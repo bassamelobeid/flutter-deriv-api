@@ -58,6 +58,7 @@ before_install:
 
 
 install:
+    - sudo date -s @1470614400
     - sudo ln -s $PWD /home/git/regentmarkets/binary-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh
