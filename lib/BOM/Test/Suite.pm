@@ -72,7 +72,7 @@ sub set_date {
             die "child died with signal %d, %s coredump\n", ($? & 127), ($? & 128) ? 'with' : 'without';
         } else {
             my $exit_code = $? >> 8;
-            die "child exited with value $exit_code, expected 0\n",
+            die "child " . join(" ", @cmd) . " exited with value $exit_code, expected 0\n",
                 if ($exit_code != 0);
         }
     }
