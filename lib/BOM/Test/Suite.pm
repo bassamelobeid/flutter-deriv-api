@@ -57,7 +57,7 @@ sub set_date {
     # We have had various problems in Travis with this date step failing,
     # so we want to capture any output we can that might indicate what's
     # happening
-    my @cmd = (qw(sudo date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
+    my @cmd = (qw(/usr/bin/sudo -- date -s), $date->datetime_yyyymmdd_hhmmss, '+%F %T');
 
     my $attempts     = 0;
     my $max_attempts = 10;
