@@ -4,7 +4,6 @@ use open qw[ :encoding(UTF-8) ];
 use BOM::Platform::Transaction;
 use BOM::Platform::Data::Persistence::DataMapper::Payment::FreeGift;
 use BOM::Platform::Data::Persistence::DataMapper::Transaction;
-use BOM::Platform::Data::Persistence::DataMapper::Account;
 use File::Flock::Tiny;
 
 ########################################################################
@@ -12,7 +11,7 @@ use File::Flock::Tiny;
 # will remove all free gifts from accounts with unused free gifts for over 90 days (i.e. with just 1 line in client a/c)
 ########################################################################
 sub Rescind_FreeGifts {
-    my ($broker, $inactivedays, $whattodo, $message) = @_;
+    my ($broker, $inactivedays, $whattodo, $message, $clerk) = @_;
 
     my $lockname = "/var/lock/rescind-free-gifts.lock";
     my $lock     = File::Flock::Tiny->trylock("/var/lock/rescind-free-gifts.lock");
@@ -21,6 +20,8 @@ sub Rescind_FreeGifts {
     }
 
     $message ||= 'Rescind of free gift for cause of inactivity';
+    $clerk   ||= 'system';
+
     my @report;
 
     my $freegift_mapper = BOM::Platform::Data::Persistence::DataMapper::Payment::FreeGift->new({broker_code => $broker,});
@@ -35,26 +36,25 @@ sub Rescind_FreeGifts {
         my $loginID      = $account->{'client_loginid'};
         my $txn_date     = $account->{'transaction_time'};
 
+        my $client       = BOM::Platform::Client->new({loginid=>$loginID});
+
         if (not BOM::Platform::Transaction->freeze_client($loginID)) {
             die "Account stuck in previous transaction $loginID";
         }
-        my $account_mapper = BOM::Platform::Data::Persistence::DataMapper::Account->new({
-                client_loginid => $loginID,
-                currency_code  => $curr,
-        });
-        my $bal = $account_mapper->get_balance();
+
+        my $bal = $client->default_account->balance;
         if ($creditamount != $bal) {
             push @report, "$loginID Error with $creditamount != $bal";
         } else {
-            push @report, '<br/>' . $loginID . ', Amount: ' . $curr . $bal . ', Funded date: ' . $txn_date;
+            push @report, "$loginID, Amount: $curr $bal, Funded date: $txn_date";
             if ($whattodo eq 'Do it for real !') {
-                ClientDB_Debit({
-                        client_loginid => $loginID,
-                        currency_code  => $curr,
-                        amount         => $bal,
-                        comment        => $message
-                });
-                push @report, $loginID . ' rescinded ' . $curr . $bal . ' !';
+                $client->payment_free_gift(
+                        currency => $curr,
+                        amount   => -$bal,
+                        remark   => $message,
+                        staff    => $clerk,
+                );
+                push @report, "$loginID rescinded $curr $bal!";
             }
         }
         BOM::Platform::Transaction->unfreeze_client($loginID);
