@@ -18,6 +18,8 @@ How to run
 
 starman bom-backoffice.psgi
 
+Then you can access the login page at https://www.binary.com/d/backoffice/login.cgi
+
 Errors
 ======
 
