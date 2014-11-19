@@ -1,0 +1,29 @@
+
+<p>The CSV format should be as below (without headers):</p>
+
+<table class="csv">
+
+    <tr>
+        <th>Login ID</th>
+        <th>Transaction Type</th>
+        <th>Trace ID</th>
+        <th>Payment Processor</th>
+        <th>Currency</th>
+        <th>Amount</th>
+        <th>Comment</th>
+    </tr>
+    <tr><td colspan="7">Examples:</td></tr>
+    <tr><td>CR0001,</td><td>credit,</td><td>714859<td>DCash1</td><td>USD,</td><td>10.00,</td><td>"DoughFlow deposit"</td></tr>
+    <tr><td>CR0001,</td><td>debit,</td><td>714859<td>NETeller</td><td>USD,</td><td>10.00,</td><td>"reversal of DoughFlow deposit"</td></tr>
+
+</table>
+
+<br/>
+<form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi')%]" enctype="multipart/form-data">
+
+    Use this CSV <input type="file" value="" required name="payments_csv" />
+    <button type="submit" name="preview" value="doughflow">PREVIEW DOUGHFLOW PAYMENTS</button>
+
+</form>
+<br/>
+

@@ -1,0 +1,5 @@
+<ul id="moneyness-comparison">
+[% FOREACH item IN items %]
+    [% INCLUDE 'backoffice/updatevol/moneyness_comparison_li.html.tt' item=item %]
+[% END %]
+</ul>

@@ -1,0 +1,51 @@
+[% IF disabled %]
+<p>The list of disabled underlying due to bankruptcy: </p>
+<table id="dtr" border="1" cellpadding="1" cellspacing="0">
+    <tr>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th>Disable Date</th>
+        <th>Effective Date</th>
+        <th>Comment</th>
+        <th>Enable</th>
+    </tr>
+    [% FOREACH symbol IN disabled.keys %]
+    <tr>
+        <td>[% symbol %]</td>
+        <td>[% disabled.$symbol.description %]</td>
+        <td>[% disabled.$symbol.suspension_date %]</td>
+        <td>[% disabled.$symbol.effective_date %]</td>
+    <form id="corp_action_[% symbol %]">
+        <td><input type='text' name="comment" value="[% disabled.$symbol.comment %]"/></td>
+        [% IF disabled.$symbol.enable %]
+            <td>re-enabled</td>
+        [% ELSE %]
+            <td><input type='checkbox' name='enable' value='1' /></td>
+        [% END %]
+        <input type="hidden" name="symbol" value="[% symbol %]"/>
+        <input type="hidden" name="action_id" value="[% disabled.$symbol.action_id %]"/>
+        <td><div class="button_[% disabled.$symbol.action_id %]"><input type="submit" value="update"/></div><div class="status_[% disabled.$symbol.action_id %]"></div></td>
+    </form>
+    </tr>
+    [% END %]
+</table>
+[% END %]
+
+[% IF monitor %]
+<p>Corporate Actions that we monitor: </p>
+<table id="dtr" border="1" cellpadding="1" cellspacing="0">
+    <tr>
+        <th>Symbol</th>
+        <th>Description</th>
+        <th>Effective Date</th>
+    </tr>
+    [% FOREACH symbol IN monitor.keys %]
+    <tr>
+        <td>[% symbol %]</td>
+        <td>[% monitor.$symbol.description %]</td>
+        <td>[% monitor.$symbol.effective_date %]</td>
+    </form>
+    </tr>
+    [% END %]
+</table>
+[% END %]

@@ -1,0 +1,14 @@
+[% FOREACH attorney IN attorneys %]
+<tr data-sortkey="[% attorney.sortkey %]" data-loginid="[% attorney.loginid %]">
+	<td align="center">[% attorney.loginid %]</td>
+	<td align="center">[% attorney.name %]&nbsp;</td>
+	<td align="center"><a href="[% attorney.url %]" target="_blank">[% attorney.url %]</a>&nbsp;</td>
+	<td align="center"><a id="[% attorney.loginid %]_total_granters" href="[% request.url_for('backoffice/attorney_granter.cgi', {action => 'show_granters', attorney_client_loginid => attorney.loginid, broker => broker.code}) %]">[% attorney.total_granters %]</a></td>
+	<td style="text-align: center; white-space: nowrap">
+          <button data-approved="[% attorney.approved ? '1' : '0' %]">
+            <span>unauthorized</span><span>approved</span>
+          </button>
+          <button data-del="1"><span>delete</span></button>
+        </td>
+</tr>
+[% END %]

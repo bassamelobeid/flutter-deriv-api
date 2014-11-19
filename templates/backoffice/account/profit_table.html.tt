@@ -1,0 +1,180 @@
+[%- MACRO display_amount(amount) BLOCK -%]
+        [% IF amount >= 0 %]
+                <span class="profit">[% to_monetary_number_format(amount) %]</span>
+        [% ELSE %]
+                <span class="loss">[% to_monetary_number_format(amount) %]</span>
+        [% END %]
+[%- END -%]
+
+[%- MACRO sale_price(contract) IF contract.is_sold -%][% contract.sell_price %][% ELSE %][% contract.info.indicative_price %][% END %]
+
+[%- MACRO display_contract(contract) BLOCK -%]
+    <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
+        <div class="grd-grid-2">[% contract.purchase_date.datetime %]</div>
+        <div class="grd-grid-1">
+            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code }) %]">
+                [% IF contract.is_sold %]
+                    [% contract.txn_id %]
+                [% ELSE %]
+                    [% contract.buy_id %]
+                [% END %]
+            </a>
+        </div>
+        <div class="grd-grid-3">[% contract.info.description %]</div>
+        <div class="grd-grid-1 right-aligned">
+                [% currency %] [% to_monetary_number_format(contract.buy_price) %]
+        </div>
+        <div class="grd-grid-2">[% contract.sale_date.datetime %]</div>
+        <div class="grd-grid-1 right-aligned">
+            [% currency %] [% to_monetary_number_format(sale_price(contract)) %]
+        </div>
+        <div class="grd-grid-1 right-aligned">
+            [% currency %] [% display_amount(sale_price(contract) - contract.buy_price) %]
+        </div>
+        <div class="grd-grid-1 right-aligned">
+                [% display_amount(contract.cumulative_pl) %]
+        </div>
+    </div>
+[%- END -%]
+
+[%- MACRO display_limit(limit) BLOCK -%]
+    <form action="[% request.url_for('backoffice/f_profit_table.cgi') %]" method="post">
+        <input type="hidden" name="loginID" value="[% loginid %]"/>
+        <input type="hidden" name="startdate" value="[% startdate %]" />
+        <input type="hidden" name="enddate" value="[% enddate %]" />
+        <td>
+            <select name="market">
+                [% FOREACH market IN markets %]
+                    <option value="[% market.name %]" [% IF market.name.search(limit.market) %]selected=selected[% END %]>[% market.display_name %]</option>
+                [% END %]
+            </select>
+        </td>
+        <td>
+            <select name="contract_kind">
+                <option value="all" [% IF limit.contract_kind == 'all' %]selected=selected[% END %]>All</option>
+                <option value="iv" [% IF limit.contract_kind == 'iv' %]selected=selected[% END %]>IV</option>
+            </select>
+        </td>
+        <td><input type="text" name="payout_limit" value="[% limit.payout_limit %]" size=10 /></td>
+        <td><input type="text" name="limitlist_comment" value="[% limit.comment %]" size=10 /></td>
+        [% IF limit.defined %]
+            <td><input type="submit" name="update_limitlist" value="Update"/></td>
+        [% ELSE %]
+            <td><input type="submit" name="update_limitlist" value="Add"/></td>
+        [% END %]
+    </form>
+[%- END -%]
+
+[%- MACRO startdate IF sold_contracts.size == 0 -%][% posted_startdate %][% ELSE %][% sold_contracts.last.purchase_time %][% END %]
+[%- MACRO enddate IF sold_contracts.size == 0 -%][% posted_enddate %][% ELSE %][% sold_contracts.first.purchase_time %][% END %]
+
+[%- MACRO navigator BLOCK -%]
+<div id="statement-table" class="grd-parent grd-grid-12 grd-row-padding">
+    <div class="grd-grid-6 left-aligned">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+                <INPUT name=enddate type=hidden value="[% startdate %]" />
+                <INPUT type=hidden name="loginID" value="[% loginid %]" />
+                <INPUT type=hidden name="broker" value="[% request.broker.code %]" />
+                <INPUT type=hidden name="l" value="EN" />
+                <INPUT type="submit" value="Older" [% IF startdate.length == 0 %]disabled=disabled[% END %]/>
+        </FORM>
+    </div>
+    <div class="grd-grid-6 right-aligned">
+        <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+                <INPUT name=startdate type=hidden value="[% enddate %]" />
+                <INPUT type=hidden name="loginID" value="[% loginid %]" />
+                <INPUT type=hidden name="broker" value="[% request.broker.code %]" />
+                <INPUT type=hidden name="l" value="EN" />
+                <INPUT type="submit" value="Newer" [% IF enddate.length == 0 %]disabled=disabled[% END %]/>
+        </FORM>
+    </div>
+</div>
+[%- END -%]
+
+<style type="text/css">
+#limit_entry { background-color: #ccf; }
+#limit_entry th { font-size: small; }
+#limit_entry td { text-align: center; padding: 5px;}
+#limit_entry caption { caption-side: bottom; font-size: small;  }
+</style>
+<FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
+        Sold Contracts Between <INPUT name=startdate type=text size=20 value="[% startdate %]" />
+        and <INPUT name=enddate type=text size=20 value="[% enddate %]" />
+        <INPUT type=hidden name="loginID" value="[% loginid %]" />
+        <INPUT type=hidden name="broker" value="[% request.broker.code %]" />
+        <INPUT type=hidden name="l" value="EN" />
+        <INPUT type=checkbox name="all">All (No pagination) </INPUT>
+        <INPUT type="submit" value="Update" />
+</FORM>
+<div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
+<p><b>[% full_name %]</b>, [% email %] from [% runtime.countries.country_from_code(residence) %]</p>
+</div>
+[% navigator %]
+[% IF sold_contracts.size == 0 %]
+        <p>[% l('There are no contracts during this period') %]</p>
+[% ELSE %]
+<div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
+    [% cumulative_pl = 0;
+        FOREACH contract IN sold_contracts.reverse;
+            contract.info = contract_details(contract, currency);
+            cumulative_pl = cumulative_pl + sale_price(contract) - contract.buy_price;
+            contract.cumulative_pl = cumulative_pl;
+    END %]
+    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
+        <div class="grd-grid-2">Purchase Date</div>
+        <div class="grd-grid-1">Id</div>
+        <div class="grd-grid-3">Contract</div>
+        <div class="grd-grid-1">Purchase Price</div>
+        <div class="grd-grid-2">Sale Date</div>
+        <div class="grd-grid-1">Sale Price</div>
+        <div class="grd-grid-1 right-aligned">Profit/Loss</div>
+        <div class="grd-grid-1 right-aligned"></div>
+    </div>
+
+    [% FOREACH contract IN sold_contracts %]
+        [%
+                display_contract(contract);
+        %]
+    [% END %]
+    [% navigator %]
+[% END %]
+
+[% cumulative_pl = 0;
+FOREACH contract IN open_contracts.reverse;
+    contract.info = contract_details(contract, currency);
+    cumulative_pl = cumulative_pl + sale_price(contract) - contract.buy_price;
+    contract.cumulative_pl = cumulative_pl;
+END %]
+    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
+        <b>Open Contracts</b>
+    </div>
+    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
+        <div class="grd-grid-2">Purchase Date</div>
+        <div class="grd-grid-1">Id</div>
+        <div class="grd-grid-3">Contract</div>
+        <div class="grd-grid-1">Purchase Price</div>
+        <div class="grd-grid-2">Sale Date</div>
+        <div class="grd-grid-1">Sale Price</div>
+        <div class="grd-grid-1 right-aligned">Profit/Loss</div>
+        <div class="grd-grid-1 right-aligned"></div>
+    </div>
+
+[% FOREACH contract IN open_contracts %]
+    [%
+        display_contract(contract);
+    %]
+[% END %]
+<div>
+<div class="grd-parent grd-grid-12 table-header grd-row-padding">
+        <b>Client Limits</b>
+</div>
+<div class="grd-parent grd-grid-12 table-header grd-row-padding">
+    <table id="limit_entry">
+    <caption>Leave <strong>comment</strong> blank to remove a single line. Leave <strong>maxpayout</strong> blank to watch but not impose a limit.</caption>
+    <tr><th>Market</th><th>Contracts</th><th>MaxPayout</th><th>Comment</th><th>Action</th></tr>
+    [% FOREACH limit IN limits %]
+        <tr>[% display_limit(limit) %]</tr>
+    [% END %]
+        <tr>[% display_limit() %]</tr>
+    </table>
+</div>

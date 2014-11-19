@@ -1,0 +1,94 @@
+<p>See, also: <a href="[% dtr_link %]">this month's daily turnover report</a>.</p>
+<p>Summary of period starting at [% start_date %] and ending [% end_date %].</p>
+<div id="rd-tabs">
+  <ul>
+    <li><a href="#rd-treemap">Treemap</a></li>
+    <li><a href="#rd-summary">Client Summary</a></li>
+    <li><a href="#rd-pivot">Pivot</a></li>
+  </ul>
+  <div id="rd-summary">
+        <div class="sum_table">
+            <h3>Deposits</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_deposits, key = 'payments' %]
+        </div>
+        <div class="sum_table">
+            <h3>Withdrawals</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_withdrawals, key = 'payments' %]
+        </div>
+        <div class="sum_table">
+            <h3>Winners</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_winners, key = 'profit' %]
+        </div>
+        <div class="sum_table">
+            <h3>Losers</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = big_losers, key = 'profit' %]
+        </div>
+<hr/>
+        <div class="sum_table">
+            <h3>Watched</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = watched, action = 'watched', key = 'profit' %]
+        </div>
+        <div class="sum_table">
+            <h3>Turnover</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_account_table.html.tt' clients = top_turnover.clients, key = 'turnover' %]
+        </div>
+        <div class="sum_table">
+            <h3>Affiliate</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_affiliate_table.html.tt' affiliates = top_turnover.affiliates, key = 'turnover' %]
+        </div>
+        <div class="sum_table">
+            <h3>Sharpe</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_sharpe_ratio.html.tt' sharpe_ratio = sharpe_ratio.one %]
+        </div>
+<hr/>
+    <div>
+        <h2>Open Postions</h2>
+        <div>
+            <h3>Payouts:</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.big_payouts %]
+        </div>
+        <div>
+            <h3>Gains (MtM >= [% open_bets.mover_limit %]):</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.top_ten_movers %]
+        </div>
+<br>
+        <div>
+            <h3>MtM:</h3>
+            [% INCLUDE 'backoffice/risk_dashboard_bet_table.html.tt' bets = open_bets.big_mtms %]
+        </div>
+    </div>
+</div>
+<div id="rd-pivot">
+[% INCLUDE 'backoffice/risk_dashboard_pivot.html.tt' pivot = open_bets.pivot %]
+</div>
+<div id="rd-treemap">
+[% INCLUDE 'backoffice/risk_dashboard_treemap.html.tt' treemap = open_bets.treemap sparks = open_bets.sparks %]
+</div>
+</div>
+
+<style type="text/css">
+    #rd-summary a:hover {
+        color:#060;
+    }
+    #rd-summary div {
+        padding:0 3px;
+        border-width: 1px;
+        display: table-cell;
+    }
+    #rd-summary h2,
+    #rd-summary h3 {
+        margin:5px 0;
+    }
+    #rd-summary ol {
+        padding-left:30px;
+    }
+    #rd-summary .sum_table {
+        width: 20%;
+    }
+    #rd-summary td {
+        text-align:right;
+    }
+    #rd-summary .highlight {
+        background-color:yellow;
+    }
+</style>

@@ -1,0 +1,72 @@
+<p><a href="[% request.url_for('backoffice/attorney_granter.cgi', { broker => broker.code, action => 'show_attorneys'}) %]">Back to see all Attorneys</a></p>
+
+[% IF granters %]
+
+<table border="1" id="attorney_granters_table">
+	<tr>
+		<th>Granter Login ID</th>
+		<th>Full Name</th>
+		<th>Date Added</th>
+		<th>Last Modified Date</th>
+		<th>Letter of Attorney</th>
+		<th>Status</th>
+	</tr>
+
+	[% FOREACH granter IN granters %]
+        [% client = granter.granter_client %]
+        [% granterid = client.loginid %]
+		<tr>
+			<td align="center"><a href="[% request.url_for('backoffice/f_clientloginid_edit.cgi', {broker => broker.code, loginID => granterid}) %]">[% granterid %]</a></td>
+			<td align="center">[% client.first_name; ' '; client.last_name %]</td>
+			<td align="center">[% granter.date_added %]</td>
+			<td align="center">[% granter.last_modified_date %]</td>
+			<td align="center">[% IF granter.letter_of_attorney_url %]<a href="[% request.url_for('backoffice/download_document.cgi', {broker => broker.code, path => granter.letter_of_attorney_url, category => "attorney_granters"}) %]>download</a>[% ELSE %]no document[% END %]</td>
+			<td align="center">
+				<a href="[% request.url_for('backoffice/attorney_granter.cgi', {action => 'change_status', status => 'approved', broker => broker.code, granter_loginid => granterid, attorney_client_loginid => attorney_client_loginid}) %]" class="change_status[% IF granter.approved %] unclickable_text[% END %]">approve</a> |
+				<a href="[% request.url_for('backoffice/attorney_granter.cgi', {action => 'change_status', status => 'disapproved', broker => broker.code, granter_loginid => granterid, attorney_client_loginid => attorney_client_loginid}) %]" class="change_status[% IF !granter.approved %] unclickable_text[% END %]">disapprove</a> |
+				<a href="[% request.url_for('backoffice/attorney_granter.cgi', {action => 'delete_granter', broker => broker.code, granter_loginid => granterid, attorney_client_loginid => attorney_client_loginid}) %]" onclick="if (!confirm('Are you sure to delete ([% attorney_client_loginid %] - [% granterid %]) relationship ?')) {return false;}">delete</a>
+			</td>
+		</tr>
+	[% END %]
+</table>
+
+[% ELSE %]
+	<p>No granters for this attorney.</p>
+[% END %]
+
+<script type="text/javascript">
+
+\$(document).ready(function (){
+	var attorney_granters_table = \$('#attorney_granters_table');
+	attorney_granters_table
+		.delegate('a.change_status','click', function (e) {
+			e.preventDefault();
+	
+			var clicked_link = \$(this);
+	
+			if (clicked_link.hasClass('unclickable_text'))
+			{
+				return false;
+			}
+	
+			\$.ajax({
+				type: 'GET',
+				url: clicked_link.attr('href')+'&ajax_only=1',
+				async: false,
+				success: function (result) {
+					clicked_link.parent().find('a').removeClass('unclickable_text');
+	
+					if (result.error) {
+						alert(result.error);
+						clicked_link.removeClass('unclickable_text');
+					}
+					else if (result.success) {
+						clicked_link.addClass('unclickable_text');
+					}
+				},
+				dataType: 'json'
+			});
+		});
+});
+
+</script>

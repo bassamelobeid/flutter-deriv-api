@@ -1,0 +1,7 @@
+        <script>
+            //A global variable required to initialize Page object.
+            window.page_params = { settings: [%= javascript.settings =%]};
+        </script>
+            [%= FOREACH js IN javascript.libs =%]
+              <script type="text/javascript" src='[%= js =%]'></script>
+            [%= END =%]

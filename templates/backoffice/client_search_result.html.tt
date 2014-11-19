@@ -1,0 +1,37 @@
+<table border="0" cellpadding="1" cellspacing="1" width="90%" style="text-align:left; padding:0.5em 0;">
+    <tr style="background-color:#ffffce";>
+        <th align="left" >Login ID</th>
+        <th>Salutation</th>
+        <th>First Name</th>
+        <th>Last Name</th>
+        <th>Email</th>
+        <th>Account Status</th>
+        <th>Last Login</th>
+        <th>Phone</th>
+        <th>Fax</th>
+        <th>Address</th>
+        <th>Citizen</th>
+        <th>Date Joined</th>
+    </tr>
+    [% FOR result = results %]
+        <tr style="background-color: #aaffaa;">
+            <td align="left" >[% result.loginid %]</td>
+            <td>[% result.salutation %]</td>
+            <td>[% result.first_name %]</td>
+            <td>[% result.last_name %]</td>
+            <td>[% result.email %]</td>
+            <td>[% result.status_code %]</td>
+            <td align="center">[% result.last_login || '---' %] </td>
+            <td>[% result.phone %]</td>
+            <td>[% result.fax %]</td>
+            <td>
+                [% IF result.address_line_1 %] [% result.address_line_1 %] </br> [% END %]
+                [% IF result.address_line_2 %] [% result.address_line_2 %] </br> [% END %]
+                [% IF result.address_city %] [% result.address_city %] </br> [% END %]
+                [% IF result.address_state %] [% result.address_state %] [% END %]
+            </td>
+            <td>[% result.citizen %]</td>
+            <td>[% result.date_joined %]</td>
+        </tr>
+    [% END %]
+</table>

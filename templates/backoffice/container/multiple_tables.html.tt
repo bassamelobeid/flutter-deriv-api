@@ -1,0 +1,7 @@
+[% FOREACH table = tables %]
+    [% INCLUDE backoffice/container/full_table_from_hashrefs.html.tt
+        title = table.title
+        rows  = table.rows 
+    %]
+    <div style="padding-bottom: 20px;"></div>
+[% END %]

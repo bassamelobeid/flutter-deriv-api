@@ -1,0 +1,34 @@
+<div>
+    <p>List of clients who are locked in transaction (buy/sell/payments).</p>
+    <p>Only client which are locked for more than a minute are of concern</p>
+<FORM METHOD="POST">
+<script>
+function toggle(source) {
+  checkboxes = document.getElementsByName('clients');
+  for(var i=0, n=checkboxes.length;i<n;i++) {
+    checkboxes[i].checked = source.checked;
+  }
+}
+</script>
+<table cellspacing=0 cellpadding=5 border="1">
+    <tr>
+        <th><input type="checkbox" onClick="toggle(this)" /> Toggle All</th>
+        <th>Client Loginid</th>
+        <th>Lock Time</th>
+        <th>Lock Age</th>
+        <th>Note</th>
+    </tr>
+    [% FOREACH key IN locked_client_list.keys %]
+    <tr>
+        <td><input type="checkbox" name="clients" value="[% locked_client_list.$key.client_loginid %]"></td>
+        <td>[% locked_client_list.$key.client_loginid %]</td>
+        <td>[% locked_client_list.$key.time %]</td>
+        <td>[% locked_client_list.$key.age %]</td>
+        <td>[% locked_client_list.$key.description %][% contract.buy_price %]</td>
+    </tr>
+    [% END %]
+</table>
+<input type="hidden" name="broker" value="[% broker.code %]">
+<input type="submit" name="unlock_selection"  value="Unlock selected clients">
+</form>
+</div>

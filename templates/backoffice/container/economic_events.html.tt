@@ -1,0 +1,22 @@
+[% WRAPPER 'backoffice/container/full_table.html.tt' %]
+    <thead>
+            <th>Recorded Date</th>
+            <th>Release DateTime</th>
+            <th>Symbol</th>
+            <th>Impact</th>
+            <th>Event Name</th>
+            <th>Event Source</th>
+    </thead>
+    <tbody>
+        [% FOREACH name = rows %]
+            <tr>
+                <td>[% name.recorded_date %]</td>
+                <td>[% name.release_date %]</td>
+                <td>[% name.symbol %]</td>
+                <td>[% name.impact %]</td>
+                <td>[% name.event_name %]</td>
+                <td>[% name.source %]</td>
+            </tr>
+        [% END %]
+    </tbody>
+[% END %]

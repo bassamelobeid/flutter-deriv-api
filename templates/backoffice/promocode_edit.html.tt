@@ -1,0 +1,130 @@
+<style type="text/css">
+table#promocode_edit td{
+    padding-top:4px;
+}
+input.upper {
+    text-transform: uppercase
+}
+.label{
+    width:20%;
+    text-align:right;
+    text-transform:uppercase;
+    vertical-align:top;
+}
+.message {
+    background-color: #fdd;
+    padding: 6px;
+    margin: 0px
+}
+</style>
+
+<link rel="stylesheet" type="text/css" href="[% request.url_for('css/external/select2/select2.css', undef, undef, {internal_static => 1}) %]" media="screen" />
+<script>
+\$(document).ready(function() {
+    \$('#country_list').select2();
+    \$('.datepick').datepicker({dateFormat: "yy-mm-dd"});
+});
+</script>
+
+<a href=[% request.url_for('backoffice/f_promotional.cgi', broker => request.broker.code) %]>[Back to marketing tools]</a><br /><br />
+
+[% FOR message IN messages %]
+    <div class="message">[% message %]</div>
+[% END %]
+
+<form action="[% request.url_for('backoffice/promocode_edit.cgi') %]" method="post">
+    <input type="submit" name="save" value="Save Promocode Details" />
+    <input type="hidden" name="broker" value="[% request.broker.code %]" />
+
+    <table id="promocode_edit">
+        <tr>
+            <td class="label">Promocode</td>
+            <td>:
+                [% IF pc.code %]
+                    [% pc.code %]
+                    <input type="hidden" name="promocode" value="[% pc.code %]" />
+                [% ELSE %]
+                    <input type="text" class="upper" name="promocode" />
+                [% END %]
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Currency</td>
+            <td>: <select name="currency">
+                    [% FOREACH currency_option = ['USD' 'GBP' 'EUR' 'AUD' 'ALL'] %]
+                        [% selected = currency_option == pc_json.currency? 'selected="selected"': '' %]
+                        <option value="[% currency_option %]" [% selected %] > [% currency_option %] </option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Amount</td>
+            <td>: <input type="text" name="amount" value="[% pc_json.amount %]" /> Note: Amount range: FREE_BET, GET_X_WHEN_DEPOSIT_Y (0 ~ 999) </td>
+        </tr>
+        <tr>
+            <td class="label">Promocode Type</td>
+            <td>: <select name="promo_code_type">
+                    [% FOREACH type_option = ['FREE_BET' 'GET_X_WHEN_DEPOSIT_Y' ] %]
+                        [% selected = type_option == pc.promo_code_type? 'selected="selected"': '' %]
+                        <option value="[% type_option %]" [% selected %] > [% type_option %] </option>
+                    [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Mininum Deposit </td>
+            <td>: <input type="text" name="min_deposit" value="[% pc_json.min_deposit %]"> Note: Only applies for type: GET_X_WHEN_DEPOSIT_Y </td>
+        </tr>
+        <tr>
+            <td class="label">Minimum Turnover</td>
+            <td>: <input type="text" name="min_turnover" value="[% pc_json.min_turnover %]" /> Note: Only applies for type: FREE_BET </td>
+        </tr>
+        <tr>
+            <td class="label">Start Date</td>
+            <td>:
+                [% IF pc.start_date %]
+                    [% pc.start_date %]
+                [% ELSE %]
+                    <input class="datepick" type="text" name="start_date" /> Format: yyyy-mm-dd
+                [% END %]
+            </td> 
+        </tr>
+        <tr>
+            <td class="label">Expiry Date</td>
+            <td>: <input class="datepick" type="text" name="expiry_date" value="[% pc.expiry_date %]" /> Format: yyyy-mm-dd</td> 
+        </tr>
+        <tr>
+            <td class="label">
+                <select name="country_type">
+                        <option value="offered" selected=selected>Countries Offered</option>
+                        <option value="not_offered">Countries Not Offered</option>
+                </select>
+            </td>
+            <td>:
+                <select size=30 name="country" id="country_list" style="width: 470px" multiple>
+                        <option value="ALL" [% IF pc_json.country.search("ALL") OR ! pc_json.country %]selected="selected"[% END %]>ALL</option>
+                [% FOREACH country = runtime.countries.all.sort %]
+                        [% country_code = runtime.countries.code_from_country(country) %]
+                        <option value="[% country_code %]" [% IF pc_json.country.search(country_code) %]selected="selected"[% END %]>[% country %]</option>
+                [% END %]
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td class="label">Description</td>
+            <td>: <input type="text" name="description" value="[% pc.description %]" size="100" /></td>
+        </tr>
+        <tr>
+            <td class="label">Status</td>
+            <td>: <select name="status">
+                    [% selected = pc.status? 'selected="selected"': '' %]
+                    <option value="1" [% selected %] >Enabled</option>
+                    [% selected = !pc.status? 'selected="selected"': '' %]
+                    <option value="0" [% selected %] >Disabled</option>
+                  </select>
+            </td>
+        </tr>
+    </table>
+
+</form>

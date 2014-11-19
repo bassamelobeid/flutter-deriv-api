@@ -1,0 +1,316 @@
+#!/usr/bin/perl
+package main;
+use strict 'vars';
+use open qw[ :encoding(UTF-8) ];
+
+use Text::Trim;
+
+use f_brokerincludeall;
+use BOM::Market::PricingInputs::Volatility::Display;
+
+use BOM::Platform::Runtime;
+use BOM::Utility::Format::Numbers qw( virgule );
+use BOM::Market::PricingInputs::Rates::Interest;
+use BOM::Market::PricingInputs::VolSurface::Delta;
+use BOM::Market::PricingInputs::VolSurface::Moneyness;
+use BOM::Market::PricingInputs::Couch::VolSurface;
+use BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator;
+use BOM::Utility::Date;
+use Path::Tiny;
+use BOM::Utility::Log4perl qw( get_logger );
+use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Plack qw( PrintContentType );
+
+system_initialize();
+
+PrintContentType();
+
+local $\ = "\n";
+
+my $text              = request()->param('text');
+my $filen             = request()->param('filen');
+my $vol_update_symbol = request()->param('symbol');
+my $can_delete;
+
+# Check file name
+my $ok = 0;
+my $overridefilename;
+
+my $file_broker_code;
+my @removed_lines = ();
+
+if ($filen eq 'editvol') { $ok = 1; }
+if ($filen =~ /^vol\/master(\w+)\.interest$/) { $ok = 1; }
+
+if ($ok == 0) {
+    print "Wrong file<P>";
+    code_exit_BO();
+}
+
+# Check we are on master server
+if (    not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')
+    and not BOM::Platform::Runtime->instance->app_config->system->on_development)
+{
+    print "Sorry, files cannot be saved on this server because it is not the Master Server.";
+    code_exit_BO();
+}
+
+my $broker = request()->broker->code;
+my $staff  = BOM::Platform::Auth0::can_access(['Quants']);
+my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+
+$text =~ s/\r\n/\n/g;
+$text =~ s/\n\r/\n/g;
+
+my @lines = split(/\n/, $text);
+
+if ($filen eq 'editvol') {
+
+    my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
+
+    my $market = $underlying->market->name;
+    my $model =
+      ($market eq 'indices')
+      ? 'BOM::Market::PricingInputs::VolSurface::Moneyness'
+      : 'BOM::Market::PricingInputs::VolSurface::Delta';
+
+    my $surface_data   = {};
+    my $col_names_line = shift @lines;
+    my @points         = split /\s+/, $col_names_line;
+    shift @points;    # get rid of "day" label
+
+    foreach my $smile_line (@lines) {
+        my @pieces = split /\s+/, $smile_line;
+        my %smile;
+        my $day = shift @pieces;
+        my %spread;
+        foreach my $point (@points) {
+
+            if ($point =~ /D_spread/) {
+                my $spread_point = $point;
+                $spread_point =~ s/D_spread//g;
+                $spread{$spread_point} = shift @pieces;
+            } elsif ($point =~ /M_spread/) {
+                my $spread_point = $point;
+                $spread_point =~ s/M_spread//g;
+                $spread{$spread_point} = shift @pieces;
+            } else {
+                $smile{$point} = shift @pieces;
+            }
+
+        }
+
+        $surface_data->{$day} = {
+            smile      => \%smile,
+            vol_spread => \%spread,
+        };
+    }
+    my %surface_args = (
+        underlying    => $underlying,
+        surface       => $surface_data,
+        recorded_date => BOM::Utility::Date->new
+    );
+
+    $surface_args{spot_reference} = request()->param('spot_reference')
+      if $model eq 'BOM::Market::PricingInputs::VolSurface::Moneyness';
+    my $surface = $model->new(%surface_args);
+
+    my $dm                  = BOM::Market::PricingInputs::Couch::VolSurface->new;
+    my $existing_volsurface = $dm->fetch_surface({underlying => $underlying});
+    my $existing_surface    = eval { $existing_volsurface->surface };
+    $existing_volsurface = undef unless $existing_surface;
+
+    if ($existing_volsurface) {
+        my $validator = BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator->new;
+        eval { $validator->validate_surface($surface) };
+
+        my ($big_differences, $error_message, @output) =
+          BOM::Market::PricingInputs::Volatility::Display->new(surface => $surface)->print_comparison_between_volsurface({
+                ref_surface => $existing_volsurface,
+                warn_diff   => 1,
+                quiet       => 1,
+          });
+
+        print "<P> Difference between existing and new surface </p>";
+        print @output;
+
+        if ($@) {
+            print "<P> $@ </P>";
+
+        } elsif ($big_differences) {
+            print "<P>$error_message</P>";
+        } else {
+            print "<P>Surface for " . $vol_update_symbol . " being saved</P>";
+            $surface->save;
+        }
+    }
+
+    code_exit_BO();
+}
+if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
+    my $symbol = $1;
+    my $rates  = {};
+
+    foreach my $rateline (@lines) {
+        my $err_cond;
+        $rateline = rtrim($rateline);
+
+        my ($tenor, $rate);
+        if ($rateline =~ /^(\d+)\s+(\d*\.?\d*)/) {
+            $tenor = $1;
+            $rate  = $2;
+
+            if ($tenor == 0 or $tenor < 1 or $tenor > 733) {
+                $err_cond = 'improper days (' . $tenor . ')';
+            } elsif ($rate <= -2) {
+                $err_cond = 'too low rate (' . $rate . ')';
+            } elsif ($rate > 20) {
+                $err_cond = 'too high rate (' . $rate . ')';
+            }
+        } else {
+            $err_cond = 'malformed line';
+        }
+
+        if ($err_cond) {
+            print '<P><font color=red><B>ERROR with ' . $err_cond . ' on line  [' . $rateline . '].  File NOT saved.</B></font></P>';
+            code_exit_BO();
+        } else {
+            $rates->{$tenor} = $rate;
+        }
+    }
+
+    my $interest_rates = BOM::Model::Rates::Interest->new(
+        symbol => $symbol,
+        rates  => $rates,
+        date   => BOM::Utility::Date->new,
+    );
+    $interest_rates->save;
+
+}
+
+if (not $overridefilename) {
+    my $db_loc = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+    if ($filen =~ /^market/) {
+        $db_loc = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
+    }
+    $overridefilename = $db_loc . '/' . $filen;
+}
+
+if (request()->param('deletefileinstead') eq 'on' and $can_delete) {
+    unlink $overridefilename;
+    if (-e $overridefilename) {
+        print "ERROR! FILE COULD NOT BE DELETED!!";
+        code_exit_BO();
+    }
+    print "Success.  File has been deleted.";
+    code_exit_BO();
+}
+
+my $diff;
+if (-e $overridefilename) {
+    $diff = Text::Diff::diff \$text, $overridefilename, {STYLE => "Table"};
+} else {
+    $diff = '[File is a new file]';
+}
+
+# Save the file
+my $fage = (-M $overridefilename) * 24 * 60 * 60;
+
+# a feed file
+if (    -e $overridefilename
+    and $fage < 30
+    and not BOM::Platform::Runtime->instance->app_config->system->on_development
+    and $overridefilename !~ /\/combined\//)
+{
+    print "<P><font color=red>Problem!! The file has been saved by someone else within the last $fage seconds.
+	There is a risk that that person saved modifications that you are going to over-write!
+	Please click Back, then REFRESH THE PAGE to pull in the modifications, then make your changes again, then re-save.";
+    code_exit_BO();
+}
+
+#internal audit warnings
+if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Runtime->instance->app_config->system->on_development and $diff) {
+    get_logger->warn("promocodes.txt EDITED BY $clerk");
+    send_email({
+            from    => BOM::Platform::Runtime->instance->app_config->system->email,
+            to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
+            subject => "Promotional Codes edited by $clerk",
+            message => ["$ENV{'REMOTE_ADDR'}\n$ENV{'HTTP_USER_AGENT'} \nDIFF=\n$diff", '================', 'NEW FILE=', @lines]});
+}
+
+local *DATA;
+open(DATA, ">$overridefilename")
+  || die "[$0] Cannot open $overridefilename to write $!";
+flock(DATA, 2);
+local $\ = "\n";
+
+foreach my $l (@lines) {
+    print DATA $l;
+}
+close(DATA);
+
+# Log the difference (difflog)
+save_difflog({
+        'overridefilename' => $overridefilename,
+        'loginID'          => $broker,
+        'staff'            => $clerk,
+        'diff'             => $diff,
+});
+
+# Log the difference (staff.difflog)
+save_log_staff_difflog({
+        'overridefilename' => $overridefilename,
+        'loginID'          => $broker,
+        'staff'            => $clerk,
+        'diff'             => $diff,
+});
+
+# f_save complete log
+save_log_save_complete_log({
+        'overridefilename' => $overridefilename,
+        'loginID'          => $broker,
+        'staff'            => $clerk,
+        'diff'             => $diff,
+});
+
+# fsave.log
+if ((-s "/var/log/fixedodds/fsave.log") > 300000) {
+    system("mv /var/log/fixedodds/fsave.log /var/log/fixedodds/fsave.log.1");
+}
+Path::Tiny::path("/var/log/fixedodds/fsave.log")
+  ->append(BOM::Utility::Date->new->datetime . " $broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename));
+
+# DISPLAY SAVED FILE
+print "<b><p>FILE was saved as follows :</p></b><br>";
+my $shorttext = substr($text, 0, 1000);
+
+print "<pre>" . $shorttext;
+if (length $shorttext != length $text) {
+    print "....etc.......";
+}
+print "</pre>";
+
+print "<p>New file size is " . (virgule(-s "$overridefilename")) . " bytes</p><hr/>";
+
+# DISPLAY diff
+print
+  "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>$diff</pre></td></tr></table><hr>";
+
+if (-e "$overridefilename.staffedit") {
+    unlink "$overridefilename.staffedit";
+}
+
+# Send email to quant team
+my $message;
+my $dbloc = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+$diff =~ s/$dbloc//;
+unless ($diff eq '0') {
+    if ($filen =~ /^market/) {
+        $message = "FILE $filen CHANGED ON SERVER BY $clerk\n\nDIFFERENCES BETWEEN OLD FILE AND NEW FILE :\n$diff\n";
+    }
+}
+if ($message and not BOM::Platform::Runtime->instance->app_config->system->on_development) {
+    get_logger()->warn('FILECHANGED', "File $filen edited by $clerk", $message);
+}
+
+code_exit_BO();

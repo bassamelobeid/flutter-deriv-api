@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<style>
+    #message div {
+        background-color:white;
+        width: 40%;
+        font-weight: bold;
+    }
+    #saved {
+        color:green;
+        }
+    #error {
+        color: red;
+    }
+
+    .settings_form td div span { font-style: italic }
+    
+    fieldset {
+        margin-bottom: 5px;
+    }
+
+    input[type="submit"] {
+        text-transform:uppercase;
+    }
+
+    fieldset legend{
+        font-weight: bold;
+        font-size: 14px;
+        width:100%;
+        text-transform:uppercase;
+        font-family: Verdana, Arial, Helvetica, sans-serif;
+        text-indent: 10px;
+    }
+
+    fieldset ul {
+        padding-left: 12px;
+    }
+    fieldset ul li {
+        padding-top:5px;
+        padding-bottom:5px;
+        margin: 0;
+        list-style: none;
+    }
+
+    fieldset ul li .branch{
+    }
+
+    fieldset ul li.leaf {
+        min-height: 60px;
+        padding-top:10px;
+        padding-bottom:10px;
+        float: left;
+        width: 100%;
+    }
+    fieldset ul li.leaf:nth-child(odd) {
+        background-color: #dddddd;
+    }
+
+    fieldset ul li.leaf:nth-child(even) {
+        background-color: #bbbbbb;
+    }
+
+    fieldset ul label,fieldset ul  textarea {
+        vertical-align:text-top;
+        font-size:12px;
+        width: 400px;
+        float:left;
+        display: block;
+        text-align: left;
+
+    }
+    fieldset ul li.leaf textarea {
+        height: 60px;
+        width: 250px;
+    }
+
+    fieldset ul li input {
+        display: block;
+        float: left;
+        width: 250px;
+    }
+
+    fieldset ul li div {
+        padding-left: 20px;
+        float: left;
+        width: 250px;
+        display: block; 
+    }
+    fieldset ul li.leaf cite {
+        display: block; 
+        float: left;
+        max-width: 250px;
+    }
+
+    span.close {
+        display: none
+    }
+
+</style>
+<div id="wrapper">
+    [% INCLUDE settings_form %]
+</div>
+<script>
+    \$('li label').click(function() {
+        \$(this).next().focus();
+    });
+
+    \$('form fieldset legend').each(function() {
+        var leg_obj = \$(this);
+        leg_obj.html( leg_obj.html().replace("_", " ") );
+    });
+    \$('form fieldset legend').click(function() {
+        event.preventDefault();
+        \$(this).next().toggle();
+        \$(this).children('a').children('span').toggle();
+    });
+</script>
+[% BLOCK leaf %]
+    <li class="leaf">
+        <label>[% item.name %]</label>
+        [% IF item.type == 'Bool' %]
+            <input type="checkbox" name="[% item.name %]" [% IF item.disabled %] disabled [% END %] [% IF item.value %] checked [% END %] />
+        [% ELSIF item.type == 'json_string' or item.type == 'LongStr' %]
+            <textarea rows="3" cols="30" name="[% item.name %]" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>[% item.value %]</textarea>
+        [% ELSE %]
+            <input type="text" name="[% item.name %]" value="[% item.value %]" size="40" placeholder="[% item.default_value %]" [% IF item.disabled %] disabled [% END %]>
+        [% END %]
+        <div>
+            [% item.description %]
+            [% IF item.default %]
+                <strong>[X] </strong> 
+            [% END %]
+            [% IF item.disabled %]
+                <strong>Set in app_settings_overrides.yml</strong>
+            [% END %]
+       </div>
+        <cite>
+            Type: <em>[% item.type %]</em>
+            Default Value:  [% IF item.default_value %] [% item.default_value %] [% ELSE %] [Empty] [% END %]
+        </cite>
+    </li>
+[% END %]
+
+[% BLOCK branch %]
+    <fieldset [% IF NOT config.key %] style="border: 0px" [% END %]>
+        <legend>
+            <a href="">[% IF config.key %]<span class="close">&#8594;</span><span>&#8595;</span> [% config.key %][% END %]</a>
+        </legend>
+        <ul>
+            [% FOREACH config IN current_config %]
+                [% IF NOT config.value.leaf  %]
+                    <li class="branch"> [% INCLUDE  branch current_config=config.value %] </li>
+                [% ELSE %]
+                    [% INCLUDE leaf item=config.value.leaf %]
+                [% END %]
+            [% END %]
+        </ul>
+    </fieldset>
+[% END %]
+
+[% BLOCK settings_form %]
+    [% FOREACH s IN settings %]
+        <table class="BlackCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="97%">
+            <tbody>
+                <tr class="Blacklabel">
+                    <td class="whitelabel" colspan="2">[% s.title %]</td>
+                </tr>
+                <tr>
+                    <td align="left" style="padding-left: 10px;">
+                        <form method="POST" id="global" action="?page=[% s.submitted %]&group=[% s.group %]">
+                            <input type="hidden" name="submitted" value="[% s.submitted %]">
+                            <input type="submit" value="UPDATE [% s.title %]">
+                            <input type="hidden" name="page" value="[% s.submitted %]">
+                            <input type="hidden" name="group" value="[% s.group %]">
+                            <input type="hidden" name="revision" value="[% s.setting_revision %]">
+                            [% INCLUDE  branch current_config=s.settings %]
+                            <input type="submit" value="UPDATE [% s.title %]">
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    [% END %]
+[% END %]

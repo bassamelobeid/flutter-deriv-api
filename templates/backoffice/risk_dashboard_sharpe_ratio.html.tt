@@ -1,0 +1,11 @@
+[% IF sharpe_ratio.size == 0 %]
+    <p>None.</p>
+[% ELSE %]
+<table>
+    <tbody>
+    [% FOREACH ratio IN sharpe_ratio %]
+    <tr class="[% ratio.id %]"><td>[<a href="[% link_to_pnl(ratio.id) %]">[% ratio.id %]</a>]</td><td>[% ratio.ratio %]</td></tr>
+    [% END %]
+    </tbody>
+</table>
+[% END %]

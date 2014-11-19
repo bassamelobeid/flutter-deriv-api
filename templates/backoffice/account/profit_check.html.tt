@@ -1,0 +1,8 @@
+<div class="grd-parent grd-grid-5 table-body grd-row-padding">
+    <div class="grd-grid-6">
+            [% currency %] :
+    </div>
+    <div class="grd-grid-6">
+            [% balance %]
+    </div>
+</div>

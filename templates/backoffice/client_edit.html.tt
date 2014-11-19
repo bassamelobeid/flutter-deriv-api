@@ -1,0 +1,450 @@
+<style type="text/css">
+table#client_edit{
+	width:100%;
+}
+table#client_edit td{
+    padding-top:4px;
+}
+.label{
+    width:20%;
+    text-align:right;
+    text-transform:uppercase;
+    vertical-align:top;
+}
+.small_header{
+    background:#ffffff;
+    text-transform:uppercase;
+    font-weight:bold;
+}
+.attorney_account {
+    border:5px dotted red;
+}
+.attorney_account .small_header {
+    color:red;
+}
+.granter_account {
+    border:5px dotted gold;
+}
+.granter_account .small_header {
+    color:orange;
+}
+.poa_header {
+    font-size:14px;
+    color:red;
+}
+.vip_notice {
+    font-size:14px;
+    color:red;
+}
+.lspace {
+    width: 80px;
+    margin-left: 6px;
+    font-weight: bold;
+    display: inline-block;
+}
+.llspace {
+    width: 160px;
+    margin-left: 6px;
+    font-weight: bold;
+    display: inline-block;
+}
+</style>
+
+[% yes_no_options = [{value => 1, text => 'yes'} {value => 0, text => 'no'}] %]
+
+[% IF client.attorney %]
+<h1 class="poa_header">This is an ATTORNEY MASTER ACCOUNT. (<a href="[%= request.url_for('backoffice/attorney_granter.cgi', { action => 'show_granters', attorney_client_loginid => client.loginid, broker => client.broker}) =%]">see granters</a>)</h1>
+[% END %]
+
+[% IF attorney_granter %]
+    <h1 class="poa_header">
+        Client auto-sell is DISABLED while the attorney flag is set.<br>
+        [% IF attorney_granter.approved %]
+            This client HAS GRANTED PERMISSION to attorney master account
+        [% ELSE %]
+            This client is WAITING OUR APPROVAL to grant permission to attorney master account
+        [% END %]
+        (<a href="[%= request.url_for('backoffice/f_clientloginid_edit.cgi', {broker => client.broker, loginID => attorney_granter.attorney_client_loginid}) =%]">[% attorney_granter.attorney_client_loginid %]</a>).
+    </h1>
+[% END %]
+[% IF is_vip %]
+    <h1 class="vip_notice">This is a VIP CLIENT since [% vip_since %]</h1>
+[% END %]
+
+<table border="0" width="100%" id="client_edit"[% IF client.attorney %] class="attorney_account"[% ELSE %][% IF attorney_granter %] class="granter_account"[% END %][% END %]>
+    <tr>
+        <td class="label">BROKER</td>
+        <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#AFFILIATE INFO</td>
+    </tr>
+    <tr>
+        <td class="label">&nbsp;</td>
+        <td>: <input type="text" name="referral_from" value="" /></td>
+    </tr>
+    <tr>
+        <td class="label">Affiliate Token</td>
+        <td>:[% client.myaffiliates_token %]
+            (This is the token <strong>currently registered</strong> with MyAffiliates.)</td>
+    </tr>
+
+    <tr>
+        <td class="small_header" colspan="2">#Identity</td>
+    </tr>
+    <tr>
+        <td class="label">MrMs</td>
+        <td>: 
+            <select name="mrms">
+            [% FOREACH salutation = mrms_options %]
+                [% IF salutation ==  client.salutation %]
+                    <option value="[% salutation %]" selected="selected">[% salutation %]</option>
+                [% ELSE %]
+                    <option value="[% salutation %]">[% salutation %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">First Name</td>
+        <td>: <input type="text" name="first_name" value="[% client.first_name %]" size="50" /> [% client.first_name %]</td>
+    </tr>
+    <tr>
+        <td class="label">Last Name</td>
+        <td>: <input type="text" name="last_name" value="[% client.last_name %]" size="50" /> [% client.last_name %]</td>
+    </tr>
+    <tr>
+        <td class="label">Date of Birth</td>
+        <td>: 
+            <select name="dob_day">[% dob_day_options %]</select>
+            <select name="dob_month">[% dob_month_options %]</select>
+            <select name="dob_year">[% dob_year_options %]</select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Citizen</td>
+        <td>: 
+            <select name="citizen">
+                [% IF client.citizen == "" %]
+                    <option value="" selected="selected">Select Citizen</option>
+                [% ELSE %]
+                    <option value="">Select Citizen</option>
+                [% END %]
+
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.citizen %]
+                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                [% ELSE %]
+                   <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="label">VIP Client?</td>
+        <td>:
+            <select name="is_vip">
+                [% IF is_vip; yes_selected = 'selected="selected"'; ELSE; no_selected = 'selected="selected"'; END; %]
+                <option value="1" [% yes_selected %]>YES</option>
+                <option value="0" [% no_selected %]>NO</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#Postal address</td>
+    </tr>
+    <tr>
+        <td class="label">Address 1</td>
+        <td>: <input type="text" name="address_1" value="[% client.address_1 %]" size="50" /> [% client.address_1 %]</td>
+    </tr>
+    <tr>
+        <td class="label">Address 2</td>
+        <td>: <input type="text" name="address_2" value="[% client.address_2 %]" size="50" /> [% client.address_2 %]</td>
+    </tr>
+    <tr>
+        <td class="label">Town/City</td>
+        <td>: <input type="text" name="city" value="[% client.city %]" size="50" /> [% client.city %]</td>
+    </tr>
+    <tr>
+        <td class="label">State/Province</td>
+        <td>: <select name="state">[% state_options %]</select> [% client.state %]</td>
+    </tr>
+    <tr>
+        <td class="label">Postcode</td>
+        <td>: <input type="text" name="postcode" value="[% client.postcode %]" size="10" /></td>
+    </tr>
+    <tr>
+        <td class="label">Residence</td>
+        <td>: 
+            <select name="residence">
+                [% IF client.residence == "" %]
+                    <option value="" selected="selected">Select Residence</option>
+                [% ELSE %]
+                    <option value="">Select Residence</option>
+                [% END %]
+
+            [% FOREACH country = countries %]
+                [% IF country_codes.$country == client.residence %]
+                   <option value="[% country_codes.$country %]" selected="selected">[% country %]</option>
+                [% ELSE %]
+                   <option value="[% country_codes.$country %]">[% country %]</option>
+                [% END %]
+            [% END %]
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#KYC/IDENTITY VERIFICATION</td>
+    </tr>
+    <tr>
+        <td class="label">ID Authentication</td>
+        [%
+            small_timer_options = [
+                {'value' => 'yes', 'details' => 'No ID (used to be called \'Smalltimer\' account)' }
+                {'value' => 'no', 'details' => 'Pending Authentication (received ID SCANS; used to be called \'Big Ticket\' account)' }
+                {'value' => 'notarised', 'details' => 'AUTHENTICATED (Submitted CERTIFIED ID by postal mail)' }
+                {'value' => 'notarisedonline_192', 'details' => 'AUTHENTICATED (Authenticated online via 192.com)' }
+                {'value' => 'notarisedonline', 'details' => 'AUTHENTICATED (Authenticated online via URU)' }
+            ]
+        %]
+        <td id="verification">: 
+            <select name="small_timer">
+                [% FOREACH small_timer = small_timer_options %]
+                    [% IF small_timer.value == client.small_timer %]
+                        <option value="[% small_timer.value %]" selected="selected">[% small_timer.details %]</option>
+                    [% ELSE %]
+                        <option value="[% small_timer.value %]">[% small_timer.details %]</option>
+                    [% END %]
+                [% END %]
+            </select>
+
+            <br/><br/>
+            [%
+                IF show_uploaded_documents;
+                THEN;
+                    'Expiry date format: dd-mon-yyyy or enter "clear" to clear it';
+                    show_uploaded_documents;
+                ELSE;
+                    "There are no uploaded documents for $client - $client.full_name";
+                END
+            %]
+
+            <br/>
+            [%
+                raw_url  = 'backoffice/view_192_raw_response.cgi';
+                doc_url  = 'backoffice/download_document.cgi';
+                args     = { loginID => client.loginid };
+                pdf_args = { broker => client.broker, category => '192_result' };
+                FOREACH auth_request IN [ proveID, checkID ];
+                    option = auth_request.search_option;
+                    IF auth_request.has_done_request; 
+                        args.search_option = option;
+                        args.raw = 0; href_rpt = request.url_for(raw_url, args );
+                        args.raw = 1; href_xml = request.url_for(raw_url, args );
+                %]
+                        An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has</span> been done.
+                        <a class="lspace" target="_blank" href="[% href_rpt %]">[Report]</a>
+                        <a class="lspace" target="_blank" href="[% href_xml %]">[XML]</a>
+                [%
+                        IF auth_request.has_downloaded_pdf;
+                            pdf_args.path = "pdf/${client.loginid}.${option}.pdf";
+                %]
+                            <a class="lspace" target="_blank" href="[% request.url_for(doc_url, pdf_args) %]">[PDF]</a>
+                        [% END %]
+                    [% ELSE %]
+                        An Experian <span class="lspace">[% option %]</span> request <span class="lspace">has NOT</span> been done.
+                    [%  END %]
+                    <br/>
+                [%  END %]
+                <input type="submit" name="do_id_check" value="Submit a new ProveID request"/>
+                <input type="submit" name="do_id_check" value="Submit a new CheckID request"/>
+            <br/>
+        <td>
+    </tr>
+    <tr>
+        <td class="label">Age Verified</td>
+        <td>:
+                [% IF client.get_status('age_verification') || client.has_valid_documents %]
+                YES
+                [% ELSE %]
+                NO
+                [% END %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Set Status Age Verified</td>
+        <td>:
+            <select name="age_verification">
+                [% client_age_verified = client.get_status('age_verification') %]
+                <option value="yes" [% IF client_age_verified %]selected="selected"[% END %]>YES</option>
+                <option value="no" [% UNLESS client_age_verified %]selected="selected"[% END %]>NO</option>
+            </select>
+        </td>
+    </tr>
+    [% IF client.broker == 'CR' %]
+    <tr>
+        <td class="label">Show Authenticate</td>
+        <td>:
+            <select name="can_authenticate">
+                [% can_authenticate = client.get_status('can_authenticate') %]
+                <option value="yes" [% IF can_authenticate %]selected="selected"[% END %]>YES</option>
+                <option value="no" [% UNLESS can_authenticate %]selected="selected"[% END %]>NO</option>
+            </select>
+        </td>
+    </tr>
+    [% END %]
+    <tr>
+        <td class="label">Driving Licence</td>
+        <td>: <input type="text" name="driving_license" value="[% client.driving_license %]" size="25" /></td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#Custom Limits </td>
+    </tr>
+    [% IF self_exclusion_enabled == 'yes' %]
+        <tr>
+                <td colspan="2"> Client has enabled self-exclusion limits. Custom limits may not take effect until the self-exclusion period is over. </td>
+        </tr>
+    [% END %]
+    <tr>
+        <td class="label">Max Account Balance</td>
+        <td>: <input type="text" name="custom_max_acbal" value="[% client.custom_max_acbal %]" size="15" />
+         Current client limit: 
+         [% client.get_limit({for=>'account_balance'}) %] 
+         </td>
+    </tr>
+    <tr>
+        <td class="label">Max Daily Turnover</td>
+        <td>: <input type="text" name="custom_max_daily_turnover" value="[% client.custom_max_daily_turnover %]" size="15" />
+         Current client limit: 
+         [% client.get_limit({for=>'daily_turnover'}) %] 
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Max Payout</td>
+        <td>: <input type="text" name="custom_max_payout" value="[% client.custom_max_payout %]" size="15" />
+         Current client limit: 
+         [% client.get_limit({for=>'payout'}) %] 
+        
+        </td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#Communication Addresses</td>
+    </tr>
+    <tr>
+        <td class="label">Email</td>
+        <td>: <input type="text" name="email" value="[% client.email %]" size="40" /></td>
+    </tr>
+    <tr>
+        <td class="label">Tel</td>
+        <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" /> Note: this number's intl. code is: <b>[% client_phone_country %]</b></td>
+    </tr>
+    <tr>
+        <td class="label">Fax</td>
+        <td>: <input type="text" name="fax" value="[% client.fax %]" size="20" /> Note: this number's intl. code is: <b>[% client_fax_country %]</b></td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#Secrets</td>
+    </tr>
+    <tr>
+        <td class="label">Secret question</td>
+        <td>: <input type="text" name="secret_question" value="[% client.secret_question %]" size="50" /> [% secret_question %]</td>
+    </tr>
+    <tr>
+        <td class="label">Secret answer</td>
+        <td>: <input type="text" name="secret_answer" value="[% secret_answer %]" size="50" /> [% secret_answer %]</td>
+    </tr>
+    <tr>
+        <td class="label">IP security</td>
+        <td>: <input type="text" name="ip_security" value="[% client.restricted_ip_address %]" size="50" /></td>
+    </tr>
+    <tr>
+        <td class="label">Cashier lock passowrd</td>
+        <td>: <input type="text" name="cashier_lock_password" value="[% client.cashier_setting_password %]" size="50" /></td>
+    </tr>
+
+    <tr>
+        <td class="small_header" colspan="2">#Promotional Code</td>
+    </tr>
+    <tr>
+       [% maybe_disabled = promo_code_access ? '' : 'disabled' %]
+       [% maybe_auth_msg = promo_code_access ? '' : '<font color=red><b>[Staff authorization required]</b></font>' %]
+
+        <td class="label">Promotional code</td>
+        <td>:
+            <input type="text" name="promo_code" [% maybe_disabled %] value="[% client.promo_code %]" size="20" />
+            [% client.client_promo_code.promotion %]
+            [% maybe_auth_msg %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Claim status</td>
+
+        [%
+            promo_code_options = [
+                {'value' => 'NOT_CLAIM', 'details' => 'not claimed' }
+                {'value' => 'CLAIM', 'details' => 'claimed' }
+                {'value' => 'APPROVAL', 'details' => 'pending approval' }
+                {'value' => 'REJECT', 'details' => 'rejected' }
+                {'value' => 'CANCEL', 'details' => 'cancelled' }
+            ]
+        %]
+
+        <td>: 
+            <select name="promo_code_status" [% maybe_disabled %]>
+                [% IF not client.promo_code_status %]
+                    <option value="" selected="selected">no status</option>
+                [% ELSE %]
+                    <option value="">no status</option>
+                [% END %]
+
+                [% FOREACH status = promo_code_options %]
+                    [% IF client.promo_code_status == status.value %]
+                        <option value="[% status.value %]" selected="selected">[% status.details %]</option>
+                    [% ELSE %]
+                        <option value="[% status.value %]">[% status.details %]</option>
+                    [% END %]
+                [% END %]
+            </select>
+            [% maybe_auth_msg %]
+        </td>
+    </tr>
+    <tr>
+        <td class="label">Apply date</td>
+        <td>: [% client.promo_code_apply_date %] [% maybe_auth_msg %] </td>
+    </tr>
+    <tr>
+        <td class="small_header" colspan="2">#Marketing</td>
+    </tr>
+    <tr>
+        <td class="label">&nbsp;</td>
+        <td>&nbsp;</td>
+    </tr>
+
+    <tr>
+        <td class="small_header" colspan="2">#WITHDRAWAL VIA PAYMENT AGENT</td>
+    </tr>
+    <tr>
+        <td class="label">expiration_date</td>
+        <td>: <input type="text" name="payment_agent_withdrawal_expiration_date"  value="[% client.payment_agent_withdrawal_expiration_date %]" size="20" />
+             <i>format: YYYY-MM-DD (Optional)</i> Note: Allowed for withdrawal via payment agent until this date
+        </td>
+    </tr>
+
+    <tr>
+        <td class="small_header" colspan="2">#Misc</td>
+    </tr>
+    <tr>
+        <td class="label">Latest environment</td>
+        <td>: [% client.latest_environment %]</td>
+    </tr>
+    <tr>
+        <td class="label">Date joined</td>
+        <td>: [% client.date_joined %]<td>
+    </tr>
+    <tr>
+        <td class="label">Password</td>
+        <td>: [% client.password %]</td>
+    </tr>
+</table>

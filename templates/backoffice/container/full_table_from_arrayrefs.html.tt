@@ -1,0 +1,22 @@
+[% WRAPPER 'backoffice/container/full_table.html.tt' extra_class="left-align" %]
+    <caption>[% title %]</caption>
+    <thead>
+        [% FOREACH header_arrayref = headers %]
+            <tr [% IF header_class %] class="[% header_class %]" [% END %]>
+                [% FOREACH header = header_arrayref %]
+                    <th>[% header %]</th>
+                [% END %]
+            </tr>
+        [% END %]
+    </thead>
+
+    <tbody>
+        [% FOREACH arrayref = rows %]
+            <tr class="[% IF (loop.index+1) % 2 %]odd[%ELSE%]even[% END %]">
+                [% FOREACH column = arrayref %]
+                    <td>[% column %]</td>
+                [% END %]
+            </tr>
+        [% END %]
+    </tbody>
+[% END %]

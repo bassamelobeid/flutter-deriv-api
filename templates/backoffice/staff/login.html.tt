@@ -1,0 +1,15 @@
+<div id="root" style="width: 320px; margin: 40px auto; padding: 10px; border-style: dashed; border-width: 1px;">
+    embeded area
+</div>
+<script src="https://cdn.auth0.com/w2/auth0-widget-5.0.min.js"></script>
+<script>
+
+  var widget = new Auth0Widget({
+        domain:         'binary.auth0.com',
+        clientID:       'rq5T7D0rL3lwS5Wp1bEv9i99wfyoU7S4',
+        callbackURL:    '[% submit %]'
+  });
+
+
+  widget.signin({ container: 'root', chrome: true, scope: 'openid profile' });
+</script>

@@ -1,0 +1,49 @@
+<h3>Confirm a TRANSFER BETWEEN ACCOUNTS</h3>
+
+<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi')%]" method="POST" class="bo_form_with_files">
+
+<table>
+<tr>
+    <th>FROM Login ID</th>
+    <th>TO Login ID</th>
+    <th>Currency</th>
+    <th>Amount</th>
+    <th>Amount Range</th>
+    <th>Control Staff</th>
+    <th>Control Code</th> 
+    <th><label for="overridelimits" >Override Withdrawal Limits?</label></th> 
+</tr>
+<tr>
+    <td><input type="text" name="account" placeholder="required"/></td>
+    <td><input type="text" name="to_account" placeholder="required"/></td>
+    <td>
+        <select name="currency">
+            [% FOR currency IN request().available_currencies %]
+            <option value="[%currency%]">[%currency%]</option>
+            [% END %]
+        </select>
+    </td>
+    <td><input type="text" name="amount" placeholder="required"/></td>
+    <td>
+        <select name="range">
+            <option value="0-10">0-10</option>
+            <option value="10-100">10-100</option>
+            <option value="100-500">100-500</option>
+            <option value="500-1000">500-1000</option>
+            <option value="1000-2500">1000-2500</option>
+            <option value="2500-5000">2500-5000</option>
+            <option value="5000-10000">5000-10000</option>
+            <option value="10000-99999">10000-99999</option>
+        </select>
+    </td>
+    <td><input type="text" name="DCstaff" placeholder="required"/></td>
+    <td><input type="text" name="DCcode" placeholder="required"/></td>
+    <td style="text-align:center"><input type="checkbox" name="overridelimits" value="on" id="overridelimits" /></td>
+</tr>
+</table>
+
+<br/>
+<button type="submit" name="ttype" value="TRANSFER">CONFIRM TRANSFER</button>
+<input type=reset name=Reset>
+
+</form>

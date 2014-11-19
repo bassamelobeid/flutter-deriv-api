@@ -1,0 +1,128 @@
+<script>
+    \$(document).ready(function() {
+        \$('.datepick').datepicker({dateFormat: "yy-mm-dd"}).datepicker('setDate', new Date());
+        \$('#mdc_credit').click(function(){\$('#payment_debit_credit').text('CONFIRM CREDIT')});
+        \$('#mdc_debit' ).click(function(){\$('#payment_debit_credit').text('CONFIRM DEBIT')});
+        \$('.all_payment_types').hide();
+        \$('.all_payment_types input[insist]').removeAttr('required');
+        \$('#payment_type' ).change(function(){
+            var payment_type = \$(this).val();
+            \$('.all_payment_types').hide();
+            \$('.all_payment_types input[insist]').removeAttr('required');
+            \$('.'+payment_type).show();
+            \$('.'+payment_type+' input[insist]').attr('required',1);
+            var remark = \$('option:selected', this).text();
+            \$('#remark').val(remark);
+        });
+    })
+</script>
+
+<style>
+    form.bo_form_with_files input[type="text"] {width:100px}
+    form.bo_form_with_files input#remark       {width:500px}
+    input[type="radio"]:checked+label {font-weight: bold}
+</style>
+
+<h3>Confirm a client DEBIT OR CREDIT</h3>
+
+<form action="[%request.url_for('backoffice/f_manager_confodeposit.cgi')%]" method="POST" class="bo_form_with_files">
+
+<p>
+<input type="radio" name="ttype" value="CREDIT" id="mdc_credit" checked="1" /><label for="mdc_credit">CREDIT this Client</label>
+<input type="radio" name="ttype" value="DEBIT"  id="mdc_debit" /><label for="mdc_debit" >DEBIT this Client</label>
+</p>
+
+<table>
+<tr>
+    <th>Login ID</th>
+    <th>Currency</th>
+    <th>Amount</th>
+    <th>Amount Range</th>
+    <th>Control Staff</th>
+    <th>Control Code</th> 
+    <th>Transaction Date</th> 
+</tr>
+<tr>
+    <td><input type="text" name="account" required placeholder="required"/></td>
+    <td>
+        <select name="currency">
+            [% FOR currency IN request().available_currencies %]
+            <option value="[%currency%]">[%currency%]</option>
+            [% END %]
+        </select>
+    </td>
+    <td><input type="text" name="amount" required placeholder="required"/></td>
+    <td>
+        <select name="range">
+            <option value="0-10">0-10</option>
+            <option value="10-100">10-100</option>
+            <option value="100-500">100-500</option>
+            <option value="500-1000">500-1000</option>
+            <option value="1000-2500">1000-2500</option>
+            <option value="2500-5000">2500-5000</option>
+            <option value="5000-10000">5000-10000</option>
+            <option value="10000-99999">10000-99999</option>
+        </select>
+    </td>
+    <td><input type="text" name="DCstaff" placeholder="required"/></td>
+    <td><input type="text" name="DCcode" placeholder="required"/></td>
+    <td><input type="text" name="date_received" required class="datepick" placeholder="required"/></td>
+</tr>
+</table>
+
+<table>
+<tr>
+    <th>Payment Type</th> 
+    <th class="all_payment_types external_cashier"      >Trace ID</th> 
+    <th class="all_payment_types external_cashier"      >Payment Processor</th> 
+    <th class="all_payment_types bank_money_transfer"   >RMG Bank</th> 
+    <th class="all_payment_types bank_money_transfer"   ><label for="overridelimits" >Override Withdrawal Limits?</label></th> 
+    <th class="all_payment_types bank_money_transfer"   ><label for="informclientbyemail" >Notify Client by Email?</label></th> 
+</tr>
+<tr>
+    <td>
+        <select id="payment_type" required name="payment_type">
+            <option value=""                    >--Choose--</option>
+            <option value="bank_money_transfer" >Bank Wire</option>
+            <option value="affiliate_reward"    >Affiliate Reward</option>
+            <option value="external_cashier"    >Doughflow</option>
+            <option value="free_gift"           >Free Gift</option>
+            <option value="adjustment_purchase" >Adjustment to Bet Purchase</option>
+            <option value="adjustment_sale"     >Adjustment to Bet Sale</option>
+            <option value="dormant_fee"         >Dormant Fee</option>
+            <option value="adjustment"          >Adjustment</option>
+        </select>
+    </td>
+    <td class="all_payment_types external_cashier"><input type="number" name="trace_id" /></td>
+    <td class="all_payment_types external_cashier"><input type="text" name="payment_processor" insist/></td>
+    <td class="all_payment_types bank_money_transfer">
+        <select name="bom_bank_info">
+            <option value="RBSI 5880-58269864">RBSI 5880-58269864</option>
+            <option value="RBSI 5880-58321386">RBSI 5880-58321386</option>
+            <option value="RBSI 5880-58442434">RBSI 5880-58442434</option>
+            <option value="BOV 40020743077"   >BOV 40020743077</option>
+            <option value="BOV 40013160133"   >BOV 40013160133</option>
+        </select>
+    </td>
+    <td class="all_payment_types bank_money_transfer" style="text-align:center"><input type="checkbox" name="overridelimits" value="on" id="overridelimits" /></td>
+    <td class="all_payment_types bank_money_transfer" style="text-align:center"><input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" /></td>
+</tr>
+</table>
+
+<table>
+<tr>
+    <th>Remarks</th> 
+</tr>
+<tr>
+    <td>
+        <input type="text" required id="remark" name="remark"/><br/>
+        <em>Remarks will appear on client statement but are no longer used by the system</em>
+    </td>
+</tr>
+</table>
+
+<br/>
+<button type="submit" id="payment_debit_credit" value="CONFIRM">CONFIRM CREDIT</button>
+<input type=reset name=Reset>
+
+</form>

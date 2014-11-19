@@ -1,0 +1,24 @@
+<p>[% bet.longcode %]</p>
+<form action="" method="post">
+    <table>
+        <tr><td>Shortcode</td><td><input value="[% input.shortcode %]" size="80" type="text" name="shortcode" id="shortcode"/></td></tr>
+        <tr><td>Currency</td><td><input value="[% input.currency %]" size="4" type="text" name="currency" id="currency" style="none"/></td></tr>
+        <tr><td>Time step</td><td><input value="[% input.timestep %]" size="4" type="text" name="timestep" id="timestep"/></td></tr>
+        <tr><td>Graph start</td><td><input value="[% input.start %]" size="20" type="text" name="start" id="start"/></td></tr>
+        <tr><td>Graph end</td><td><input value="[% input.end %]" size="20" type="text" name="end" id="end"/></td></tr>
+        <tr><td colspan=2><input type="submit" value="Graph it!"/></td></tr>
+</table>
+</form>
+[% debug_link %]
+[% IF graph_url %]
+    <br>
+    <img src="[% graph_url %]"/>
+    <p>Notes:</p>
+<ul>
+    <li>Background color changes indicate a different volatility surface from the previous plotted price.</li>
+    <li>Percentage amounts of over 300% have been scaled down 100x. Review pricing details in cases of confusion.</li>
+</ul>
+[% END %]
+<script>
+PricingDetails.register();
+</script>

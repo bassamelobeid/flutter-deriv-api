@@ -1,0 +1,84 @@
+<div class="grd-parent grd-grid-12 table-header grd-row-padding">
+        <div class="grd-grid-10">
+            <b>Balance on [% balance.date.date %]</b>
+        </div>
+        <div class="grd-grid-2 right-aligned">
+            <b>[% currency %] [% balance.amount %]</b>
+        </div>
+</div>
+<div id="statement_navigation" class="grd-parent grd-grid-12">
+        <div class="grd-grid-2 left-aligned">
+            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>&laquo;Newer</span></a>
+        </div>
+        <div class="grd-grid-8 center-aligned">
+            <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
+        </div>
+        <div class="grd-grid-2 right-aligned">
+                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>Older&raquo;</span></a>
+        </div>
+</div>
+[% IF transactions.size == 0 %]
+        <p>[% l('There are no items during this period') %]</p>
+[% ELSE %]
+<div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
+    <div class="grd-parent grd-grid-12 table-header grd-row-padding">
+        <div class="grd-grid-2">Date</div>
+        <div class="grd-grid-1">Staff</div>
+        <div class="grd-grid-1">Ref.</div>
+        <div class="grd-grid-4">Item</div>
+        <div class="grd-grid-1 right-aligned">Debit</div>
+        <div class="grd-grid-1 right-aligned">Credit</div>
+        <div class="grd-grid-2 right-aligned">Cash Balance</div>
+    </div>
+
+    [% FOREACH transaction IN transactions %]
+    <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
+        <div class="grd-grid-2">[% transaction.date.datetime %]</div>
+        <div class="grd-grid-1">[% transaction.staff_loginid %]</div>
+        [% IF transaction.financial_market_bet_id.defined %]
+                <div class="grd-grid-1">
+                        <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code }) %]">[% transaction.id %]</a>
+                </div>
+                [% IF transaction.action_type == 'sell' %]
+                        <div class="grd-grid-4">
+                                Sell<br />
+                                [% contract_details(transaction, currency).description %]
+                        </div>
+                        <div class="grd-grid-1 right-aligned"></div>
+                        <div class="grd-grid-1 right-aligned">[% currency %] [% to_monetary_number_format(transaction.amount) %]</div>
+                [% ELSE %]
+                        <div class="grd-grid-4">
+                                [% details = contract_details(transaction, currency) %]
+                                Buy<br />[% details.longcode %]
+                                [% details.analyse_link %]
+                        </div>
+                        <div class="grd-grid-1 right-aligned">[% currency %] [% to_monetary_number_format(transaction.amount) %]</div>
+                        <div class="grd-grid-1 right-aligned"></div>
+                [% END %]
+        [% ELSE %]
+                <div class="grd-grid-1">[% transaction.id %]</div>
+                <div class="grd-grid-4">[% transaction.payment_remark | replace('\s+:\s+', ': ') %]</div>
+                [% IF transaction.action_type == 'deposit' %]
+                        <div class="grd-grid-1 right-aligned"></div>
+                        <div class="grd-grid-1 right-aligned">[% to_monetary_number_format(transaction.amount) %]</div>
+                [% ELSE %]
+                        <div class="grd-grid-1 right-aligned">[% to_monetary_number_format(transaction.amount) %]</div>
+                        <div class="grd-grid-1 right-aligned"></div>
+                [% END %]
+        [% END %]
+        <div class="grd-grid-2 right-aligned">[% currency %] [% to_monetary_number_format(transaction.balance) %]</div>
+    </div>
+    [% END %]
+[% END %]
+<div>
+<div id="statement_navigation" class="grd-parent grd-grid-12">
+        <div class="grd-grid-2 left-aligned">
+            <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, startdate => transactions.first.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>&laquo;Newer</span></a>
+        </div>
+        <div class="grd-grid-8 center-aligned">
+            <b>[% transactions.first.date.datetime %] --- [% transactions.last.date.datetime %]</b>
+        </div>
+        <div class="grd-grid-2 right-aligned">
+                <a class="pjaxload button" href="[% request.url_for('backoffice/f_manager_history.cgi', { loginID => loginid, enddate => transactions.last.transaction_time, currency => currency, depositswithdrawalsonly => depositswithdrawalsonly }) %]"><span>Older&raquo;</span></a>
+        </div>
+</div>

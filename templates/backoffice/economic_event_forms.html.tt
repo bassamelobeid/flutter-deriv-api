@@ -1,0 +1,52 @@
+<p><b>Execute economic event cron manually</b></p>
+
+<FORM NAME="autoupdate" ACTION="[% ee_upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+    <table>
+        <tr><td>Number of week(s)</td><td><input type=text name='num_of_week' value=1></td></tr>
+        <tr><INPUT type="hidden" name="autoupdate" value="1"></tr>
+        <tr><td><input type="submit" name="submit" value="Execute cron"></td></tr>
+    </table>
+</FORM>
+
+<p><b>Delete economic event with the tool below: </b></p>
+
+<FORM NAME="delete_event" ACTION="[% ee_upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+    <table>
+        <tr><td>Event Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. Foreign Security Purchases)</td>
+        <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td> (e.g. USD) </td></tr>
+        <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
+        <tr><INPUT type="hidden" name="remove_news_id" value=1></tr>
+        <tr><td><INPUT type="submit" name="submit" value="Delete Event"></td></tr>
+    </table>
+</FORM>
+
+<p><b>Update economic event manually with the tool below: </b></p>
+
+<FORM NAME="currency" ACTION="[% ee_upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+    <table>
+        <tr><td>Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR)</td></tr>
+        <tr><td>Announcement DateTime</td><td> : <INPUT type="text" name="release_date"></td><td>(e.g. 2012-11-14T01:15:00Z  The time given on forexfactory is GMT-4)</td></tr>
+        <tr><td>Annoucement Name</td><td> : <INPUT type="text" name="event_name"></td><td>(e.g. German Trade Balance)</td></tr>
+        <tr><td>Source</td><td> : <INPUT type="text" name="source" value="forexfactory"></td></tr>
+        <tr><td>Impact</td>
+            <td> : <select name=impact>
+                    <option value=1>1</option>
+                    <option value=3>3</option>
+                    <option value=5>5</option>
+                  </select>
+            </td></tr>
+            <tr><INPUT type="hidden" name="save_economic_event" value="1"></tr>
+        <tr><td></td><td><INPUT type="submit" name="submit_eco" value="Save"></td></tr>
+    </table>
+</FORM>
+
+
+<p><b> Upload Bloomberg Economic Events</b></p> 
+<FORM NAME="bloomberg_eco" ACTION="[% ee_upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+    <table>
+        <tr><td>Please select the file to upload</td>
+            <td><INPUT type="file" name="bloomberg_eco_file" value="" size="45"></td></tr>
+        <tr><INPUT type="hidden" name="process_bloomberg_economic_events" value="1"></tr>
+        <tr><td><input type="submit" name="submit_bb_eco" value="Process Excel File"></td></tr>
+    </table>
+</FORM>

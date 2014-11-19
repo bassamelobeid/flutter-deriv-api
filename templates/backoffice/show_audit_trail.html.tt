@@ -1,0 +1,63 @@
+[%
+    titles = { stamp=>'Date', client_addr=>'IP', staff_name=>'Staff', table=>'Table', operation=>'Operation' };
+%]
+
+<style type="text/css">
+    table#show_log_list_table td {
+        background: #eeeedd;
+    }
+    table#show_log_list_table td div{
+        height: 16px;
+        overflow: hidden;
+        padding: 1px;
+    }
+    table#show_log_list_table td div.first {
+        white-space: nowrap;
+    }
+    table#show_log_list_table td div.changed {
+        background: #ffaaaa;
+    }
+</style>
+
+<a href="[% url_to_client %]">&laquo; return to client details</a>
+<br>
+[% INCLUDE pager %]
+<table id="show_log_list_table">
+    <tr>
+        [% FOREACH hdr = hdrs  %]
+            <th>[% titles.$hdr || hdr.replace('_',' ') %]</th>
+        [% END %]
+    </tr>
+    [% FOREACH log = logs %]
+        <tr>
+            [% FOREACH hdr = hdrs;
+                SET value = log.data.$hdr;
+                SET value = '' IF value == 'now()'; # default timestamp vals.  tacky; need to fix this at source!
+                SET class = '';
+                SET class = class _ " first" IF loop.first;
+                SET class = class _ " changed" IF log.changes.$hdr;
+                SET classdec = class ? "class=\"$class\"" : '' %]
+                <td><div [%classdec%] title="[%value%]">
+                    &nbsp;[% value %]
+                </div></td>
+            [% END %]
+        </tr>
+    [% END %]
+</table>
+[% INCLUDE pager %]
+
+[% BLOCK pager %]
+    <div rowcount="[%rowcount%]"></div>
+    [% IF pages > 1 %]
+        [% pages_less1 = pages - 1 %]
+        [% page_url = url_to_myself _ "&pagesize=$pagesize" %]
+        <a href="[% page_url _ "&page=0" %]">|<</a>
+        <a href="[% page_url _ "&page=$prev" %]"><</a>
+        [% FOREACH page IN [ 0..pages_less1 ] %]
+           <a href="[% page_url _ "&page=$page" %]">[% page + 1 %]</a>
+        [% END %]
+        <a href="[% page_url _ "&page=$next" %]">></a>
+        <a href="[% page_url _ "&page=$pages_less1" %]">>|</a>
+    [% END %]
+[% END %]
+

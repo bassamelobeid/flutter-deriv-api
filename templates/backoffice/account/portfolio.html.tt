@@ -1,0 +1,45 @@
+[% total_in = 0; total_value_now = 0; %]
+[% IF open_bets.size == 0 %]
+    <div class="grd-grid-12">
+        <p>No open positions.</p>
+    </div>
+[% ELSE %]
+    <div class="grd-grid-12">
+        Open positions:
+    </div>
+    <div id="portfolio-table" class="grd-grid-12 grd-row-padding">
+        <div class="grd-parent grd-grid-12 table-header grd-row-padding ">
+                <div class="grd-grid-1 grd-hide-mobile">Ref.</div>
+                <div class="grd-grid-7">Contract Details</div>
+                <div class="grd-grid-2 right-aligned">Buy Price</div>
+                <div class="grd-grid-2 right-aligned">Sale Price</div>
+        </div>
+        [% FOREACH open_bet IN open_bets %]
+            [%
+                    total_in = total_in + open_bet.buy_price;
+                    total_value_now = total_value_now + open_bet.sale_price;
+            %]
+            <div class="grd-parent grd-grid-12 table-body table-body-lines">
+                <div class="grd-grid-1">
+                    <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', { shortcode => open_bet.short_code, currency => currency}) %]">[% open_bet.buy_id %]</a>
+                </div>
+                <div class="grd-grid-7">[% open_bet.description %]</div>
+                <div class="grd-grid-2 right-aligned">
+                        [% currency %] <strong>[% to_monetary_number_format(open_bet.buy_price) %]</strong>
+                </div>
+                <div class="grd-grid-2 right-aligned">
+                        [% currency %] [% to_monetary_number_format(open_bet.sale_price) %]
+                </div>
+            </div>
+        [% END %]
+    </div>
+[% END %]
+
+<div class="grd-grid-6 grd-row-padding">
+    <div class="grd-grid-6"><strong>Balance</strong> : </div>
+    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(balance) %]</div>
+    <div class="grd-grid-6"><strong>Cost of open positions</strong> :</div>
+    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(total_in) %]</div>
+    <div class="grd-grid-6"><strong>Value of open positions</strong> : </div>
+    <div class="grd-grid-6">[% currency %] [% to_monetary_number_format(total_value_now) %]</div>
+</div>

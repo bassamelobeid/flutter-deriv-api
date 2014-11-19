@@ -1,0 +1,32 @@
+[% IF ON_cut_datetime  %]
+<h4>
+    [% big_title %]
+    <br>
+    Cut: [% cut %]
+</h4>
+
+<p>ON is cut to date and time: [% ON_cut_datetime %]</p>
+[% END %]
+
+[% INCLUDE backoffice/price_debug/table.html.tt
+    title = table1.title
+    headers = table1.headers
+    days = table1.days
+    tenors = table1.tenors
+    dates = table1.dates
+    surface = table1.surface
+%]
+
+<p style="font-size: 0.8em;">[% table1.notes %]</p>
+<div style="clear:both; height: 10px;"></div>
+
+[% IF table2 %]
+[% INCLUDE backoffice/price_debug/table.html.tt
+    title = table2.title
+    headers = table2.headers
+    days = table2.days
+    tenors = table2.tenors
+    dates = table2.dates
+    surface = table2.surface
+%]
+[% END %]

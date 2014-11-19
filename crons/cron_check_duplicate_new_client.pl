@@ -1,0 +1,57 @@
+#!/usr/bin/perl
+package main;
+use strict;
+
+use include_common_modules;
+use Carp qw( croak );
+use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
+use BOM::Utility::Log4perl;
+
+BOM::Utility::Log4perl::init_log4perl_console;
+
+system_initialize();
+
+if ($ENV{REQUEST_METHOD}) {
+    croak 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';
+}
+
+my $check_date = BOM::Utility::Date->new(time - 86400)->date;
+
+#connect to collector for getting data
+my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
+        broker_code => 'FOG',
+        operation   => 'read_collector'
+});
+my $client_dup_list = $report_mapper->check_clients_duplication(BOM::Utility::Date->new($check_date)->truncate_to_day);
+
+# Duplicate new client found
+my $note_header = qq{
+=========================================================================================
+The following client opened an account on $check_date but has the same name and date of birth as other clients.
+=========================================================================================\n\n};
+
+foreach my $client_hash (@{$client_dup_list}) {
+    my $loginid           = $client_hash->{new_loginid};
+    my $client            = BOM::Platform::Client::get_instance({loginid => $loginid});
+    my @duplicate_clients = map {
+        my ($lid, $status) = split '/', $_, 2;
+        $lid eq $loginid ? ()
+          : length $status ? "$lid(\u$status)"
+          :                  $lid;
+    } @{$client_hash->{loginids}};
+    my $note_content = $note_header;
+    $note_content .= $loginid . '(' . $client_hash->{first_name} . ' ' . $client_hash->{last_name} . ")\n";
+    $note_content .= '   Duplicate login id: ' . join(', ', @duplicate_clients) . "\n\n";
+    $client->add_note("Duplicate clients found for [$loginid] opened on $check_date", $note_content);
+}
+
+=head1 NAME
+
+cron_check_duplicate_new_client.pl
+
+=head1 DESCRIPTION
+
+This is a CRON script to check whether the account that is opened yesterday has the same first name and last name
+with old accounts. This cron will send the result to cs team to check if duplicate account detected.
+
+=cut
