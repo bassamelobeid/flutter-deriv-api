@@ -298,4 +298,10 @@ sub vk_BObottomPRES {
     ServerWarningBar();
 }
 
+sub code_exit_BO {
+    if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
+    if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
+
+    code_exit();
+}
 1;

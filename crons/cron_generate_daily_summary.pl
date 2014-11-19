@@ -77,7 +77,7 @@ my $total_pl;
 foreach my $currency (sort @currencies) {
     foreach my $broker (sort @brokercodes) {
         # We don't care about these for Virtuals.
-        if ($broker !~ /^\w+$/ or $broker =~ /^VRT/) {
+        if ($broker !~ /^\w+$/ or $broker =~ /^VRT/ or $broker eq 'FOG') {
             next;
         }
         $logger->debug('Doing ' . $broker . '-' . $currency . '...');
