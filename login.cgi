@@ -37,7 +37,7 @@ if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('
 } elsif (request()->param('whattodo') eq 'logout') {
     my $mycookie = session_cookie({
             loginid  => "",
-            password => "",
+            token    => "",
             clerk    => "",
             expires  => 1,
     });
