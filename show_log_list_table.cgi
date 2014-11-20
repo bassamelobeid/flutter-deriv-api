@@ -4,6 +4,7 @@ package main;
 use strict 'vars';
 
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Persistence::DAO::Utils::Log;
 use f_brokerincludeall;
 system_initialize();
 
@@ -66,7 +67,7 @@ if ($table_name =~ /^client_status_(\w+)/) {
         code_exit_BO();
     }
 
-    my $total_count = Persistence::DAO::LogDAO::get_count_client_status_log_by_status_code({
+    my $total_count = BOM::Platform::Persistence::DAO::Utils::Log::get_count_client_status_log_by_status_code({
             'status_code' => $status_code,
             'broker'      => $broker,
     });
@@ -74,7 +75,7 @@ if ($table_name =~ /^client_status_(\w+)/) {
     $pages = int $total_count / $number_of_rows;
     $pages -= 1 if ($total_count % $number_of_rows == 0);
 
-    $result_arrayref = Persistence::DAO::LogDAO::get_sorted_arrayref_list_of_client_status_log_by_status_code({
+    $result_arrayref = BOM::Platform::Persistence::DAO::Utils::Log::get_sorted_arrayref_list_of_client_status_log_by_status_code({
             'status_code'    => $status_code,
             'broker'         => $broker,
             'page'           => $page,
@@ -82,7 +83,7 @@ if ($table_name =~ /^client_status_(\w+)/) {
     });
 } else {
     if ($loginid) {
-        my $total_count = Persistence::DAO::LogDAO::get_count_log_by_table_name_and_loginid({
+        my $total_count = BOM::Platform::Persistence::DAO::Utils::Log::get_count_log_by_table_name_and_loginid({
                 'table_name' => $table_name,
                 'broker'     => $broker,
                 'loginid'    => $loginid
@@ -90,7 +91,7 @@ if ($table_name =~ /^client_status_(\w+)/) {
         $pages = int $total_count / $number_of_rows;
         $pages -= 1 if ($total_count % $number_of_rows == 0);
 
-        $result_arrayref = Persistence::DAO::LogDAO::get_sorted_arrayref_list_of_log_by_table_name_and_loginid({
+        $result_arrayref = BOM::Platform::Persistence::DAO::Utils::Log::get_sorted_arrayref_list_of_log_by_table_name_and_loginid({
                 'table_name'     => $table_name,
                 'broker'         => $broker,
                 'page'           => $page,
@@ -100,14 +101,14 @@ if ($table_name =~ /^client_status_(\w+)/) {
 
         $url_to_myself .= "&loginid=$loginid";
     } else {
-        my $total_count = Persistence::DAO::LogDAO::get_count_log_by_table_name({
+        my $total_count = BOM::Platform::Persistence::DAO::Utils::Log::get_count_log_by_table_name({
                 'table_name' => $table_name,
                 'broker'     => $broker,
         });
         $pages = int $total_count / $number_of_rows;
         $pages -= 1 if ($total_count % $number_of_rows == 0);
 
-        $result_arrayref = Persistence::DAO::LogDAO::get_sorted_arrayref_list_of_log_by_table_name({
+        $result_arrayref = BOM::Platform::Persistence::DAO::Utils::Log::get_sorted_arrayref_list_of_log_by_table_name({
                 'table_name'     => $table_name,
                 'broker'         => $broker,
                 'page'           => $page,
