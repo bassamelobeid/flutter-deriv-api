@@ -76,8 +76,9 @@
     <th class="all_payment_types external_cashier"      >Trace ID</th> 
     <th class="all_payment_types external_cashier"      >Payment Processor</th> 
     <th class="all_payment_types bank_money_transfer"   >RMG Bank</th> 
-    <th class="all_payment_types bank_money_transfer"   ><label for="overridelimits" >Override Withdrawal Limits?</label></th> 
-    <th class="all_payment_types bank_money_transfer"   ><label for="informclientbyemail" >Notify Client by Email?</label></th> 
+    <th class="all_payment_types cash_transfer"         >MTCN</th> 
+    <th class="all_payment_types bank_money_transfer cash_transfer"><label for="overridelimits" >Override Withdrawal Limits?</label></th> 
+    <th class="all_payment_types bank_money_transfer cash_transfer"><label for="informclientbyemail" >Notify Client by Email?</label></th> 
 </tr>
 <tr>
     <td>
@@ -91,6 +92,7 @@
             <option value="adjustment_sale"     >Adjustment to Bet Sale</option>
             <option value="dormant_fee"         >Dormant Fee</option>
             <option value="adjustment"          >Adjustment</option>
+            <option value="cash_transfer"       >Western Union</option>
         </select>
     </td>
     <td class="all_payment_types external_cashier"><input type="number" name="trace_id" /></td>
@@ -104,8 +106,10 @@
             <option value="BOV 40013160133"   >BOV 40013160133</option>
         </select>
     </td>
-    <td class="all_payment_types bank_money_transfer" style="text-align:center"><input type="checkbox" name="overridelimits" value="on" id="overridelimits" /></td>
-    <td class="all_payment_types bank_money_transfer" style="text-align:center"><input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" /></td>
+    <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>
+    <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" insist/></td>
+    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center"><input type="checkbox" name="overridelimits" value="on" id="overridelimits" /></td>
+    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center"><input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" /></td>
 </tr>
 </table>
 
