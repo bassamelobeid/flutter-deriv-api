@@ -41,7 +41,7 @@ my $range          = delete $params{range};
 my $overridelimits = delete $params{overridelimits};
 
 BOM::Platform::Auth0::can_access(['Payments']);
-my $password = BOM::Platform::Context::request()->bo_cookie->password;
+my $token = BOM::Platform::Context::request()->bo_cookie->token;
 my $staff    = BOM::Platform::Auth0::from_cookie();
 my $clerk    = $staff->{nickname};
 
@@ -123,7 +123,7 @@ if (!BOM::Platform::Runtime->instance->app_config->system->on_development || $am
         code_exit_BO();
     }
 
-    my $validcode = DualControlCode($DCstaff, $password, $curr, $amount, BOM::Utility::Date->new->date_ddmmmyy, $ttype, $loginID);
+    my $validcode = DualControlCode($DCstaff, $token, $curr, $amount, BOM::Utility::Date->new->date_ddmmmyy, $ttype, $loginID);
 
     if (substr(uc($DCcode), 0, 5) ne substr(uc($validcode), 0, 5)) {
         print "ERROR: Dual Control Code $DCcode is invalid (code FMDO). Check the fellow staff name, amount, date and transaction type.";
