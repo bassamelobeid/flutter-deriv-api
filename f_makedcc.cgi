@@ -12,7 +12,7 @@ system_initialize();
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
 BOM::Platform::Auth0::can_access(['Payment']);
-my $password = BOM::Platform::Context::request()->bo_cookie->password;
+my $token    = BOM::Platform::Context::request()->bo_cookie->token;
 my $clerk    = BOM::Platform::Context::request()->bo_cookie->clerk;
 
 Bar("Make dual control code");
@@ -55,7 +55,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         code_exit_BO();
     }
 
-    $code = dual_control_code_for_file_content($clerk, $password, $today, Path::Tiny::path($input->{'file_location'})->slurp);
+    $code = dual_control_code_for_file_content($clerk, $token, $today, Path::Tiny::path($input->{'file_location'})->slurp);
 
     print "The dual control code created by $clerk for "
       . $input->{'purpose'}
@@ -79,7 +79,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         code_exit_BO();
     }
 
-    $code = DualControlCode_CS($clerk, $password, $today, $input->{'clientloginid'}, $input->{'filetype'});
+    $code = DualControlCode_CS($clerk, $token, $today, $input->{'clientloginid'}, $input->{'filetype'});
 
     print "<p class=\"success_message\">The dual control code created by $clerk for file type <b>'"
       . $input->{'filetype'}
@@ -97,7 +97,7 @@ if ($input->{'dcctype'} eq 'file_content') {
           . " $ENV{'REMOTE_ADDR'} REMINDER="
           . $input->{'reminder'});
 } else {
-    $code = DualControlCode($clerk, $password, $input->{'currency'}, $input->{'amount'}, $today, $input->{'transtype'}, $input->{'clientloginid'},);
+    $code = DualControlCode($clerk, $token, $input->{'currency'}, $input->{'amount'}, $today, $input->{'transtype'}, $input->{'clientloginid'},);
 
     print "<p class=\"success_message\">The dual control code created by $clerk for an amount of "
       . $input->{'currency'}
