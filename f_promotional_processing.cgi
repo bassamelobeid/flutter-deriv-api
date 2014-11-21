@@ -17,7 +17,8 @@ Bar('PROMO CODE APPROVAL TOOL');
 
 my %input = %{request->params};
 
-my $staff = BOM::Platform::Auth0::can_access(['Marketing']);
+BOM::Platform::Auth0::can_access(['Marketing']);
+my $clerk = BOM::Platform::Auth0::from_cookie()->{nickname};
 
 my @approved = grep { /_promo$/ && $input{$_} eq 'A' } keys %input;
 my @rejected = grep { /_promo$/ && $input{$_} eq 'R' } keys %input;
@@ -56,12 +57,12 @@ foreach my $loginid (@approved, @rejected) {
             $client->promo_code_status('CLAIM');
             $client->save();
             # credit with free gift
-            ClientDB_Credit({
-                    client_loginid => $loginid,
-                    currency_code  => $currency,
-                    amount         => $amount,
-                    comment        => 'Free gift claimed from promotional code'
-            });
+            $client->payment_free_gift(
+                    currency => $currency,
+                    amount   => $amount,
+                    remark   => 'Free gift claimed from promotional code',
+                    staff    => $clerk,
+            );
         }
 
         BOM::Platform::Context::template->process(

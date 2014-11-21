@@ -290,23 +290,13 @@ my $website          = BOM::Platform::Runtime->instance->website_list->get_by_br
 
 if ($toemail && $informclient) {
 
-    my $payment_desc = localize('Bank Wire');
-    my $subject = $ttype eq 'CREDIT' ? localize('Deposit via bank wire') : localize('Withdrawal via bank wire');
-
-    my $email_body;
-    if ($ttype eq 'CREDIT') {
-        $email_body = localize(
-            'Dear [_1] [_2] [_3], We would like to inform you that your [_5] Deposit has been processed. Kind Regards, [_4]',
-            BOM::View::Language::translate_salutation($salutation),
-            $first_name, $last_name, $website->display_name, $payment_desc
-        );
-    } else {
-        $email_body = localize(
-            'Dear [_1] [_2] [_3], We would like to inform you that your [_5] Withdrawal has been processed. Kind Regards, [_4]',
-            BOM::View::Language::translate_salutation($salutation),
-            $first_name, $last_name, $website->display_name, $payment_desc
-        );
-    }
+    my $subject = $ttype eq 'CREDIT' ? localize('Deposit via Bank Wire') : localize('Withdrawal via Bank Wire');
+    my $who = BOM::View::Language::translate_salutation($salutation) . " $first_name $last_name";
+    my $email_body =
+        localize('Dear') . " $who,\n\n"
+      . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
+      . localize('Kind Regards') . "\n\n"
+      . $website->display_name;
 
     my $support_email = BOM::Platform::Context::request()->website->config->get('customer_support.email');
 

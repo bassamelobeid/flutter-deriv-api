@@ -482,12 +482,14 @@ sub RecoverFromClientAccount {
 
     next CURRENCY if ($bal < 0.01);
 
-    ClientDB_Debit({
-            client_loginid => $loginID,
-            currency_code  => $client->currency,
-            amount         => $bal,
-            comment        => 'Account closed. Please contact customer support for assistance.'
-    });
+    $client->payment_legacy_payment(
+            currency     => $client->currency,
+            amount       => -$bal,
+            remark       => 'Inactive Account closed. Please contact customer support for assistance.',
+            payment_type => 'closed_account',
+            staff        => $clerk,
+    );
+
     my $acc_balance = $client->currency . $bal;
 
     Path::Tiny::path("/var/log/fixedodds/$broker.funds_withdrawn")

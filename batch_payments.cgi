@@ -114,13 +114,13 @@ read_csv_row_and_callback(
         my $client;
         my $error;
         {
-            $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
-            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
-            $currency ne $client->currency and $error = "client does not trade in currency [$currency]", last;
-            $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
-            $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
-            $amount > 1000      and $error = 'Amount not allowed to exceed 1000',  last;
-            !$statement_comment and $error = 'Statement comment can not be empty', last;
+            $cols_found == $cols_expected                                           or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
+            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) }   or $error = ($@ || 'No such client'), last;
+            $currency ne $client->currency                                          and $error = "client does not trade in currency [$currency]", last;
+            $action !~ /^(debit|credit)$/                                           and $error = "Invalid transaction type [$action]", last;
+            $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0                             and $error = "Invalid amount [$amount]", last;
+            $amount > 1000                                                          and $error = 'Amount not allowed to exceed 1000',  last;
+            !$statement_comment                                                     and $error = 'Statement comment can not be empty', last;
 
             if ($action eq 'debit') {
                 my $balance = $client->default_account->balance;
