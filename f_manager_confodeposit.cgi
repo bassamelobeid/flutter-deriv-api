@@ -189,7 +189,7 @@ if (!$overridelimits) {
 
         print '<p style="color:red;">';
 
-        my $withdrawal_limits = get_client_withdrawal_limits($client);
+        my $withdrawal_limits = $client->get_withdrawal_limits();
         check_if_client_can_withdraw({
                 client            => $client,
                 amount            => $amount,
