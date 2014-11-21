@@ -58,7 +58,7 @@ if ($confirm) {
 
         my $validcode = dual_control_code_for_file_content(
             $fellow_staff,
-            BOM::Platform::Context::request()->bo_cookie->password,
+            BOM::Platform::Context::request()->bo_cookie->token,
             BOM::Utility::Date->new->date_ddmmmyy,
             join("\n", @payment_lines),
         );
