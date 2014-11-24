@@ -34,7 +34,7 @@ my $bal = $account_mapper->get_balance();
 
 Bar($login . ' withdrawal limits for ' . $curr);
 
-my $withdrawal_limits = get_client_withdrawal_limits($client);
+my $withdrawal_limits = $client->get_withdrawal_limits();
 
 print '<p style="font-weight:bold; text-align:center;">CLIENT ACCOUNT BALANCE</p>'
   . 'Client account balance is <b>'

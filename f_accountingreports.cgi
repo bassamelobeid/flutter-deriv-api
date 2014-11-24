@@ -105,17 +105,12 @@ if ($country eq 'UK' or $country eq 'Isle of Man') {
       . "</form>";
 }
 
-# NEW Monthly Client Report
-Bar("Monthly Client Report");
+Bar("Monthly Client Reports");
 {
     my $yyyymm = DateTime->now->subtract(months => 1)->ymd('-');
     $yyyymm =~ s/-..$//;
-    my $stash = {
-        handler => request()->url_for('backoffice/monthly_client_report.cgi'),
-        yyyymm  => $yyyymm,
-    };
 
-    BOM::Platform::Context::template->process('backoffice/account/monthly_client_report.tt', $stash)
+    BOM::Platform::Context::template->process('backoffice/account/monthly_client_report.tt', {yyyymm=>$yyyymm})
       || die BOM::Platform::Context::template->error();
 }
 
