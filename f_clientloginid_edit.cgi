@@ -499,10 +499,10 @@ if (my $payment_agent = $client->payment_agent) {
 Bar("CLIENT $client");
 
 my ($link_acc, $link_loginid);
-if ($client->comment =~ /move UK clients to MX \(from (\w+)\)/) {
+if ($client->comment =~ /move UK clients to \w+ \(from (\w+)\)/) {
     $link_loginid = $1;
     $link_acc     = "<p>UK account, previously moved from ";
-} elsif ($client->comment =~ /move UK clients to MX \(to (\w+)\)/) {
+} elsif ($client->comment =~ /move UK clients to \w+ \(to (\w+)\)/) {
     $link_loginid = $1;
     $link_acc     = "<p>UK account, has been moved to ";
 }
