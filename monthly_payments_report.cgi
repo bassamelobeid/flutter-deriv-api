@@ -77,6 +77,7 @@ my @headers    = qw/Broker Loginid Timestamp PaymentGateway PaymentType Currency
     my $csv = Text::CSV->new({eol=>"\n"});
     $csv->print(\*STDOUT, \@headers);
     while (my $row = $sth->fetchrow_arrayref) {
+        s/\s*$// for @$row; # removes some nasty trailing white-space in historical affiliate records
         $csv->print(\*STDOUT, $row );
     }
 }
