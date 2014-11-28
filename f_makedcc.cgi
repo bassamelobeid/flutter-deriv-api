@@ -55,7 +55,10 @@ if ($input->{'dcctype'} eq 'file_content') {
         code_exit_BO();
     }
 
-    $code = dual_control_code_for_file_content($clerk, $token, $today, Path::Tiny::path($input->{'file_location'})->slurp);
+    my $file_location = $input->{'file_location'};
+    my @lines = Path::Tiny::path($file_location)->lines;
+    my $lines = join("\n", @lines);
+    $code = dual_control_code_for_file_content($clerk, $token, $today, $lines);
 
     print "The dual control code created by $clerk for "
       . $input->{'purpose'}
