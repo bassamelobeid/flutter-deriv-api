@@ -18,11 +18,7 @@ BOM::Platform::Auth0::can_access(['Quants']);
 my $cgi          = new CGI;
 my $filetoupload = $cgi->param('filetoupload');
 
-my ($surfaces, $filename) = upload_and_process_moneyness_volsurfaces($filetoupload);
-
 Bar('Moneyness surface update procedure.');
-print compare_uploaded_moneyness_surface($surfaces);
-
-unlink $filename;
+print compare_uploaded_moneyness_surface($filetoupload);
 
 code_exit_BO();
