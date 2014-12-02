@@ -365,10 +365,11 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         $support_email = qq{"$website_name" <$support_email>};
 
         send_email({
-                'from'    => $support_email,
-                'to'      => $client_old_email,
-                'subject' => $loginid . ' - change in email address',
-                'message' => [
+                'from'             => $support_email,
+                'to'               => $client_old_email,
+                'subject'          => $loginid . ' - change in email address',
+                'template_loginid' => $loginid,
+                'message'          => [
                     localize(
                         'This is to confirm that your email address for your account [_1] on [_2] has been changed from [_3] to [_4]',
                         $loginid, $website_name, $client_old_email, $client->email
