@@ -14,7 +14,6 @@ use BOM::MarketData::InterestRate;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::MarketData::VolSurface::Validator;
 use BOM::Utility::Date;
 use Path::Tiny;
 use BOM::Utility::Log4perl qw( get_logger );
@@ -121,9 +120,6 @@ if ($filen eq 'editvol') {
     $existing_volsurface = undef unless $existing_surface;
 
     if ($existing_volsurface) {
-        my $validator = BOM::MarketData::VolSurface::Validator->new;
-        eval { $validator->validate_surface($surface) };
-
         my ($big_differences, $error_message, @output) =
           BOM::MarketData::Display::VolatilitySurface->new(surface => $surface)->print_comparison_between_volsurface({
                 ref_surface => $existing_volsurface,
@@ -134,8 +130,8 @@ if ($filen eq 'editvol') {
         print "<P> Difference between existing and new surface </p>";
         print @output;
 
-        if ($@) {
-            print "<P> $@ </P>";
+        if (!$surface->is_valid) {
+            print "<P> $surface->validation_error </P>";
 
         } elsif ($big_differences) {
             print "<P>$error_message</P>";

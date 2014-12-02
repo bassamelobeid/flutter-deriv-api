@@ -21,7 +21,6 @@ use URL::Encode qw( url_decode );
 
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
-use BOM::MarketData::VolSurface::Validator;
 system_initialize();
 
 # Our very own %input processing logic seems to strip
@@ -39,22 +38,21 @@ my $surface_data = from_json($surface_string);
 my $class = 'BOM::MarketData::VolSurface::' . ($type eq 'moneyness' ? 'Moneyness' : 'Delta');
 my $surface;
 
-eval {
-    $surface = $class->new(
-        underlying     => $underlying,
-        surface        => $surface_data,
-        recorded_date  => $recorded_date,
-        spot_reference => $spot,
-    );
+$surface = $class->new(
+    underlying     => $underlying,
+    surface        => $surface_data,
+    recorded_date  => $recorded_date,
+    spot_reference => $spot,
+);
 
-    BOM::MarketData::VolSurface::Validator->new->validate_surface($surface);
-};
-
-my $response = {success => 1};
-if (my $e = $@ || $surface->get_smile_flags) {
+my $response;
+if ($surface->is_valid) {
+    $response->{success} = 1;
+} else {
     $response = {
         success => 0,
-        reason  => (ref $e ? $e->message : $e)};
+        reason => $surface->validation_error,
+    };
 }
 
 PrintContentType_JavaScript();

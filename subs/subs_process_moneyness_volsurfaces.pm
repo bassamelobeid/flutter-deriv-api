@@ -8,7 +8,6 @@ use JSON qw( to_json );
 use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Market::UnderlyingDB;
-use BOM::MarketData::VolSurface::Validator;
 
 use BOM::Market::DataSource::SuperDerivatives::SuperDerivativesParser;
 use BOM::MarketData::Display::VolatilitySurface;
