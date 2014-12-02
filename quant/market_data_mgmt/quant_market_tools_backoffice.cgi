@@ -13,13 +13,13 @@ PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
-use BOM::Market::PricingInputs::EconomicEvents::ForexFactoryParser;
-use BOM::Market::PricingInputs::EconomicEvents::Display;
-use BOM::Market::PricingInputs::EconomicEvent;
+use BOM::MarketData::Parser::ForexFactoryEconomicEvent;
+use BOM::MarketData::Display::EconomicEvent;
+use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
 use BOM::Utility::Date;
-use BOM::Market::PricingInputs::Couch::EconomicEvent;
-use BOM::Market::PricingInputs::EconomicEvents::BloombergParser;
+use BOM::MarketData::Fetcher::EconomicEvent;
+use BOM::MarketData::Parser::Bloomberg::EconomicEvent;
 use BOM::Utility::Log4perl qw( get_logger );
 
 my $broker = request()->broker->code;
@@ -74,14 +74,14 @@ my $remove_news_id            = request()->param('remove_news_id');
 my $save_economic_event       = request()->param('save_economic_event');
 my $autoupdate                = request()->param('autoupdate');
 my $bloomberg_economic_events = request()->param('process_bloomberg_economic_events');
-my $display                   = BOM::Market::PricingInputs::EconomicEvents::Display->new;
+my $display                   = BOM::MarketData::Display::EconomicEvent->new;
 
 # Manual cron runner for economic events
 print $display->economic_event_forms(request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'));
 
 if ($autoupdate) {
     eval {
-        my $num_of_events_updated = BOM::Market::PricingInputs::EconomicEvents::ForexFactoryParser->new()->update_economic_events;
+        my $num_of_events_updated = BOM::MarketData::Parser::ForexFactoryEconomicEvent->new()->update_economic_events;
         print $num_of_events_updated . ' economic events were successfully saved on couch.</br></br>';
     };
     if (my $error = $@) {
@@ -110,13 +110,13 @@ if ($autoupdate) {
             impact       => $impact,
             symbol       => $symbol,
         };
-        my $event = BOM::Market::PricingInputs::EconomicEvent->new($event_param);
+        my $event = BOM::MarketData::EconomicEvent->new($event_param);
         $event->save;
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
     }
 } elsif ($remove_news_id) {
-    my $dm = BOM::Market::PricingInputs::Couch::EconomicEvent->new();
+    my $dm = BOM::MarketData::Fetcher::EconomicEvent->new();
     eval {
         my @docs = $dm->retrieve_doc_with_view({
                 symbol       => $symbol,
@@ -143,8 +143,8 @@ if ($autoupdate) {
     my $economic_event_saved;
     my $file   = $cgi->param('bloomberg_eco_file');
     my $now    = BOM::Utility::Date->new;
-    my $parser = BOM::Market::PricingInputs::EconomicEvents::BloombergParser->new;
-    my $dm     = BOM::Market::PricingInputs::Couch::EconomicEvent->new;
+    my $parser = BOM::MarketData::Parser::Bloomberg::EconomicEvent->new;
+    my $dm     = BOM::MarketData::Fetcher::EconomicEvent->new;
     eval { $parser->process_economic_events($now, $file); };
 
     if (my $error = $@) {

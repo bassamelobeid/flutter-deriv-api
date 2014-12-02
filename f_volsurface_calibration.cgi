@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Market::PricingInputs::VolSurface::Helper::Calibration::Display;
+use BOM::MarketData::Display::VolatilitySurface;
 use CGI;
 
 system_initialize();
@@ -26,7 +26,7 @@ my @underlyings = ($cgi->param('underlyings')) ? split ',', $cgi->param('underly
 
 my $calibrate = $cgi->param('calibrate');
 my (%calibration_results, $template_name);
-my $display = BOM::Market::PricingInputs::VolSurface::Helper::Calibration::Display->new();
+my $display = BOM::MarketData::Display::VolatilitySurface->new();
 foreach my $underlying_symbol (@underlyings) {
     if ($calibrate) {
         $calibration_results{$underlying_symbol} = $display->volsurface_calibration_result($underlying_symbol);

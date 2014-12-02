@@ -20,7 +20,7 @@ use JSON qw( from_json to_json );
 use URL::Encode qw( url_decode );
 
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
-use BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator;
+use BOM::MarketData::VolSurface::Validator;
 
 use f_brokerincludeall;
 system_initialize();
@@ -38,14 +38,14 @@ $surface_string =~ s/point/./g;
 my $surface_data = from_json($surface_string);
 
 eval {
-    my $surface = BOM::Market::PricingInputs::VolSurface::Moneyness->new(
+    my $surface = BOM::MarketData::VolSurface::Moneyness->new(
         underlying     => $underlying,
         surface        => $surface_data,
         recorded_date  => $recorded_date,
         spot_reference => $spot,
     );
 
-    BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator->new->validate_surface($surface);
+    BOM::MarketData::VolSurface::Validator->new->validate_surface($surface);
 
     $surface->save;
 };

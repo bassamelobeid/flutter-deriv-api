@@ -6,14 +6,14 @@ use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
-use BOM::Market::PricingInputs::Couch::CorporateAction;
+use BOM::MarketData::Fetcher::CorporateAction;
 use subs::subs_process_moneyness_volsurfaces;
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::DataSource::SuperDerivatives::Correlations qw( generate_correlations_upload_form );
 use BOM::Market::DataSource::BBDL::FileDownloader;
 use BOM::Market::DataSource::BBDL::RequestFiles;
-use BOM::Market::PricingInputs::HolidayCalendar::BBHolidayCalendar qw( generate_holiday_upload_form );
+use BOM::MarketData::BBHolidayCalendar qw( generate_holiday_upload_form );
 system_initialize();
 
 PrintContentType();
@@ -230,13 +230,13 @@ my $remove_news_id      = request()->param('remove_news_id');
 my $save_economic_event = request()->param('save_economic_event');
 my $autoupdate          = request()->param('autoupdate');
 
-my $display = BOM::Market::PricingInputs::EconomicEvents::Display->new;
+my $display = BOM::MarketData::Display::EconomicEvent->new;
 
 # Manual cron runner for economic events
 print $display->economic_event_forms(request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'));
 
 Bar("Corporate Actions");
-my $corp_dm = BOM::Market::PricingInputs::Couch::CorporateAction->new;
+my $corp_dm = BOM::MarketData::Fetcher::CorporateAction->new;
 my $list    = $corp_dm->get_underlyings_with_corporate_action;
 
 my ($disabled, $monitor);

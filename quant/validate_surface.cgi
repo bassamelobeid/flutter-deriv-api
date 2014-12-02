@@ -21,7 +21,7 @@ use URL::Encode qw( url_decode );
 
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
-use BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator;
+use BOM::MarketData::VolSurface::Validator;
 system_initialize();
 
 # Our very own %input processing logic seems to strip
@@ -36,7 +36,7 @@ my $surface_string = url_decode($cgi->param('surface'));
 $surface_string =~ s/point/./g;
 my $surface_data = from_json($surface_string);
 
-my $class = 'BOM::Market::PricingInputs::VolSurface::' . ($type eq 'moneyness' ? 'Moneyness' : 'Delta');
+my $class = 'BOM::MarketData::VolSurface::' . ($type eq 'moneyness' ? 'Moneyness' : 'Delta');
 my $surface;
 
 eval {
@@ -47,7 +47,7 @@ eval {
         spot_reference => $spot,
     );
 
-    BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator->new->validate_surface($surface);
+    BOM::MarketData::VolSurface::Validator->new->validate_surface($surface);
 };
 
 my $response = {success => 1};

@@ -5,9 +5,9 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Market::PricingInputs::VolSurface::Helper::Calibration::Display;
+use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Market::Underlying;
-use BOM::Market::PricingInputs::VolSurface::Moneyness;
+use BOM::MarketData::VolSurface::Moneyness;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Utility::Date;
 
@@ -17,7 +17,7 @@ use CGI;
 my $cgi                   = CGI->new();
 my $underlying_symbol     = $cgi->param('underlying');
 my $underlying            = BOM::Market::Underlying->new($underlying_symbol);
-my $volsurface            = BOM::Market::PricingInputs::VolSurface::Moneyness->new({underlying => $underlying});
+my $volsurface            = BOM::MarketData::VolSurface::Moneyness->new({underlying => $underlying});
 my @param_names           = @{$volsurface->calibration_param_names};
 my %new_params            = map { $_ => $cgi->param($_) } @param_names;
 my @param_in_array        = map { $new_params{$_} } @param_names;

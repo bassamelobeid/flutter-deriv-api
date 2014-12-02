@@ -5,7 +5,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Market::PricingInputs::Couch::VolSurface;
+use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Utility::Graph::GD;
@@ -27,7 +27,7 @@ $altered_param = from_json($altered_param);
 my $response;
 try {
     my $underlying                 = BOM::Market::Underlying->new($symbol);
-    my $volsurface                 = BOM::Market::PricingInputs::Couch::VolSurface->new()->fetch_surface({underlying => $underlying,});
+    my $volsurface                 = BOM::MarketData::Fetcher::VolSurface->new()->fetch_surface({underlying => $underlying,});
     my %ori_surface                = map { $_ => $volsurface->surface->{$_}->{smile} } keys %{$volsurface->surface};
     my $calibrated_surface         = $volsurface->clone({parameterization => {values => from_json($ori_param)}})->calibrated_surface();
     my $altered_volsurface         = $volsurface->clone({parameterization => {values => $altered_param}});

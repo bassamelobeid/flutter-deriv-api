@@ -8,11 +8,11 @@ use JSON qw( to_json );
 use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Market::UnderlyingDB;
-use BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator;
+use BOM::MarketData::VolSurface::Validator;
 
 use BOM::Market::DataSource::SuperDerivatives::SuperDerivativesParser;
-use BOM::Market::PricingInputs::Volatility::Display;
-use BOM::Market::PricingInputs::Volatility::AutoUpdater::Indices;
+use BOM::MarketData::Display::VolatilitySurface;
+use BOM::MarketData::AutoUpdater::Indices;
 use Path::Tiny;
 
 sub upload_and_process_moneyness_volsurfaces {
@@ -67,7 +67,7 @@ sub compare_uploaded_moneyness_surface {
     );
 
     my @items;
-    my $auto_updater = BOM::Market::PricingInputs::Volatility::AutoUpdater::Indices->new;
+    my $auto_updater = BOM::MarketData::AutoUpdater::Indices->new;
 
     UNDERLYING:
     foreach my $symbol (@symbols) {
@@ -79,11 +79,11 @@ sub compare_uploaded_moneyness_surface {
         my $SD_surfaces = $surfaces->get_volsurface_for($surface_symbol);
 
         my $underlying = BOM::Market::Underlying->new($symbol);
-        my $existing = eval { BOM::Market::PricingInputs::Couch::VolSurface->new->fetch_surface({underlying => $underlying}) };
+        my $existing = eval { BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying}) };
 
         if ($SD_surfaces->{success} or $SD_surfaces->{reason}) {
             $item->{SD_surface}->{table} =
-              BOM::Market::PricingInputs::Volatility::Display->new(surface => $SD_surfaces->{surface})->html_volsurface_in_table({class => 'SD'});
+              BOM::MarketData::Display::VolatilitySurface->new(surface => $SD_surfaces->{surface})->html_volsurface_in_table({class => 'SD'});
             $item->{SD_surface}->{recorded_epoch} = $SD_surfaces->{surface}->recorded_date->epoch;
 
             if ($auto_updater->use_rmg_data_for_spot_reference($symbol)) {
@@ -96,7 +96,7 @@ sub compare_uploaded_moneyness_surface {
             if ($existing) {
                 eval {
                     my ($found_big_difference, undef, @comparison_output) =
-                      BOM::Market::PricingInputs::Volatility::Display->new(surface => $existing)->print_comparison_between_volsurface({
+                      BOM::MarketData::Display::VolatilitySurface->new(surface => $existing)->print_comparison_between_volsurface({
                             ref_surface        => $SD_surfaces->{surface},
                             warn_diff          => 0.03,
                             quiet              => 1,

@@ -5,7 +5,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Market::PricingInputs::Couch::VolSurface;
+use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
@@ -21,7 +21,7 @@ my $symbol        = $cgi->param('symbol');
 my $initial_guess = from_json($cgi->param('initial_guess'));
 
 my $underlying = BOM::Market::Underlying->new($symbol);
-my $volsurface = BOM::Market::PricingInputs::Couch::VolSurface->new()->fetch_surface({underlying => $underlying,});
+my $volsurface = BOM::MarketData::Fetcher::VolSurface->new()->fetch_surface({underlying => $underlying,});
 
 my $clone = $volsurface->clone({parameterization => {values => $initial_guess}});
 my $response;

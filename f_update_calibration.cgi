@@ -5,7 +5,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Market::PricingInputs::Couch::VolSurface;
+use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Utility::Date;
@@ -21,7 +21,7 @@ BOM::Platform::Auth0::can_access(['Quants']);
 
 my $cgi = CGI->new();
 
-my $dm                 = BOM::Market::PricingInputs::Couch::VolSurface->new();
+my $dm                 = BOM::MarketData::Fetcher::VolSurface->new();
 my $underlying         = BOM::Market::Underlying->new($cgi->param('symbol'));
 my $surface            = $dm->fetch_surface({underlying => $underlying});
 my %calibration_params = map { $_ => $cgi->param($_) } @{$surface->calibration_param_names};
