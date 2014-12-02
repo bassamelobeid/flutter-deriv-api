@@ -30,7 +30,13 @@ my $note_header = qq{
 The following client opened an account on $check_date but has the same name and date of birth as other clients.
 =========================================================================================\n\n};
 
+my $dup_unique;
 foreach my $client_hash (@{$client_dup_list}) {
+    # avoid sending multiple emails for same client with multiple duplicate loginids
+    my $client_str = join(',', $client_hash->{first_name}, $client_hash->{last_name}, $client_hash->{date_of_birth});
+    next if (defined $dup_unique and exists $dup_unique->{$client_str});
+    $dup_unique->{$client_str} = 1;
+
     my $loginid           = $client_hash->{new_loginid};
     my $client            = BOM::Platform::Client::get_instance({loginid => $loginid});
     my @duplicate_clients = map {
@@ -39,6 +45,7 @@ foreach my $client_hash (@{$client_dup_list}) {
           : length $status ? "$lid(\u$status)"
           :                  $lid;
     } @{$client_hash->{loginids}};
+
     my $note_content = $note_header;
     $note_content .= $loginid . '(' . $client_hash->{first_name} . ' ' . $client_hash->{last_name} . ")\n";
     $note_content .= '   Duplicate login id: ' . join(', ', @duplicate_clients) . "\n\n";

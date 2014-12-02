@@ -13,7 +13,7 @@ BOM::Platform::Auth0::can_access(['CS']);
 
 my $broker = request()->param('broker');
 
-my $all_clients_self_exclusion_hashref = Persistence::DAO::ClientDAO::get_all_self_exclusion_hashref_by_broker($broker);
+my $all_clients_self_exclusion_hashref = BOM::Platform::Persistence::DAO::Client::get_all_self_exclusion_hashref_by_broker($broker);
 
 my $head = '<tr>';
 $head .= '<th>LoginID</th>';

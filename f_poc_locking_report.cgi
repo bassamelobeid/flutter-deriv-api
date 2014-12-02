@@ -7,6 +7,7 @@ use f_brokerincludeall;
 use BOM::Utility::CurrencyConverter qw(in_USD);
 use BOM::Platform::Data::Persistence::DataMapper::Account;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Persistence::DAO::Client;
 system_initialize();
 
 PrintContentType();
@@ -36,7 +37,7 @@ print q~
 ~;
 
 my $frmid     = 1;
-my $login_ids = Persistence::DAO::ClientDAO::get_loginids_for_poc_locking_clients_arrayref({
+my $login_ids = BOM::Platform::Persistence::DAO::Client::get_loginids_for_poc_locking_clients_arrayref({
         'broker'           => $broker,
         'date'             => $date,
         'authenticated'    => $authenticated,
