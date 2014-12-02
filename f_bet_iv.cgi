@@ -13,7 +13,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlations_upload_form );
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
-use BOM::MarketData::BBHolidayCalendar qw( generate_holiday_upload_form );
+use BOM::MarketData::HolidayCalendar qw( generate_holiday_upload_form );
 system_initialize();
 
 PrintContentType();
