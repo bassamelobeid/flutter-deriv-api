@@ -9,7 +9,7 @@ use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Market::UnderlyingDB;
 
-use BOM::Market::DataSource::SuperDerivatives::SuperDerivativesParser;
+use BOM::MarketData::Parser::SuperDerivatives::VolSurface;
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::AutoUpdater::Indices;
 use Path::Tiny;
@@ -51,7 +51,7 @@ sub upload_and_process_moneyness_volsurfaces {
     }
     close NEWFILE;
 
-    my $surfaces = BOM::Market::DataSource::SuperDerivatives::SuperDerivativesParser->new(file => $filename);
+    my $surfaces = BOM::MarketData::Parser::SuperDerivatives::VolSurface->new(file => $filename);
 
     return ($surfaces, $filename);
 }

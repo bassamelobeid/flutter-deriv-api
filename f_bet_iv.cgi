@@ -10,9 +10,9 @@ use BOM::MarketData::Fetcher::CorporateAction;
 use subs::subs_process_moneyness_volsurfaces;
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Market::DataSource::SuperDerivatives::Correlations qw( generate_correlations_upload_form );
-use BOM::Market::DataSource::BBDL::FileDownloader;
-use BOM::Market::DataSource::BBDL::RequestFiles;
+use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlations_upload_form );
+use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use BOM::MarketData::BBHolidayCalendar qw( generate_holiday_upload_form );
 system_initialize();
 
@@ -106,7 +106,7 @@ unless (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name eq Ma
 
 my $start = BOM::Utility::Date->new;
 my $end   = BOM::Utility::Date->new($start->epoch + (86400 * 200));
-my $rq    = BOM::Market::DataSource::BBDL::RequestFiles->new;
+my $rq    = BOM::MarketData::Parser::Bloomberg::RequestFiles->new;
 
 # On 26Sept07, BBDL informed that the TIME field expects a time value of the form HHMM, where HH=00-23 and MM=00-59
 # BBDL informed that the TIME should in TOKYO time zone as our account attached to TOKYO . TOKYO time= GMT+9
@@ -116,7 +116,7 @@ $rq->generate_cancel_files('daily');
 
 print '<UL>';
 
-my $bbdl             = BOM::Market::DataSource::BBDL::FileDownloader->new();
+my $bbdl             = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
 my $selectbbdlserver = '<select name="server">';
 foreach my $ip (@{$bbdl->ftp_server_ips}) {
     $selectbbdlserver .= "<option value='$ip'>$ip</option>";

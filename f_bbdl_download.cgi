@@ -10,7 +10,7 @@ use File::Slurp;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Market::DataSource::BBDL::FileDownloader;
+use BOM::MarketData::Parser::Bloomberg::FileDownloader;
 
 system_initialize();
 
@@ -28,7 +28,7 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
     code_exit_BO();
 }
 
-my $bbdl = BOM::Market::DataSource::BBDL::FileDownloader->new();
+my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
 $bbdl->ftp_server_ip($server_ip);
 my $ftp = $bbdl->login;
 
