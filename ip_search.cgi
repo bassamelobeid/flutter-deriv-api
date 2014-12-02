@@ -3,7 +3,7 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
-use Persistence::DAO::Report::ClientAccountReportDAO;
+use BOM::Platform::Persistence::DAO::Report::ClientAccountReport;
 use BOM::Platform::Plack qw( PrintContentType );
 system_initialize();
 
@@ -24,7 +24,7 @@ Bar("Searching for LoginIDs corresponding to $ip");
 # Search IP address from clients loginhistory file
 my $last_login_age = request()->param('lastndays');
 
-my @login_history_result = Persistence::DAO::Report::ClientAccountReportDAO::get_logins_by_ip_and_login_age({
+my @login_history_result = BOM::Platform::Persistence::DAO::Report::ClientAccountReport::get_logins_by_ip_and_login_age({
         ip             => $ip,
         broker         => $broker,
         last_login_age => $last_login_age,

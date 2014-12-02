@@ -6,7 +6,6 @@ use open qw[ :encoding(UTF-8) ];
 use BOM::Utility::Format::Strings qw( set_selected_item );
 
 use f_brokerincludeall;
-use Persistence::DAO::ClientDAO;
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
 

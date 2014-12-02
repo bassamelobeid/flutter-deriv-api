@@ -4,6 +4,7 @@ package main;
 use strict 'vars';
 
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Persistence::DAO::Client;
 use f_brokerincludeall;
 system_initialize();
 
@@ -27,7 +28,7 @@ print q~
 
 my $date      = BOM::Utility::Date->new(request()->param('date'));
 my $frmid     = 1;
-my $login_ids = Persistence::DAO::ClientDAO::get_loginids_for_clients_with_expired_documents_arrayref({
+my $login_ids = BOM::Platform::Persistence::DAO::Client::get_loginids_for_clients_with_expired_documents_arrayref({
         'broker' => $broker,
         'date'   => $date,
 });

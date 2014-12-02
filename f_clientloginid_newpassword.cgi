@@ -5,7 +5,7 @@ use strict 'vars';
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use f_brokerincludeall;
-use Persistence::DAO::Utils::ClientPasswordRecoveryDAO;
+use BOM::Platform::Persistence::DAO::Utils::ClientPasswordRecovery;
 use URL::Encode qw( url_encode );
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
@@ -36,7 +36,7 @@ if (not $email) {
 my $hcstring = $email . time . 'request_password';
 my $token    = Digest::MD5::md5_hex($hcstring);
 
-my $success = Persistence::DAO::Utils::ClientPasswordRecoveryDAO::force_client_recovery_password_email_status($client->loginid, $token, $email);
+my $success = BOM::Platform::Persistence::DAO::Utils::ClientPasswordRecovery::force_client_recovery_password_email_status($client->loginid, $token, $email);
 
 my $lang = request()->language;
 
