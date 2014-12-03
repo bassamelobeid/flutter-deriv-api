@@ -87,4 +87,4 @@ sub _retrieve_table_data {
     };
 }
 
-$ftp->close;
+$ftp->disconnect;
