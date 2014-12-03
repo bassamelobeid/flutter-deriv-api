@@ -1,0 +1,34 @@
+<p><b> Upload Excel file contains exchange or currencies holiday from Bloomberg </b></p> 
+<form  name="upload_file" action="[% upload_url %]" method="POST" enctype="multipart/form-data">
+    <table>
+        <tr><td colspan=2><INPUT type=hidden name="whattodo" value="process_exchange_currencies_holidays"></td></tr>
+        <tr><td>Please select the file to upload</td><td><INPUT type="file" name="filetoupload" id="upload_exchnage_currencies_excel_file_field" value="" size="45"></td></tr>
+        <tr><td colspan=2><INPUT type="submit" name="upload_exchange_currencies_excel_file" value="Process Excel File"></td></tr>
+    </table>
+</form>
+<p><i> NOTE: Remember to update Christmas and New Years holidays for FOREX exchange </i></p>
+<p><b>Update holidays manually with the tool below: </b></p>
+
+<form name="manual_update" action="[% upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+    <table>
+        <tr><td>Exchange or Currency Symbol</td><td> : <INPUT type="text" name="symbol"></td><td>(e.g. USD GBP EUR NYSE TSE)</td></tr>
+        <tr><td>Holiday Date</td><td> : <INPUT type="text" name="holiday_date"></td><td>(e.g. 12-Dec-2014)</td></tr>
+        <tr><td>Holiday Name or Weight or early_close_time</td><td> : <INPUT type="text" name="holiday_name"></td><td>(e.g. New Year's Eve or 0.5 or 3h59m)</td></tr>
+        <tr><td>Source of holiday</td><td> : <INPUT type="text" name="source" "></td><td>(e.g. Exchange or Country) NOTE: Early close is only apply to Exchange</td></tr>
+        <tr><td>Type of holiday</td><td> : <INPUT type="text" name="type" "></td><td>(e.g. Holiday or Early_Close)</td></tr>
+        <tr><td></td><td><INPUT type="submit" name="manually_update_individual_holiday" value="Save"></td></tr>
+    </table>
+</form>
+
+<p><b>Update pseudo holidays manually with the tool below: </b></p>
+
+<form name="manual_update" action="[% upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
+    <table>
+        <tr><td>Pseudo Holiday Start Date</td><td> : <INPUT type="text" name="pseudo_start_date"></td><td>(e.g. 12-Dec-2014)</td></tr>
+        <tr><td>Pseudo Holiday End Date</td><td> : <INPUT type="text" name="pseudo_end_date"></td><td>(e.g. 5-Jan-2015)</td></tr>
+        <tr><td></td><td><INPUT type="submit" name="update_pseudo_holiday" value="Save"></td></tr>
+    </table>
+</form>
+
+
+

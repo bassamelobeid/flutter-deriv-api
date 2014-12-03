@@ -8,12 +8,16 @@ use JSON qw( to_json );
 use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Market::UnderlyingDB;
-use BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator;
 
-use BOM::Market::DataSource::SuperDerivatives::SuperDerivativesParser;
-use BOM::Market::PricingInputs::Volatility::Display;
-use BOM::Market::PricingInputs::Volatility::AutoUpdater::Indices;
+use BOM::MarketData::Parser::SuperDerivatives::VolSurface;
+use BOM::MarketData::Display::VolatilitySurface;
 use Path::Tiny;
+
+my @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    market       => ['indices'],
+    broker       => 'VRT',
+    bet_category => 'ANY'
+);
 
 sub upload_and_process_moneyness_volsurfaces {
     my $filetoupload = shift;
@@ -52,52 +56,35 @@ sub upload_and_process_moneyness_volsurfaces {
     }
     close NEWFILE;
 
-    my $surfaces = BOM::Market::DataSource::SuperDerivatives::SuperDerivativesParser->new(file => $filename);
+    my $surfaces = BOM::MarketData::Parser::SuperDerivatives::VolSurface->new->parse_data_for($filename, \@symbols_to_update);
+    unlink $filename;
 
-    return ($surfaces, $filename);
+    return compare_uploaded_moneyness_surface($surfaces);
 }
 
 sub compare_uploaded_moneyness_surface {
     my $surfaces = shift;
 
-    my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market       => ['indices', 'stocks'],
-        broker       => 'VRT',
-        bet_category => 'ANY'
-    );
-
     my @items;
-    my $auto_updater = BOM::Market::PricingInputs::Volatility::AutoUpdater::Indices->new;
 
     UNDERLYING:
-    foreach my $symbol (@symbols) {
+    foreach my $symbol (@symbols_to_update) {
         my $item = {symbol => $symbol};
+        my $volsurface = $surfaces->{$symbol};
 
-        # For certain underlying such as IXIC, SZSECOMP, N150, they are using NDX, SSECOMP and N100 surfaces respectively.
-        my $surface_symbol = $auto_updater->equivalent_volsurfaces->{$symbol} || $symbol;
+        if ($volsurface) {
+            $item->{SD_surface} = {
+                table => BOM::MarketData::Display::VolatilitySurface->new(surface => $volsurface)->html_volsurface_in_table({class => 'SD'}),
+                recorded_epoch => $volsurface->recorded_date->epoch,
+                spot_reference => $volsurface->spot_reference,
+            };
 
-        my $SD_surfaces = $surfaces->get_volsurface_for($surface_symbol);
-
-        my $underlying = BOM::Market::Underlying->new($symbol);
-        my $existing = eval { BOM::Market::PricingInputs::Couch::VolSurface->new->fetch_surface({underlying => $underlying}) };
-
-        if ($SD_surfaces->{success} or $SD_surfaces->{reason}) {
-            $item->{SD_surface}->{table} =
-              BOM::Market::PricingInputs::Volatility::Display->new(surface => $SD_surfaces->{surface})->html_volsurface_in_table({class => 'SD'});
-            $item->{SD_surface}->{recorded_epoch} = $SD_surfaces->{surface}->recorded_date->epoch;
-
-            if ($auto_updater->use_rmg_data_for_spot_reference($symbol)) {
-                my $ref_tick = $underlying->tick_at($SD_surfaces->{surface}->recorded_date->epoch);
-                $item->{SD_surface}->{spot_reference} = ($ref_tick) ? $ref_tick->quote : $underlying->spot;
-            } else {
-                $item->{SD_surface}->{spot_reference} = $SD_surfaces->{surface}->spot_reference;
-            }
-
+            my $existing = $volsurface->get_existing_surface;
             if ($existing) {
                 eval {
                     my ($found_big_difference, undef, @comparison_output) =
-                      BOM::Market::PricingInputs::Volatility::Display->new(surface => $existing)->print_comparison_between_volsurface({
-                            ref_surface        => $SD_surfaces->{surface},
+                      BOM::MarketData::Display::VolatilitySurface->new(surface => $existing)->print_comparison_between_volsurface({
+                            ref_surface        => $volsurface,
                             warn_diff          => 0.03,
                             quiet              => 1,
                             ref_surface_source => 'SD',
@@ -118,8 +105,8 @@ sub compare_uploaded_moneyness_surface {
                 }
             }
 
-            if ($SD_surfaces->{reason}) {
-                $item->{SD_surface}->{reason} = $SD_surfaces->{reason};
+            if (!$volsurface->is_valid) {
+                $item->{SD_surface}->{reason} = $volsurface->validation_error;
             }
         } else {
             $item->{SD_surface}->{reason} = "SD does not have moneyness surface for $symbol";

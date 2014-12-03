@@ -5,7 +5,7 @@ use strict 'vars';
 
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Market::PricingInputs::HolidayCalendar::BBHolidayCalendar;
+use BOM::MarketData::HolidayCalendar;
 system_initialize();
 PrintContentType();
 
@@ -24,7 +24,7 @@ my $source                                = $cgi->param('source');
 my $type                                  = $cgi->param('type');
 my $pseudo_start_date                     = $cgi->param('pseudo_start_date');
 my $pseudo_end_date                       = $cgi->param('pseudo_end_date');
-my $parser                                = BOM::Market::PricingInputs::HolidayCalendar::BBHolidayCalendar->new;
+my $parser                                = BOM::MarketData::HolidayCalendar->new;
 
 my ($surfaces, $filename) = $parser->process_holidays({
         'filetoupload'                          => $filetoupload,

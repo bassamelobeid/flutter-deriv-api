@@ -6,15 +6,14 @@ use open qw[ :encoding(UTF-8) ];
 use Text::Trim;
 
 use f_brokerincludeall;
-use BOM::Market::PricingInputs::Volatility::Display;
+use BOM::MarketData::Display::VolatilitySurface;
 
 use BOM::Platform::Runtime;
 use BOM::Utility::Format::Numbers qw( virgule );
-use BOM::Market::PricingInputs::Rates::Interest;
-use BOM::Market::PricingInputs::VolSurface::Delta;
-use BOM::Market::PricingInputs::VolSurface::Moneyness;
-use BOM::Market::PricingInputs::Couch::VolSurface;
-use BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator;
+use BOM::MarketData::InterestRate;
+use BOM::MarketData::VolSurface::Delta;
+use BOM::MarketData::VolSurface::Moneyness;
+use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Utility::Date;
 use Path::Tiny;
 use BOM::Utility::Log4perl qw( get_logger );
@@ -71,8 +70,8 @@ if ($filen eq 'editvol') {
     my $market = $underlying->market->name;
     my $model =
       ($market eq 'indices')
-      ? 'BOM::Market::PricingInputs::VolSurface::Moneyness'
-      : 'BOM::Market::PricingInputs::VolSurface::Delta';
+      ? 'BOM::MarketData::VolSurface::Moneyness'
+      : 'BOM::MarketData::VolSurface::Delta';
 
     my $surface_data   = {};
     my $col_names_line = shift @lines;
@@ -112,20 +111,17 @@ if ($filen eq 'editvol') {
     );
 
     $surface_args{spot_reference} = request()->param('spot_reference')
-      if $model eq 'BOM::Market::PricingInputs::VolSurface::Moneyness';
+      if $model eq 'BOM::MarketData::VolSurface::Moneyness';
     my $surface = $model->new(%surface_args);
 
-    my $dm                  = BOM::Market::PricingInputs::Couch::VolSurface->new;
+    my $dm                  = BOM::MarketData::Fetcher::VolSurface->new;
     my $existing_volsurface = $dm->fetch_surface({underlying => $underlying});
     my $existing_surface    = eval { $existing_volsurface->surface };
     $existing_volsurface = undef unless $existing_surface;
 
     if ($existing_volsurface) {
-        my $validator = BOM::Market::PricingInputs::VolSurface::Helper::SurfaceValidator->new;
-        eval { $validator->validate_surface($surface) };
-
         my ($big_differences, $error_message, @output) =
-          BOM::Market::PricingInputs::Volatility::Display->new(surface => $surface)->print_comparison_between_volsurface({
+          BOM::MarketData::Display::VolatilitySurface->new(surface => $surface)->print_comparison_between_volsurface({
                 ref_surface => $existing_volsurface,
                 warn_diff   => 1,
                 quiet       => 1,
@@ -134,8 +130,8 @@ if ($filen eq 'editvol') {
         print "<P> Difference between existing and new surface </p>";
         print @output;
 
-        if ($@) {
-            print "<P> $@ </P>";
+        if (!$surface->is_valid) {
+            print "<P> $surface->validation_error </P>";
 
         } elsif ($big_differences) {
             print "<P>$error_message</P>";

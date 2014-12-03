@@ -7,8 +7,8 @@ use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Market::PricingInputs::VolSurface::Delta;
-use BOM::Market::PricingInputs::Volatility::Display;
+use BOM::MarketData::VolSurface::Delta;
+use BOM::MarketData::Display::VolatilitySurface;
 
 system_initialize();
 $\ = "\n";
@@ -19,7 +19,7 @@ my $warndifference = request()->param('warndifference');
 
 my @markets = split /\s+/, $markets;
 
-my $dm = BOM::Market::PricingInputs::Couch::VolSurface->new;
+my $dm = BOM::MarketData::Fetcher::VolSurface->new;
 
 BrokerPresentation("", "");
 
@@ -30,7 +30,7 @@ foreach my $market (@markets) {
 
     #------------------------Get the old/in-use/existing volatility ---------------------------------
     my $existing_vol_surface = $dm->fetch_surface({underlying => $underlying});
-    my $display = BOM::Market::PricingInputs::Volatility::Display->new(surface => $existing_vol_surface);
+    my $display = BOM::MarketData::Display::VolatilitySurface->new(surface => $existing_vol_surface);
 
     local $/ = "";
 

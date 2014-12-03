@@ -5,7 +5,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Market::PricingInputs::CorporateAction;
+use BOM::MarketData::CorporateAction;
 use BOM::Platform::Runtime;
 use JSON qw(to_json);
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
@@ -22,7 +22,7 @@ my $enable  = $cgi->param('enable');
 
 my $response;
 try {
-    my $corp = BOM::Market::PricingInputs::CorporateAction->new(symbol => $symbol);
+    my $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
     my $action_to_update = $corp->actions->{$id};
     $action_to_update->{comment} = $comment;
     if ($enable) {

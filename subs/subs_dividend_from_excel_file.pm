@@ -44,7 +44,7 @@ sub save_dividends {
 
         }
         try {
-            my $dividends = BOM::Market::PricingInputs::Rates::Dividend->new(
+            my $dividends = BOM::MarketData::Dividend->new(
                 symbol          => $symbol,
                 rates           => $rates,
                 discrete_points => $discrete_points,

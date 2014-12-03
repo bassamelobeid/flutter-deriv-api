@@ -52,9 +52,9 @@ use List::MoreUtils qw( uniq );
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Market::PricingInputs::VolSurface::Delta;
-use BOM::Market::PricingInputs::Volatility::Display;
-use BOM::Market::PricingInputs::Couch::VolSurface;
+use BOM::MarketData::VolSurface::Delta;
+use BOM::MarketData::Display::VolatilitySurface;
+use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
 
@@ -92,7 +92,7 @@ if ($update_including_intraday_double) {
     );
 }
 
-my $dm = BOM::Market::PricingInputs::Couch::VolSurface->new;
+my $dm = BOM::MarketData::Fetcher::VolSurface->new;
 
 # Get various volatilty surfaces
 my %volatility_surfaces;
@@ -149,7 +149,7 @@ foreach my $market (@markets) {
     print '<TD>';
     if (not $volatility_surfaces{$market}->{'errorused'}) {
         if ($volatility_surfaces{$market}->{used}) {
-            print BOM::Market::PricingInputs::Volatility::Display->new(surface => $volatility_surfaces{$market}->{used})->html_volsurface_in_table;
+            print BOM::MarketData::Display::VolatilitySurface->new(surface => $volatility_surfaces{$market}->{used})->html_volsurface_in_table;
         } else {
             print "Surface does not exist";
         }

@@ -8,8 +8,8 @@ use List::Util qw( first );
 
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Market::PricingInputs::Couch::VolSurface;
-use BOM::Market::PricingInputs::Volatility::Display;
+use BOM::MarketData::Fetcher::VolSurface;
+use BOM::MarketData::Display::VolatilitySurface;
 system_initialize();
 
 PrintContentType();
@@ -18,13 +18,13 @@ my $display;
 my $symbol     = request()->param('symbol');
 my $underlying = BOM::Market::Underlying->new($symbol);
 
-my $dm               = BOM::Market::PricingInputs::Couch::VolSurface->new;
+my $dm               = BOM::MarketData::Fetcher::VolSurface->new;
 my $existing         = $dm->fetch_surface({underlying => $underlying});
 my $existing_surface = eval { $existing->surface };
 
 my $volsurface = ($existing_surface) ? $existing : undef;
 if ($volsurface) {
-    $display = BOM::Market::PricingInputs::Volatility::Display->new(surface => $volsurface);
+    $display = BOM::MarketData::Display::VolatilitySurface->new(surface => $volsurface);
 }
 
 print '<html><head><title>Editing volsurface for ' . $symbol . '</title></head>';
