@@ -22,11 +22,11 @@ my $broker    = $cgi->param('broker');
 
 my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
-my $ftp = $bbdl->login;
+my $sftp = $bbdl->login;
 
 Bar("BBDL Directory Listing $server_ip");
 
-my $ls = $ftp->ls('/') or die "unable to change cwd: " . $ftp->error;
+my $ls = $sftp->ls('/') or die "unable to change cwd: " . $sftp->error;
 
 my @request_files  = grep { $_->{'filename'} =~ /\.req$/ } @{$ls};
 my @response_files = grep { $_->{'filename'} =~ /\.csv\.enc$/ } @{$ls};
@@ -87,4 +87,4 @@ sub _retrieve_table_data {
     };
 }
 
-$ftp->disconnect;
+$sftp->disconnect;
