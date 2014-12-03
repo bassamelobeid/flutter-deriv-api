@@ -30,8 +30,8 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
 }
 
 my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
-$bbdl->ftp_server_ip($server_ip);
-my $ftp = $bbdl->login;
+$bbdl->sftp_server_ip($server_ip);
+my $sftp = $bbdl->login;
 
 my $request_file = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(volatility_source => $volatility_source);
 
@@ -52,11 +52,11 @@ foreach my $file (@files) {
         print "<font color=red>ERROR: $file exceeds 25 characters in length</font><br>";
     } elsif (not -s $temp_gif_dir . '/' . $file) {
         print "<font color=red>ERROR: $file does not exist</font><br>";
-    } elsif ($ftp->put($temp_gif_dir . '/' . $file, $file)) {
+    } elsif ($sftp->put($temp_gif_dir . '/' . $file, $file)) {
         print "UPLOAD $file SUCCESSFUL<br>";
     } else {
-        print "<font color=red>UPLOAD $file FAILURE: " . $ftp->message . '</font><br>';
+        print "<font color=red>UPLOAD $file FAILURE: " . $sftp->error . '</font><br>';
     }
 }
 
-$ftp->quit;
+$sftp->disconnect;

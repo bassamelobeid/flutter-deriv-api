@@ -118,7 +118,7 @@ print '<UL>';
 
 my $bbdl             = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
 my $selectbbdlserver = '<select name="server">';
-foreach my $ip (@{$bbdl->ftp_server_ips}) {
+foreach my $ip (@{$bbdl->sftp_server_ips}) {
     $selectbbdlserver .= "<option value='$ip'>$ip</option>";
 }
 $selectbbdlserver .= '</select>';

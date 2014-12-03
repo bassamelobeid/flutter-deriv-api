@@ -29,18 +29,27 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
 }
 
 my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
-$bbdl->ftp_server_ip($server_ip);
-my $ftp = $bbdl->login;
+$bbdl->sftp_server_ip($server_ip);
+my $sftp = $bbdl->login;
+
+my $file_stat = $sftp->stat($filename);
 
 my $gif_temp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
-my $mdtm         = $ftp->mdtm($filename);
-my $mod_time     = BOM::Utility::Date->new($mdtm);
-my $mtime        = $mod_time->datetime . ' = ' . (time - $mod_time->epoch) . 'seconds ago';
-my $size         = $ftp->size($filename);
 my $message;
-$message .= '<p>File[' . $filename . '] found with size[' . $size . '] modified[' . $mtime . ']</p>';
 
-if ($ftp->get($filename, "$gif_temp_dir/$filename")) {
+if ($file_stat) {
+    my $mdtm         = $file_stat->mtime;
+    my $mod_time     = BOM::Utility::Date->new($mdtm);
+    my $mtime        = $mod_time->datetime . ' = ' . (time - $mod_time->epoch) . 'seconds ago';
+    my $size         = $file_stat->size;
+
+    $message .= '<p>File[' . $filename . '] found with size[' . $size . '] modified[' . $mtime . ']</p>';
+}
+
+$sftp->get($filename, "$gif_temp_dir/$filename");
+if ($sftp->error) {
+    $message .= '<p>DOWNLOAD FAILURE: ' . $sftp->error . '</p>';
+} else {
     if ($filename =~ /\.err/) {    # error file
         copy($gif_temp_dir . '/' . $filename, $gif_temp_dir . '/' . $filename . '.txt');
     } else {
@@ -61,12 +70,10 @@ if ($ftp->get($filename, "$gif_temp_dir/$filename")) {
     } else {
         $message .= '<p>Sorry, could not find file[' . $filename . '] in directory[' . $gif_temp_dir . ']</p>';
     }
-} else {
-    $message .= '<p>DOWNLOAD FAILURE: ' . $ftp->message . '</p>';
 }
 
 print $message;
 
-$ftp->quit;
+$sftp->disconnect;
 
 code_exit_BO();
