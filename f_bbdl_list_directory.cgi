@@ -22,15 +22,15 @@ my $broker    = $cgi->param('broker');
 
 my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
-my $ftp = $bbdl->login;
+my $sftp = $bbdl->login;
 
 Bar("BBDL Directory Listing $server_ip");
 
-my @ls = $ftp->ls('.');
+my @ls = $sftp->ls('.');
 
 foreach my $l (@ls) {
     #delete these annoying .2006.. files
-    $ftp->delete($l) if ($l =~ /\.csv\.enc\.200/
+    $sftp->remove($l) if ($l =~ /\.csv\.enc\.200/
         or $l =~ /\.csv\.enc\.gz\.200/
         or $l =~ /scheduled\.out\.200/);
 }
@@ -38,8 +38,8 @@ foreach my $l (@ls) {
 my @request_files  = grep { $_ =~ /\.req$/ } @ls;
 my @response_files = grep { $_ =~ /\.csv\.enc$/ } @ls;
 
-my @request_list  = map { _retrieve_table_data($ftp, $_) } @request_files;
-my @response_list = map { _retrieve_table_data($ftp, $_) } @response_files;
+my @request_list  = map { _retrieve_table_data($sftp, $_) } @request_files;
+my @response_list = map { _retrieve_table_data($sftp, $_) } @response_files;
 
 my $request_f;
 BOM::Platform::Context::template->process(
@@ -68,13 +68,14 @@ BOM::Platform::Context::template->process(
 print $response_f;
 
 sub _retrieve_table_data {
-    my ($ftp, $rf) = @_;
+    my ($sftp, $rf) = @_;
 
-    my $mdtm            = $ftp->mdtm($rf);
+    my $file_stat       = $sftp->stat($rf);
+    my $mdtm            = $file_stat->mtime;
     my $bom_mdtm        = BOM::Utility::Date->new($mdtm);
     my $how_long_ago    = time - $bom_mdtm->epoch;
     my $more_than_a_day = (time > $mdtm + 86400) ? 1 : 0;
-    my $file_size       = $ftp->size($rf);
+    my $file_size       = $file_stat->size;
     my $file_url        = request()->url_for(
         "backoffice/f_bbdl_download.cgi",
         {
@@ -93,4 +94,4 @@ sub _retrieve_table_data {
     };
 }
 
-$ftp->quit;
+$sftp->disconnect;
