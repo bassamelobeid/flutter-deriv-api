@@ -19,10 +19,8 @@ use IO::File;
 use BOM::Utility::Log4perl;
 use BOM::Platform::MyAffiliates::PaymentToBOMAccountManager;
 use BOM::Platform::Email qw(send_email);
-use include_common_modules;
 
 BOM::Utility::Log4perl::init_log4perl_console;
-system_initialize();
 
 my $runtime = BOM::Utility::Date->new;
 
