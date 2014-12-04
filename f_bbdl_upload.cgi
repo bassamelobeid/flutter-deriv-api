@@ -45,7 +45,7 @@ if (length($filename) >= 25) {
         $replyfile = chomp($replyfile);
     }
 
-    $sftp->put($temp_dir . '/' . $filename, $filename)
+    $sftp->put($temp_dir . '/' . $filename, $filename);
     if ($sftp->error) {
         $message = "<p>Upload Failed: " . $sftp->error . '</p>';
     } else {
