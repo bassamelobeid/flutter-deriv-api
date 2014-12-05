@@ -63,7 +63,9 @@ print "<INPUT type=\"submit\" value=\"Go\"></form>
 </form><div style=\"clear:both\"></div>";
 
 if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-    BOM::Product::Transaction::sell_expired_contracts({client => $client,});
+    BOM::Product::Transaction::sell_expired_contracts({
+        client => $client,
+    });
 }
 
 my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
@@ -73,9 +75,9 @@ my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
 
 my $currency = $client->currency;
 my $bet_dm   = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
-        client_loginid => $client->loginid,
-        currency_code  => $currency,
-        db             => $db,
+    client_loginid => $client->loginid,
+    currency_code  => $currency,
+    db             => $db,
 });
 
 my $open_bets = $bet_dm->get_open_bets_of_account();
@@ -88,9 +90,9 @@ foreach my $open_bet (@{$open_bets}) {
 }
 
 my $acnt_dm = BOM::Platform::Data::Persistence::DataMapper::Account->new({
-        client_loginid => $client->loginid,
-        currency_code  => $currency,
-        db             => $db,
+    client_loginid => $client->loginid,
+    currency_code  => $currency,
+    db             => $db,
 });
 
 BOM::Platform::Context::template->process(
@@ -104,21 +106,21 @@ BOM::Platform::Context::template->process(
 
 Bar("Turnover analysis (Getting data from Transaction Database) ");
 my $txn_data_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
-        'client_loginid' => $loginID,
-        'currency_code'  => $currency,
-        db               => $db,
+    'client_loginid' => $loginID,
+    'currency_code'  => $currency,
+    db               => $db,
 });
 my $turnover = {};
 $turnover->{total} = $txn_data_mapper->get_turnover_of_account();
 
 my $bet_data_mapper = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => $loginID,
-        'currency_code'  => $currency,
-        db               => $db,
+    'client_loginid' => $loginID,
+    'currency_code'  => $currency,
+    db               => $db,
 });
 $turnover->{intraday} = $bet_data_mapper->get_turnover_of_client({
-        'bet_type'         => ['INTRA',],
-        'overall_turnover' => 1
+    'bet_type'         => ['INTRA',],
+    'overall_turnover' => 1
 });
 
 BOM::Platform::Context::template->process(

@@ -71,38 +71,38 @@ foreach my $currl (@{$all_currencies}) {
 }
 
 print "<form action=\""
-  . request()->url_for('backoffice/f_show.cgi')
-  . "\" method=\"get\">"
-  . "<b>Reference date :</b> <select name=\"show\">$RECENTDAYS</select>"
-  . "<input type=\"submit\" value=\"View Dailysummary File\">"
-  . "</form>";
+    . request()->url_for('backoffice/f_show.cgi')
+    . "\" method=\"get\">"
+    . "<b>Reference date :</b> <select name=\"show\">$RECENTDAYS</select>"
+    . "<input type=\"submit\" value=\"View Dailysummary File\">"
+    . "</form>";
 
 print "<form action=\""
-  . request()->url_for('backoffice/f_formatdailysummary.cgi')
-  . "\" method=\"get\">"
-  . "Reference date : <select name=\"show\">$RECENTDAYS</select>"
-  . "<input type=checkbox name=displayport value=yes>Display portfolio"
-  . "<br />Output <input type=text size=6 value='30' name=outputlargest> largest clients only"
-  . "<br />*or* view only these clients : <input type=text size=20 name=viewonlylist> (list loginIDs separated by spaces)"
-  . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
-  . "</form>";
+    . request()->url_for('backoffice/f_formatdailysummary.cgi')
+    . "\" method=\"get\">"
+    . "Reference date : <select name=\"show\">$RECENTDAYS</select>"
+    . "<input type=checkbox name=displayport value=yes>Display portfolio"
+    . "<br />Output <input type=text size=6 value='30' name=outputlargest> largest clients only"
+    . "<br />*or* view only these clients : <input type=text size=20 name=viewonlylist> (list loginIDs separated by spaces)"
+    . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
+    . "</form>";
 
 my $country = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($broker)->country;
 if ($country eq 'UK' or $country eq 'Isle of Man') {
     Bar("HMCE/IOMCE bet numbering records");
 
     print "<form action=\""
-      . request()->url_for('backoffice/f_broker_hmce_numbering_output.cgi')
-      . "\" method=post>"
-      . "<input type=hidden name=\"broker\" value=\"$broker\">"
-      . "<input type=hidden name=\"output\" value=\"CSV\">"
-      . "<br />Do : <select name=action_type>
+        . request()->url_for('backoffice/f_broker_hmce_numbering_output.cgi')
+        . "\" method=post>"
+        . "<input type=hidden name=\"broker\" value=\"$broker\">"
+        . "<input type=hidden name=\"output\" value=\"CSV\">"
+        . "<br />Do : <select name=action_type>
                        <option>sell</option>
                        <option>buy</option>
                </select>"
-      . "<br />for given month : <input type=text size=10 name=monthonly> Example : Jun-03"
-      . "<br /><b><input type=\"submit\" value=\"VIEW HMCE/IOMCE bet numbering records\">"
-      . "</form>";
+        . "<br />for given month : <input type=text size=10 name=monthonly> Example : Jun-03"
+        . "<br /><b><input type=\"submit\" value=\"VIEW HMCE/IOMCE bet numbering records\">"
+        . "</form>";
 }
 
 Bar("Monthly Client Reports");
@@ -110,8 +110,8 @@ Bar("Monthly Client Reports");
     my $yyyymm = DateTime->now->subtract(months => 1)->ymd('-');
     $yyyymm =~ s/-..$//;
 
-    BOM::Platform::Context::template->process('backoffice/account/monthly_client_report.tt', {yyyymm=>$yyyymm})
-      || die BOM::Platform::Context::template->error();
+    BOM::Platform::Context::template->process('backoffice/account/monthly_client_report.tt', {yyyymm => $yyyymm})
+        || die BOM::Platform::Context::template->error();
 }
 
 # RESCIND FREE GIFT
@@ -121,28 +121,28 @@ print "If an account is opened, gets a free gift, but never trades for XX days, 
 print " <font color=red>DO NOT RUN THIS FOR MLT DUE TO LGA REQUIREMENTS</font>";
 
 print "<form action=\""
-  . request()->url_for('backoffice/f_rescind_freegift.cgi')
-  . "\" method=post>"
-  . "<input type=hidden name=broker value=$broker>"
-  . "Days of inactivity: <input type=text size=8 name=inactivedays value=90> "
-  . "<br />Message: <input type=text size=50 name=message value='Rescind of free gift for cause of inactivity'> "
-  . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
-  . "<input type=submit value='Rescind free gifts'>"
-  . "</form>";
+    . request()->url_for('backoffice/f_rescind_freegift.cgi')
+    . "\" method=post>"
+    . "<input type=hidden name=broker value=$broker>"
+    . "Days of inactivity: <input type=text size=8 name=inactivedays value=90> "
+    . "<br />Message: <input type=text size=50 name=message value='Rescind of free gift for cause of inactivity'> "
+    . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
+    . "<input type=submit value='Rescind free gifts'>"
+    . "</form>";
 
 Bar("CLEAN UP GIVEN LIST OF ACCOUNTS");
 
 print "Paste here a list of accounts to rescind all their cash balances (separate with commas):";
 
 print "<form action=\""
-  . request()->url_for('backoffice/f_rescind_listofaccounts.cgi')
-  . "\" method=post>"
-  . "<input type=hidden name=broker value=$broker>"
-  . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021'> (separate with commas)"
-  . "<br />Message: <input type=text size=65 name=message value='Account closed. Please contact customer support for assistance.'> "
-  . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
-  . " <input type=submit value='Rescind these accounts!'>"
-  . "</form>";
+    . request()->url_for('backoffice/f_rescind_listofaccounts.cgi')
+    . "\" method=post>"
+    . "<input type=hidden name=broker value=$broker>"
+    . "List of accounts: <input type=text size=60 name=listaccounts value='CBET1020,CBET1021'> (separate with commas)"
+    . "<br />Message: <input type=text size=65 name=message value='Account closed. Please contact customer support for assistance.'> "
+    . "<br /><select name=whattodo><option>Simulate<option>Do it for real !</select>"
+    . " <input type=submit value='Rescind these accounts!'>"
+    . "</form>";
 
 Bar("USEFUL EXCHANGE RATES");
 
@@ -160,12 +160,12 @@ print "<table><tr><th>Currency</th><th>1 week</th><th>1 month</th></tr>";
 foreach my $currency_symbol (qw(AUD GBP EUR USD HKD)) {
     my $currency = BOM::Market::Currency->new($currency_symbol);
     print '<tr><td>'
-      . $currency_symbol
-      . '</td><td>'
-      . $currency->rate_for(7 / 365) * 100
-      . '%</td><td>'
-      . $currency->rate_for(30 / 365) * 100
-      . '%</td></tr>';
+        . $currency_symbol
+        . '</td><td>'
+        . $currency->rate_for(7 / 365) * 100
+        . '%</td><td>'
+        . $currency->rate_for(30 / 365) * 100
+        . '%</td></tr>';
 }
 print '</table>';
 

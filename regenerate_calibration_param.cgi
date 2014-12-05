@@ -21,7 +21,9 @@ my $symbol        = $cgi->param('symbol');
 my $initial_guess = from_json($cgi->param('initial_guess'));
 
 my $underlying = BOM::Market::Underlying->new($symbol);
-my $volsurface = BOM::MarketData::Fetcher::VolSurface->new()->fetch_surface({underlying => $underlying,});
+my $volsurface = BOM::MarketData::Fetcher::VolSurface->new()->fetch_surface({
+    underlying => $underlying,
+});
 
 my $clone = $volsurface->clone({parameterization => {values => $initial_guess}});
 my $response;

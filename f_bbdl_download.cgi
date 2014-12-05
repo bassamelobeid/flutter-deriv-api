@@ -38,10 +38,10 @@ my $gif_temp_dir = BOM::Platform::Runtime->instance->app_config->system->directo
 my $message;
 
 if ($file_stat) {
-    my $mdtm         = $file_stat->mtime;
-    my $mod_time     = BOM::Utility::Date->new($mdtm);
-    my $mtime        = $mod_time->datetime . ' = ' . (time - $mod_time->epoch) . 'seconds ago';
-    my $size         = $file_stat->size;
+    my $mdtm     = $file_stat->mtime;
+    my $mod_time = BOM::Utility::Date->new($mdtm);
+    my $mtime    = $mod_time->datetime . ' = ' . (time - $mod_time->epoch) . 'seconds ago';
+    my $size     = $file_stat->size;
 
     $message .= '<p>File[' . $filename . '] found with size[' . $size . '] modified[' . $mtime . ']</p>';
 }
@@ -55,7 +55,7 @@ if ($sftp->error) {
     } else {
         if ($filename =~ /\.gz/) {    # it's gzipped
             print "<p>Sorry, Decrytion Error</p>" and code_exit_BO()
-              if (not $bbdl->des_decrypt("$gif_temp_dir/$filename", "$gif_temp_dir/$filename.gz"));
+                if (not $bbdl->des_decrypt("$gif_temp_dir/$filename", "$gif_temp_dir/$filename.gz"));
             system("gunzip -c $gif_temp_dir/$filename.gz > $gif_temp_dir/$filename.txt");
         } else {
             $bbdl->des_decrypt("$gif_temp_dir/$filename", "$gif_temp_dir/$filename.txt");

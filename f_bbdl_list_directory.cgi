@@ -63,7 +63,6 @@ print $response_f;
 sub _retrieve_table_data {
     my ($rf) = @_;
 
-
     my $mdtm            = $rf->{"a"}->mtime;
     my $bom_mdtm        = BOM::Utility::Date->new($mdtm);
     my $how_long_ago    = time - $bom_mdtm->epoch;

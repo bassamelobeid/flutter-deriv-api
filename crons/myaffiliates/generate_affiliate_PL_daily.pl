@@ -68,13 +68,13 @@ while ($to_date->days_between($processing_date) >= 0) {
 
 # email CSV out for reporting purposes
 send_email({
-        from    => BOM::Platform::Runtime->instance->app_config->system->email,
-        to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-        subject => 'CRON generate_affiliate_PL_daily: Report from '
-          . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name
-          . ' for date range '
-          . $from_date->date_yyyymmdd . ' - '
-          . $to_date->date_yyyymmdd,
-        message    => ['Find attached the CSV that was generated.'],
-        attachment => \@csv_filenames,
+    from    => BOM::Platform::Runtime->instance->app_config->system->email,
+    to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+    subject => 'CRON generate_affiliate_PL_daily: Report from '
+        . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name
+        . ' for date range '
+        . $from_date->date_yyyymmdd . ' - '
+        . $to_date->date_yyyymmdd,
+    message    => ['Find attached the CSV that was generated.'],
+    attachment => \@csv_filenames,
 });

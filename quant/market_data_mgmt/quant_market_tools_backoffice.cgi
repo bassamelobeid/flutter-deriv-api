@@ -36,8 +36,8 @@ if (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name ne Master
 # Currently we can get a list of forecast dividend from Bloomberg but in excel format
 Bar("Upload Dividend");
 print generate_dividend_upload_form({
-        broker     => $broker,
-        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
 if (request()->param('whattodo') eq 'process_dividend') {
@@ -49,8 +49,8 @@ if (request()->param('whattodo') eq 'process_dividend') {
 
 Bar("Upload Correlations");
 print generate_correlations_upload_form({
-        broker     => $broker,
-        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
 if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
@@ -87,10 +87,10 @@ if ($autoupdate) {
     if (my $error = $@) {
         my $msg    = 'Error while fetching economic events on date [' . BOM::Utility::Date->new->datetime . ']';
         my $sender = Mail::Sender->new({
-                smtp    => 'localhost',
-                from    => 'Market tools <market-tools@binary.com>',
-                to      => 'Quants <x-quants-alert@binary.com>',
-                subject => $msg,
+            smtp    => 'localhost',
+            from    => 'Market tools <market-tools@binary.com>',
+            to      => 'Quants <x-quants-alert@binary.com>',
+            subject => $msg,
         });
         $sender->MailMsg({msg => $msg});
 
@@ -119,9 +119,9 @@ if ($autoupdate) {
     my $dm = BOM::MarketData::Fetcher::EconomicEvent->new();
     eval {
         my @docs = $dm->retrieve_doc_with_view({
-                symbol       => $symbol,
-                event_name   => $event_name,
-                release_date => $release_date
+            symbol       => $symbol,
+            event_name   => $event_name,
+            release_date => $release_date
         });
         my $doc_num = scalar @docs;
         if ($doc_num) {

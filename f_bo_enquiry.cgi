@@ -24,7 +24,7 @@ if ($broker ne 'FOG') {
 
     # Client Portfolio
     print
-      "<hr>Note : This function shows the client portfolio in exactly the same way as the client sees them on the client Website.  Therefore, in the Portfolio, 'Sale Prices' of contracts include the Company markup fee.<p>";
+        "<hr>Note : This function shows the client portfolio in exactly the same way as the client sees them on the client Website.  Therefore, in the Portfolio, 'Sale Prices' of contracts include the Company markup fee.<p>";
     print "<FORM ACTION=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" METHOD=\"POST\">";
     print "Check Portfolio of LoginID : <input id='portfolio_loginID' name=loginID type=text size=10 value='$broker'>";
     print "<input type=hidden name=outputtype value=table>";
@@ -58,7 +58,7 @@ if ($broker ne 'FOG') {
     # LIST CLIENT WITHDRAWAL LIMITS
     Bar("List client withdrawal limits");
     print
-      "This function will let you view a client's payment history - i.e. how much he deposited by credit card, paypal, etc., and how much the system will let him withdraw in turn by each method.<P>";
+        "This function will let you view a client's payment history - i.e. how much he deposited by credit card, paypal, etc., and how much the system will let him withdraw in turn by each method.<P>";
 
     print "<form method=post action='" . request()->url_for('backoffice/c_listclientlimits.cgi') . "'>";
     print "LoginID : ";

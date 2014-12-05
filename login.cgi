@@ -29,17 +29,17 @@ if (request()->param('sig_response')) {
 if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('access_token'))) {
 
     my $mycookie = session_cookie({
-            loginid  => BOM::Platform::Context::request()->broker->code,
-            token    => request()->param('access_token'),
-            clerk    => $staff->{nickname},
+        loginid => BOM::Platform::Context::request()->broker->code,
+        token   => request()->param('access_token'),
+        clerk   => $staff->{nickname},
     });
     PrintContentType({'cookies' => $mycookie});
 } elsif (request()->param('whattodo') eq 'logout') {
     my $mycookie = session_cookie({
-            loginid  => "",
-            token    => "",
-            clerk    => "",
-            expires  => 1,
+        loginid => "",
+        token   => "",
+        clerk   => "",
+        expires => 1,
     });
     BOM::Platform::Auth0::loggout();
     PrintContentType({'cookies' => $mycookie});

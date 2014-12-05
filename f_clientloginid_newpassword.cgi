@@ -36,7 +36,8 @@ if (not $email) {
 my $hcstring = $email . time . 'request_password';
 my $token    = Digest::MD5::md5_hex($hcstring);
 
-my $success = BOM::Platform::Persistence::DAO::Utils::ClientPasswordRecovery::force_client_recovery_password_email_status($client->loginid, $token, $email);
+my $success =
+    BOM::Platform::Persistence::DAO::Utils::ClientPasswordRecovery::force_client_recovery_password_email_status($client->loginid, $token, $email);
 
 my $lang = request()->language;
 
@@ -70,11 +71,11 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
 
 my $result = send_email({
-        from               => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
-        to                 => $email,
-        subject            => localize('New Password Request'),
-        message            => [$lost_pass_email,],
-        use_email_template => 1,
+    from               => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
+    to                 => $email,
+    subject            => localize('New Password Request'),
+    message            => [$lost_pass_email,],
+    use_email_template => 1,
 });
 
 print '<p>New password issuance RESULT: ' . ($result) ? 'success' : 'fail' . '</p>';

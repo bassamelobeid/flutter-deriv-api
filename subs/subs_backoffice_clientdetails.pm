@@ -106,7 +106,7 @@ sub print_client_details {
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
-      || die BOM::Platform::Context::template->error(), "\n";
+        || die BOM::Platform::Context::template->error(), "\n";
 }
 
 ## build_client_statement_form #######################################
@@ -117,18 +117,18 @@ sub build_client_statement_form {
     my $broker = shift @_;
 
     return
-        "<hr><FORM ACTION=\""
-      . request()->url_for("backoffice/f_manager_history.cgi")
-      . "\" METHOD=\"POST\">"
-      . "Check Statement of LoginID : <input id='statement_loginID' name=loginID type=text size=10 value='$broker'>"
-      . "<INPUT type=hidden name=\"broker\" value=\"$broker\">"
-      . "<SELECT name=\"currency\"><option value=\"default\">client's default currency</option>"
-      . get_currency_options()
-      . "</SELECT>"
-      . "<INPUT type=hidden name=\"l\" value=\"EN\">"
-      . "&nbsp; <INPUT type=\"submit\" value='Client Statement'>"
-      . "&nbsp; <input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only "
-      . "</FORM>";
+          "<hr><FORM ACTION=\""
+        . request()->url_for("backoffice/f_manager_history.cgi")
+        . "\" METHOD=\"POST\">"
+        . "Check Statement of LoginID : <input id='statement_loginID' name=loginID type=text size=10 value='$broker'>"
+        . "<INPUT type=hidden name=\"broker\" value=\"$broker\">"
+        . "<SELECT name=\"currency\"><option value=\"default\">client's default currency</option>"
+        . get_currency_options()
+        . "</SELECT>"
+        . "<INPUT type=hidden name=\"l\" value=\"EN\">"
+        . "&nbsp; <INPUT type=\"submit\" value='Client Statement'>"
+        . "&nbsp; <input type=checkbox value=yes name=depositswithdrawalsonly>Deposits and Withdrawals only "
+        . "</FORM>";
 }
 
 ## build_client_warning_message #######################################
@@ -144,7 +144,7 @@ sub build_client_warning_message {
     my $edit_client_with_status = sub {
         my $action_type = shift;
         return '<a href="'
-          . request()->url_for(
+            . request()->url_for(
             "backoffice/f_clientloginid.cgi",
             {
                 untrusted_action      => 'insert_data',
@@ -158,7 +158,7 @@ sub build_client_warning_message {
     my $remove_client_from = sub {
         my $action_type = shift;
         return '<a href="'
-          . request()->url_for(
+            . request()->url_for(
             "backoffice/untrusted_client_edit.cgi",
             {
                 untrusted_action      => 'remove_data',
@@ -233,7 +233,7 @@ sub build_client_warning_message {
                 warning  => 'blue',
                 section  => 'Add to OK Login',
                 editlink => '<a href="'
-                  . request()->url_for(
+                    . request()->url_for(
                     "backoffice/f_clientloginid.cgi",
                     {
                         trusted_action      => 'insert_data',
@@ -242,9 +242,9 @@ sub build_client_warning_message {
                         broker              => $broker,
                         trusted_action_type => 'oklogins'
                     })
-                  . "\" $onclick>edit</a>",
+                    . "\" $onclick>edit</a>",
                 removelink => '<a href="'
-                  . request()->url_for(
+                    . request()->url_for(
                     "backoffice/untrusted_client_edit.cgi",
                     {
                         trusted_action      => 'remove_data',
@@ -252,7 +252,7 @@ sub build_client_warning_message {
                         broker              => $broker,
                         trusted_action_type => 'oklogins'
                     })
-                  . "\" $onclick>remove</a>",
+                    . "\" $onclick>remove</a>",
             });
     }
 
@@ -260,12 +260,12 @@ sub build_client_warning_message {
     my $output;
     if (@output) {
         $output =
-            '<br /><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
-          . '<th>SECTION</th>'
-          . '<th>REASON</th>'
-          . '<th>STAFF</th>'
-          . '<th>EDIT</th>'
-          . '<th>REMOVE</th>' . '</tr>';
+              '<br /><table border="1" cellpadding="2" style="background-color:#cccccc">' . '<tr>'
+            . '<th>SECTION</th>'
+            . '<th>REASON</th>'
+            . '<th>STAFF</th>'
+            . '<th>EDIT</th>'
+            . '<th>REMOVE</th>' . '</tr>';
 
         my $trusted_section;
         foreach my $output_rows (@output) {
@@ -274,23 +274,23 @@ sub build_client_warning_message {
             }
 
             $output .= '<tr>'
-              . '<td align="left" style="color:'
-              . $output_rows->{'warning'}
-              . ';"><strong>WARNING : '
-              . (uc $output_rows->{'section'})
-              . '</strong></td>'
-              . '<td><b>'
-              . $output_rows->{'reason'}
-              . '</b></td>'
-              . '<td><b>'
-              . $output_rows->{'clerk'}
-              . '</b></td>'
-              . '<td><b>'
-              . $output_rows->{'editlink'}
-              . '</b></td>'
-              . '<td><b>'
-              . $output_rows->{'removelink'}
-              . '</b></td></tr>';
+                . '<td align="left" style="color:'
+                . $output_rows->{'warning'}
+                . ';"><strong>WARNING : '
+                . (uc $output_rows->{'section'})
+                . '</strong></td>'
+                . '<td><b>'
+                . $output_rows->{'reason'}
+                . '</b></td>'
+                . '<td><b>'
+                . $output_rows->{'clerk'}
+                . '</b></td>'
+                . '<td><b>'
+                . $output_rows->{'editlink'}
+                . '</b></td>'
+                . '<td><b>'
+                . $output_rows->{'removelink'}
+                . '</b></td></tr>';
         }
 
         $output .= '</table>';

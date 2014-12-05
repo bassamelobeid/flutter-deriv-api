@@ -34,8 +34,8 @@ my $tac_url = request()->url_for(
 CLIENT:
 foreach my $loginid (@approved, @rejected) {
 
-    my $client = BOM::Platform::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
-    my $approved = $input{"${loginid}_promo"} eq 'A';
+    my $client        = BOM::Platform::Client->new({loginid => $loginid}) || die "bad loginid $loginid";
+    my $approved      = $input{"${loginid}_promo"} eq 'A';
     my $client_name   = ucfirst join(' ', (BOM::View::Language::translate_salutation($client->salutation), $client->first_name, $client->last_name));
     my $website       = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($client->broker);
     my $email_subject = localize("Your bonus request - [_1]", $loginid);
@@ -58,10 +58,10 @@ foreach my $loginid (@approved, @rejected) {
             $client->save();
             # credit with free gift
             $client->payment_free_gift(
-                    currency => $currency,
-                    amount   => $amount,
-                    remark   => 'Free gift claimed from promotional code',
-                    staff    => $clerk,
+                currency => $currency,
+                amount   => $amount,
+                remark   => 'Free gift claimed from promotional code',
+                staff    => $clerk,
             );
         }
 
@@ -76,9 +76,9 @@ foreach my $loginid (@approved, @rejected) {
                 website_name  => $website->name,
             },
             \$email_content
-          )
-          || die "approving promocode for $client: "
-          . BOM::Platform::Context::template->error
+            )
+            || die "approving promocode for $client: "
+            . BOM::Platform::Context::template->error
 
     } else {
         # reject client
@@ -101,11 +101,11 @@ foreach my $loginid (@approved, @rejected) {
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-                from               => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
-                to                 => $client->email,
-                subject            => $email_subject,
-                message            => [$email_content],
-                use_email_template => 1,
+            from               => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
+            to                 => $client->email,
+            subject            => $email_subject,
+            message            => [$email_content],
+            use_email_template => 1,
         });
         $client->add_note($email_subject, $email_content);
     }

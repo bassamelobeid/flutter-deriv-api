@@ -13,7 +13,7 @@ sub USD_AggregateOutstandingBets_ongivendate {
             operation   => 'read_collector',
         })->connection_parameters;
     my $dbh =
-      DBI->connect('dbi:Pg:dbname=' . $conn_args->{'database'} . ';host=' . $conn_args->{'host'}, $conn_args->{'user'}, $conn_args->{'password'});
+        DBI->connect('dbi:Pg:dbname=' . $conn_args->{'database'} . ';host=' . $conn_args->{'host'}, $conn_args->{'user'}, $conn_args->{'password'});
 
     my @result = $dbh->selectrow_array(
         qq{ SELECT market_value

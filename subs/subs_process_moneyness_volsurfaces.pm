@@ -74,7 +74,7 @@ sub compare_uploaded_moneyness_surface {
 
         if ($volsurface) {
             $item->{SD_surface} = {
-                table => BOM::MarketData::Display::VolatilitySurface->new(surface => $volsurface)->html_volsurface_in_table({class => 'SD'}),
+                table          => BOM::MarketData::Display::VolatilitySurface->new(surface => $volsurface)->html_volsurface_in_table({class => 'SD'}),
                 recorded_epoch => $volsurface->recorded_date->epoch,
                 spot_reference => $volsurface->spot_reference,
             };
@@ -83,13 +83,13 @@ sub compare_uploaded_moneyness_surface {
             if ($existing) {
                 eval {
                     my ($found_big_difference, undef, @comparison_output) =
-                      BOM::MarketData::Display::VolatilitySurface->new(surface => $existing)->print_comparison_between_volsurface({
+                        BOM::MarketData::Display::VolatilitySurface->new(surface => $existing)->print_comparison_between_volsurface({
                             ref_surface        => $volsurface,
                             warn_diff          => 0.03,
                             quiet              => 1,
                             ref_surface_source => 'SD',
                             surface_source     => 'Existing',
-                      });
+                        });
                     if ($found_big_difference) {
                         $item->{big_diff}         = 1;
                         $item->{big_diff_between} = 'Existing and SD';

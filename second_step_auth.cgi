@@ -37,7 +37,7 @@ if ($sig_request) {
 
     BOM::Platform::Context::template->process('backoffice/global/javascripts.html.tt',
         {javascript => BOM::View::JavascriptConfig->instance->config_for()})
-      || die BOM::Platform::Context::template->error;
+        || die BOM::Platform::Context::template->error;
     foreach my $js_file (BOM::View::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
     }

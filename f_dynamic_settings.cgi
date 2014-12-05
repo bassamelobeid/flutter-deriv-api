@@ -42,11 +42,11 @@ if (request()->param('page') eq 'global') {
 
 if (scalar @{$settings_list;} == 0) {
     print "<b>There is no setting in this Group!</b><br />Go to <a style=\"color:white\" href=\""
-      . request()->url_for('backoffice/f_broker_login.cgi', {})
-      . "#dynamic_settings\">Login Page</a> and try again";
+        . request()->url_for('backoffice/f_broker_login.cgi', {})
+        . "#dynamic_settings\">Login Page</a> and try again";
     if (request()->param('group') eq 'others') {
         print
-          "<br /><br /><b>We keep \"others\" group to show uncategorized settings, the reason that you can't see any settings in this page is beacuse there is no uncategorized setting left.</b>";
+            "<br /><br /><b>We keep \"others\" group to show uncategorized settings, the reason that you can't see any settings in this page is beacuse there is no uncategorized setting left.</b>";
     }
     code_exit_BO();
 }
@@ -58,9 +58,9 @@ if (not $localhost->has_role('couchdb_master')) {
     print "<div id=\"message\"><div id=\"error\">This server is not Dynamic Settings Master and your changes won't be saved.</div></div><br />";
 } else {
     BOM::Platform::Backoffice::Helper::DynamicSettings::save_settings({
-            'settings'          => request()->params,
-            'settings_in_group' => $settings_list,
-            'save'              => request()->param('submitted'),
+        'settings'          => request()->params,
+        'settings_in_group' => $settings_list,
+        'save'              => request()->param('submitted'),
     });
 }
 my @send_to_template = ();
@@ -74,13 +74,17 @@ if (request()->param('page') eq 'global') {
 }
 
 push @send_to_template,
-  BOM::Platform::Backoffice::Helper::DynamicSettings::generate_settings_branch({
+    BOM::Platform::Backoffice::Helper::DynamicSettings::generate_settings_branch({
         settings          => $all_settings,
         settings_in_group => $settings_list,
         group             => request()->param('group'),
         title             => $title,
         submitted         => request()->param('page'),
-  });
+    });
 
-BOM::Platform::Context::template->process('backoffice/dynamic_settings.html.tt', {'settings' => \@send_to_template,});
+BOM::Platform::Context::template->process(
+    'backoffice/dynamic_settings.html.tt',
+    {
+        'settings' => \@send_to_template,
+    });
 code_exit_BO();

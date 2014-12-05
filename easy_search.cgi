@@ -64,7 +64,7 @@ if (my $search = $params{search}) {
 }
 
 $tt->process('backoffice/easy_search.html.tt', $stash)
-  || die "Template process failed: " . $tt->error() . "\n";
+    || die "Template process failed: " . $tt->error() . "\n";
 
 code_exit_BO();
 

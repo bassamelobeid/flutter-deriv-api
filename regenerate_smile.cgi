@@ -26,11 +26,13 @@ $altered_param = from_json($altered_param);
 
 my $response;
 try {
-    my $underlying                 = BOM::Market::Underlying->new($symbol);
-    my $volsurface                 = BOM::MarketData::Fetcher::VolSurface->new()->fetch_surface({underlying => $underlying,});
-    my %ori_surface                = map { $_ => $volsurface->surface->{$_}->{smile} } keys %{$volsurface->surface};
-    my $calibrated_surface         = $volsurface->clone({parameterization => {values => from_json($ori_param)}})->calibrated_surface();
-    my $altered_volsurface         = $volsurface->clone({parameterization => {values => $altered_param}});
+    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new()->fetch_surface({
+        underlying => $underlying,
+    });
+    my %ori_surface = map { $_ => $volsurface->surface->{$_}->{smile} } keys %{$volsurface->surface};
+    my $calibrated_surface = $volsurface->clone({parameterization => {values => from_json($ori_param)}})->calibrated_surface();
+    my $altered_volsurface = $volsurface->clone({parameterization => {values => $altered_param}});
     my @altered_param_in_array     = map { $altered_param->{$_} } @{$altered_volsurface->calibration_param_names};
     my $new_calibration_error      = $altered_volsurface->function_to_optimize(\@altered_param_in_array);
     my $altered_calibrated_surface = $altered_volsurface->calibrated_surface();
@@ -38,7 +40,7 @@ try {
     my $display_altered;
     foreach my $tenor (keys %$altered_calibrated_surface) {
         %{$display_altered->{$tenor}} =
-          map { $_ => roundnear(0.0001, $altered_calibrated_surface->{$tenor}->{$_}) } keys %{$altered_calibrated_surface->{$tenor}};
+            map { $_ => roundnear(0.0001, $altered_calibrated_surface->{$tenor}->{$_}) } keys %{$altered_calibrated_surface->{$tenor}};
     }
 
     my @x_axis = @{$volsurface->moneynesses};
