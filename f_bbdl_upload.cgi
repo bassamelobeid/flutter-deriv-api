@@ -29,8 +29,8 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
 }
 
 my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
-$bbdl->ftp_server_ip($server_ip);
-my $ftp = $bbdl->login;
+$bbdl->sftp_server_ip($server_ip);
+my $sftp = $bbdl->login;
 
 my $message;
 if (length($filename) >= 25) {
@@ -45,15 +45,16 @@ if (length($filename) >= 25) {
         $replyfile = chomp($replyfile);
     }
 
-    if ($ftp->put($temp_dir . '/' . $filename, $filename)) {
-        $message = '<p>Successfully uploaded file[' . $filename . '] to server[' . $server_ip . ']. Your response file is ' . $replyfile . '</p>';
+    $sftp->put($temp_dir . '/' . $filename, $filename);
+    if ($sftp->error) {
+        $message = "<p>Upload Failed: " . $sftp->error . '</p>';
     } else {
-        $message = "<p>Upload Failed: " . $ftp->message . '</p>';
+        $message = '<p>Successfully uploaded file[' . $filename . '] to server[' . $server_ip . ']. Your response file is ' . $replyfile . '</p>';
     }
 
     print $message;
 }
 
-$ftp->quit;
+$sftp->disconnect;
 
 code_exit_BO();
