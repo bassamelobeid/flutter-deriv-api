@@ -64,9 +64,7 @@ $text =~ s/\n\r/\n/g;
 my @lines = split(/\n/, $text);
 
 if ($filen eq 'editvol') {
-
     my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
-
     my $market = $underlying->market->name;
     my $model =
         ($market eq 'indices')
@@ -84,7 +82,6 @@ if ($filen eq 'editvol') {
         my $day = shift @pieces;
         my %spread;
         foreach my $point (@points) {
-
             if ($point =~ /D_spread/) {
                 my $spread_point = $point;
                 $spread_point =~ s/D_spread//g;
@@ -98,7 +95,6 @@ if ($filen eq 'editvol') {
             }
 
         }
-
         $surface_data->{$day} = {
             smile      => \%smile,
             vol_spread => \%spread,
@@ -107,11 +103,10 @@ if ($filen eq 'editvol') {
     my %surface_args = (
         underlying    => $underlying,
         surface       => $surface_data,
-        recorded_date => BOM::Utility::Date->new
+        recorded_date => BOM::Utility::Date->new,
+        (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
 
-    $surface_args{spot_reference} = request()->param('spot_reference')
-        if $model eq 'BOM::MarketData::VolSurface::Moneyness';
     my $surface = $model->new(%surface_args);
 
     my $dm                  = BOM::MarketData::Fetcher::VolSurface->new;
@@ -131,7 +126,8 @@ if ($filen eq 'editvol') {
         print @output;
 
         if (!$surface->is_valid) {
-            print "<P> $surface->validation_error </P>";
+            print "<P> "
+            . $surface->validation_error . " </P>";
 
         } elsif ($big_differences) {
             print "<P>$error_message</P>";
@@ -143,6 +139,7 @@ if ($filen eq 'editvol') {
 
     code_exit_BO();
 }
+
 if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
     my $symbol = $1;
     my $rates  = {};
