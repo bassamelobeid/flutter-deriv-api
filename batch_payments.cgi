@@ -87,9 +87,9 @@ if ($confirm) {
 
 my @hdgs = ('Line Number', 'Login Id', 'Name', 'debit/credit', 'Payment Type', 'Trace ID', 'Payment Processor', 'Currency', 'Amount', 'Comment');
 my $client_account_table =
-  '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px"><caption>Batch Credit/Debit details</caption>'
-  . '<tr>'
-  . join('', map { "<th>$_</th>" } @hdgs) . '</tr>';
+    '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px"><caption>Batch Credit/Debit details</caption>'
+    . '<tr>'
+    . join('', map { "<th>$_</th>" } @hdgs) . '</tr>';
 
 my %summary_amount_by_currency;
 my @invalid_lines;
@@ -114,13 +114,13 @@ read_csv_row_and_callback(
         my $client;
         my $error;
         {
-            $cols_found == $cols_expected                                           or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
-            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) }   or $error = ($@ || 'No such client'), last;
-            $currency ne $client->currency                                          and $error = "client does not trade in currency [$currency]", last;
-            $action !~ /^(debit|credit)$/                                           and $error = "Invalid transaction type [$action]", last;
-            $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0                             and $error = "Invalid amount [$amount]", last;
-            ($payment_type ne 'affiliate_reward' && $amount > 1000)                 and $error = 'Amount not allowed to exceed 1000',  last;
-            !$statement_comment                                                     and $error = 'Statement comment can not be empty', last;
+            $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
+            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
+            $currency ne $client->currency and $error = "client does not trade in currency [$currency]", last;
+            $action !~ /^(debit|credit)$/  and $error = "Invalid transaction type [$action]",            last;
+            $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
+            ($payment_type ne 'affiliate_reward' && $amount > 1000) and $error = 'Amount not allowed to exceed 1000', last;
+            !$statement_comment and $error = 'Statement comment can not be empty', last;
 
             if ($action eq 'debit') {
                 my $balance = $client->default_account->balance;
@@ -132,8 +132,8 @@ read_csv_row_and_callback(
 
             # check pontential duplicate entry
             my $payment_mapper = BOM::Platform::Data::Persistence::DataMapper::Payment->new({
-                    client_loginid => $login_id,
-                    currency_code  => $currency,
+                client_loginid => $login_id,
+                currency_code  => $currency,
             });
 
             chomp($statement_comment);
@@ -207,9 +207,9 @@ $client_account_table .= '</table>';
 my $summary_table;
 if (scalar @invalid_lines > 0) {
     $summary_table .=
-        '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px;color:red;">'
-      . '<caption>Error(s) found, please correct the line(s) below</caption>'
-      . '<tr><th>Error</th></tr>';
+          '<table border="1" width="100%" bgcolor="#ffffff" style="border-collapse:collapse;margin-bottom:20px;color:red;">'
+        . '<caption>Error(s) found, please correct the line(s) below</caption>'
+        . '<tr><th>Error</th></tr>';
 
     foreach my $invalid_line (@invalid_lines) {
         $summary_table .= '<tr><td>' . $invalid_line . '</td></tr>';
@@ -240,17 +240,17 @@ print $client_account_table;
 
 if ($preview and @invalid_lines == 0) {
     print "<div class=\"inner_bo_box bo_ajax_form\"><h2>Make Dual Control Code</h2><form action=\""
-      . request()->url_for("backoffice/f_makedcc.cgi")
-      . "\" method=\"post\">"
-      . "<input type=hidden name=\"dcctype\" value=\"file_content\">"
-      . "<input type=hidden name=\"broker\" value=\"$broker\">"
-      . "<input type=hidden name=\"l\" value=\"EN\">"
-      . '<input type="hidden" name="purpose" value="batch clients payments" />'
-      . "<input type=hidden name=\"file_location\" value=\"$payments_csv_file\">"
-      . "Make sure you check the above details before you make dual control code"
-      . "<br />Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
-      . "<br /><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
-      . "</form></div>";
+        . request()->url_for("backoffice/f_makedcc.cgi")
+        . "\" method=\"post\">"
+        . "<input type=hidden name=\"dcctype\" value=\"file_content\">"
+        . "<input type=hidden name=\"broker\" value=\"$broker\">"
+        . "<input type=hidden name=\"l\" value=\"EN\">"
+        . '<input type="hidden" name="purpose" value="batch clients payments" />'
+        . "<input type=hidden name=\"file_location\" value=\"$payments_csv_file\">"
+        . "Make sure you check the above details before you make dual control code"
+        . "<br />Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
+        . "<br /><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
+        . "</form></div>";
 
     print qq[<div class="inner_bo_box"><h2>Confirm credit/debit clients</h2>
         <form onsubmit="confirm('Are you sure?')">
@@ -267,10 +267,10 @@ if ($preview and @invalid_lines == 0) {
     unshift @clients_has_been_processed, 'These clients have been debited/credited using the backoffice batch debit/credit tool by ' . $clerk;
 
     send_email({
-            'from'    => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
-            'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
-            'subject' => 'Batch debit/credit client account on ' . BOM::Utility::Date->new->date_ddmmmyy,
-            'message' => \@clients_has_been_processed,
+        'from'    => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
+        'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
+        'subject' => 'Batch debit/credit client account on ' . BOM::Utility::Date->new->date_ddmmmyy,
+        'message' => \@clients_has_been_processed,
     });
 }
 

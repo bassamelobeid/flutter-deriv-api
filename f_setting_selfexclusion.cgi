@@ -26,18 +26,18 @@ if ($loginid =~ /^VRT/) {
 }
 
 my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid})
-  || die "[$0] Could not get the client object instance for client [$loginid]";
+    || die "[$0] Could not get the client object instance for client [$loginid]";
 
 my $broker = $client->broker;
 
 my $self_exclusion_form = BOM::View::CGIForm::get_self_exclusion_form({
-        client           => $client,
-        lang             => request()->language,
-        from_back_office => 1,
+    client           => $client,
+    lang             => request()->language,
+    from_back_office => 1,
 });
 
 my $page =
-  '<h2> The Client [loginid: ' . $loginid . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
+    '<h2> The Client [loginid: ' . $loginid . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
 #to generate existing limits
 if (my $self_exclusion = $client->self_exclusion) {
@@ -55,20 +55,22 @@ if (my $self_exclusion = $client->self_exclusion) {
 
     if ($self_exclusion->max_balance) {
         $page .= '<li>'
-          . localize('Maximum account cash balance is currently set to <strong>[_1] [_2]</strong>', $all_currencies, $self_exclusion->max_balance)
-          . '</li>';
+            . localize('Maximum account cash balance is currently set to <strong>[_1] [_2]</strong>', $all_currencies, $self_exclusion->max_balance)
+            . '</li>';
     }
     if ($self_exclusion->max_turnover) {
         $page .= '<li>'
-          . localize('Daily Turnover limit is currently set to <strong>[_1] [_2]</strong>', $all_currencies, $self_exclusion->max_turnover) . '</li>';
+            . localize('Daily Turnover limit is currently set to <strong>[_1] [_2]</strong>', $all_currencies, $self_exclusion->max_turnover)
+            . '</li>';
     }
     if ($self_exclusion->max_open_bets) {
         $page .=
-          '<li>' . localize('Maximum number of open positions is currently set to <strong>[_1]</strong>', $self_exclusion->max_open_bets) . '</li>';
+            '<li>' . localize('Maximum number of open positions is currently set to <strong>[_1]</strong>', $self_exclusion->max_open_bets) . '</li>';
     }
     if ($self_exclusion->session_duration_limit) {
         $page .= '<li>'
-          . localize('Session duration limit is currently set to <strong>[_1] minutes.</strong>', $self_exclusion->session_duration_limit) . '</li>';
+            . localize('Session duration limit is currently set to <strong>[_1] minutes.</strong>', $self_exclusion->session_duration_limit)
+            . '</li>';
     }
     if ($self_exclusion->exclude_until) {
         $page .= '<li>' . localize('Website exclusion is currently set to <strong>[_1].</strong>', $self_exclusion->exclude_until) . '</li>';
@@ -109,7 +111,7 @@ if ($client->save) {
     #print message inform Client everything is ok
     print "<p class=\"aligncenter\">Thank you. the client settings have been updated.</p>";
     print "<a href=\""
-      . request()->url_for(
+        . request()->url_for(
         "backoffice/f_clientloginid_edit.cgi",
         {
             broker  => $broker,

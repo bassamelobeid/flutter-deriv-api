@@ -25,9 +25,9 @@ Bar("Searching for LoginIDs corresponding to $ip");
 my $last_login_age = request()->param('lastndays');
 
 my @login_history_result = BOM::Platform::Persistence::DAO::Report::ClientAccountReport::get_logins_by_ip_and_login_age({
-        ip             => $ip,
-        broker         => $broker,
-        last_login_age => $last_login_age,
+    ip             => $ip,
+    broker         => $broker,
+    last_login_age => $last_login_age,
 });
 
 if (scalar @login_history_result == 0) {

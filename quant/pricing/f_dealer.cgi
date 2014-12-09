@@ -41,16 +41,16 @@ my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
 my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants . ','
-  . BOM::Platform::Context::request()->website->config->get('customer_support.email');
+    . BOM::Platform::Context::request()->website->config->get('customer_support.email');
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') eq 'closeatzero') {
 
-    if ($currency !~ /^\w\w\w$/) { print "Error with curr " . request()->param('curr');   code_exit_BO(); }
-    if ($price !~ /^\d*\.?\d*$/) { print "Error with price " . request()->param('price'); code_exit_BO(); }
-    if ($price eq "") { print "Error : no price entered"; code_exit_BO(); }
+    if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . request()->param('curr');       code_exit_BO(); }
+    if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . request()->param('price');     code_exit_BO(); }
+    if ($price eq "")               { print "Error : no price entered";                          code_exit_BO(); }
     if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . request()->param('loginid'); code_exit_BO(); }
-    if ($betcode !~ /^[\w\.\-]+$/) { print "Error with betcode $betcode"; code_exit_BO(); }
+    if ($betcode !~ /^[\w\.\-]+$/)  { print "Error with betcode $betcode";                       code_exit_BO(); }
     if ($qty !~ /^\d+$/ or request()->param('qty') > 50) { print "Error with qty " . request()->param('qty'); code_exit_BO(); }
 
     my $client;
@@ -170,13 +170,13 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-      ->append($now->datetime
-          . "GMT $ttype($buysell) $qty @ $currency$price $betcode $loginID clerk=$clerk fellow="
-          . request()->param('DCstaff')
-          . " DCcode="
-          . request()->param('DCcode') . " ["
-          . request()->param('comment')
-          . "] $ENV{'REMOTE_ADDR'}");
+        ->append($now->datetime
+            . "GMT $ttype($buysell) $qty @ $currency$price $betcode $loginID clerk=$clerk fellow="
+            . request()->param('DCstaff')
+            . " DCcode="
+            . request()->param('DCcode') . " ["
+            . request()->param('comment')
+            . "] $ENV{'REMOTE_ADDR'}");
 
     Bar("Done");
     print "Done!<P>
@@ -210,10 +210,10 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
     }
 
     send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->system->email,
-            to      => $to,
-            subject => $subject,
-            message => \@body,
+        from    => BOM::Platform::Runtime->instance->app_config->system->email,
+        to      => $to,
+        subject => $subject,
+        message => \@body,
     });
 
     code_exit_BO();
@@ -223,7 +223,7 @@ Bar("MAKE TRANSACTION IN CLIENT ACCOUNT");
 print qq~
 <table width=100% border=0 bgcolor=ffffce><tr><td width=100% bgcolor=ffffce>
 <FORM name=maketrans onsubmit="return confirm('Are you sure ? Please double-check all inputs.');" method=POST action="~
-  . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
+    . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
 <input type=hidden name=whattodo value=maketrans>
 <input type=hidden name=broker value=$broker>
 <select name=buysell><option selected>SELL<option>BUY</select>
@@ -252,7 +252,7 @@ Bar("CLOSE CONTRACT AT ZERO PRICE");
 print qq~
 <table width=100% border=0 bgcolor=ffffce><tr><td width=100% bgcolor=ffffce>
 <FORM name=maketrans onsubmit="return confirm('Are you sure ? Please double-check all inputs.');" method=POST action="~
-  . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
+    . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
 <input type=hidden name=whattodo value=closeatzero>
 <input type=hidden name=broker value=$broker>
 <select name=buysell><option selected>SELL</select>

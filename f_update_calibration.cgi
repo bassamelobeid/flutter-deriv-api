@@ -34,7 +34,9 @@ my $clone = $surface->clone({
             calibration_error => $calibration_error
         }});
 
-my $response = {success => 1,};
+my $response = {
+    success => 1,
+};
 
 try { $clone->save } catch { $response = {success => 0, reason => $_} };
 

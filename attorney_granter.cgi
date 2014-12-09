@@ -19,9 +19,9 @@ sub log_attorney_action {
     my %args   = @_;
     my $logger = get_logger;
     $logger->info("STAFF:$args{staff}"
-          . ($args{comment} ? ",GRANTER:$args{granter}" : '')
-          . ",ATTORNEY:$args{attorney},ACTION:$args{action}"
-          . ($args{comment} ? ",$args{comment}" : ''));
+            . ($args{comment} ? ",GRANTER:$args{granter}" : '')
+            . ",ATTORNEY:$args{attorney},ACTION:$args{action}"
+            . ($args{comment} ? ",$args{comment}" : ''));
 }
 
 PrintContentType();
@@ -47,7 +47,11 @@ if ($action eq 'show_attorneys') {
 
     Bar('All Attorneys in DB');
 
-    BOM::Platform::Context::template->process('backoffice/attorneys.html.tt', {attorneys => $attorneys,});
+    BOM::Platform::Context::template->process(
+        'backoffice/attorneys.html.tt',
+        {
+            attorneys => $attorneys,
+        });
 } elsif ($action eq 'add_attorney') {
     my ($loginid, $company_name, $url, $approved) = map {
         my $param = request()->param($_);
@@ -74,9 +78,9 @@ if ($action eq 'show_attorneys') {
             }))
     {
         print JSON::to_json({
-                success => 1,
-                broker  => $attorney->broker,
-                %$row,
+            success => 1,
+            broker  => $attorney->broker,
+            %$row,
         });
         log_attorney_action(
             staff    => $clerk,
@@ -96,12 +100,16 @@ if ($action eq 'show_attorneys') {
 
     if (!($attorney = BOM::Platform::Client::get_instance({loginid => $loginid}))) {
         print JSON::to_json({'error' => "Client $loginid does not exist"});
-    } elsif (my $row = BOM::Platform::Persistence::DAO::AttorneyGranter::delete_attorney({attorney => $attorney,})) {
+    } elsif (
+        my $row = BOM::Platform::Persistence::DAO::AttorneyGranter::delete_attorney({
+                attorney => $attorney,
+            }))
+    {
         File::Path::remove_tree(
             BOM::Platform::Runtime->instance->app_config->system->directory->db
-              . "/attorney_granters/"
-              . $attorney->broker
-              . "/letter_of_attorney/$loginid",
+                . "/attorney_granters/"
+                . $attorney->broker
+                . "/letter_of_attorney/$loginid",
             {error => \my $err});
         if (@$err) {
             get_logger->error("while deleting attorney $loginid:");
@@ -111,9 +119,9 @@ if ($action eq 'show_attorneys') {
             }
         }
         print JSON::to_json({
-                success => 1,
-                broker  => $attorney->broker,
-                %$row,
+            success => 1,
+            broker  => $attorney->broker,
+            %$row,
         });
         log_attorney_action(
             staff    => $clerk,
@@ -131,11 +139,11 @@ if ($action eq 'show_attorneys') {
         my $attorney_as_client = $attorney->client;
 
         if ($attorney_as_client) {
-            Bar(    'All Granters for Attorney ('
-                  . $attorney_as_client->first_name . ' '
-                  . $attorney_as_client->last_name . ' - '
-                  . $attorney_client_loginid
-                  . ')');
+            Bar(      'All Granters for Attorney ('
+                    . $attorney_as_client->first_name . ' '
+                    . $attorney_as_client->last_name . ' - '
+                    . $attorney_client_loginid
+                    . ')');
 
             BOM::Platform::Context::template->process(
                 'backoffice/attorney_granters.html.tt',
@@ -187,10 +195,10 @@ if ($action eq 'show_attorneys') {
         # NOTE: $broker and $attorney->broker may differ. The letter directory depends on the
         # attorney's broker code not on the broker code this script is called with.
         my $letter_of_attorney_dir =
-          (     BOM::Platform::Runtime->instance->app_config->system->directory->db
-              . "/attorney_granters/"
-              . $attorney->broker
-              . "/letter_of_attorney/$attorney_client_loginid");
+            (     BOM::Platform::Runtime->instance->app_config->system->directory->db
+                . "/attorney_granters/"
+                . $attorney->broker
+                . "/letter_of_attorney/$attorney_client_loginid");
 
         if (not -d $letter_of_attorney_dir) {
             Path::Tiny::path($letter_of_attorney_dir)->mkpath;
@@ -203,7 +211,7 @@ if ($action eq 'show_attorneys') {
             if ($! == Errno::EXDEV()) {
                 require File::Copy;
                 File::Copy::copy($cgi->tmpFileName($letter_of_attorney_pdf), $letter_filename)
-                  or die "[$0] could not write to $letter_filename $!";
+                    or die "[$0] could not write to $letter_filename $!";
             } else {
                 die "[$0] could not write to $letter_filename $!";
             }
@@ -224,13 +232,13 @@ if ($action eq 'show_attorneys') {
         for my $granter_loginid (sort keys %$result) {
             my $res = $result->{$granter_loginid};
             print '<p><b>OK. '
-              . ($map{$res} // 'If you see this, something strange has happened. Not sure if I added/updated') . ' ('
-              . $granter_loginid
-              . ') as granter of attorney '
-              . $attorney->first_name . ' '
-              . $attorney->last_name . '('
-              . $attorney->loginid
-              . ').</b></p>';
+                . ($map{$res} // 'If you see this, something strange has happened. Not sure if I added/updated') . ' ('
+                . $granter_loginid
+                . ') as granter of attorney '
+                . $attorney->first_name . ' '
+                . $attorney->last_name . '('
+                . $attorney->loginid
+                . ').</b></p>';
             log_attorney_action(
                 staff    => $clerk,
                 granter  => $granter_loginid,
@@ -239,9 +247,9 @@ if ($action eq 'show_attorneys') {
             );
         }
         print '<input type="hidden" id="added_attorney_id" value="'
-          . $attorney->loginid . '" />'
-          . '<input type="hidden" id="added_attorney_total_granters" value="'
-          . BOM::Platform::Persistence::DAO::AttorneyGranter::get_number_of_granters({
+            . $attorney->loginid . '" />'
+            . '<input type="hidden" id="added_attorney_total_granters" value="'
+            . BOM::Platform::Persistence::DAO::AttorneyGranter::get_number_of_granters({
                 attorney_client_loginid => $attorney->loginid,
                 broker                  => $attorney->broker,
             }) . '" />';
@@ -290,10 +298,10 @@ if ($action eq 'show_attorneys') {
                 granter_loginids => [$granter_loginid],
             }))
     {
-        unlink( BOM::Platform::Runtime->instance->app_config->system->directory->db
-              . "/attorney_granters/"
-              . $attorney->broker
-              . "/letter_of_attorney/$attorney_client_loginid/$granter_loginid.pdf");
+        unlink(   BOM::Platform::Runtime->instance->app_config->system->directory->db
+                . "/attorney_granters/"
+                . $attorney->broker
+                . "/letter_of_attorney/$attorney_client_loginid/$granter_loginid.pdf");
         print "<h1>Granter $granter_loginid removed from attorney $attorney_client_loginid.</h1>";
         log_attorney_action(
             staff    => $clerk,
@@ -306,15 +314,15 @@ if ($action eq 'show_attorneys') {
     }
 
     print '<p>Redirecting in 1 seconds... or <a href="'
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/attorney_granter.cgi',
         {
             broker                  => $broker,
             action                  => "show_granters",
             attorney_client_loginid => $attorney_client_loginid
         })
-      . '">go back</a> <script>setTimeout(function(){window.location.href=\''
-      . request()->url_for(
+        . '">go back</a> <script>setTimeout(function(){window.location.href=\''
+        . request()->url_for(
         'backoffice/attorney_granter.cgi',
         {
             broker                  => $broker,

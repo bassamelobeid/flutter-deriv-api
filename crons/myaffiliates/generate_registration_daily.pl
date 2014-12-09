@@ -20,10 +20,10 @@ sub run {
 
     my $result = BOM::Platform::MyAffiliates::GenerateRegistrationDaily->new->run;
     send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->system->email,
-            to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-            subject => 'CRON registrations: Report for ' . $result->{start_time}->datetime_yyyymmdd_hhmmss_TZ,
-            message => $result->{report},
+        from    => BOM::Platform::Runtime->instance->app_config->system->email,
+        to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+        subject => 'CRON registrations: Report for ' . $result->{start_time}->datetime_yyyymmdd_hhmmss_TZ,
+        message => $result->{report},
     });
 }
 

@@ -34,7 +34,7 @@ sub BrokerPresentation {
 
     BOM::Platform::Context::template->process('backoffice/global/javascripts.html.tt',
         {javascript => BOM::View::JavascriptConfig->instance->config_for()})
-      || die BOM::Platform::Context::template->error;
+        || die BOM::Platform::Context::template->error;
 
     foreach my $js_file (BOM::View::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
@@ -43,7 +43,7 @@ sub BrokerPresentation {
     print '</head>';
     print '<div class="EN" id="language_select" style="display:none"><span class="langsel">English</span></div>';
     print
-      '<body class="BlueTopBack" marginheight="0" marginwidth="0" topmargin="0" bottommargin="0" leftmargin="0" rightmargin="0" style="margin:0px;">';
+        '<body class="BlueTopBack" marginheight="0" marginwidth="0" topmargin="0" bottommargin="0" leftmargin="0" rightmargin="0" style="margin:0px;">';
 
     if (not $noDisplayOfTopMenu) {
         vk_BOtopPRES();
@@ -132,7 +132,7 @@ sub ServerWarningBar {
  </td></tr></table>
  </td></tr><tr>
  <td colspan="2" style="background-repeat: repeat-x;" background="~
-      . request()->url_for('images/topborder.gif', undef, undef, {internal_static => 1}) . qq~">
+        . request()->url_for('images/topborder.gif', undef, undef, {internal_static => 1}) . qq~">
  <img src="~ . request()->url_for('images/blank.gif', undef, undef, {internal_static => 1}) . qq~" height="16" width="1"></td>
  </tr></table>~;
 }
@@ -154,10 +154,10 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
   <tr>
    <td bgcolor="#2A3052"><a href="$vk_BOurl" title="Back Office Home Page">
    <img border="0" src="~
-      . request()->url_for('images/bo_sign.jpg', undef, undef, {internal_static => 1}) . qq~" width="347" height="68" alt="Back Office Home Page">
+        . request()->url_for('images/bo_sign.jpg', undef, undef, {internal_static => 1}) . qq~" width="347" height="68" alt="Back Office Home Page">
    </a></td>
    <td width="100%" bgcolor="#2A3052" align="right"><img border="0" src="~
-      . request()->url_for('images/bo_logo.jpg', undef, undef, {internal_static => 1}) . qq~" width="489" height="68"></td>
+        . request()->url_for('images/bo_logo.jpg', undef, undef, {internal_static => 1}) . qq~" width="489" height="68"></td>
   </tr>
   <tr><td colspan="2" bgcolor="#E88024" style="height:4px"></td></tr>
  </table>~;
@@ -177,92 +177,92 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
 							<tr>
 								<td><img src="~ . request()->url_for('images/xpicon1.gif', undef, undef, {internal_static => 1}) . qq~" height="32" width="31"></td>
 								<td valign="bottom"><img src="~
-      . request()->url_for('images/xptitle.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="110"></td>
+        . request()->url_for('images/xptitle.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="110"></td>
 								<td valign="bottom"><img src="~
-      . request()->url_for('images/xpexpand1.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="25"></td>
+        . request()->url_for('images/xpexpand1.gif', undef, undef, {internal_static => 1}) . qq~" height="25" width="25"></td>
 							</tr>
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_broker_login.cgi',
         {
             _r     => $rand,
             broker => $broker
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Login Page</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Login Page</a>
 								</td>
 							</tr>
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_bo_enquiry.cgi',
         {
             _r     => $rand,
             broker => $broker
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Transaction Reports</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Transaction Reports</a>
 								</td>
 							</tr>
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_accountingreports.cgi',
         {
             _r     => $rand,
             broker => $broker
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Accounting Reports</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Accounting Reports</a>
 								</td>
 							</tr>
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_manager.cgi',
         {
             _r     => $rand,
             broker => $broker
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Deposits & Withdrawals</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Deposits & Withdrawals</a>
 								</td>
 							</tr>
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_clientloginid.cgi',
         {
             _r     => $rand,
             broker => $broker
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Client Management</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Client Management</a>
 								</td>
 							</tr>
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_rtquoteslogin.cgi',
         {
             _r     => $rand,
             broker => $broker
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Realtime Feeds</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Realtime Feeds</a>
 								</td>
 							</tr>
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/login.cgi',
         {
             _r       => $rand,
             whattodo => 'logout'
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Log Out</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Log Out</a>
 								</td>
 							</tr>
 							<tr>
@@ -271,13 +271,13 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
 							<tr>
 								<td colspan="3" class="ParamTblCell" style="padding-bottom: 3px; padding-top: 3px;" width="$vk_BOmenuWidth">
 									<a href="~
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_investigative.cgi',
         {
             _r     => $rand,
             broker => $broker
         })
-      . qq~" class="Blue" style="margin-left: 10px;">Investigative Tools</a>
+        . qq~" class="Blue" style="margin-left: 10px;">Investigative Tools</a>
 								</td>
 							</tr>
       </tbody>

@@ -63,16 +63,16 @@ if ($reason =~ /SELECT A REASON/) {
 ## BUILD MESSAGE TO PRINT TO SCREEN                                 ##
 ######################################################################
 my $insert_error_msg =
-  "<br /><font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has not been saved<br /><br />";
+    "<br /><font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has not been saved<br /><br />";
 
 my $insert_success_msg =
-  "<br /><font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has been saved successfully<br /><br />";
+    "<br /><font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has been saved successfully<br /><br />";
 
 my $remove_error_msg =
-  "<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to remove this client <b>$clientID</b>. Please try again.<br /><br />";
+    "<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to remove this client <b>$clientID</b>. Please try again.<br /><br />";
 
 my $remove_success_msg =
-  "<br /><font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has been removed successfully<br /><br />";
+    "<br /><font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$clientID $reason ($clerk)</b>&nbsp;&nbsp;has been removed successfully<br /><br />";
 
 ######################################################################
 ## ALLOW OK LOGINS                                                  ##
@@ -104,8 +104,8 @@ if ($action_type eq 'oklogins') {
 # handle invalid login
 if (@invalid_logins) {
     print '<br /><font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to save these invalid login ID: <b>'
-      . join(', ', @invalid_logins)
-      . '</b><br /><br />';
+        . join(', ', @invalid_logins)
+        . '</b><br /><br />';
 }
 
 code_exit_BO();

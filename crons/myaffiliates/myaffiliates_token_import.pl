@@ -12,8 +12,8 @@ BOM::Utility::Log4perl::init_log4perl_console;
 system_initialize();
 
 my $connection_builder = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
-        broker_code => 'FOG',
-        operation   => 'write_collector',
+    broker_code => 'FOG',
+    operation   => 'write_collector',
 });
 
 my $sth = $connection_builder->db->dbh->prepare(
@@ -57,7 +57,11 @@ while (my $row = $sth->fetchrow_hashref) {
             token => $token,
         );
 
-        if ($affiliate_record->load(speculative => 1,)) {
+        if (
+            $affiliate_record->load(
+                speculative => 1,
+            ))
+        {
             print ++$i, "already in db\n";
             next;
         }
@@ -74,7 +78,7 @@ while (my $row = $sth->fetchrow_hashref) {
         if ($affiliate->{'TOKEN'}->{'USER_ID'}) {
             print "Start to fetch myaffiliate [", $affiliate->{'TOKEN'}->{'USER_ID'}, "]\n";
             $content =
-              LWP::Simple::get('http://kavehmz:kv56eh3@admin.betonmarkets.com/feeds.php?FEED_ID=1&USER_ID=' . $affiliate->{'TOKEN'}->{'USER_ID'});
+                LWP::Simple::get('http://kavehmz:kv56eh3@admin.betonmarkets.com/feeds.php?FEED_ID=1&USER_ID=' . $affiliate->{'TOKEN'}->{'USER_ID'});
             die "Couldn't get tags!" unless defined $content;
             print "Parsing the content:\n";
             my $user_tags   = '';

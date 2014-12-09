@@ -79,17 +79,19 @@ my $broker = $update_including_vrt ? 'VRT' : 'FOG';
 my @markets;
 push @markets, split /\s+/, $markets if $markets;
 if ($update_including_intraday_double) {
-    push @markets, BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    push @markets,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market       => \@update_markets,
         bet_category => 'ANY',
         broker       => 'VRT',
-    );
+        );
 } else {
-    push @markets, BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    push @markets,
+        BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market       => \@update_markets,
         bet_category => 'IV',
         broker       => $broker,
-    );
+        );
 }
 
 my $dm = BOM::MarketData::Fetcher::VolSurface->new;
@@ -118,9 +120,9 @@ print q~<table width='100%'>~;
 print '<tr>';
 print '<td>';
 print get_update_volatilities_form({
-        'selected_markets' => $markets,
-        'warndifference'   => $warndifference,
-        'all_markets'      => \@all_markets
+    'selected_markets' => $markets,
+    'warndifference'   => $warndifference,
+    'all_markets'      => \@all_markets
 });
 print '</td>';
 print q~<td align=right>~;
@@ -140,7 +142,7 @@ foreach my $market (@markets) {
 		<TR>
 		<TH>
 			<a title="Click To Plot Volsurface" href="~
-      . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/plot_volsurface.cgi', {underlying => $market}) . qq~"></a>
+        . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/plot_volsurface.cgi', {underlying => $market}) . qq~"></a>
 		</TH>
 		</TR>~;
     print '<TR>';

@@ -54,12 +54,12 @@ foreach my $login_id (split(/\s+/, $clientID)) {
 
     # BUILD MESSAGE TO PRINT TO SCREEN
     my $insert_error_msg =
-      "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
+        "<font color=red><b>ERROR :</font></b>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has not been saved to  <b>$file_name</b>";
     my $insert_success_msg =
-      "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
+        "<font color=green><b>SUCCESS :</font></b>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has been saved to  <b>$file_name</b>";
     my $remove_error_msg = "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Failed to enable this client <b>$login_id</b>. Please try again.";
     my $remove_success_msg =
-      "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
+        "<font color=green><b>SUCCESS :</b></font>&nbsp;&nbsp;<b>$login_id $reason ($clerk)</b>&nbsp;&nbsp;has been removed from  <b>$file_name</b>";
 
     # DISABLED/CLOSED CLIENT LOGIN
     if ($client_status_type eq 'disabledlogins') {
@@ -108,8 +108,8 @@ foreach my $login_id (split(/\s+/, $clientID)) {
 
 if (scalar @invalid_logins > 0) {
     print "<font color=red><b>ERROR :</b></font>&nbsp;&nbsp;Unable to find these clients <b>"
-      . join(',', @invalid_logins)
-      . "</b>. Please check and try again.";
+        . join(',', @invalid_logins)
+        . "</b>. Please check and try again.";
 }
 
 code_exit_BO();

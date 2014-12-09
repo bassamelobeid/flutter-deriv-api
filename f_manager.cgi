@@ -15,7 +15,7 @@ my $currency_options = get_currency_options();
 
 if (length($broker) < 2) {
     print
-      "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
+        "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
     code_exit_BO();
 }
 my $today = BOM::Utility::Date->new->date_ddmmmyy;
@@ -55,28 +55,28 @@ print "Show uploaded payment supporting docs of LoginID : <input name=loginID ty
 print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
 print "<input type=hidden name=whattodo value=showdocs>";
 print "<INPUT type=\"submit\" value=Go> <a href='"
-  . request()->url_for('backoffice/download_document.cgi', {path => "/$broker/payments"})
-  . "'>[view complete list]</a>";
+    . request()->url_for('backoffice/download_document.cgi', {path => "/$broker/payments"})
+    . "'>[view complete list]</a>";
 print "</FORM>";
 
 Bar("Make Dual Control Control Code");
 print "To comply with ISO17799 requirements, deposits/withdrawals to client accounts require 2 staff members to authorise.
 One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when inputting the transaction.";
 print "<form id=\"paymentDCC\" action=\""
-  . request()->url_for('backoffice/f_makedcc.cgi')
-  . "\" method=\"post\" class=\"bo_ajax_form\">"
-  . "<input type=\"hidden\" name=\"broker\" value=\"$broker\">"
-  . "<input type=\"hidden\" name=\"l\" value=\"EN\">"
-  . " Amount: <select name=\"currency\">$currency_options</select> <input type=\"text\" name=\"amount\" size=\"7\">"
-  . " Type of transaction: <select name=\"transtype\">"
-  . "<option value=\"CREDIT\">CREDIT (deposit)</option>"
-  . "<option value=\"DEBIT\">DEBIT (withdrawal)</option>"
-  . "<option value=\"TRANSFER\">TRANSFER</option>"
-  . "</select>"
-  . " LoginID of the client: <input type=\"text\" size=\"12\" name=\"clientloginid\">"
-  . "<br>Input a comment/reminder about this DCC: <input type=\"text\" size=\"50\" name=\"reminder\">"
-  . "<br><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
-  . "</form>";
+    . request()->url_for('backoffice/f_makedcc.cgi')
+    . "\" method=\"post\" class=\"bo_ajax_form\">"
+    . "<input type=\"hidden\" name=\"broker\" value=\"$broker\">"
+    . "<input type=\"hidden\" name=\"l\" value=\"EN\">"
+    . " Amount: <select name=\"currency\">$currency_options</select> <input type=\"text\" name=\"amount\" size=\"7\">"
+    . " Type of transaction: <select name=\"transtype\">"
+    . "<option value=\"CREDIT\">CREDIT (deposit)</option>"
+    . "<option value=\"DEBIT\">DEBIT (withdrawal)</option>"
+    . "<option value=\"TRANSFER\">TRANSFER</option>"
+    . "</select>"
+    . " LoginID of the client: <input type=\"text\" size=\"12\" name=\"clientloginid\">"
+    . "<br>Input a comment/reminder about this DCC: <input type=\"text\" size=\"50\" name=\"reminder\">"
+    . "<br><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
+    . "</form>";
 print "<br><i>Note: the person issuing the control code is the one taking responsibility for the transaction. If subsequently it is discovered that
 there was an error with the transaction, then the person who issued the control code will be considered responsible.</i>";
 

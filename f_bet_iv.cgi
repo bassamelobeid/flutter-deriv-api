@@ -67,11 +67,11 @@ print get_update_volatilities_form({'all_markets' => \@all_markets});
 # Calibrate volsurface
 Bar("Volsurface Calibration Tool");
 print '<FORM id="volsurface_calibration" ACTION="'
-  . request()->url_for('backoffice/f_volsurface_calibration.cgi')
-  . '" METHOD="POST" ENCTYPE="multipart/form-data">';
+    . request()->url_for('backoffice/f_volsurface_calibration.cgi')
+    . '" METHOD="POST" ENCTYPE="multipart/form-data">';
 print '<TABLE>';
 print
-  '<tr><td>Please insert the underlying list (defaults to full list if blank):</td><td> <INPUT type="text" name="underlyings" ></td><td class="underlying_error" style="display:none"></td></tr>';
+    '<tr><td>Please insert the underlying list (defaults to full list if blank):</td><td> <INPUT type="text" name="underlyings" ></td><td class="underlying_error" style="display:none"></td></tr>';
 print '<tr><td><INPUT type="checkbox" name="calibrate" value="1" checked="checked">Calibrates Volatility Surfaces</td></tr>';
 print '<tr><td><INPUT type="submit" value="GO"></td></tr>';
 print '</TABLE>';
@@ -80,8 +80,8 @@ print '</FORM>';
 # Upload Moneyness volsurfaces
 Bar("Upload Moneyness Volsurfaces");
 print '<FORM ACTION="'
-  . request()->url_for('backoffice/f_moneyness_surface_comparison.cgi')
-  . '" METHOD="POST" ENCTYPE="multipart/form-data" id="upload_moneyness_vol_form">';
+    . request()->url_for('backoffice/f_moneyness_surface_comparison.cgi')
+    . '" METHOD="POST" ENCTYPE="multipart/form-data" id="upload_moneyness_vol_form">';
 print '<INPUT type=hidden name="broker" value="' . $broker . '">';
 print '<INPUT type="file" id="upload_moneyness_vol_file_field" name="filetoupload">';
 print '<INPUT type="submit" id="upload_moneyness_vol_submit" value="Process Excel File">';
@@ -101,7 +101,7 @@ print "BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make request
 
 unless (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name eq MasterLiveServer()) {
     print
-      "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
+        "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }
 
 my $start = BOM::Utility::Date->new;
@@ -197,24 +197,24 @@ Server: $selectbbdlserver
 # Currently we can get a list of forecast dividend from Bloomberg but in excel format
 Bar("Upload Dividend");
 print generate_dividend_upload_form({
-        broker     => $broker,
-        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
 # Upload calendar
 #
 Bar("Upload Calendar");
 print generate_holiday_upload_form({
-        broker     => $broker,
-        upload_url => request()->url_for('backoffice/f_upload_holidays.cgi'),
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/f_upload_holidays.cgi'),
 });
 
 # Upload Correlations
 # Currently we can get a table of correlation data from SuperDerivatives but in excel format
 Bar("Upload Correlations");
 print generate_correlations_upload_form({
-        broker     => $broker,
-        upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    broker     => $broker,
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
 Bar("Update the news events database");

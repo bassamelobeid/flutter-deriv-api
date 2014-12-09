@@ -26,13 +26,13 @@ my $grandtotal = 0;
 CLIENT:
 foreach my $loginID (split(/,/, $listaccounts)) {
 
-    my $client = eval{BOM::Platform::Client->new({loginid => $loginID})} || do {
+    my $client = eval { BOM::Platform::Client->new({loginid => $loginID}) } || do {
         print "<br/>error: cannot find client '$loginID'";
         next CLIENT;
     };
 
-    my $name   = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
-    my $email  = $client->email;
+    my $name  = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
+    my $email = $client->email;
 
     if (not BOM::Platform::Transaction->freeze_client($loginID)) {
         die "Account stuck in previous transaction $loginID";
@@ -58,11 +58,11 @@ foreach my $loginID (split(/,/, $listaccounts)) {
         if ($b > 0) {
             print "<br>[FOR REAL] $loginID ($name $email) rescinding <b>$curr$b</b>";
             $client->payment_legacy_payment(
-                    currency     => $curr,
-                    amount       => -$b,
-                    remark       => $message,
-                    payment_type => 'closed_account',
-                    staff        => $clerk,
+                currency     => $curr,
+                amount       => -$b,
+                remark       => $message,
+                payment_type => 'closed_account',
+                staff        => $clerk,
             );
         }
     } else {

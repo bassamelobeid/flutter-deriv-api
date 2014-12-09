@@ -39,10 +39,12 @@ print "<LI><font color=FF0000>More than 0.2\% away from combined quote (0.4\% fo
 print "</UL>";
 
 push @providerlist, 'combined';
-my @instrumentlist = sort BOM::Market::UnderlyingDB->instance->get_symbols_for(market => [@all_markets],);
+my @instrumentlist = sort BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    market => [@all_markets],
+);
 
 print " &nbsp;-&nbsp; <a href='"
-  . request()->url_for(
+    . request()->url_for(
     "backoffice/f_rtquoteslogin.cgi",
     {
         broker => $broker,
@@ -67,14 +69,14 @@ foreach my $i (@instrumentlist) {
 
     print "<tr><td bgcolor=FFFFCE>";
     print "<a target=$i href=\""
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/rtquotes_displayallgraphs.cgi',
         {
             overlay      => $i,
             all_provider => 1
         }) . "\">$i</a></b>";
     print "&nbsp; <a target=y$i href=\""
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/rtquotes_displayallgraphs.cgi',
         {
             overlay      => $i,
@@ -105,7 +107,7 @@ foreach my $i (@instrumentlist) {
         if ($age > 86400 * 4) { print "<td bgcolor=#FFFFCE>&nbsp;</td>"; }
         elsif ($p ne 'combined' and $age > 180) { print "<td bgcolor=#F09999><i>$price</i><br><i>$age secs.</i></td>"; }
         elsif ($p ne 'combined') { print "<td bgcolor=#F0F0F0><i>$price</i><br><i>$age secs.</i></td>"; }
-        elsif ($age > 180) { print "<td bgcolor=FF8888>$price<br><b>$age secs.</b></td>"; }
+        elsif ($age > 180)       { print "<td bgcolor=FF8888>$price<br><b>$age secs.</b></td>"; }
         else {
             #compare it to combined feed
             my $spot = $underlying->spot;

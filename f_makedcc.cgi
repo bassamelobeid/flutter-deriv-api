@@ -12,8 +12,8 @@ system_initialize();
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
 BOM::Platform::Auth0::can_access(['Payment']);
-my $token    = BOM::Platform::Context::request()->bo_cookie->token;
-my $clerk    = BOM::Platform::Context::request()->bo_cookie->clerk;
+my $token = BOM::Platform::Context::request()->bo_cookie->token;
+my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 
 Bar("Make dual control code");
 
@@ -56,26 +56,26 @@ if ($input->{'dcctype'} eq 'file_content') {
     }
 
     my $file_location = $input->{'file_location'};
-    my @lines = Path::Tiny::path($file_location)->lines;
-    my $lines = join("\n", @lines);
+    my @lines         = Path::Tiny::path($file_location)->lines;
+    my $lines         = join("\n", @lines);
     $code = dual_control_code_for_file_content($clerk, $token, $today, $lines);
 
     print "The dual control code created by $clerk for "
-      . $input->{'purpose'}
-      . " is: <font size=+1><b>$code</b></font><br />This code is valid for today ($today) only.";
+        . $input->{'purpose'}
+        . " is: <font size=+1><b>$code</b></font><br />This code is valid for today ($today) only.";
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-      ->append($now->datetime
-          . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
-          . $input->{'transtype'}
-          . " AMOUNT="
-          . $input->{'currency'}
-          . $input->{'amount'}
-          . " loginID="
-          . $input->{'clientloginid'}
-          . " $ENV{'REMOTE_ADDR'} REMINDER="
-          . $input->{'reminder'});
+        ->append($now->datetime
+            . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
+            . $input->{'transtype'}
+            . " AMOUNT="
+            . $input->{'currency'}
+            . $input->{'amount'}
+            . " loginID="
+            . $input->{'clientloginid'}
+            . " $ENV{'REMOTE_ADDR'} REMINDER="
+            . $input->{'reminder'});
 } elsif ($input->{'dcctype'} eq 'cs') {
     if ($input->{'filetype'} !~ /^\w+$/) {
         print "ERROR: please select file type";
@@ -85,47 +85,47 @@ if ($input->{'dcctype'} eq 'file_content') {
     $code = DualControlCode_CS($clerk, $token, $today, $input->{'clientloginid'}, $input->{'filetype'});
 
     print "<p class=\"success_message\">The dual control code created by $clerk for file type <b>'"
-      . $input->{'filetype'}
-      . "'</b> for "
-      . $input->{'clientloginid'}
-      . " is: <font size=+1><b>$code</b></font><br>This code is valid for today ($today) only.</p>";
+        . $input->{'filetype'}
+        . "'</b> for "
+        . $input->{'clientloginid'}
+        . " is: <font size=+1><b>$code</b></font><br>This code is valid for today ($today) only.</p>";
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/cs_dcc.log")
-      ->append($now->datetime
-          . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
-          . $input->{'filetype'}
-          . " loginID="
-          . $input->{'clientloginid'}
-          . " $ENV{'REMOTE_ADDR'} REMINDER="
-          . $input->{'reminder'});
+        ->append($now->datetime
+            . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
+            . $input->{'filetype'}
+            . " loginID="
+            . $input->{'clientloginid'}
+            . " $ENV{'REMOTE_ADDR'} REMINDER="
+            . $input->{'reminder'});
 } else {
     $code = DualControlCode($clerk, $token, $input->{'currency'}, $input->{'amount'}, $today, $input->{'transtype'}, $input->{'clientloginid'},);
 
     print "<p class=\"success_message\">The dual control code created by $clerk for an amount of "
-      . $input->{'currency'}
-      . $input->{'amount'}
-      . " (for a "
-      . $input->{'transtype'}
-      . ") for "
-      . $input->{'clientloginid'}
-      . " is: <font size=+1><b>$code</b></font><br />This code is valid for today ($today) only.</p>";
+        . $input->{'currency'}
+        . $input->{'amount'}
+        . " (for a "
+        . $input->{'transtype'}
+        . ") for "
+        . $input->{'clientloginid'}
+        . " is: <font size=+1><b>$code</b></font><br />This code is valid for today ($today) only.</p>";
 
     print "<p>Note: " . $input->{'clientloginid'} . " is " . $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
     print "<br><b />PS: make sure you didn't get the currency wrong! You chose <font color=red>" . $input->{'currency'} . "</font></b></p>";
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-      ->append($now->datetime
-          . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
-          . $input->{'transtype'}
-          . " AMOUNT="
-          . $input->{'currency'}
-          . $input->{'amount'}
-          . " loginID="
-          . $input->{'clientloginid'}
-          . " $ENV{'REMOTE_ADDR'} REMINDER="
-          . $input->{'reminder'});
+        ->append($now->datetime
+            . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
+            . $input->{'transtype'}
+            . " AMOUNT="
+            . $input->{'currency'}
+            . $input->{'amount'}
+            . " loginID="
+            . $input->{'clientloginid'}
+            . " $ENV{'REMOTE_ADDR'} REMINDER="
+            . $input->{'reminder'});
 }
 
 code_exit_BO();

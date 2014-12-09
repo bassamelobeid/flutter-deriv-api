@@ -25,8 +25,8 @@ my @clients = $cgi->param('clients');
 foreach my $client_loginid (@clients) {
     try {
         my $client_data_mapper = BOM::Platform::Data::Persistence::DataMapper::Client->new({
-                operation      => 'write',
-                client_loginid => $client_loginid,
+            operation      => 'write',
+            client_loginid => $client_loginid,
         });
         $client_data_mapper->unlock_client_loginid();
         print '<em>Unlocked: ' . $client_loginid . '</em><br>';
@@ -37,13 +37,13 @@ foreach my $client_loginid (@clients) {
 }
 
 my $client_data_mapper = BOM::Platform::Data::Persistence::DataMapper::Client->new({
-        operation   => 'read',
-        broker_code => request()->broker->code,
+    operation   => 'read',
+    broker_code => request()->broker->code,
 });
 
 my $clients_list = $client_data_mapper->locked_client_list();
 
 BOM::Platform::Context::template->process('backoffice/transaction_locked_client.html.tt', {locked_client_list => $clients_list})
-  || die BOM::Platform::Context::template->error();
+    || die BOM::Platform::Context::template->error();
 
 code_exit_BO();

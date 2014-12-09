@@ -42,12 +42,12 @@ my %non_empty_fields = (map { ($_, $fields{$_}) } (grep { $fields{$_} } (keys %f
 my $results;
 if (defined %non_empty_fields && keys %non_empty_fields) {
     my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
-            broker_code => 'FOG',
-            operation   => 'read_collector'
+        broker_code => 'FOG',
+        operation   => 'read_collector'
     });
     $results = $report_mapper->get_clients_result_by_field({
-            'broker'        => $broker,
-            'field_arg_ref' => \%non_empty_fields,
+        'broker'        => $broker,
+        'field_arg_ref' => \%non_empty_fields,
     });
 } else {
     print "Please enter client details";
@@ -62,7 +62,7 @@ if (not scalar @{$results}) {
 }
 
 BOM::Platform::Context::template->process('backoffice/client_search_result.html.tt', {results => $results})
-  || die BOM::Platform::Context::template->error(), "\n";
+    || die BOM::Platform::Context::template->error(), "\n";
 
 print "<P><center><A HREF='javascript:history.go(-1);'>Back</a>";
 

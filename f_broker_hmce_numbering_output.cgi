@@ -24,12 +24,14 @@ BOM::Platform::Auth0::can_access(['Accounts']);
 my $action_type = request()->param('action_type');
 my $month_only  = BOM::Utility::Date->new('01-' . request()->param('monthonly'))->db_timestamp;
 
-my $txn_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({'broker_code' => $broker,});
+my $txn_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+    'broker_code' => $broker,
+});
 
 my $bets = $txn_mapper->get_bet_transactions_for_broker({
-        'broker_code' => $broker,
-        'action_type' => $action_type,
-        'month'       => $month_only,
+    'broker_code' => $broker,
+    'action_type' => $action_type,
+    'month'       => $month_only,
 });
 
 print "$action_type transactions\n";
