@@ -14,6 +14,7 @@ use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use Controller::Bet;
+use BOM::View::Cashier;
 
 system_initialize();
 PrintContentType();
@@ -192,7 +193,7 @@ if (!$overridelimits) {
         print '<p style="color:red;">';
 
         my $withdrawal_limits = $client->get_withdrawal_limits();
-        check_if_client_can_withdraw({
+        BOM::View::Cashier::check_if_client_can_withdraw({
             client            => $client,
             amount            => $amount,
             withdrawal_limits => $withdrawal_limits,
