@@ -12,6 +12,8 @@ use BOM::Platform::Data::Persistence::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Context;
+use Controller::Bet;
 
 system_initialize();
 PrintContentType();
@@ -267,11 +269,23 @@ my $today  = BOM::Utility::Date->today;
 my $after  = $today->datetime_yyyymmdd_hhmmss;
 my $before = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
 
-print_client_statement_for_backoffice({
+my $statement = client_statement_for_backoffice({
     client => $client,
     before => $before,
     after  => $after
 });
+
+BOM::Platform::Context::template->process(
+    'backoffice/account/statement.html.tt',
+    {
+        transactions            => $statement->{transactions},
+        balance                 => $statement->{balance},
+        currency                => $client->currency,
+        loginid                 => $client->loginid,
+        depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
+        contract_details        => \&Controller::Bet::get_info,
+    },
+) || die BOM::Platform::Context::template->error();
 
 #View updated statement
 print "<form action=\"" . request()->url_for("backoffice/f_manager_history.cgi") . "\" method=\"post\">";

@@ -66,7 +66,7 @@
                         <div class="grd-grid-1 right-aligned"></div>
                 [% END %]
         [% END %]
-        <div class="grd-grid-2 right-aligned">[% currency %] [% to_monetary_number_format(transaction.balance) %]</div>
+        <div class="grd-grid-2 right-aligned">[% currency %] [% to_monetary_number_format(transaction.balance_after) %]</div>
     </div>
     [% END %]
 [% END %]
