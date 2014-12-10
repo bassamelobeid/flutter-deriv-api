@@ -3,6 +3,7 @@ use Encode;
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
 use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Platform::Persistence::DAO::Client;
 use BOM::Platform::Context qw(request);
 use BOM::Utility::Format::Strings qw( set_selected_item );
 use BOM::Utility::Date;
@@ -486,6 +487,32 @@ sub client_statement_for_backoffice {
         transactions    => $transactions,
         balance         => $balance
     };
+}
+
+sub get_client_login_history_arrayref {
+    my $client = shift;
+
+    if (not UNIVERSAL::isa($client, 'BOM::Platform::Client')) {
+        croak 'Invalid parameter client';
+    }
+
+    my $login_history_result = BOM::Platform::Persistence::DAO::Client::get_client_login_history($client);
+
+    if (scalar @{$login_history_result} > 0) {
+        my @login_history;
+
+        foreach my $login_history (@{$login_history_result}) {
+            my $login_detail = {
+                login_date        => BOM::Utility::Date->new($login_history->{login_date}),
+                login_status      => ($login_history->{'login_successful'} ? 'Successful login' : 'Failed login'),
+                login_environment => $login_history->{'login_environment'},
+            };
+            push @login_history, $login_detail;
+        }
+        return \@login_history;
+    }
+
+    return;
 }
 
 1;
