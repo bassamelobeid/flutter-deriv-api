@@ -4,21 +4,17 @@ use open qw[ :encoding(UTF-8) ];
 use Try::Tiny;
 use Spreadsheet::ParseExcel;
 use BOM::Utility::Format::Numbers qw(roundnear);
+use BOM::Utility::Date;
+use BOM::Market::Underlying;
 use YAML::XS;
 
 sub process_dividend {
     my ($fh, $vendor) = @_;
 
     my ($data, $skipped);
-
-    try {
-        ($data, $skipped) = read_discrete_forecasted_dividend_from_excel_files($fh, $vendor);
-        die 'No data was read' if not keys %$data;
-        save_dividends($data);
-    }
-    catch {
-        return 'Could not process dividend: ' . $_;
-    };
+    ($data, $skipped) = read_discrete_forecasted_dividend_from_excel_files($fh, $vendor);
+    die 'No data was read' if not keys %$data;
+    save_dividends($data);
 
     my $number_of_underlyings_processed = scalar keys %$data;
     my $skipped_string = join ',', @$skipped;
@@ -52,9 +48,7 @@ sub save_dividends {
             );
             $dividends->save;
         }
-
         catch {
-
             print " We are having error for $symbol: $_";
         };
     }
