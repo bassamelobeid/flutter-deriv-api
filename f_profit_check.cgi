@@ -9,7 +9,8 @@ use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
 

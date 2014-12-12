@@ -16,9 +16,10 @@ use include_common_modules;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
-
+use BOM::Platform::Sysinit ();
 BOM::Utility::Log4perl::init_log4perl_console;
-system_initialize();
+BOM::Platform::Sysinit::init();
+
 my ($jobs, $currencies, $brokercodes, $for_date);
 my $optres = GetOptions(
     'broker-codes=s' => \$brokercodes,

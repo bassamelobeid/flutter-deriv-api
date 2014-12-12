@@ -9,7 +9,8 @@ use BOM::Platform::Data::Persistence::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('PROMOTIONAL TOOLS');

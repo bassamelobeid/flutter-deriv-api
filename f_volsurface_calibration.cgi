@@ -10,8 +10,9 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
 use CGI;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 BrokerPresentation('CALIBRATION MODEL COMPARISON');
 

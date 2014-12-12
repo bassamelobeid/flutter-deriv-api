@@ -6,7 +6,8 @@ use strict 'vars';
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Persistence::DAO::Client;
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Clients who are authenticated but have expired identity documents.');

@@ -8,8 +8,8 @@ use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use BOM::Product::Transaction;
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 local $\ = "\n";
 my $loginID    = uc(request()->param('loginID'));

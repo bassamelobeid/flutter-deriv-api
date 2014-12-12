@@ -6,8 +6,8 @@ use BOM::Utility::Format::Strings qw( defang );
 use f_brokerincludeall;
 use Path::Tiny;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");

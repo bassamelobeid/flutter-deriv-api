@@ -9,8 +9,8 @@ use Text::CSV;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType_excel );
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my %params = %{request()->params};
 

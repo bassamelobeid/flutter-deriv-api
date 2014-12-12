@@ -11,6 +11,7 @@ use BOM::Platform::Context;
 use Mojo::URL;
 use BOM::View::JavascriptConfig;
 use BOM::Platform::Plack qw( AjaxSession );
+use BOM::Platform::Sysinit ();
 
 our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 
@@ -302,6 +303,6 @@ sub code_exit_BO {
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
 
-    code_exit();
+    BOM::Platform::code_exit();
 }
 1;

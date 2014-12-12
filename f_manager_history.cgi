@@ -5,7 +5,8 @@ use strict 'vars';
 use f_brokerincludeall;
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
 

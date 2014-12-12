@@ -8,8 +8,8 @@ use BOM::Utility::Format::Strings qw( set_selected_item );
 use f_brokerincludeall;
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");

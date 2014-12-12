@@ -12,7 +12,8 @@ use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 
 use Path::Tiny;
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $show = request()->param('show');
 if (request()->param('action') ne 'DOWNLOAD CSV') {
