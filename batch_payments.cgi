@@ -294,4 +294,16 @@ sub construct_row_line {
     </tr>];
 }
 
+sub read_csv_row_and_callback {
+    my $csv_lines = shift;
+    my $callback  = shift;
+
+    foreach my $line (@{$csv_lines}) {
+        $line =~ s/"//g;
+        my (@row_values) = split ',', $line;
+
+        &$callback(@row_values);
+    }
+}
+
 code_exit_BO();
