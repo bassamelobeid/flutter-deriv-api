@@ -42,14 +42,14 @@ my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
 Bar($loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
 
 my $txn_dm = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
-        client_loginid => $client->loginid,
-        currency_code  => $client->currency,
-        db             => $db,
+    client_loginid => $client->loginid,
+    currency_code  => $client->currency,
+    db             => $db,
 });
 
 my $balance = $txn_dm->get_profit_for_days({
-        after  => $startdate->datetime,
-        before => $enddate->datetime
+    after  => $startdate->datetime,
+    before => $enddate->datetime
 });
 
 BOM::Platform::Context::template->process(

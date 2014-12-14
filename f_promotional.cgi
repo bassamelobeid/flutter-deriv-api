@@ -70,27 +70,27 @@ if (@$pcs) {
     foreach my $currency_label (sort keys %pcs_by_currency) {
         print '<li>
                 <a href="'
-          . request()->url_for(
+            . request()->url_for(
             'backoffice/f_promotional.cgi',
             {
                 currency_only => $currency_label,
                 broker        => $broker
             })
-          . '" onclick="window.location= this.href + \'&expiry_select=\' + document.getElementById(\'expiry_select\').value;return(false);">'
-          . $currency_label
-          . ' currency' . '</a>
+            . '" onclick="window.location= this.href + \'&expiry_select=\' + document.getElementById(\'expiry_select\').value;return(false);">'
+            . $currency_label
+            . ' currency' . '</a>
             </li>';
     }
 
-    print '<li>' 
-      . '<a href="'
-      . request()->url_for(
+    print '<li>'
+        . '<a href="'
+        . request()->url_for(
         'backoffice/f_promotional.cgi',
         {
             currency_only => '',
             broker        => $broker
         })
-      . '" onclick="window.location= this.href + \'&expiry_select=\' + document.getElementById(\'expiry_select\').value;return(false);">ALL Promocodes
+        . '" onclick="window.location= this.href + \'&expiry_select=\' + document.getElementById(\'expiry_select\').value;return(false);">ALL Promocodes
             </a>
         </li>
     </ul>';
@@ -133,7 +133,7 @@ if (@$pcs) {
         my $amount = $pc_currency . $pc->{_json}->{amount};
 
         my @countries =
-          map { /ALL/ ? 'ALL' : BOM::Platform::Runtime->instance->countries->country_from_code($_) } split(/,/, $pc->{_json}->{country});
+            map { /ALL/ ? 'ALL' : BOM::Platform::Runtime->instance->countries->country_from_code($_) } split(/,/, $pc->{_json}->{country});
 
         my $href = request()->url_for(
             'backoffice/promocode_edit.cgi',
@@ -144,17 +144,17 @@ if (@$pcs) {
         my $link = qq[<a target="_blank" href="$href">Edit</a>];
 
         print '<tr>' . '<td>' . '<b>'
-          . $pc->code . '</b>' . '</td>' . '<td>'
-          . $amount . '</td>' . '<td>'
-          . ($pc->{_json}->{min_deposit}  || '&nbsp;') . '</td>' . '<td>'
-          . ($pc->{_json}->{min_turnover} || '&nbsp;') . '</td>' . '<td>'
-          . ($pc->start_date              || '&nbsp;') . '</td>' . '<td>'
-          . ($expiry_date                 || '&nbsp;') . '</td>' . '<td>'
-          . $pc->promo_code_type . '</td>' . '<td>'
-          . join(', ', @countries) . '</td>' . '<td>'
-          . ($pc->description || '&nbsp') . '</td>' . '<td>'
-          . ($pc->status ? 'TRUE' : 'FALSE') . '</td>' . '<td>'
-          . $link . '</td>' . '</tr>';
+            . $pc->code . '</b>' . '</td>' . '<td>'
+            . $amount . '</td>' . '<td>'
+            . ($pc->{_json}->{min_deposit}  || '&nbsp;') . '</td>' . '<td>'
+            . ($pc->{_json}->{min_turnover} || '&nbsp;') . '</td>' . '<td>'
+            . ($pc->start_date              || '&nbsp;') . '</td>' . '<td>'
+            . ($expiry_date                 || '&nbsp;') . '</td>' . '<td>'
+            . $pc->promo_code_type . '</td>' . '<td>'
+            . join(', ', @countries) . '</td>' . '<td>'
+            . ($pc->description || '&nbsp') . '</td>' . '<td>'
+            . ($pc->status ? 'TRUE' : 'FALSE') . '</td>' . '<td>'
+            . $link . '</td>' . '</tr>';
     }
 
     print '</table>';
@@ -166,12 +166,12 @@ print '<i>Note: to track signups, see the log files in the Perl log files sectio
 print '<br><hr>' . '<p><b>' . '<font color=green size=3>Add new promocode: </font>' . '</b></p>';
 
 print '<form method=get action="'
-  . request()->url_for('backoffice/promocode_edit.cgi') . '">'
-  . '<input name=broker value='
-  . $broker
-  . ' type=hidden></input>'
-  . '<input type=submit value="Add new promocode"> Note: Click this button to add new promocode'
-  . '</form>';
+    . request()->url_for('backoffice/promocode_edit.cgi') . '">'
+    . '<input name=broker value='
+    . $broker
+    . ' type=hidden></input>'
+    . '<input type=submit value="Add new promocode"> Note: Click this button to add new promocode'
+    . '</form>';
 
 # PROMO CODE APPROVAL TOOL
 Bar('PROMO CODE APPROVAL TOOL');
@@ -179,27 +179,27 @@ Bar('PROMO CODE APPROVAL TOOL');
 my ($output, $table_elements, $input_elements);
 
 my $table_header =
-    '<br /><form method="post" action="'
-  . request()->url_for('backoffice/f_promotional_processing.cgi') . '">'
-  . '<table border=1 cellpadding=3 cellspacing=1 id="PROMO_CODE_APPROVAL" class="sortable">' . '<tr>'
-  . '<th>Approve</th>'
-  . '<th>Reject</th>'
-  . '<th>Date/Time</th>'
-  . '<th>Promocode</th>'
-  . '<th>Code type</th>'
-  . '<th>Bonus</th>'
-  . '<th>LoginID</th>'
-  . '<th>Name</th>'
-  . '<th>Residence</th>'
-  . '<th>Referer</th>'
-  . '<th>IP address</th>'
-  . '<th>Turnover</th>'
-  . '<th># of bets bought</th>'
-  . '<th>Account age</th>'
-  . '<th>Authenticated?</th>'
-  . '<th>Account status</th>'
-  . '<th>Notify client?</th>'
-  . '<th>Further details</th>' . '</tr>';
+      '<br /><form method="post" action="'
+    . request()->url_for('backoffice/f_promotional_processing.cgi') . '">'
+    . '<table border=1 cellpadding=3 cellspacing=1 id="PROMO_CODE_APPROVAL" class="sortable">' . '<tr>'
+    . '<th>Approve</th>'
+    . '<th>Reject</th>'
+    . '<th>Date/Time</th>'
+    . '<th>Promocode</th>'
+    . '<th>Code type</th>'
+    . '<th>Bonus</th>'
+    . '<th>LoginID</th>'
+    . '<th>Name</th>'
+    . '<th>Residence</th>'
+    . '<th>Referer</th>'
+    . '<th>IP address</th>'
+    . '<th>Turnover</th>'
+    . '<th># of bets bought</th>'
+    . '<th>Account age</th>'
+    . '<th>Authenticated?</th>'
+    . '<th>Account status</th>'
+    . '<th>Notify client?</th>'
+    . '<th>Further details</th>' . '</tr>';
 
 my @clients = BOM::Platform::Client->by_promo_code(
     broker_code => $broker,
@@ -210,10 +210,10 @@ foreach my $client (@clients) {
     my $client_login = $client->loginid;
     next unless ($client->promo_code_status || '') eq 'APPROVAL';
     my $dodgy =
-         $client->get_status('disabled')
-      || $client->get_status('cashier_locked')
-      || $client->get_status('unwelcome')
-      || $client->documents_expired;
+           $client->get_status('disabled')
+        || $client->get_status('cashier_locked')
+        || $client->get_status('unwelcome')
+        || $client->documents_expired;
     my $color = $dodgy ? 'red' : '';
     my $disabled = $dodgy ? 'disabled="disabled"' : '';
     my $client_name          = $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name;
@@ -255,8 +255,8 @@ foreach my $client (@clients) {
 
     my $total_turnover;
     my $txn_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
-            client_loginid => $client_login,
-            currency_code  => $client->currency,
+        client_loginid => $client_login,
+        currency_code  => $client->currency,
     });
     my $account_turnover = $txn_mapper->get_turnover_of_account;
 
@@ -271,14 +271,14 @@ foreach my $client (@clients) {
     $total_bets     ||= '&nbsp;';
 
     my $clientdetail_link = '<a href="'
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_clientloginid_edit.cgi',
         {
             broker  => $broker,
             loginID => $client_login
         }) . '" target=_blank>client details</a>';
     my $statement_link = '<a href="'
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_manager_history.cgi',
         {
             broker   => $broker,
@@ -287,11 +287,11 @@ foreach my $client (@clients) {
         }) . '" target=_blank>statement</a>';
 
     my $check_account =
-        $client->get_status('disabled')       ? 'account disabled'
-      : $client->get_status('cashier_locked') ? 'cashier locked'
-      : $client->get_status('unwelcome')      ? 'unwelcome login'
-      : $client->documents_expired            ? 'documents expired'
-      :                                         '';
+          $client->get_status('disabled')       ? 'account disabled'
+        : $client->get_status('cashier_locked') ? 'cashier locked'
+        : $client->get_status('unwelcome')      ? 'unwelcome login'
+        : $client->documents_expired            ? 'documents expired'
+        :                                         '';
 
     $table_elements .= qq[
         <tr>
@@ -318,12 +318,12 @@ foreach my $client (@clients) {
 }
 
 my $table_end .=
-    '</table>'
-  . '<br /><input type="submit" value="Save">'
-  . '<input type=hidden name="save_file" value="save">'
-  . '<input type=hidden name="broker" value="'
-  . $broker . '">'
-  . '</form>';
+      '</table>'
+    . '<br /><input type="submit" value="Save">'
+    . '<input type=hidden name="save_file" value="save">'
+    . '<input type=hidden name="broker" value="'
+    . $broker . '">'
+    . '</form>';
 
 if ($table_elements) {
     $output .= $table_header . $table_elements . $table_end;
@@ -336,7 +336,9 @@ print $output;
 Bar('Bulk-add client affiliate exposures.');
 BOM::Platform::Context::template->process(
     'backoffice/bulkadd_exposures.html.tt',
-    {action => request()->url_for('backoffice/bulkadd_exposures.cgi'),},
+    {
+        action => request()->url_for('backoffice/bulkadd_exposures.cgi'),
+    },
 );
 
 code_exit_BO();

@@ -19,8 +19,8 @@ my $check_date = BOM::Utility::Date->new(time - 86400)->date;
 
 #connect to collector for getting data
 my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
-        broker_code => 'FOG',
-        operation   => 'read_collector'
+    broker_code => 'FOG',
+    operation   => 'read_collector'
 });
 my $client_dup_list = $report_mapper->check_clients_duplication(BOM::Utility::Date->new($check_date)->truncate_to_day);
 
@@ -41,9 +41,9 @@ foreach my $client_hash (@{$client_dup_list}) {
     my $client            = BOM::Platform::Client::get_instance({loginid => $loginid});
     my @duplicate_clients = map {
         my ($lid, $status) = split '/', $_, 2;
-        $lid eq $loginid ? ()
-          : length $status ? "$lid(\u$status)"
-          :                  $lid;
+        $lid eq $loginid     ? ()
+            : length $status ? "$lid(\u$status)"
+            :                  $lid;
     } @{$client_hash->{loginids}};
 
     my $note_content = $note_header;

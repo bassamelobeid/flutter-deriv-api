@@ -37,7 +37,7 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
             quote_char   => "'",
             eol          => ''
         })    # should set binary attribute.
-      or die "Cannot use CSV: " . Text::CSV->error_diag();
+        or die "Cannot use CSV: " . Text::CSV->error_diag();
 
     my @header = (
         'LOGINID', 'NAME', 'COUNTRY', 'EMAIL', 'AGG. DEPOSITS - WITHDRAWALS',
@@ -49,8 +49,8 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
     print $csv->string;
 
     my $results = get_client_by_status({
-            'broker' => $broker,
-            'show'   => $show,
+        'broker' => $broker,
+        'show'   => $show,
     });
     foreach my $loginid (keys %{$results}) {
         my $client = $results->{$loginid};
@@ -74,36 +74,36 @@ if (request()->param('recoverfromfraudpassword') eq 'l') {
 
 # Show the "DOWNLOAD CSV" button.
 print '<form method="post" id="download_csv_form" action="'
-  . request()->url_for('backoffice/f_viewclientsubset.cgi') . '" '
-  . $on_submit_event . ' >'
-  . '<input type="hidden" name="show" value="'
-  . request()->param('show') . '">'
-  . '<input type="hidden" name="onlylarge" value="'
-  . request()->param('onlylarge') . '">'
-  . '<input type="hidden" name="onlyfunded" value="'
-  . request()->param('onlyfunded') . '" />'
-  . '<input type="hidden" name="onlynonzerobalance" value="'
-  . request()->param('onlynonzerobalance') . '" />'
-  . '<input type="hidden" name="broker" value="'
-  . $broker . '">'
-  . '<input type="submit" name="action" value="DOWNLOAD CSV" />'
-  . '</form>';
+    . request()->url_for('backoffice/f_viewclientsubset.cgi') . '" '
+    . $on_submit_event . ' >'
+    . '<input type="hidden" name="show" value="'
+    . request()->param('show') . '">'
+    . '<input type="hidden" name="onlylarge" value="'
+    . request()->param('onlylarge') . '">'
+    . '<input type="hidden" name="onlyfunded" value="'
+    . request()->param('onlyfunded') . '" />'
+    . '<input type="hidden" name="onlynonzerobalance" value="'
+    . request()->param('onlynonzerobalance') . '" />'
+    . '<input type="hidden" name="broker" value="'
+    . $broker . '">'
+    . '<input type="submit" name="action" value="DOWNLOAD CSV" />'
+    . '</form>';
 
 Bar($show);
 
 my $total_bal;
 
 my $table_header = '<tr>'
-  . '<th>LOGINID</th>'
-  . '<th>NAME</th>'
-  . '<th>COUNTRY</th>'
-  . '<th>EMAIL</th>'
-  . '<th>AGG. DEPOSITS<br />- WITHDRAWALS</th>'
-  . '<th>CASH<br />BALANCE</th>'
-  . '<th>Cashier</th>'
-  . '<th>TOTAL EQUITY<br />& Expired contracts</th>'
-  . '<th>Last access (in days)</th>'
-  . '<th>Reason</th>' . '</tr>';
+    . '<th>LOGINID</th>'
+    . '<th>NAME</th>'
+    . '<th>COUNTRY</th>'
+    . '<th>EMAIL</th>'
+    . '<th>AGG. DEPOSITS<br />- WITHDRAWALS</th>'
+    . '<th>CASH<br />BALANCE</th>'
+    . '<th>Cashier</th>'
+    . '<th>TOTAL EQUITY<br />& Expired contracts</th>'
+    . '<th>Last access (in days)</th>'
+    . '<th>Reason</th>' . '</tr>';
 
 print '<br /><table border=1 cellpadding=0 cellspacing=0 width=95%>' . $table_header;
 
@@ -112,10 +112,10 @@ my $page_selected = request()->param('page')  || 1;      # selected page number
 my $offsetfrom = $limit * ($page_selected - 1);
 
 my $results = get_client_by_status({
-        broker => $broker,
-        show   => $show,
-        limit  => $limit,
-        offset => $offsetfrom
+    broker => $broker,
+    show   => $show,
+    limit  => $limit,
+    offset => $offsetfrom
 });
 
 my $total = scalar keys %{$results};
@@ -129,8 +129,8 @@ foreach my $loginID (keys %{$results}) {
     my $recover;
     if ($last_access > request()->param('recoverdays') and request()->param('recoverfromfraudpassword') eq 'l') {
         my $result = RecoverFromClientAccount({
-                'loginID' => $loginID,
-                'clerk'   => $clerk,
+            'loginID' => $loginID,
+            'clerk'   => $clerk,
         });
 
         $recover = $result->{'msg'};
@@ -140,40 +140,41 @@ foreach my $loginID (keys %{$results}) {
     }
 
     print "<tr>"
-      . "<td>$loginID</td>" . "<td>"
-      . $client->{name}
-      . "&nbsp;</td>" . "<td>"
-      . $client->{citizen}
-      . "&nbsp;</td>"
-      . "<td><font size=1>"
-      . $client->{email}
-      . "&nbsp;</font></td>"
-      . "<td>\$"
-      . $client->{agg_payment_usd} . "</td>"
-      . "<td>\$"
-      . $client->{balance_usd}
-      . "&nbsp;</td>" . "<td>"
-      . $client->{cashier_locked}
-      . "&nbsp;</td>" . "<td>"
-      . $client->{equity}
-      . "&nbsp;</td>" . "<td>"
-      . $client->{last_access}
-      . " days $recover &nbsp;</td>" . "<td>"
-      . $client->{reason}
-      . "&nbsp;</td>" . "</tr>";
+        . "<td>$loginID</td>" . "<td>"
+        . $client->{name}
+        . "&nbsp;</td>" . "<td>"
+        . $client->{citizen}
+        . "&nbsp;</td>"
+        . "<td><font size=1>"
+        . $client->{email}
+        . "&nbsp;</font></td>"
+        . "<td>\$"
+        . $client->{agg_payment_usd} . "</td>"
+        . "<td>\$"
+        . $client->{balance_usd}
+        . "&nbsp;</td>" . "<td>"
+        . $client->{cashier_locked}
+        . "&nbsp;</td>" . "<td>"
+        . $client->{equity}
+        . "&nbsp;</td>" . "<td>"
+        . $client->{last_access}
+        . " days $recover &nbsp;</td>" . "<td>"
+        . $client->{reason}
+        . "&nbsp;</td>" . "</tr>";
 
     $total_bal += $client->{balance_usd};
 }
 
 if ($email_notification) {
     my $email_to =
-      join(',', (BOM::Platform::Runtime->instance->app_config->compliance->email, BOM::Platform::Runtime->instance->app_config->accounting->email,));
+        join(',',
+        (BOM::Platform::Runtime->instance->app_config->compliance->email, BOM::Platform::Runtime->instance->app_config->accounting->email,));
 
     my $ret = send_email({
-            'from'    => BOM::Platform::Runtime->instance->app_config->system->email,
-            'to'      => $email_to,
-            'subject' => 'Funds withdrawn for disabled accounts',
-            'message' => ["To be informed that the funds have been withdrawn for the following disabled account(s):\n\n$email_notification"],
+        'from'    => BOM::Platform::Runtime->instance->app_config->system->email,
+        'to'      => $email_to,
+        'subject' => 'Funds withdrawn for disabled accounts',
+        'message' => ["To be informed that the funds have been withdrawn for the following disabled account(s):\n\n$email_notification"],
     });
 
     if (not $ret) {
@@ -183,9 +184,9 @@ if ($email_notification) {
 
 # Page navigation
 my ($prev_page, $next_page, $offset, $total_page, $next_total) = GetPagingParameter({
-        'page'  => $page_selected,
-        'total' => ($total || 0),
-        'limit' => $limit,
+    'page'  => $page_selected,
+    'total' => ($total || 0),
+    'limit' => $limit,
 });
 
 my $paging;
@@ -193,90 +194,90 @@ my $paging;
 if ($total) {
     if ($prev_page >= 1) {
         $prev_page =
-            '<a id="prev_page" href="'
-          . $home_link
-          . '?broker='
-          . $broker
-          . '&show='
-          . $show
-          . '&limit='
-          . $limit
-          . '&page='
-          . $prev_page
-          . '&onlylarge='
-          . request()->param('onlylarge')
-          . '&onlyfunded='
-          . request()->param('onlyfunded')
-          . '&onlynonzerobalance='
-          . request()->param('onlynonzerobalance')
-          . '&recoverfromfraudpassword='
-          . request()->param('recoverfromfraudpassword')
-          . '&recoverdays='
-          . request()->param('recoverdays')
-          . '">Previous '
-          . $limit . '</a>';
+              '<a id="prev_page" href="'
+            . $home_link
+            . '?broker='
+            . $broker
+            . '&show='
+            . $show
+            . '&limit='
+            . $limit
+            . '&page='
+            . $prev_page
+            . '&onlylarge='
+            . request()->param('onlylarge')
+            . '&onlyfunded='
+            . request()->param('onlyfunded')
+            . '&onlynonzerobalance='
+            . request()->param('onlynonzerobalance')
+            . '&recoverfromfraudpassword='
+            . request()->param('recoverfromfraudpassword')
+            . '&recoverdays='
+            . request()->param('recoverdays')
+            . '">Previous '
+            . $limit . '</a>';
     } else {
         $prev_page = '';
     }
 
     if ($next_page <= $total_page) {
         $next_page =
-            '<a id="next_page" href="'
-          . $home_link
-          . '?broker='
-          . $broker
-          . '&show='
-          . $show
-          . '&limit='
-          . $limit
-          . '&page='
-          . $next_page
-          . '&onlylarge='
-          . request()->param('onlylarge')
-          . '&onlyfunded='
-          . request()->param('onlyfunded')
-          . '&onlynonzerobalance='
-          . request()->param('onlynonzerobalance')
-          . '&recoverfromfraudpassword='
-          . request()->param('recoverfromfraudpassword')
-          . '&recoverdays='
-          . request()->param('recoverdays')
-          . '">Next '
-          . $next_total . '</a>';
+              '<a id="next_page" href="'
+            . $home_link
+            . '?broker='
+            . $broker
+            . '&show='
+            . $show
+            . '&limit='
+            . $limit
+            . '&page='
+            . $next_page
+            . '&onlylarge='
+            . request()->param('onlylarge')
+            . '&onlyfunded='
+            . request()->param('onlyfunded')
+            . '&onlynonzerobalance='
+            . request()->param('onlynonzerobalance')
+            . '&recoverfromfraudpassword='
+            . request()->param('recoverfromfraudpassword')
+            . '&recoverdays='
+            . request()->param('recoverdays')
+            . '">Next '
+            . $next_total . '</a>';
     } else {
         $next_page = '';
     }
 
     if ($next_page or $prev_page) {
         $paging =
-            '<form class="paging" action="'
-          . request()->url_for('backoffice/f_viewclientsubset.cgi')
-          . '" method="post">'
-          . '<input type="hidden" name="broker" value="'
-          . $broker . '" />'
-          . '<input type="hidden" name="limit" value="'
-          . $limit . '" />'
-          . '<input type="hidden" name="show" value="'
-          . $show . '" />'
-          . '<input type="hidden" name="onlylarge" value="'
-          . request()->param('onlylarge') . '" />'
-          . '<input type="hidden" name="onlyfunded" value="'
-          . request()->param('onlyfunded') . '" />'
-          . '<input type="hidden" name="onlynonzerobalance" value="'
-          . request()->param('onlynonzerobalance') . '" />'
-          . '<input type="hidden" name="recoverfromfraudpassword" value="'
-          . request()->param('recoverfromfraudpassword') . '" />'
-          . '<input type="hidden" name="recoverdays" value="'
-          . request()->param('recoverdays') . '" />'
-          . $prev_page . ' <em>'
-          . ' Page: <input size="3" maxlength="3" type="text" id="page_input" name="page" value="'
-          . $page_selected
-          . '" /> of '
-          . $total_page
-          . ' <input type="submit" value="Go" />'
-          . '</em> '
-          . $next_page
-          . '</form>';
+              '<form class="paging" action="'
+            . request()->url_for('backoffice/f_viewclientsubset.cgi')
+            . '" method="post">'
+            . '<input type="hidden" name="broker" value="'
+            . $broker . '" />'
+            . '<input type="hidden" name="limit" value="'
+            . $limit . '" />'
+            . '<input type="hidden" name="show" value="'
+            . $show . '" />'
+            . '<input type="hidden" name="onlylarge" value="'
+            . request()->param('onlylarge') . '" />'
+            . '<input type="hidden" name="onlyfunded" value="'
+            . request()->param('onlyfunded') . '" />'
+            . '<input type="hidden" name="onlynonzerobalance" value="'
+            . request()->param('onlynonzerobalance') . '" />'
+            . '<input type="hidden" name="recoverfromfraudpassword" value="'
+            . request()->param('recoverfromfraudpassword') . '" />'
+            . '<input type="hidden" name="recoverdays" value="'
+            . request()->param('recoverdays') . '" />'
+            . $prev_page . ' <em>'
+            . ' Page: <input size="3" maxlength="3" type="text" id="page_input" name="page" value="'
+            . $page_selected
+            . '" /> of '
+            . $total_page
+            . ' <input type="submit" value="Go" />'
+            . '</em> '
+            . $next_page
+            . '</form>';
     }
 }
 
@@ -304,7 +305,7 @@ sub get_client_by_status {
     my $yesterday = BOM::Utility::Date->new(time - 86400)->date_ddmmmyy;
     foreach my $curr (@{request()->available_currencies}) {
         my $summaryfilename =
-          BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/dailysummary/" . $yesterday . ".summary";
+            BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/dailysummary/" . $yesterday . ".summary";
         if ($curr ne 'USD') {
             $summaryfilename .= '.' . $curr;
         }
@@ -470,7 +471,7 @@ sub RecoverFromClientAccount {
     }
 
     my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID})
-      || die "[$0] RecoverFromClientAccount could not get client for $loginID";
+        || die "[$0] RecoverFromClientAccount could not get client for $loginID";
     if (not $client->get_status('disabled')) {
         $result->{'msg'} = "span style='color:red;font-weight:bold;'>ERROR: $loginID ($broker) is not disabled</font>";
     }
@@ -483,17 +484,17 @@ sub RecoverFromClientAccount {
     next CURRENCY if ($bal < 0.01);
 
     $client->payment_legacy_payment(
-            currency     => $client->currency,
-            amount       => -$bal,
-            remark       => 'Inactive Account closed. Please contact customer support for assistance.',
-            payment_type => 'closed_account',
-            staff        => $clerk,
+        currency     => $client->currency,
+        amount       => -$bal,
+        remark       => 'Inactive Account closed. Please contact customer support for assistance.',
+        payment_type => 'closed_account',
+        staff        => $clerk,
     );
 
     my $acc_balance = $client->currency . $bal;
 
     Path::Tiny::path("/var/log/fixedodds/$broker.funds_withdrawn")
-      ->append(BOM::Utility::Date->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
+        ->append(BOM::Utility::Date->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
 
     $result->{'msg'}          = "<br><span style='color:green;font-weight:bold;'>RECOVERED $acc_balance</span>";
     $result->{'notification'} = $acc_balance;

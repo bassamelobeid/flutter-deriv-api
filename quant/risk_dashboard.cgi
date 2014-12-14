@@ -46,13 +46,13 @@ $report->{titlfy}  = sub {
         foreach my $limit (@{$href->{custom_limits}}) {
             my $payout_amount = $limit->{payout_limit} // 'no limit';
             $title .=
-                "\n" . '['
-              . $limit->{market} . '-'
-              . $limit->{contract_kind} . ': '
-              . $payout_amount . '] '
-              . $limit->{comment} . ' ('
-              . $limit->{staff} . ','
-              . $limit->{modified} . ')';
+                  "\n" . '['
+                . $limit->{market} . '-'
+                . $limit->{contract_kind} . ': '
+                . $payout_amount . '] '
+                . $limit->{comment} . ' ('
+                . $limit->{staff} . ','
+                . $limit->{modified} . ')';
         }
     }
     return $title;

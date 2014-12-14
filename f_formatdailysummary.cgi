@@ -20,7 +20,7 @@ print "<TABLE border=1>";
 
 my $F = "<font size=2 face=verdana><b>";
 print
-  "<TR><TD>$F LOGINID</TD><TD>$F LIVEorDEAD</TD><TD>$F A/C BALANCE</TD><TD>$F OPEN P/L</TD><TD>$F TOTAL EQUITY AT MKT</TD><TD>$F AGGREGATE DEPOSITS<br>& WITHDRAWALS</TD><TD>$F MARKED-TO-MARKET<br>PROFIT/LOSS</TD>";
+    "<TR><TD>$F LOGINID</TD><TD>$F LIVEorDEAD</TD><TD>$F A/C BALANCE</TD><TD>$F OPEN P/L</TD><TD>$F TOTAL EQUITY AT MKT</TD><TD>$F AGGREGATE DEPOSITS<br>& WITHDRAWALS</TD><TD>$F MARKED-TO-MARKET<br>PROFIT/LOSS</TD>";
 print "<TD>$F AGG. PAYOUTS OF<br>OUTSTANDING BETS</TD>";
 if ($displayport) { print "<TD>$F PORTFOLIO</TD>"; }
 print "</TR>";
@@ -80,10 +80,10 @@ if (open(FILE, $filename)) {
 my @s_to_out;
 if (request()->param('sortorder') =~ /reverse/) {
     @s_to_out =
-      sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $a1 <=> $b1; } @to_out;
+        sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $a1 <=> $b1; } @to_out;
 } else {
     @s_to_out =
-      sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $b1 <=> $a1; } @to_out;
+        sort { my ($a1, $b1); $a =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $a1 = $1; $b =~ /\<\!\-\-\s(\-?\d*\.?\d*)\s/; $b1 = $1; $b1 <=> $a1; } @to_out;
 }
 
 splice @s_to_out, $outputlargest;
@@ -99,7 +99,7 @@ foreach my $f (@fields) {
 print "</TR>";
 print "</table>";
 print "<P><font size=2 face=verdana><b>Sum of all client overall marked-to-market profits since inception : "
-  . (int(100 * ($sums[4] - $sums[5])) / 100);
+    . (int(100 * ($sums[4] - $sums[5])) / 100);
 print "<P>";
 
 code_exit_BO();

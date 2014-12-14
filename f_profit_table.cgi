@@ -35,12 +35,12 @@ if (not $client) {
 if (request()->param('update_limitlist')) {
     my $limitlist = BOM::Product::Utility::CustomClientLimits->new;
     $limitlist->update({
-            loginid       => $loginID,
-            market        => request()->param('market'),
-            contract_kind => request()->param('contract_kind'),
-            payout_limit  => request()->param('payout_limit'),
-            comment       => request()->param('limitlist_comment'),
-            staff         => BOM::Platform::Auth0::from_cookie()->{nickname},
+        loginid       => $loginID,
+        market        => request()->param('market'),
+        contract_kind => request()->param('contract_kind'),
+        payout_limit  => request()->param('payout_limit'),
+        comment       => request()->param('limitlist_comment'),
+        staff         => BOM::Platform::Auth0::from_cookie()->{nickname},
     });
 }
 
@@ -58,16 +58,16 @@ my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
 
 Bar($loginID . " - Contracts");
 my $fmb_dm = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
-        client_loginid => $client->loginid,
-        currency_code  => $client->currency,
-        db             => $db,
+    client_loginid => $client->loginid,
+    currency_code  => $client->currency,
+    db             => $db,
 });
 
 my $limits         = BOM::Product::Utility::CustomClientLimits->new->client_limit_list($client->loginid);
 my $sold_contracts = $fmb_dm->get_sold({
-        after  => $startdate,
-        before => $enddate,
-        limit  => (request()->param('all') ? 99999 : 50),
+    after  => $startdate,
+    before => $enddate,
+    limit  => (request()->param('all') ? 99999 : 50),
 });
 
 my $open_contracts = $fmb_dm->get_open_bets_of_account();

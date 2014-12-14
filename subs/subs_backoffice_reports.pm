@@ -26,7 +26,7 @@ sub DailyTurnOverReport {
 
     my $mtm_calc_time = $report_mapper->get_last_generated_historical_marked_to_market_time();
     my $initial_note =
-      ($args->{whattodo} eq 'TURNOVER' ? '(BUY-SELL represents the company profit)' : '(CREDIT-DEBIT represents the client deposits)');
+        ($args->{whattodo} eq 'TURNOVER' ? '(BUY-SELL represents the company profit)' : '(CREDIT-DEBIT represents the client deposits)');
     my @all_currencies = BOM::Platform::Runtime->instance->landing_companies->all_currencies;
     my %rates = map { $_ => ($args->{$_} || in_USD(1, $_)) } @all_currencies;
 
@@ -73,11 +73,11 @@ sub DailyTurnOverReport {
         $aggregate_transactions = from_json($cached);
     } else {
         $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({
-                date => $currdate->db_timestamp,
-                type => ($args->{whattodo} eq 'TURNOVER') ? 'bet' : 'payment',
+            date => $currdate->db_timestamp,
+            type => ($args->{whattodo} eq 'TURNOVER') ? 'bet' : 'payment',
         });
         Cache::RedisDB->set($cache_prefix, $cache_key, to_json($aggregate_transactions), 3600)
-          if ($this_month);    # Hold current month for up to an hour.
+            if ($this_month);    # Hold current month for up to an hour.
     }
 
     my $eod_market_values = BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket->new({

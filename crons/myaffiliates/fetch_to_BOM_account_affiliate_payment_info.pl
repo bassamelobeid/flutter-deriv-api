@@ -42,7 +42,8 @@ if ($from_arg and $to_arg) {
     $to   = BOM::Utility::Date->new($to_arg);
 } else {
     $to =
-      BOM::Utility::Date->new(BOM::Utility::Date->new('1-' . $runtime->month_as_string . '-' . $runtime->year_in_two_digit . ' 00:00:00')->epoch - 1);
+        BOM::Utility::Date->new(
+        BOM::Utility::Date->new('1-' . $runtime->month_as_string . '-' . $runtime->year_in_two_digit . ' 00:00:00')->epoch - 1);
     $from = BOM::Utility::Date->new('1-' . $to->month_as_string . '-' . $to->year_in_two_digit . ' 00:00:00');
 }
 
@@ -55,15 +56,15 @@ my @message = ('"To BOM Account" affiliate payment CSVs are attached for review 
 if (grep { $_ =~ /ERRORS/ } @csv_file_locs) {
     push @message, '';
     push @message,
-      'NOTE: There are reported ERRORS. Please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
+        'NOTE: There are reported ERRORS. Please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
 }
 
 send_email({
-        from    => BOM::Platform::Runtime->instance->app_config->system->email,
-        to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-        subject => 'CRON fetch_to_BOM_account_affiliate_payment_info: Report from '
-          . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name . ' for '
-          . $runtime->datetime_yyyymmdd_hhmmss_TZ,
-        message    => \@message,
-        attachment => \@csv_file_locs,
+    from    => BOM::Platform::Runtime->instance->app_config->system->email,
+    to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+    subject => 'CRON fetch_to_BOM_account_affiliate_payment_info: Report from '
+        . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name . ' for '
+        . $runtime->datetime_yyyymmdd_hhmmss_TZ,
+    message    => \@message,
+    attachment => \@csv_file_locs,
 });

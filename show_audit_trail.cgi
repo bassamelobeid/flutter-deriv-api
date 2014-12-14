@@ -152,15 +152,15 @@ for my $table (@tables) {
             $data->{$col} = $row->$col;
             if ($loginid && $prevrow) {
                 $changes->{$col} = 1
-                  if ($row->$col || '') ne ($prevrow->$col || '');
+                    if ($row->$col || '') ne ($prevrow->$col || '');
             }
         }
         $prevrow = $row;
         push @logs,
-          {
+            {
             data    => $data,
             changes => $changes
-          };
+            };
     }
 }
 

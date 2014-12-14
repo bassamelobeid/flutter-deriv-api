@@ -27,23 +27,23 @@ BOM::Platform::Auth0::can_access(['Quants']);
 
 Bar("Bet Parameters");
 my $bet =
-  (request()->param('shortcode') and request()->param('currency'))
-  ? produce_contract(request()->param('shortcode'), request()->param('currency'))
-  : '';
+    (request()->param('shortcode') and request()->param('currency'))
+    ? produce_contract(request()->param('shortcode'), request()->param('currency'))
+    : '';
 
 my $graph_url =
-  (request()->param('shortcode') and request()->param('currency'))
-  ? 'bpot_graph.cgi?shortcode='
-  . request()->param('shortcode')
-  . '&currency='
-  . request()->param('currency')
-  . '&start='
-  . request()->param('start') . '&end='
-  . request()->param('end')
-  . '&timestep='
-  . request()->param('timestep') . '&'
-  . rand(100000)
-  : '';
+    (request()->param('shortcode') and request()->param('currency'))
+    ? 'bpot_graph.cgi?shortcode='
+    . request()->param('shortcode')
+    . '&currency='
+    . request()->param('currency')
+    . '&start='
+    . request()->param('start') . '&end='
+    . request()->param('end')
+    . '&timestep='
+    . request()->param('timestep') . '&'
+    . rand(100000)
+    : '';
 
 my $debug_link = '';
 

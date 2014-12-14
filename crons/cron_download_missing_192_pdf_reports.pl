@@ -38,10 +38,10 @@ for my $broker (BOM::Platform::Runtime->instance->broker_codes->all_codes) {
                 client        => $client,
                 result_as_xml => $result_as_xml,
                 search_option => $search_option
-              )->save_pdf_result
+                )->save_pdf_result
 
-              ? $logger->debug("Saved $search_option result for $client")
-              : $logger->warn("Failed to save $search_option result for $client");
+                ? $logger->debug("Saved $search_option result for $client")
+                : $logger->warn("Failed to save $search_option result for $client");
 
         })->in($xml_dir);
 }

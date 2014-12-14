@@ -38,20 +38,20 @@ print q~
 
 my $frmid     = 1;
 my $login_ids = BOM::Platform::Persistence::DAO::Client::get_loginids_for_poc_locking_clients_arrayref({
-        'broker'           => $broker,
-        'date'             => $date,
-        'authenticated'    => $authenticated,
-        'lock_cashier'     => $lock_cashier,
-        'unwelcome_logins' => $unwelcome_logins,
+    'broker'           => $broker,
+    'date'             => $date,
+    'authenticated'    => $authenticated,
+    'lock_cashier'     => $lock_cashier,
+    'unwelcome_logins' => $unwelcome_logins,
 });
 
 foreach my $loginID (@{$login_ids}) {
     my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID}) || next;
 
     my $account_mapper = BOM::Platform::Data::Persistence::DataMapper::Account->new({
-            client_loginid => $loginID,
-            currency_code  => $client->currency,
-            operation      => 'read_binary_replica',
+        client_loginid => $loginID,
+        currency_code  => $client->currency,
+        operation      => 'read_binary_replica',
     });
     my $bal = in_USD($account_mapper->get_balance(), $client->currency);
 
@@ -69,7 +69,7 @@ foreach my $loginID (@{$login_ids}) {
   <tr>
     <td>
       <form name="frm_monitor$frmid" id="frm_monitor$frmid" target="$loginID" action="~
-      . request()->url_for('backoffice/f_manager_history.cgi') . qq~" method="post">
+        . request()->url_for('backoffice/f_manager_history.cgi') . qq~" method="post">
         <input name=loginID type=hidden value=$loginID>
         <input type=hidden name=broker value=$broker>
         <input type=hidden name=currency value=USD>

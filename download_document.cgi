@@ -58,9 +58,10 @@ if (-d $full_path) {
             $encodedl =~ s/\s/+/g;
             $encodedl =~ s/\&/%26/g;
             if (-d "$full_path/$l") {
-                push @directorycontents, "<!-- $createtime -->" 
-                  . "<li><strong><font size=\"4\">$path/<a href='"
-                  . request()->url_for(
+                push @directorycontents,
+                      "<!-- $createtime -->"
+                    . "<li><strong><font size=\"4\">$path/<a href='"
+                    . request()->url_for(
                     'backoffice/download_document.cgi',
                     {
                         category => $category,
@@ -69,21 +70,22 @@ if (-d $full_path) {
                     }) . "'>$l</a></font></strong></li>";
             } else {
                 #use normal cgi on this one because of content-type
-                push @directorycontents, "<!-- $createtime -->" . "<li>" 
-                  . "<font size=\"4\">$path/<a target='$createtime' href='"
-                  . request()->url_for(
+                push @directorycontents,
+                      "<!-- $createtime -->" . "<li>"
+                    . "<font size=\"4\">$path/<a target='$createtime' href='"
+                    . request()->url_for(
                     'backoffice/download_document.cgi',
                     {
                         category => $category,
                         path     => $encodedl,
                         broker   => $broker
                     })
-                  . "'>$l</a></font>&nbsp;"
-                  . '<font size="1">(Last modified '
-                  . (int($createtime * 10) / 10)
-                  . ' days ago.  File size : '
-                  . (-s "$full_path/$l")
-                  . ')</font>' . '</li>';
+                    . "'>$l</a></font>&nbsp;"
+                    . '<font size="1">(Last modified '
+                    . (int($createtime * 10) / 10)
+                    . ' days ago.  File size : '
+                    . (-s "$full_path/$l")
+                    . ')</font>' . '</li>';
             }
         }
     }

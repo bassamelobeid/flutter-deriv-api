@@ -1,6 +1,5 @@
 #!/usr/bin/perl
 
-
 BEGIN {
     push @INC, "/home/git/bom/cgi";
 }
@@ -97,19 +96,24 @@ foreach my $currency (sort @currencies) {
             })->db;
 
         # Get all of the clients in the DB with this broker code/currency combo, their balance and their agg deposits and withdrawals
-        my $client_ref = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({db => $db,})->get_daily_summary_report({
+        my $client_ref = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+                db => $db,
+            }
+            )->get_daily_summary_report({
                 currency_code     => $currency,
                 broker_code       => $broker,
                 start_of_next_day => $start_of_next_day,
-        });
+            });
 
         $logger->debug('get_accounts_with_open_bets_at_end_of');
-        my $accounts_with_open_bet =
-          BOM::Platform::Data::Persistence::DataMapper::Transaction->new({db => $db,})->get_accounts_with_open_bets_at_end_of({
+        my $accounts_with_open_bet = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+                db => $db,
+            }
+            )->get_accounts_with_open_bets_at_end_of({
                 currency_code     => $currency,
                 broker_code       => $broker,
                 start_of_next_day => $start_of_next_day,
-          });
+            });
 
         # LOOP THROUGH ALL THE CLIENTS
         $logger->debug('...' . scalar(keys(%$client_ref)) . ' clients to do.');
@@ -162,7 +166,7 @@ foreach my $currency (sort @currencies) {
             $acbalance = roundnear(0.01, $acbalance);
 
             my $summary_line =
-              join(',', ($login_id, $acbalance, $total_open_bets_value, $total_open_bets_profit, $total_equity, $agg_deposit_withdrawal));
+                join(',', ($login_id, $acbalance, $total_open_bets_value, $total_open_bets_profit, $total_equity, $agg_deposit_withdrawal));
             $summary_line .= ',' . join('+', @portfolios) if scalar @portfolios;
             push @sum_lines, $summary_line . "\n";
         }
@@ -178,11 +182,11 @@ foreach my $currency (sort @currencies) {
         my $sm_fh       = new IO::File '> ' . $tempsummary || die '[' . $0 . '] Can\'t write to ' . $tempsummary . ' ' . $!;
 
         my $generation_msg =
-            '\#File generated for '
-          . $run_for->date . ' on '
-          . $now->datetime
-          . ' from entire database since inception by f_consolidated.cgi ('
-          . $currency . ")\n";
+              '\#File generated for '
+            . $run_for->date . ' on '
+            . $now->datetime
+            . ' from entire database since inception by f_consolidated.cgi ('
+            . $currency . ")\n";
 
         my $header = "loginid,account_balance,total_open_bets_value,total_open_bets_profit,total_equity,aggregate_deposit_withdrawals,portfolio\n";
         print $sm_fh ($generation_msg, $header, @sum_lines);
@@ -200,10 +204,10 @@ foreach my $broker (keys %{$total_pl}) {
     }
 }
 send_email({
-        'from'    => 'system@binary.com',
-        'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
-        'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
-        'message' => \@mail_msg,
+    'from'    => 'system@binary.com',
+    'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
+    'subject' => 'Daily Outstanding Bets Profit / Lost [' . $run_for->date . ']',
+    'message' => \@mail_msg,
 });
 
 $logger->debug('Finished.');

@@ -42,8 +42,8 @@ my $overridelimits = delete $params{overridelimits};
 
 BOM::Platform::Auth0::can_access(['Payments']);
 my $token = BOM::Platform::Context::request()->bo_cookie->token;
-my $staff    = BOM::Platform::Auth0::from_cookie();
-my $clerk    = $staff->{nickname};
+my $staff = BOM::Platform::Auth0::from_cookie();
+my $clerk = $staff->{nickname};
 
 my $client = eval { BOM::Platform::Client->new({loginid => $loginID}) } || do {
     print "Error: no such client $loginID";
@@ -163,8 +163,8 @@ if ($amount > $staffauthlimit) {
 
 # Check didn't hit Reload
 my $payment_mapper = BOM::Platform::Data::Persistence::DataMapper::Payment->new({
-        'client_loginid' => $loginID,
-        'currency_code'  => $curr,
+    'client_loginid' => $loginID,
+    'currency_code'  => $curr,
 });
 
 if (
@@ -184,16 +184,16 @@ if (!$overridelimits) {
         Bar('Performing client-side withdrawal limit checks');
 
         print '<p>Performing client-side withdrawal limit checks...</p>'
-          . '<p style="font-style:italic;">Note: the system is now simulating a client-side withdrawal and checking if it gets blocked by the client-side withdrawal limits. You can over-ride this by clicking on the over-ride checkbox on the previous page.</p>'
-          . '<p>If the client-side withdrawal check fails, then the withdrawal will not have been processed.</p>';
+            . '<p style="font-style:italic;">Note: the system is now simulating a client-side withdrawal and checking if it gets blocked by the client-side withdrawal limits. You can over-ride this by clicking on the over-ride checkbox on the previous page.</p>'
+            . '<p>If the client-side withdrawal check fails, then the withdrawal will not have been processed.</p>';
 
         print '<p style="color:red;">';
 
         my $withdrawal_limits = $client->get_withdrawal_limits();
         check_if_client_can_withdraw({
-                client            => $client,
-                amount            => $amount,
-                withdrawal_limits => $withdrawal_limits,
+            client            => $client,
+            amount            => $amount,
+            withdrawal_limits => $withdrawal_limits,
         });
         print '</p>';
 
@@ -212,7 +212,7 @@ if ($ttype eq 'TRANSFER') {
     BOM::Platform::Transaction->freeze_client($toLoginID) || do {
         print "ERROR: To-Account stuck in previous transaction $toLoginID";
         code_exit_BO();
-      }
+        }
 }
 
 # NEW PAYMENT HANDLERS ..
@@ -233,7 +233,7 @@ if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         toClient => $toClient,
         amount   => $amount,
         staff    => $clerk,
-      )
+        )
 
 }
 
@@ -243,7 +243,7 @@ BOM::Platform::Transaction->unfreeze_client($toLoginID) if $toLoginID;
 my $now = BOM::Utility::Date->new;
 # Logging
 Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-  ->append($now->datetime . " $ttype $curr$amount $loginID clerk=$clerk fellow=$DCstaff DCcode=$DCcode $ENV{REMOTE_ADDR}");
+    ->append($now->datetime . " $ttype $curr$amount $loginID clerk=$clerk fellow=$DCstaff DCcode=$DCcode $ENV{REMOTE_ADDR}");
 
 # Print confirmation
 Bar("$ttype confirmed");
@@ -268,9 +268,9 @@ my $after  = $today->datetime_yyyymmdd_hhmmss;
 my $before = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
 
 print_client_statement_for_backoffice({
-        client => $client,
-        before => $before,
-        after  => $after
+    client => $client,
+    before => $before,
+    after  => $after
 });
 
 #View updated statement
@@ -293,19 +293,20 @@ if ($toemail && $informclient) {
     my $subject = $ttype eq 'CREDIT' ? localize('Deposit via Bank Wire') : localize('Withdrawal via Bank Wire');
     my $who = BOM::View::Language::translate_salutation($salutation) . " $first_name $last_name";
     my $email_body =
-        localize('Dear') . " $who,\n\n"
-      . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
-      . localize('Kind Regards') . "\n\n"
-      . $website->display_name;
+          localize('Dear')
+        . " $who,\n\n"
+        . localize('We would like to inform you that your [_1] has been processed.', $subject) . "\n\n"
+        . localize('Kind Regards') . "\n\n"
+        . $website->display_name;
 
     my $support_email = BOM::Platform::Context::request()->website->config->get('customer_support.email');
 
     my $result = send_email({
-            from               => $support_email,
-            to                 => $email,
-            subject            => $website->display_name . ': ' . $subject,
-            message            => [$email_body],
-            use_email_template => 1,
+        from               => $support_email,
+        to                 => $email,
+        subject            => $website->display_name . ': ' . $subject,
+        message            => [$email_body],
+        use_email_template => 1,
     });
 
     $client->add_note($subject, $email_body);

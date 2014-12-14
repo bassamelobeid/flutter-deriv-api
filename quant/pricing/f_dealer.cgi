@@ -9,9 +9,12 @@ use f_brokerincludeall;
 use Try::Tiny;
 use Path::Tiny;
 
+use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Product::Contract::ContractCategory::ContractType::Registry;
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
+use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Platform::Helper::Model::FinancialMarketBet;
 use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
@@ -38,16 +41,16 @@ my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
 my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants . ','
-  . BOM::Platform::Context::request()->website->config->get('customer_support.email');
+    . BOM::Platform::Context::request()->website->config->get('customer_support.email');
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') eq 'closeatzero') {
 
-    if ($currency !~ /^\w\w\w$/) { print "Error with curr " . request()->param('curr');   code_exit_BO(); }
-    if ($price !~ /^\d*\.?\d*$/) { print "Error with price " . request()->param('price'); code_exit_BO(); }
-    if ($price eq "") { print "Error : no price entered"; code_exit_BO(); }
+    if ($currency !~ /^\w\w\w$/)    { print "Error with curr " . request()->param('curr');       code_exit_BO(); }
+    if ($price !~ /^\d*\.?\d*$/)    { print "Error with price " . request()->param('price');     code_exit_BO(); }
+    if ($price eq "")               { print "Error : no price entered";                          code_exit_BO(); }
     if ($loginID !~ /^$broker\d+$/) { print "Error with loginid " . request()->param('loginid'); code_exit_BO(); }
-    if ($betcode !~ /^[\w\.\-]+$/) { print "Error with betcode $betcode"; code_exit_BO(); }
+    if ($betcode !~ /^[\w\.\-]+$/)  { print "Error with betcode $betcode";                       code_exit_BO(); }
     if ($qty !~ /^\d+$/ or request()->param('qty') > 50) { print "Error with qty " . request()->param('qty'); code_exit_BO(); }
 
     my $client;
@@ -83,6 +86,11 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
     }
 
     # Further error checks
+    my $fmb_mapper = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
+            client_loginid => $loginID,
+            currency_code  => $currency,
+    });
+
     if ($buysell eq 'BUY') {
         my $bal = BOM::Platform::Data::Persistence::DataMapper::Account->new({
                 'client_loginid' => $loginID,
@@ -90,10 +98,6 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
             })->get_balance();
         if ($bal < $price) { print "Error : insufficient client account balance. Client balance is only $currency$bal"; code_exit_BO(); }
     } elsif ($buysell eq 'SELL') {
-        my $fmb_mapper = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
-                client_loginid => $loginID,
-                currency_code  => $currency,
-        });
         my $stockonhand = $fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($betcode);
 
         if ($qty > $stockonhand + 0.000001) {
@@ -101,9 +105,9 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
             else                     { print "Error: you cannot sell $qty as $loginID only owns $stockonhand of $betcode" }
             code_exit_BO();
         }
+
         if ($qty != $stockonhand) {
-            print "Error: you cannot sell $qty as $loginID owns $stockonhand of $betcode.
- <br> All of the positions have to be sold at once";
+            print "Error: you cannot sell $qty as $loginID owns $stockonhand of $betcode. <br> All of the positions have to be sold at once";
             code_exit_BO();
         }
     } else {
@@ -111,45 +115,68 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
         code_exit_BO();
     }
 
-    # check short code
-    my $bet = produce_contract($betcode, $currency);
+    if (request()->param('whattodo') eq 'closeatzero') {
+        if (not BOM::Platform::Transaction->freeze_client($loginID)) {
+            die "Account stuck in previous transaction $loginID";
+        }
 
-    if ($bet->longcode =~ /UNKNOWN|Unknown/) { print "Error : BOM::Product::Contract returned unknown bet code!"; code_exit_BO(); }
+        my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+                operation   => 'write',
+                broker_code => $broker,
+            })->db;
 
-    if ($bet->payout > 50001) { print "Error : Payout is higher than 50000. Payout=" . $bet->payout; code_exit_BO(); }
-    if ($bet->payout < $price) {
-        print "Error : Bet price is higher than payout: payout=" . $bet->payout . ' price=' . $price;
-        code_exit_BO();
+        my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
+        my $fmb_helper = BOM::Platform::Helper::Model::FinancialMarketBet->new({
+                bet => $fmbs->[0],
+                db  => $db
+            });
+
+        $fmb_helper->sell_bet({
+                sell_price    => 0,
+                sell_time     => $now->db_timestamp,
+                staff_loginid => $clerk,
+            });
+    } else {
+        # check short code
+        my $bet = produce_contract($betcode, $currency);
+
+        if ($bet->longcode =~ /UNKNOWN|Unknown/) { print "Error : BOM::Product::Contract returned unknown bet code!"; code_exit_BO(); }
+
+        if ($bet->payout > 50001) { print "Error : Payout is higher than 50000. Payout=" . $bet->payout; code_exit_BO(); }
+        if ($bet->payout < $price) {
+            print "Error : Bet price is higher than payout: payout=" . $bet->payout . ' price=' . $price;
+            code_exit_BO();
+        }
+        # add other checks below..
+
+        if (not BOM::Platform::Transaction->freeze_client($loginID)) {
+            die "Account stuck in previous transaction $loginID";
+        }
+        #pricing comment
+        my $pricingcomment = request()->param('comment');
+        my $transaction    = BOM::Product::Transaction->new({
+                client   => $client,
+                contract => $bet,
+                action   => $buysell,
+                price    => $price,
+                comment  => $pricingcomment,
+                staff    => $clerk,
+        });
+        my $error = $transaction->update_client_db;
+        die $error->{-message_to_client} if $error;
     }
-    # add other checks below..
 
-    if (not BOM::Platform::Transaction->freeze_client($loginID)) {
-        die "Account stuck in previous transaction $loginID";
-    }
-    #pricing comment
-    my $pricingcomment = request()->param('comment');
-    my $transaction    = BOM::Product::Transaction->new({
-            client   => $client,
-            contract => $bet,
-            action   => $buysell,
-            price    => $price,
-            comment  => $pricingcomment,
-            staff    => $clerk,
-    });
-    my $error = $transaction->update_client_db;
-    die $error->{-message_to_client} if $error;
-
-    BOM::Platform::Transaction->unfreeze_client(request()->param('loginid'));
+    BOM::Platform::Transaction->unfreeze_client($loginID);
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-      ->append($now->datetime
-          . "GMT $ttype($buysell) $qty @ $currency$price $betcode $loginID clerk=$clerk fellow="
-          . request()->param('DCstaff')
-          . " DCcode="
-          . request()->param('DCcode') . " ["
-          . request()->param('comment')
-          . "] $ENV{'REMOTE_ADDR'}");
+        ->append($now->datetime
+            . "GMT $ttype($buysell) $qty @ $currency$price $betcode $loginID clerk=$clerk fellow="
+            . request()->param('DCstaff')
+            . " DCcode="
+            . request()->param('DCcode') . " ["
+            . request()->param('comment')
+            . "] $ENV{'REMOTE_ADDR'}");
 
     Bar("Done");
     print "Done!<P>
@@ -183,10 +210,10 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
     }
 
     send_email({
-            from    => BOM::Platform::Runtime->instance->app_config->system->email,
-            to      => $to,
-            subject => $subject,
-            message => \@body,
+        from    => BOM::Platform::Runtime->instance->app_config->system->email,
+        to      => $to,
+        subject => $subject,
+        message => \@body,
     });
 
     code_exit_BO();
@@ -196,7 +223,7 @@ Bar("MAKE TRANSACTION IN CLIENT ACCOUNT");
 print qq~
 <table width=100% border=0 bgcolor=ffffce><tr><td width=100% bgcolor=ffffce>
 <FORM name=maketrans onsubmit="return confirm('Are you sure ? Please double-check all inputs.');" method=POST action="~
-  . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
+    . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
 <input type=hidden name=whattodo value=maketrans>
 <input type=hidden name=broker value=$broker>
 <select name=buysell><option selected>SELL<option>BUY</select>
@@ -225,7 +252,7 @@ Bar("CLOSE CONTRACT AT ZERO PRICE");
 print qq~
 <table width=100% border=0 bgcolor=ffffce><tr><td width=100% bgcolor=ffffce>
 <FORM name=maketrans onsubmit="return confirm('Are you sure ? Please double-check all inputs.');" method=POST action="~
-  . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
+    . request()->url_for('backoffice/quant/pricing/f_dealer.cgi') . qq~">
 <input type=hidden name=whattodo value=closeatzero>
 <input type=hidden name=broker value=$broker>
 <select name=buysell><option selected>SELL</select>

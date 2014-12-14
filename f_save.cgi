@@ -64,14 +64,12 @@ $text =~ s/\n\r/\n/g;
 my @lines = split(/\n/, $text);
 
 if ($filen eq 'editvol') {
-
     my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
-
     my $market = $underlying->market->name;
     my $model =
-      ($market eq 'indices')
-      ? 'BOM::MarketData::VolSurface::Moneyness'
-      : 'BOM::MarketData::VolSurface::Delta';
+        ($market eq 'indices')
+        ? 'BOM::MarketData::VolSurface::Moneyness'
+        : 'BOM::MarketData::VolSurface::Delta';
 
     my $surface_data   = {};
     my $col_names_line = shift @lines;
@@ -84,7 +82,6 @@ if ($filen eq 'editvol') {
         my $day = shift @pieces;
         my %spread;
         foreach my $point (@points) {
-
             if ($point =~ /D_spread/) {
                 my $spread_point = $point;
                 $spread_point =~ s/D_spread//g;
@@ -98,7 +95,6 @@ if ($filen eq 'editvol') {
             }
 
         }
-
         $surface_data->{$day} = {
             smile      => \%smile,
             vol_spread => \%spread,
@@ -107,11 +103,10 @@ if ($filen eq 'editvol') {
     my %surface_args = (
         underlying    => $underlying,
         surface       => $surface_data,
-        recorded_date => BOM::Utility::Date->new
+        recorded_date => BOM::Utility::Date->new,
+        (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
 
-    $surface_args{spot_reference} = request()->param('spot_reference')
-      if $model eq 'BOM::MarketData::VolSurface::Moneyness';
     my $surface = $model->new(%surface_args);
 
     my $dm                  = BOM::MarketData::Fetcher::VolSurface->new;
@@ -121,17 +116,18 @@ if ($filen eq 'editvol') {
 
     if ($existing_volsurface) {
         my ($big_differences, $error_message, @output) =
-          BOM::MarketData::Display::VolatilitySurface->new(surface => $surface)->print_comparison_between_volsurface({
+            BOM::MarketData::Display::VolatilitySurface->new(surface => $surface)->print_comparison_between_volsurface({
                 ref_surface => $existing_volsurface,
                 warn_diff   => 1,
                 quiet       => 1,
-          });
+            });
 
         print "<P> Difference between existing and new surface </p>";
         print @output;
 
         if (!$surface->is_valid) {
-            print "<P> $surface->validation_error </P>";
+            print "<P> "
+            . $surface->validation_error . " </P>";
 
         } elsif ($big_differences) {
             print "<P>$error_message</P>";
@@ -143,6 +139,7 @@ if ($filen eq 'editvol') {
 
     code_exit_BO();
 }
+
 if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
     my $symbol = $1;
     my $rates  = {};
@@ -236,7 +233,7 @@ if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Runtime->instance
 
 local *DATA;
 open(DATA, ">$overridefilename")
-  || die "[$0] Cannot open $overridefilename to write $!";
+    || die "[$0] Cannot open $overridefilename to write $!";
 flock(DATA, 2);
 local $\ = "\n";
 
@@ -247,26 +244,26 @@ close(DATA);
 
 # Log the difference (difflog)
 save_difflog({
-        'overridefilename' => $overridefilename,
-        'loginID'          => $broker,
-        'staff'            => $clerk,
-        'diff'             => $diff,
+    'overridefilename' => $overridefilename,
+    'loginID'          => $broker,
+    'staff'            => $clerk,
+    'diff'             => $diff,
 });
 
 # Log the difference (staff.difflog)
 save_log_staff_difflog({
-        'overridefilename' => $overridefilename,
-        'loginID'          => $broker,
-        'staff'            => $clerk,
-        'diff'             => $diff,
+    'overridefilename' => $overridefilename,
+    'loginID'          => $broker,
+    'staff'            => $clerk,
+    'diff'             => $diff,
 });
 
 # f_save complete log
 save_log_save_complete_log({
-        'overridefilename' => $overridefilename,
-        'loginID'          => $broker,
-        'staff'            => $clerk,
-        'diff'             => $diff,
+    'overridefilename' => $overridefilename,
+    'loginID'          => $broker,
+    'staff'            => $clerk,
+    'diff'             => $diff,
 });
 
 # fsave.log
@@ -274,7 +271,7 @@ if ((-s "/var/log/fixedodds/fsave.log") > 300000) {
     system("mv /var/log/fixedodds/fsave.log /var/log/fixedodds/fsave.log.1");
 }
 Path::Tiny::path("/var/log/fixedodds/fsave.log")
-  ->append(BOM::Utility::Date->new->datetime . " $broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename));
+    ->append(BOM::Utility::Date->new->datetime . " $broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename));
 
 # DISPLAY SAVED FILE
 print "<b><p>FILE was saved as follows :</p></b><br>";
@@ -290,7 +287,7 @@ print "<p>New file size is " . (virgule(-s "$overridefilename")) . " bytes</p><h
 
 # DISPLAY diff
 print
-  "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>$diff</pre></td></tr></table><hr>";
+    "<hr><table border=0><tr><td bgcolor=#ffffce><center><b>DIFFERENCES BETWEEN OLD FILE AND NEW FILE :<br>(differences indicated by stars)</b><br><pre>$diff</pre></td></tr></table><hr>";
 
 if (-e "$overridefilename.staffedit") {
     unlink "$overridefilename.staffedit";

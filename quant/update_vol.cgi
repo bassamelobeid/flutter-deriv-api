@@ -50,7 +50,7 @@ if ($surface->is_valid) {
 } else {
     $response = {
         success => 0,
-        reason => $surface->validation_error;
+        reason  => $surface->validation_error;
     };
 }
 

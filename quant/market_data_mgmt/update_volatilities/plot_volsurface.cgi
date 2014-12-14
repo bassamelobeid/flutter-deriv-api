@@ -42,16 +42,16 @@ Bar('Volatility Smiles for ' . $underlying->symbol);
 my $display = BOM::MarketData::Display::VolatilitySurface->new(surface => $vol_surface);
 foreach my $day_to_expiry (@days_to_expiry) {
     print $display->plot_smile_or_termstructure({
-            days_to_expiry => $day_to_expiry,
-            title          => "$day_to_expiry day smile for $underlying_symbol",
+        days_to_expiry => $day_to_expiry,
+        title          => "$day_to_expiry day smile for $underlying_symbol",
     });
 }
 
 Bar("Volatility Termstructures for $underlying_symbol");
 foreach my $moneyness (@moneyness) {
     print $display->plot_smile_or_termstructure({
-            moneyness => $moneyness,
-            title     => "$moneyness delta termstructure for $underlying_symbol",
+        moneyness => $moneyness,
+        title     => "$moneyness delta termstructure for $underlying_symbol",
     });
 }
 

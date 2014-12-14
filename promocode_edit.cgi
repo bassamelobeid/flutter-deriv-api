@@ -75,7 +75,7 @@ my $stash = {
     messages => \@messages
 };
 BOM::Platform::Context::template->process('backoffice/promocode_edit.html.tt', $stash)
-  || die("in promocode_edit: " . BOM::Platform::Context::template->error());
+    || die("in promocode_edit: " . BOM::Platform::Context::template->error());
 
 code_exit_BO();
 
@@ -93,9 +93,9 @@ sub _validation_errors {
     }
     # any more complex validation should go here..
     push @errors, "MINUMUM TURNOVER is only for FREE_BET promotions"
-      if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
+        if $input{min_turnover} && $input{promo_code_type} ne 'FREE_BET';
     push @errors, "MINUMUM DEPOSIT is only for GET_X_WHEN_DEPOSIT_Y promotions"
-      if $input{min_deposit} && $input{promo_code_type} ne 'GET_X_WHEN_DEPOSIT_Y';
+        if $input{min_deposit} && $input{promo_code_type} ne 'GET_X_WHEN_DEPOSIT_Y';
     return @errors;
 }
 

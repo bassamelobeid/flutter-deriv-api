@@ -30,17 +30,17 @@ my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mi
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
 my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
 
-if ($input{impersonate_user}){
+if ($input{impersonate_user}) {
     my $token = BOM::Platform::Authorization->issue_token(
         client_id       => 1,
         expiration_time => time + 86400,
-        login_id         => $loginid,
-        scopes          => ['price', 'chart', 'trade'], 
+        login_id        => $loginid,
+        scopes          => ['price', 'chart', 'trade'],
     );
     my $cookie = BOM::Platform::SessionCookie->new(
         impersonating => 1,
-        loginid => $loginid,
-        token   => $token,
+        loginid       => $loginid,
+        token         => $token,
     );
     my $session_cookie = CGI::cookie(
         -name    => BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login,
@@ -119,10 +119,10 @@ if ($input{whattodo} eq 'uploadID') {
     }
 
     $client->add_client_authentication_document({    # Rose
-            document_type              => $doctype,
-            document_format            => $docformat,
-            document_path              => $newfilename,
-            authentication_method_code => 'ID_DOCUMENT',
+        document_type              => $doctype,
+        document_format            => $docformat,
+        document_path              => $newfilename,
+        authentication_method_code => 'ID_DOCUMENT',
     });
 
     $client->save;
@@ -142,9 +142,9 @@ if (my $check_str = $input{do_id_check}) {
     );
     for ($check_str) {
         $result =
-            /CheckID/ ? $id_auth->_fetch_checkid()
-          : /ProveID/ ? $id_auth->_fetch_proveid()
-          :             die("unknown IDAuthentication method $_");
+              /CheckID/ ? $id_auth->_fetch_checkid()
+            : /ProveID/ ? $id_auth->_fetch_proveid()
+            :             die("unknown IDAuthentication method $_");
     }
     $logger->info("result: " . Dumper($result));
     print qq[<p><b>"$check_str" completed</b></p>
@@ -228,9 +228,9 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 and $input{'dob_year'})
             {
                 my $day_number =
-                  ($input{'dob_day'} < 10)
-                  ? "0$input{'dob_day'}"
-                  : $input{'dob_day'};
+                    ($input{'dob_day'} < 10)
+                    ? "0$input{'dob_day'}"
+                    : $input{'dob_day'};
                 $date_of_birth = $input{'dob_year'} . '-' . $input{'dob_month'} . '-' . $day_number;
             }
 
@@ -467,7 +467,7 @@ if (my $statuses = build_client_warning_message($loginid)) {
 if ($client->self_exclusion) {
     Bar("$loginid SELF-EXCLUSION SETTINGS");
     print "$loginid has enabled <a id='self-exclusion' href=\""
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_setting_selfexclusion.cgi',
         {
             broker  => $broker,
@@ -488,7 +488,7 @@ if (my $payment_agent = $client->payment_agent) {
 
     print '</table>';
     print "<p><a href=\""
-      . request()->url_for(
+        . request()->url_for(
         'backoffice/f_setting_paymentagent.cgi',
         {
             broker   => $broker,

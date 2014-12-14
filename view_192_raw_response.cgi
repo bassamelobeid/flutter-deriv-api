@@ -24,8 +24,8 @@ my $client = BOM::Platform::Client->new({loginid => $loginID}) || die "could not
 my $report = BOM::Platform::ProveID->new(
     client        => $client,
     search_option => $search_option
-  )->get_192_xml_report()
-  || die "no 192 $search_option report available for $client";
+    )->get_192_xml_report()
+    || die "no 192 $search_option report available for $client";
 
 if (request()->param('raw')) {
     PrintContentType_XML();
@@ -41,7 +41,7 @@ if (request()->param('raw')) {
       ~;
     BOM::Platform::Context::template->process('backoffice/global/javascripts.html.tt',
         {javascript => BOM::View::JavascriptConfig->instance->config_for()})
-      || die BOM::Platform::Context::template->error;
+        || die BOM::Platform::Context::template->error;
     foreach my $js_file (BOM::View::JavascriptConfig->instance->bo_js_files_for($0)) {
         print '<script type="text/javascript" src="' . $js_file . '"></script>';
     }

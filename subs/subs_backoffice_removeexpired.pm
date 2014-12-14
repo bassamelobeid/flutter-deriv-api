@@ -24,7 +24,9 @@ sub Rescind_FreeGifts {
 
     my @report;
 
-    my $freegift_mapper = BOM::Platform::Data::Persistence::DataMapper::Payment::FreeGift->new({broker_code => $broker,});
+    my $freegift_mapper = BOM::Platform::Data::Persistence::DataMapper::Payment::FreeGift->new({
+        broker_code => $broker,
+    });
 
     my $now                       = BOM::Utility::Date->new;
     my $befor_than                = BOM::Utility::Date->new(($now->epoch - ($inactivedays * 24 * 60 * 60)))->truncate_to_day;
@@ -36,7 +38,7 @@ sub Rescind_FreeGifts {
         my $loginID      = $account->{'client_loginid'};
         my $txn_date     = $account->{'transaction_time'};
 
-        my $client       = BOM::Platform::Client->new({loginid=>$loginID});
+        my $client = BOM::Platform::Client->new({loginid => $loginID});
 
         if (not BOM::Platform::Transaction->freeze_client($loginID)) {
             die "Account stuck in previous transaction $loginID";
@@ -49,10 +51,10 @@ sub Rescind_FreeGifts {
             push @report, "$loginID, Amount: $curr $bal, Funded date: $txn_date";
             if ($whattodo eq 'Do it for real !') {
                 $client->payment_free_gift(
-                        currency => $curr,
-                        amount   => -$bal,
-                        remark   => $message,
-                        staff    => $clerk,
+                    currency => $curr,
+                    amount   => -$bal,
+                    remark   => $message,
+                    staff    => $clerk,
                 );
                 push @report, "$loginID rescinded $curr $bal!";
             }

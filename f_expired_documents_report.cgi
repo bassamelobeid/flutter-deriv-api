@@ -29,8 +29,8 @@ print q~
 my $date      = BOM::Utility::Date->new(request()->param('date'));
 my $frmid     = 1;
 my $login_ids = BOM::Platform::Persistence::DAO::Client::get_loginids_for_clients_with_expired_documents_arrayref({
-        'broker' => $broker,
-        'date'   => $date,
+    'broker' => $broker,
+    'date'   => $date,
 });
 
 foreach my $loginID (@{$login_ids}) {
@@ -45,7 +45,7 @@ foreach my $loginID (@{$login_ids}) {
   <tr>
     <td>
       <form name="frm_monitor$frmid" id="frm_monitor$frmid" target="$loginID" action="~
-      . request()->url_for('backoffice/f_manager_history.cgi') . qq~" method="post">
+        . request()->url_for('backoffice/f_manager_history.cgi') . qq~" method="post">
         <input name=loginID type=hidden value=$loginID>
         <input type=hidden name=broker value=$broker>
         <input type=hidden name=l value=EN>

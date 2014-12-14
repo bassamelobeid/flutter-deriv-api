@@ -29,9 +29,9 @@ my $bet = produce_contract(\%bet_params);
 
 my $start = (request()->param('start')) ? BOM::Utility::Date->new(request()->param('start')) : $bet->date_start;
 my $end =
-    (request()->param('end')) ? BOM::Utility::Date->new(request()->param('end'))
-  : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->max_tick_expiry_duration)
-  :                             $bet->date_expiry;
+      (request()->param('end')) ? BOM::Utility::Date->new(request()->param('end'))
+    : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->max_tick_expiry_duration)
+    :                             $bet->date_expiry;
 
 if (request()->param('last')) {
     $start = BOM::Utility::Date->new({epoch => $start->epoch - request()->param('last') * 86400});

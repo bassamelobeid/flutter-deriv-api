@@ -68,51 +68,51 @@ if ($table_name =~ /^client_status_(\w+)/) {
     }
 
     my $total_count = BOM::Platform::Persistence::DAO::Utils::Log::get_count_client_status_log_by_status_code({
-            'status_code' => $status_code,
-            'broker'      => $broker,
+        'status_code' => $status_code,
+        'broker'      => $broker,
     });
 
     $pages = int $total_count / $number_of_rows;
     $pages -= 1 if ($total_count % $number_of_rows == 0);
 
     $result_arrayref = BOM::Platform::Persistence::DAO::Utils::Log::get_sorted_arrayref_list_of_client_status_log_by_status_code({
-            'status_code'    => $status_code,
-            'broker'         => $broker,
-            'page'           => $page,
-            'number_of_rows' => $number_of_rows,
+        'status_code'    => $status_code,
+        'broker'         => $broker,
+        'page'           => $page,
+        'number_of_rows' => $number_of_rows,
     });
 } else {
     if ($loginid) {
         my $total_count = BOM::Platform::Persistence::DAO::Utils::Log::get_count_log_by_table_name_and_loginid({
-                'table_name' => $table_name,
-                'broker'     => $broker,
-                'loginid'    => $loginid
+            'table_name' => $table_name,
+            'broker'     => $broker,
+            'loginid'    => $loginid
         });
         $pages = int $total_count / $number_of_rows;
         $pages -= 1 if ($total_count % $number_of_rows == 0);
 
         $result_arrayref = BOM::Platform::Persistence::DAO::Utils::Log::get_sorted_arrayref_list_of_log_by_table_name_and_loginid({
-                'table_name'     => $table_name,
-                'broker'         => $broker,
-                'page'           => $page,
-                'number_of_rows' => $number_of_rows,
-                'loginid'        => $loginid
+            'table_name'     => $table_name,
+            'broker'         => $broker,
+            'page'           => $page,
+            'number_of_rows' => $number_of_rows,
+            'loginid'        => $loginid
         });
 
         $url_to_myself .= "&loginid=$loginid";
     } else {
         my $total_count = BOM::Platform::Persistence::DAO::Utils::Log::get_count_log_by_table_name({
-                'table_name' => $table_name,
-                'broker'     => $broker,
+            'table_name' => $table_name,
+            'broker'     => $broker,
         });
         $pages = int $total_count / $number_of_rows;
         $pages -= 1 if ($total_count % $number_of_rows == 0);
 
         $result_arrayref = BOM::Platform::Persistence::DAO::Utils::Log::get_sorted_arrayref_list_of_log_by_table_name({
-                'table_name'     => $table_name,
-                'broker'         => $broker,
-                'page'           => $page,
-                'number_of_rows' => $number_of_rows,
+            'table_name'     => $table_name,
+            'broker'         => $broker,
+            'page'           => $page,
+            'number_of_rows' => $number_of_rows,
         });
     }
 }
@@ -132,6 +132,6 @@ $template_param->{'url_to_myself'}  = $url_to_myself;
 $template_param->{'url_to_client'}  = $url_to_client;
 
 BOM::Platform::Context::template->process('backoffice/log_list_table.html.tt', $template_param) || die BOM::Platform::Context::template->error(),
-  "\n";
+    "\n";
 
 code_exit_BO();

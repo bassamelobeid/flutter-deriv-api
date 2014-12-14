@@ -5,7 +5,8 @@ sub get_update_volatilities_form {
     my @all_markets = @{$all_markets};
 
     my $form =
-      "<form method=post action='" . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/update_used_volatilities.cgi') . "'>";
+        "<form method=post action='"
+        . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/update_used_volatilities.cgi') . "'>";
     $form .= "<input type=hidden name=warndifference value='$warndifference'>";
     $form .= qq~Update volatility for following underlyings: <input type="text" size=30 name="markets" value="$markets">~;
     $form .= qq~</br>~;
