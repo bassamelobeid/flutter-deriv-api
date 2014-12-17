@@ -16,8 +16,8 @@ use BOM::Market::UnderlyingDB;
 use BOM::Utility::GNUPlot;
 use BOM::Utility::Hash;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Plot Graph");

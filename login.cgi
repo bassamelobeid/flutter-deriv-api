@@ -11,8 +11,8 @@ use BOM::Utility::DuoWeb;
 use BOM::Platform::Auth0;
 use BOM::View::Backoffice::StaffPages;
 use BOM::Platform::Plack qw( http_redirect PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $try_to_login;
 my $passwd = request()->param('pass');

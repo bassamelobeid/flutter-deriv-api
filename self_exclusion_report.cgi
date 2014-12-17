@@ -5,7 +5,8 @@ use strict 'vars';
 
 use BOM::Platform::Plack qw( PrintContentType );
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Client self exclusion report');

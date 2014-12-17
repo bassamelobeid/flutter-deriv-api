@@ -6,8 +6,9 @@ use warnings;
 use Scalar::Util qw(looks_like_number);
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 
 my $LIMIT  = 100;

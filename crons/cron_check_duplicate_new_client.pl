@@ -6,10 +6,10 @@ use include_common_modules;
 use Carp qw( croak );
 use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
 use BOM::Utility::Log4perl;
+use BOM::Platform::Sysinit ();
 
 BOM::Utility::Log4perl::init_log4perl_console;
-
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 if ($ENV{REQUEST_METHOD}) {
     croak 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';

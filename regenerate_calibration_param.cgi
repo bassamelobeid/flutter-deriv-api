@@ -9,8 +9,8 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 use CGI;
 use JSON qw(to_json from_json);

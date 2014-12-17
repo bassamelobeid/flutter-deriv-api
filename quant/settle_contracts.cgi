@@ -16,8 +16,8 @@ use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
 use BOM::Platform::Helper::Model::FinancialMarketBet;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Manually Settle Contracts');

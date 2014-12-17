@@ -6,6 +6,7 @@ use BOM::Utility::Log4perl;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use include_common_modules;
+use BOM::Platform::Sysinit ();
 
 run() unless caller;
 
@@ -13,7 +14,7 @@ sub run {
     use Getopt::Long;
     BOM::Utility::Log4perl::init_log4perl_console;
     su_nobody();
-    system_initialize();
+    BOM::Platform::Sysinit::init();
 
     my $to;
     GetOptions('to=s' => \$to);

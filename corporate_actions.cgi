@@ -9,10 +9,9 @@ use BOM::MarketData::CorporateAction;
 use BOM::Platform::Runtime;
 use JSON qw(to_json);
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
-
-system_initialize();
-
 use CGI;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $cgi     = CGI->new;
 my $symbol  = $cgi->param('symbol');

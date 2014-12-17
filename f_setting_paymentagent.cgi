@@ -6,7 +6,8 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Runtime;
 use BOM::View::CGIForm;
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Payment Agent Setting');

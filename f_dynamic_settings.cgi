@@ -6,11 +6,12 @@ use BOM::Platform::Backoffice::Helper::DynamicSettings;
 use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
-system_initialize();
 
 use BOM::Platform::Runtime;
 use HTML::Entities;
 use Data::Compare;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 

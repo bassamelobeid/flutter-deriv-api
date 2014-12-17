@@ -7,7 +7,8 @@ use f_brokerincludeall;
 use BOM::Utility::DuoWeb;
 use BOM::Platform::Auth0;
 use BOM::Platform::Plack qw( PrintContentType );
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 PrintContentType();
 
 my $access_token = BOM::Platform::Auth0::exchange_code(request()->param('code'));

@@ -6,7 +6,8 @@ use BOM::Platform::Plack qw( PrintContentType );
 use Data::Validate::Sanctions qw/is_sanctioned/;
 use Path::Tiny;
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');

@@ -6,7 +6,8 @@ use strict 'vars';
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::HolidayCalendar;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 PrintContentType();
 
 BOM::Platform::Auth0::can_access(['Quants']);

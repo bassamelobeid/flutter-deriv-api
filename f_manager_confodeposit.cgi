@@ -12,8 +12,9 @@ use BOM::Platform::Data::Persistence::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 
 my $cgi    = new CGI;
