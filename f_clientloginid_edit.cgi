@@ -13,6 +13,7 @@ use f_brokerincludeall;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Client::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
