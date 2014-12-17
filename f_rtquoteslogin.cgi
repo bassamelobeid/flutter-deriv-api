@@ -22,6 +22,7 @@ my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Quants']);
 
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
+push @all_markets, 'futures'; # this is added to check for futures feed
 my $feedloc     = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
 my $dbloc       = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $tmp_dir     = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
