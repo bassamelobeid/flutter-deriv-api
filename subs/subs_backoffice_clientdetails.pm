@@ -3,6 +3,7 @@ use Encode;
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
 use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Platform::Client::Utility ();
 use BOM::Platform::Persistence::DAO::Client;
 use BOM::Platform::Context qw(request);
 use BOM::Utility::Format::Strings qw( set_selected_item );
