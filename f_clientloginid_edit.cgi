@@ -17,6 +17,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
 use BOM::View::CGIForm;
+use BOM::Platform::Client::Utility ();
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -312,7 +313,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if ($key eq 'secret_answer') {
-            $client->secret_answer(encrypt_secret_answer($input{$key}));
+            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}));
             next CLIENT_KEY;
         }
         if ($key eq 'ip_security') {
