@@ -15,44 +15,36 @@ $\ = "\n";
 PrintContentType();
 
 my $markets        = request()->param('markets');
-my $warndifference = request()->param('warndifference');
-
 my @markets = split /\s+/, $markets;
-
 my $dm = BOM::MarketData::Fetcher::VolSurface->new;
-
 BrokerPresentation("", "");
 
-foreach my $market (@markets) {
-    my $underlying = BOM::Market::Underlying->new($market);
-
+foreach my $symbol (@markets) {
     local $/ = "\n";
-
-    #------------------------Get the old/in-use/existing volatility ---------------------------------
+    my $underlying = BOM::Market::Underlying->new($symbol);
     my $existing_vol_surface = $dm->fetch_surface({underlying => $underlying});
     my $display = BOM::MarketData::Display::VolatilitySurface->new(surface => $existing_vol_surface);
-
     local $/ = "";
 
     print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% >";
     print "<TR>";
     print "<TD>";
-    print "<iframe frameborder=0 width=100% height=340 scrolling=yes ";
-    print "src='" . request()->url_for('backoffice/quant/edit_vol.cgi', {symbol => $market}) . "' ";
-    print "border=0 marginheight=0 marginwidth=0 vspace=0>";
-    print "</iframe>";
+    print '<form action="' . request()->url_for('backoffice/f_save.cgi') . '" method="post" name="editform">';
+    print '<input type="hidden" name="filen" value="editvol">';
+    print '<input type="hidden" name="symbol" value="' . $symbol . '">';
+    print '<input type="hidden" name="l" value="EN">';
+    print "<textarea name='text' rows=15 cols=75>";
+    print join "\n", $display->rmg_text_format;
+    print "</textarea>";
+    if ($existing_vol_surface->type eq 'moneyness') {
+        print 'Spot reference: <input type="text" name="spot_reference" value="' . $existing_vol_surface->spot_reference . '">';
+    }
+    print '<input type="submit" value="Save">';
     print "</TD>";
 
     print "</TABLE>";
 
 }
-
-print "<form method=post action='" . request()->url_for('backoffice/quant/market_data_mgmt/update_volatilities/update_used_volatilities.cgi') . "'>";
-print qq~<input type=hidden size=10 name=markets value="$markets">~;
-print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% ><TR><TD align = center>";
-print "<input type=submit value='BACK'>";
-print "</TD></TR></TABLE>";
-print "</form><br><hr><br>";
 
 code_exit_BO();
 

@@ -104,7 +104,7 @@ input.upper {
             <td>:
                 <select size=30 name="country" id="country_list" style="width: 470px" multiple>
                         <option value="ALL" [% IF pc_json.country.search("ALL") OR ! pc_json.country %]selected="selected"[% END %]>ALL</option>
-                [% FOREACH country = runtime.countries.all.sort %]
+                [% FOREACH country = runtime.countries.all_country_names.sort %]
                         [% country_code = runtime.countries.code_from_country(country) %]
                         <option value="[% country_code %]" [% IF pc_json.country.search(country_code) %]selected="selected"[% END %]>[% country %]</option>
                 [% END %]

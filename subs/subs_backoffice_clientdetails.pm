@@ -41,7 +41,7 @@ sub print_client_details {
 
     my @countries;
     my $country_codes = {};
-    foreach my $country_name (sort BOM::Platform::Runtime->instance->countries->all) {
+    foreach my $country_name (sort BOM::Platform::Runtime->instance->countries->all_country_names) {
         push @countries, $country_name;
         $country_codes->{$country_name} = BOM::Platform::Runtime->instance->countries->code_from_country($country_name);
     }

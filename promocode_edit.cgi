@@ -45,7 +45,7 @@ if ($input{save}) {
                 my $countries_not_offered = ref $input{country} ? $input{country} : [$input{country}];
                 my $rt_countries = BOM::Platform::Runtime->instance->countries;
                 my @countries_offered;
-                foreach my $country (map { $rt_countries->code_from_country($_) } $rt_countries->all) {
+                foreach my $country (map { $rt_countries->code_from_country($_) } $rt_countries->all_country_names) {
                     push @countries_offered, $country unless (grep { $_ eq $country } @{$countries_not_offered});
                 }
                 $input{country} = join(',', @countries_offered);
