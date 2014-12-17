@@ -10,8 +10,8 @@ use BOM::Utility::Format::Numbers qw( to_monetary_number_format );
 use BOM::Product::RiskReporting::Dashboard;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Risk Dashboard.');

@@ -14,8 +14,8 @@ use BOM::Platform::Plack qw( http_redirect PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw(request);
 use BOM::View::Backoffice::StaffPages;
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $try_to_login;
 my $passwd = request()->param('pass');

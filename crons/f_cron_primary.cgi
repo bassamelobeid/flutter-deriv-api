@@ -7,8 +7,6 @@ BEGIN {
 }
 
 use include_common_modules;
-system_initialize();
-
 use subs::subs_files;
 
 use BOM::Platform::Runtime;
@@ -16,6 +14,8 @@ use subs::subs_backoffice_security;
 use subs::subs_backoffice_statistics;
 use subs::subs_backoffice_removeexpired;
 use subs::subs_backoffice_reports;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $now  = BOM::Utility::Date->new;
 my $hour = $now->hour;

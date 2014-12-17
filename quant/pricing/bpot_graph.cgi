@@ -10,19 +10,20 @@ A b/o page that generates and serves the actual BPOT graph image.
 
 =cut
 
+package main;
+
 use strict;
 use warnings;
 
-package main;
-
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-system_initialize();
 
 use List::Util qw( min max );
 
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Platform::Plack qw( PrintContentType_image );
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my %bet_params = %{shortcode_to_parameters(request()->param('shortcode'), request()->param('currency'))};
 my $bet = produce_contract(\%bet_params);

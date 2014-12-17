@@ -9,9 +9,9 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::Display::VolatilitySurface;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
-$\ = "\n";
 PrintContentType();
 
 my $markets        = request()->param('markets');

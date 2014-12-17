@@ -7,7 +7,8 @@ use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use Controller::Bet;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
 

@@ -9,10 +9,10 @@ use XML::Simple;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_XML );
 
 use f_brokerincludeall;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 $YAML::XS::QuoteNumericStrings = 0;
-
-system_initialize();
 
 BOM::Platform::Auth0::can_access(['CS']);
 

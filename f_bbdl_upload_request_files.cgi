@@ -6,12 +6,13 @@ use open qw[ :encoding(UTF-8) ];
 use CGI;
 
 use f_brokerincludeall;
+use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 

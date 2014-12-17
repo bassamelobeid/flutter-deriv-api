@@ -6,7 +6,8 @@ use strict 'vars';
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Persistence::DAO::Utils::Log;
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 

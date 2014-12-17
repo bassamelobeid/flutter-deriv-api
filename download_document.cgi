@@ -5,9 +5,10 @@ use open qw[ :encoding(UTF-8) ];
 
 use Symbol qw( gensym );
 use BOM::Platform::Plack qw/PrintContentType_XSendfile/;
+use BOM::Platform::Sysinit ();
 
 use f_brokerincludeall;
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access();
@@ -147,7 +148,7 @@ else {
         if (-f -r $full_path) {
             PrintContentType_XSendfile($full_path, (lc($type) eq 'pdf' ? 'application/pdf' : 'application/octet-stream'));
 
-            code_exit();
+            BOM::Platform::code_exit();
         } else {
             PrintContentType();
             print "ERROR: cannot open file ($full_path) $!";

@@ -8,7 +8,8 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::View::CGIForm;
 
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Setting Client Self Exclusion");

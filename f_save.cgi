@@ -19,8 +19,8 @@ use Path::Tiny;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 

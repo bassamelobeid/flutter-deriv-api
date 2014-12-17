@@ -3,10 +3,11 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
-system_initialize();
 use Exception::Class;
 use BOM::Platform::MyAffiliates::ExposureManager;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Bulk-add Exposures.');

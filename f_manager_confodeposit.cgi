@@ -15,8 +15,9 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use Controller::Bet;
 use BOM::View::Cashier;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 
 my $cgi    = new CGI;
