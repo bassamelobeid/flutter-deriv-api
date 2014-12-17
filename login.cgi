@@ -61,12 +61,11 @@ print '<script>window.location = "' . request()->url_for('backoffice/f_broker_lo
 
 code_exit_BO();
 
-
 sub session_cookie {
     my $args = shift;
     $args->{loginid} = uc $args->{loginid};
-    my $expiry = ($args->{expires}) ? $args->{expires} : '+30d';
-    my $cookie = BOM::Platform::SessionCookie->new($args);
+    my $expiry     = ($args->{expires}) ? $args->{expires} : '+30d';
+    my $cookie     = BOM::Platform::SessionCookie->new($args);
     my $cookiename = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
 
     my $login = CGI::cookie(
@@ -80,6 +79,4 @@ sub session_cookie {
 
     return [$login];
 }
-
-
 

@@ -467,8 +467,8 @@ sub client_statement_for_backoffice {
         });
 
         foreach my $transaction (@{$transactions}) {
-            $transaction->{amount}  = abs($transaction->{amount});
-            $transaction->{remark}  = $transaction->{bet_remark};
+            $transaction->{amount} = abs($transaction->{amount});
+            $transaction->{remark} = $transaction->{bet_remark};
         }
     }
 
@@ -484,8 +484,8 @@ sub client_statement_for_backoffice {
     };
 
     return {
-        transactions    => $transactions,
-        balance         => $balance
+        transactions => $transactions,
+        balance      => $balance
     };
 }
 

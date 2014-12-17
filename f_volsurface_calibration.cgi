@@ -18,8 +18,9 @@ BrokerPresentation('CALIBRATION MODEL COMPARISON');
 
 BOM::Platform::Auth0::can_access(['Quants']);
 
-my $cgi         = CGI->new();
-my @underlyings = ($cgi->param('underlyings'))
+my $cgi = CGI->new();
+my @underlyings =
+    ($cgi->param('underlyings'))
     ? split ',',
     $cgi->param('underlyings')
     : BOM::Market::UnderlyingDB->instance->get_symbols_for(
