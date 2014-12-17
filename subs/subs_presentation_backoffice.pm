@@ -303,6 +303,6 @@ sub code_exit_BO {
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
 
-    BOM::Platform::code_exit();
+    BOM::Platform::Sysinit::code_exit();
 }
 1;
