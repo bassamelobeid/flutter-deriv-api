@@ -44,7 +44,7 @@ sub save_dividends {
                 symbol          => $symbol,
                 rates           => $rates,
                 discrete_points => $discrete_points,
-                recorded_date            => BOM::Utility::Date->new,
+                recorded_date   => BOM::Utility::Date->new,
             );
             $dividends->save;
         }

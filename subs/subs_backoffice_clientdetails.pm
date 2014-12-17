@@ -1,6 +1,12 @@
 use strict 'vars';
 use Encode;
+use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Platform::Data::Persistence::DataMapper::Transaction;
+use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Platform::Persistence::DAO::Client;
+use BOM::Platform::Context qw(request);
 use BOM::Utility::Format::Strings qw( set_selected_item );
+use BOM::Utility::Date;
 use BOM::View::CGIForm;
 
 sub print_client_details {
@@ -421,6 +427,92 @@ sub get_trusted_allow_login_reason {
         'Test accounts',
         'Others',
     );
+}
+
+sub client_statement_for_backoffice {
+    my $args = shift;
+    my ($client, $before, $after) = @{$args}{'client', 'before', 'after'};
+
+    my $currency;
+    $currency = $args->{currency} if exists $args->{currency};
+    $currency //= $client->currency;
+
+    my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+            client_loginid => $client->loginid,
+            operation      => 'read',
+        })->db;
+
+    my $txn_dm = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+        client_loginid => $client->loginid,
+        currency_code  => $currency,
+        db             => $db,
+    });
+
+    my $transactions = [];
+    if (request()->param('depositswithdrawalsonly') eq 'yes') {
+        $transactions = $txn_dm->get_payments({
+            before => $before,
+            after  => $after,
+            limit  => 50
+        });
+        foreach my $transaction (@{$transactions}) {
+            $transaction->{balance_after} = $txn_dm->get_balance_after_transaction({transaction_time => $transaction->{transaction_time}});
+            $transaction->{amount} = abs($transaction->{amount});
+        }
+    } else {
+        my $transactions = $txn_dm->get_transactions({
+            after  => $after,
+            before => $before,
+            limit  => 200
+        });
+
+        foreach my $transaction (@{$transactions}) {
+            $transaction->{amount} = abs($transaction->{amount});
+            $transaction->{remark} = $transaction->{bet_remark};
+        }
+    }
+
+    my $acnt_dm = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+        client_loginid => $client->loginid,
+        currency_code  => $currency,
+        db             => $db,
+    });
+
+    my $balance = {
+        date   => BOM::Utility::Date->today,
+        amount => $acnt_dm->get_balance(),
+    };
+
+    return {
+        transactions => $transactions,
+        balance      => $balance
+    };
+}
+
+sub get_client_login_history_arrayref {
+    my $client = shift;
+
+    if (not UNIVERSAL::isa($client, 'BOM::Platform::Client')) {
+        croak 'Invalid parameter client';
+    }
+
+    my $login_history_result = BOM::Platform::Persistence::DAO::Client::get_client_login_history($client);
+
+    if (scalar @{$login_history_result} > 0) {
+        my @login_history;
+
+        foreach my $login_history (@{$login_history_result}) {
+            my $login_detail = {
+                login_date        => BOM::Utility::Date->new($login_history->{login_date}),
+                login_status      => ($login_history->{'login_successful'} ? 'Successful login' : 'Failed login'),
+                login_environment => $login_history->{'login_environment'},
+            };
+            push @login_history, $login_detail;
+        }
+        return \@login_history;
+    }
+
+    return;
 }
 
 1;

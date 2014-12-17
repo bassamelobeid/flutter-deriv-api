@@ -21,8 +21,6 @@ my $now  = BOM::Utility::Date->new;
 my $hour = $now->hour;
 my $wday = $now->day_of_week;
 
-cronprimary_RemoveOldFiles($hour);
-
 if ($hour == 22 and $wday == 6) {
     my $runtime = BOM::Platform::Runtime->instance;
     my @broker_codes = map { $_->code } grep { not $_->is_virtual } $runtime->broker_codes->get_brokers_on_server($runtime->hosts->localhost);

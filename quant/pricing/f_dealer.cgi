@@ -87,8 +87,8 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
 
     # Further error checks
     my $fmb_mapper = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
-            client_loginid => $loginID,
-            currency_code  => $currency,
+        client_loginid => $loginID,
+        currency_code  => $currency,
     });
 
     if ($buysell eq 'BUY') {
@@ -125,17 +125,17 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
                 broker_code => $broker,
             })->db;
 
-        my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
+        my $fmbs       = $fmb_mapper->get_fmb_by_shortcode($betcode);
         my $fmb_helper = BOM::Platform::Helper::Model::FinancialMarketBet->new({
-                bet => $fmbs->[0],
-                db  => $db
-            });
+            bet => $fmbs->[0],
+            db  => $db
+        });
 
         $fmb_helper->sell_bet({
-                sell_price    => 0,
-                sell_time     => $now->db_timestamp,
-                staff_loginid => $clerk,
-            });
+            sell_price    => 0,
+            sell_time     => $now->db_timestamp,
+            staff_loginid => $clerk,
+        });
     } else {
         # check short code
         my $bet = produce_contract($betcode, $currency);
@@ -155,12 +155,12 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
         #pricing comment
         my $pricingcomment = request()->param('comment');
         my $transaction    = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $bet,
-                action   => $buysell,
-                price    => $price,
-                comment  => $pricingcomment,
-                staff    => $clerk,
+            client   => $client,
+            contract => $bet,
+            action   => $buysell,
+            price    => $price,
+            comment  => $pricingcomment,
+            staff    => $clerk,
         });
         my $error = $transaction->update_client_db;
         die $error->{-message_to_client} if $error;

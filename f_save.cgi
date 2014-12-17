@@ -65,7 +65,7 @@ my @lines = split(/\n/, $text);
 
 if ($filen eq 'editvol') {
     my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
-    my $market = $underlying->market->name;
+    my $market     = $underlying->market->name;
     my $model =
         ($market eq 'indices')
         ? 'BOM::MarketData::VolSurface::Moneyness'
@@ -126,8 +126,7 @@ if ($filen eq 'editvol') {
         print @output;
 
         if (!$surface->is_valid) {
-            print "<P> "
-            . $surface->validation_error . " </P>";
+            print "<P> " . $surface->validation_error . " </P>";
 
         } elsif ($big_differences) {
             print "<P>$error_message</P>";

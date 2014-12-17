@@ -6,11 +6,14 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Platform::Runtime;
+use CGI;
 use BOM::Utility::DuoWeb;
+use BOM::Platform::Runtime;
 use BOM::Platform::Auth0;
-use BOM::View::Backoffice::StaffPages;
 use BOM::Platform::Plack qw( http_redirect PrintContentType );
+use BOM::Platform::SessionCookie;
+use BOM::Platform::Context qw(request);
+use BOM::View::Backoffice::StaffPages;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -27,7 +30,6 @@ if (request()->param('sig_response')) {
 }
 
 if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('access_token'))) {
-
     my $mycookie = session_cookie({
         loginid => BOM::Platform::Context::request()->broker->code,
         token   => request()->param('access_token'),
@@ -58,4 +60,23 @@ BrokerPresentation('STAFF LOGIN PAGE');
 print '<script>window.location = "' . request()->url_for('backoffice/f_broker_login.cgi') . '"</script>';
 
 code_exit_BO();
+
+sub session_cookie {
+    my $args = shift;
+    $args->{loginid} = uc $args->{loginid};
+    my $expiry     = ($args->{expires}) ? $args->{expires} : '+30d';
+    my $cookie     = BOM::Platform::SessionCookie->new($args);
+    my $cookiename = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
+
+    my $login = CGI::cookie(
+        -name    => $cookiename,
+        -value   => $cookie->value,
+        -expires => $expiry,
+        -secure  => 1,
+        -domain  => request()->cookie_domain,
+        -path    => '/',
+    );
+
+    return [$login];
+}
 
