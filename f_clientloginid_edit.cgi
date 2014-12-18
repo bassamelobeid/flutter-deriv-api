@@ -452,7 +452,7 @@ print qq{<br/>
         &nbsp;&nbsp;<input type="submit" value="View">
         <input type="hidden" name="broker" value="$broker">
         <input type="hidden" name="l" value="$language">
-        <input type="hidden" name="currency" value="All">
+        <input type="hidden" name="currency" value="default">
         <div class="flat" id="StatementOption" style="display:none">
             <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
         </div>
