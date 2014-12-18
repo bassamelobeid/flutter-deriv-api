@@ -13,7 +13,8 @@ use BOM::Platform::Auth0;
 use BOM::View::Backoffice::StaffPages;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 if (not BOM::Platform::Auth0::from_cookie()) {
     PrintContentType();

@@ -7,8 +7,9 @@ use open qw[ :encoding(UTF-8) ];
 use f_brokerincludeall;
 use subs::subs_process_moneyness_volsurfaces;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 BrokerPresentation('COMPARISON AMONG MONEYNESS SURFACES');
 

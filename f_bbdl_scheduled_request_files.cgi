@@ -14,8 +14,8 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_JavaScript );
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 

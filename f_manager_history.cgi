@@ -5,7 +5,10 @@ use strict 'vars';
 use f_brokerincludeall;
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
-system_initialize();
+use BOM::Platform::Context;
+use Controller::Bet;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
 
@@ -89,12 +92,24 @@ if ($tel) {
 }
 print '<br />';
 
-print_client_statement_for_backoffice({
+my $statement = client_statement_for_backoffice({
     client   => $client,
     before   => $enddate,
     after    => $startdate,
     currency => $currency,
 });
+
+BOM::Platform::Context::template->process(
+    'backoffice/account/statement.html.tt',
+    {
+        transactions            => $statement->{transactions},
+        balance                 => $statement->{balance},
+        currency                => $currency,
+        loginid                 => $client->loginid,
+        depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
+        contract_details        => \&Controller::Bet::get_info,
+    },
+) || die BOM::Platform::Context::template->error();
 
 code_exit_BO();
 

@@ -6,7 +6,8 @@ use Try::Tiny;
 use f_brokerincludeall;
 use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
 use BOM::Platform::Plack qw( PrintContentType );
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 

@@ -57,8 +57,9 @@ use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 
 my @all_markets = BOM::Market::Registry->instance->all_market_names();

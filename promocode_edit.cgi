@@ -8,7 +8,8 @@ use Scalar::Util 'looks_like_number';
 use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('EDIT PROMOTIONAL CODE DETAILS');

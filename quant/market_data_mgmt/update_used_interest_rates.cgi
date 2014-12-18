@@ -5,8 +5,9 @@ use strict 'vars';
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-system_initialize();
-$\ = "\n";
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
+
 PrintContentType();
 
 #-----------------------------------INPUT from other programm-------------------------
@@ -17,8 +18,6 @@ my @currencies = split /\s+/, $currencies;
 BrokerPresentation("", "");
 
 foreach my $currency (@currencies) {
-
-    local $/ = "";
 
     print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% >";
 

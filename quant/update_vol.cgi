@@ -22,7 +22,8 @@ use URL::Encode qw( url_decode );
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
 
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 # Our very own %input processing logic seems to strip
 # out characters from my URL encoded JSON, breaking it.

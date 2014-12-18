@@ -13,12 +13,14 @@ use f_brokerincludeall;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Client::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
 use BOM::View::CGIForm;
-
-system_initialize();
+use BOM::Platform::Client::Utility ();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my %input = %{request()->params};
 
@@ -312,7 +314,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if ($key eq 'secret_answer') {
-            $client->secret_answer(encrypt_secret_answer($input{$key}));
+            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}));
             next CLIENT_KEY;
         }
         if ($key eq 'ip_security') {
@@ -450,7 +452,7 @@ print qq{<br/>
         &nbsp;&nbsp;<input type="submit" value="View">
         <input type="hidden" name="broker" value="$broker">
         <input type="hidden" name="l" value="$language">
-        <input type="hidden" name="currency" value="All">
+        <input type="hidden" name="currency" value="default">
         <div class="flat" id="StatementOption" style="display:none">
             <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
         </div>

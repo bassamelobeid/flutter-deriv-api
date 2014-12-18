@@ -10,15 +10,17 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::Display::VolatilitySurface;
 use CGI;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 BrokerPresentation('CALIBRATION MODEL COMPARISON');
 
 BOM::Platform::Auth0::can_access(['Quants']);
 
-my $cgi         = CGI->new();
-my @underlyings = ($cgi->param('underlyings'))
+my $cgi = CGI->new();
+my @underlyings =
+    ($cgi->param('underlyings'))
     ? split ',',
     $cgi->param('underlyings')
     : BOM::Market::UnderlyingDB->instance->get_symbols_for(

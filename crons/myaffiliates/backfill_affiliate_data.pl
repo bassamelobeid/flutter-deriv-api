@@ -18,11 +18,12 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Utility::Log4perl;
 use include_common_modules;
 use BOM::Platform::MyAffiliates::BackfillManager;
+use BOM::Platform::Sysinit ();
 
 BOM::Utility::Log4perl::init_log4perl_console;
+BOM::Platform::Sysinit::init();
 
 my $runtime = BOM::Utility::Date->new;
-system_initialize();
 
 my $backfill_manager            = BOM::Platform::MyAffiliates::BackfillManager->new;
 my @mark_first_deposits_report  = $backfill_manager->mark_first_deposits;
