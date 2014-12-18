@@ -84,6 +84,7 @@ install:
     - sudo -u postgres psql -p 5435 -c "ALTER ROLE postgres WITH password 'letmein'"
     - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/tmp/bom-utility/lib -I/home/travis/build/regentmarkets/bom/database/lib /home/git/bom/database/bin/dbmigration.pl --yes --hostname="localhost" --port="5435" --username=postgres --database=auth --dbset=auth'
     - export BOM_LOG4PERLCONFIG=/home/git/bom/t/config/log4perl.conf
+    - export PAYMENTAPI_LOG_FILE=/tmp/paymentapi.log
 
 script:
     - perl Makefile.PL && make test && cover -test -report coveralls
