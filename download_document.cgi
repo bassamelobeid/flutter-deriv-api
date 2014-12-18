@@ -148,7 +148,7 @@ else {
         if (-f -r $full_path) {
             PrintContentType_XSendfile($full_path, (lc($type) eq 'pdf' ? 'application/pdf' : 'application/octet-stream'));
 
-            BOM::Platform::code_exit();
+            BOM::Platform::Sysinit::code_exit();
         } else {
             PrintContentType();
             print "ERROR: cannot open file ($full_path) $!";
