@@ -8,6 +8,8 @@ use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use BOM::Product::Transaction;
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Product::ContractFactory qw(produce_contract);
+
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
