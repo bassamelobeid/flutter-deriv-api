@@ -73,11 +73,15 @@ sub auth_request {
 }
 
 sub __request {
-    my $req    = shift;
-    test_psgi app=>$app, client=>sub { shift->($req) };
+    my $req = shift;
+    test_psgi
+        app    => $app,
+        client => sub { shift->($req) };
 }
 
-sub decode_json { eval { JSON::decode_json($_[0]) } }
+sub decode_json {
+    eval { JSON::decode_json($_[0]) };
+}
 
 ## common
 sub deposit {
@@ -88,7 +92,7 @@ sub deposit {
     my $method = $is_validate ? 'GET' : 'POST';    # validate only support GET
     my $headers = $is_validate ? {} : {'Content-Type' => 'text/xml'};
     # note.. we have declared content-type xml but we are failing to build xml into the body!
-    # These request parameters get sent as uri query strings.  That works ok for now but does not 
+    # These request parameters get sent as uri query strings.  That works ok for now but does not
     # really simulate how doughflow sends requests!   TODO:  build xml into request body.
     request(
         $method, $url,

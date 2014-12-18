@@ -24,7 +24,7 @@ use BOM::API::Payment::Client;
 use BOM::API::Payment::Session;
 use BOM::API::Payment::DoughFlow;
 
-sub to_app {  ## no critic (Subroutines::RequireFinalReturn)
+sub to_app {    ## no critic (Subroutines::RequireFinalReturn)
     my ($self) = @_;
 
     my $router = router {
@@ -90,12 +90,24 @@ sub to_app {  ## no critic (Subroutines::RequireFinalReturn)
     };
 
     my $trace_log = '/var/log/httpd/pa_error.log';
-    my $trace_lvl = $ENV{PAYMENTAPI_LOG_LEVEL} || ($ENV{PLACK_ENV} eq 'development'? 'debug': 'info');
+    my $trace_lvl = $ENV{PAYMENTAPI_LOG_LEVEL} || ($ENV{PLACK_ENV} eq 'development' ? 'debug' : 'info');
     my $syslg_lvl = 'warn';
     my $logformat = sub { my %msg = @_; my $lvl = sprintf '%-7s', uc $msg{level}; "$lvl $msg{message}" };
-    my $log = Log::Dispatch->new;
-    $log->add(Log::Dispatch::File->new(  newline=>1, callbacks=>$logformat, min_level=>$trace_lvl, mode=>'>>', filename=>$trace_log));
-    $log->add(Log::Dispatch::Screen->new(newline=>1, callbacks=>$logformat, min_level=>$syslg_lvl)) unless $ENV{PLACK_TEST_IMPL};
+    my $log       = Log::Dispatch->new;
+    $log->add(
+        Log::Dispatch::File->new(
+            newline   => 1,
+            callbacks => $logformat,
+            min_level => $trace_lvl,
+            mode      => '>>',
+            filename  => $trace_log
+        ));
+    $log->add(
+        Log::Dispatch::Screen->new(
+            newline   => 1,
+            callbacks => $logformat,
+            min_level => $syslg_lvl
+        )) unless $ENV{PLACK_TEST_IMPL};
     $log->info(sprintf "PaymentAPI Server Starting at %s. PID $$. Tracing to $trace_log. Environment: %s", scalar(localtime), Dumper(\%ENV));
 
     builder {
@@ -112,9 +124,9 @@ sub to_app {  ## no critic (Subroutines::RequireFinalReturn)
                 my $req = Plack::Request->new($env);
                 if ($log->is_debug) {
                     my $now = DateTime->now;
-                    my $msg = sprintf "\n%s\n%s %s Request is %s %s\n", '='x80, $now->ymd, $now->hms, $req->method, $req->path;
-                    $msg   .= sprintf "Query %s", Dumper($req->query_parameters) if $req->query_parameters->keys;
-                    $msg   .= sprintf "Body  %s", ($req->content||'empty') if $req->method eq 'POST';
+                    my $msg = sprintf "\n%s\n%s %s Request is %s %s\n", '=' x 80, $now->ymd, $now->hms, $req->method, $req->path;
+                    $msg .= sprintf "Query %s", Dumper($req->query_parameters) if $req->query_parameters->keys;
+                    $msg .= sprintf "Body  %s", ($req->content || 'empty') if $req->method eq 'POST';
                     $log->debug($msg);
                 }
 
@@ -124,12 +136,11 @@ sub to_app {  ## no critic (Subroutines::RequireFinalReturn)
                 # post-processing: log this response
                 if ($log->is_debug) {
                     my $res = Plack::Response->new(@$ref);
-                    my $msg = sprintf "\n%s\n%s\n%s\n%s\n%s",
-                                '_'x80, $res->status, Dumper($res->headers), join('',@{$res->body}), '_'x80;
+                    my $msg = sprintf "\n%s\n%s\n%s\n%s\n%s", '_' x 80, $res->status, Dumper($res->headers), join('', @{$res->body}), '_' x 80;
                     $log->debug($msg);
                 }
 
-                return $ref
+                return $ref;
             };
         };
 
@@ -138,10 +149,10 @@ sub to_app {  ## no critic (Subroutines::RequireFinalReturn)
             $_[0]->{PATH_INFO} ne '/ping';
         }
         'Auth::DoughFlow',
-          header_name      => 'X-BOM-DoughFlow-Authorization',
-          secret_key       => 'N73X49dS6SmX9Tf4',
-          continue_on_fail => 1;                                 # allow to fallback to Basic
-                                                                 # fallback to Basic only DoughFlow failed
+            header_name      => 'X-BOM-DoughFlow-Authorization',
+            secret_key       => 'N73X49dS6SmX9Tf4',
+            continue_on_fail => 1;                                 # allow to fallback to Basic
+                                                                   # fallback to Basic only DoughFlow failed
         enable_if {
             $_[0]->{PATH_INFO} ne '/ping' and not $_[0]->{'X-DoughFlow-Authorization-Passed'};
         }
@@ -188,7 +199,7 @@ sub to_app {  ## no critic (Subroutines::RequireFinalReturn)
 
                 if (blessed($r)) {              # Plack::Response
                     $r->content_type('text/xml');
-                    $r->body($xs->XMLout({data => $r->body||''}));
+                    $r->body($xs->XMLout({data => $r->body || ''}));
                     return $r->finalize;
                 }
 

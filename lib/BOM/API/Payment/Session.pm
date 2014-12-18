@@ -8,20 +8,20 @@ use BOM::Platform::Model::HandoffToken;
 use BOM::Platform::Runtime;
 
 sub session_GET {
-    my $c = shift;
-    my $log = $c->env->{log};
-    my $client = $c->user;
+    my $c       = shift;
+    my $log     = $c->env->{log};
+    my $client  = $c->user;
     my $loginid = $client->loginid;
 
-    $log->debug("session_GET for $client, DF Auth-Passed header " . ($c->env->{'X-DoughFlow-Authorization-Passed'}||'missing'));
+    $log->debug("session_GET for $client, DF Auth-Passed header " . ($c->env->{'X-DoughFlow-Authorization-Passed'} || 'missing'));
 
     ## only allow Basic Auth call
     return $c->throw(401, 'Authorization required')
-      if $c->env->{'X-DoughFlow-Authorization-Passed'};
+        if $c->env->{'X-DoughFlow-Authorization-Passed'};
 
     my $cb = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
-            client_loginid => $loginid,
-            operation      => 'write',
+        client_loginid => $loginid,
+        operation      => 'write',
     });
 
     my $handoff_token_key;
@@ -77,8 +77,8 @@ sub session_validate_GET {
 
     # This is where we should check to make sure that the token
     # is a valid BOM::API::Session. For now we'll just check that
-        # it is 32 hex characters :-/
-        if (!exists $c->request_parameters->{token}
+    # it is 32 hex characters :-/
+    if (!exists $c->request_parameters->{token}
         or $c->request_parameters->{token} !~ /^[a-f0-9]{40}$/)
     {
         my $token_key = $c->request_parameters->{token};
@@ -87,14 +87,14 @@ sub session_validate_GET {
     # we have a token, so lets make a db
     my $landing_company    = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($c->user->loginid);
     my $connection_builder = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
-            client_loginid => $c->user->loginid,
-            operation      => 'write',
+        client_loginid => $c->user->loginid,
+        operation      => 'write',
     });
     my $token_key = $c->request_parameters->{token};
     # Get the existing handoff token
     my $handoff_token = BOM::Platform::Model::HandoffToken->new({
-            data_object_params => {'key' => $token_key},
-            db                 => $connection_builder->db
+        data_object_params => {'key' => $token_key},
+        db                 => $connection_builder->db
     });
     # ->exists is important because it does a SPECULATIVE LOAD
     # this allows us to check if the object exists in the DB without

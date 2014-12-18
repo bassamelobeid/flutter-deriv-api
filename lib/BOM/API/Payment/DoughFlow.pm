@@ -31,8 +31,8 @@ sub record_GET {
     my $reference_number = $c->request_parameters->{reference_number};
 
     my $payment_datamapper = BOM::Platform::Data::Persistence::DataMapper::Payment->new({
-            client_loginid => $client_loginid,
-            currency_code  => $currency_code,
+        client_loginid => $client_loginid,
+        currency_code  => $currency_code,
     });
     # Can we find a corresponding transaction in this user's account?
     if (not $payment_datamapper->does_account_exist) {
@@ -80,7 +80,7 @@ Receives a request for a DoughFlow deposit record, validates the request
 =cut
 
 sub deposit_validate_GET {
-    my $c    = shift;
+    my $c = shift;
     return _doughflow_backend($c, 'deposit_validate');
 }
 
@@ -91,7 +91,7 @@ Receives a request for a DoughFlow withdrawal record, validates the request, and
 =cut
 
 sub withdrawal_validate_GET {
-    my $c    = shift;
+    my $c = shift;
     return _doughflow_backend($c, 'withdrawal_validate');
 }
 
@@ -102,7 +102,7 @@ Receives a request for a DoughFlow withdrawal record, validates the request
 =cut
 
 sub withdrawal_POST {
-    my $c    = shift;
+    my $c = shift;
     return _doughflow_backend($c, 'withdrawal');
 }
 
@@ -113,7 +113,7 @@ Receives a request for a DoughFlow withdrawal reversal record, validates the req
 =cut
 
 sub withdrawal_reversal_POST {
-    my $c    = shift;
+    my $c = shift;
     return _doughflow_backend($c, 'withdrawal_reversal');
 }
 
@@ -131,7 +131,7 @@ sub _doughflow_backend {
     ## only allow DoughFlow Auth call
     unless ($c->env->{'X-DoughFlow-Authorization-Passed'}) {
         # check BOM::API::Payment
-        return $c->throw(401, 'Authorization required')
+        return $c->throw(401, 'Authorization required');
     }
 
     my $new_txn_id = BOM::API::Payment::DoughFlow::Backend->new(

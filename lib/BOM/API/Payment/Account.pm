@@ -13,23 +13,23 @@ sub account_GET {
     my $client = $c->user;
 
     if (my $err = $c->validate('currency_code')) {
-        return $c->status_bad_request($err)
+        return $c->status_bad_request($err);
     }
 
     my $account = $client->default_account || do {
         return $c->throw(500, "No account for client $client");
     };
 
-    my $currency_code  = $c->request_parameters->{currency_code};
+    my $currency_code = $c->request_parameters->{currency_code};
 
     if ($currency_code ne $account->currency_code) {
         return $c->status_bad_request("No $currency_code account for client $client");
-    };
+    }
 
     my $limit = $client->get_limit({
-                for      => 'account_balance',
-                currency => $currency_code
-        });
+        for      => 'account_balance',
+        currency => $currency_code
+    });
 
     return {
         client_loginid => $client->loginid,

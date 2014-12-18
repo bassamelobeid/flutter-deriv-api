@@ -26,14 +26,14 @@ sub _build_user {
 }
 
 has 'request_parameters' => (
-    is          => 'lazy',
+    is => 'lazy',
 );
 
 sub _build_request_parameters {
     my $c = shift;
 
     my $content_type = $c->req->header('Content-Type');
-    my $params  = $c->req->parameters;
+    my $params       = $c->req->parameters;
 
     if (keys %{$params}) {
         return $params;
@@ -54,21 +54,21 @@ sub throw {
     my $status  = shift || 500;
     my $message = shift || do {
         $log->error("Raising Status $status, no message");
-        return { status_code => $status };
+        return {status_code => $status};
     };
     chomp($message);
-    $log->error(sprintf '%s: %s', $c->user||'(no-user)', $message);
+    $log->error(sprintf '%s: %s', $c->user || '(no-user)', $message);
     return {
         status_code => $status,
         error       => $message
-    }
+    };
 }
 
 sub status_bad_request {
     my ($c, $message) = @_;
     my $log = $c->env->{log};
     chomp($message);
-    $log->warn(sprintf '%s: %s', $c->user||'(no-user)', $message);
+    $log->warn(sprintf '%s: %s', $c->user || '(no-user)', $message);
     return {
         status_code => 400,
         error       => $message
@@ -93,7 +93,7 @@ sub validate {
         my @currencies = qw(AUD EUR GBP USD);
         my $regex = '(' . join('|', @currencies) . ')';
         return "Invalid currency $currency_code. Must be one of: " . join(', ', @currencies)
-          unless $currency_code =~ /^$regex$/;
+            unless $currency_code =~ /^$regex$/;
     }
 
     foreach my $f ('trace_id', 'reference_number') {

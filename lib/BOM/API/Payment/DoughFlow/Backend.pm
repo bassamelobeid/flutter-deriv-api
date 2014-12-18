@@ -36,7 +36,7 @@ sub execute {
 
     if ($c->type eq 'withdrawal_reversal') {
         if (my $err = $c->validate_params) {
-            return $c->status_bad_request($err)
+            return $c->status_bad_request($err);
         }
     } else {
         my $passed = $c->validate_as_payment;
@@ -65,7 +65,7 @@ sub comment {
 
     my %fields;
     my @vars = qw/payment_processor/;
-    push @vars, qw/transaction_id created_by/ if $c->type eq 'deposit'; # ip_address
+    push @vars, qw/transaction_id created_by/ if $c->type eq 'deposit';                         # ip_address
     foreach my $var (@vars) {
         $fields{$var} = $c->request_parameters->{$var};
     }
@@ -99,7 +99,7 @@ sub validate_params {
 }
 
 sub validate_as_payment {
-    my $c = shift;
+    my $c   = shift;
     my $log = $c->env->{log};
 
     if (my $err = $c->validate_params) {
@@ -111,9 +111,10 @@ sub validate_as_payment {
     }
 
     my $client = $c->user;
-    my $action = ($c->type =~ /deposit/i)    ? 'deposit'  :
-                 ($c->type =~ /withdrawal/i) ? 'withdraw' :
-                 return 1;
+    my $action =
+          ($c->type =~ /deposit/i)    ? 'deposit'
+        : ($c->type =~ /withdrawal/i) ? 'withdraw'
+        :                               return 1;
 
     my $currency      = $c->request_parameters->{currency_code};
     my $signed_amount = $c->request_parameters->{amount};
@@ -123,11 +124,12 @@ sub validate_as_payment {
     try {
         $client->set_default_account($currency);
         $client->validate_payment(
-                currency    => $currency,
-                amount      => $signed_amount,
-                action_type => $action,
-        )
-    } catch {
+            currency    => $currency,
+            amount      => $signed_amount,
+            action_type => $action,
+            )
+    }
+    catch {
         $err = $_;
     };
     return $c->throw(403, $err) if $err;
@@ -138,7 +140,7 @@ sub validate_as_payment {
 }
 
 sub write_transaction_line {
-    my $c = shift;
+    my $c   = shift;
     my $log = $c->env->{log};
 
     my $client = $c->user;
@@ -154,11 +156,11 @@ sub write_transaction_line {
     };
 
     if (my $rejection = $c->check_predicates()) {
-        return $c->status_bad_request($rejection)
+        return $c->status_bad_request($rejection);
     }
 
     my $bonus = $c->request_parameters->{bonus} || 0;
-    my $fee   = $c->request_parameters->{fee} || 0;
+    my $fee   = $c->request_parameters->{fee}   || 0;
 
     my $currency_code     = $c->request_parameters->{currency_code};
     my $amount            = $c->request_parameters->{amount};
@@ -185,29 +187,28 @@ sub write_transaction_line {
     my $trx;
 
     if ($c->type eq 'deposit') {
-        $trx = $client->payment_doughflow( %payment_args );
+        $trx = $client->payment_doughflow(%payment_args);
     } elsif ($c->type eq 'withdrawal') {
         # Don't allow balances to ever go negative! Include any fee in this test.
         my $balance = $client->default_account->load->balance;
-        if ($amount+$fee > $balance) {
-            my $plusfee = $fee? " plus fee $fee": '';
+        if ($amount + $fee > $balance) {
+            my $plusfee = $fee ? " plus fee $fee" : '';
             return $c->status_bad_request(
-                "Requested withdrawal amount $currency_code $amount$plusfee exceeds client balance $currency_code $balance"
-            );
+                "Requested withdrawal amount $currency_code $amount$plusfee exceeds client balance $currency_code $balance");
         }
-        $trx = $client->payment_doughflow( %payment_args, amount=>sprintf("%0.2f", -$amount) );
+        $trx = $client->payment_doughflow(%payment_args, amount => sprintf("%0.2f", -$amount));
     } elsif ($c->type eq 'withdrawal_reversal') {
         if ($bonus or $fee) {
             return $c->status_bad_request('Bonuses and fees are not allowed for withdrawal reversals');
         }
-        $trx = $client->payment_doughflow( %payment_args );
+        $trx = $client->payment_doughflow(%payment_args);
     }
 
     if ($fee) {
         my $fee_trx = $client->payment_payment_fee(
-                %payment_args,
-                amount   => -$fee,
-                remark   => $c->fee_comment($trx->id),
+            %payment_args,
+            amount => -$fee,
+            remark => $c->fee_comment($trx->id),
         );
         $log->debug($c->type . " fee transaction complete, trx id " . $fee_trx->id);
     }
@@ -227,8 +228,8 @@ sub check_predicates {
     # any transaction with an identical type (deposit/withdrawal)
     # and trace id
     my $doughflow_datamapper = BOM::Platform::Data::Persistence::DataMapper::Payment::DoughFlow->new({
-            client_loginid => $c->user->loginid,
-            currency_code  => $currency_code,
+        client_loginid => $c->user->loginid,
+        currency_code  => $currency_code,
     });
 
     my $rejection;
@@ -242,22 +243,22 @@ sub check_predicates {
         my $match_count = $doughflow_datamapper->get_doughflow_withdrawal_count_by_trace_id($trace_id);
         if (!$match_count) {
             $rejection =
-                'A withdrawal reversal was requested for DoughFlow trace ID '
-              . $trace_id
-              . ', but no corresponding original withdrawal could be found with that trace ID';
+                  'A withdrawal reversal was requested for DoughFlow trace ID '
+                . $trace_id
+                . ', but no corresponding original withdrawal could be found with that trace ID';
         } elsif ($match_count > 1) {
             $rejection =
-                'A withdrawal reversal was requested for DoughFlow trace ID '
-              . $trace_id
-              . ', but multiple corresponding original withdrawals were found with that trace ID ';
+                  'A withdrawal reversal was requested for DoughFlow trace ID '
+                . $trace_id
+                . ', but multiple corresponding original withdrawals were found with that trace ID ';
         } elsif (sprintf("%0.2f", $doughflow_datamapper->get_doughflow_withdrawal_amount_by_trace_id($trace_id)) != sprintf("%0.2f", $amount)) {
             $rejection =
-                'A withdrawal reversal request for DoughFlow trace ID '
-              . $trace_id
-              . ' was made in the amount of '
-              . $currency_code . ' '
-              . sprintf("%0.2f", $amount)
-              . ', but this does not match the original DoughFlow withdrawal request amount';
+                  'A withdrawal reversal request for DoughFlow trace ID '
+                . $trace_id
+                . ' was made in the amount of '
+                . $currency_code . ' '
+                . sprintf("%0.2f", $amount)
+                . ', but this does not match the original DoughFlow withdrawal request amount';
         }
 
         return $rejection if $rejection;

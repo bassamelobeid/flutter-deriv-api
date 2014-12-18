@@ -7,11 +7,14 @@ use APIHelper qw(balance deposit withdraw request decode_json);
 
 my $loginid = 'CR0011';
 
-my $r = deposit(loginid => $loginid, amount => 2);
+my $r = deposit(
+    loginid => $loginid,
+    amount  => 2
+);
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
 
-sleep 1; # so the payment_time DESC for get_last_payment_of_account will be correct
+sleep 1;    # so the payment_time DESC for get_last_payment_of_account will be correct
 
 my $starting_balance = balance($loginid);
 $r = withdraw(loginid => $loginid);
@@ -29,18 +32,28 @@ $location =~ s{^(.*?)/transaction}{/transaction};
 $r = request('GET', $location);
 my $data = decode_json($r->content);
 is($data->{client_loginid}, $loginid);
-is($data->{type}, 'withdrawal');
+is($data->{type},           'withdrawal');
 
 # Failed tests
-$r = withdraw(loginid => $loginid, trace_id => ' 123');
+$r = withdraw(
+    loginid  => $loginid,
+    trace_id => ' 123'
+);
 is($r->code,    400,           'Correct failure status code');
 is($r->message, 'Bad Request', 'Correct message');
-like($r->content, qr[(Attribute \(trace_id\) does not pass the type constraint|trace_id must be a positive integer)], 'Correct error message on response body');
+like(
+    $r->content,
+    qr[(Attribute \(trace_id\) does not pass the type constraint|trace_id must be a positive integer)],
+    'Correct error message on response body'
+);
 is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
 
 # exceeds balance
-$r = withdraw(loginid => $loginid, amount => $balance_now + 1);
-is $r->code, 403;
+$r = withdraw(
+    loginid => $loginid,
+    amount  => $balance_now + 1
+);
+is $r->code,              403;
 like $r->decoded_content, qr/exceeds client balance/;
 is(balance($loginid), $balance_now, 'Correct final balance (unchanged)');
 
