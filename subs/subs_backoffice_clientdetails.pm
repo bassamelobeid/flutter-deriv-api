@@ -461,7 +461,7 @@ sub client_statement_for_backoffice {
             $transaction->{amount} = abs($transaction->{amount});
         }
     } else {
-        my $transactions = $txn_dm->get_transactions({
+        $transactions = $txn_dm->get_transactions({
             after  => $after,
             before => $before,
             limit  => 200
