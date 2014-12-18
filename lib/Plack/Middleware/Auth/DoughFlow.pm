@@ -1,6 +1,7 @@
 package Plack::Middleware::Auth::DoughFlow;
 
 use strict;
+use warnings;
 use parent qw(Plack::Middleware);
 use Plack::Util::Accessor qw( secret_key header_name acceptable_time_diff continue_on_fail );
 use Plack::Request;

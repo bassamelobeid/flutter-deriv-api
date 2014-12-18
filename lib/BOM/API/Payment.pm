@@ -1,6 +1,7 @@
 package BOM::API::Payment;
 
 use strict;
+use warnings;
 use 5.008_001;
 use Plack::Builder;
 use Router::Resource;
@@ -24,9 +25,7 @@ use BOM::API::Payment::Client;
 use BOM::API::Payment::Session;
 use BOM::API::Payment::DoughFlow;
 
-sub to_app {    ## no critic (Subroutines::RequireFinalReturn)
-    my ($self) = @_;
-
+sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalReturn)
     my $router = router {
         resource '/ping' => sub {
             GET { {status => 'up'} };

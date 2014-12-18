@@ -1,5 +1,7 @@
 package BOM::API::Payment::DoughFlow;
 
+## no critic (RequireUseStrict,RequireUseWarnings)
+
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
