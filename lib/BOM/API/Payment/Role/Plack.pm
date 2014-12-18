@@ -13,11 +13,11 @@ has 'env' => (
 has 'req' => (is => 'lazy');
 
 sub _build_req {
-    Plack::Request->new((shift)->env);
+    return Plack::Request->new((shift)->env);
 }
 
 # alias
-sub request { (shift)->req }
+sub request { return (shift)->req }
 
 has 'user' => (is => 'lazy');
 

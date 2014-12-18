@@ -24,8 +24,8 @@ use BOM::API::Payment::Client;
 use BOM::API::Payment::Session;
 use BOM::API::Payment::DoughFlow;
 
-sub to_app {
-    my $self = shift;
+sub to_app {  ## no critic (Subroutines::RequireFinalReturn)
+    my ($self) = @_;
 
     my $router = router {
         resource '/ping' => sub {
@@ -132,7 +132,7 @@ sub to_app {
                 return $ref
             };
         };
-            
+
         # first try DoughFlow Auth
         enable_if {
             $_[0]->{PATH_INFO} ne '/ping';

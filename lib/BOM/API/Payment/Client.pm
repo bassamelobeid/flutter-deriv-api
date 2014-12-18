@@ -50,7 +50,7 @@ sub address_diff_GET {
     };
 }
 
-sub address_diff_POST {
+sub address_diff_POST { ## no critic (Subroutines::RequireFinalReturn)
     my $c = shift;
 
     my $client = $c->user;

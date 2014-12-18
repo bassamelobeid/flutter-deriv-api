@@ -9,6 +9,7 @@ use BOM::Utility::Date;
 use Guard;
 use BOM::Platform::Data::Persistence::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
+use Try::Tiny;
 
 # one of deposit, withdrawal
 has 'type' => (
@@ -118,18 +119,18 @@ sub validate_as_payment {
     my $signed_amount = $c->request_parameters->{amount};
     $signed_amount *= -1 if $action eq 'withdraw';
 
-    eval {
+    my $err;
+    try {
         $client->set_default_account($currency);
         $client->validate_payment(
                 currency    => $currency,
                 amount      => $signed_amount,
                 action_type => $action,
         )
+    } catch {
+        $err = $_;
     };
-
-    if (my $err = $@) {
-        return $c->throw(403, $err);
-    }
+    return $c->throw(403, $err) if $err;
 
     $log->debug("$action validation passed");
 
