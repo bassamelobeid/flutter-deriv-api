@@ -28,8 +28,7 @@ BOM::Platform::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-# Exit when not master live server (or not development pc)
-if (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name ne MasterLiveServer()) {
+if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
     code_exit_BO();
 }
 

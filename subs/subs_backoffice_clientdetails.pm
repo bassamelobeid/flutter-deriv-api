@@ -10,6 +10,14 @@ use BOM::Utility::Format::Strings qw( set_selected_item );
 use BOM::Utility::Date;
 use BOM::View::CGIForm;
 
+sub get_currency_options {
+    my $currency_options;
+    foreach my $currency (@{request()->available_currencies}) {
+        $currency_options .= '<option value="' . $currency . '">' . $currency . '</option>';
+    }
+    return $currency_options;
+}
+
 sub print_client_details {
 
     my ($client, $staff) = @_;

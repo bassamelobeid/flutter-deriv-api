@@ -41,7 +41,9 @@ my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::Run
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : BOM::Platform::Runtime->instance->landing_companies->all_currencies;
 
 # This report will now only be run on the MLS.
-exit 0 if (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name ne MasterLiveServer());
+if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
+    exit 0;
+}
 
 my $run_for           = BOM::Utility::Date->new($for_date);
 my $start_of_next_day = BOM::Utility::Date->new($run_for->epoch - $run_for->seconds_after_midnight)->datetime_iso8601;
