@@ -12,6 +12,7 @@ use Try::Tiny;
 use Mail::Sender;
 
 use Cache::RedisDB;
+use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
 use BOM::Platform::Helper::Model::FinancialMarketBet;
 use BOM::Platform::Runtime;
