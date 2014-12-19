@@ -5,8 +5,7 @@ use strict;
 
 our (
     #official globals
-    $GRAPH_GRID,       $GRAPH_SIZEX, $GRAPH_SIZEY,
-    $GRAPH_TIMEFORMAT, $GRAPH_TITLE, $GRAPH_XDATATYPE,
+    $GRAPH_TITLE, $GRAPH_XDATATYPE,
     $GRAPH_XTITLE,
     @GRAPH_X, @GRAPH_Y,
 );
@@ -561,13 +560,8 @@ else {
     $num_of_ticks = 99999;
 
     local $GRAPH_XDATATYPE = 'time';
-    local $GRAPH_SIZEX     = 340;
-    local $GRAPH_SIZEY     = 300;
 
     my $yesterday = BOM::Utility::Date->new($now->epoch - 86400)->date_ddmmmyy;
-
-    local $GRAPH_TIMEFORMAT = '%H:%M:%S';
-    local $GRAPH_GRID       = "yes";
 
     foreach my $forexitem (
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -583,9 +577,16 @@ else {
 
         my $graph_formatx = '%H:%M';
         my $graph_formaty = '%.4f';
+        my $graph_sizex   = 340,
+        my $graph_sizey   = 300,
+        my $graph_timeformat = '%H:%M:%S';
+
         graph_setup({
-            graph_formatx => $graph_formatx,
-            graph_formaty => $graph_formaty,
+            graph_formatx       => $graph_formatx,
+            graph_formaty       => $graph_formaty,
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_timeformat    => $graph_timeformat,
         });
 
         Plot({
@@ -597,7 +598,10 @@ else {
             'candle_o'     => \@candle_o,
             daytochart     => $daytochart
         });
-        print graph_draw();
+        print graph_draw({
+            graph_sizex   => $graph_sizex,
+            graph_sizey   => $graph_sizey,
+        });
 
         print "</td><td><font size=1>";
 
@@ -605,8 +609,11 @@ else {
         $GRAPH_XTITLE = "$forexitem $daytochart (TODAY)";
 
         graph_setup({
-            graph_formatx => $graph_formatx,
-            graph_formaty => $graph_formaty,
+            graph_formatx       => $graph_formatx,
+            graph_formaty       => $graph_formaty,
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_timeformat    => $graph_timeformat,
         });
 
         Plot({
@@ -618,7 +625,10 @@ else {
             'candle_o'     => \@candle_o,
             daytochart     => $daytochart
         });
-        print graph_draw();
+        print graph_draw({
+            graph_sizex   => $graph_sizex,
+            graph_sizey   => $graph_sizey,
+        });
 
         print "</td><td><font size=2>";
 
