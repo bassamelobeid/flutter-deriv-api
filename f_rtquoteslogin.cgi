@@ -27,7 +27,7 @@ my $dbloc       = BOM::Platform::Runtime->instance->app_config->system->director
 my $tmp_dir     = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $now          = BOM::Utility::Date->new;
-my @providerlist = AllFeedProviders();
+my @providerlist = qw(gtis idata random telekurs sd tenfore bloomberg olsen test combined);
 
 Bar("Compare providers");
 
@@ -38,7 +38,6 @@ print "<LI><font color=F09999>Shadow tick file over 180 seconds</font>";
 print "<LI><font color=FF0000>More than 0.2\% away from combined quote (0.4\% for stocks)</font>";
 print "</UL>";
 
-push @providerlist, 'combined';
 my @instrumentlist = sort BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market => [@all_markets],
 );

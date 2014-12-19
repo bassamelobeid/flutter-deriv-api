@@ -306,8 +306,7 @@ elsif (scalar @overlay and not $merge) {
 
             my @providerlist;
             if ($all_provider) {
-                @providerlist = AllFeedProviders();
-                push @providerlist, 'combined';    #put combined last so we can see it on top
+                @providerlist = qw(gtis idata random telekurs sd tenfore bloomberg olsen test combined);
             } else {
                 push @providerlist, $provider;
             }
@@ -445,8 +444,8 @@ elsif (scalar @overlay and $merge) {
 
         my @providerlist;
         if ($all_provider) {
-            @providerlist = AllFeedProviders();
-            push @providerlist, 'combined';    #put combined last so we can see it on top
+            # put combined last so we can see it on top
+            @providerlist = qw(gtis idata random telekurs sd tenfore bloomberg olsen test combined);
         } else {
             push @providerlist, $provider;
         }
