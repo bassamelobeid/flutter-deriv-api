@@ -15,11 +15,12 @@ package main;
 
 use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
-system_initialize();
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::Helper::PricingDetails;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');

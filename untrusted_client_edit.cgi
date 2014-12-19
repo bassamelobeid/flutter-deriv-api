@@ -5,8 +5,9 @@ use strict 'vars';
 
 use BOM::Platform::Plack qw( PrintContentType );
 use f_brokerincludeall;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 BrokerPresentation("UNTRUSTED/DISABLE CLIENT");
 

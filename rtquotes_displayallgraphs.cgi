@@ -5,8 +5,8 @@ use strict;
 
 our (
     #official globals
-    $GRAPH_FORMATX,    $GRAPH_FORMATY, $GRAPH_GRID, $GRAPH_SIZEX, $GRAPH_SIZEY,
-    $GRAPH_TIMEFORMAT, $GRAPH_TITLE,   $GRAPH_XDATATYPE,
+    $GRAPH_GRID,       $GRAPH_SIZEX, $GRAPH_SIZEY,
+    $GRAPH_TIMEFORMAT, $GRAPH_TITLE, $GRAPH_XDATATYPE,
     $GRAPH_XTITLE,
     @GRAPH_X, @GRAPH_Y,
 );
@@ -16,8 +16,8 @@ use BOM::Market::UnderlyingDB;
 use BOM::Utility::GNUPlot;
 use BOM::Utility::Hash;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("Plot Graph");
@@ -568,8 +568,6 @@ else {
     my $yesterday = BOM::Utility::Date->new($now->epoch - 86400)->date_ddmmmyy;
 
     local $GRAPH_TIMEFORMAT = '%H:%M:%S';
-    local $GRAPH_FORMATX    = '%H:%M';
-    local $GRAPH_FORMATY    = '%.4f';
     local $GRAPH_GRID       = "yes";
 
     foreach my $forexitem (
@@ -583,7 +581,13 @@ else {
         my $daytochart = $yesterday;
         $GRAPH_XTITLE = "$forexitem $daytochart (YESTERDAY)";
         $GRAPH_TITLE  = $underlying->display_name;
-        graph_setup();
+
+        my $graph_formatx = '%H:%M';
+        my $graph_formaty = '%.4f';
+        graph_setup({
+            graph_formatx => $graph_formatx,
+            graph_formaty => $graph_formaty,
+        });
 
         Plot({
             'market'       => $forexitem,
@@ -600,7 +604,12 @@ else {
 
         $daytochart   = $today;
         $GRAPH_XTITLE = "$forexitem $daytochart (TODAY)";
-        graph_setup();
+
+        graph_setup({
+            graph_formatx => $graph_formatx,
+            graph_formaty => $graph_formaty,
+        });
+
         Plot({
             'market'       => $forexitem,
             'num_of_ticks' => $num_of_ticks,

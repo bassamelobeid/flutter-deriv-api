@@ -8,7 +8,8 @@ use BOM::Utility::CurrencyConverter qw(in_USD);
 use BOM::Platform::Data::Persistence::DataMapper::Account;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Persistence::DAO::Client;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Accounts subject to PoC locking.');

@@ -6,10 +6,10 @@ use Path::Tiny;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::ActivityReporter;
 use BOM::Utility::Log4perl;
+use BOM::Platform::Sysinit ();
 
 BOM::Utility::Log4perl::init_log4perl_console;
-
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 my ($from_date_str, $to_date_str);
 my $optres = GetOptions(
