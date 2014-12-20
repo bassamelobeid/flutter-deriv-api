@@ -10,7 +10,7 @@ use Test::More;
 
 if ($ENV{SKIP_TESTDB_INIT}) {
     require BOM::Test::Data::Utility::UnitTestDatabase;
-            BOM::Test::Data::Utility::UnitTestDatabase->import(':init');
+    BOM::Test::Data::Utility::UnitTestDatabase->import(':init');
     ok(1, 'test database has been reset up-front for whole test-suite');
 } else {
     ok(1, 'test database will be reset in each test.  To avoid, set SKIP_TESTDB_INIT');

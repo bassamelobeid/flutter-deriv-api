@@ -19,7 +19,7 @@ use Digest::SHA qw/sha256_hex/;
 use Data::Dumper;
 use MIME::Base64;
 
-if($ENV{SKIP_TESTDB_INIT}) {
+if ($ENV{SKIP_TESTDB_INIT}) {
     ok(1, 'Note: Continuing with unchanged Test Database');
 } else {
     require BOM::Test::Data::Utility::UnitTestDatabase;
@@ -41,7 +41,7 @@ unless ($ENV{PLACK_TEST_IMPL} eq 'ExternalServer') {
     $app = Plack::Util::load_psgi($ENV{PAYMENT_PSGI} || "$Bin/../../paymentapi.psgi");
 }
 
-my $clear_password = '123456'; # this is the unencrypted pwd of CR011 in the test database.
+my $clear_password = '123456';    # this is the unencrypted pwd of CR011 in the test database.
 
 sub request {
     my ($method, $url, $query_form, $headers) = @_;
