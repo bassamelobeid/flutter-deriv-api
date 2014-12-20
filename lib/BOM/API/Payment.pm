@@ -89,7 +89,8 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
     };
 
     my $trace_log = $ENV{PAYMENTAPI_LOG_FILE} || '/var/log/httpd/pa_error.log';
-    my $trace_lvl = $ENV{PAYMENTAPI_LOG_LEVEL} || ($ENV{PLACK_ENV} eq 'development' ? 'debug' : 'info');
+    #my $trace_lvl = $ENV{PAYMENTAPI_LOG_LEVEL} || ($ENV{PLACK_ENV} eq 'development' ? 'debug' : 'info');
+    my $trace_lvl = 'debug'; # temporary override
     my $syslg_lvl = 'warn';
     my $logformat = sub { my %msg = @_; my $lvl = sprintf '%-7s', uc $msg{level}; "$lvl $msg{message}" };
     my $log       = Log::Dispatch->new;
