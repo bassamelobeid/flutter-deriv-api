@@ -36,7 +36,7 @@ foreach my $u (@POSTs) {
 @GETs = ('/transaction/payment/doughflow/deposit', '/transaction/payment/doughflow/withdrawal', '/transaction/payment/doughflow/withdrawal_reversal');
 foreach my $u (@GETs) {
     $r = request('GET', "$u?client_loginid=$loginid&currency_code=USD");
-    ok($r->code == 405|| $r->code == 401, "FAILED on $u: " . $r->code);    # not allowed
+    ok($r->code == 405, "FAILED on $u: " . $r->code);    # not allowed
 }
 @POSTs = (
     '/client',                                '/session',
@@ -46,7 +46,7 @@ foreach my $u (@GETs) {
 );
 foreach my $u (@POSTs) {
     $r = request('POST', "$u?client_loginid=$loginid&currency_code=USD");
-    ok($r->code == 405 || $r->code == 401, "FAILED on $u: " . $r->code);    # not allowed
+    ok($r->code == 405, "FAILED on $u: " . $r->code);    # not allowed
 }
 
 done_testing();
