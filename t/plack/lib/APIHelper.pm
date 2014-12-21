@@ -7,6 +7,7 @@ use Exporter 'import';
 our @EXPORT_OK = qw( request auth_request decode_json deposit withdraw balance new_client);
 
 use FindBin qw/$Bin/;
+use Test::More;
 use Plack::Test;
 use Plack::Util;
 use URI;
@@ -17,6 +18,14 @@ use Digest::MD5 qw/md5_hex/;
 use Digest::SHA qw/sha256_hex/;
 use Data::Dumper;
 use MIME::Base64;
+
+if ($ENV{SKIP_TESTDB_INIT}) {
+    ok(1, 'Note: Continuing with unchanged Test Database');
+} else {
+    require BOM::Test::Data::Utility::UnitTestDatabase;
+    BOM::Test::Data::Utility::UnitTestDatabase->import(':init');
+    ok(1, 'Test Database has been reset');
+}
 
 # To run the test-suite much faster, and distinguish test output from server output,
 # and avoid server start-up overhead, run the test-suite and plack-server as distinct processes:
@@ -32,7 +41,7 @@ unless ($ENV{PLACK_TEST_IMPL} eq 'ExternalServer') {
     $app = Plack::Util::load_psgi($ENV{PAYMENT_PSGI} || "$Bin/../../paymentapi.psgi");
 }
 
-my $clear_password = '123456';
+my $clear_password = '123456';    # this is the unencrypted pwd of CR011 in the test database.
 
 sub request {
     my ($method, $url, $query_form, $headers) = @_;
