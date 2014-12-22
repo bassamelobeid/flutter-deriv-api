@@ -10,6 +10,7 @@ use Getopt::Long;
 use BOM::Utility::Log4perl qw( get_logger );
 use Path::Tiny;
 use BOM::Platform::Email;
+use BOM::Product::ContractFactory qw( produce_contract );
 
 use include_common_modules;
 
