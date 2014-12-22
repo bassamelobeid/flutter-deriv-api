@@ -532,7 +532,7 @@ else {
         my $graph_sizey   = 300,
         my $graph_timeformat = '%H:%M:%S';
 
-        graph_setup({
+        my $graph_outputfile = graph_setup({
             graph_formatx       => $graph_formatx,
             graph_formaty       => $graph_formaty,
             graph_sizex         => $graph_sizex,
@@ -552,8 +552,9 @@ else {
             graph_title     => $graph_title,
         });
         print graph_draw({
-            graph_sizex   => $graph_sizex,
-            graph_sizey   => $graph_sizey,
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_outputfile    => $graph_outputfile,
         });
 
         print "</td><td><font size=1>";
@@ -561,7 +562,7 @@ else {
         $daytochart   = $today;
         $graph_xtitle = "$forexitem $daytochart (TODAY)";
 
-        graph_setup({
+        $graph_outputfile = graph_setup({
             graph_formatx       => $graph_formatx,
             graph_formaty       => $graph_formaty,
             graph_sizex         => $graph_sizex,
@@ -581,8 +582,9 @@ else {
             graph_title     => $graph_title,
         });
         print graph_draw({
-            graph_sizex   => $graph_sizex,
-            graph_sizey   => $graph_sizey,
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_outputfile    => $graph_outputfile,
         });
 
         print "</td><td><font size=2>";
