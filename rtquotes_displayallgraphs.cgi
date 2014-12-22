@@ -5,7 +5,6 @@ use strict;
 
 our (
     #official globals
-    $GRAPH_TITLE, $GRAPH_XDATATYPE,
     $GRAPH_XTITLE,
     @GRAPH_X, @GRAPH_Y,
 );
@@ -559,8 +558,6 @@ else {
 
     $num_of_ticks = 99999;
 
-    local $GRAPH_XDATATYPE = 'time';
-
     my $yesterday = BOM::Utility::Date->new($now->epoch - 86400)->date_ddmmmyy;
 
     foreach my $forexitem (
@@ -572,9 +569,9 @@ else {
         my $underlying = BOM::Market::Underlying->new($forexitem);
         print "<table cellpadding=0 cellspacing=0 border=1 width=100%><tr><td><font size=1>";
         my $daytochart = $yesterday;
-        $GRAPH_XTITLE = "$forexitem $daytochart (YESTERDAY)";
-        $GRAPH_TITLE  = $underlying->display_name;
+        my $graph_xtitle = "$forexitem $daytochart (YESTERDAY)";
 
+        my $graph_title   = $underlying->display_name;
         my $graph_formatx = '%H:%M';
         my $graph_formaty = '%.4f';
         my $graph_sizex   = 340,
@@ -587,16 +584,19 @@ else {
             graph_sizex         => $graph_sizex,
             graph_sizey         => $graph_sizey,
             graph_timeformat    => $graph_timeformat,
+            graph_title   => $graph_title,
+            graph_xtitle  => $graph_xtitle,
         });
 
         Plot({
-            'market'       => $forexitem,
-            'num_of_ticks' => $num_of_ticks,
-            'candle_c'     => \@candle_c,
-            'candle_h'     => \@candle_h,
-            'candle_l'     => \@candle_l,
-            'candle_o'     => \@candle_o,
-            daytochart     => $daytochart
+            market          => $forexitem,
+            num_of_ticks    => $num_of_ticks,
+            candle_c        => \@candle_c,
+            candle_h        => \@candle_h,
+            candle_l        => \@candle_l,
+            candle_o        => \@candle_o,
+            daytochart      => $daytochart,
+            graph_title     => $graph_title,
         });
         print graph_draw({
             graph_sizex   => $graph_sizex,
@@ -614,16 +614,19 @@ else {
             graph_sizex         => $graph_sizex,
             graph_sizey         => $graph_sizey,
             graph_timeformat    => $graph_timeformat,
+            graph_title   => $graph_title,
+            graph_xtitle  => $graph_xtitle,
         });
 
         Plot({
-            'market'       => $forexitem,
-            'num_of_ticks' => $num_of_ticks,
-            'candle_c'     => \@candle_c,
-            'candle_h'     => \@candle_h,
-            'candle_l'     => \@candle_l,
-            'candle_o'     => \@candle_o,
-            daytochart     => $daytochart
+            market          => $forexitem,
+            num_of_ticks    => $num_of_ticks,
+            candle_c        => \@candle_c,
+            candle_h        => \@candle_h,
+            candle_l        => \@candle_l,
+            candle_o        => \@candle_o,
+            daytochart      => $daytochart,
+            graph_title     => $graph_title,
         });
         print graph_draw({
             graph_sizex   => $graph_sizex,
