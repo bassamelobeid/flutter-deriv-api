@@ -396,17 +396,18 @@ print qq[<style>
     </style>
 ];
 
-# find next and prev real clients but give up after 20 tries in each direction.
-my $attempts = 20;
+# find next and prev real clients but give up after a few tries in each direction.
+my $attempts = 3;
 my ($prev_client, $next_client, $prev_loginid, $next_loginid);
 my $client_broker = $client->broker;
 (my $number = $loginid) =~ s/$client_broker//;
+my $len = length($number);
 for (1 .. $attempts) {
-    $prev_loginid = $client_broker . ($number - $_);
+    $prev_loginid = sprintf "$client_broker%0*d", $len, $number-$_;
     last if $prev_client = BOM::Platform::Client->new({loginid => $prev_loginid});
 }
 for (1 .. $attempts) {
-    $next_loginid = $client_broker . ($number + $_);
+    $next_loginid = sprintf "$client_broker%0*d", $len, $number+$_;
     last if $next_client = BOM::Platform::Client->new({loginid => $next_loginid});
 }
 
