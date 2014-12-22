@@ -8,6 +8,8 @@ use BOM::Utility::GNUPlot;
 use BOM::Utility::Hash;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use subs::subs_graphs;
+
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
