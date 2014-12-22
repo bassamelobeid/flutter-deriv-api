@@ -29,11 +29,9 @@ foreach my $symbol (@markets) {
     print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% >";
     print "<TR>";
     print "<TD>";
-    print '<form action="' . request()->url_for('backoffice/f_save.cgi') . '" method="post" name="editform">';
-    print '<input type="hidden" name="filen" value="editvol">';
-    print '<input type="hidden" name="symbol" value="' . $symbol . '">';
-    print '<input type="hidden" name="l" value="EN">';
-    print "<textarea name='text' rows=15 cols=75>";
+    print '<form action="' . request()->url_for('backoffice/f_save.cgi') . '" method="post" onsubmit="return setSymbolValue(this);" name="editform">';
+    print '<input type="hidden" name="underlying" value="' . $symbol . '">';
+    print "<textarea name='info_text' rows=15 cols=75>";
     print join "\n", $display->rmg_text_format;
     print "</textarea>";
 
@@ -41,11 +39,17 @@ foreach my $symbol (@markets) {
         print 'Spot reference: <input type="text" name="spot_reference" value="' . $existing_vol_surface->spot_reference . '">';
     }
     print '<input type="submit" value="Save">';
+
+    print '<input type="hidden" name="filen" value="editvol"/>';
+    print '<input type="hidden" name="symbol"/>';
+    print "<textarea name='text' rows=15 cols=75 style='display:none;'></textarea>";
+    print '<input type="hidden" name="l" value="EN">';
+
+    print '</form>';
     print "</TD>";
 
     print "</TABLE>";
 
 }
-
 code_exit_BO();
 
