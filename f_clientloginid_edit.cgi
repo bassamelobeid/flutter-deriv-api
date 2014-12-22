@@ -19,7 +19,7 @@ use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
 use BOM::View::CGIForm;
 use BOM::Platform::Client::Utility ();
-use BOM::Platform::Sysinit ();
+use BOM::Platform::Sysinit         ();
 BOM::Platform::Sysinit::init();
 
 my %input = %{request()->params};
