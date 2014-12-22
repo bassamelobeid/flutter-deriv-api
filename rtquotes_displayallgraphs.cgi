@@ -5,7 +5,6 @@ use strict;
 
 our (
     #official globals
-    $GRAPH_XTITLE,
     @GRAPH_X, @GRAPH_Y,
 );
 
@@ -606,7 +605,7 @@ else {
         print "</td><td><font size=1>";
 
         $daytochart   = $today;
-        $GRAPH_XTITLE = "$forexitem $daytochart (TODAY)";
+        $graph_xtitle = "$forexitem $daytochart (TODAY)";
 
         graph_setup({
             graph_formatx       => $graph_formatx,
