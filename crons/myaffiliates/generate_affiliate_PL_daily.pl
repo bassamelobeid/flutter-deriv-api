@@ -1,11 +1,14 @@
 use strict;
 use warnings;
+
 use Getopt::Long;
-use include_common_modules;
 use Path::Tiny;
+use FileHandle;
+
+use include_common_modules;
+use BOM::Utility::Log4perl;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::ActivityReporter;
-use BOM::Utility::Log4perl;
 use BOM::Platform::Sysinit ();
 
 BOM::Utility::Log4perl::init_log4perl_console;

@@ -8,6 +8,7 @@ use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/bom/cgi);
 use f_brokerincludeall;
 use Try::Tiny;
 use Path::Tiny;
+use File::ReadBackwards;
 
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);

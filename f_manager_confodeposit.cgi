@@ -6,6 +6,7 @@ use warnings;
 
 use Scalar::Util qw(looks_like_number);
 use Path::Tiny;
+use File::ReadBackwards;
 
 use f_brokerincludeall;
 use BOM::Platform::Data::Persistence::DataMapper::Payment;

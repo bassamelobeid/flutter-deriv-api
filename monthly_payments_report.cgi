@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Text::CSV;
+use DateTime;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType_excel );

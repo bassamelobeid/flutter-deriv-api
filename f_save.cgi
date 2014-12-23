@@ -4,19 +4,19 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use Text::Trim;
+use Text::Diff;
+use Path::Tiny;
 
 use f_brokerincludeall;
-use BOM::MarketData::Display::VolatilitySurface;
-
-use BOM::Platform::Runtime;
+use BOM::Utility::Date;
+use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Format::Numbers qw( virgule );
 use BOM::MarketData::InterestRate;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Utility::Date;
-use Path::Tiny;
-use BOM::Utility::Log4perl qw( get_logger );
+use BOM::MarketData::Display::VolatilitySurface;
+use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
