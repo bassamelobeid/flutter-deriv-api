@@ -20,6 +20,8 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use BOM::Product::ContractFactory qw( produce_contract );
+
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
