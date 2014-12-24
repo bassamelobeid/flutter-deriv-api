@@ -43,7 +43,9 @@ if (not $client) {
 }
 
 my $currency = request()->param('currency');
-$currency = $client->currency if ($currency eq 'default');
+if (not $currency or $currency eq 'default') {
+    $currency = $client->currency;
+}
 
 # print other untrusted section warning in backoffice
 print build_client_warning_message($client->loginid) . '<br />';

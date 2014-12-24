@@ -59,7 +59,7 @@ while ($to_date->days_between($processing_date) >= 0) {
     # Date, Player, P&L, Deposits, RBTO, IDTO, OTO
     foreach my $line (@csv) {
         chomp $line;
-        print $fh $line if $line;
+        print $fh $line . "\n" if $line;
     }
 
     undef $fh;
