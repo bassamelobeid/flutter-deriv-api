@@ -225,9 +225,10 @@ if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
 
     $client->smart_payment(
         %params,    # these are payment-type-specific params from the html form.
-        currency => $curr,
-        amount   => $signed_amount,
-        staff    => $clerk,
+        currency        => $curr,
+        amount          => $signed_amount,
+        staff           => $clerk,
+        skip_validation => 1,
     );
 
 } elsif ($ttype eq 'TRANSFER') {
