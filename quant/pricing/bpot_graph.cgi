@@ -20,6 +20,7 @@ use f_brokerincludeall;
 
 use List::Util qw( min max );
 
+use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Platform::Plack qw( PrintContentType_image );
 use BOM::Platform::Sysinit ();
