@@ -8,8 +8,9 @@ use File::Copy;
 use Locale::Country 'code2country';
 use Data::Dumper;
 
-use BOM::Platform::Runtime;
 use f_brokerincludeall;
+use BOM::Utility::Log4perl qw( get_logger );
+use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Client::IDAuthentication;
@@ -17,9 +18,10 @@ use BOM::Platform::Client::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
-use BOM::View::CGIForm;
 use BOM::Platform::Client::Utility ();
 use BOM::Platform::Sysinit         ();
+use BOM::View::CGIForm;
+
 BOM::Platform::Sysinit::init();
 
 my %input = %{request()->params};

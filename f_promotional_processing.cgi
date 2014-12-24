@@ -4,6 +4,8 @@ use strict 'vars';
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
+use JSON;
+
 use f_brokerincludeall;
 use BOM::Platform::Data::Persistence::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);

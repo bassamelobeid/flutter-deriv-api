@@ -4,6 +4,8 @@ use strict 'vars';
 
 use Locale::Country;
 use DateTime;
+use JSON;
+
 use f_brokerincludeall;
 use BOM::Platform::Data::Persistence::DataMapper::Payment;
 use BOM::Platform::Data::Persistence::DataMapper::Transaction;
