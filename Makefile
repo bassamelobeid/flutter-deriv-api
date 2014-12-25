@@ -8,7 +8,7 @@ v3_3:
 	bash -c 'prove --timer -I./lib -I./t -r t/BOM/WebsocketAPI/v3/{8,9}*'
 
 json_schema:
-	bash -c 'date -s \'2016-08-09 12:00:00\'; prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/suite.t'
+	bash -c "date -s '2016-08-09 12:00:00'; prove --timer -I./lib -I./t t/BOM/WebsocketAPI/v3/schema_suite/suite.t"
 
 structure:
 	prove --timer -I./lib  -I./t t/BOM/*.t
