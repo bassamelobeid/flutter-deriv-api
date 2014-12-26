@@ -1,5 +1,6 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
+use DBI;
 use BOM::Utility::Format::Numbers qw(to_monetary_number_format roundnear);
 
 sub USD_AggregateOutstandingBets_ongivendate {

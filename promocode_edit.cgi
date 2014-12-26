@@ -6,6 +6,7 @@ use warnings;
 
 use Scalar::Util 'looks_like_number';
 use BOM::Platform::Plack qw( PrintContentType );
+use JSON;
 
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();

@@ -4,7 +4,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use CGI;
-use Carp;
+use Carp qw( croak );
 
 use f_brokerincludeall;
 

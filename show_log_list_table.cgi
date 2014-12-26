@@ -5,6 +5,8 @@ use strict 'vars';
 
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Persistence::DAO::Utils::Log;
+use JSON;
+
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();

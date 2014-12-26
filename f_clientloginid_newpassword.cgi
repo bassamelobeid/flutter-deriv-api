@@ -2,11 +2,13 @@
 package main;
 use strict 'vars';
 
+use URL::Encode qw( url_encode );
+use Digest::MD5;
+
+use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
-use f_brokerincludeall;
 use BOM::Platform::Persistence::DAO::Utils::ClientPasswordRecovery;
-use URL::Encode qw( url_encode );
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();

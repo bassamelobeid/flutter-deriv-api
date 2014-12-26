@@ -2,21 +2,14 @@
 package main;
 
 use strict;
-
-our (
-    #official globals
-    $GRAPH_GRID,       $GRAPH_SIZEX, $GRAPH_SIZEY,
-    $GRAPH_TIMEFORMAT, $GRAPH_TITLE, $GRAPH_XDATATYPE,
-    $GRAPH_XTITLE,
-    @GRAPH_X, @GRAPH_Y,
-);
-
 use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
 use BOM::Utility::GNUPlot;
 use BOM::Utility::Hash;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use subs::subs_graphs;
+
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -38,7 +31,6 @@ my $lower           = request()->param('lower') || '';
 my $time_upper      = request()->param('time_upper') || '';
 my $time_lower      = request()->param('time_lower') || '';
 my $use_y2          = request()->param('use_y2') || 0;
-my $num_of_ticks;
 my @overlay = split /\s+/, $overlay;
 my @source  = split /\s+/, $source;
 my @candle_c = ();
@@ -59,13 +51,11 @@ my $fileextention       = "gif";
 my $graph_outputfile    = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif . "/$hashcat.$fileextention";
 my $graph_outputfile_ht = request()->url_for("temp/$hashcat.$fileextention");
 
-#############################################################################
 my $now           = BOM::Utility::Date->new;
 my $currenthour   = $now->hour;
 my $currentminute = $now->minute;
 my $today         = $now->date_ddmmmyy;
 Bar("Plot Graph (Input Parameters) $today   $currenthour:$currentminute GMT");
-#############################################################################
 
 print "<Body>";
 
@@ -83,9 +73,7 @@ foreach my $underlying_symbol ('frxUSDJPY', 'FTSE', 'UKBARC', 'USINTC') {
 }
 print '</span>';
 
-#############################################################################
 # Input Parameters
-#############################################################################
 print qq~
 	<form action="~ . request()->url_for('backoffice/rtquotes_displayallgraphs.cgi') . qq~">
 	<TABLE border=0 cellpadding=1>
@@ -166,13 +154,9 @@ print qq~
 ~;
 
 my $override_findfullfeed;
-############################################################################
 # DAILY CHART
-############################################################################
 if ($daily) {
-    #############################################################################
     Bar("Daily Graph for $daily");
-    #############################################################################
 
     #link to intraday charts
     print "Other Intraday Charts : <a href=\""
@@ -207,27 +191,23 @@ if ($daily) {
         . '/d/backoffice';
     print "<center>&nbsp;<br>";
 
-    $num_of_ticks = 99999;    # global in doDailyPlot()
-    my $no_data = doDailyPlot({
+
+    my ($graph_x, $graph_y) = doDailyPlot({
         underlying_symbol => $daily,
-        num_of_ticks      => $num_of_ticks,
         candle_c          => \@candle_c,
         candle_h          => \@candle_h,
         candle_l          => \@candle_l,
         candle_o          => \@candle_o
-    });                        # Create arrays @GRAPH_X,@GRAPH_Y,@candle_o,@candle_h,@candle_l
-    if ($no_data) {
-        print $no_data->[1];
+    });
+    if (not $graph_x and not $graph_y) {
+        print 'No Data available';
     }
-
-    # @GRAPH_X,@GRAPHY,@candle_o,@candle_l is a global variables generated from doDailyPlot();
-    my $daily_data;
-    my $num_of_row = @GRAPH_X;
 
     # 1    : 2 : 3  : 4 : 5
     # Date Open High Low Close
-    for (my $n = 0; $n < $num_of_row; $n++) {
-        $daily_data .= $GRAPH_X[$n] . ' ' . $candle_o[$n] . ' ' . $candle_h[$n] . ' ' . $candle_l[$n] . ' ' . $candle_c[$n] . "\n";
+    my $daily_data;
+    for (my $n = 0; $n < scalar @{$graph_x}; $n++) {
+        $daily_data .= $graph_x->[$n] . ' ' . $candle_o[$n] . ' ' . $candle_h[$n] . ' ' . $candle_l[$n] . ' ' . $candle_c[$n] . "\n";
     }
 
     my $graphs_gnuplot = BOM::Utility::GNUPlot->new({
@@ -235,7 +215,7 @@ if ($daily) {
         'background_color' => 'FFFFFF',
         'output_type'      => 'gif',
         'graph_grid'       => 'yes',
-        'xdata_type'       => 'time',                      # time, string
+        'xdata_type'       => 'time',
         'x_label'          => "Date (MM:dd)",
         'y_label'          => '',
         'x_format'         => '%m/%y',
@@ -263,20 +243,16 @@ if ($daily) {
     print qq~<textarea rows="25" cols="60">$daily_data</textarea>~;
 }
 
-############################################################################
-# OVERLAY TWO OR MORE MARKETS (INTRADAY) - show intraday-graph seperately
-############################################################################
+# OVERLAY TWO OR MORE MARKETS (INTRADAY) - show intraday-graph separately
 elsif (scalar @overlay and not $merge) {
-    #############################################################################
     Bar("Intraday Graph for $overlay");
-    #############################################################################
 
     my $now = BOM::Utility::Date->new;
     for (my $i = 0; $i < $count; $i++) {
         $graph_outputfile =~ s/.gif/$i.gif/;
         $graph_outputfile_ht =~ s/.gif/$i.gif/;
         my $which = ($yday) ? $yday + $i : $i;
-        my $daytochart = BOM::Utility::Date->new($now->epoch - 86400 * $which)->date_ddmmmyy;    # global in doPlot
+        my $daytochart = BOM::Utility::Date->new($now->epoch - 86400 * $which)->date_ddmmmyy;
 
         my $graphs_gnuplot = BOM::Utility::GNUPlot->new({
             'top_title'        => "Intraday Chart - $overlay on $daytochart",
@@ -306,8 +282,7 @@ elsif (scalar @overlay and not $merge) {
 
             my @providerlist;
             if ($all_provider) {
-                @providerlist = AllFeedProviders();
-                push @providerlist, 'combined';    #put combined last so we can see it on top
+                @providerlist = qw(gtis idata random telekurs sd tenfore bloomberg olsen test combined);
             } else {
                 push @providerlist, $provider;
             }
@@ -324,52 +299,44 @@ elsif (scalar @overlay and not $merge) {
                 if (-e $fffile) {
                     $msg .= `wc -l $fffile` . '<br>';
 
-                    my $adjustmentfactor = 1;
-                    $num_of_ticks = 99999;    # global in doPlot
-                    if (
-                        doPlot({
-                                underlying_symbol     => $instrument,
-                                adjustmentfactor      => $adjustmentfactor,
-                                num_of_ticks          => $num_of_ticks,
-                                candle_c              => \@candle_c,
-                                candle_h              => \@candle_h,
-                                candle_l              => \@candle_l,
-                                candle_o              => \@candle_o,
-                                override_findfullfeed => $override_findfullfeed,
-                                daytochart            => $daytochart,
-                                tick_by_tick          => 1
-                            }
-                        ) eq 'no data'
-                        )
-                    {
+                    my ($graph_x, $graph_y) = doPlot({
+                            underlying_symbol     => $instrument,
+                            candle_c              => \@candle_c,
+                            candle_h              => \@candle_h,
+                            candle_l              => \@candle_l,
+                            candle_o              => \@candle_o,
+                            override_findfullfeed => $override_findfullfeed,
+                            daytochart            => $daytochart,
+                            tick_by_tick          => 1
+                        });
+
+                    if (not $graph_x and not $graph_y) {
                         print "<span style='color:#FF0000;'>No data for $instrument [$provider] on $daytochart</span><br/>";
                         next;
                     }
 
-                    # @GRAPH_X,@GRAPHY,@candle_o,@candle_l is a global variables generated from doPlot;
                     my $data;
-                    my $num_of_row = scalar @GRAPH_X;
                     my $first      = 0;
 
                     # 1   : 2
                     # Date Close
-                    for (my $n = 0; $n < $num_of_row; $n++) {
+                    for (my $n = 0; $n < scalar @{$graph_x}; $n++) {
                         my $y;
                         if ($first == 0) {
-                            $first = $GRAPH_Y[$n];
+                            $first = $graph_y->[$n];
                             if ($norm_from_start and $first == 0) {
                                 next;
                             }
 
                             $y = $norm_from_start ? 100 : $first;
                         } else {
-                            $y = $norm_from_start ? 100 * $GRAPH_Y[$n] / $first : $GRAPH_Y[$n];
+                            $y = $norm_from_start ? 100 * $graph_y->[$n] / $first : $graph_y->[$n];
                         }
                         # Filter by spot barriers
                         next if (($upper ne '' and $y > $upper) or ($lower ne '' and $y < $lower));
 
                         # Filter by time barriers
-                        my $graphx_date = BOM::Utility::Date->new($daytochart . ' ' . $GRAPH_X[$n]);
+                        my $graphx_date = BOM::Utility::Date->new($daytochart . ' ' . $graph_x->[$n]);
                         if ($time_upper) {
                             my $upper_date = BOM::Utility::Date->new($daytochart . ' ' . $time_upper . 'GMT');
                             next if $graphx_date->epoch > $upper_date->epoch;
@@ -379,7 +346,7 @@ elsif (scalar @overlay and not $merge) {
                             next if $graphx_date->epoch < $lower_date->epoch;
                         }
 
-                        $data .= $GRAPH_X[$n] . ' ' . $y . "\n";
+                        $data .= $graph_x->[$n] . ' ' . $y . "\n";
                     }
 
                     if ($data) {
@@ -387,7 +354,7 @@ elsif (scalar @overlay and not $merge) {
                             'using' => '1:2',
                             'title' => "$instrument from [$p] on $daytochart",
                             #Assuming we upload excel vols less than 5 times a day. 'linespoints' are used for vols feed while 'lines' are used for ticks fullfeed file.
-                            'graph_type' => (scalar @GRAPH_X < 5) ? 'linespoints' : 'lines',
+                            'graph_type' => (scalar @{$graph_x} < 5) ? 'linespoints' : 'lines',
                             'line_style' => '',
                             'fill_style' => '',
                             'data'       => $data,
@@ -412,9 +379,7 @@ elsif (scalar @overlay and not $merge) {
         print "<br/><br/><img id=\"GnuPlotChart\" src=\"$graph_outputfile_ht\" border=\"0\" width=\"990\" height=\"600\" /><br/>";
     }
 }
-###################################################################################
 # OVERLAY TWO OR MORE MARKETS (INTRADAY) - merge intraday-graph into single graph
-###################################################################################
 elsif (scalar @overlay and $merge) {
     Bar("Intraday Graph (Merge) for $overlay");
 
@@ -423,7 +388,7 @@ elsif (scalar @overlay and $merge) {
         'background_color' => 'FFFFFF',
         'output_type'      => 'gif',
         'graph_grid'       => 'yes',
-        'xdata_type'       => 'time',                              # time, string
+        'xdata_type'       => 'time',
         'x_label'          => '',
         'y_label'          => '',
         'x_format'         => '%d/%m %H:%M',
@@ -445,8 +410,8 @@ elsif (scalar @overlay and $merge) {
 
         my @providerlist;
         if ($all_provider) {
-            @providerlist = AllFeedProviders();
-            push @providerlist, 'combined';    #put combined last so we can see it on top
+            # put combined last so we can see it on top
+            @providerlist = qw(gtis idata random telekurs sd tenfore bloomberg olsen test combined);
         } else {
             push @providerlist, $provider;
         }
@@ -458,8 +423,8 @@ elsif (scalar @overlay and $merge) {
             for (my $j = $count - 1; $j >= 0; $j--) {
                 my $which      = ($yday) ? $yday + $j : $j;
                 my $chart_date = BOM::Utility::Date->new($now->epoch - 86400 * $which);
-                my $daytochart = $chart_date->date_ddmmmyy;                               # global in doPlot
-                                                                                          # This format sucks, so no adding it to BOM::Utility::Date.
+                my $daytochart = $chart_date->date_ddmmmyy;
+
                 my $ddmmyy =
                     sprintf('%02d', $chart_date->day_of_month) . '-' . sprintf('%02d', $chart_date->month) . '-' . $chart_date->year_in_two_digit;
 
@@ -479,34 +444,26 @@ elsif (scalar @overlay and $merge) {
 
                 $msg .= `wc -l $fffile` . '<br>';
 
-                my $adjustmentfactor = 1;
-                $num_of_ticks = 99999;    # global in doPlot
-                if (
-                    doPlot({
-                            underlying_symbol     => $market,
-                            adjustmentfactor      => $adjustmentfactor,
-                            num_of_ticks          => $num_of_ticks,
-                            candle_c              => \@candle_c,
-                            candle_h              => \@candle_h,
-                            candle_l              => \@candle_l,
-                            candle_o              => \@candle_o,
-                            override_findfullfeed => $override_findfullfeed,
-                            daytochart            => $daytochart,
-                        }
-                    ) eq 'no data'
-                    )
-                {
+                my ($graph_x, $graph_y) = doPlot({
+                        underlying_symbol     => $market,
+                        candle_c              => \@candle_c,
+                        candle_h              => \@candle_h,
+                        candle_l              => \@candle_l,
+                        candle_o              => \@candle_o,
+                        override_findfullfeed => $override_findfullfeed,
+                        daytochart            => $daytochart,
+                    });
+                if (not $graph_x and not $graph_y) {
                     print "<span style='color:#FF0000;'>No data for $market [$provider] on $daytochart</span><br/>";
                     next;
                 }
 
-                # @GRAPH_X,@GRAPHY,@candle_o,@candle_l is a global variables generated from doDailyPlot();
-                my $num_of_row = @GRAPH_X;
+                my $num_of_row = scalar @{$graph_x};
 
                 if (not $first) {
-                    $first = $GRAPH_Y[0];
+                    $first = $graph_y->[0];
                     if ($num_of_row) {
-                        my $d = $ddmmyy . '_' . $GRAPH_X[0];
+                        my $d = $ddmmyy . '_' . $graph_x->[0];
                         my $y = $norm_from_start ? 100 : $first;
 
                         $data .= $d . ' ' . $y . "\n";
@@ -524,8 +481,8 @@ elsif (scalar @overlay and $merge) {
                 }
 
                 for (my $n = $i; $n < $num_of_row; $n++) {
-                    my $d = $ddmmyy . '_' . $GRAPH_X[$n];
-                    my $y = $norm_from_start ? 100 * $GRAPH_Y[$n] / $first : $GRAPH_Y[$n];
+                    my $d = $ddmmyy . '_' . $graph_x->[$n];
+                    my $y = $norm_from_start ? 100 * $graph_y->[$n] / $first : $graph_y[$n];
 
                     next if (($upper ne '' and $y > $upper) or ($lower ne '' and $y < $lower));
                     $data .= $d . ' ' . $y . "\n";
@@ -536,7 +493,7 @@ elsif (scalar @overlay and $merge) {
                 'using' => '1:2',
                 'title' => "$market from [$p]",
                 #Assuming we upload excel vols less than 5 times a day. 'linespoints' are used for vols feed while 'lines' are used for ticks fullfeed file.
-                'graph_type' => (scalar @GRAPH_X < 5) ? 'linespoints' : 'lines',
+                'graph_type' => (scalar @{$graph_x} < 5) ? 'linespoints' : 'lines',
                 'line_style' => '',
                 'fill_style' => '',
                 'data'       => $data,
@@ -551,24 +508,13 @@ elsif (scalar @overlay and $merge) {
     my $filename = $graphs_gnuplot->plot();
     print "<br/><br/><img id=\"GnuPlotChart\" src=\"$graph_outputfile_ht\" border=\"0\" width=\"990\" height=\"600\" /></br>";
 }
-############################################################################
 # GRAPH ALL MARKETS
-############################################################################
 else {
     Bar("Market Chart for $market");
 
     print "<center>&nbsp;<br>";
 
-    $num_of_ticks = 99999;
-
-    local $GRAPH_XDATATYPE = 'time';
-    local $GRAPH_SIZEX     = 340;
-    local $GRAPH_SIZEY     = 300;
-
     my $yesterday = BOM::Utility::Date->new($now->epoch - 86400)->date_ddmmmyy;
-
-    local $GRAPH_TIMEFORMAT = '%H:%M:%S';
-    local $GRAPH_GRID       = "yes";
 
     foreach my $forexitem (
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -579,47 +525,69 @@ else {
         my $underlying = BOM::Market::Underlying->new($forexitem);
         print "<table cellpadding=0 cellspacing=0 border=1 width=100%><tr><td><font size=1>";
         my $daytochart = $yesterday;
-        $GRAPH_XTITLE = "$forexitem $daytochart (YESTERDAY)";
-        $GRAPH_TITLE  = $underlying->display_name;
+        my $graph_xtitle = "$forexitem $daytochart (YESTERDAY)";
 
+        my $graph_title   = $underlying->display_name;
         my $graph_formatx = '%H:%M';
         my $graph_formaty = '%.4f';
-        graph_setup({
-            graph_formatx => $graph_formatx,
-            graph_formaty => $graph_formaty,
+        my $graph_sizex   = 340,
+        my $graph_sizey   = 300,
+        my $graph_timeformat = '%H:%M:%S';
+
+        my $graph_outputfile = graph_setup({
+            graph_formatx       => $graph_formatx,
+            graph_formaty       => $graph_formaty,
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_timeformat    => $graph_timeformat,
+            graph_title         => $graph_title,
+            graph_xtitle        => $graph_xtitle,
         });
 
         Plot({
-            'market'       => $forexitem,
-            'num_of_ticks' => $num_of_ticks,
-            'candle_c'     => \@candle_c,
-            'candle_h'     => \@candle_h,
-            'candle_l'     => \@candle_l,
-            'candle_o'     => \@candle_o,
-            daytochart     => $daytochart
+            market          => $forexitem,
+            candle_c        => \@candle_c,
+            candle_h        => \@candle_h,
+            candle_l        => \@candle_l,
+            candle_o        => \@candle_o,
+            daytochart      => $daytochart,
+            graph_title     => $graph_title,
         });
-        print graph_draw();
+        print graph_draw({
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_outputfile    => $graph_outputfile,
+        });
 
         print "</td><td><font size=1>";
 
         $daytochart   = $today;
-        $GRAPH_XTITLE = "$forexitem $daytochart (TODAY)";
+        $graph_xtitle = "$forexitem $daytochart (TODAY)";
 
-        graph_setup({
-            graph_formatx => $graph_formatx,
-            graph_formaty => $graph_formaty,
+        $graph_outputfile = graph_setup({
+            graph_formatx       => $graph_formatx,
+            graph_formaty       => $graph_formaty,
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_timeformat    => $graph_timeformat,
+            graph_title         => $graph_title,
+            graph_xtitle        => $graph_xtitle,
         });
 
         Plot({
-            'market'       => $forexitem,
-            'num_of_ticks' => $num_of_ticks,
-            'candle_c'     => \@candle_c,
-            'candle_h'     => \@candle_h,
-            'candle_l'     => \@candle_l,
-            'candle_o'     => \@candle_o,
-            daytochart     => $daytochart
+            market          => $forexitem,
+            candle_c        => \@candle_c,
+            candle_h        => \@candle_h,
+            candle_l        => \@candle_l,
+            candle_o        => \@candle_o,
+            daytochart      => $daytochart,
+            graph_title     => $graph_title,
         });
-        print graph_draw();
+        print graph_draw({
+            graph_sizex         => $graph_sizex,
+            graph_sizey         => $graph_sizey,
+            graph_outputfile    => $graph_outputfile,
+        });
 
         print "</td><td><font size=2>";
 

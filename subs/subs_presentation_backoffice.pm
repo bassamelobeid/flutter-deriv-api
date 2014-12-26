@@ -148,8 +148,6 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
     my $vk_BOurl       = request()->url_for("backoffice/f_broker_login.cgi", {_r => $rand});
     my $vk_BOmenuWidth = 100;                                                                #width of the left menu (change if some urls doesn't fit)
 
-    my $master = MasterLiveServer();
-
     print qq~
  <table border="0" width="100%" cellspacing="0" cellpadding="0">
   <tr>

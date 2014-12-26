@@ -1,6 +1,7 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 use Devel::StackTrace;
+use JSON;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Utility::Hash;
 
