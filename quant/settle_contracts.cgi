@@ -12,12 +12,13 @@ use Try::Tiny;
 use Mail::Sender;
 
 use Cache::RedisDB;
+use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
 use BOM::Platform::Helper::Model::FinancialMarketBet;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Manually Settle Contracts');
@@ -76,15 +77,6 @@ if (request()->param('perform_actions')) {
                 bet => $fmb,
                 db  => $broker_db,
             });
-            my @msg = (
-                'Please note that contract reference '
-                    . $bet_info->{ref}
-                    . ' purchased by '
-                    . $bet_info->{loginid}
-                    . ' has been manually settled. The description was: "'
-                    . $bet->longcode . '"',
-                '', 'It could not be automatically settled because: "' . $bet_info->{reason} . '"', '',
-            );
 
             my $sell_time = BOM::Utility::Date->new->db_timestamp;
             if ($action eq 'cancel') {
@@ -103,10 +95,6 @@ if (request()->param('perform_actions')) {
                     staff        => $staff_name,
                     payment_type => 'adjustment_purchase',
                 );
-                push @msg,
-                      'We have closed the open position at 0 price and refunded the purchase price of '
-                    . $bet_info->{currency}
-                    . $bet_info->{buy_price};
             } elsif ($action eq 'loss') {
                 # Here we just the open position for 0
                 $fmb_helper->sell_bet({
@@ -114,7 +102,6 @@ if (request()->param('perform_actions')) {
                     sell_time     => $sell_time,
                     staff_loginid => $staff_name,
                 });
-                push @msg, 'We have closed the open position at 0 price as a loss';
 
             } elsif ($action eq 'win') {
                 # Here we just the open position for full payout
@@ -123,17 +110,8 @@ if (request()->param('perform_actions')) {
                     sell_time     => $sell_time,
                     staff_loginid => $staff_name,
                 });
-                push @msg, 'We have closed the open position at ' . $bet_info->{currency} . $bet_info->{payout} . ' as a win';
             }
 
-            my $sender = Mail::Sender->new({
-                smtp    => 'localhost',
-                from    => 'Contract settlement <contract-settlement@binary.com>',
-                to      => 'Helpdesk <helpdesk@binary.com>',
-                cc      => 'Quants <quants-market-data@binary.com>',
-                subject => $client->loginid . ' Contract Settlement (' . $bet_info->{ref} . ') - ' . uc $action,
-            });
-            $sender->MailMsg({msg => join("\n", @msg) . "\n\n"});
         }
     }
     catch {

@@ -6,7 +6,8 @@ use BOM::Utility::Format::Numbers qw(virgule);
 use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BOM::Platform::Auth0::can_access(['Quants']);

@@ -1,15 +1,18 @@
 use strict;
 use warnings;
+
 use Getopt::Long;
-use include_common_modules;
 use Path::Tiny;
+use FileHandle;
+
+use include_common_modules;
+use BOM::Utility::Log4perl;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::ActivityReporter;
-use BOM::Utility::Log4perl;
+use BOM::Platform::Sysinit ();
 
 BOM::Utility::Log4perl::init_log4perl_console;
-
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 my ($from_date_str, $to_date_str);
 my $optres = GetOptions(
@@ -56,7 +59,7 @@ while ($to_date->days_between($processing_date) >= 0) {
     # Date, Player, P&L, Deposits, RBTO, IDTO, OTO
     foreach my $line (@csv) {
         chomp $line;
-        print $fh $line if $line;
+        print $fh $line . "\n" if $line;
     }
 
     undef $fh;

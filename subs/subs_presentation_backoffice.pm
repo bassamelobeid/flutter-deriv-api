@@ -11,6 +11,7 @@ use BOM::Platform::Context;
 use Mojo::URL;
 use BOM::View::JavascriptConfig;
 use BOM::Platform::Plack qw( AjaxSession );
+use BOM::Platform::Sysinit ();
 
 our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 
@@ -146,8 +147,6 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
     my $rand           = '?' . rand(9999);                                                   #to avoid caching on these fast navigation links
     my $vk_BOurl       = request()->url_for("backoffice/f_broker_login.cgi", {_r => $rand});
     my $vk_BOmenuWidth = 100;                                                                #width of the left menu (change if some urls doesn't fit)
-
-    my $master = MasterLiveServer();
 
     print qq~
  <table border="0" width="100%" cellspacing="0" cellpadding="0">
@@ -302,6 +301,6 @@ sub code_exit_BO {
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
 
-    code_exit();
+    BOM::Platform::Sysinit::code_exit();
 }
 1;

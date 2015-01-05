@@ -57,8 +57,9 @@ use BOM::MarketData::Display::VolatilitySurface;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
 PrintContentType();
 
 my @all_markets = BOM::Market::Registry->instance->all_market_names();
@@ -101,7 +102,12 @@ my %volatility_surfaces;
 foreach my $market (@markets) {
 
     my $underlying       = BOM::Market::Underlying->new($market);
-    my $volsurface       = $dm->fetch_surface({underlying => $underlying});
+    # when we are updating surface, fetch New York 10 for FX
+    my $args = {
+        underlying => $underlying,
+        $underlying->market->name  eq 'forex' ? (cutoff => 'New York 10:00') : (),
+    };
+    my $volsurface       = $dm->fetch_surface($args);
     my $existing_surface = eval { $volsurface->surface };
     $volsurface = undef unless $existing_surface;
 

@@ -8,17 +8,21 @@ use File::Copy;
 use Locale::Country 'code2country';
 use Data::Dumper;
 
-use BOM::Platform::Runtime;
 use f_brokerincludeall;
+use BOM::Utility::Log4perl qw( get_logger );
+use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Client::IDAuthentication;
+use BOM::Platform::Client::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
+use BOM::Platform::Client::Utility ();
+use BOM::Platform::Sysinit         ();
 use BOM::View::CGIForm;
 
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 my %input = %{request()->params};
 
@@ -312,7 +316,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             next CLIENT_KEY;
         }
         if ($key eq 'secret_answer') {
-            $client->secret_answer(encrypt_secret_answer($input{$key}));
+            $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer($input{$key}));
             next CLIENT_KEY;
         }
         if ($key eq 'ip_security') {
@@ -394,17 +398,18 @@ print qq[<style>
     </style>
 ];
 
-# find next and prev real clients but give up after 20 tries in each direction.
-my $attempts = 20;
+# find next and prev real clients but give up after a few tries in each direction.
+my $attempts = 3;
 my ($prev_client, $next_client, $prev_loginid, $next_loginid);
 my $client_broker = $client->broker;
 (my $number = $loginid) =~ s/$client_broker//;
+my $len = length($number);
 for (1 .. $attempts) {
-    $prev_loginid = $client_broker . ($number - $_);
+    $prev_loginid = sprintf "$client_broker%0*d", $len, $number-$_;
     last if $prev_client = BOM::Platform::Client->new({loginid => $prev_loginid});
 }
 for (1 .. $attempts) {
-    $next_loginid = $client_broker . ($number + $_);
+    $next_loginid = sprintf "$client_broker%0*d", $len, $number+$_;
     last if $next_client = BOM::Platform::Client->new({loginid => $next_loginid});
 }
 
@@ -450,7 +455,7 @@ print qq{<br/>
         &nbsp;&nbsp;<input type="submit" value="View">
         <input type="hidden" name="broker" value="$broker">
         <input type="hidden" name="l" value="$language">
-        <input type="hidden" name="currency" value="All">
+        <input type="hidden" name="currency" value="default">
         <div class="flat" id="StatementOption" style="display:none">
             <input type="checkbox" value="yes" name="depositswithdrawalsonly">Deposits and Withdrawals only
         </div>

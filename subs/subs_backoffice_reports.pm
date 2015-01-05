@@ -3,6 +3,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use Date::Manip;
 use JSON qw(from_json to_json);
+use List::Util qw( min max );
 
 use Cache::RedisDB;
 use BOM::Utility::Format::Numbers qw(virgule roundnear);

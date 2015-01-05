@@ -13,7 +13,8 @@ use BOM::Platform::Auth0;
 use BOM::View::Backoffice::StaffPages;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 if (not BOM::Platform::Auth0::from_cookie()) {
     PrintContentType();
@@ -27,13 +28,13 @@ my $broker = request()->broker->code;
 
 BrokerPresentation('STAFF LOGIN PAGE');
 
-if (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name eq MasterLiveServer()
-    and not BOM::Platform::Runtime->instance->app_config->system->on_development)
+if ( BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')
+     and not BOM::Platform::Runtime->instance->app_config->system->on_development )
 {
     print "<table border=0 width=97%><tr><td width=97% bgcolor=#FFFFEE>
-	<b><center><font size=+1>YOU ARE ON THE MASTER LIVE SERVER</font>
-	<br>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).
-	</b></font></td></tr></table>";
+        <b><center><font size=+1>YOU ARE ON THE MASTER LIVE SERVER</font>
+        <br>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).
+        </b></font></td></tr></table>";
 }
 
 print "<center>";

@@ -14,7 +14,8 @@ use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlat
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use BOM::MarketData::HolidayCalendar qw( generate_holiday_upload_form );
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('I.V. DATABASE');
@@ -99,7 +100,7 @@ print "BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make request
  Then wait a minute and download scheduled.out.
 ";
 
-unless (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name eq MasterLiveServer()) {
+if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
     print
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }

@@ -5,7 +5,8 @@ use strict 'vars';
 use f_brokerincludeall;
 use BOM::Platform::Persistence::DAO::Report::ClientAccountReport;
 use BOM::Platform::Plack qw( PrintContentType );
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 

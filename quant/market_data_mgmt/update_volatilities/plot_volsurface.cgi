@@ -9,10 +9,9 @@ use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Display::VolatilitySurface;
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
-system_initialize();
-
-$\ = "";
 PrintContentType();
 
 my $underlying_symbol = request()->param('underlying') || 'frxEURUSD';

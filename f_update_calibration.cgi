@@ -10,12 +10,13 @@ use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Utility::Date;
 use BOM::Platform::Plack qw( PrintContentType_JavaScript );
+use BOM::Platform::Sysinit ();
 
 use CGI;
 use JSON qw(from_json);
 use Try::Tiny;
 
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 BOM::Platform::Auth0::can_access(['Quants']);
 

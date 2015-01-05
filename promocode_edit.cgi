@@ -6,9 +6,11 @@ use warnings;
 
 use Scalar::Util 'looks_like_number';
 use BOM::Platform::Plack qw( PrintContentType );
+use JSON;
 
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('EDIT PROMOTIONAL CODE DETAILS');
@@ -45,7 +47,7 @@ if ($input{save}) {
                 my $countries_not_offered = ref $input{country} ? $input{country} : [$input{country}];
                 my $rt_countries = BOM::Platform::Runtime->instance->countries;
                 my @countries_offered;
-                foreach my $country (map { $rt_countries->code_from_country($_) } $rt_countries->all) {
+                foreach my $country (map { $rt_countries->code_from_country($_) } $rt_countries->all_country_names) {
                     push @countries_offered, $country unless (grep { $_ eq $country } @{$countries_not_offered});
                 }
                 $input{country} = join(',', @countries_offered);

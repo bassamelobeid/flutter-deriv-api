@@ -10,7 +10,8 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Data::Persistence::DataMapper::Client;
 use BOM::Platform::Plack qw( PrintContentType );
 
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Clients Locked in Transaction');

@@ -4,7 +4,8 @@ use strict;
 
 use BOM::Platform::Plack qw( PrintContentType );
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("DAILY TURNOVER REPORT FOR " . request()->param('month'));

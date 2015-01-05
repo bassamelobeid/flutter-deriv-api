@@ -7,8 +7,10 @@ use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use Try::Tiny;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType_excel );
+use BOM::Platform::Sysinit ();
+use BOM::Product::ContractFactory qw( produce_contract );
 
-system_initialize();
+BOM::Platform::Sysinit::init();
 
 local $\ = "\n";
 

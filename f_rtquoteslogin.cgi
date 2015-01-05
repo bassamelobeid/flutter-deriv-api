@@ -13,8 +13,8 @@ use BOM::Market::Registry;
 use BOM::Feed::Listener::Quote;
 use Try::Tiny;
 use BOM::Platform::Plack qw( PrintContentType );
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('REALTIME QUOTES');
@@ -22,12 +22,13 @@ my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Quants']);
 
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
-my $feedloc     = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
-my $dbloc       = BOM::Platform::Runtime->instance->app_config->system->directory->db;
-my $tmp_dir     = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
+push @all_markets, 'futures';    # this is added to check for futures feed
+my $feedloc = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
+my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
 my $now          = BOM::Utility::Date->new;
-my @providerlist = AllFeedProviders();
+my @providerlist = qw(gtis idata random telekurs sd tenfore bloomberg olsen test combined);
 
 Bar("Compare providers");
 
@@ -38,7 +39,6 @@ print "<LI><font color=F09999>Shadow tick file over 180 seconds</font>";
 print "<LI><font color=FF0000>More than 0.2\% away from combined quote (0.4\% for stocks)</font>";
 print "</UL>";
 
-push @providerlist, 'combined';
 my @instrumentlist = sort BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market => [@all_markets],
 );

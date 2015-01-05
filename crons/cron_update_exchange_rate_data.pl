@@ -5,12 +5,13 @@ use strict;
 use warnings;
 
 use include_common_modules;
-system_initialize();
-BOM::Utility::Log4perl::init_log4perl_console;
-my $logger = get_logger;
-
+use BOM::Platform::Sysinit ();
 use BOM::Platform::Model::ExchangeRate;
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
+
+BOM::Utility::Log4perl::init_log4perl_console;
+BOM::Platform::Sysinit::init();
+my $logger = get_logger;
 
 my @all_currencies = ('USD', 'GBP', 'EUR', 'AUD', 'JPY');
 

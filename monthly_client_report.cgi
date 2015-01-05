@@ -9,7 +9,8 @@ use Text::CSV;
 use BOM::Platform::Plack qw( PrintContentType_excel );
 
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my %params = %{request()->params};
 

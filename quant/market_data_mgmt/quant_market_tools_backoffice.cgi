@@ -7,7 +7,8 @@ use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlations_upload_form upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
@@ -27,8 +28,7 @@ BOM::Platform::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-# Exit when not master live server (or not development pc)
-if (BOM::Platform::Runtime->instance->hosts->localhost->canonical_name ne MasterLiveServer()) {
+if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
     code_exit_BO();
 }
 

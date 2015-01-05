@@ -7,7 +7,8 @@ use open qw[ :encoding(UTF-8) ];
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::InterestRate;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BOM::Platform::Auth0::can_access(['Quants']);

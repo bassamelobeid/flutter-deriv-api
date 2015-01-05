@@ -2,6 +2,7 @@
 package main;
 
 use strict 'vars';
+use POSIX;
 use BOM::Platform::Data::Persistence::DataMapper::Account;
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
@@ -12,7 +13,8 @@ use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 
 use Path::Tiny;
 use f_brokerincludeall;
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 my $show = request()->param('show');
 if (request()->param('action') ne 'DOWNLOAD CSV') {
@@ -439,7 +441,7 @@ sub GetPagingParameter {
     my $page = $args->{'page'} || 1;
     my $remain = $args->{'total'} % $args->{'limit'};
     #my $total_page    = ($args->{'total'} - $remain)/$args->{'limit'} + 1;
-    my $total_page = ceil($args->{'total'} / $args->{'limit'});
+    my $total_page = POSIX::ceil($args->{'total'} / $args->{'limit'});
     my $offset     = $args->{'limit'} * $page - $args->{'limit'} + 1;
     my $next_page  = $page + 1;
     my $next_total = $remain && $next_page == $total_page ? $remain : $args->{'limit'};

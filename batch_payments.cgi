@@ -4,17 +4,18 @@ package main;
 use strict;
 use warnings;
 
-use BOM::Utility::Format::Numbers qw(to_monetary_number_format roundnear);
+use File::ReadBackwards;
+use Path::Tiny;
 
 use f_brokerincludeall;
-
+use BOM::Utility::Format::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Data::Persistence::DataMapper::Payment;
 use BOM::Platform::Transaction;
-use Path::Tiny;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Batch Credit/Debit to Clients Accounts');
@@ -183,6 +184,7 @@ read_csv_row_and_callback(
                     staff             => $clerk,
                     payment_processor => $payment_processor,
                     trace_id          => $trace_id,
+                    skip_validation   => 1,
                 );
             } or $err = $@;
             BOM::Platform::Transaction->unfreeze_client($login_id);
@@ -292,6 +294,18 @@ sub construct_row_line {
         <td>$args{comment}</td>
         <td style="color:$color">$notes</td>
     </tr>];
+}
+
+sub read_csv_row_and_callback {
+    my $csv_lines = shift;
+    my $callback  = shift;
+
+    foreach my $line (@{$csv_lines}) {
+        $line =~ s/"//g;
+        my (@row_values) = split ',', $line;
+
+        &$callback(@row_values);
+    }
 }
 
 code_exit_BO();

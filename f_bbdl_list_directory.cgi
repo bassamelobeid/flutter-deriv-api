@@ -4,14 +4,14 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use CGI;
-use Carp;
+use Carp qw( croak );
 
 use f_brokerincludeall;
 
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-
-system_initialize();
+use BOM::Platform::Sysinit ();
+BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('BBDL LIST DIRECTORY');
