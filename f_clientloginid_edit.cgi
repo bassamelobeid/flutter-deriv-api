@@ -39,7 +39,7 @@ if ($input{impersonate_user}) {
         client_id       => 1,
         expiration_time => time + 86400,
         login_id        => $loginid,
-        scopes          => ['price', 'chart', 'trade'],
+        scopes          => ['price', 'chart'],
     );
     my $cookie = BOM::Platform::SessionCookie->new(
         impersonating => 1,
