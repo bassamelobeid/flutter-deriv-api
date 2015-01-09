@@ -40,7 +40,7 @@ sub session_GET {
             },
         );
         if (not $handoff_token->exists and not $handoff_token->is_valid) {
-            return $c->status_bad_request('Invalid or missing token in request');
+            return $c->status_bad_request('Invalid or missing handoff token in request');
         }
     } else {
         $log->debug('Creating handoff_token');
