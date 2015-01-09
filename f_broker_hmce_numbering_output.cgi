@@ -37,7 +37,7 @@ my $bets = $txn_mapper->get_bet_transactions_for_broker({
 });
 
 print "$action_type transactions\n";
-print "transaction time,transaction id, betid, client loginid,quantity,currency code, amount,bet description";
+print "transaction time,transaction id, betid, client loginid,residence,quantity,currency code, amount,bet description,is_random";
 foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $bet              = $bets->{$transaction_id};
     my $transaction_time = BOM::Utility::Date->new($bet->{'transaction_time'})->datetime_ddmmmyy_hhmmss_TZ;
@@ -47,17 +47,22 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $quantity         = $bet->{'quantity'};
     my $currency_code    = $bet->{'currency_code'};
     my $amount           = ($action_type eq 'sell') ? $bet->{'amount'} : -1 * $bet->{'amount'};
+    my $residence        = $bet->{residence};
 
+    my ($contract, $is_random);
     my $long_code = '';
     try {
-        $long_code = produce_contract($bet->{'short_code'}, $currency_code)->longcode;
+        $contract = produce_contract($bet->{'short_code'}, $currency_code);
+        $long_code = $contract->longcode;
         $long_code =~ s/,/ /g;
+
+        $is_random = ($contract->underlying->market->name eq 'random') ? 1 : 0;
     }
     catch {
         get_logger->warn($_);
     };
 
-    print "$transaction_time,$id,$bet_id,$client_loginid,$quantity,$currency_code,$amount,$long_code";
+    print "$transaction_time,$id,$bet_id,$client_loginid,$residence,$quantity,$currency_code,$amount,$long_code,$is_random";
 }
 
 print "Number of bets listed above : " . scalar keys %{$bets};
