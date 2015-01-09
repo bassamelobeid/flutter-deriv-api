@@ -20,7 +20,7 @@ my $starting_balance = balance($loginid);
 $r = withdraw(loginid => $loginid);
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
-like($r->content, qr[<opt data="" />], 'Correct content');
+like($r->content, qr[<opt>\s*<data></data>\s*</opt>], 'Correct content');
 my $balance_now = balance($loginid);
 is(0 + $balance_now, $starting_balance - 1.00, 'Correct final balance');
 

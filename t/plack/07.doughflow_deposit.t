@@ -11,19 +11,19 @@ my $starting_balance = balance($loginid);
 my $r = deposit(loginid => $loginid);
 is($r->code,    201,       'correct status code');
 is($r->message, 'Created', 'Correct message');
-like($r->content, qr[<opt data="" />], 'Correct content');
+like($r->content, qr[<opt>\s*<data></data>\s*</opt>], 'Correct content');
 my $balance_now = balance($loginid);
 is(0 + $balance_now, $starting_balance + 1.00, 'Correct final balance');
 
 my $location = $r->header('Location');
-ok($location);
+ok $location, "Location header present";
 
 ## test record_GET also
 $location =~ s{^(.*?)/transaction}{/transaction};
 $r = request('GET', $location);
 my $data = decode_json($r->content);
-is($data->{client_loginid}, $loginid);
-is($data->{type},           'deposit');
+is($data->{client_loginid}, $loginid, "client_loginid present in returned data and is $loginid");
+is($data->{type},          'deposit', "type present in returned data and is 'deposit'");
 
 # Failed
 $r = deposit(
