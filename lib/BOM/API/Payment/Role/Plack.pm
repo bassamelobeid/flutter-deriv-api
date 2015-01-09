@@ -46,7 +46,7 @@ sub _build_request_parameters {
         }
     }
 
-    return;
+    return {};
 }
 
 ## Response
