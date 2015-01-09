@@ -36,10 +36,6 @@
             <h3>Affiliate</h3>
             [% INCLUDE 'backoffice/risk_dashboard_affiliate_table.html.tt' affiliates = top_turnover.affiliates, key = 'turnover' %]
         </div>
-        <div class="sum_table">
-            <h3>Sharpe</h3>
-            [% INCLUDE 'backoffice/risk_dashboard_sharpe_ratio.html.tt' sharpe_ratio = sharpe_ratio.one %]
-        </div>
 <hr/>
     <div>
         <h2>Open Postions</h2>
