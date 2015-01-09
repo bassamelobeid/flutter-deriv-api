@@ -130,8 +130,12 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                     $log->debug($msg);
                 }
 
-                # run the app
-                my $ref = $app->($env);
+                # run the app, but trap breakages here so we can trace.
+                my $ref = eval { $app->($env) } || do {
+                    my $error = $@;
+                    $log->error($error);
+                    [500, [], ['Server Error']];
+                };
 
                 # post-processing: log this response
                 if ($log->is_debug) {
