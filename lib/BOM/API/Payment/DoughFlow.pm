@@ -23,44 +23,37 @@ sub record_GET {
     my $log    = $c->env->{log};
     my $client = $c->user;
 
-    ## validate
     if (my $err = $c->validate('currency_code', 'reference_number')) {
         return $c->status_bad_request('Invalid doughflow record GET request');
     }
 
-    my $client_loginid   = $client->loginid;
     my $currency_code    = $c->request_parameters->{currency_code};
     my $reference_number = $c->request_parameters->{reference_number};
 
-    my $payment_datamapper = BOM::Platform::Data::Persistence::DataMapper::Payment->new({
-        client_loginid => $client_loginid,
-        currency_code  => $currency_code,
-    });
-    # Can we find a corresponding transaction in this user's account?
-    if (not $payment_datamapper->does_account_exist) {
-        return $c->throw(500, 'Unable to find account details for client ' . $client_loginid . ', currency ' . $currency_code);
-    }
+    my $account = $client->default_account ||
+        return $c->status_bad_request("No account for $client");
 
-    if (my $payment = $payment_datamapper->get_last_payment_of_account) {
-        my $payment_type = ($payment->amount > 0) ? 'deposit' : 'withdrawal';
-        my $record = {
-            reference_number => $reference_number,
-            client_loginid   => $client_loginid,
-            currency_code    => $currency_code,
-            transaction_date => BOM::Utility::Date->new($payment->payment_time->epoch)->datetime_iso8601,
-            type             => $payment_type,
-            payment_gateway  => 'doughflow',
-        };
-        foreach my $field (qw(trace_id payment_processor created_by fee bonus promo_id ip_address transaction_id)) {
-            if ($payment->remark =~ /$field=(\S+)\b/) {
-                $record->{$field} = $1;
-            }
-        }
-        $log->debug("$client_loginid $currency_code $payment_type got the record successfully");
+    return $c->status_bad_request("No $currency_code account for $client")
+        unless $account->currency_code eq $currency_code;
 
-        return $record;
-    } else {
-        return $c->throw(404, 'Unknown transaction reference number ' . $reference_number);
+    # Search within account to ensure that this trx_id really belongs to this account.
+    my $trx = $account->find_transaction({id=>$reference_number, referrer_type=>'payment'})->[0] || do {
+        return $c->status_bad_request("Unknown payment transaction number $reference_number");
+    };
+    my $payment = $trx->payment;
+    my $doughflow = $payment->doughflow ||
+        return $c->status_bad_request("Not a doughflow transaction $reference_number");
+
+    return {
+        reference_number => $reference_number,
+        client_loginid   => $client->loginid,
+        currency_code    => $currency_code,
+        transaction_date => $payment->payment_time->iso8601,
+        type             => $trx->action_type,
+        amount           => $payment->amount,
+        trace_id         => $doughflow->trace_id,
+        payment_processor=> $doughflow->payment_processor,
+        created_by       => $doughflow->created_by,
     }
 }
 
