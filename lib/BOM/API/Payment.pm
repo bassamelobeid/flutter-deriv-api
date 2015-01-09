@@ -111,6 +111,9 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
     $log->info(sprintf "PaymentAPI Server Starting at %s. PID $$. Tracing to $trace_log. Environment: %s", scalar(localtime), Dumper(\%ENV));
 
     builder {
+
+        enable "Plack::Middleware::ContentLength";
+
         enable_if {
             $_[0]->{PATH_INFO} ne '/ping'
         }
