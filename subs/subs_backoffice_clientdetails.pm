@@ -120,6 +120,8 @@ sub print_client_details {
         is_vip                  => $client->is_vip,
         vip_since               => $client->vip_since,
         state_options           => set_selected_item($client->state, $stateoptions),
+        show_funds_message      => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
+        ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
