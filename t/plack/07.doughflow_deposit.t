@@ -22,8 +22,8 @@ ok $location, "Location header present";
 $location =~ s{^(.*?)/transaction}{/transaction};
 $r = request('GET', $location);
 my $data = decode_json($r->content);
-is($data->{client_loginid}, $loginid, "client_loginid present in returned data and is $loginid");
-is($data->{type},          'deposit', "type present in returned data and is 'deposit'");
+is($data->{client_loginid}, $loginid,  "client_loginid present in returned data and is $loginid");
+is($data->{type},           'deposit', "type present in returned data and is 'deposit'");
 
 # Failed
 $r = deposit(

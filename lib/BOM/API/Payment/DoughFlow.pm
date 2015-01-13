@@ -30,31 +30,36 @@ sub record_GET {
     my $currency_code    = $c->request_parameters->{currency_code};
     my $reference_number = $c->request_parameters->{reference_number};
 
-    my $account = $client->default_account ||
-        return $c->status_bad_request("No account for $client");
+    my $account = $client->default_account
+        || return $c->status_bad_request("No account for $client");
 
     return $c->status_bad_request("No $currency_code account for $client")
         unless $account->currency_code eq $currency_code;
 
     # Search within account to ensure that this trx_id really belongs to this account.
-    my $trx = $account->find_transaction({id=>$reference_number, referrer_type=>'payment'})->[0] || do {
+    my $trx = $account->find_transaction({
+            id            => $reference_number,
+            referrer_type => 'payment'
+        }
+        )->[0]
+        || do {
         return $c->status_bad_request("Unknown payment transaction number $reference_number");
-    };
-    my $payment = $trx->payment;
-    my $doughflow = $payment->doughflow ||
-        return $c->status_bad_request("Not a doughflow transaction $reference_number");
+        };
+    my $payment   = $trx->payment;
+    my $doughflow = $payment->doughflow
+        || return $c->status_bad_request("Not a doughflow transaction $reference_number");
 
     return {
-        reference_number => $reference_number,
-        client_loginid   => $client->loginid,
-        currency_code    => $currency_code,
-        transaction_date => $payment->payment_time->iso8601,
-        type             => $trx->action_type,
-        amount           => $payment->amount,
-        trace_id         => $doughflow->trace_id,
-        payment_processor=> $doughflow->payment_processor,
-        created_by       => $doughflow->created_by,
-    }
+        reference_number  => $reference_number,
+        client_loginid    => $client->loginid,
+        currency_code     => $currency_code,
+        transaction_date  => $payment->payment_time->iso8601,
+        type              => $trx->action_type,
+        amount            => $payment->amount,
+        trace_id          => $doughflow->trace_id,
+        payment_processor => $doughflow->payment_processor,
+        created_by        => $doughflow->created_by,
+    };
 }
 
 =head2 deposit_POST

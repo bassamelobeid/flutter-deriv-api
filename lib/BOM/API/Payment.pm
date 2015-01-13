@@ -206,12 +206,12 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
 
                 if (blessed($r)) {              # Plack::Response
                     $r->content_type('text/xml');
-                    $r->body($xs->XMLout({data => $r->body||{}}));
+                    $r->body($xs->XMLout({data => $r->body || {}}));
                     return $r->finalize;
                 }
 
                 my $code = delete $r->{status_code} || 200;
-                return [$code, ['Content-Type' => 'text/xml; charset=utf-8'], [$xs->XMLout({data=>$r||{}})]];
+                return [$code, ['Content-Type' => 'text/xml; charset=utf-8'], [$xs->XMLout({data => $r || {}})]];
             }
 
             return $r->finalize if blessed($r);    # Plack::Response
