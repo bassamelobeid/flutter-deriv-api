@@ -14,7 +14,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
-use Controller::Bet;
+use BOM::View::Controller::Bet;
 use BOM::View::Cashier;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -287,7 +287,7 @@ BOM::Platform::Context::template->process(
         currency                => $client->currency,
         loginid                 => $client->loginid,
         depositswithdrawalsonly => request()->param('depositswithdrawalsonly'),
-        contract_details        => \&Controller::Bet::get_info,
+        contract_details        => \&BOM::View::Controller::Bet::get_info,
     },
 ) || die BOM::Platform::Context::template->error();
 

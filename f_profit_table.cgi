@@ -90,7 +90,7 @@ BOM::Platform::Context::template->process(
         posted_enddate   => $enddate,
         currency         => $client->currency,
         residence        => $client->residence,
-        contract_details => \&Controller::Bet::get_info,
+        contract_details => \&BOM::View::Controller::Bet::get_info,
     }) || die BOM::Platform::Context::template->error();
 
 code_exit_BO();
