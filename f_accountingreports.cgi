@@ -102,7 +102,8 @@ if ($landing_company eq 'iom' or $landing_company eq 'malta') {
                        <option>sell</option>
                        <option>buy</option>
                </select>"
-        . "<br />for given month : <input type=text size=10 name=monthonly> Example : Jun-03"
+        . "<br />Start Date : <input type=text size=10 name=start> eg: 2015-01-01"
+        . "<br />End Date: <input type=text size=10 name=end> eg: 2015-01-31"
         . "<br /><b><input type=\"submit\" value=\"VIEW HMCE/IOMCE bet numbering records\">"
         . "</form>";
 }
