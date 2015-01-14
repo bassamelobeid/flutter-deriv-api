@@ -7,6 +7,7 @@ use lib qw!/etc/perl
            /home/git/bom/lib
            /home/git/bom/database/lib
            /home/git/regentmarkets/bom-backoffice
+           /home/git/regentmarkets/bom-backoffice/lib
            /home/git/bom/cgi/subs
            /home/git/bom/cgi/oop!;
 
