@@ -50,15 +50,14 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $currency_code    = $bet->{'currency_code'};
     my $amount           = ($action_type eq 'sell') ? $bet->{'amount'} : -1 * $bet->{'amount'};
     my $residence        = $bet->{residence};
+    my $symbol           = $bet->{underlying_symbol};
 
-    my ($contract, $is_random);
+    my $is_random = ($symbol =~ /^RD/ or $symbol =~ /^R_/) ? 1 : 0;
     my $long_code = '';
     try {
-        $contract = produce_contract($bet->{'short_code'}, $currency_code);
+        my $contract = produce_contract($bet->{'short_code'}, $currency_code);
         $long_code = $contract->longcode;
         $long_code =~ s/,/ /g;
-
-        $is_random = ($contract->underlying->market->name eq 'random') ? 1 : 0;
     }
     catch {
         get_logger->warn($_);
