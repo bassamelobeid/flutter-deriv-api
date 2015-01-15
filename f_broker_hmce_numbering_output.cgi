@@ -18,22 +18,24 @@ if (request()->param('output') ne 'CSV') {
     die "wrong output type [" . request()->param('output') . "]";
 }
 
-PrintContentType_excel(request()->param('action_type') . '_bets_for_' . request()->param('monthonly') . ".csv");
+PrintContentType_excel(request()->param('action_type') . '_bets_for_' . request()->param('start') . ".csv");
 
 my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Accounts']);
 
 my $action_type = request()->param('action_type');
-my $month_only  = BOM::Utility::Date->new('01-' . request()->param('monthonly'))->db_timestamp;
+my $start = BOM::Utility::Date->new(request()->param('start'))->db_timestamp;
+my $end = BOM::Utility::Date->new(request()->param('end'))->db_timestamp;
 
 my $txn_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
     'broker_code' => $broker,
 });
 
 my $bets = $txn_mapper->get_bet_transactions_for_broker({
-    'broker_code' => $broker,
-    'action_type' => $action_type,
-    'month'       => $month_only,
+    broker_code => $broker,
+    action_type => $action_type,
+    start       => $start,
+    end         => $end
 });
 
 print "$action_type transactions\n";
@@ -48,15 +50,14 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $currency_code    = $bet->{'currency_code'};
     my $amount           = ($action_type eq 'sell') ? $bet->{'amount'} : -1 * $bet->{'amount'};
     my $residence        = $bet->{residence};
+    my $symbol           = $bet->{underlying_symbol};
 
-    my ($contract, $is_random);
+    my $is_random = ($symbol =~ /^RD/ or $symbol =~ /^R_/) ? 1 : 0;
     my $long_code = '';
     try {
-        $contract = produce_contract($bet->{'short_code'}, $currency_code);
+        my $contract = produce_contract($bet->{'short_code'}, $currency_code);
         $long_code = $contract->longcode;
         $long_code =~ s/,/ /g;
-
-        $is_random = ($contract->underlying->market->name eq 'random') ? 1 : 0;
     }
     catch {
         get_logger->warn($_);

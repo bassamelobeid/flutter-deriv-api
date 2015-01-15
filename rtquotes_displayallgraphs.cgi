@@ -184,11 +184,6 @@ if ($daily) {
         }) . "\">25 last days</a>";
     #link to edit daily OHLC file
 
-    my $master_live_server_url =
-          'https://'
-        . BOM::Platform::Runtime->instance->hosts->get_nearest('master_live_server')->name . '.'
-        . request()->website->domain
-        . '/d/backoffice';
     print "<center>&nbsp;<br>";
 
 
