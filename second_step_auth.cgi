@@ -4,7 +4,7 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
-use BOM::Utility::DuoWeb;
+use Auth::DuoWeb;
 use BOM::Platform::Auth0;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -21,7 +21,7 @@ my $post_action = "login.cgi";
 my $email       = $staff->{email};
 my $post_action = "login.cgi";
 
-my $sig_request = BOM::Utility::DuoWeb::sign_request(
+my $sig_request = Auth::DuoWeb::sign_request(
     BOM::Platform::Runtime->instance->app_config->system->duoweb->IKEY,
     BOM::Platform::Runtime->instance->app_config->system->duoweb->SKEY,
     BOM::Platform::Runtime->instance->app_config->system->duoweb->AKEY, $email,

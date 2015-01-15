@@ -89,8 +89,8 @@ print "<form action=\""
     . "<input type=\"submit\" value=\"View Dailysummary File in Table format\">"
     . "</form>";
 
-my $country = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($broker)->country;
-if ($country eq 'UK' or $country eq 'Isle of Man') {
+my $landing_company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($broker)->short;
+if ($landing_company eq 'iom' or $landing_company eq 'malta') {
     Bar("HMCE/IOMCE bet numbering records");
 
     print "<form action=\""
@@ -102,7 +102,8 @@ if ($country eq 'UK' or $country eq 'Isle of Man') {
                        <option>sell</option>
                        <option>buy</option>
                </select>"
-        . "<br />for given month : <input type=text size=10 name=monthonly> Example : Jun-03"
+        . "<br />Start Date : <input type=text size=10 name=start> eg: 2015-01-01"
+        . "<br />End Date: <input type=text size=10 name=end> eg: 2015-01-31"
         . "<br /><b><input type=\"submit\" value=\"VIEW HMCE/IOMCE bet numbering records\">"
         . "</form>";
 }

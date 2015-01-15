@@ -7,7 +7,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
 use CGI;
-use BOM::Utility::DuoWeb;
+use Auth::DuoWeb;
 use BOM::Platform::Runtime;
 use BOM::Platform::Auth0;
 use BOM::Platform::Plack qw( http_redirect PrintContentType );
@@ -21,7 +21,7 @@ my $try_to_login;
 my $passwd = request()->param('pass');
 
 if (request()->param('sig_response')) {
-    my $email = BOM::Utility::DuoWeb::verify_response(
+    my $email = Auth::DuoWeb::verify_response(
         BOM::Platform::Runtime->instance->app_config->system->duoweb->IKEY, BOM::Platform::Runtime->instance->app_config->system->duoweb->SKEY,
         BOM::Platform::Runtime->instance->app_config->system->duoweb->AKEY, request()->param('sig_response'),
     );
