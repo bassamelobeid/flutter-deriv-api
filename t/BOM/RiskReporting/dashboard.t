@@ -18,6 +18,7 @@ use BOM::Test::Data::Utility::TestDatabaseFixture;
 use aliased "BOM::Test::Data::Utility::TestDatabaseFixture" => "DBFixture";
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(update_combined_realtime);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $fix       = 'BOM::Test::Data::Utility::TestDatabaseFixture';
 my $now       = BOM::Utility::Date->new;
