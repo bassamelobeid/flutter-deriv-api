@@ -28,12 +28,14 @@ my $usd_gbp_rate = 1.5;
 DBFixture->new('exchange')->create;
 
 lives_ok {
-map {    update_combined_realtime(
-        datetime   => BOM::Utility::Date->new($now->epoch - 1),
-        underlying => BOM::Market::Underlying->new($_),
-        tick       => {
-            quote => $usd_gbp_rate,
-        }) } qw(frxGBPUSD frxAUDUSD frxEURUSD);
+    map {
+        update_combined_realtime(
+            datetime   => BOM::Utility::Date->new($now->epoch - 1),
+            underlying => BOM::Market::Underlying->new($_),
+            tick       => {
+                quote => $usd_gbp_rate,
+            })
+    } qw(frxGBPUSD frxAUDUSD frxEURUSD);
 }
 'realtime tick frxGBPUSD';
 
@@ -46,7 +48,6 @@ lives_ok {
         })->create;
 }
 'Insert GBP exchange rate to db';
-
 
 subtest big_movers => sub {
     plan tests => 10;
