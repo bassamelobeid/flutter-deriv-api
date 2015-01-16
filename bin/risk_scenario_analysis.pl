@@ -17,7 +17,7 @@ use lib qw( /home/git/bom/cgi /home/git/bom/cgi/oop );
 use Moose;
 
 use BOM::Platform::Runtime;
-use BOM::Product::RiskReporting::ScenarioAnalysis;
+use BOM::RiskReporting::ScenarioAnalysis;
 
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
@@ -31,7 +31,7 @@ sub script_run {
         return $self->return_value(255);
     }
     $self->info('Starting scenario analysis generation.');
-    BOM::Product::RiskReporting::ScenarioAnalysis->new(run_by => $self)->generate;
+    BOM::RiskReporting::ScenarioAnalysis->new(run_by => $self)->generate;
     $self->info('Completed scenario analysis generation.');
 
     return 0;

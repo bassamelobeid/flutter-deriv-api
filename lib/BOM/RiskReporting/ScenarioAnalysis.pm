@@ -1,4 +1,4 @@
-package BOM::Product::RiskReporting::ScenarioAnalysis;
+package BOM::RiskReporting::ScenarioAnalysis;
 
 =head1 NAME
 
