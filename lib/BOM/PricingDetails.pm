@@ -545,11 +545,16 @@ sub _get_greeks {
     my $number_format = '%.3f';
     my $bet           = $self->bet;
 
-    my $fd_bet    = make_similar_contract($bet, {greek_engine_name => 'BOM::Greeks::FiniteDifference'});
+    my $fd_greeks = BOM::Greeks::FiniteDifference->new({bet => $bet});
     my $bs_greeks = $bet->greek_engine->get_greeks;
-    my $fd_greeks = $fd_bet->greek_engine->get_greeks;
 
-    my $display_greeks_engine = BOM::DisplayGreeks->new(bet => $fd_bet);
+    my $display_greeks_engine = BOM::DisplayGreeks->new(
+        payout => $bet->payout,
+        priced_with => $bet->priced_with,
+        pricing_greeks => $fd_greeks->get_greeks,
+        current_spot => $bet->current_spot,
+        underlying => $bet->underlying
+    );
     my $display = $display_greeks_engine->get_display_greeks();
     my $diff;
     foreach my $greek (qw(delta gamma theta vega vanna volga)) {

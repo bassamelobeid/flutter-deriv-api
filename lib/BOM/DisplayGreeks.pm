@@ -22,64 +22,9 @@ The bet object
 
 =cut
 
-has 'bet' => (
-    is       => 'rw',
-    isa      => 'BOM::Product::Contract',
-    required => 1,
+has [qw(payout priced_with pricing_greeks current_spot underlying)] => (
+    is => 'ro',
 );
-
-=head2 payout
-
-Payout amount of the bet
-
-=cut
-
-has 'payout' => (
-    is         => 'rw',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-sub _build_payout {
-    my $self = shift;
-    return $self->bet->payout;
-}
-
-=head2 priced_with
-
-Determines if it is a base, numeraire or quanto bet
-
-=cut
-
-has 'priced_with' => (
-    is         => 'rw',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-sub _build_priced_with {
-    my $self = shift;
-    return $self->bet->priced_with;
-}
-
-=head2 pricing_greeks
-
-The greeks we use for pricing
-
-=cut
-
-has 'pricing_greeks' => (
-    is         => 'rw',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-sub _build_pricing_greeks {
-    my $self = shift;
-    my $bet  = $self->bet;
-
-    return $bet->greek_engine->get_greeks();
-}
 
 =head2 get_display_greeks
 
