@@ -17,7 +17,7 @@ use warnings;
 local $\ = undef;    # Sigh.
 
 use Moose;
-extends 'BOM::Product::RiskReporting::Base';
+extends 'BOM::RiskReporting::Base';
 
 use IO::File;
 use IO::Handle;

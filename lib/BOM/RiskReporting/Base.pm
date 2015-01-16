@@ -1,8 +1,8 @@
-package BOM::Product::RiskReporting::Base;
+package BOM::RiskReporting::Base;
 
 =head1 NAME
 
-BOM::Product::RiskReporting::Base
+BOM::RiskReporting::Base
 
 =head1 DESCRIPTION
 

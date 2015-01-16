@@ -18,7 +18,7 @@ use List::Util qw(max first sum);
 use JSON qw(to_json from_json);
 use Moose;
 use Try::Tiny;
-extends 'BOM::Product::RiskReporting::Base';
+extends 'BOM::RiskReporting::Base';
 
 use Cache::RedisDB;
 use BOM::Utility::Date;
