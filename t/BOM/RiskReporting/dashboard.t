@@ -28,12 +28,14 @@ my $usd_gbp_rate = 1.5;
 DBFixture->new('exchange')->create;
 
 lives_ok {
-    update_combined_realtime(
-        datetime   => BOM::Utility::Date->new($now->epoch - 1),
-        underlying => BOM::Market::Underlying->new('frxGBPUSD'),
-        tick       => {
-            quote => $usd_gbp_rate,
-        });
+    map {
+        update_combined_realtime(
+            datetime   => BOM::Utility::Date->new($now->epoch - 1),
+            underlying => BOM::Market::Underlying->new($_),
+            tick       => {
+                quote => $usd_gbp_rate,
+            })
+    } qw(frxGBPUSD frxAUDUSD frxEURUSD);
 }
 'realtime tick frxGBPUSD';
 
@@ -83,7 +85,6 @@ subtest big_movers => sub {
         $bet_hash{bet_type}, $bet_hash{underlying_symbol},
         $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
     );
-
     my $fmb = $fix->new(
         'fmb_higher_lower',
         {
