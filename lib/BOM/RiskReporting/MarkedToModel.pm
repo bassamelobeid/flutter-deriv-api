@@ -1,8 +1,8 @@
-package BOM::Product::RiskReporting::MarkedToModel;
+package BOM::RiskReporting::MarkedToModel;
 
 =head1 NAME
 
-BOM::Product::RiskReporting::MarkedToModel
+BOM::RiskReporting::MarkedToModel
 
 =head1 SYNOPSIS
 

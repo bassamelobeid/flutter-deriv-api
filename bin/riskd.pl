@@ -10,7 +10,7 @@ use Time::Duration::Concise::Localize;
 use BOM::Platform::Runtime;
 
 use BOM::RiskReporting::Dashboard;
-use BOM::Product::RiskReporting::MarkedToModel;
+use BOM::RiskReporting::MarkedToModel;
 
 has rest_period => (
     is         => 'ro',
@@ -34,7 +34,7 @@ sub daemon_run {
 
     while (1) {
         $self->info('Starting marked-to-model calculation.');
-        BOM::Product::RiskReporting::MarkedToModel->new(run_by => $self)->generate;
+        BOM::RiskReporting::MarkedToModel->new(run_by => $self)->generate;
         $self->info('Completed marked-to-model calculation.');
         $self->rest;
         $self->info('Starting risk report generation.');

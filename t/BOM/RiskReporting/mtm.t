@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::TestDatabaseFixture::RealtimeBook;
 use BOM::Utility::Date;
 use BOM::Market::Underlying;
-use BOM::Product::RiskReporting::MarkedToModel;
+use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
 use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
 
@@ -138,7 +138,7 @@ subtest 'realtime report generation' => sub {
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
     my $results;
-    lives_ok { $results = BOM::Product::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate }
+    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate }
     'Report generation does not die.';
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
