@@ -28,7 +28,7 @@ use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::MarketData::VolSurface::Converter qw( get_delta_for_strike get_strike_for_spot_delta get_1vol_butterfly);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-use BOM::Product::Pricing::Greeks::FiniteDifference;
+use BOM::Greeks::FiniteDifference;
 
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::DisplayGreeks;
@@ -545,7 +545,7 @@ sub _get_greeks {
     my $number_format = '%.3f';
     my $bet           = $self->bet;
 
-    my $fd_bet    = make_similar_contract($bet, {greek_engine_name => 'BOM::Product::Pricing::Greeks::FiniteDifference'});
+    my $fd_bet    = make_similar_contract($bet, {greek_engine_name => 'BOM::Greeks::FiniteDifference'});
     my $bs_greeks = $bet->greek_engine->get_greeks;
     my $fd_greeks = $fd_bet->greek_engine->get_greeks;
 
