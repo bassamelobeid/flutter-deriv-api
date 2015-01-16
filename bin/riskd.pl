@@ -19,7 +19,7 @@ has rest_period => (
 );
 
 sub _build_rest_period {
-    return Time::Duration::Concise::Localize->new( interval => '37s' );
+    return Time::Duration::Concise::Localize->new(interval => '37s');
 }
 
 sub documentation {
@@ -30,7 +30,7 @@ sub daemon_run {
     my $self = shift;
 
     die 'riskd only to run on master servers.'
-      if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
+        if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
 
     while (1) {
         $self->info('Starting marked-to-model calculation.');

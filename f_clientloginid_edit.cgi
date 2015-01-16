@@ -405,11 +405,11 @@ my $client_broker = $client->broker;
 (my $number = $loginid) =~ s/$client_broker//;
 my $len = length($number);
 for (1 .. $attempts) {
-    $prev_loginid = sprintf "$client_broker%0*d", $len, $number-$_;
+    $prev_loginid = sprintf "$client_broker%0*d", $len, $number - $_;
     last if $prev_client = BOM::Platform::Client->new({loginid => $prev_loginid});
 }
 for (1 .. $attempts) {
-    $next_loginid = sprintf "$client_broker%0*d", $len, $number+$_;
+    $next_loginid = sprintf "$client_broker%0*d", $len, $number + $_;
     last if $next_client = BOM::Platform::Client->new({loginid => $next_loginid});
 }
 

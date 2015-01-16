@@ -31,12 +31,12 @@ my $lower           = request()->param('lower') || '';
 my $time_upper      = request()->param('time_upper') || '';
 my $time_lower      = request()->param('time_lower') || '';
 my $use_y2          = request()->param('use_y2') || 0;
-my @overlay = split /\s+/, $overlay;
-my @source  = split /\s+/, $source;
-my @candle_c = ();
-my @candle_h = ();
-my @candle_l = ();
-my @candle_o = ();
+my @overlay         = split /\s+/, $overlay;
+my @source          = split /\s+/, $source;
+my @candle_c        = ();
+my @candle_h        = ();
+my @candle_l        = ();
+my @candle_o        = ();
 
 my $msg = '<br/>Number of lines in each file:<br/>';
 
@@ -186,7 +186,6 @@ if ($daily) {
 
     print "<center>&nbsp;<br>";
 
-
     my ($graph_x, $graph_y) = doDailyPlot({
         underlying_symbol => $daily,
         candle_c          => \@candle_c,
@@ -295,15 +294,15 @@ elsif (scalar @overlay and not $merge) {
                     $msg .= `wc -l $fffile` . '<br>';
 
                     my ($graph_x, $graph_y) = doPlot({
-                            underlying_symbol     => $instrument,
-                            candle_c              => \@candle_c,
-                            candle_h              => \@candle_h,
-                            candle_l              => \@candle_l,
-                            candle_o              => \@candle_o,
-                            override_findfullfeed => $override_findfullfeed,
-                            daytochart            => $daytochart,
-                            tick_by_tick          => 1
-                        });
+                        underlying_symbol     => $instrument,
+                        candle_c              => \@candle_c,
+                        candle_h              => \@candle_h,
+                        candle_l              => \@candle_l,
+                        candle_o              => \@candle_o,
+                        override_findfullfeed => $override_findfullfeed,
+                        daytochart            => $daytochart,
+                        tick_by_tick          => 1
+                    });
 
                     if (not $graph_x and not $graph_y) {
                         print "<span style='color:#FF0000;'>No data for $instrument [$provider] on $daytochart</span><br/>";
@@ -311,7 +310,7 @@ elsif (scalar @overlay and not $merge) {
                     }
 
                     my $data;
-                    my $first      = 0;
+                    my $first = 0;
 
                     # 1   : 2
                     # Date Close
@@ -440,14 +439,14 @@ elsif (scalar @overlay and $merge) {
                 $msg .= `wc -l $fffile` . '<br>';
 
                 my ($graph_x, $graph_y) = doPlot({
-                        underlying_symbol     => $market,
-                        candle_c              => \@candle_c,
-                        candle_h              => \@candle_h,
-                        candle_l              => \@candle_l,
-                        candle_o              => \@candle_o,
-                        override_findfullfeed => $override_findfullfeed,
-                        daytochart            => $daytochart,
-                    });
+                    underlying_symbol     => $market,
+                    candle_c              => \@candle_c,
+                    candle_h              => \@candle_h,
+                    candle_l              => \@candle_l,
+                    candle_o              => \@candle_o,
+                    override_findfullfeed => $override_findfullfeed,
+                    daytochart            => $daytochart,
+                });
                 if (not $graph_x and not $graph_y) {
                     print "<span style='color:#FF0000;'>No data for $market [$provider] on $daytochart</span><br/>";
                     next;
@@ -519,39 +518,37 @@ else {
     {
         my $underlying = BOM::Market::Underlying->new($forexitem);
         print "<table cellpadding=0 cellspacing=0 border=1 width=100%><tr><td><font size=1>";
-        my $daytochart = $yesterday;
+        my $daytochart   = $yesterday;
         my $graph_xtitle = "$forexitem $daytochart (YESTERDAY)";
 
         my $graph_title   = $underlying->display_name;
         my $graph_formatx = '%H:%M';
         my $graph_formaty = '%.4f';
-        my $graph_sizex   = 340,
-        my $graph_sizey   = 300,
-        my $graph_timeformat = '%H:%M:%S';
+        my $graph_sizex   = 340, my $graph_sizey = 300, my $graph_timeformat = '%H:%M:%S';
 
         my $graph_outputfile = graph_setup({
-            graph_formatx       => $graph_formatx,
-            graph_formaty       => $graph_formaty,
-            graph_sizex         => $graph_sizex,
-            graph_sizey         => $graph_sizey,
-            graph_timeformat    => $graph_timeformat,
-            graph_title         => $graph_title,
-            graph_xtitle        => $graph_xtitle,
+            graph_formatx    => $graph_formatx,
+            graph_formaty    => $graph_formaty,
+            graph_sizex      => $graph_sizex,
+            graph_sizey      => $graph_sizey,
+            graph_timeformat => $graph_timeformat,
+            graph_title      => $graph_title,
+            graph_xtitle     => $graph_xtitle,
         });
 
         Plot({
-            market          => $forexitem,
-            candle_c        => \@candle_c,
-            candle_h        => \@candle_h,
-            candle_l        => \@candle_l,
-            candle_o        => \@candle_o,
-            daytochart      => $daytochart,
-            graph_title     => $graph_title,
+            market      => $forexitem,
+            candle_c    => \@candle_c,
+            candle_h    => \@candle_h,
+            candle_l    => \@candle_l,
+            candle_o    => \@candle_o,
+            daytochart  => $daytochart,
+            graph_title => $graph_title,
         });
         print graph_draw({
-            graph_sizex         => $graph_sizex,
-            graph_sizey         => $graph_sizey,
-            graph_outputfile    => $graph_outputfile,
+            graph_sizex      => $graph_sizex,
+            graph_sizey      => $graph_sizey,
+            graph_outputfile => $graph_outputfile,
         });
 
         print "</td><td><font size=1>";
@@ -560,28 +557,28 @@ else {
         $graph_xtitle = "$forexitem $daytochart (TODAY)";
 
         $graph_outputfile = graph_setup({
-            graph_formatx       => $graph_formatx,
-            graph_formaty       => $graph_formaty,
-            graph_sizex         => $graph_sizex,
-            graph_sizey         => $graph_sizey,
-            graph_timeformat    => $graph_timeformat,
-            graph_title         => $graph_title,
-            graph_xtitle        => $graph_xtitle,
+            graph_formatx    => $graph_formatx,
+            graph_formaty    => $graph_formaty,
+            graph_sizex      => $graph_sizex,
+            graph_sizey      => $graph_sizey,
+            graph_timeformat => $graph_timeformat,
+            graph_title      => $graph_title,
+            graph_xtitle     => $graph_xtitle,
         });
 
         Plot({
-            market          => $forexitem,
-            candle_c        => \@candle_c,
-            candle_h        => \@candle_h,
-            candle_l        => \@candle_l,
-            candle_o        => \@candle_o,
-            daytochart      => $daytochart,
-            graph_title     => $graph_title,
+            market      => $forexitem,
+            candle_c    => \@candle_c,
+            candle_h    => \@candle_h,
+            candle_l    => \@candle_l,
+            candle_o    => \@candle_o,
+            daytochart  => $daytochart,
+            graph_title => $graph_title,
         });
         print graph_draw({
-            graph_sizex         => $graph_sizex,
-            graph_sizey         => $graph_sizey,
-            graph_outputfile    => $graph_outputfile,
+            graph_sizex      => $graph_sizex,
+            graph_sizey      => $graph_sizey,
+            graph_outputfile => $graph_outputfile,
         });
 
         print "</td><td><font size=2>";
