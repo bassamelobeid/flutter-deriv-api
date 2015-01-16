@@ -76,6 +76,7 @@ install:
     - sudo -u postgres psql -c "ALTER ROLE postgres WITH password 'letmein'"
     - sudo -u postgres -E printenv
     - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/bom/database/lib /home/git/bom/database/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=rmg'
+    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/bom/database/lib /home/git/bom/database/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=collector'
     - sudo -u postgres psql regentmarkets -c "INSERT INTO betonmarkets.broker_code VALUES ('CR'), ('VRTC'), ('MX'),('MLT');"
     # -- feed
     - sudo pg_createcluster 9.3 feed -p 5433 --locale 'en_US.UTF-8'
