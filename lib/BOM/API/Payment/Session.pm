@@ -23,7 +23,8 @@ sub session_GET {
 
     my $cb = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         client_loginid => $loginid,
-            });
+        operation      => 'write',
+    });
 
     my $handoff_token_key;
     my $handoff_token;
@@ -86,7 +87,8 @@ sub session_validate_GET {
     my $landing_company    = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($c->user->loginid);
     my $connection_builder = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         client_loginid => $c->user->loginid,
-            });
+        operation      => 'write',
+    });
     my $token_key = $c->request_parameters->{token};
     # Get the existing handoff token
     my $handoff_token = BOM::Platform::Model::HandoffToken->new({
