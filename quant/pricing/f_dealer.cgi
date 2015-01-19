@@ -12,7 +12,7 @@ use File::ReadBackwards;
 
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
-use BOM::Product::Contract::ContractCategory::ContractType::Registry;
+use BOM::Product::Contract::Type;
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
 use BOM::Platform::Helper::Model::FinancialMarketBet;
