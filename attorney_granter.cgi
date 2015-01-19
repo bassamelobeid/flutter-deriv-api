@@ -11,6 +11,7 @@ use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Persistence::DAO::AttorneyGranter;
 use BOM::Platform::Sysinit ();
+use BOM::Platform::Client::Attorney;
 BOM::Platform::Sysinit::init();
 
 my $logger = get_logger;
