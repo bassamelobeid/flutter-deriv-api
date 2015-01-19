@@ -111,6 +111,9 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
     $log->info(sprintf "PaymentAPI Server Starting at %s. PID $$. Tracing to $trace_log. Environment: %s", scalar(localtime), Dumper(\%ENV));
 
     builder {
+
+        enable "Plack::Middleware::ContentLength";
+
         enable_if {
             $_[0]->{PATH_INFO} ne '/ping'
         }
@@ -130,8 +133,12 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
                     $log->debug($msg);
                 }
 
-                # run the app
-                my $ref = $app->($env);
+                # run the app, but trap breakages here so we can trace.
+                my $ref = eval { $app->($env) } || do {
+                    my $error = $@;
+                    $log->error($error);
+                    [500, [], ['Server Error']];
+                };
 
                 # post-processing: log this response
                 if ($log->is_debug) {
@@ -199,12 +206,12 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
 
                 if (blessed($r)) {              # Plack::Response
                     $r->content_type('text/xml');
-                    $r->body($xs->XMLout({data => $r->body || ''}));
+                    $r->body($xs->XMLout({data => $r->body || {}}));
                     return $r->finalize;
                 }
 
                 my $code = delete $r->{status_code} || 200;
-                return [$code, ['Content-Type' => 'text/xml; charset=utf-8'], [$xs->XMLout({data => $r})]];
+                return [$code, ['Content-Type' => 'text/xml; charset=utf-8'], [$xs->XMLout({data => $r || {}})]];
             }
 
             return $r->finalize if blessed($r);    # Plack::Response
