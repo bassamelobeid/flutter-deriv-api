@@ -4,6 +4,7 @@ use strict 'vars';
 
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Runtime;
+use BOM::Platform::Client::PaymentAgent;
 use BOM::View::CGIForm;
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();

@@ -1,17 +1,17 @@
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
-use include_common_modules;
 use Spreadsheet::ParseExcel;
 use Date::Manip;
 use JSON qw( to_json );
+use Path::Tiny;
+
 use BOM::Utility::Log4perl qw( get_logger );
-
+use BOM::Platform::Runtime;
+use BOM::Platform::Context;
 use BOM::Market::UnderlyingDB;
-
 use BOM::MarketData::Parser::SuperDerivatives::VolSurface;
 use BOM::MarketData::Display::VolatilitySurface;
-use Path::Tiny;
 
 my @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market       => ['indices'],

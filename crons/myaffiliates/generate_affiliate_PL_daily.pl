@@ -5,11 +5,12 @@ use Getopt::Long;
 use Path::Tiny;
 use FileHandle;
 
-use include_common_modules;
+use BOM::Utility::Date;
 use BOM::Utility::Log4perl;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::ActivityReporter;
 use BOM::Platform::Sysinit ();
+use BOM::Platform::Runtime;
 
 BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();
