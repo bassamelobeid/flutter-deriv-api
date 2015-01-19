@@ -50,7 +50,7 @@ sub graph_setup {
         $graph_formaty
         . $graph_formatx
         . $graph_timeformat
-        . 'yes',
+        . 'yes'
         . $graph_sizex
         . $graph_sizey
         . $graph_xtitle;
