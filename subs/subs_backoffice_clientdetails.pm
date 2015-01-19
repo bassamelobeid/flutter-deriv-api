@@ -450,8 +450,7 @@ sub client_statement_for_backoffice {
 
     my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
             client_loginid => $client->loginid,
-            operation      => 'read',
-        })->db;
+                    })->db;
 
     my $txn_dm = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
         client_loginid => $client->loginid,

@@ -96,7 +96,7 @@ sub ServerWarningBar {
     my $switchservers = "<b>You are on " . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name . "</b><br/>";
 
     my $runtime = BOM::Platform::Runtime->instance;
-    my @bconserver = map { $_->code } $runtime->broker_codes->get_brokers_on_server($runtime->hosts->localhost);
+    my @bconserver = map { $_->code } $runtime->broker_codes->all;
 
     if (@bconserver) {
         $brokercodesonthisserver = "Your IP: $ENV{'REMOTE_ADDR'} - Bcodes : ";

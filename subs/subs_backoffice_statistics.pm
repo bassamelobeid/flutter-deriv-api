@@ -11,7 +11,7 @@ sub USD_AggregateOutstandingBets_ongivendate {
 
     my $conn_args = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
             broker_code => 'FOG',
-            operation   => 'read_collector',
+            operation   => 'collector',
         })->connection_parameters;
     my $dbh =
         DBI->connect('dbi:Pg:dbname=' . $conn_args->{'database'} . ';host=' . $conn_args->{'host'}, $conn_args->{'user'}, $conn_args->{'password'});

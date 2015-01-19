@@ -53,7 +53,7 @@ foreach my $loginID (@{$login_ids}) {
     my $account_mapper = BOM::Platform::Data::Persistence::DataMapper::Account->new({
         client_loginid => $loginID,
         currency_code  => $client->currency,
-        operation      => 'read_binary_replica',
+        operation      => 'replica',
     });
     my $bal = in_USD($account_mapper->get_balance(), $client->currency);
 

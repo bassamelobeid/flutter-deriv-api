@@ -65,8 +65,7 @@ HERE
 
 my $dbh = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         broker_code => $broker,
-        operation   => 'read',
-    })->db->dbh;
+            })->db->dbh;
 
 my $sth   = $dbh->prepare($sql);
 my @binds = (

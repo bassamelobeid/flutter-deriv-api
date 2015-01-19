@@ -23,7 +23,7 @@ my $wday = $now->day_of_week;
 
 if ($hour == 22 and $wday == 6) {
     my $runtime = BOM::Platform::Runtime->instance;
-    my @broker_codes = map { $_->code } grep { not $_->is_virtual } $runtime->broker_codes->get_brokers_on_server($runtime->hosts->localhost);
+    my @broker_codes = map { $_->code } grep { not $_->is_virtual } $runtime->broker_codes->all;
 
     foreach my $bc (@broker_codes) {
         if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($bc)->country eq 'Malta') { next; }    #due to LGA regulations
