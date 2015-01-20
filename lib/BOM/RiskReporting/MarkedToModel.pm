@@ -18,6 +18,7 @@ local $\ = undef;    # Sigh.
 use Moose;
 extends 'BOM::RiskReporting::Base';
 
+use JSON qw(to_json);
 use File::Temp;
 use POSIX qw(strftime);
 use Try::Tiny;
@@ -167,6 +168,25 @@ sub generate {
         $self->logger->warn('Updating realtime book transaction aborted while processing bet [' . $last_fmb_id . '] because ' . $errmsg);
         try { $dbh->rollback };
     };
+
+    # Run & cache query for BO Daily Turnover Report
+    my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
+    my $cache_key  = $pricing_date->db_timestamp;
+    $cache_key =~ s/\s//g;
+    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG'});
+
+    # daily buy/sell
+    my $cache_prefix = 'DTR_AGG_SUM';
+    my $agg_txn      = $report_mapper->get_aggregated_sum_of_transactions_of_month({
+        date => $curr_month->db_timestamp,
+        type => 'bet',
+    });
+    Cache::RedisDB->set($cache_prefix, $cache_key, to_json($agg_txn), 3600);
+
+    # daily active clients
+    $cache_prefix = 'ACTIVE_CLIENTS';
+    my $active_clients = $report_mapper->number_of_active_clients_of_month($curr_month->db_timestamp);
+    Cache::RedisDB->set($cache_prefix, $cache_key, to_json($active_clients), 3600);
 
     return {
         full_count => $howmany,
