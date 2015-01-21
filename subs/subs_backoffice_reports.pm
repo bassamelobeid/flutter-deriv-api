@@ -83,7 +83,7 @@ sub DailyTurnOverReport {
 
     my $eod_market_values = BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket->new({
             broker_code => 'FOG',
-            operation   => 'read_collector'
+            operation   => 'collector'
         })->eod_market_values_of_month($currdate->db_timestamp);
 
     $cache_prefix = 'ACTIVE_CLIENTS';
