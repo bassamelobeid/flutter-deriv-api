@@ -2,14 +2,15 @@
 package main;
 use strict;
 
-use include_common_modules;
 use Carp qw( croak );
-use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
+
 use BOM::Utility::Log4perl;
 use BOM::Platform::Sysinit ();
+use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
+use BOM::Platform::Client;
 
-BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();
+BOM::Utility::Log4perl::init_log4perl_console;
 
 if ($ENV{REQUEST_METHOD}) {
     croak 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';

@@ -86,7 +86,16 @@ sub DailyTurnOverReport {
             operation   => 'read_collector'
         })->eod_market_values_of_month($currdate->db_timestamp);
 
-    my $active_clients = $report_mapper->number_of_active_clients_of_month($currdate->db_timestamp);
+    $cache_prefix = 'ACTIVE_CLIENTS';
+    my $active_clients;
+    if ($this_month and my $cached = Cache::RedisDB->get($cache_prefix, $cache_key)) {
+        $active_clients = from_json($cached);
+    } else {
+        $active_clients = $report_mapper->number_of_active_clients_of_month($currdate->db_timestamp);
+        Cache::RedisDB->set($cache_prefix, $cache_key, to_json($active_clients), 3600)
+            if ($this_month);    # Hold current month for up to an hour.
+    }
+
     my $days_in_month  = $currdate->days_in_month;
 
     foreach my $day (1 .. $days_in_month) {

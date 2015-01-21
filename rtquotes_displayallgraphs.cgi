@@ -477,7 +477,7 @@ elsif (scalar @overlay and $merge) {
 
                 for (my $n = $i; $n < $num_of_row; $n++) {
                     my $d = $ddmmyy . '_' . $graph_x->[$n];
-                    my $y = $norm_from_start ? 100 * $graph_y->[$n] / $first : $graph_y[$n];
+                    my $y = $norm_from_start ? 100 * $graph_y->[$n] / $first : $graph_y->[$n];
 
                     next if (($upper ne '' and $y > $upper) or ($lower ne '' and $y < $lower));
                     $data .= $d . ' ' . $y . "\n";
@@ -487,8 +487,7 @@ elsif (scalar @overlay and $merge) {
             $graphs_gnuplot->set_data_properties({
                 'using' => '1:2',
                 'title' => "$market from [$p]",
-                #Assuming we upload excel vols less than 5 times a day. 'linespoints' are used for vols feed while 'lines' are used for ticks fullfeed file.
-                'graph_type' => (scalar @{$graph_x} < 5) ? 'linespoints' : 'lines',
+                'graph_type' => 'lines',
                 'line_style' => '',
                 'fill_style' => '',
                 'data'       => $data,

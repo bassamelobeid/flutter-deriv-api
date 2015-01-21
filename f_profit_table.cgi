@@ -3,17 +3,18 @@ package main;
 use strict 'vars';
 
 use BOM::Utility::Date;
+use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Client;
-use BOM::Market::Registry;
-use BOM::Product::Utility::CustomClientLimits;
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
-use BOM::Utility::Format::Numbers qw(roundnear);
-use Try::Tiny;
-use BOM::Platform::Plack qw( PrintContentType );
-
-use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
+use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Market::Registry;
+use BOM::Product::Utility::CustomClientLimits;
+use BOM::View::Controller::Bet;
+
+use Try::Tiny;
+use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
 
 my $loginID = uc(request()->param('loginID'));
