@@ -1,11 +1,10 @@
 #!/usr/bin/perl
 package main;
 
-use BOM::Platform::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Utility::Log4perl;
+use BOM::Platform::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
-use include_common_modules;
 use BOM::Platform::Sysinit ();
 
 run() unless caller;

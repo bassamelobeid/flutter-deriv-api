@@ -14,11 +14,12 @@ su nobody -c "perl /home/git/regentmarkets/bom-backoffice/crons/myaffiliates/bac
 use strict;
 use warnings;
 
-use BOM::Platform::Email qw(send_email);
 use BOM::Utility::Log4perl;
-use include_common_modules;
+use BOM::Utility::Date;
+use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::BackfillManager;
 use BOM::Platform::Sysinit ();
+use BOM::Platform::Runtime;
 
 BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();

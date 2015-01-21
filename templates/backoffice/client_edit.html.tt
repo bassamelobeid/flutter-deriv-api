@@ -447,4 +447,10 @@ table#client_edit td{
         <td class="label">Password</td>
         <td>: [% client.password %]</td>
     </tr>
+    [% IF show_funds_message %]
+        <tr>
+            <td class="label"><input type="checkbox" [% IF ukgc_funds_status %]checked[% END %] disabled="disabled"/></td>
+            <td>The client acknowledges the funds level of protection are: medium</td>
+        </tr>
+    [% END %]
 </table>

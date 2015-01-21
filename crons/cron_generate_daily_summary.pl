@@ -7,17 +7,18 @@ BEGIN {
 use strict;
 use warnings;
 use Getopt::Long;
-use BOM::Utility::Log4perl qw( get_logger );
 use Path::Tiny;
-use BOM::Platform::Email qw(send_email);
-use BOM::Product::ContractFactory qw( produce_contract );
 
-use include_common_modules;
-
+use BOM::Utility::Date;
+use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
+use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Runtime;
+use BOM::Product::ContractFactory qw( produce_contract );
+
 BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();
 
