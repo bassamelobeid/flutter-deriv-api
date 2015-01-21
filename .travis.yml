@@ -42,6 +42,10 @@ before_install:
     - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
     - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bom-utility /home/git/regentmarkets/
+    # binary-static
+    - git clone https://github.com/binary-com/binary-static.git /tmp/binary-static
+    - pushd /tmp/binary-static && ( git checkout gh-pages || true ) && popd
+    - sudo mv /tmp/binary-static /home/git/binary-com/
     # bom
     - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
