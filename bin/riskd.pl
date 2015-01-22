@@ -6,6 +6,7 @@ use Moose;
 with 'App::Base::Daemon';
 with 'BOM::Utility::Logging';
 
+use lib qw(/home/git/regentmarkets/bom-backoffice/lib/);
 use Time::Duration::Concise::Localize;
 use BOM::Platform::Runtime;
 
