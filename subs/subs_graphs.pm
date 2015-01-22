@@ -16,14 +16,14 @@ use BOM::View::Charting;
 my ($firstplot, $ip);
 
 sub graph_setup {
-    my $args                = shift;
-    my $graph_formatx       = $args->{graph_formatx};
-    my $graph_formaty       = $args->{graph_formaty};
-    my $graph_sizex         = $args->{graph_sizex};
-    my $graph_sizey         = $args->{graph_sizey};
-    my $graph_timeformat    = $args->{graph_timeformat};
-    my $graph_title         = $args->{graph_title};
-    my $graph_xtitle        = $args->{graph_xtitle};
+    my $args             = shift;
+    my $graph_formatx    = $args->{graph_formatx};
+    my $graph_formaty    = $args->{graph_formaty};
+    my $graph_sizex      = $args->{graph_sizex};
+    my $graph_sizey      = $args->{graph_sizey};
+    my $graph_timeformat = $args->{graph_timeformat};
+    my $graph_title      = $args->{graph_title};
+    my $graph_xtitle     = $args->{graph_xtitle};
 
     # error checks
     $ip = request()->client_ip;
@@ -145,7 +145,7 @@ sub graph_plot {
     my $using;
     local $\ = "";
     local *DATAF;
-    unlink $graph_datafile;                                                                                            #fix tmpfs bug
+    unlink $graph_datafile;    #fix tmpfs bug
     if (open(DATAF, ">$graph_datafile")) {
         flock(DATAF, 2);
         for (my $n = 0; $n < scalar @graph_x; $n++) {
@@ -169,7 +169,7 @@ sub graph_plot {
 }
 
 sub graph_draw {
-    my $args = shift;
+    my $args                = shift;
     my $graph_sizex         = $args->{graph_sizex};
     my $graph_sizey         = $args->{graph_sizey};
     my $graph_outputfile    = $args->{graph_outputfile};
@@ -193,23 +193,23 @@ sub graph_draw {
 sub Plot {
     my $arg_ref = shift;
 
-    my $market           = $arg_ref->{'market'};
-    my $candle_c         = $arg_ref->{'candle_c'};
-    my $candle_h         = $arg_ref->{'candle_h'};
-    my $candle_l         = $arg_ref->{'candle_l'};
-    my $candle_o         = $arg_ref->{'candle_o'};
-    my $daytochart       = $arg_ref->{'daytochart'};
-    my $graph_title      = $arg_ref->{'graph_title'};
+    my $market      = $arg_ref->{'market'};
+    my $candle_c    = $arg_ref->{'candle_c'};
+    my $candle_h    = $arg_ref->{'candle_h'};
+    my $candle_l    = $arg_ref->{'candle_l'};
+    my $candle_o    = $arg_ref->{'candle_o'};
+    my $daytochart  = $arg_ref->{'daytochart'};
+    my $graph_title = $arg_ref->{'graph_title'};
 
     # gets the data
     my ($graph_x, $graph_y) = doPlot({
-            underlying_symbol => $market,
-            candle_c          => $candle_c,
-            candle_h          => $candle_h,
-            candle_l          => $candle_l,
-            candle_o          => $candle_o,
-            daytochart        => $daytochart,
-        });
+        underlying_symbol => $market,
+        candle_c          => $candle_c,
+        candle_h          => $candle_h,
+        candle_l          => $candle_l,
+        candle_o          => $candle_o,
+        daytochart        => $daytochart,
+    });
 
     if (not $graph_x and not $graph_y) {
         return;
@@ -372,7 +372,7 @@ sub doDailyPlot {
     my $previousline;
 
     my (@graph_x, @graph_y);
-    my $firsty      = "";
+    my $firsty = "";
 
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 

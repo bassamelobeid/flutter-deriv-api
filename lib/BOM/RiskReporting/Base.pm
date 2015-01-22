@@ -1,0 +1,105 @@
+package BOM::RiskReporting::Base;
+
+=head1 NAME
+
+BOM::RiskReporting::Base
+
+=head1 DESCRIPTION
+
+A generic base class for risk reporting modules. 
+=head1 SYNOPSIS
+
+BOM::RiskReport::Base->new->generate;
+
+=cut
+
+use strict;
+use warnings;
+
+use BOM::Utility::CurrencyConverter qw(in_USD);
+
+local $\ = undef;    # Sigh.
+
+use Moose;
+
+use BOM::Utility::Log4perl qw( get_logger );
+
+has run_by => (is => 'ro');
+
+has [qw( end )] => (
+    is         => 'ro',
+    isa        => 'BOM::Utility::Date',
+    lazy_build => 1,
+);
+
+has send_alerts => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 1,
+);
+
+sub _build_end {
+    return BOM::Utility::Date->new;
+}
+
+has _usd_rates => (
+    is      => 'ro',
+    builder => '_build__usd_rates',
+);
+
+sub _build__usd_rates {
+    return {map { $_ => in_USD(1, $_) } BOM::Platform::Runtime->instance->landing_companies->all_currencies};
+}
+
+sub amount_in_usd {
+    my ($self, $amount, $currency) = @_;
+
+    return $amount * $self->_usd_rates->{uc $currency};
+}
+
+sub logger {
+    my $self = shift;
+
+    return ($self->run_by) ? $self->run_by : get_logger();
+}
+
+sub _db {
+    return shift->_connection_builder->db;
+}
+
+has _connection_builder => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__connection_builder {
+
+    return BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+        broker_code => 'FOG',
+        operation   => 'write_collector',
+    });
+}
+
+has live_open_bets => (
+    isa        => 'HashRef',
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_live_open_bets {
+    my $self = shift;
+    return $self->_db->dbh->selectall_hashref(qq{ SELECT * FROM accounting.get_live_open_bets() }, 'id');
+}
+
+before generate => sub {
+    exit 0
+        unless (BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
+};
+
+sub generate {
+    return 1;
+}
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
+1;
