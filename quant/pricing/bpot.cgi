@@ -17,7 +17,7 @@ use lib qw(/home/git/regentmarkets/bom-backoffice);
 use f_brokerincludeall;
 
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::Product::Helper::PricingDetails;
+use BOM::PricingDetails;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -50,7 +50,7 @@ my $debug_link = '';
 
 if ($bet) {
     $bet = make_similar_contract($bet, {priced_at => 'start'});
-    $debug_link = BOM::Product::Helper::PricingDetails->new({bet => $bet})->debug_link;
+    $debug_link = BOM::PricingDetails->new({bet => $bet})->debug_link;
 }
 
 BOM::Platform::Context::template->process(

@@ -8,3 +8,6 @@ tidy:
 	find . -name '*.p?.bak' -delete
 	find . -name '*.p[lm]' -o -name '*.cgi' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
+
+unit_test:
+	cd lib;prove --timer -I. -I.. -I../t -r ../t

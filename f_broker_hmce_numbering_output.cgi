@@ -24,8 +24,8 @@ my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Accounts']);
 
 my $action_type = request()->param('action_type');
-my $start = BOM::Utility::Date->new(request()->param('start'))->db_timestamp;
-my $end = BOM::Utility::Date->new(request()->param('end'))->db_timestamp;
+my $start       = BOM::Utility::Date->new(request()->param('start'))->db_timestamp;
+my $end         = BOM::Utility::Date->new(request()->param('end'))->db_timestamp;
 
 my $txn_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
     'broker_code' => $broker,

@@ -28,8 +28,8 @@ my $broker = request()->broker->code;
 
 BrokerPresentation('STAFF LOGIN PAGE');
 
-if ( BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')
-     and not BOM::Platform::Runtime->instance->app_config->system->on_development )
+if (BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')
+    and not BOM::Platform::Runtime->instance->app_config->system->on_development)
 {
     print "<table border=0 width=97%><tr><td width=97% bgcolor=#FFFFEE>
         <b><center><font size=+1>YOU ARE ON THE MASTER LIVE SERVER</font>

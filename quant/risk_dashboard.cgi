@@ -7,7 +7,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Numbers qw( to_monetary_number_format );
-use BOM::Product::RiskReporting::Dashboard;
+use BOM::RiskReporting::Dashboard;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -18,7 +18,7 @@ BrokerPresentation('Risk Dashboard.');
 
 Bar('Risk Dashboard');
 
-my $report = BOM::Product::RiskReporting::Dashboard->new->fetch;
+my $report = BOM::RiskReporting::Dashboard->new->fetch;
 
 my $today = BOM::Utility::Date->today;
 

@@ -21,14 +21,14 @@ BrokerPresentation("", "");
 
 foreach my $symbol (@markets) {
     local $/ = "\n";
-    my $underlying           = BOM::Market::Underlying->new($symbol);
+    my $underlying = BOM::Market::Underlying->new($symbol);
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,
-        $underlying->market->name  eq 'forex' ? (cutoff => 'New York 10:00') : (),
+        $underlying->market->name eq 'forex' ? (cutoff => 'New York 10:00') : (),
     };
     my $existing_vol_surface = $dm->fetch_surface($args);
-    my $display              = BOM::MarketData::Display::VolatilitySurface->new(surface => $existing_vol_surface);
+    my $display = BOM::MarketData::Display::VolatilitySurface->new(surface => $existing_vol_surface);
     local $/ = "";
 
     print "<TABLE BORDER = 2 bgcolor = #00AAAAA width=99% >";

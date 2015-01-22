@@ -63,9 +63,11 @@ sub display {
     my $underlying_symbol = shift;
 
     my %calibration_results;
-    my $GD                    = BOM::Utility::Graph::GD->new();
-    my $underlying            = BOM::Market::Underlying->new($underlying_symbol);
-    my $volsurface            = BOM::Market::PricingInputs::Couch::VolSurface->new->fetch_surface({underlying => $underlying,});
+    my $GD         = BOM::Utility::Graph::GD->new();
+    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+    my $volsurface = BOM::Market::PricingInputs::Couch::VolSurface->new->fetch_surface({
+        underlying => $underlying,
+    });
     my $new_values            = $volsurface->compute_parameterization;
     my $new_parameterization  = $new_values->{values};
     my $new_calibration_error = $new_values->{calibration_error};
@@ -84,9 +86,9 @@ sub display {
     my $display_implied;
     foreach my $tenor (keys %$calibrated_implied_surface) {
         %{$display_calibrated->{$tenor}} =
-          map { $_ => roundnear(0.0001, $calibrated_implied_surface->{$tenor}->{$_}) } keys %{$calibrated_implied_surface->{$tenor}};
+            map { $_ => roundnear(0.0001, $calibrated_implied_surface->{$tenor}->{$_}) } keys %{$calibrated_implied_surface->{$tenor}};
         %{$display_implied->{$tenor}} =
-          map { $_ => roundnear(0.0001, $implied_surface->{$tenor}->{smile}->{$_}) } keys %{$implied_surface->{$tenor}->{smile}};
+            map { $_ => roundnear(0.0001, $implied_surface->{$tenor}->{smile}->{$_}) } keys %{$implied_surface->{$tenor}->{smile}};
     }
 
     $calibration_results{calibration_error}                     = $surface_with_new_param->calibration_error;
@@ -99,7 +101,7 @@ sub display {
     my @tenor                        = sort { $a <=> $b } @{$volsurface->term_by_day};
     my @implied_surface_volpoints    = map  { values %{$implied_surface->{$_}->{smile}} } @tenor;
     my @calibrated_surface_volpoints = map  { values %{$calibrated_implied_surface->{$_}} } @tenor;
-    my $y_max_value = (sort {$a<=>$b} (@implied_surface_volpoints, @calibrated_surface_volpoints))[-1];
+    my $y_max_value = (sort { $a <=> $b } (@implied_surface_volpoints, @calibrated_surface_volpoints))[-1];
     foreach my $term (@tenor) {
         my @implied_smile    = map { $implied_surface->{$term}->{smile}->{$_}   || undef } @x_axis;
         my @calibrated_smile = map { $calibrated_implied_surface->{$term}->{$_} || undef } @x_axis;
