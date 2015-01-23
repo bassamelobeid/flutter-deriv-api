@@ -72,7 +72,7 @@ sub _retrieve_table_data {
         "backoffice/f_bbdl_download.cgi",
         {
             broker   => $broker,
-            filename => $rf,
+            filename => $rf->{"filename"},
             server   => $server_ip
         });
 
