@@ -31,37 +31,41 @@ my $ls = $sftp->ls('/') or die "unable to change cwd: " . $sftp->error;
 my @request_files  = grep { $_->{'filename'} =~ /\.req$/ } @{$ls};
 my @response_files = grep { $_->{'filename'} =~ /\.csv\.enc$/ } @{$ls};
 
-my @request_list  = map { _retrieve_table_data($_) } @request_files;
-my @response_list = map { _retrieve_table_data($_) } @response_files;
+my @request_list  = map { _retrieve_table_data($_, $broker, $server_ip) } @request_files;
+my @response_list = map { _retrieve_table_data($_, $broker, $server_ip) } @response_files;
 
-my $request_f;
-BOM::Platform::Context::template->process(
-    'backoffice/bbdl/list_directory.html.tt',
-    {
-        file_type => 'REQUEST FILES',
-        args      => \@request_list
-    },
-    \$request_f
-) || croak BOM::Platform::Context::template->error();
+if (@request_list) {
+    my $request_f;
+    BOM::Platform::Context::template->process(
+        'backoffice/bbdl/list_directory.html.tt',
+        {
+            file_type => 'REQUEST FILES',
+            args      => \@request_list
+        },
+        \$request_f
+    ) || croak BOM::Platform::Context::template->error();
 
-print $request_f;
-print "</br></br>";
+    print $request_f;
+    print "</br></br>";
+}
 
-my $response_f;
+if (@response_list) {
+    my $response_f;
 
-BOM::Platform::Context::template->process(
-    'backoffice/bbdl/list_directory.html.tt',
-    {
-        file_type => 'RESPONSE FILES',
-        args      => \@response_list
-    },
-    $response_f
-) || croak BOM::Platform::Context::template->error();
+    BOM::Platform::Context::template->process(
+        'backoffice/bbdl/list_directory.html.tt',
+        {
+            file_type => 'RESPONSE FILES',
+            args      => \@response_list
+        },
+        $response_f
+    ) || croak BOM::Platform::Context::template->error();
 
-print $response_f;
+    print $response_f;
+}
 
 sub _retrieve_table_data {
-    my ($rf) = @_;
+    my ($rf, $current_broker, $server_ip_addr) = @_;
 
     my $mdtm            = $rf->{"a"}->mtime;
     my $bom_mdtm        = BOM::Utility::Date->new($mdtm);
@@ -71,9 +75,9 @@ sub _retrieve_table_data {
     my $file_url        = request()->url_for(
         "backoffice/f_bbdl_download.cgi",
         {
-            broker   => $broker,
+            broker   => $current_broker,
             filename => $rf->{"filename"},
-            server   => $server_ip
+            server   => $server_ip_addr
         });
 
     return {
