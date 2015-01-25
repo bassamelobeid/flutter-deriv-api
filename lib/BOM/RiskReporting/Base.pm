@@ -76,7 +76,7 @@ sub _build__connection_builder {
 
     return BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         broker_code => 'FOG',
-        operation   => 'write_collector',
+        operation   => 'collector',
     });
 }
 
