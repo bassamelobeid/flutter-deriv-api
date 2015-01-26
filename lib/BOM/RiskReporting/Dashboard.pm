@@ -23,7 +23,7 @@ extends 'BOM::RiskReporting::Base';
 use Cache::RedisDB;
 use BOM::Utility::Date;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Product::Utility::CustomClientLimits;
+use BOM::Platform::CustomClientLimits;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Model::Account;
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
@@ -59,8 +59,8 @@ sub _build_start {
 
 has _limitlist => (
     is      => 'ro',
-    isa     => 'BOM::Product::Utility::CustomClientLimits',
-    default => sub { return BOM::Product::Utility::CustomClientLimits->new; },
+    isa     => 'BOM::Platform::CustomClientLimits',
+    default => sub { return BOM::Platform::CustomClientLimits->new; },
 );
 
 has _affiliate_info => (
