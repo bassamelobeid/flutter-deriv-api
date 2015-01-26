@@ -55,6 +55,7 @@ install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-backoffice
     - sudo cp -R /home/git/bom/config/environments/development/ /etc/rmg
     - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
+    - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
 
     # Setting up databases
     # -- client db
