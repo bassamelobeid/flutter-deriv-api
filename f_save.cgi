@@ -174,7 +174,7 @@ if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
         }
     }
 
-    my $interest_rates = BOM::Model::Rates::Interest->new(
+    my $interest_rates = BOM::MarketData::InterestRate->new(
         symbol => $symbol,
         rates  => $rates,
         date   => BOM::Utility::Date->new,

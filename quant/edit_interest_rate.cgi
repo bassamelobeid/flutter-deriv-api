@@ -26,7 +26,7 @@ print '<input type="hidden" name="l" value="EN">';
 print '<textarea name="text" rows="15" cols="50">';
 
 foreach my $term (sort { $a <=> $b } keys %{$existing_interest_rate}) {
-    print "$term $existing_interest_rate->{$term}";
+    print "$term $existing_interest_rate->{$term}\n";
 }
 print '</textarea>';
 print '<input type="submit" value="Save.">';
