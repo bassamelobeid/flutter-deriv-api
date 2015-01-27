@@ -10,7 +10,7 @@ use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Utility::Format::Strings qw( set_selected_item );
 use BOM::Platform::Auth0;
-use BOM::View::Backoffice::StaffPages;
+use BOM::StaffPages;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
 use BOM::Platform::Sysinit ();
@@ -18,7 +18,7 @@ BOM::Platform::Sysinit::init();
 
 if (not BOM::Platform::Auth0::from_cookie()) {
     PrintContentType();
-    BOM::View::Backoffice::StaffPages->instance->login();
+    BOM::StaffPages->instance->login();
     code_exit_BO();
 } else {
     PrintContentType();

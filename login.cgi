@@ -13,7 +13,7 @@ use BOM::Platform::Auth0;
 use BOM::Platform::Plack qw( http_redirect PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw(request);
-use BOM::View::Backoffice::StaffPages;
+use BOM::StaffPages;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -49,7 +49,7 @@ if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('
     code_exit_BO();
 } elsif (not BOM::Platform::Auth0::from_cookie()) {
     PrintContentType();
-    BOM::View::Backoffice::StaffPages->instance->login();
+    BOM::StaffPages->instance->login();
     code_exit_BO();
 } else {
     http_redirect(request()->url_for("backoffice/f_broker_login.cgi"));

@@ -345,4 +345,12 @@ BOM::Platform::Context::template->process(
     },
 );
 
+Bar('Fetch Myaffiliate Payment');
+BOM::Platform::Context::template->process(
+    'backoffice/fetch_myaffiliate_payment.tt',
+    {
+        action => request()->url_for('backoffice/fetch_myaffiliate_payment.cgi'),
+    },
+);
+
 code_exit_BO();
