@@ -125,7 +125,7 @@ sub print_client_details {
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
-        || die BOM::Platform::Context::template->error(), "\n";
+        || die BOM::Platform::Context::template->error();
 }
 
 ## build_client_statement_form #######################################
