@@ -44,7 +44,7 @@ if (grep { $_ =~ /ERRORS/ } @csv_file_locs) {
 send_email({
     from    => BOM::Platform::Runtime->instance->app_config->system->email,
     to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-    subject => 'Fetch Myaffiliates payment info: (' . $from->datetime_yyyymmdd . ' - ' . $to->datetime_yyyymmdd . ')',
+    subject => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
     message    => \@message,
     attachment => \@csv_file_locs,
 });
