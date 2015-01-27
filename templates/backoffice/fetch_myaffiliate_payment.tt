@@ -1,0 +1,9 @@
+<form method="post" action="[% action %]" id="fetch_aff_payment">
+    <label for="from">From Date (eg: 2014-12-01)</label>
+    <input type="text" name="from" id="from">
+
+    <label for="to">To Date (eg: 2014-12-31)</label>
+    <input type="text" name="to" id="to">
+
+    <input type="submit" value="fetch">
+</form>

@@ -106,11 +106,14 @@ if ($filen eq 'editvol') {
         recorded_date => BOM::Utility::Date->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
-
+    my $existing_surface_args = {
+        underlying => $underlying,
+        $underlying->market->name eq 'forex' ? (cutoff => 'New York 10:00') : (),
+    };
     my $surface = $model->new(%surface_args);
 
     my $dm                  = BOM::MarketData::Fetcher::VolSurface->new;
-    my $existing_volsurface = $dm->fetch_surface({underlying => $underlying});
+    my $existing_volsurface = $dm->fetch_surface($existing_surface_args);
     my $existing_surface    = eval { $existing_volsurface->surface };
     $existing_volsurface = undef unless $existing_surface;
 
@@ -171,7 +174,7 @@ if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
         }
     }
 
-    my $interest_rates = BOM::Model::Rates::Interest->new(
+    my $interest_rates = BOM::MarketData::InterestRate->new(
         symbol => $symbol,
         rates  => $rates,
         date   => BOM::Utility::Date->new,
