@@ -8,12 +8,12 @@ use IO::File;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::MyAffiliates::PaymentToBOMAccountManager;
 use BOM::Platform::Email qw(send_email);
-
-use f_brokerincludeall;
+use BOM::Platform::Context qw(request);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
-BOM::Platform::Sysinit::init();
+use f_brokerincludeall;
 
+BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Myaffiliate Payment');
 
