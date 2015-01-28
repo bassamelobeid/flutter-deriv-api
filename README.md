@@ -11,6 +11,7 @@ This repo depends on:
 * https://github.com/regentmarkets/cpan
 * https://github.com/regentmarkets/bom-utility
 * https://github.com/regentmarkets/bom
+* https://github.com/regentmarkets/bom-app
 * https://github.com/regentmarkets/binary-static-backoffice
 
 How to run
