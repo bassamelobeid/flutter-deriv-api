@@ -19,6 +19,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
+use BOM::Platform::Context qw(request);
 
 PrintContentType();
 BrokerPresentation('Manually Settle Contracts');
@@ -30,7 +31,6 @@ my $rt = BOM::Platform::Runtime->instance;
 if (
     my $err_msg =
       (!request()->is_logged_into_bo)                      ? 'Not Logged into BO'
-    : (!$rt->hosts->localhost->has_role('dealing_server')) ? 'Only to be run on dealing servers.'
     :                                                        ''
     )
 {
@@ -45,7 +45,7 @@ if ($localhost->has_role('master_live_server')) {
 }
 
 my $broker_db    = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
-                broker_code => request()->param('broker_code'),
+                broker_code => request()->param('broker'),
     })->db;
 
 # We're going to presume things won't change too much underneath us.
