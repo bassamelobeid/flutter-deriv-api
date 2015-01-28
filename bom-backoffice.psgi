@@ -3,13 +3,11 @@ use strict;
 use warnings;
 
 use lib qw!/etc/perl
-           /home/git/bom/cgi
+           /home/git/regentmarkets/bom-app/lib
            /home/git/bom/lib
            /home/git/bom/database/lib
            /home/git/regentmarkets/bom-backoffice
-           /home/git/regentmarkets/bom-backoffice/lib
-           /home/git/bom/cgi/subs
-           /home/git/bom/cgi/oop!;
+           /home/git/regentmarkets/bom-backoffice/lib!;
 
 use BOM::System::Plack::App;
 
