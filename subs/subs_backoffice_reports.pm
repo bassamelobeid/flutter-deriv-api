@@ -18,7 +18,7 @@ use BOM::Utility::CurrencyConverter qw(in_USD);
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
 
-    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG'});
+    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector'});
 
     if ($args->{month} !~ /^\w{3}-\d{2}$/) {
         print "<p>Invalid month $args->{month}</p>";
