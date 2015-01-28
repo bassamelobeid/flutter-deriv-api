@@ -37,8 +37,7 @@ $enddate   = BOM::Utility::Date->new($enddate);
 
 my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         client_loginid => $client->loginid,
-        operation      => 'read',
-    })->db;
+            })->db;
 
 Bar($loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
 

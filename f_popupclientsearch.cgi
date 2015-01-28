@@ -12,12 +12,6 @@ PrintContentType();
 
 BOM::Platform::Auth0::can_access(['CS']);
 
-my $broker_options = '';
-my $runtime        = BOM::Platform::Runtime->instance;
-foreach my $broker (map { $_->code } $runtime->broker_codes->get_brokers_on_server($runtime->hosts->localhost)) {
-    $broker_options .= "<option value='$broker'>$broker</option>";
-}
-
 print qq~
 <head>
     <title>Client Search</title>
@@ -30,11 +24,7 @@ print qq~
 	<input type="text" size="10" name="partialfname" value="Partial FName" onfocus="this.select()" />
         <input type="text" size="10" name="partiallname" value="Partial LName" onfocus="this.select()" />
 	<input type="text" size="20" name="partialemail" value="Partial email" onfocus="this.select()" />
-
-    <select name = "broker">
-        <option value="FOG" selected="selected">ALL</option>
-        ~ . $broker_options . qq~
-    </select>
+    <input type="text" size="20" name="broker" value="ALL" onfocus="this.select()" />
 
 	<input type="submit" value="Search" />
 </form>

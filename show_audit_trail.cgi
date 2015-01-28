@@ -28,8 +28,7 @@ if ($broker eq 'FOG') {
 }
 
 my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
-        operation   => 'read',
-        broker_code => $broker,
+                broker_code => $broker,
     })->db;
 
 my $category    = request()->param('category');

@@ -55,8 +55,7 @@ if ($enddate) {
 
 my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         client_loginid => $client->loginid,
-        operation      => 'read',
-    })->db;
+            })->db;
 
 Bar($loginID . " - Contracts");
 my $fmb_dm = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({

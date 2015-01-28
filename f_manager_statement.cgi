@@ -72,7 +72,7 @@ if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portf
 
 my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         client_loginid => $client->loginid,
-        operation      => 'read_binary_replica',
+        operation      => 'replica',
     })->db;
 
 my $currency = $client->currency;

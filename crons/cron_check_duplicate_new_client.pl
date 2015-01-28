@@ -21,7 +21,7 @@ my $check_date = BOM::Utility::Date->new(time - 86400)->date;
 #connect to collector for getting data
 my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
     broker_code => 'FOG',
-    operation   => 'read_collector'
+    operation   => 'collector'
 });
 my $client_dup_list = $report_mapper->check_clients_duplication(BOM::Utility::Date->new($check_date)->truncate_to_day);
 

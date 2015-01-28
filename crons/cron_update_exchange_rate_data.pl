@@ -25,7 +25,7 @@ $logger->debug('Update exchange rate for date [' . $update_time->db_timestamp . 
 
 my $dbs;
 foreach my $broker ('FOG') {
-    my $operation = ($broker eq 'FOG') ? 'write_collector' : 'write';
+    my $operation = ($broker eq 'FOG') ? 'collector' : 'write';
 
     $dbs->{$broker} = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
             broker_code => $broker,

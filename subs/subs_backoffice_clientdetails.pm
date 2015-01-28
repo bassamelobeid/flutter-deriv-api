@@ -125,7 +125,7 @@ sub print_client_details {
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
-        || die BOM::Platform::Context::template->error(), "\n";
+        || die BOM::Platform::Context::template->error();
 }
 
 ## build_client_statement_form #######################################
@@ -452,8 +452,7 @@ sub client_statement_for_backoffice {
 
     my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
             client_loginid => $client->loginid,
-            operation      => 'read',
-        })->db;
+                    })->db;
 
     my $txn_dm = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
         client_loginid => $client->loginid,

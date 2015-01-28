@@ -219,7 +219,7 @@ if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
 					<p><b>CONTRACT SETTLEMENT</b></p>
                 <form action="~
         . request()->url_for('backoffice/quant/settle_contracts.cgi')
-        . qq~" method="post"><font size=2> <input type="submit" value="CONTRACT SETTLEMENT"></font></form>
+        . qq~" method="post"><font size=2>Broker code : <select name=broker> ~ . set_selected_item($broker, $allbrokercodes) . qq~</select> <input type="submit" value="CONTRACT SETTLEMENT"></font></form>
                 </td>
 			</tr>
 				<td align="center" width="50%">

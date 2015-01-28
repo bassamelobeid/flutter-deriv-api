@@ -15,7 +15,7 @@ BOM::Platform::Sysinit::init();
 
 my $connection_builder = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
     broker_code => 'FOG',
-    operation   => 'write_collector',
+    operation   => 'collector',
 });
 
 my $sth = $connection_builder->db->dbh->prepare(

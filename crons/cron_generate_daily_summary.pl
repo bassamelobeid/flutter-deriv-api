@@ -54,7 +54,7 @@ my $temp_suffix       = '.temp';
 # Now iterate over them in some kind of order.
 my $db_write = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
         broker_code => 'FOG',
-        operation   => 'write_collector',
+        operation   => 'collector',
     })->db;
 my $dbh_write = $db_write->dbh;
 

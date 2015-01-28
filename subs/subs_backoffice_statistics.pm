@@ -9,12 +9,10 @@ sub USD_AggregateOutstandingBets_ongivendate {
     my $last_second = BOM::Utility::Date->new($date)->epoch + 86399;
     # Pull Agg Outstanding bets from the historical DB.
 
-    my $conn_args = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    my $dbh = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
             broker_code => 'FOG',
-            operation   => 'read_collector',
-        })->connection_parameters;
-    my $dbh =
-        DBI->connect('dbi:Pg:dbname=' . $conn_args->{'database'} . ';host=' . $conn_args->{'host'}, $conn_args->{'user'}, $conn_args->{'password'});
+            operation   => 'collector',
+        })->db->dbh;
 
     my @result = $dbh->selectrow_array(
         qq{ SELECT market_value

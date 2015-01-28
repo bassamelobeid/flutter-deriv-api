@@ -123,8 +123,7 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
         }
 
         my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
-                operation   => 'write',
-                broker_code => $broker,
+                                broker_code => $broker,
             })->db;
 
         my $fmbs       = $fmb_mapper->get_fmb_by_shortcode($betcode);

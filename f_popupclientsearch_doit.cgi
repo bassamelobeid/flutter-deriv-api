@@ -44,7 +44,7 @@ my $results;
 if (defined %non_empty_fields && keys %non_empty_fields) {
     my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
-        operation   => 'read_collector'
+        operation   => 'collector'
     });
     $results = $report_mapper->get_clients_result_by_field({
         'broker'        => $broker,
