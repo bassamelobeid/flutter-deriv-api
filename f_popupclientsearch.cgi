@@ -24,7 +24,7 @@ print qq~
 	<input type="text" size="10" name="partialfname" value="Partial FName" onfocus="this.select()" />
         <input type="text" size="10" name="partiallname" value="Partial LName" onfocus="this.select()" />
 	<input type="text" size="20" name="partialemail" value="Partial email" onfocus="this.select()" />
-    <input type="text" size="20" name="broker" value="ALL" onfocus="this.select()" />
+    <input type="text" size="20" name="broker" value="" onfocus="this.select()" />
 
 	<input type="submit" value="Search" />
 </form>
