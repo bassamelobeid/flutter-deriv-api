@@ -173,7 +173,7 @@ sub generate {
     my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
     my $cache_key  = $pricing_date->db_timestamp;
     $cache_key =~ s/\s//g;
-    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG'});
+    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector',});
 
     # daily buy/sell
     my $cache_prefix = 'DTR_AGG_SUM';
