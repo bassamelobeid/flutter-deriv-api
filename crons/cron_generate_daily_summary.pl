@@ -97,7 +97,7 @@ foreach my $currency (sort @currencies) {
 
         my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
                 broker_code => $broker,
-                operation   => 'read_report_binary_replica'
+                operation   => 'backoffice_replica'
             })->db;
 
         # Get all of the clients in the DB with this broker code/currency combo, their balance and their agg deposits and withdrawals
