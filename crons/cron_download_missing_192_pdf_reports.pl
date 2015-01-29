@@ -23,7 +23,7 @@ for my $broker (BOM::Platform::Runtime->instance->broker_codes->all_codes) {
     $logger->debug("Looking in $dir for ProveID XML reports without corresponding PDF files for $broker");
     my $xml_dir = "$dir/xml";
     my $pdf_dir = "$dir/pdf";
-    File::Find::Rule->new->file->exec(sub { -M $_ < 360 })->exec(sub { !-e "$pdf_dir/$_.pdf" })->exec(
+    File::Find::Rule->new->file->exec(sub { -M $_ < 30 })->exec(sub { !-e "$pdf_dir/$_.pdf" })->exec(
         sub {
             my ($loginid, $search_option) = $_ =~ /^([^.]+)[.]([^.]+)$/;
             my $result_as_xml = read_file($_);
