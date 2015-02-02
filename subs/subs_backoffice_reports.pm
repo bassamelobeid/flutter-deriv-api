@@ -7,7 +7,6 @@ use List::Util qw( min max );
 
 use Cache::RedisDB;
 use BOM::Utility::Format::Numbers qw(virgule roundnear);
-use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(in_USD);
 
@@ -21,13 +20,11 @@ sub DailyTurnOverReport {
         code_exit_BO();
     }
 
-    my $mtm_calc_time = $report_mapper->get_last_generated_historical_marked_to_market_time();
     my $initial_note = '(BUY-SELL represents the company profit)';
     my @all_currencies = BOM::Platform::Runtime->instance->landing_companies->all_currencies;
     my %rates = map { $_ => in_USD(1, $_) } @all_currencies;
 
     my %template = (
-        mtm_calc_time => $mtm_calc_time,
         initial_note  => $initial_note,
         risk_report   => request()->url_for("backoffice/quant/risk_dashboard.cgi"),
         currencies    => \@all_currencies,
@@ -52,6 +49,7 @@ sub DailyTurnOverReport {
     my ($allUSDsells, $allUSDbuys, $allpl);
 
     # get latest timestamp in redis cache
+    my $cache_prefix = 'DAILY_TURNOVER';
     my $redis_time = Cache::RedisDB->keys($cache_prefix);
     my $latest_time;
     foreach my $time (@{$redis_time}) {
@@ -155,6 +153,7 @@ sub DailyTurnOverReport {
         $allsells{$curr} = int roundnear(0.01, $allsells{$curr});
     }
 
+    $template{mtm_calc_time} = $latest_time->db_timestamp;
     $template{all_buys}      = \%allbuys;
     $template{all_sells}     = \%allsells;
     $template{all_USD_buys}  = int $allUSDbuys;
@@ -165,9 +164,8 @@ sub DailyTurnOverReport {
     $template{all_prev_agg_bets} = $allprevaggbets;
 
     my $start_of_month   = BOM::Utility::Date->new('1-' . $month_to_do);
-    my $end_of_mtm       = BOM::Utility::Date->new($mtm_calc_time);
     my $end_of_month     = $start_of_month->plus_time_interval($days_in_month . 'd')->minus_time_interval('1s');
-    my $month_completed  = min(1, max(1e-5, ($end_of_mtm->epoch - $start_of_month->epoch) / ($end_of_month->epoch - $start_of_month->epoch)));
+    my $month_completed  = min(1, max(1e-5, ($latest_time->epoch - $start_of_month->epoch) / ($end_of_month->epoch - $start_of_month->epoch)));
     my $projection_ratio = 1 / $month_completed;
 
     $template{summarize_turnover} = 1;
