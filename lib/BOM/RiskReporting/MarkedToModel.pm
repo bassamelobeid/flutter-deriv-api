@@ -192,8 +192,9 @@ sub cache_daily_turnover {
     my $self = shift;
     my $pricing_date = shift;
 
-    my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
+    $self->logger->info('query daily turnover to cache in redis');
 
+    my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
     my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector'});
     my $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({ date => $curr_month->db_timestamp });
 
@@ -212,6 +213,8 @@ sub cache_daily_turnover {
 
     my $cache_prefix = 'DAILY_TURNOVER';
     Cache::RedisDB->set($cache_prefix, $pricing_date->db_timestamp, to_json($cache_query), 3600 * 5);
+
+    $self->logger->info('DONE caching query in redis');
 
     # when month changes
     if ($pricing_date->day_of_month == 1 and $self->keep_prev_month == 0) {
@@ -243,6 +246,7 @@ sub cache_daily_turnover {
         }
 
         $self->keep_prev_month(1);
+        $self->logger->info('Keep long cache for prev month');
     }
     return;
 }
