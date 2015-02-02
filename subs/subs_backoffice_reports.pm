@@ -8,7 +8,6 @@ use List::Util qw( min max );
 use Cache::RedisDB;
 use BOM::Utility::Format::Numbers qw(virgule roundnear);
 use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
-use BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket;
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(in_USD);
 
