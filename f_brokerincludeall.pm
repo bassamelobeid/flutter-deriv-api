@@ -3,7 +3,6 @@ use lib qw(. .. ../subs ../oop);
 use subs::subs_presentation_backoffice;
 
 use subs::subs_backoffice_security;
-use subs::subs_backoffice_statistics;
 use subs::subs_backoffice_clientdetails;
 
 use subs::subs_backoffice_reports;
