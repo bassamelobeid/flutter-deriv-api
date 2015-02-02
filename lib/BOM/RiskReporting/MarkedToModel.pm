@@ -221,7 +221,7 @@ sub cache_daily_turnover {
         # get latest time of previous month
         foreach my $time (@{$redis_time}) {
             my $bom_date = BOM::Utility::Date->new($time);
-            if ($bom_date->month == ($currdate->month - 1)) {
+            if ($bom_date->month == ($curr_month->month - 1)) {
                 push @prev_month, $bom_date;
 
                 if (not $latest_prev or $bom_date->epoch > $latest_prev->epoch) {
