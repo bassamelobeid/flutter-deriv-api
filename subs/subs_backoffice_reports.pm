@@ -67,7 +67,7 @@ sub DailyTurnOverReport {
     }
 
     # get latest cache
-    my $cache_qeury = Cache::RedisDB->get($cache_prefix, $latest_time->db_timestamp);
+    my $cache_query = Cache::RedisDB->get($cache_prefix, $latest_time->db_timestamp);
     $cache_query = from_json($cache_query);
 
     my $aggregate_transactions = $cache_query->{agg_txn};
