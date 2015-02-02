@@ -8,17 +8,13 @@ use List::Util qw( min max );
 use Cache::RedisDB;
 use BOM::Utility::Format::Numbers qw(virgule roundnear);
 use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
-use BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket;
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(in_USD);
 
-### DailyTurnOverReport ####################
-# Purpose: Total display daily turn over report
-#################################################
+
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
 
-    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector'});
 
     if ($args->{month} !~ /^\w{3}-\d{2}$/) {
         print "<p>Invalid month $args->{month}</p>";
@@ -26,10 +22,9 @@ sub DailyTurnOverReport {
     }
 
     my $mtm_calc_time = $report_mapper->get_last_generated_historical_marked_to_market_time();
-    my $initial_note =
-        ($args->{whattodo} eq 'TURNOVER' ? '(BUY-SELL represents the company profit)' : '(CREDIT-DEBIT represents the client deposits)');
+    my $initial_note = '(BUY-SELL represents the company profit)';
     my @all_currencies = BOM::Platform::Runtime->instance->landing_companies->all_currencies;
-    my %rates = map { $_ => ($args->{$_} || in_USD(1, $_)) } @all_currencies;
+    my %rates = map { $_ => in_USD(1, $_) } @all_currencies;
 
     my %template = (
         mtm_calc_time => $mtm_calc_time,
@@ -37,21 +32,14 @@ sub DailyTurnOverReport {
         risk_report   => request()->url_for("backoffice/quant/risk_dashboard.cgi"),
         currencies    => \@all_currencies,
         rates         => \%rates,
-        buy_label     => ($args->{whattodo} eq 'TURNOVER' ? 'BUY' : 'CREDIT'),
-        sell_label    => ($args->{whattodo} eq 'TURNOVER' ? 'SELL' : 'DEBIT'),
+        buy_label     => 'BUY',
+        sell_label    => 'SELL',
         days          => [],
     );
 
-    my ($action_bb,   $action_ss);
+    my $action_bb = 'buy';
+    my $action_ss = 'sell';
     my ($lastaggbets, $allprevaggbets);
-
-    if ($args->{whattodo} eq 'TURNOVER') {
-        $action_bb = 'buy';
-        $action_ss = 'sell';
-    } else {
-        $action_bb = 'deposit';
-        $action_ss = 'withdrawal';
-    }
 
     my $now         = BOM::Utility::Date->new;
     my $month_to_do = $args->{month};
@@ -60,44 +48,39 @@ sub DailyTurnOverReport {
     my $currdate = BOM::Utility::Date->new('1-' . $args->{'month'});
     my $prevdate = BOM::Utility::Date->new($currdate->epoch - 86400)->date_ddmmmyy;
 
-    my $prevaggbets  = int(USD_AggregateOutstandingBets_ongivendate($prevdate));
-    my $firstaggbets = $prevaggbets;
-
     my (%allbuys, %allsells);
     my ($allUSDsells, $allUSDbuys, $allpl);
 
-    my $cache_prefix = 'DTR_AGG_SUM';
-    my $cache_key    = $mtm_calc_time;
-    $cache_key =~ s/\s//g;
-    my $aggregate_transactions;
-    if ($this_month and my $cached = Cache::RedisDB->get($cache_prefix, $cache_key)) {
-        $aggregate_transactions = from_json($cached);
-    } else {
-        $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({
-            date => $currdate->db_timestamp,
-            type => ($args->{whattodo} eq 'TURNOVER') ? 'bet' : 'payment',
-        });
-        Cache::RedisDB->set($cache_prefix, $cache_key, to_json($aggregate_transactions), 3600)
-            if ($this_month);    # Hold current month for up to an hour.
+    # get latest timestamp in redis cache
+    my $redis_time = Cache::RedisDB->keys($cache_prefix);
+    my $latest_time;
+    foreach my $time (@{$redis_time}) {
+        my $bom_date = BOM::Utility::Date->new($time);
+        if ($bom_date->month == $currdate->month) {
+            if (not $latest_time) {
+                $latest_time = $bom_date;
+                next;
+            }
+
+            if ($bom_date->epoch > $latest_time->epoch) {
+                $latest_time = $bom_date;
+            }
+        }
     }
 
-    my $eod_market_values = BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket->new({
-            broker_code => 'FOG',
-            operation   => 'collector'
-        })->eod_market_values_of_month($currdate->db_timestamp);
+    # get latest cache
+    my $cache_qeury = Cache::RedisDB->get($cache_prefix, $latest_time->db_timestamp);
+    $cache_query = from_json($cache_query);
 
-    $cache_prefix = 'ACTIVE_CLIENTS';
-    my $active_clients;
-    if ($this_month and my $cached = Cache::RedisDB->get($cache_prefix, $cache_key)) {
-        $active_clients = from_json($cached);
-    } else {
-        $active_clients = $report_mapper->number_of_active_clients_of_month($currdate->db_timestamp);
-        Cache::RedisDB->set($cache_prefix, $cache_key, to_json($active_clients), 3600)
-            if ($this_month);    # Hold current month for up to an hour.
-    }
+    my $aggregate_transactions = $cache_query->{agg_txn};
+    my $active_clients = $cache_query->{active_clients};
+    my $eod_market_values = $cache_query->{eod_open_bets_value};
+
+    # get end of previous month open bets value
+    my $prevaggbets = int($eod_market_values->{$prevdate->epoch}->{market_value});
+    my $firstaggbets = $prevaggbets;
 
     my $days_in_month  = $currdate->days_in_month;
-
     foreach my $day (1 .. $days_in_month) {
 
         my $date = $day . '-' . $args->{'month'};
@@ -181,21 +164,19 @@ sub DailyTurnOverReport {
     $template{agg_bets_diff}     = int $aggbetsdiff;
     $template{all_prev_agg_bets} = $allprevaggbets;
 
-    if ($args->{'whattodo'} eq 'TURNOVER') {
-        my $start_of_month   = BOM::Utility::Date->new('1-' . $month_to_do);
-        my $end_of_mtm       = BOM::Utility::Date->new($mtm_calc_time);
-        my $end_of_month     = $start_of_month->plus_time_interval($days_in_month . 'd')->minus_time_interval('1s');
-        my $month_completed  = min(1, max(1e-5, ($end_of_mtm->epoch - $start_of_month->epoch) / ($end_of_month->epoch - $start_of_month->epoch)));
-        my $projection_ratio = 1 / $month_completed;
+    my $start_of_month   = BOM::Utility::Date->new('1-' . $month_to_do);
+    my $end_of_mtm       = BOM::Utility::Date->new($mtm_calc_time);
+    my $end_of_month     = $start_of_month->plus_time_interval($days_in_month . 'd')->minus_time_interval('1s');
+    my $month_completed  = min(1, max(1e-5, ($end_of_mtm->epoch - $start_of_month->epoch) / ($end_of_month->epoch - $start_of_month->epoch)));
+    my $projection_ratio = 1 / $month_completed;
 
-        $template{summarize_turnover} = 1;
-        my $estimated_pl = int($allpl + $aggbetsdiff);
-        $template{estimated_pl}        = $estimated_pl;
-        $template{pct_month_completed} = roundnear(0.01, 100 * $month_completed);
-        $template{pct_hold}            = roundnear(0.01, 100 * ($estimated_pl / ($allUSDbuys || 1)));
-        $template{projected_pl}        = int($estimated_pl * $projection_ratio);
-        $template{projected_turnover}  = int($allUSDbuys * $projection_ratio);
-    }
+    $template{summarize_turnover} = 1;
+    my $estimated_pl = int($allpl + $aggbetsdiff);
+    $template{estimated_pl}        = $estimated_pl;
+    $template{pct_month_completed} = roundnear(0.01, 100 * $month_completed);
+    $template{pct_hold}            = roundnear(0.01, 100 * ($estimated_pl / ($allUSDbuys || 1)));
+    $template{projected_pl}        = int($estimated_pl * $projection_ratio);
+    $template{projected_turnover}  = int($allUSDbuys * $projection_ratio);
 
     return %template;
 }

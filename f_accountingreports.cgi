@@ -29,14 +29,6 @@ Bar("DAILY TURNOVER REPORT");
 print "<form action=\"" . request()->url_for('backoffice/f_dailyturnoverreport.cgi') . "\" method=post>";
 print "<input type=hidden name=broker value=$broker>";
 print 'Month: <input type=text size=12 name=month value="' . $now->months_ahead(0) . '">';
-print "<br />Use following exchange rates (leave empty to get realtime current values):<ul>";
-
-foreach my $curr ('frxEURUSD', 'frxGBPUSD') {
-    print "<li>&nbsp; $curr: <input type=text name=$curr size=12></li>";
-}
-print "</ul>";
-print "Do <select name=whattodo><option>TURNOVER</option><option>CREDITS AND DEBITS</option></select>";
-print "<br /><select name=useDSonly><option value=''>Normal<option value=useDSonly>Use Daily Summary values for outstanding bets</select>";
 print "<br /><input type=\"submit\" value=\"Daily Turnover Report\"> CLICK ONLY ONCE! Be patient if slow to respond.";
 print "</form>";
 

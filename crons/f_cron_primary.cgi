@@ -11,7 +11,6 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Sysinit ();
 
 use subs::subs_backoffice_security;
-use subs::subs_backoffice_statistics;
 use subs::subs_backoffice_removeexpired;
 use subs::subs_backoffice_reports;
 

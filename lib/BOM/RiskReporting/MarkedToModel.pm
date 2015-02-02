@@ -25,9 +25,17 @@ use Try::Tiny;
 
 use Mail::Sender;
 use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
+
+
+has 'keep_prev_month' => (
+    is      => 'rw',
+    isa     => 'Bool',
+    default => 0,
+);
 
 # This report will only be run on the MLS.
 sub generate {
@@ -169,30 +177,74 @@ sub generate {
         try { $dbh->rollback };
     };
 
-    # Run & cache query for BO Daily Turnover Report
-    my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
-    my $cache_key  = $pricing_date->db_timestamp;
-    $cache_key =~ s/\s//g;
-    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector',});
-
-    # daily buy/sell
-    my $cache_prefix = 'DTR_AGG_SUM';
-    my $agg_txn      = $report_mapper->get_aggregated_sum_of_transactions_of_month({
-        date => $curr_month->db_timestamp,
-        type => 'bet',
-    });
-    Cache::RedisDB->set($cache_prefix, $cache_key, to_json($agg_txn), 3600);
-
-    # daily active clients
-    $cache_prefix = 'ACTIVE_CLIENTS';
-    my $active_clients = $report_mapper->number_of_active_clients_of_month($curr_month->db_timestamp);
-    Cache::RedisDB->set($cache_prefix, $cache_key, to_json($active_clients), 3600);
+    $self->cache_daily_turnover($pricing_date);
 
     return {
         full_count => $howmany,
         errors     => $error_count,
         expired    => $total_expired
     };
+}
+
+
+# cache query result for BO Daily Turnover Report
+sub cache_daily_turnover {
+    my $self = shift;
+    my $pricing_date = shift;
+
+    my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
+
+    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector'});
+    my $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({ date => $curr_month->db_timestamp });
+
+    my $eod_market_values = BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket->new({
+            broker_code => 'FOG',
+            operation   => 'collector'
+        })->eod_market_values_of_month($curr_month->db_timestamp);
+
+    my $active_clients = $report_mapper->number_of_active_clients_of_month($curr_month->db_timestamp);
+
+    my $cache_query = {
+        agg_txn             => $aggregate_transactions,
+        eod_open_bets_value => $eod_market_values,
+        active_clients      => $active_clients,
+    };
+
+    my $cache_prefix = 'DAILY_TURNOVER';
+    Cache::RedisDB->set($cache_prefix, $pricing_date->db_timestamp, to_json($cache_query), 3600 * 5);
+
+    # when month changes
+    if ($pricing_date->day_of_month == 1 and $self->keep_prev_month == 0) {
+        my $redis_time = Cache::RedisDB->keys($cache_prefix);
+        my @prev_month;
+        my $latest_prev;
+
+        # get latest time of previous month
+        foreach my $time (@{$redis_time}) {
+            my $bom_date = BOM::Utility::Date->new($time);
+            if ($bom_date->month == ($curr_month->month - 1)) {
+                push @prev_month, $bom_date;
+
+                if (not $latest_prev or $bom_date->epoch > $latest_prev->epoch) {
+                    $latest_prev = $bom_date;
+                }
+            }
+        }
+
+        # keep previous month latest cache for 60 days
+        my $cache_query = Cache::RedisDB->get($cache_prefix, $latest_prev->db_timestamp);
+        Cache::RedisDB->set($cache_prefix, $latest_prev->db_timestamp, $cache_query, 86400 * 60);
+
+        # delete all other cache for previous month
+        foreach my $time (@prev_month) {
+            if ($time->db_timestamp ne $latest_prev->db_timestamp) {
+                Cache::RedisDB->del($cache_prefix, $time->db_timestamp);
+            }
+        }
+
+        $self->keep_prev_month(1);
+    }
+    return;
 }
 
 no Moose;
