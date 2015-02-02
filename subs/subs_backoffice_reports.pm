@@ -43,7 +43,6 @@ sub DailyTurnOverReport {
     my $this_month  = ($now->date_ddmmmyy =~ /$month_to_do/) ? 1 : 0;    # A rather inelegant way to see if we are doing this month.
 
     my $currdate = BOM::Utility::Date->new('1-' . $args->{'month'});
-    my $prevdate = BOM::Utility::Date->new($currdate->epoch - 86400)->date_ddmmmyy;
 
     my (%allbuys, %allsells);
     my ($allUSDsells, $allUSDbuys, $allpl);
@@ -51,6 +50,7 @@ sub DailyTurnOverReport {
     # get latest timestamp in redis cache
     my $cache_prefix = 'DAILY_TURNOVER';
     my $redis_time = Cache::RedisDB->keys($cache_prefix);
+
     my $latest_time;
     foreach my $time (@{$redis_time}) {
         my $bom_date = BOM::Utility::Date->new($time);
@@ -75,7 +75,7 @@ sub DailyTurnOverReport {
     my $eod_market_values = $cache_query->{eod_open_bets_value};
 
     # get end of previous month open bets value
-    my $prevaggbets = int($eod_market_values->{$prevdate->epoch}->{market_value});
+    my $prevaggbets = int($eod_market_values->{$currdate->epoch - 86400}->{market_value});
     my $firstaggbets = $prevaggbets;
 
     my $days_in_month  = $currdate->days_in_month;
