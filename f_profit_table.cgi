@@ -50,7 +50,7 @@ my $startdate = request()->param('startdate');
 my $enddate   = request()->param('enddate');
 
 if ($enddate) {
-    $enddate = BOM::Utility::Date->new($enddate)->plus_time_interval('1d')->date_ddmmmyyyy;
+    $enddate = BOM::Utility::Date->new($enddate)->plus_time_interval('1d')->date_yyyymmdd;
 }
 
 my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
