@@ -31,12 +31,6 @@ use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 
 
-has 'keep_prev_month' => (
-    is      => 'rw',
-    isa     => 'Bool',
-    default => 0,
-);
-
 # This report will only be run on the MLS.
 sub generate {
     my $self = shift;
@@ -217,7 +211,7 @@ sub cache_daily_turnover {
     $self->logger->info('DONE caching query in redis');
 
     # when month changes
-    if ($pricing_date->day_of_month == 1 and $self->keep_prev_month == 0) {
+    if ($pricing_date->day_of_month == 1 and $pricing_date->hour < 3) {
         my $redis_time = Cache::RedisDB->keys($cache_prefix);
         my @prev_month;
         my $latest_prev;
@@ -244,9 +238,7 @@ sub cache_daily_turnover {
                 Cache::RedisDB->del($cache_prefix, $time->db_timestamp);
             }
         }
-
-        $self->keep_prev_month(1);
-        $self->logger->info('Keep long cache for prev month');
+        $self->logger->info('Keep long cache for prev month: ' . $latest_prev->db_timestamp);
     }
     return;
 }
