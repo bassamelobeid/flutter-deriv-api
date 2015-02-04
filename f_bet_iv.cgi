@@ -178,7 +178,7 @@ Upload a file to the Bloomberg Data License FTP folder:<br>
 Filename: <input type=text size=20 name=filename value='scheduled.req'>
 Server: $selectbbdlserver
 <input type=submit value='Upload File'><br>
-<textarea rows=10 cols=90 name=content>START-OF-FILE
+<textarea rows=10 cols=90 name=bbdl_file_content>START-OF-FILE
 FIRMNAME=dl623471
 REPLYFILENAME=scheduled.out
 PROGRAMNAME=scheduled

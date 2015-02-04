@@ -17,7 +17,7 @@ PrintContentType();
 
 my $cgi       = CGI->new;
 my $filename  = $cgi->param('filename');
-my $content   = $cgi->param('content');
+my $content   = $cgi->param('bbdl_file_content');
 my $server_ip = $cgi->param('server');
 
 Bar("Upload a file to BBDL $server_ip");
