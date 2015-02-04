@@ -41,13 +41,37 @@ if (grep { $_ =~ /ERRORS/ } @csv_file_locs) {
         'NOTE: There are reported ERRORS. Please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
 }
 
-send_email({
-    from    => BOM::Platform::Runtime->instance->app_config->system->email,
-    to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-    subject => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
-    message    => \@message,
-    attachment => \@csv_file_locs,
-});
+my $pid = fork;
+if (not defined $pid) {
+    print "An error has occurred";
+} elsif ($pid) {
+    waitpid $pid, 0;
+    if ($?) {
+        print "An error has occurred";
+    } else {
+        print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email;
+    }
+} else {
+    # 1st, break parent/child relationship
+    $pid = fork;
+    exit 1 unless defined $pid;
+    exit 0 if $pid;
 
-print "Fetch Myaffiliates payment done, info has been emailed to " . BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email;
+    # next daemonize
+    close STDIN;
+    open STDIN, '<', '/dev/null';
+    close STDOUT;
+    open STDOUT, '>', '/dev/null';
+    require POSIX;
+    POSIX::setsid;
+    send_email({
+        from       => BOM::Platform::Runtime->instance->app_config->system->email,
+        to         => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+        subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
+        message    => \@message,
+        attachment => \@csv_file_locs,
+    });
+    exit 0;
+}
+
 code_exit_BO();
