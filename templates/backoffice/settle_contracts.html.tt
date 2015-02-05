@@ -35,6 +35,7 @@
     [% END %]
 </table>
 <hr/>
-<input type="submit" name="perform_actions"  value="Perform Selected Actions">
+<input type="submit" name="perform_actions"  value="Perform Selected Actions"/>
+<input type="hidden" name="broker"  value="[% broker_code %]"/>
 </form>
 </div>
