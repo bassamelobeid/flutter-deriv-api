@@ -8,7 +8,7 @@ use Try::Tiny;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType_excel );
 use BOM::Platform::Sysinit ();
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory qw( simple_contract_info );
 
 BOM::Platform::Sysinit::init();
 
@@ -55,8 +55,7 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $is_random = ($symbol =~ /^RD/ or $symbol =~ /^R_/) ? 1 : 0;
     my $long_code = '';
     try {
-        my $contract = produce_contract($bet->{'short_code'}, $currency_code);
-        $long_code = $contract->longcode;
+	($long_code) = simple_contract_info($bet->{'short_code'}, $currency_code);
         $long_code =~ s/,/ /g;
     }
     catch {
