@@ -12,6 +12,7 @@ use BOM::Platform::Context qw(request);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use f_brokerincludeall;
+use Fcntl qw/:flock O_RDWR O_CREAT/;
 
 BOM::Platform::Sysinit::init();
 PrintContentType();
@@ -28,6 +29,18 @@ unless (request()->param('from') and request()->param('to')) {
 
 my $from = BOM::Utility::Date->new(request()->param('from'));
 my $to   = BOM::Utility::Date->new(request()->param('to'));
+
+my $lf = '/var/run/bom-daemon/fetch_myaffiliate_payment.lock';
+
+sysopen my $lock, $lf, O_RDWR | O_CREAT or do {
+    print "Cannot open $lf: $!\n";
+    code_exit_BO();
+};
+
+flock $lock, LOCK_EX | LOCK_NB or do {
+    print "Cannot lock $lf. There is probably another process still doing pretty much the same thing.\n";
+    code_exit_BO();
+};
 
 my $pid = fork;
 if (not defined $pid) {
@@ -46,8 +59,13 @@ if (not defined $pid) {
     POSIX::_exit 1 unless defined $pid;
     POSIX::_exit 0 if $pid;
 
+    truncate $lock, 0;
+    syswrite $lock, "$$\n";
+
     # next daemonize
     for my $fd (0,1,3..1000) {
+        next if $fd == 2;
+        next if $fd == fileno $lock;
         POSIX::close $fd;
     }
 
@@ -65,8 +83,8 @@ if (not defined $pid) {
     $0 = "fetch myaffiliate payment info worker";
     POSIX::setsid;
 
-    $SIG{ALRM} = sub {POSIX::_exit 19};
-    alarm 3600;
+    $SIG{ALRM} = sub {truncate $lock, 0; POSIX::_exit 19};
+    alarm 900;
 
     my @csv_file_locs = BOM::Platform::MyAffiliates::PaymentToBOMAccountManager->new(
         from => $from,
@@ -87,6 +105,7 @@ if (not defined $pid) {
         message    => \@message,
         attachment => \@csv_file_locs,
     });
+    truncate $lock, 0;
     POSIX::_exit 0;
 }
 
