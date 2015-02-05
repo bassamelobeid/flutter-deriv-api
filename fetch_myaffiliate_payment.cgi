@@ -63,22 +63,25 @@ if (not defined $pid) {
     syswrite $lock, "$$\n";
 
     # next daemonize
-    for my $fd (0,1,3..1000) {
+    for my $fd (0..1000) {
         next if $fd == 2;
         next if $fd == fileno $lock;
         POSIX::close $fd;
     }
 
-    request()->http_handler->suppress_flush=1;
-    request()->http_handler->binmode_ok=1;
-    {
-        no warnings 'uninitialized';
-        binmode STDIN;
-        open STDIN, '<', '/dev/null';
-
-        binmode STDOUT;
-        open STDOUT, '>', '/dev/null';
-    }
+#    request()->http_handler->suppress_flush=1;
+#    request()->http_handler->binmode_ok=1;
+#    {
+#        no warnings 'uninitialized';
+#        binmode STDIN;
+#        open STDIN, '<', '/dev/null';
+#
+#        binmode STDOUT;
+#        open STDOUT, '>', '/dev/null';
+#
+#        binmode STDERR;
+#        open STDERR, '>', '/dev/null';
+#    }
 
     $0 = "fetch myaffiliate payment info worker";
     POSIX::setsid;
