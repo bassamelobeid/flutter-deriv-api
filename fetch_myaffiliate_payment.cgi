@@ -64,24 +64,9 @@ if (not defined $pid) {
 
     # next daemonize
     for my $fd (0..1000) {
-        next if $fd == 2;
         next if $fd == fileno $lock;
         POSIX::close $fd;
     }
-
-#    request()->http_handler->suppress_flush=1;
-#    request()->http_handler->binmode_ok=1;
-#    {
-#        no warnings 'uninitialized';
-#        binmode STDIN;
-#        open STDIN, '<', '/dev/null';
-#
-#        binmode STDOUT;
-#        open STDOUT, '>', '/dev/null';
-#
-#        binmode STDERR;
-#        open STDERR, '>', '/dev/null';
-#    }
 
     $0 = "fetch myaffiliate payment info worker";
     POSIX::setsid;
@@ -103,7 +88,7 @@ if (not defined $pid) {
 
     send_email({
         from       => BOM::Platform::Runtime->instance->app_config->system->email,
-        to         => 'torsten@binary.com',  #BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+        to         => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
         subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
         message    => \@message,
         attachment => \@csv_file_locs,
