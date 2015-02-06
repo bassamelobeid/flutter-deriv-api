@@ -74,6 +74,7 @@ if (not defined $pid) {
     POSIX::open( "/dev/null", &POSIX::O_WRONLY ); # stderr
 
     BOM::Utility::Log4perl->init(1);
+    $SIG{__WARN__} = sub { get_logger->warn($_[0]) };
 
     $0 = "fetch myaffiliate payment info worker";
     POSIX::setsid;
