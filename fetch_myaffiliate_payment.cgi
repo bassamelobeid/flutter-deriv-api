@@ -13,6 +13,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use f_brokerincludeall;
 use Fcntl qw/:flock O_RDWR O_CREAT/;
+use Try::Tiny;
 
 BOM::Platform::Sysinit::init();
 PrintContentType();
@@ -68,32 +69,44 @@ if (not defined $pid) {
         POSIX::close $fd;
     }
 
+    POSIX::open( "/dev/null", &POSIX::O_RDONLY ); # stdin
+    POSIX::open( "/dev/null", &POSIX::O_WRONLY ); # stdout
+    POSIX::open( "/dev/null", &POSIX::O_WRONLY ); # stderr
+
+    BOM::Utility::Log4perl->init(1);
+
     $0 = "fetch myaffiliate payment info worker";
     POSIX::setsid;
 
     $SIG{ALRM} = sub {truncate $lock, 0; POSIX::_exit 19};
     alarm 900;
 
-    my @csv_file_locs = BOM::Platform::MyAffiliates::PaymentToBOMAccountManager->new(
-        from => $from,
-        to   => $to
-    )->get_csv_file_locs;
+    try {
+        my @csv_file_locs = BOM::Platform::MyAffiliates::PaymentToBOMAccountManager->new(
+            from => $from,
+            to   => $to
+        )->get_csv_file_locs;
 
-    my @message = ('"To BOM Account" affiliate payment CSVs are attached for review and upload into the affiliate payment backoffice tool.');
-    if (grep { $_ =~ /ERRORS/ } @csv_file_locs) {
-        push @message, '';
-        push @message,
-            'NOTE: There are reported ERRORS. Please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
+        my @message = ('"To BOM Account" affiliate payment CSVs are attached for review and upload into the affiliate payment backoffice tool.');
+        if (grep { $_ =~ /ERRORS/ } @csv_file_locs) {
+            push @message, '';
+            push @message,
+                'NOTE: There are reported ERRORS. Please CHECK AND FIX the erroneous transactions in MyAffiliates then work with SWAT to rerun the cronjob.';
+        }
+
+        send_email({
+            from       => BOM::Platform::Runtime->instance->app_config->system->email,
+            to         => 'shuwnyuan@binary.com',       #BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+            subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
+            message    => \@message,
+            attachment => \@csv_file_locs,
+        });
+        truncate $lock, 0;
     }
+    catch {
+        get_logger->error($_);
+    };
 
-    send_email({
-        from       => BOM::Platform::Runtime->instance->app_config->system->email,
-        to         => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
-        subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
-        message    => \@message,
-        attachment => \@csv_file_locs,
-    });
-    truncate $lock, 0;
     POSIX::_exit 0;
 }
 
