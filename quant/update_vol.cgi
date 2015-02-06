@@ -19,7 +19,7 @@ use CGI;
 use JSON qw( from_json to_json );
 use URL::Encode qw( url_decode );
 
-use BOM::Platform::Plack qw( PrintContentType_JavaScript );
+use BOM::Platform::Plack qw( PrintContentType_JSON );
 
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
@@ -55,6 +55,6 @@ if ($surface->is_valid) {
     };
 }
 
-PrintContentType_JavaScript();
+PrintContentType_JSON();
 print to_json($response);
 code_exit_BO();
