@@ -10,11 +10,11 @@ services:
     - couchdb
 cache: apt
 before_install:
+    - sudo /usr/sbin/service postgresql stop
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - sudo ifconfig lo:1 172.28.128.3
-    - sudo apt-get install -y postgresql-plperl-9.3
-    - sudo apt-get install -y postgresql-contrib-9.3
-    - sudo rm -f /tmp/unittest_*
+    - sudo apt-get update
+    - sudo apt-get install -y postgresql-9.3 postgresql-plperl-9.3 postgresql-contrib-9.3
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     ## fix hostname
