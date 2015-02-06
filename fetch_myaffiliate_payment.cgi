@@ -96,7 +96,7 @@ if (not defined $pid) {
 
         send_email({
             from       => BOM::Platform::Runtime->instance->app_config->system->email,
-            to         => 'shuwnyuan@binary.com',       #BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
+            to         => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
             subject    => 'Fetch Myaffiliates payment info: (' . $from->date_yyyymmdd . ' - ' . $to->date_yyyymmdd . ')',
             message    => \@message,
             attachment => \@csv_file_locs,
