@@ -233,6 +233,7 @@ sub _open_bets_report {
             interval => max(0, $seconds_to_expiry),
             locale   => BOM::Platform::Context::request()->language
         );
+        $bet_details->{longcode}   = try { $bet->longcode } catch { 'Description unavailable' };
         $bet_details->{expires_in} =
             ($til_expiry->seconds > 0) ? $til_expiry->as_string(1) : 'expired';
         my $currency      = $bet_details->{currency_code};
