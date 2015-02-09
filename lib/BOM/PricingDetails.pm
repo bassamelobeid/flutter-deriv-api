@@ -141,16 +141,6 @@ sub debug_link {
         content => $dvol,
         };
 
-    # calculate vol from historical ticks
-    my $historic_vol = $self->_get_historical_vol();
-    push @{$tabs_content},
-        {
-        label   => 'Historic Vol',
-        url     => 'hv',
-        content => $historic_vol,
-        class   => 'hvol_tab_' . $bet->bet_type->id,
-        };
-
     # rates
     if (grep { $bet->underlying->market->name eq $_ } ('forex', 'commodities', 'indices')) {
         push @{$tabs_content},
@@ -159,14 +149,6 @@ sub debug_link {
             url     => 'rq',
             content => $self->_get_rates()};
     }
-
-    push @{$tabs_content},
-        {
-        label   => 'VCAL',
-        url     => 'vcal',
-        content => $self->_get_vcal(),
-        class   => 'vcal_tab',
-        };
 
     my $bpot_url = 'bp';
     push @{$tabs_content},
