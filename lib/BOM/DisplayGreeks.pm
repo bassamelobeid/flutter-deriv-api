@@ -16,12 +16,6 @@ Currently, this package does not handle quanto
 use Moose;
 use Data::Dumper;
 
-=head2 bet
-
-The bet object
-
-=cut
-
 has [qw(payout priced_with pricing_greeks current_spot underlying)] => (
     is => 'ro',
 );
@@ -40,7 +34,7 @@ has 'get_display_greeks' => (
 
 sub _build_get_display_greeks {
     my $self       = shift;
-    my $underlying = $self->bet->underlying;
+    my $underlying = $self->underlying;
     my $display_greeks;
 
     foreach my $greek (keys %{$self->pricing_greeks}) {
@@ -52,7 +46,7 @@ sub _build_get_display_greeks {
 sub _get_base_num_values {
     my ($self, $display_greeks) = @_;
     my $payout = $self->payout;
-    my $S      = $self->bet->current_spot;
+    my $S      = $self->current_spot;
     my $pw     = $self->priced_with;
 
     my $base_num;
@@ -89,7 +83,7 @@ has 'delta' => (
 sub _build_delta {
     my $self          = shift;
     my $pw            = $self->priced_with;
-    my $S             = $self->bet->current_spot;
+    my $S             = $self->current_spot;
     my $pricing_delta = $self->pricing_greeks->{delta};
 
     return
@@ -108,7 +102,7 @@ has 'gamma' => (
 sub _build_gamma {
     my $self          = shift;
     my $pw            = $self->priced_with;
-    my $S             = $self->bet->current_spot;
+    my $S             = $self->current_spot;
     my $pricing_gamma = $self->pricing_greeks->{gamma};
 
     return
@@ -163,7 +157,7 @@ has 'vanna' => (
 sub _build_vanna {
     my $self          = shift;
     my $pw            = $self->priced_with;
-    my $S             = $self->bet->current_spot;
+    my $S             = $self->current_spot;
     my $pricing_vanna = $self->pricing_greeks->{vanna};
 
     return
