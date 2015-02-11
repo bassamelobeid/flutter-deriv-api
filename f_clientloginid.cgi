@@ -386,16 +386,4 @@ print "Expired before <input type=\"text\" style=\"width:100px\" maxlength=\"15\
 print "<input type=\"submit\" value=\"Go\">";
 print '</form>';
 
-print '<a name="attorney_granter"></a>';
-Bar('Attorney & Granters');
-print
-    '<br /><p>The Attorney & Granters facility allows an Attorney account to control a number of Granter accounts. This was developed for Jonathan King.</p>';
-print '<p><a href="'
-    . request()->url_for(
-    'backoffice/attorney_granter.cgi',
-    {
-        action => 'show_attorneys',
-        broker => $broker
-    }) . '">Go to Attorneys Management</a></p>';
-
 code_exit_BO();

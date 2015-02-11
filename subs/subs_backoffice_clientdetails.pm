@@ -116,7 +116,6 @@ sub print_client_details {
         language_options        => \@language_options,
         secret_answer           => $secret_answer,
         promo_code_access       => $promo_code_access,
-        attorney_granter        => $client->attorney_granter,
         is_vip                  => $client->is_vip,
         vip_since               => $client->vip_since,
         state_options           => set_selected_item($client->state, $stateoptions),
