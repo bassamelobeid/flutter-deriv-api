@@ -254,24 +254,6 @@ print "&nbsp;&nbsp;<input type=\"submit\" name=\"close_disable_button\" value=\"
 print '</div>';
 print '</div>';
 
-# display log differences for untrusted client section
-print "<hr><b>View changes to this trusted client section.</b><br />"
-    . "To view all the changes made to this status, kindly click on each of the link below : ";
-
-print "<br /><br /><table border=\"1\" cellpadding=\"3\">" . "<tr>"
-    . "<th>Trusted section</th>"
-    . "<th>Show the log changes</th>" . "</tr>" . "<tr>"
-    . "<td>$trusted_ok_login</td>" . "<td>"
-    . '<a href="'
-    . request()->url_for(
-    'backoffice/show_log_list_table.cgi',
-    {
-        broker   => $broker,
-        category => "client_status_ok"
-    })
-    . '">Ok Logins</a>' . "</td>" . "</tr>"
-    . "</table><br />";
-
 # Monitor client lists
 Bar("Monitor client lists");
 
