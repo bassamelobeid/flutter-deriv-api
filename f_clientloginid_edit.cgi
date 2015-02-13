@@ -88,7 +88,7 @@ my $client = eval { BOM::Platform::Client->new({loginid => $loginid}) } || do {
     code_exit_BO();
 };
 
-my $broker = request()->broker->code;
+my $broker = $client->broker;
 my $staff  = BOM::Platform::Auth0::can_access(['CS']);
 my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
 
