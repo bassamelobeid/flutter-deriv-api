@@ -11,7 +11,7 @@ use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Platform::Plack qw( PrintContentType PrintContentType_JavaScript );
+use BOM::Platform::Plack qw( PrintContentType PrintContentType_JSON );
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
@@ -61,6 +61,6 @@ catch {
     };
 };
 
-PrintContentType_JavaScript();
+PrintContentType_JSON();
 print to_json($response);
 code_exit_BO();

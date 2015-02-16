@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::MarketData::CorporateAction;
 use BOM::Platform::Runtime;
 use JSON qw(to_json);
-use BOM::Platform::Plack qw( PrintContentType_JavaScript );
+use BOM::Platform::Plack qw( PrintContentType_JSON );
 use CGI;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -46,6 +46,6 @@ catch {
     $response->{reason}  = $_;
 };
 
-PrintContentType_JavaScript();
+PrintContentType_JSON();
 print to_json($response);
 code_exit_BO();

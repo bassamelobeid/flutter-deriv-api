@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
-use BOM::Platform::Plack qw( PrintContentType_JavaScript );
+use BOM::Platform::Plack qw( PrintContentType_JSON );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -42,6 +42,6 @@ catch {
     };
 };
 
-PrintContentType_JavaScript();
+PrintContentType_JSON();
 print to_json($response);
 code_exit_BO();
