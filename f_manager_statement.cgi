@@ -106,31 +106,4 @@ BOM::Platform::Context::template->process(
     },
 ) || die BOM::Platform::Context::template->error();
 
-Bar("Turnover analysis (Getting data from Transaction Database) ");
-my $txn_data_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
-    'client_loginid' => $loginID,
-    'currency_code'  => $currency,
-    db               => $db,
-});
-my $turnover = {};
-$turnover->{total} = $txn_data_mapper->get_turnover_of_account();
-
-my $bet_data_mapper = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
-    'client_loginid' => $loginID,
-    'currency_code'  => $currency,
-    db               => $db,
-});
-$turnover->{intraday} = $bet_data_mapper->get_turnover_of_client({
-    'bet_type'         => ['INTRA',],
-    'overall_turnover' => 1
-});
-
-BOM::Platform::Context::template->process(
-    'backoffice/account/turnover_analysis.html.tt',
-    {
-        turnover => $turnover,
-        currency => $currency,
-    },
-) || die BOM::Platform::Context::template->error();
-
 code_exit_BO();
