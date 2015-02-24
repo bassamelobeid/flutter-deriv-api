@@ -37,7 +37,7 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
             binary       => 1,
             always_quote => 1,
             quote_char   => "'",
-            eol          => ''
+            eol          => "\n"
         })    # should set binary attribute.
         or die "Cannot use CSV: " . Text::CSV->error_diag();
 
