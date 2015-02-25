@@ -13,7 +13,7 @@ use Mail::Sender;
 
 use Cache::RedisDB;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
+use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Helper::Model::FinancialMarketBet;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -66,7 +66,7 @@ if (request()->param('perform_actions')) {
             die $fmb_id . '  cannot be settled with this tool.' unless $bet_info;
             my $client = BOM::Platform::Client::get_instance({'loginid' => $bet_info->{loginid}});
             my $fmb =
-                BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])
+                BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])
                 ->[0];
 
             my $bet = produce_contract($fmb, $bet_info->{currency});

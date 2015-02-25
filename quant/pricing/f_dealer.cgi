@@ -12,7 +12,7 @@ use File::ReadBackwards;
 
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
+use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Helper::Model::FinancialMarketBet;
 use BOM::Platform::Transaction;
@@ -88,13 +88,13 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
     }
 
     # Further error checks
-    my $fmb_mapper = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
+    my $fmb_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         client_loginid => $loginID,
         currency_code  => $currency,
     });
 
     if ($buysell eq 'BUY') {
-        my $bal = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+        my $bal = BOM::Database::DataMapper::Account->new({
                 'client_loginid' => $loginID,
                 'currency_code'  => $currency
             })->get_balance();

@@ -6,7 +6,7 @@ use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
+use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
@@ -58,7 +58,7 @@ my $db = BOM::Database::ClientDB->new({
             })->db;
 
 Bar($loginID . " - Contracts");
-my $fmb_dm = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
+my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
     db             => $db,

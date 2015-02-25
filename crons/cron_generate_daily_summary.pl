@@ -13,7 +13,7 @@ use BOM::Utility::Date;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Database::ClientDB;
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
+use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
@@ -101,7 +101,7 @@ foreach my $currency (sort @currencies) {
             })->db;
 
         # Get all of the clients in the DB with this broker code/currency combo, their balance and their agg deposits and withdrawals
-        my $client_ref = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+        my $client_ref = BOM::Database::DataMapper::Transaction->new({
                 db => $db,
             }
             )->get_daily_summary_report({
@@ -111,7 +111,7 @@ foreach my $currency (sort @currencies) {
             });
 
         $logger->debug('get_accounts_with_open_bets_at_end_of');
-        my $accounts_with_open_bet = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+        my $accounts_with_open_bet = BOM::Database::DataMapper::Transaction->new({
                 db => $db,
             }
             )->get_accounts_with_open_bets_at_end_of({

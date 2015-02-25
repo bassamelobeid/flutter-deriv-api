@@ -3,7 +3,7 @@ package main;
 
 use strict 'vars';
 use POSIX;
-use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Database::DataMapper::Account;
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Utility::CurrencyConverter qw(in_USD);
@@ -477,7 +477,7 @@ sub RecoverFromClientAccount {
         $result->{'msg'} = "span style='color:red;font-weight:bold;'>ERROR: $loginID ($broker) is not disabled</font>";
     }
 
-    my $bal = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+    my $bal = BOM::Database::DataMapper::Account->new({
             client_loginid => $loginID,
             currency_code  => $client->currency
         })->get_balance();

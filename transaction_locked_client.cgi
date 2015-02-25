@@ -7,7 +7,7 @@ use f_brokerincludeall;
 use CGI;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Data::Persistence::DataMapper::Client;
+use BOM::Database::DataMapper::Client;
 use BOM::Platform::Plack qw( PrintContentType );
 
 use BOM::Platform::Sysinit ();
@@ -25,7 +25,7 @@ my @clients = $cgi->param('clients');
 
 foreach my $client_loginid (@clients) {
     try {
-        my $client_data_mapper = BOM::Platform::Data::Persistence::DataMapper::Client->new({
+        my $client_data_mapper = BOM::Database::DataMapper::Client->new({
                         client_loginid => $client_loginid,
         });
         $client_data_mapper->unlock_client_loginid();
@@ -36,7 +36,7 @@ foreach my $client_loginid (@clients) {
     };
 }
 
-my $client_data_mapper = BOM::Platform::Data::Persistence::DataMapper::Client->new({
+my $client_data_mapper = BOM::Database::DataMapper::Client->new({
         broker_code => request()->broker->code,
 });
 

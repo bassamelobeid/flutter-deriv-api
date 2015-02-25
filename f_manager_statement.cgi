@@ -3,8 +3,8 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
-use BOM::Platform::Data::Persistence::DataMapper::Transaction;
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::DataMapper::Transaction;
 use BOM::Product::Transaction;
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -76,7 +76,7 @@ my $db = BOM::Database::ClientDB->new({
     })->db;
 
 my $currency = $client->currency;
-my $bet_dm   = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
+my $bet_dm   = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $currency,
     db             => $db,
@@ -91,7 +91,7 @@ foreach my $open_bet (@{$open_bets}) {
     }
 }
 
-my $acnt_dm = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+my $acnt_dm = BOM::Database::DataMapper::Account->new({
     client_loginid => $client->loginid,
     currency_code  => $currency,
     db             => $db,

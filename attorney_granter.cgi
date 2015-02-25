@@ -9,7 +9,7 @@ use JSON;
 use f_brokerincludeall;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Platform::Persistence::DAO::AttorneyGranter;
+use BOM::Database::DAO::AttorneyGranter;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Client::Attorney;
 BOM::Platform::Sysinit::init();
@@ -45,7 +45,7 @@ if ($broker eq 'FOG') {
 my $action = request()->param('action');
 
 if ($action eq 'show_attorneys') {
-    my $attorneys = BOM::Platform::Persistence::DAO::AttorneyGranter::get_attorneys({'broker' => $broker});
+    my $attorneys = BOM::Database::DAO::AttorneyGranter::get_attorneys({'broker' => $broker});
 
     Bar('All Attorneys in DB');
 
@@ -71,7 +71,7 @@ if ($action eq 'show_attorneys') {
     if (!($attorney = BOM::Platform::Client::get_instance({loginid => $loginid}))) {
         print JSON::to_json({'error' => "Client $loginid does not exist"});
     } elsif (
-        my $row = BOM::Platform::Persistence::DAO::AttorneyGranter::create_or_update_attorney({
+        my $row = BOM::Database::DAO::AttorneyGranter::create_or_update_attorney({
                 attorney     => $attorney,
                 company_name => $company_name,
                 url          => $url,
@@ -103,7 +103,7 @@ if ($action eq 'show_attorneys') {
     if (!($attorney = BOM::Platform::Client::get_instance({loginid => $loginid}))) {
         print JSON::to_json({'error' => "Client $loginid does not exist"});
     } elsif (
-        my $row = BOM::Platform::Persistence::DAO::AttorneyGranter::delete_attorney({
+        my $row = BOM::Database::DAO::AttorneyGranter::delete_attorney({
                 attorney => $attorney,
             }))
     {
@@ -221,7 +221,7 @@ if ($action eq 'show_attorneys') {
     }
 
     if (
-        my $result = BOM::Platform::Persistence::DAO::AttorneyGranter::create_or_update_attorney_granter({
+        my $result = BOM::Database::DAO::AttorneyGranter::create_or_update_attorney_granter({
                 attorney         => $attorney,
                 granter_loginids => \@granters,
                 no_exception     => 1,
@@ -251,7 +251,7 @@ if ($action eq 'show_attorneys') {
         print '<input type="hidden" id="added_attorney_id" value="'
             . $attorney->loginid . '" />'
             . '<input type="hidden" id="added_attorney_total_granters" value="'
-            . BOM::Platform::Persistence::DAO::AttorneyGranter::get_number_of_granters({
+            . BOM::Database::DAO::AttorneyGranter::get_number_of_granters({
                 attorney_client_loginid => $attorney->loginid,
                 broker                  => $attorney->broker,
             }) . '" />';
@@ -270,7 +270,7 @@ if ($action eq 'show_attorneys') {
     }
 
     if (
-        BOM::Platform::Persistence::DAO::AttorneyGranter::create_or_update_attorney_granter({
+        BOM::Database::DAO::AttorneyGranter::create_or_update_attorney_granter({
                 attorney         => BOM::Platform::Client->new({loginid => $attorney_client_loginid}),
                 granter_loginids => [$granter_loginid],
                 approved         => $status,
@@ -295,7 +295,7 @@ if ($action eq 'show_attorneys') {
     if (!$attorney) {
         print "<h1>$attorney_client_loginid is not an attorney or has no granters.</h1>";
     } elsif (
-        BOM::Platform::Persistence::DAO::AttorneyGranter::delete_attorney_granter({
+        BOM::Database::DAO::AttorneyGranter::delete_attorney_granter({
                 attorney         => $attorney,
                 granter_loginids => [$granter_loginid],
             }))

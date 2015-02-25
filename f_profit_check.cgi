@@ -5,7 +5,7 @@ use strict 'vars';
 use BOM::Utility::Date;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
-use BOM::Platform::Data::Persistence::DataMapper::Transaction;
+use BOM::Database::DataMapper::Transaction;
 use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
@@ -41,7 +41,7 @@ my $db = BOM::Database::ClientDB->new({
 
 Bar($loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
 
-my $txn_dm = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+my $txn_dm = BOM::Database::DataMapper::Transaction->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
     db             => $db,
