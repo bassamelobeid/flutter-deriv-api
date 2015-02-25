@@ -9,7 +9,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Transaction;
 use BOM::Utility::Date;
 use Guard;
-use BOM::Platform::Data::Persistence::DataMapper::Payment::DoughFlow;
+use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
 use Try::Tiny;
 
@@ -229,7 +229,7 @@ sub check_predicates {
     # Detecting duplicates for DoughFlow is simple; it'll be
     # any transaction with an identical type (deposit/withdrawal)
     # and trace id
-    my $doughflow_datamapper = BOM::Platform::Data::Persistence::DataMapper::Payment::DoughFlow->new({
+    my $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
         client_loginid => $c->user->loginid,
         currency_code  => $currency_code,
     });
