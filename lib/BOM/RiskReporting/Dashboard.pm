@@ -26,7 +26,7 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Platform::CustomClientLimits;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Model::Account;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Platform::Data::Persistence::DataMapper::Account;
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
 use BOM::Platform::Data::Persistence::DataMapper::Transaction;

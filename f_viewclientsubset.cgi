@@ -402,7 +402,7 @@ sub get_client_by_status {
         GROUP BY 1,2,3,4,5,6,7,8,9,10
     };
 
-    my $dbh = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    my $dbh = BOM::Database::ClientDB->new({
             broker_code => $broker,
                     })->db->dbh;
     my $sth = $dbh->prepare($sql);

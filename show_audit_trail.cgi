@@ -27,7 +27,7 @@ if ($broker eq 'FOG') {
     code_exit_BO();
 }
 
-my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $db = BOM::Database::ClientDB->new({
                 broker_code => $broker,
     })->db;
 

@@ -13,7 +13,7 @@ use File::ReadBackwards;
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Platform::Helper::Model::FinancialMarketBet;
 use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
@@ -122,7 +122,7 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
             die "Account stuck in previous transaction $loginID";
         }
 
-        my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+        my $db = BOM::Database::ClientDB->new({
                                 broker_code => $broker,
             })->db;
 

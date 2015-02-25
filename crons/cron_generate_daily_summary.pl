@@ -12,7 +12,7 @@ use Path::Tiny;
 use BOM::Utility::Date;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Format::Numbers qw(roundnear);
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
@@ -52,7 +52,7 @@ my $start_of_next_day = BOM::Utility::Date->new($run_for->epoch - $run_for->seco
 my $temp_suffix       = '.temp';
 
 # Now iterate over them in some kind of order.
-my $db_write = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $db_write = BOM::Database::ClientDB->new({
         broker_code => 'FOG',
         operation   => 'collector',
     })->db;
@@ -95,7 +95,7 @@ foreach my $currency (sort @currencies) {
 
         $logger->debug('get_daily_summary_report');
 
-        my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+        my $db = BOM::Database::ClientDB->new({
                 broker_code => $broker,
                 operation   => 'backoffice_replica'
             })->db;

@@ -4,7 +4,7 @@ use Carp qw( croak );
 
 use BOM::Utility::Format::Strings qw( set_selected_item );
 use BOM::Utility::Date;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use BOM::Platform::Data::Persistence::DataMapper::Account;
 use BOM::Platform::Client::Utility ();
@@ -450,7 +450,7 @@ sub client_statement_for_backoffice {
     $currency = $args->{currency} if exists $args->{currency};
     $currency //= $client->currency;
 
-    my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    my $db = BOM::Database::ClientDB->new({
             client_loginid => $client->loginid,
                     })->db;
 

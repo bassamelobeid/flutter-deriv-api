@@ -44,7 +44,7 @@ if ($localhost->has_role('master_live_server')) {
     die "This tool can't be accessed from Master Live Server. It can only be accessed from dealing server's BO";
 }
 
-my $broker_db    = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $broker_db    = BOM::Database::ClientDB->new({
                 broker_code => request()->param('broker'),
     })->db;
 

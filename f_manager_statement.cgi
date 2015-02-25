@@ -70,7 +70,7 @@ if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portf
     });
 }
 
-my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
         operation      => 'replica',
     })->db;

@@ -4,7 +4,7 @@ use strict 'vars';
 
 use BOM::Utility::Date;
 use BOM::Platform::Client;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Platform::Data::Persistence::DataMapper::Transaction;
 use BOM::Platform::Plack qw( PrintContentType );
 
@@ -35,7 +35,7 @@ my $enddate   = request()->param('enddate');
 $startdate = BOM::Utility::Date->new($startdate);
 $enddate   = BOM::Utility::Date->new($enddate);
 
-my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
             })->db;
 
