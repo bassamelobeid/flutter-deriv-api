@@ -5,7 +5,7 @@ package BOM::API::Payment::Client;
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
-use BOM::Platform::Model::DoughFlowAddressDiff;
+use BOM::Database::Model::DoughFlowAddressDiff;
 use BOM::Platform::Helper::Model::DoughFlowAddressDiff;
 use Try::Tiny;
 use Data::Dumper;
@@ -60,7 +60,7 @@ sub address_diff_POST {    ## no critic (Subroutines::RequireFinalReturn)
     my $connection_builder = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
     });
-    my $doughflow_address_diff = BOM::Platform::Model::DoughFlowAddressDiff->new({
+    my $doughflow_address_diff = BOM::Database::Model::DoughFlowAddressDiff->new({
         data_object_params => {'client_loginid' => $client->loginid},
         db                 => $connection_builder->db
     });

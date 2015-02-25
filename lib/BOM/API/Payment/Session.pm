@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Database::ClientDB;
-use BOM::Platform::Model::HandoffToken;
+use BOM::Database::Model::HandoffToken;
 use BOM::Platform::Runtime;
 
 sub session_GET {
@@ -30,7 +30,7 @@ sub session_GET {
     if ($c->request_parameters->{'handoff_tokenid'}) {
         $log->debug('handoff_tokenid included, fetching handoff_token');
         $handoff_token_key = $c->request_parameters->{'handoff_tokenid'};
-        $handoff_token     = BOM::Platform::Model::HandoffToken->new(
+        $handoff_token     = BOM::Database::Model::HandoffToken->new(
             db                 => $cb->db,
             data_object_params => {
                 key            => $handoff_token_key,
@@ -44,8 +44,8 @@ sub session_GET {
     } else {
         $log->debug('Creating handoff_token');
         # generate handoff_token token
-        $handoff_token_key = BOM::Platform::Model::HandoffToken->generate_session_key;
-        $handoff_token     = BOM::Platform::Model::HandoffToken->new({
+        $handoff_token_key = BOM::Database::Model::HandoffToken->generate_session_key;
+        $handoff_token     = BOM::Database::Model::HandoffToken->new({
                 db                 => $cb->db,
                 data_object_params => {
                     key            => $handoff_token_key,
@@ -89,7 +89,7 @@ sub session_validate_GET {
     });
     my $token_key = $c->request_parameters->{token};
     # Get the existing handoff token
-    my $handoff_token = BOM::Platform::Model::HandoffToken->new({
+    my $handoff_token = BOM::Database::Model::HandoffToken->new({
         data_object_params => {'key' => $token_key},
         db                 => $connection_builder->db
     });
