@@ -5,7 +5,7 @@ package BOM::API::Payment::Session;
 use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Platform::Model::HandoffToken;
 use BOM::Platform::Runtime;
 
@@ -21,7 +21,7 @@ sub session_GET {
     return $c->throw(401, 'Authorization required')
         if $c->env->{'X-DoughFlow-Authorization-Passed'};
 
-    my $cb = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    my $cb = BOM::Database::ClientDB->new({
         client_loginid => $loginid,
     });
 
@@ -84,7 +84,7 @@ sub session_validate_GET {
     }
     # we have a token, so lets make a db
     my $landing_company    = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($c->user->loginid);
-    my $connection_builder = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    my $connection_builder = BOM::Database::ClientDB->new({
         client_loginid => $c->user->loginid,
     });
     my $token_key = $c->request_parameters->{token};

@@ -57,7 +57,7 @@ sub address_diff_POST {    ## no critic (Subroutines::RequireFinalReturn)
 
     my $client = $c->user;
 
-    my $connection_builder = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    my $connection_builder = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
     });
     my $doughflow_address_diff = BOM::Platform::Model::DoughFlowAddressDiff->new({
