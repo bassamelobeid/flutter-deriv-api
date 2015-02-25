@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use BOM::Platform::Sysinit ();
-use BOM::Platform::Model::ExchangeRate;
+use BOM::Database::Model::ExchangeRate;
 use BOM::Database::ClientDB;
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
@@ -52,7 +52,7 @@ foreach my $currency (@all_currencies) {
 
     # Insert exchange rate
     foreach my $broker (keys %{$dbs}) {
-        my $exchange_rate = BOM::Platform::Model::ExchangeRate->new({
+        my $exchange_rate = BOM::Database::Model::ExchangeRate->new({
                 data_object_params => {
                     source_currency => $currency,
                     target_currency => 'USD',
