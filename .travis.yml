@@ -94,8 +94,4 @@ install:
     - export PAYMENTAPI_LOG_FILE=/tmp/paymentapi.log
 
 script:
-    - echo $PERL5LIB
-    - ls /tmp/bom/database/lib/BOM
-    - ls /tmp/bom/database/lib/BOM/Database/DataMapper/Account.pm
-    - git branch
     - perl Makefile.PL && make test && cover -test -report coveralls
