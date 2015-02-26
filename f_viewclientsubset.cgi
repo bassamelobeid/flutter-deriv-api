@@ -3,7 +3,7 @@ package main;
 
 use strict 'vars';
 use POSIX;
-use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Database::DataMapper::Account;
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Utility::CurrencyConverter qw(in_USD);
@@ -37,7 +37,7 @@ if (request()->param('action') eq 'DOWNLOAD CSV') {
             binary       => 1,
             always_quote => 1,
             quote_char   => "'",
-            eol          => ''
+            eol          => "\n"
         })    # should set binary attribute.
         or die "Cannot use CSV: " . Text::CSV->error_diag();
 
@@ -402,7 +402,7 @@ sub get_client_by_status {
         GROUP BY 1,2,3,4,5,6,7,8,9,10
     };
 
-    my $dbh = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    my $dbh = BOM::Database::ClientDB->new({
             broker_code => $broker,
                     })->db->dbh;
     my $sth = $dbh->prepare($sql);
@@ -477,7 +477,7 @@ sub RecoverFromClientAccount {
         $result->{'msg'} = "span style='color:red;font-weight:bold;'>ERROR: $loginID ($broker) is not disabled</font>";
     }
 
-    my $bal = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+    my $bal = BOM::Database::DataMapper::Account->new({
             client_loginid => $loginID,
             currency_code  => $client->currency
         })->get_balance();

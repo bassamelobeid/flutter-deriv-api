@@ -74,7 +74,7 @@ has _connection_builder => (
 
 sub _build__connection_builder {
 
-    return BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    return BOM::Database::ClientDB->new({
         broker_code => 'FOG',
         operation   => 'collector',
     });

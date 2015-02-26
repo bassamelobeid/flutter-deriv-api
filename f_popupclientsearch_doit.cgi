@@ -4,7 +4,7 @@ use strict 'vars';
 use Try::Tiny;
 
 use f_brokerincludeall;
-use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
+use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -42,7 +42,7 @@ my %fields = (
 my %non_empty_fields = (map { ($_, $fields{$_}) } (grep { $fields{$_} } (keys %fields)));
 my $results;
 if (defined %non_empty_fields && keys %non_empty_fields) {
-    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
+    my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'
     });

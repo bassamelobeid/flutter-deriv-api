@@ -26,7 +26,7 @@ use File::Temp;
 use List::Util qw(min sum);
 
 use Mail::Sender;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Text::CSV_XS;

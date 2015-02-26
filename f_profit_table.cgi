@@ -5,8 +5,8 @@ use strict 'vars';
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Client;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
+use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
@@ -53,12 +53,12 @@ if ($enddate) {
     $enddate = BOM::Utility::Date->new($enddate)->plus_time_interval('1d')->date_yyyymmdd;
 }
 
-my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
             })->db;
 
 Bar($loginID . " - Contracts");
-my $fmb_dm = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
+my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     client_loginid => $client->loginid,
     currency_code  => $client->currency,
     db             => $db,

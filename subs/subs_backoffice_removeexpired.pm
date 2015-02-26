@@ -2,8 +2,8 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use BOM::Platform::Transaction;
-use BOM::Platform::Data::Persistence::DataMapper::Payment::FreeGift;
-use BOM::Platform::Data::Persistence::DataMapper::Transaction;
+use BOM::Database::DataMapper::Payment::FreeGift;
+use BOM::Database::DataMapper::Transaction;
 use File::Flock::Tiny;
 
 ########################################################################
@@ -24,7 +24,7 @@ sub Rescind_FreeGifts {
 
     my @report;
 
-    my $freegift_mapper = BOM::Platform::Data::Persistence::DataMapper::Payment::FreeGift->new({
+    my $freegift_mapper = BOM::Database::DataMapper::Payment::FreeGift->new({
         broker_code => $broker,
     });
 

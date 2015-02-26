@@ -8,7 +8,7 @@ use Digest::MD5;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
-use BOM::Platform::Persistence::DAO::Utils::ClientPasswordRecovery;
+use BOM::Database::DAO::Utils::ClientPasswordRecovery;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -40,7 +40,7 @@ my $hcstring = $email . time . 'request_password';
 my $token    = Digest::MD5::md5_hex($hcstring);
 
 my $success =
-    BOM::Platform::Persistence::DAO::Utils::ClientPasswordRecovery::force_client_recovery_password_email_status($client->loginid, $token, $email);
+    BOM::Database::DAO::Utils::ClientPasswordRecovery::force_client_recovery_password_email_status($client->loginid, $token, $email);
 
 my $lang = request()->language;
 

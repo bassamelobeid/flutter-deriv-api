@@ -13,8 +13,8 @@ use Mail::Sender;
 
 use Cache::RedisDB;
 use BOM::Product::ContractFactory qw(produce_contract);
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
-use BOM::Platform::Helper::Model::FinancialMarketBet;
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -44,7 +44,7 @@ if ($localhost->has_role('master_live_server')) {
     die "This tool can't be accessed from Master Live Server. It can only be accessed from dealing server's BO";
 }
 
-my $broker_db    = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $broker_db    = BOM::Database::ClientDB->new({
                 broker_code => request()->param('broker'),
     })->db;
 
@@ -66,11 +66,11 @@ if (request()->param('perform_actions')) {
             die $fmb_id . '  cannot be settled with this tool.' unless $bet_info;
             my $client = BOM::Platform::Client::get_instance({'loginid' => $bet_info->{loginid}});
             my $fmb =
-                BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])
+                BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])
                 ->[0];
 
             my $bet = produce_contract($fmb, $bet_info->{currency});
-            my $fmb_helper = BOM::Platform::Helper::Model::FinancialMarketBet->new({
+            my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
                 bet => $fmb,
                 db  => $broker_db,
             });
