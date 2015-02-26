@@ -14,7 +14,7 @@ use Mail::Sender;
 use Cache::RedisDB;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Platform::Helper::Model::FinancialMarketBet;
+use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -70,7 +70,7 @@ if (request()->param('perform_actions')) {
                 ->[0];
 
             my $bet = produce_contract($fmb, $bet_info->{currency});
-            my $fmb_helper = BOM::Platform::Helper::Model::FinancialMarketBet->new({
+            my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
                 bet => $fmb,
                 db  => $broker_db,
             });

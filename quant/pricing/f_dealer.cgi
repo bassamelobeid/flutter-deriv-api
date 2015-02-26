@@ -14,7 +14,7 @@ use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
-use BOM::Platform::Helper::Model::FinancialMarketBet;
+use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
@@ -127,7 +127,7 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
             })->db;
 
         my $fmbs       = $fmb_mapper->get_fmb_by_shortcode($betcode);
-        my $fmb_helper = BOM::Platform::Helper::Model::FinancialMarketBet->new({
+        my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
             bet => $fmbs->[0],
             db  => $db
         });
