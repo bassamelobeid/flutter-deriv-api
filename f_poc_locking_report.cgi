@@ -6,9 +6,9 @@ use strict 'vars';
 use Locale::Country;
 use f_brokerincludeall;
 use BOM::Utility::CurrencyConverter qw(in_USD);
-use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Database::DataMapper::Account;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::Platform::Persistence::DAO::Client;
+use BOM::Database::DAO::Client;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -39,7 +39,7 @@ print q~
 ~;
 
 my $frmid     = 1;
-my $login_ids = BOM::Platform::Persistence::DAO::Client::get_loginids_for_poc_locking_clients_arrayref({
+my $login_ids = BOM::Database::DAO::Client::get_loginids_for_poc_locking_clients_arrayref({
     'broker'           => $broker,
     'date'             => $date,
     'authenticated'    => $authenticated,
@@ -50,7 +50,7 @@ my $login_ids = BOM::Platform::Persistence::DAO::Client::get_loginids_for_poc_lo
 foreach my $loginID (@{$login_ids}) {
     my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID}) || next;
 
-    my $account_mapper = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+    my $account_mapper = BOM::Database::DataMapper::Account->new({
         client_loginid => $loginID,
         currency_code  => $client->currency,
         operation      => 'replica',

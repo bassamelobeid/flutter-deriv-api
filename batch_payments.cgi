@@ -9,7 +9,7 @@ use Path::Tiny;
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Numbers qw(to_monetary_number_format roundnear);
-use BOM::Platform::Data::Persistence::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
@@ -132,7 +132,7 @@ read_csv_row_and_callback(
             }
 
             # check pontential duplicate entry
-            my $payment_mapper = BOM::Platform::Data::Persistence::DataMapper::Payment->new({
+            my $payment_mapper = BOM::Database::DataMapper::Payment->new({
                 client_loginid => $login_id,
                 currency_code  => $currency,
             });

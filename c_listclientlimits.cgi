@@ -4,7 +4,7 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
-use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Database::DataMapper::Account;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -27,7 +27,7 @@ if ($login !~ /^$broker\d+$/) {
 my $client = BOM::Platform::Client::get_instance({'loginid' => $login}) || die "[$0] could not get client for $login";
 my $curr = $client->currency;
 
-my $account_mapper = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+my $account_mapper = BOM::Database::DataMapper::Account->new({
     client_loginid => $login,
     currency_code  => $curr,
 });

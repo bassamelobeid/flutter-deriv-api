@@ -7,7 +7,7 @@ use BOM::Platform::Context;
 use JSON;
 
 use f_brokerincludeall;
-use BOM::Platform::Data::Persistence::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );

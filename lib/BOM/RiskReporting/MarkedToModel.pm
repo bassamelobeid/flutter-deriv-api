@@ -24,8 +24,8 @@ use POSIX qw(strftime);
 use Try::Tiny;
 
 use Mail::Sender;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
-use BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket;
+use BOM::Database::ClientDB;
+use BOM::Database::DataMapper::HistoricalMarkedToMarket;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
@@ -189,10 +189,10 @@ sub cache_daily_turnover {
     $self->logger->info('query daily turnover to cache in redis');
 
     my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
-    my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector'});
+    my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector'});
     my $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({ date => $curr_month->db_timestamp });
 
-    my $eod_market_values = BOM::Platform::Data::Persistence::DataMapper::HistoricalMarkedToMarket->new({
+    my $eod_market_values = BOM::Database::DataMapper::HistoricalMarkedToMarket->new({
             broker_code => 'FOG',
             operation   => 'collector'
         })->eod_market_values_of_month($curr_month->db_timestamp);

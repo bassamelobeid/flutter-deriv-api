@@ -6,7 +6,7 @@ use Carp qw( croak );
 
 use BOM::Utility::Log4perl;
 use BOM::Platform::Sysinit ();
-use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
+use BOM::Database::DataMapper::CollectorReporting;
 use BOM::Platform::Client;
 
 BOM::Platform::Sysinit::init();
@@ -19,7 +19,7 @@ if ($ENV{REQUEST_METHOD}) {
 my $check_date = BOM::Utility::Date->new(time - 86400)->date;
 
 #connect to collector for getting data
-my $report_mapper = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
+my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
     broker_code => 'FOG',
     operation   => 'collector'
 });
