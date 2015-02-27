@@ -74,12 +74,10 @@ has _connection_builder => (
 
 sub _build__connection_builder {
 
-    my $cdb = BOM::Database::ClientDB->new({
+    return BOM::Database::ClientDB->new({
         broker_code => 'FOG',
         operation   => 'collector',
     });
-    $cdb->db->dbh->do("SET statement_timeout TO " . 900_000);
-    return $cdb;
 }
 
 has live_open_bets => (
