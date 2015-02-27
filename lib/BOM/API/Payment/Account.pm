@@ -6,7 +6,7 @@ use Moo;
 with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Platform::Client;
-use BOM::Platform::Data::Persistence::DataMapper::Account;
+use BOM::Database::DataMapper::Account;
 use Try::Tiny;
 
 sub account_GET {

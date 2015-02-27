@@ -9,7 +9,7 @@ use Try::Tiny;
 use Scalar::Util qw/blessed/;
 use BOM::API::Payment::DoughFlow::Backend;
 use BOM::Utility::Date;
-use BOM::Platform::Data::Persistence::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment;
 
 =head2 record
 
