@@ -108,6 +108,7 @@ foreach my $loginid (@approved, @rejected) {
             to                 => $client->email,
             subject            => $email_subject,
             message            => [$email_content],
+            template_loginid   => $loginid,
             use_email_template => 1,
         });
         $client->add_note($email_subject, $email_content);
