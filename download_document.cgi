@@ -30,8 +30,6 @@ my $dbloc = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $full_path;
 if ($category eq '192_result') {
     $full_path = "$dbloc/f_accounts/$broker/192com_authentication/$path";
-} elsif ($category eq 'attorney_granters') {
-    $full_path = "$dbloc/attorney_granters/$broker/$path";
 } elsif ($category eq 'temp') {
     $full_path = BOM::Platform::Runtime->instance->app_config->system->directory->tmp . $path;
 } else {
