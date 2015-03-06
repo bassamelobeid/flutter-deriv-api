@@ -20,11 +20,16 @@ use f_brokerincludeall;
 
 use List::Util qw( min max );
 
+use perlchartdir;
+
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Platform::Plack qw( PrintContentType_image );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
+
+# Set Chart Director license key here
+perlchartdir::setLicenseCode('RDST-2556-FV5X-NX9G-BD82-E751');
 
 my %bet_params = %{shortcode_to_parameters(request()->param('shortcode'), request()->param('currency'))};
 my $bet = produce_contract(\%bet_params);
