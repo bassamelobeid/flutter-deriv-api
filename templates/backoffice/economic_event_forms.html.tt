@@ -41,12 +41,3 @@
 </FORM>
 
 
-<p><b> Upload Bloomberg Economic Events</b></p> 
-<FORM NAME="bloomberg_eco" ACTION="[% ee_upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
-    <table>
-        <tr><td>Please select the file to upload</td>
-            <td><INPUT type="file" name="bloomberg_eco_file" value="" size="45"></td></tr>
-        <tr><INPUT type="hidden" name="process_bloomberg_economic_events" value="1"></tr>
-        <tr><td><input type="submit" name="submit_bb_eco" value="Process Excel File"></td></tr>
-    </table>
-</FORM>
