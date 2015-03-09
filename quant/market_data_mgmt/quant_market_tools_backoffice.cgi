@@ -69,7 +69,6 @@ my $event_name                = request()->param('event_name');
 my $release_date              = request()->param('release_date');
 my $source                    = request()->param('source');
 my $add_news_event            = request()->param('add_news_event');
-my $remove_news_id            = request()->param('remove_news_id');
 my $save_economic_event       = request()->param('save_economic_event');
 my $autoupdate                = request()->param('autoupdate');
 my $display                   = BOM::MarketData::Display::EconomicEvent->new;
@@ -113,30 +112,7 @@ if ($autoupdate) {
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
     }
-} elsif ($remove_news_id) {
-    my $dm = BOM::MarketData::Fetcher::EconomicEvent->new();
-    eval {
-        my @docs = $dm->retrieve_doc_with_view({
-            symbol       => $symbol,
-            event_name   => $event_name,
-            release_date => $release_date
-        });
-        my $doc_num = scalar @docs;
-        if ($doc_num) {
-            my @deleted = map { $_->delete } @docs;
-            print scalar @deleted . ' document(s) deleted</br></br>';
-        } else {
-            print 'No document found</br></br>';
-        }
-    };
-
-    if (my $error = $@) {
-        print "Document deletion error: $error";
-        get_logger->error($error);
-    }
-    $remove_news_id = 0;
 }
-
 # Display economic events calendar
 my $today = BOM::Utility::Date->new;
 print '<b>The table below shows the economic events that will take place today (' . $today->date_ddmmmyyyy . ')</b></br></br>';
