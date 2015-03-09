@@ -136,7 +136,6 @@ if ($autoupdate) {
     }
     $remove_news_id = 0;
 }
-}
 
 # Display economic events calendar
 my $today = BOM::Utility::Date->new;
