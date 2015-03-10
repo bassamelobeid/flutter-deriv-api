@@ -10,6 +10,9 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
 use CGI;
 use BOM::Platform::Sysinit ();
+use BOM::MarketData::Fetcher::VolSurface;
+use BOM::MarketData::VolSurface::Moneyness;
+use BOM::Market::Underlying;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -35,7 +38,7 @@ foreach my $underlying_symbol (@underlyings) {
         $calibration_results{$underlying_symbol} = display($underlying_symbol);
         $template_name = 'backoffice/calibrator_param.html.tt';
     } else {
-        $calibration_results{$underlying_symbol} = BOM::Market::Underlying->new($underlying_symbol)->parameterization || {};
+        $calibration_results{$underlying_symbol} = BOM::MarketData::VolSurface::Moneyness->new({underlying => BOM::Market::Underlying->new($underlying_symbol)})->parameterization || {};
         $template_name = 'backoffice/manual_update_calibration_param.html.tt';
     }
 }
@@ -65,7 +68,7 @@ sub display {
     my %calibration_results;
     my $GD         = BOM::Utility::Graph::GD->new();
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
-    my $volsurface = BOM::Market::PricingInputs::Couch::VolSurface->new->fetch_surface({
+    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
         underlying => $underlying,
     });
     my $new_values            = $volsurface->compute_parameterization;
