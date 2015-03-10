@@ -64,26 +64,23 @@ if (request()->param('perform_actions')) {
             $fmb_id =~ s/^fmb_(\d+)$/$1/;
             my $bet_info = first { $_->{fmb_id} == $fmb_id } @$expired_unsold;
             die $fmb_id . '  cannot be settled with this tool.' unless $bet_info;
-            my $client = BOM::Platform::Client::get_instance({'loginid' => $bet_info->{loginid}});
-            my $fmb =
-                BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])
-                ->[0];
 
-            my $bet = produce_contract($fmb, $bet_info->{currency});
-            my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
-                bet => $fmb,
-                db  => $broker_db,
-            });
-
-            my $sell_time = BOM::Utility::Date->new->db_timestamp;
-            if ($action eq 'cancel') {
-                # First we sell off for 0.
-                $fmb_helper->sell_bet({
-                    sell_price    => 0,
-                    sell_time     => $sell_time,
+            BOM::Database::Helper::FinancialMarketBet->new({
+                transaction_data => {
                     staff_loginid => $staff_name,
-                });
-                # Now adjust their account for the purchase price
+                },
+                bet_data => {
+                    id         => $fmb_id,
+                    sell_price => $action eq 'win' ? $bet_info->{payout} : 0,
+                    sell_time  => BOM::Utility::Date->new->db_timestamp,
+                },
+                account_data => {client_loginid => $bet_info->{loginid}, currency_code => $bet_info->{currency}},
+                db           => $broker_db
+            })->sell_bet;
+
+            if ($action eq 'cancel') {
+                # For cancelled bets, now adjust their account for the purchase price
+                my $client = BOM::Platform::Client::get_instance({'loginid' => $bet_info->{loginid}});
                 my $remark = 'Adjustment bet purchase ref ' . $bet_info->{ref};
                 $client->payment_legacy_payment(
                     currency     => $bet_info->{currency},
@@ -92,23 +89,7 @@ if (request()->param('perform_actions')) {
                     staff        => $staff_name,
                     payment_type => 'adjustment_purchase',
                 );
-            } elsif ($action eq 'loss') {
-                # Here we just the open position for 0
-                $fmb_helper->sell_bet({
-                    sell_price    => 0,
-                    sell_time     => $sell_time,
-                    staff_loginid => $staff_name,
-                });
-
-            } elsif ($action eq 'win') {
-                # Here we just the open position for full payout
-                $fmb_helper->sell_bet({
-                    sell_price    => $bet_info->{payout},
-                    sell_time     => $sell_time,
-                    staff_loginid => $staff_name,
-                });
             }
-
         }
     }
     catch {
