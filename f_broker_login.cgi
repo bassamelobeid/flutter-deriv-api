@@ -179,36 +179,22 @@ if (BOM::Platform::Auth0::has_authorisation(['Marketing'])) {
 	</table>~;
 }
 
-# RISK ASSESSMENT, MONITORING & MANAGEMENT
 if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
     print qq~
 	<table class="Grey3Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
 			<tr class="GreyLabel">
-				<td class="whitelabel" colspan="2">QUANT RISK ASSESSMENT, MONITORING, MANAGEMENT</td>
+				<td class="whitelabel" colspan="2">QUANT TOOLS</td>
 			</tr>
 			<tr>
-				<td align="center" width="50%">
-					<p><b>RISK MONITORING</b></p>
-					<form action="~ . request()->url_for('backoffice/quant/risk/monitoring/risklogin.cgi') . qq~" method="post"><font size=2>
-						<b>$brokerselection</b>
-						&nbsp;<input type="submit" value="RISK MONITORING">
+				<td align="center" colspan="2">
+					<p><b>RISK DASHBOARD</b></p>
+					<form action="~ . request()->url_for('backoffice/quant/risk_dashboard.cgi') . qq~" method="post"><font size=2>
+						<input type="submit" value="RISK DASHBOARD">
 					</font></form>
-				</td>
-            </tr>
-        </tbody>
-    </table>~;
-}
-
-# MATHS & BET PRICINGS
-if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
-    print qq~
-	<table class="Grey3Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
-		<tbody>
-			<tr class="GreyLabel">
-				<td class="whitelabel" colspan="2">QUANT MARKET DATA MANAGEMENT, PRICING ANALYSIS</td>
 			</tr>
 			<tr>
+				</td>
 				<td align="center" width="50%">
 					<p><b>QUANT MARKET DATA</b></p>
 					<form action="~ . request()->url_for('backoffice/f_bet_iv.cgi') . qq~" method="post"><font size=2>
@@ -217,10 +203,11 @@ if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
 				</td>
 				<td align="center" width="50%">
 					<p><b>CONTRACT SETTLEMENT</b></p>
-                <form action="~
-        . request()->url_for('backoffice/quant/settle_contracts.cgi')
-        . qq~" method="post"><font size=2>Broker code : <select name=broker> ~ . set_selected_item($broker, $allbrokercodes) . qq~</select> <input type="submit" value="CONTRACT SETTLEMENT"></font></form>
-                </td>
+					<form action="~ . request()->url_for('backoffice/quant/settle_contracts.cgi') . qq~" method="post"><font size=2>
+						<b>$brokerselection</b>
+						&nbsp;<input type="submit" value="CONTRACT SETTLEMENT">
+					</font></form>
+				</td>
 			</tr>
 				<td align="center" width="50%">
 					<p><b>CREATE MANUAL TRANSACTION</b></p>
