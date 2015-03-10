@@ -179,5 +179,5 @@ my $errlayer = $c->addBoxWhiskerLayer(
 $errlayer->setUseYAxis2;
 $errlayer->setDataGap(0.8);
 
-PrintContentType_image('png');
-print $c->makeChart2($perlchartdir::PNG);
+PrintContentType_image('svg+xml');
+print $c->makeChart2($perlchartdir::SVG);
