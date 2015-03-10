@@ -70,13 +70,14 @@ my %prices = (
     pricing_mu       => [],
 );
 
-my $step_epoch = $start->epoch;
 my $graph_more = 1;
 my $expired    = 0;
+my $show_date  = 1;
+my $when       = $start;
+
 my $value;
 
 while ($graph_more) {
-    my $when = BOM::Utility::Date->new($step_epoch);
     $bet = make_similar_contract($bet, {priced_at => $when});
 
     if (not $bet->current_spot) {
@@ -87,7 +88,7 @@ while ($graph_more) {
             $value      = $bet->value / $bet->payout;    # Should go to 0 or 1 probability
             $graph_more = 0 if ($bet->tick_expiry);      # Don't know when it ends, so when it expires, stop.
         }
-        push @times, $when->datetime;
+        push @times, ($show_date) ? $when->datetime : $when->time_hhmmss;
         push @spots, $bet->current_spot;
         foreach my $attr (keys %prices) {
             my $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
@@ -103,9 +104,13 @@ while ($graph_more) {
         push @wins,      100;
         push @losses,    0;
 
-        $graph_more = 0 if ($step_epoch >= $end->epoch);
-        $step_epoch += $timestep->seconds;
-        $step_epoch = min($step_epoch, $end->epoch);    # This makes the last step the wrong size sometimes, but so be it.
+        if (!$when->is_before($end)) {
+            $graph_more = 0;
+        } else {
+            my $next_step = $when->plus_time_interval($timestep);
+            $show_date = ($next_step->days_between($when)) ? 1    : 0;             # Show the date only when we switch days.
+            $when      = ($when->is_after($end))           ? $end : $next_step;    # This makes the last step the wrong size sometimes, but so be it.
+        }
     }
 }
 
