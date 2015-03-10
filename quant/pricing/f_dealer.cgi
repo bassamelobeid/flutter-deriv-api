@@ -12,9 +12,9 @@ use File::ReadBackwards;
 
 use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
-use BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
-use BOM::Platform::Helper::Model::FinancialMarketBet;
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
+use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
@@ -88,13 +88,13 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
     }
 
     # Further error checks
-    my $fmb_mapper = BOM::Platform::Data::Persistence::DataMapper::FinancialMarketBet->new({
+    my $fmb_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         client_loginid => $loginID,
         currency_code  => $currency,
     });
 
     if ($buysell eq 'BUY') {
-        my $bal = BOM::Platform::Data::Persistence::DataMapper::Account->new({
+        my $bal = BOM::Database::DataMapper::Account->new({
                 'client_loginid' => $loginID,
                 'currency_code'  => $currency
             })->get_balance();
@@ -122,12 +122,12 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
             die "Account stuck in previous transaction $loginID";
         }
 
-        my $db = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+        my $db = BOM::Database::ClientDB->new({
                                 broker_code => $broker,
             })->db;
 
         my $fmbs       = $fmb_mapper->get_fmb_by_shortcode($betcode);
-        my $fmb_helper = BOM::Platform::Helper::Model::FinancialMarketBet->new({
+        my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
             bet => $fmbs->[0],
             db  => $db
         });

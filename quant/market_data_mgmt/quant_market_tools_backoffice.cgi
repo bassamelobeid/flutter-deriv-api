@@ -20,7 +20,6 @@ use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
 use BOM::Utility::Date;
 use BOM::MarketData::Fetcher::EconomicEvent;
-use BOM::MarketData::Parser::Bloomberg::EconomicEvent;
 use BOM::Utility::Log4perl qw( get_logger );
 
 my $broker = request()->broker->code;
@@ -70,10 +69,8 @@ my $event_name                = request()->param('event_name');
 my $release_date              = request()->param('release_date');
 my $source                    = request()->param('source');
 my $add_news_event            = request()->param('add_news_event');
-my $remove_news_id            = request()->param('remove_news_id');
 my $save_economic_event       = request()->param('save_economic_event');
 my $autoupdate                = request()->param('autoupdate');
-my $bloomberg_economic_events = request()->param('process_bloomberg_economic_events');
 my $display                   = BOM::MarketData::Display::EconomicEvent->new;
 
 # Manual cron runner for economic events
@@ -115,45 +112,7 @@ if ($autoupdate) {
         print 'Econmic Announcement saved!</br></br>';
         $save_economic_event = 0;
     }
-} elsif ($remove_news_id) {
-    my $dm = BOM::MarketData::Fetcher::EconomicEvent->new();
-    eval {
-        my @docs = $dm->retrieve_doc_with_view({
-            symbol       => $symbol,
-            event_name   => $event_name,
-            release_date => $release_date
-        });
-        my $doc_num = scalar @docs;
-        if ($doc_num) {
-            my @deleted = map { $_->delete } @docs;
-            print scalar @deleted . ' document(s) deleted</br></br>';
-        } else {
-            print 'No document found</br></br>';
-        }
-    };
-
-    if (my $error = $@) {
-        print "Document deletion error: $error";
-        get_logger->error($error);
-    }
-    $remove_news_id = 0;
-} elsif ($bloomberg_economic_events) {
-
-    my $cgi = new CGI;
-    my $economic_event_saved;
-    my $file   = $cgi->param('bloomberg_eco_file');
-    my $now    = BOM::Utility::Date->new;
-    my $parser = BOM::MarketData::Parser::Bloomberg::EconomicEvent->new;
-    my $dm     = BOM::MarketData::Fetcher::EconomicEvent->new;
-    eval { $parser->process_economic_events($now, $file); };
-
-    if (my $error = $@) {
-        print "Document deletion error: $error";
-        get_logger->error($error);
-    }
-
 }
-
 # Display economic events calendar
 my $today = BOM::Utility::Date->new;
 print '<b>The table below shows the economic events that will take place today (' . $today->date_ddmmmyyyy . ')</b></br></br>';

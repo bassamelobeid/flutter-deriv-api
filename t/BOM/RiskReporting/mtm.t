@@ -17,7 +17,7 @@ use BOM::Utility::Date;
 use BOM::Market::Underlying;
 use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
-use BOM::Platform::Data::Persistence::DataMapper::CollectorReporting;
+use BOM::Database::DataMapper::CollectorReporting;
 
 initialize_realtime_ticks_db();
 
@@ -54,7 +54,7 @@ foreach my $symbol (keys %date_string) {
 subtest 'realtime report generation' => sub {
     plan tests => 3;
 
-    my $dm = BOM::Platform::Data::Persistence::DataMapper::CollectorReporting->new({
+    my $dm = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
     });
 

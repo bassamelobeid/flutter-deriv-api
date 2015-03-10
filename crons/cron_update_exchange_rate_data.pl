@@ -5,8 +5,8 @@ use strict;
 use warnings;
 
 use BOM::Platform::Sysinit ();
-use BOM::Platform::Model::ExchangeRate;
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::Model::ExchangeRate;
+use BOM::Database::ClientDB;
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
 use BOM::Utility::Log4perl qw( get_logger );
@@ -27,7 +27,7 @@ my $dbs;
 foreach my $broker ('FOG') {
     my $operation = ($broker eq 'FOG') ? 'collector' : 'write';
 
-    $dbs->{$broker} = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+    $dbs->{$broker} = BOM::Database::ClientDB->new({
             broker_code => $broker,
             operation   => $operation,
         })->db;
@@ -52,7 +52,7 @@ foreach my $currency (@all_currencies) {
 
     # Insert exchange rate
     foreach my $broker (keys %{$dbs}) {
-        my $exchange_rate = BOM::Platform::Model::ExchangeRate->new({
+        my $exchange_rate = BOM::Database::Model::ExchangeRate->new({
                 data_object_params => {
                     source_currency => $currency,
                     target_currency => 'USD',

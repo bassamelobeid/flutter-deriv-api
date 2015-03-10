@@ -19,13 +19,11 @@ foreach my $loginID (@loginIDarray) {
     if ($loginID =~ /^\D+\d+$/) {
         Bar("$loginID Login History");
 
-        my $client = BOM::Platform::Client::get_instance({'loginid' => $loginID});
-
-        my $login_history_result = get_client_login_history_arrayref($client);
+        my $login_history_result = get_client_login_history_arrayref($loginID);
 
         print '<pre>';
         if (not $login_history_result) {
-            print '<p>There is no login history record for client [' . $client->loginid . ']</p>';
+            print '<p>There is no login history record for client [' . $loginID . ']</p>';
         }
 
         foreach my $login_history (@{$login_history_result}) {

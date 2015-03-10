@@ -7,7 +7,7 @@ use BOM::Platform::Context;
 use JSON;
 
 use f_brokerincludeall;
-use BOM::Platform::Data::Persistence::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -108,6 +108,7 @@ foreach my $loginid (@approved, @rejected) {
             to                 => $client->email,
             subject            => $email_subject,
             message            => [$email_content],
+            template_loginid   => $loginid,
             use_email_template => 1,
         });
         $client->add_note($email_subject, $email_content);

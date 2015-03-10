@@ -3,6 +3,10 @@ perl:
     - "5.14.2"
 env:
     - PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi:/home/git/regentmarkets/bom-utility/lib:/home/git/bom/lib:/home/git/bom/database/lib
+notifications:
+  slack:
+    rooms:
+      - binaryteam:AzxKOjpwZXWze8XiQEEcNtij#z-builds
 addons:
     postgresql: "9.3"
 services:

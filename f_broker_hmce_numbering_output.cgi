@@ -3,7 +3,7 @@ package main;
 use strict 'vars';
 
 use f_brokerincludeall;
-use BOM::Platform::Data::Persistence::DataMapper::Transaction;
+use BOM::Database::DataMapper::Transaction;
 use Try::Tiny;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType_excel );
@@ -27,7 +27,7 @@ my $action_type = request()->param('action_type');
 my $start       = BOM::Utility::Date->new(request()->param('start'))->db_timestamp;
 my $end         = BOM::Utility::Date->new(request()->param('end'))->db_timestamp;
 
-my $txn_mapper = BOM::Platform::Data::Persistence::DataMapper::Transaction->new({
+my $txn_mapper = BOM::Database::DataMapper::Transaction->new({
     'broker_code' => $broker,
 });
 

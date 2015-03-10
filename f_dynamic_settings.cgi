@@ -2,7 +2,7 @@
 package main;
 
 use strict 'vars';
-use BOM::Platform::Backoffice::Helper::DynamicSettings;
+use BOM::DynamicSettings;
 use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
@@ -17,7 +17,7 @@ PrintContentType();
 
 BrokerPresentation('DYNAMIC SETTINGS MANAGEMENT');
 
-my @global_settings = BOM::Platform::Backoffice::Helper::DynamicSettings::get_all_settings_list('global');
+my @global_settings = BOM::DynamicSettings::get_all_settings_list('global');
 
 my $settings_list = [];
 if (request()->param('page') eq 'global') {
@@ -34,7 +34,7 @@ if (request()->param('page') eq 'global') {
 
     if ($authorisations->{$group_to_display}) {
         BOM::Platform::Auth0::can_access([$authorisations->{$group_to_display}]);
-        push @{$settings_list}, @{BOM::Platform::Backoffice::Helper::DynamicSettings::get_settings_by_group($group_to_display)};
+        push @{$settings_list}, @{BOM::DynamicSettings::get_settings_by_group($group_to_display)};
     } else {
         print "Access restricted.";
         code_exit_BO();
@@ -58,7 +58,7 @@ my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
 if (not $localhost->has_role('couchdb_master')) {
     print "<div id=\"message\"><div id=\"error\">This server is not Dynamic Settings Master and your changes won't be saved.</div></div><br />";
 } else {
-    BOM::Platform::Backoffice::Helper::DynamicSettings::save_settings({
+    BOM::DynamicSettings::save_settings({
         'settings'          => request()->params,
         'settings_in_group' => $settings_list,
         'save'              => request()->param('submitted'),
@@ -75,7 +75,7 @@ if (request()->param('page') eq 'global') {
 }
 
 push @send_to_template,
-    BOM::Platform::Backoffice::Helper::DynamicSettings::generate_settings_branch({
+    BOM::DynamicSettings::generate_settings_branch({
         settings          => $all_settings,
         settings_in_group => $settings_list,
         group             => request()->param('group'),

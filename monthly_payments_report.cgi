@@ -9,7 +9,7 @@ use DateTime;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType_excel );
-use BOM::Platform::Data::Persistence::ConnectionBuilder;
+use BOM::Database::ClientDB;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -63,7 +63,7 @@ my $sql = <<HERE;
 
 HERE
 
-my $dbh = BOM::Platform::Data::Persistence::ConnectionBuilder->new({
+my $dbh = BOM::Database::ClientDB->new({
         broker_code => $broker,
             })->db->dbh;
 

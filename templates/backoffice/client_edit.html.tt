@@ -16,18 +16,6 @@ table#client_edit td{
     text-transform:uppercase;
     font-weight:bold;
 }
-.attorney_account {
-    border:5px dotted red;
-}
-.attorney_account .small_header {
-    color:red;
-}
-.granter_account {
-    border:5px dotted gold;
-}
-.granter_account .small_header {
-    color:orange;
-}
 .poa_header {
     font-size:14px;
     color:red;
@@ -52,26 +40,11 @@ table#client_edit td{
 
 [% yes_no_options = [{value => 1, text => 'yes'} {value => 0, text => 'no'}] %]
 
-[% IF client.attorney %]
-<h1 class="poa_header">This is an ATTORNEY MASTER ACCOUNT. (<a href="[%= request.url_for('backoffice/attorney_granter.cgi', { action => 'show_granters', attorney_client_loginid => client.loginid, broker => client.broker}) =%]">see granters</a>)</h1>
-[% END %]
-
-[% IF attorney_granter %]
-    <h1 class="poa_header">
-        Client auto-sell is DISABLED while the attorney flag is set.<br>
-        [% IF attorney_granter.approved %]
-            This client HAS GRANTED PERMISSION to attorney master account
-        [% ELSE %]
-            This client is WAITING OUR APPROVAL to grant permission to attorney master account
-        [% END %]
-        (<a href="[%= request.url_for('backoffice/f_clientloginid_edit.cgi', {broker => client.broker, loginID => attorney_granter.attorney_client_loginid}) =%]">[% attorney_granter.attorney_client_loginid %]</a>).
-    </h1>
-[% END %]
 [% IF is_vip %]
     <h1 class="vip_notice">This is a VIP CLIENT since [% vip_since %]</h1>
 [% END %]
 
-<table border="0" width="100%" id="client_edit"[% IF client.attorney %] class="attorney_account"[% ELSE %][% IF attorney_granter %] class="granter_account"[% END %][% END %]>
+<table border="0" width="100%" id="client_edit">
     <tr>
         <td class="label">BROKER</td>
         <td>: <b>[% client.broker %]</b> <input type="hidden" name="edit_client_loginid" value="[% client.loginid %]"></td>

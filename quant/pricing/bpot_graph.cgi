@@ -20,14 +20,18 @@ use f_brokerincludeall;
 
 use List::Util qw( min max );
 
+use perlchartdir;
+
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Platform::Plack qw( PrintContentType_image );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
-my %bet_params = %{shortcode_to_parameters(request()->param('shortcode'), request()->param('currency'))};
-my $bet = produce_contract(\%bet_params);
+# Set Chart Director license key here
+perlchartdir::setLicenseCode('RDST-2556-FV5X-NX9G-BD82-E751');
+
+my $bet = produce_contract(request()->param('shortcode'), request()->param('currency'));
 
 my $start = (request()->param('start')) ? BOM::Utility::Date->new(request()->param('start')) : $bet->date_start;
 my $end =
@@ -43,7 +47,7 @@ if ($end->epoch > time) {
     $end = BOM::Utility::Date->new;
 }
 my $duration = $end->epoch - $start->epoch;
-my $interval = ($bet->tick_expiry) ? '1s' : max(1, request()->param('timestep') || int($duration / 20));
+my $interval = ($bet->tick_expiry) ? '1s' : request()->param('timestep') || max(1, int($duration / 20));
 my $timestep = Time::Duration::Concise::Localize->new(interval => $interval);
 
 if ($duration / $timestep->seconds > 500) {
@@ -73,8 +77,7 @@ my $value;
 
 while ($graph_more) {
     my $when = BOM::Utility::Date->new($step_epoch);
-    $bet_params{date_pricing} = $when;
-    $bet = produce_contract(\%bet_params);
+    $bet = make_similar_contract($bet, {priced_at => $when});
 
     if (not $bet->current_spot) {
         $graph_more = 0;
@@ -84,7 +87,7 @@ while ($graph_more) {
             $value      = $bet->value / $bet->payout;    # Should go to 0 or 1 probability
             $graph_more = 0 if ($bet->tick_expiry);      # Don't know when it ends, so when it expires, stop.
         }
-        push @times, sprintf('%02d', $when->month) . '/' . sprintf('%02d', $when->day_of_month) . ' ' . $when->time_hhmmss;
+        push @times, $when->datetime;
         push @spots, $bet->current_spot;
         foreach my $attr (keys %prices) {
             my $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
