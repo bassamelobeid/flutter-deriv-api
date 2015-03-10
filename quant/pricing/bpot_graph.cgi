@@ -22,7 +22,7 @@ use List::Util qw( min max );
 
 use perlchartdir;
 
-use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use BOM::Platform::Plack qw( PrintContentType_image );
 use BOM::Platform::Sysinit ();
