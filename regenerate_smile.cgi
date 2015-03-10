@@ -13,6 +13,7 @@ use BOM::Platform::Plack qw( PrintContentType_JSON );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
+use BOM::Platform::Context qw(request);
 use CGI;
 use List::Util qw(max);
 use JSON qw(to_json from_json);
@@ -22,6 +23,7 @@ use URL::Encode qw(url_decode);
 my $cgi    = CGI->new();
 my $symbol = $cgi->param('symbol');
 my ($ori_param, $altered_param) = map { $cgi->param($_) } qw(ori altered);
+my $ori_param = from_json($ori_param);
 $altered_param = from_json($altered_param);
 
 my $response;
@@ -31,7 +33,7 @@ try {
         underlying => $underlying,
     });
     my %ori_surface = map { $_ => $volsurface->surface->{$_}->{smile} } keys %{$volsurface->surface};
-    my $calibrated_surface = $volsurface->clone({parameterization => {values => from_json($ori_param)}})->calibrated_surface();
+    my $calibrated_surface = $volsurface->clone({parameterization => {values => $ori_param}})->calibrated_surface();
     my $altered_volsurface = $volsurface->clone({parameterization => {values => $altered_param}});
     my @altered_param_in_array     = map { $altered_param->{$_} } @{$altered_volsurface->calibration_param_names};
     my $new_calibration_error      = $altered_volsurface->function_to_optimize(\@altered_param_in_array);
@@ -73,7 +75,7 @@ try {
                 y_label     => 'Volatility',
                 y_max_value => roundnear(0.001, $y_max_value * 1.1),
             });
-        $new_graphs->{$term} = request()->url_for('temp/' . $calib_filename);
+        $new_graphs->{$term} = request()->url_for('temp/' . $calib_filename)->to_string;
     }
     $response = {
         success               => 1,

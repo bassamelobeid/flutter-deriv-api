@@ -141,16 +141,6 @@ sub debug_link {
         content => $dvol,
         };
 
-    # calculate vol from historical ticks
-    my $historic_vol = $self->_get_historical_vol();
-    push @{$tabs_content},
-        {
-        label   => 'Historic Vol',
-        url     => 'hv',
-        content => $historic_vol,
-        class   => 'hvol_tab_' . $bet->bet_type->id,
-        };
-
     # rates
     if (grep { $bet->underlying->market->name eq $_ } ('forex', 'commodities', 'indices')) {
         push @{$tabs_content},
@@ -159,22 +149,6 @@ sub debug_link {
             url     => 'rq',
             content => $self->_get_rates()};
     }
-
-    push @{$tabs_content},
-        {
-        label   => 'VCAL',
-        url     => 'vcal',
-        content => $self->_get_vcal(),
-        class   => 'vcal_tab',
-        };
-
-    my $bpot_url = 'bp';
-    push @{$tabs_content},
-        {
-        label   => 'BPOT',
-        url     => $bpot_url,
-        content => $self->_get_bpot($bpot_url),
-        };
 
     my $debug_link;
     BOM::Platform::Context::template->process(
@@ -231,55 +205,6 @@ sub _get_rates {
     ) || die BOM::Platform::Context::template->error;
 
     return $rates_content;
-}
-
-sub _get_bpot {
-    my ($self, $bpot_url) = @_;
-    my $bet = $self->bet;
-
-    # BPOT, default graph 5 days back
-    my $start     = $bet->date_start->epoch;
-    my $end       = $bet->date_expiry->epoch;
-    my $graph_url = BOM::Platform::Context::request()->url_for(
-        'backoffice/quant/pricing/bpot_graph.cgi',
-        {
-            shortcode => $bet->shortcode,
-            currency  => $bet->currency,
-            start     => $start,
-            end       => $end,
-            _r        => rand(100000),
-            last      => 5
-        });
-
-    my $bpot_form;
-    BOM::Platform::Context::template->process(
-        'backoffice/price_debug/bpot_form.html.tt',
-        {
-            graph_url => $graph_url,
-            id        => $bet->bet_type->id . $bpot_url,
-        },
-        \$bpot_form
-    ) || die BOM::Platform::Context::template->error;
-
-    return $bpot_form;
-}
-
-sub _get_vcal {
-    my $vcal_content = q~
-        <h4>VCAL</h4>
-        <p>(Give the calendar a second or two to load the weights. Hover over a day to see day of month.)</p>
-        <div class="vcal"></div>
-    ~;
-
-    return $vcal_content;
-}
-
-sub _get_historical_vol {
-    my $hvol_content = q~
-        <span>Note: Give it some time to load</span>
-        <div id="hvol"></div>
-    ~;
-    return $hvol_content;
 }
 
 sub _get_dvol {
