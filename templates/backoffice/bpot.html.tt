@@ -11,8 +11,9 @@
 </form>
 [% debug_link %]
 [% IF graph_url %]
-    <br>
-    <img src="[% graph_url %]"/>
+    <hr>
+    <iframe src="[% graph_url %]" width="1000" height="500"></iframe>
+    <hr>
     <p>Notes:</p>
 <ul>
     <li>Background color changes indicate a different volatility surface from the previous plotted price.</li>
