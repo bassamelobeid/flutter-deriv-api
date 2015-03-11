@@ -88,7 +88,9 @@ while ($graph_more) {
             $value      = $bet->value / $bet->payout;    # Should go to 0 or 1 probability
             $graph_more = 0 if ($bet->tick_expiry);      # Don't know when it ends, so when it expires, stop.
         }
-        push @times, ($show_date) ? $when->datetime : $when->time_hhmmss;
+        my $date_string = $when->time_hhmmss;
+        $date_string .= ' ' . $when->date_ddmmmyy if ($show_date);
+        push @times, $date_string;
         push @spots, $bet->current_spot;
         foreach my $attr (keys %prices) {
             my $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
