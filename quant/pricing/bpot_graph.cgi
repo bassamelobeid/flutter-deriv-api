@@ -47,7 +47,7 @@ if ($end->epoch > time) {
     $end = BOM::Utility::Date->new;
 }
 my $duration = $end->epoch - $start->epoch;
-my $interval = ($bet->tick_expiry) ? '1s' : request()->param('timestep') || max(1, int($duration / 20));
+my $interval = ($bet->tick_expiry) ? '1s' : request()->param('timestep') || max(1, int($duration / 5));
 my $timestep = Time::Duration::Concise::Localize->new(interval => $interval);
 
 if ($duration / $timestep->seconds > 500) {
