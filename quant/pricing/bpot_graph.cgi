@@ -32,28 +32,9 @@ BOM::Platform::Sysinit::init();
 perlchartdir::setLicenseCode('RDST-2556-FV5X-NX9G-BD82-E751');
 
 my $bet = produce_contract(request()->param('shortcode'), request()->param('currency'));
-
-my $start = (request()->param('start')) ? BOM::Utility::Date->new(request()->param('start')) : $bet->date_start;
-my $end =
-      (request()->param('end')) ? BOM::Utility::Date->new(request()->param('end'))
-    : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->max_tick_expiry_duration)
-    :                             $bet->date_expiry;
-
-if (request()->param('last')) {
-    $start = BOM::Utility::Date->new({epoch => $start->epoch - request()->param('last') * 86400});
-}
-
-if ($end->epoch > time) {
-    $end = BOM::Utility::Date->new;
-}
-my $duration = $end->epoch - $start->epoch;
-my $interval = ($bet->tick_expiry) ? '1s' : request()->param('timestep') || max(1, int($duration / 20));
-my $timestep = Time::Duration::Concise::Localize->new(interval => $interval);
-
-if ($duration / $timestep->seconds > 500) {
-    # Don't let them go crazy asking for thousands of points.
-    $timestep = Time::Duration::Concise::Localize->new(interval => int($duration / 500));
-}
+my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep'));
+my $start    = BOM::Utility::Date->new(request()->param('start'));
+my $end      = BOM::Utility::Date->new(request()->param('end'));
 
 my $barrier = ($bet->bet_type->category->code eq 'digits') ? $bet->current_spot : (defined $bet->barrier) ? $bet->barrier->as_absolute : undef;
 my $barrier2 = ($bet->barrier2) ? $bet->barrier2->as_absolute : $barrier;    # No idea how this might be changed by digit two barriers.
@@ -88,7 +69,9 @@ while ($graph_more) {
             $value      = $bet->value / $bet->payout;    # Should go to 0 or 1 probability
             $graph_more = 0 if ($bet->tick_expiry);      # Don't know when it ends, so when it expires, stop.
         }
-        push @times, ($show_date) ? $when->datetime : $when->time_hhmmss;
+        my $date_string = $when->time_hhmmss;
+        $date_string .= ' ' . $when->date_ddmmmyy if ($show_date);
+        push @times, $date_string;
         push @spots, $bet->current_spot;
         foreach my $attr (keys %prices) {
             my $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
