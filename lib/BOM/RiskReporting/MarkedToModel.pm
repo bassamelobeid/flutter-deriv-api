@@ -29,6 +29,7 @@ use BOM::Database::DataMapper::HistoricalMarkedToMarket;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
+use BOM::Database::DataMapper::CollectorReporting;
 
 
 # This report will only be run on the MLS.
