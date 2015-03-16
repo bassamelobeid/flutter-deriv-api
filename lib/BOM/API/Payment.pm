@@ -37,14 +37,6 @@ sub to_app {    ## no critic (RequireArgUnpacking,Subroutines::RequireFinalRetur
         resource '/client' => sub {
             GET { BOM::API::Payment::Client->new(env => $_[0])->client_GET };
         };
-        resource '/client/address_diff' => sub {
-            GET {
-                BOM::API::Payment::Client->new(env => $_[0])->address_diff_GET;
-            };
-            POST {
-                BOM::API::Payment::Client->new(env => $_[0])->address_diff_POST;
-            };
-        };
 
         resource '/session' => sub {
             GET {
