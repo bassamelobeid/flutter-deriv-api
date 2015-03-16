@@ -308,7 +308,7 @@ my $website          = BOM::Platform::Runtime->instance->website_list->get_by_br
 
 if ($toemail && $informclient) {
 
-    my $subject = $ttype eq 'CREDIT' ? localize('Deposit via Bank Wire') : localize('Withdrawal via Bank Wire');
+    my $subject = $ttype eq 'CREDIT' ? localize('Deposit') : localize('Withdrawal');
     my $who = BOM::View::Language::translate_salutation($salutation) . " $first_name $last_name";
     my $email_body =
           localize('Dear')
@@ -325,6 +325,7 @@ if ($toemail && $informclient) {
         subject            => $website->display_name . ': ' . $subject,
         message            => [$email_body],
         use_email_template => 1,
+        template_loginid   => $loginID,
     });
 
     $client->add_note($subject, $email_body);
