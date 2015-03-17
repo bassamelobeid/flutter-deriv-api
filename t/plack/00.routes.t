@@ -12,14 +12,14 @@ my $r = request('GET', '/ping');
 is $r->code, 200;
 
 my @GETs = (
-    '/account', '/client', '/client/address_diff', '/session', '/session/validate',
+    '/account', '/client', '/session', '/session/validate',
     '/transaction/payment/doughflow/record',
     '/transaction/payment/doughflow/record/',
     '/transaction/payment/doughflow/deposit_validate',
     '/transaction/payment/doughflow/withdrawal_validate'
 );
 my @POSTs = (
-    '/client/address_diff',                      '/transaction/payment/doughflow/deposit',
+    '/transaction/payment/doughflow/deposit',
     '/transaction/payment/doughflow/withdrawal', '/transaction/payment/doughflow/withdrawal_reversal'
 );
 
