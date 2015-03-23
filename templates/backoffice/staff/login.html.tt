@@ -11,5 +11,5 @@
   });
 
 
-  widget.signin({ container: 'root', chrome: true, scope: 'openid profile' });
+  widget.signin({ container: 'root', chrome: true, scope: 'openid profile', showSignup: false });
 </script>
