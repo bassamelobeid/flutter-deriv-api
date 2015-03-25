@@ -224,6 +224,7 @@ sub get_settings_by_group {
                 quants.client_limits.intraday_spot_index_turnover_limit
                 quants.client_limits.tick_expiry_engine_turnover_limit
                 quants.client_limits.digits_turnover_limit
+                quants.client_limits.payout_per_symbol_and_bet_type_limit
                 quants.market_data.extra_vol_diff_by_delta
                 quants.market_data.volsurface_calibration_error_threshold
                 quants.market_data.volatility_source
