@@ -8,7 +8,6 @@ with 'BOM::API::Payment::Role::Plack';
 use Try::Tiny;
 use Scalar::Util qw/blessed/;
 use BOM::API::Payment::DoughFlow::Backend;
-use BOM::Utility::Date;
 use BOM::Database::DataMapper::Payment;
 
 =head2 record
