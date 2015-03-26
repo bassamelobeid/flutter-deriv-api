@@ -97,6 +97,7 @@ sub print_client_details {
     my $stateoptionlist = BOM::View::CGIForm::get_state_option($client->residence);
     my $stateoptions    = '<option value=""></option>';
     $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>| for @$stateoptionlist;
+    my $mga_tnc_status = $client->get_status('mga_tnc_status');
 
     my $template_param = {
         client                  => $client,
@@ -121,6 +122,9 @@ sub print_client_details {
         state_options           => set_selected_item($client->state, $stateoptions),
         show_funds_message      => ($client->residence eq 'gb' and not $client->is_virtual) ? 1 : 0,
         ukgc_funds_status       => $client->get_status('ukgc_funds_protection'),
+        show_mga_tnc_status => $client->loginid =~ /^MLT/ ? 1 : 0,
+        mga_tnc_approval_status => $mga_tnc_status,
+        client_tnc_version      => $mga_tnc_status ? $mga_tnc_status->reason : '',
     };
 
     BOM::Platform::Context::template->process('backoffice/client_edit.html.tt', $template_param, undef, {binmode => ':utf8'})
@@ -451,7 +455,7 @@ sub client_statement_for_backoffice {
 
     my $db = BOM::Database::ClientDB->new({
             client_loginid => $client->loginid,
-                    })->db;
+        })->db;
 
     my $txn_dm = BOM::Database::DataMapper::Transaction->new({
         client_loginid => $client->loginid,

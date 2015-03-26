@@ -426,4 +426,10 @@ table#client_edit td{
             <td>The client acknowledges the funds level of protection are: medium</td>
         </tr>
     [% END %]
+    [% IF show_mga_tnc_status %]
+        <tr>
+            <td class="label"><input type="checkbox" [% IF mga_tnc_approval_status %]checked[% END %] disabled="disabled"/></td>
+            <td>Client acknowledges T&C Version [% client_tnc_version %]</td>
+        </tr>
+    [% END %]
 </table>
