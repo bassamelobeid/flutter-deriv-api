@@ -12,7 +12,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Data::Utility::TestDatabaseFixture::RealtimeBook;
 use BOM::Utility::Date;
 use BOM::Market::Underlying;
 use BOM::RiskReporting::MarkedToModel;
