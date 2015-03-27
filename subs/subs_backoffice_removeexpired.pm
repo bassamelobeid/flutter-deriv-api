@@ -40,10 +40,6 @@ sub Rescind_FreeGifts {
 
         my $client = BOM::Platform::Client->new({loginid => $loginID});
 
-        if (not BOM::Platform::Transaction->freeze_client($loginID)) {
-            die "Account stuck in previous transaction $loginID";
-        }
-
         my $bal = $client->default_account->balance;
         if ($creditamount != $bal) {
             push @report, "$loginID Error with $creditamount != $bal";
@@ -59,7 +55,6 @@ sub Rescind_FreeGifts {
                 push @report, "$loginID rescinded $curr $bal!";
             }
         }
-        BOM::Platform::Transaction->unfreeze_client($loginID);
     }
 
     unlink $lockname;
