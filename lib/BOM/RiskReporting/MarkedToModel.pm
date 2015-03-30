@@ -31,7 +31,6 @@ use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
 
-
 # This report will only be run on the MLS.
 sub generate {
     my $self = shift;
@@ -181,17 +180,19 @@ sub generate {
     };
 }
 
-
 # cache query result for BO Daily Turnover Report
 sub cache_daily_turnover {
-    my $self = shift;
+    my $self         = shift;
     my $pricing_date = shift;
 
     $self->logger->info('query daily turnover to cache in redis');
 
-    my $curr_month = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
-    my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({broker_code => 'FOG', operation => 'collector'});
-    my $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({ date => $curr_month->db_timestamp });
+    my $curr_month    = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
+    my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
+        broker_code => 'FOG',
+        operation   => 'collector'
+    });
+    my $aggregate_transactions = $report_mapper->get_aggregated_sum_of_transactions_of_month({date => $curr_month->db_timestamp});
 
     my $eod_market_values = BOM::Database::DataMapper::HistoricalMarkedToMarket->new({
             broker_code => 'FOG',

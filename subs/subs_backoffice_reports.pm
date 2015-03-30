@@ -10,28 +10,26 @@ use BOM::Utility::Format::Numbers qw(virgule roundnear);
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(in_USD);
 
-
 sub DailyTurnOverReport {
     my ($args, $options) = @_;
-
 
     if ($args->{month} !~ /^\w{3}-\d{2}$/) {
         print "<p>Invalid month $args->{month}</p>";
         code_exit_BO();
     }
 
-    my $initial_note = '(BUY-SELL represents the company profit)';
+    my $initial_note   = '(BUY-SELL represents the company profit)';
     my @all_currencies = BOM::Platform::Runtime->instance->landing_companies->all_currencies;
-    my %rates = map { $_ => in_USD(1, $_) } @all_currencies;
+    my %rates          = map { $_ => in_USD(1, $_) } @all_currencies;
 
     my %template = (
-        initial_note  => $initial_note,
-        risk_report   => request()->url_for("backoffice/quant/risk_dashboard.cgi"),
-        currencies    => \@all_currencies,
-        rates         => \%rates,
-        buy_label     => 'BUY',
-        sell_label    => 'SELL',
-        days          => [],
+        initial_note => $initial_note,
+        risk_report  => request()->url_for("backoffice/quant/risk_dashboard.cgi"),
+        currencies   => \@all_currencies,
+        rates        => \%rates,
+        buy_label    => 'BUY',
+        sell_label   => 'SELL',
+        days         => [],
     );
 
     my $action_bb = 'buy';
@@ -49,7 +47,7 @@ sub DailyTurnOverReport {
 
     # get latest timestamp in redis cache
     my $cache_prefix = 'DAILY_TURNOVER';
-    my $redis_time = Cache::RedisDB->keys($cache_prefix);
+    my $redis_time   = Cache::RedisDB->keys($cache_prefix);
 
     my $latest_time;
     foreach my $time (@{$redis_time}) {
@@ -71,14 +69,14 @@ sub DailyTurnOverReport {
     $cache_query = from_json($cache_query);
 
     my $aggregate_transactions = $cache_query->{agg_txn};
-    my $active_clients = $cache_query->{active_clients};
-    my $eod_market_values = $cache_query->{eod_open_bets_value};
+    my $active_clients         = $cache_query->{active_clients};
+    my $eod_market_values      = $cache_query->{eod_open_bets_value};
 
     # get end of previous month open bets value
-    my $prevaggbets = int($eod_market_values->{$currdate->epoch - 86400}->{market_value});
+    my $prevaggbets  = int($eod_market_values->{$currdate->epoch - 86400}->{market_value});
     my $firstaggbets = $prevaggbets;
 
-    my $days_in_month  = $currdate->days_in_month;
+    my $days_in_month = $currdate->days_in_month;
     foreach my $day (1 .. $days_in_month) {
 
         my $date = $day . '-' . $args->{'month'};

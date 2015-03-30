@@ -46,14 +46,7 @@ sub graph_setup {
     }
 
     # make file name - according to %INPUT hash
-    my $hashcat =
-        $graph_formaty
-        . $graph_formatx
-        . $graph_timeformat
-        . 'yes'
-        . $graph_sizex
-        . $graph_sizey
-        . $graph_xtitle;
+    my $hashcat = $graph_formaty . $graph_formatx . $graph_timeformat . 'yes' . $graph_sizex . $graph_sizey . $graph_xtitle;
     foreach my $hashkey (keys %{request()->params}) {
         $hashcat .= "$hashkey=" . request()->param($hashkey);
     }
