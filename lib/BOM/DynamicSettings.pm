@@ -240,6 +240,7 @@ sub get_settings_by_group {
         it => [qw(
                 cgi.allowed_languages
                 cgi.backoffice.static_url
+                cgi.terms_conditions_version
                 )
         ],
         payments => [qw(
