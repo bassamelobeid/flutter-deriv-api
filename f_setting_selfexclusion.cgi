@@ -52,16 +52,14 @@ if (my $self_exclusion = $client->self_exclusion) {
         $self_exclusion_form->set_field_value('EXCLUDEUNTIL', $exclude_until_date);
     }
 
-    my $all_currencies = join('/', @{request()->available_currencies});
-
     if ($self_exclusion->max_balance) {
         $page .= '<li>'
-            . localize('Maximum account cash balance is currently set to <strong>[_1] [_2]</strong>', $all_currencies, $self_exclusion->max_balance)
+            . localize('Maximum account cash balance is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_balance)
             . '</li>';
     }
     if ($self_exclusion->max_turnover) {
         $page .= '<li>'
-            . localize('Daily Turnover limit is currently set to <strong>[_1] [_2]</strong>', $all_currencies, $self_exclusion->max_turnover)
+            . localize('Daily Turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
             . '</li>';
     }
     if ($self_exclusion->max_open_bets) {

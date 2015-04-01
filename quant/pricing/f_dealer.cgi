@@ -118,25 +118,21 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
     }
 
     if (request()->param('whattodo') eq 'closeatzero') {
-        if (not BOM::Platform::Transaction->freeze_client($loginID)) {
-            die "Account stuck in previous transaction $loginID";
+        my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
+        if ($fmbs and @$fmbs) {
+            BOM::Database::Helper::FinancialMarketBet->new({
+                account_data     => {client_loginid => $loginID, currency_code => $currency},
+                transaction_data => [({staff_loginid => $clerk, remark => request()->param('comment')}) x @$fmbs],
+                bet_data => [map {
+                    {
+                        sell_price => 0,
+                        sell_time  => $now->db_timestamp,
+                        id         => $_->id,
+                    }
+                } @{$fmbs}],
+                db  => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+            })->batch_sell_bet;
         }
-
-        my $db = BOM::Database::ClientDB->new({
-                                broker_code => $broker,
-            })->db;
-
-        my $fmbs       = $fmb_mapper->get_fmb_by_shortcode($betcode);
-        my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new({
-            bet => $fmbs->[0],
-            db  => $db
-        });
-
-        $fmb_helper->sell_bet({
-            sell_price    => 0,
-            sell_time     => $now->db_timestamp,
-            staff_loginid => $clerk,
-        });
     } else {
         # check short code
         my $bet = produce_contract($betcode, $currency);
@@ -150,24 +146,31 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
         }
         # add other checks below..
 
-        if (not BOM::Platform::Transaction->freeze_client($loginID)) {
-            die "Account stuck in previous transaction $loginID";
+        my $contract_id;
+        if ($buysell eq 'SELL') {
+            # need fmbid
+            my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
+            unless ($fmbs and @$fmbs) {
+                print "Error : Contract $betcode not found in database";
+                code_exit_BO();
+            }
+            $contract_id = $fmbs->[0]->id;
         }
+
         #pricing comment
         my $pricingcomment = request()->param('comment');
         my $transaction    = BOM::Product::Transaction->new({
-            client   => $client,
-            contract => $bet,
-            action   => $buysell,
-            price    => $price,
-            comment  => $pricingcomment,
-            staff    => $clerk,
+            client      => $client,
+            contract    => $bet,
+            contract_id => $contract_id,
+            price       => $price,
+            comment     => $pricingcomment,
+            staff       => $clerk,
         });
-        my $error = $transaction->update_client_db;
+        my $method = lc $buysell;
+        my $error = $transaction->$method(skip_validation => 1);
         die $error->{-message_to_client} if $error;
     }
-
-    BOM::Platform::Transaction->unfreeze_client($loginID);
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
