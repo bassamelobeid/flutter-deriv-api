@@ -184,7 +184,6 @@ read_csv_row_and_callback(
                     staff             => $clerk,
                     payment_processor => $payment_processor,
                     trace_id          => $trace_id,
-                    skip_validation   => 1,
                 );
             } or $err = $@;
             BOM::Platform::Transaction->unfreeze_client($login_id);

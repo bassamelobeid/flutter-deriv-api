@@ -229,7 +229,6 @@ if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         currency        => $curr,
         amount          => $signed_amount,
         staff           => $clerk,
-        skip_validation => 1,
     );
 
 } elsif ($ttype eq 'TRANSFER') {
