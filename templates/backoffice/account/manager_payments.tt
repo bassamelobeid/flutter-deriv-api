@@ -73,11 +73,11 @@
 <table>
 <tr>
     <th>Payment Type</th> 
+    <th>                   <label for="skip_validation1">Override Status Checks?</label></th> 
     <th class="all_payment_types external_cashier"      >Trace ID</th> 
     <th class="all_payment_types external_cashier"      >Payment Processor</th> 
     <th class="all_payment_types bank_money_transfer"   >RMG Bank</th> 
     <th class="all_payment_types cash_transfer"         >MTCN</th> 
-    <th class="all_payment_types bank_money_transfer cash_transfer"><label for="overridelimits" >Override Withdrawal Limits?</label></th> 
     <th class="all_payment_types bank_money_transfer cash_transfer"><label for="informclientbyemail" >Notify Client by Email?</label></th> 
 </tr>
 <tr>
@@ -95,6 +95,7 @@
             <option value="cash_transfer"       >Western Union</option>
         </select>
     </td>
+    <td style="text-align:center">                 <input type="checkbox" name="skip_validation" value="on" id="skip_validation1" /></td>
     <td class="all_payment_types external_cashier"><input type="number" name="trace_id" /></td>
     <td class="all_payment_types external_cashier"><input type="text" name="payment_processor" insist/></td>
     <td class="all_payment_types bank_money_transfer">
@@ -108,7 +109,6 @@
     </td>
     <td class="all_payment_types "><input type="text" name="payment_processor" insist/></td>
     <td class="all_payment_types cash_transfer"><input type="text" name="mtcn_number" insist/></td>
-    <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center"><input type="checkbox" name="overridelimits" value="on" id="overridelimits" /></td>
     <td class="all_payment_types bank_money_transfer cash_transfer" style="text-align:center"><input type="checkbox" name="informclientbyemail" value="on" id="informclientbyemail" /></td>
 </tr>
 </table>

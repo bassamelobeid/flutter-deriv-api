@@ -27,6 +27,7 @@ my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
 my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
+my $skip_validation   = $cgi->param('skip_validation')||0;
 my $format            = $confirm || $preview || die "either preview or confirm";
 
 Bar('Batch Credit/Debit to Clients Accounts');
@@ -184,6 +185,7 @@ read_csv_row_and_callback(
                     staff             => $clerk,
                     payment_processor => $payment_processor,
                     trace_id          => $trace_id,
+                    ($skip_validation? (skip_validation=>1): ()),
                 );
             } or $err = $@;
             BOM::Platform::Transaction->unfreeze_client($login_id);
@@ -256,6 +258,7 @@ if ($preview and @invalid_lines == 0) {
     print qq[<div class="inner_bo_box"><h2>Confirm credit/debit clients</h2>
         <form onsubmit="confirm('Are you sure?')">
          <input type="hidden" name="payments_csv_file" value="$payments_csv_file"/>
+         <input type="hidden" name="skip_validation" value="$skip_validation"/>
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
 				<br>Fellow staff name: <input type=text name=DCstaff required size=8>
