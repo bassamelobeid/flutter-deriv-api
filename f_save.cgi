@@ -67,7 +67,7 @@ if ($filen eq 'editvol') {
     my $underlying = BOM::Market::Underlying->new($vol_update_symbol);
     my $market     = $underlying->market->name;
     my $model =
-        ($market eq 'indices')
+        ($underlying->volatility_surface_type eq 'moneyness')
         ? 'BOM::MarketData::VolSurface::Moneyness'
         : 'BOM::MarketData::VolSurface::Delta';
 
