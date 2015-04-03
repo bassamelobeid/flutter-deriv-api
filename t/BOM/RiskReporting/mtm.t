@@ -60,9 +60,7 @@ subtest 'realtime report generation' => sub {
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_new_client({
         broker_code => 'CR',
     });
-    my $USDaccount = BOM::Test::Data::Utility::UnitTestDatabase::create_account({
-        client_loginid  => $client->loginid,
-    });
+    my $USDaccount = $client->set_default_account('USD');
 
     BOM::Test::Data::Utility::TestDatabaseFixture->new(
         'payment_deposit',
