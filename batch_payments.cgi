@@ -6,6 +6,7 @@ use warnings;
 
 use File::ReadBackwards;
 use Path::Tiny;
+use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Numbers qw(to_monetary_number_format roundnear);
@@ -117,19 +118,16 @@ read_csv_row_and_callback(
         my $error;
         {
             $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
-            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
-            $currency ne $client->currency and $error = "client does not trade in currency [$currency]", last;
-            $action !~ /^(debit|credit)$/  and $error = "Invalid transaction type [$action]",            last;
+            $action !~ /^(debit|credit)$/  and $error = "Invalid transaction type [$action]",    last;
             $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
-            ($payment_type ne 'affiliate_reward' && $amount > 1000) and $error = 'Amount not allowed to exceed 1000', last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
+            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
+            my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
-            if ($action eq 'debit') {
-                my $balance = $client->default_account->balance;
-                if ($amount > $balance) {
-                    $error = "Client does not have enough balance to debit. Client current balance is $currency$balance";
-                    last;
-                }
+            unless ($skip_validation) {
+                try   { $client->validate_payment(currency=>$currency, amount=>$signed_amount) }
+                catch { $error = $_ };
+                last if $error;
             }
 
             # check pontential duplicate entry
@@ -145,7 +143,7 @@ read_csv_row_and_callback(
                         comment => $statement_comment
                     }))
             {
-                $error = "Same transaction found in client account. Please check [transaciton id:" . $duplicate_record . ']';
+                $error = "Same transaction found in client account. Check [transaciton id: $duplicate_record]";
                 last;
             }
         }
