@@ -22,6 +22,8 @@
 <form method="POST" action="[%request.url_for('backoffice/batch_payments.cgi')%]" enctype="multipart/form-data">
 
     Use this CSV <input type="file" value="" required name="payments_csv" />
+    <label for="skip_validation4" >Override Status Checks?</label>
+    <input type="checkbox" name="skip_validation" value="on" id="skip_validation4" />
     <button type="submit" name="preview" value="doughflow">PREVIEW DOUGHFLOW PAYMENTS</button>
 
 </form>

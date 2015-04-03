@@ -6,6 +6,7 @@ use warnings;
 
 use File::ReadBackwards;
 use Path::Tiny;
+use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Numbers qw(to_monetary_number_format roundnear);
@@ -27,6 +28,7 @@ my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
 my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
+my $skip_validation   = $cgi->param('skip_validation')||0;
 my $format            = $confirm || $preview || die "either preview or confirm";
 
 Bar('Batch Credit/Debit to Clients Accounts');
@@ -116,19 +118,16 @@ read_csv_row_and_callback(
         my $error;
         {
             $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
-            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
-            $currency ne $client->currency and $error = "client does not trade in currency [$currency]", last;
-            $action !~ /^(debit|credit)$/  and $error = "Invalid transaction type [$action]",            last;
+            $action !~ /^(debit|credit)$/  and $error = "Invalid transaction type [$action]",    last;
             $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
-            ($payment_type ne 'affiliate_reward' && $amount > 1000) and $error = 'Amount not allowed to exceed 1000', last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
+            $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
+            my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
-            if ($action eq 'debit') {
-                my $balance = $client->default_account->balance;
-                if ($amount > $balance) {
-                    $error = "Client does not have enough balance to debit. Client current balance is $currency$balance";
-                    last;
-                }
+            unless ($skip_validation) {
+                try   { $client->validate_payment(currency=>$currency, amount=>$signed_amount) }
+                catch { $error = $_ };
+                last if $error;
             }
 
             # check pontential duplicate entry
@@ -144,7 +143,7 @@ read_csv_row_and_callback(
                         comment => $statement_comment
                     }))
             {
-                $error = "Same transaction found in client account. Please check [transaciton id:" . $duplicate_record . ']';
+                $error = "Same transaction found in client account. Check [transaciton id: $duplicate_record]";
                 last;
             }
         }
@@ -184,7 +183,7 @@ read_csv_row_and_callback(
                     staff             => $clerk,
                     payment_processor => $payment_processor,
                     trace_id          => $trace_id,
-                    skip_validation   => 1,
+                    ($skip_validation? (skip_validation=>1): ()),
                 );
             } or $err = $@;
             BOM::Platform::Transaction->unfreeze_client($login_id);
@@ -257,6 +256,7 @@ if ($preview and @invalid_lines == 0) {
     print qq[<div class="inner_bo_box"><h2>Confirm credit/debit clients</h2>
         <form onsubmit="confirm('Are you sure?')">
          <input type="hidden" name="payments_csv_file" value="$payments_csv_file"/>
+         <input type="hidden" name="skip_validation" value="$skip_validation"/>
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
 				<br>Fellow staff name: <input type=text name=DCstaff required size=8>

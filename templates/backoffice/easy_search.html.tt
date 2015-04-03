@@ -1,0 +1,68 @@
+[% 
+    SET child_classes = [ 
+        'account', 
+        'attorneys', 'client_authentication_document', 'client_lock', 'affiliate', 'client_authorization_code',
+        'client_affiliate_exposure', 'client_authentication_method', 'client_failed_logins',
+        'client_status', 'attorney_granter', 'login_history',
+    ];
+    SET one_to_one_classes = [ 
+        'client_promo_code', 'payment_agent', 'self_exclusion',
+    ];
+%]
+
+<style>
+    .insider { margin: 0px 20px; padding: 12px }
+</style>
+
+<form method="POST">
+    <input name="search" placeholder="[%search||"Search.."%]"></input>
+    <input name="broker" type="hidden" value="[%broker%]"></input>
+</form>
+
+<div class="insider">
+
+[% IF clients %]
+
+    <table>[%
+        FOR client IN clients;
+            href = "?loginid=$client.loginid&broker=$broker";
+            link = "<a href=$href>$client</a>";
+            "<tr><td>$link</td><td>$client.email</td></tr>";
+        END;
+    %]</table>
+
+[% ELSIF client %]
+
+    <h3>
+       <a href=[%client_href%]>[%client%]</a><br/><br/>
+       Country: [%client.residence%] Joined: [%client.date_joined%]
+    </h3>
+
+    [% 
+    FOR class IN one_to_one_classes;
+        hit = client.$class;
+        NEXT UNLESS hit;
+        "<h4>$class</h4>$hit";
+    END %]
+
+    [% limit = 100;
+    FOR child_class IN child_classes;
+        mth1 = "${child_class}_count";
+        mth2 = "find_$child_class";
+        count = client.$mth1;
+        NEXT UNLESS count;
+        hits = client.$mth2('limit',limit);
+        "<h4>$child_class</h4>";
+        "<em>.. showing only $limit of $count entries</em>" IF count >= limit;
+        "<ul>";
+        FOR hit IN hits;
+            "<li>$hit</li>";
+            LAST IF loop.count >= limit;
+        END;
+        "</ul>";
+    END %]
+
+[% END %]
+
+</div>
+
