@@ -6,6 +6,7 @@ use warnings;
 
 use Scalar::Util qw(looks_like_number);
 use Path::Tiny;
+use Try::Tiny;
 use File::ReadBackwards;
 
 use f_brokerincludeall;
@@ -21,6 +22,8 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 
+print qq[<style>p {margin: 12px}</style>];
+
 my $cgi    = new CGI;
 my %params = $cgi->Vars;
 
@@ -33,9 +36,9 @@ for (qw/account amount currency ttype range/) {
 # Why all the delete-params?  Because any remaining form params just get passed directly
 # to the new-style database payment-handlers.  There's no need to mention those in this module.
 
+my $curr      = $params{currency};
 my $loginID   = uc((delete $params{account}    || ''));
 my $toLoginID = uc((delete $params{to_account} || ''));
-my $curr      = delete $params{currency};
 my $amount    = delete $params{amount};
 my $informclient   = delete $params{informclientbyemail};
 my $ttype          = delete $params{ttype};
@@ -43,7 +46,6 @@ my $ajax_only      = delete $params{ajax_only};
 my $DCstaff        = delete $params{DCstaff};
 my $DCcode         = delete $params{DCcode};
 my $range          = delete $params{range};
-my $overridelimits = delete $params{overridelimits};
 
 BOM::Platform::Auth0::can_access(['Payments']);
 my $token = BOM::Platform::Context::request()->bo_cookie->token;
@@ -152,12 +154,6 @@ if (!BOM::Platform::Runtime->instance->app_config->system->on_development || $am
 }
 
 my $acc = $client->set_default_account($curr);    # creates a first account if necessary.
-my $bal = $acc->balance;
-
-if (($ttype =~ /TRANSFER|DEBIT/) and ($bal < $amount)) {
-    print "ERROR: Client balance is only $curr$bal - can't withdraw $curr$amount";
-    code_exit_BO();
-}
 
 # Check Staff Authorisation Limit ##################
 my $staffauthlimit = get_staff_payment_limit($clerk);
@@ -183,26 +179,28 @@ if (
     code_exit_BO();
 }
 
-# Check client withdrawal limits
-if (!$overridelimits) {
-    if ($ttype =~ /DEBIT|TRANSFER/) {
-        Bar('Performing client-side withdrawal limit checks');
+# validate payment (both sides if a transfer)
+unless ($params{skip_validation}) {
+    Bar('Checking payment validation rules');
 
-        print '<p>Performing client-side withdrawal limit checks...</p>'
-            . '<p style="font-style:italic;">Note: the system is now simulating a client-side withdrawal and checking if it gets blocked by the client-side withdrawal limits. You can over-ride this by clicking on the over-ride checkbox on the previous page.</p>'
-            . '<p>If the client-side withdrawal check fails, then the withdrawal will not have been processed.</p>';
+    print qq[<p><em>You can override this with "Override Status Checks"</em></p>];
 
-        print '<p style="color:red;">';
-
-        my $withdrawal_limits = $client->get_withdrawal_limits();
-        BOM::View::Cashier::check_if_client_can_withdraw({
-            client            => $client,
-            amount            => $amount,
-            withdrawal_limits => $withdrawal_limits,
-        });
-        print '</p>';
-
-        print '<p><b>Done.</b> The withdrawal is allowed.</p>';
+    my $cli = $client;
+    eval {
+        if ($ttype eq 'TRANSFER') {
+            $cli->validate_payment( %params, amount=>-$amount);
+            $cli = $toClient;
+            $cli->validate_payment( %params, amount=>$amount);
+        } else {
+            $cli->validate_payment( %params, amount=>$signed_amount);
+        }
+    };
+    if (my $err = $@) {
+        print qq[<p style="color:#F00">$cli Failed. $err</p>];
+        code_exit_BO();
+    } else {
+        print qq[<p style="color:#070">Done. $ttype will be ok.</p>];
+        $params{skip_validation} = 1;
     }
 }
 
@@ -222,29 +220,33 @@ if ($ttype eq 'TRANSFER') {
 
 # NEW PAYMENT HANDLERS ..
 
-if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
+my $leave;
+try {
+    if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
+        $client->smart_payment(
+            %params, # these are payment-type-specific params from the html form.
+            amount   => $signed_amount,
+            staff    => $clerk,
+        );
 
-    $client->smart_payment(
-        %params,    # these are payment-type-specific params from the html form.
-        currency        => $curr,
-        amount          => $signed_amount,
-        staff           => $clerk,
-        skip_validation => 1,
-    );
-
-} elsif ($ttype eq 'TRANSFER') {
-
-    $client->payment_account_transfer(
-        currency => $curr,
-        toClient => $toClient,
-        amount   => $amount,
-        staff    => $clerk,
-        )
-
-}
+    } elsif ($ttype eq 'TRANSFER') {
+        $client->payment_account_transfer(
+            currency => $curr,
+            toClient => $toClient,
+            amount   => $amount,
+            staff    => $clerk,
+            )
+    }
+} catch {
+    print "<p>TRANSACTION ERROR: This payment violated a fundamental database rule.  Details:<br/>$_</p>";
+    $leave = 1;
+    printf STDERR "got here\n";
+};
 
 BOM::Platform::Transaction->unfreeze_client($loginID);
 BOM::Platform::Transaction->unfreeze_client($toLoginID) if $toLoginID;
+
+code_exit_BO() if $leave;
 
 my $now = BOM::Utility::Date->new;
 # Logging

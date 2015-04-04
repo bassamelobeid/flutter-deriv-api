@@ -583,7 +583,7 @@ print '<div><br/>';
 
 my $loglim = 200;
 my $logins = $client->find_login_history(
-    sort_by => 'id desc',
+    sort_by => 'login_date desc',
     limit   => $loglim
 );
 
