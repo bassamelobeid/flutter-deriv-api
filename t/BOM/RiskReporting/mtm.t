@@ -57,7 +57,7 @@ subtest 'realtime report generation' => sub {
         broker_code => 'FOG',
     });
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_new_client({
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
     my $USDaccount = $client->set_default_account('USD');
