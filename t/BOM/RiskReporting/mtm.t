@@ -62,12 +62,11 @@ subtest 'realtime report generation' => sub {
     });
     my $USDaccount = $client->set_default_account('USD');
 
-    BOM::Test::Data::Utility::TestDatabaseFixture->new(
-        'payment_deposit',
-        {
-            amount     => 5000,
-            account_id => $USDaccount->id,
-        })->create;
+    $client->payment_free_gift(
+        currency    => 'USD',
+        amount      => 5000,
+        remark      => 'free gift',
+    );
 
     my $start_time  = $minus5mins;
     my $expiry_time = $now;
