@@ -30,7 +30,7 @@ use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Text::CSV_XS;
-use BOM::Platform::Types qw(bom_time_interval);
+use BOM::System::Types qw(bom_time_interval);
 use Time::Duration::Concise::Localize;
 
 has 'min_contract_length' => (
