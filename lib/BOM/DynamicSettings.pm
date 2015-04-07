@@ -254,7 +254,6 @@ sub get_settings_by_group {
         invisible => [qw(quants.internal.custom_client_limits)],    #Global settings not to be saved from UI.
         marketing => [qw(
                 marketing.email
-                marketing.intercom_io_hash_key
                 marketing.myaffiliates_email
                 )
         ],
