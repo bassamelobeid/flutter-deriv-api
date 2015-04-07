@@ -53,7 +53,7 @@ sub save_dividends {
             );
             if (exists $valid_synthetic{'SYN' . $symbol}) {
                 my $synthetic_dividend = BOM::MarketData::Dividend->new(
-                    symbol          => 'SYN_' . $symbol,
+                    symbol          => 'SYN' . $symbol,
                     rates           => $rates,
                     discrete_points => $discrete_points,
                     recorded_date   => BOM::Utility::Date->new,
