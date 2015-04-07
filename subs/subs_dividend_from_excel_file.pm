@@ -26,6 +26,11 @@ sub process_dividend {
 sub save_dividends {
     my ($data) = @_;
 
+    my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
+        market    => 'indices',
+        submarket => 'fast_index'
+    );
+
     foreach my $symbol (keys %{$data}) {
         my $rates           = $data->{$symbol}->{dividend_yields};
         my $discrete_points = $data->{$symbol}->{discrete_points};
@@ -46,6 +51,16 @@ sub save_dividends {
                 discrete_points => $discrete_points,
                 recorded_date   => BOM::Utility::Date->new,
             );
+            if (exists $valid_synthetic{'SYN' . $symbol}) {
+                my $synthetic_dividend = BOM::MarketData::Dividend->new(
+                    symbol          => 'SYN_' . $symbol,
+                    rates           => $rates,
+                    discrete_points => $discrete_points,
+                    recorded_date   => BOM::Utility::Date->new,
+                );
+                $synthetic_dividend->save;
+            }
+
             $dividends->save;
         }
         catch {
