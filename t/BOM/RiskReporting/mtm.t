@@ -26,7 +26,12 @@ my $plus5mins  = BOM::Utility::Date->new(time + 300);
 my $plus30mins = BOM::Utility::Date->new(time + 1800);
 my $minus5mins = BOM::Utility::Date->new(time - 300);
 
-$fix->new('exchange', {symbol => $_})->create for qw(FOREX RANDOM);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange', $_, 'exchange_config',
+    {
+        symbol          => $_,
+        date            => BOM::Utility::Date->new->datetime_iso8601,
+    }) for (qw/FOREX RANDOM/);
 
 my %date_string = (
     R_50      => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
