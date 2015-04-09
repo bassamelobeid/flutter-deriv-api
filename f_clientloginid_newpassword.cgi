@@ -3,7 +3,6 @@ package main;
 use strict 'vars';
 
 use URL::Encode qw( url_encode );
-use Digest::MD5;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
@@ -12,6 +11,7 @@ use BOM::Database::DAO::Utils::ClientPasswordRecovery;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use BOM::View::LostPassword;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -36,19 +36,16 @@ if (not $email) {
     code_exit_BO();
 }
 
-my $hcstring = $email . time . 'request_password';
-my $token    = Digest::MD5::md5_hex($hcstring);
-
 my $success = BOM::Database::DAO::Utils::ClientPasswordRecovery::force_client_recovery_password_email_status($client->loginid, $token, $email);
 
 my $lang = request()->language;
 
 my $link = request()->url_for(
-    'lost_password.cgi',
+    'reset_password.cgi',
     {
         action => 'recover',
         email  => url_encode($email),
-        token  => $token,
+        token  => BOM::View::LostPassword->new(email => $email)->token,
         login  => $client->loginid
     });
 
