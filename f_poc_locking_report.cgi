@@ -18,7 +18,7 @@ BOM::Platform::Auth0::can_access(['CS']);
 
 my $broker = request()->param('broker');
 
-my $date             = BOM::Utility::Date->new(request()->param('date'));
+my $date             = Date::Utility->new(request()->param('date'));
 my $authenticated    = request()->param('authenticated');
 my $lock_cashier     = request()->param('lock_cashier');
 my $unwelcome_logins = request()->param('unwelcome_logins');

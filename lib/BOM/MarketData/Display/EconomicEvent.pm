@@ -38,8 +38,8 @@ Returns economic events that will happen today in a table format.
 sub events_for_today {
     my $self = shift;
 
-    my $start_of_day = BOM::Utility::Date->new()->truncate_to_day;
-    my $end_of_day   = BOM::Utility::Date->new($start_of_day->epoch + 86400);
+    my $start_of_day = Date::Utility->new()->truncate_to_day;
+    my $end_of_day   = Date::Utility->new($start_of_day->epoch + 86400);
 
     my $dm       = $self->data_mapper;
     my $events_1 = $dm->get_latest_events_for_period({
