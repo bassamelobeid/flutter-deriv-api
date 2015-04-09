@@ -7,7 +7,7 @@ with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Transaction;
-use BOM::Utility::Date;
+use Date::Utility;
 use Guard;
 use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Platform::Client::Utility;
@@ -27,9 +27,9 @@ sub execute {
     if ($c->type =~ 'deposit') {
 
         # when client deposits using DF, restrict withdrawals to payment agents
-        my $today = BOM::Utility::Date->today();
+        my $today = Date::Utility->today();
         if (   !$client->payment_agent_withdrawal_expiration_date
-            || !BOM::Utility::Date->new($client->payment_agent_withdrawal_expiration_date)->is_same_as($today))
+            || !Date::Utility->new($client->payment_agent_withdrawal_expiration_date)->is_same_as($today))
         {
             $client->payment_agent_withdrawal_expiration_date($today->date_yyyymmdd);
             $client->save();
