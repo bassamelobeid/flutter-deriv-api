@@ -7,7 +7,6 @@ use URL::Encode qw( url_encode );
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
-use BOM::Database::DAO::Utils::ClientPasswordRecovery;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -36,8 +35,6 @@ if (not $email) {
     code_exit_BO();
 }
 
-my $success = BOM::Database::DAO::Utils::ClientPasswordRecovery::force_client_recovery_password_email_status($client->loginid, $token, $email);
-
 my $lang = request()->language;
 
 my $link = request()->url_for(
@@ -58,11 +55,6 @@ BOM::Platform::Context::template->process(
     },
     \$lost_pass_email
 );
-
-if (not $success) {
-    print 'Could not set client recovery stage properly';
-    code_exit_BO();
-}
 
 # email link to client
 Bar('emailing change password link to ' . $loginID);
