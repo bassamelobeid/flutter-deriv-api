@@ -44,6 +44,8 @@ if ($input{impersonate_user}) {
     );
 
     my $email = BOM::Platform::User::get_email_by_loginid($loginid);
+    my $user = BOM::Platform::User->new({ email => $email });
+
     my $cookie = BOM::Platform::SessionCookie->new(
         impersonating => 1,
         loginid       => $loginid,
@@ -67,7 +69,26 @@ if ($input{impersonate_user}) {
         -path    => '/',
         -expires => time + 86400,
     );
-    PrintContentType({'cookies' => [$session_cookie, $lcookie]});
+
+    my $email_cookie = CGI::cookie(
+        -name    => 'email',
+        -value   => $email,
+        -domain  => request()->cookie_domain,
+        -secure  => 0,
+        -path    => '/',
+        -expires => time + 86400,
+    );
+
+    my $loginid_list_cookie = CGI::cookie(
+        -name    => 'loginid_list',
+        -value   => $user->loginids_cookie_string,
+        -domain  => request()->cookie_domain,
+        -secure  => 0,
+        -path    => '/',
+        -expires => time + 86400,
+    );
+
+    PrintContentType({'cookies' => [ $session_cookie, $lcookie, $email_cookie, $loginid_list_cookie ]});
     eval { BrokerPresentation("$loginid CLIENT DETAILS") };
     print '<font color=green><b>SUCCESS!</b></font></p>';
     print qq[You are impersonating $loginid on our <a href="/" target="impersonated">main web site<a/>.];
