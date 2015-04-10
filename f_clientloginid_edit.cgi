@@ -13,6 +13,7 @@ use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
+use BOM::Platform::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -41,10 +42,13 @@ if ($input{impersonate_user}) {
         login_id        => $loginid,
         scopes          => ['price', 'chart'],
     );
+
+    my $email = BOM::Platform::User::get_email_by_loginid($loginid);
     my $cookie = BOM::Platform::SessionCookie->new(
         impersonating => 1,
         loginid       => $loginid,
         token         => $token,
+        email         => $email,
     );
     my $session_cookie = CGI::cookie(
         -name    => BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login,
