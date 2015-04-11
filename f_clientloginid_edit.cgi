@@ -203,13 +203,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             code_exit_BO();
         }
     }
-    if (length($input{'email'}) < 5) {
-        print "<p style=\"color:red; font-weight:bold;\">ERROR ! EMAIL field appears incorrect or empty.</p></p>";
-        code_exit_BO();
-    }
-
-    # new method is used here as we need to keep old values and then compare them to the changes
-    my $client_old_email = $client->email;
 
     # client promo_code related fields
     if (BOM::Platform::Auth0::has_authorisation(['Marketing'])) {
@@ -324,10 +317,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->custom_max_payout($input{$key});
             next CLIENT_KEY;
         }
-        if ($key eq 'email') {
-            $client->email($input{$key});
-            next CLIENT_KEY;
-        }
         if ($key eq 'phone') {
             $client->phone($input{$key});
             next CLIENT_KEY;
@@ -385,27 +374,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     if (not $client->save) {
         print "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $loginid</p></p>";
         code_exit_BO();
-    }
-
-    # change of email -> warn Client
-    if (uc $client_old_email ne uc $client->email) {
-        my $website_name  = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($client->broker)->display_name;
-        my $support_email = BOM::Platform::Context::request()->website->config->get('customer_support.email');
-        $support_email = qq{"$website_name" <$support_email>};
-
-        send_email({
-                'from'             => $support_email,
-                'to'               => $client_old_email,
-                'subject'          => $loginid . ' - change in email address',
-                'template_loginid' => $loginid,
-                'message'          => [
-                    localize(
-                        'This is to confirm that your email address for your account [_1] on [_2] has been changed from [_3] to [_4]',
-                        $loginid, $website_name, $client_old_email, $client->email
-                    )
-                ],
-                'use_email_template' => 1,
-            });
     }
 
     print '<p><b>SUCCESS!</b></p>';
