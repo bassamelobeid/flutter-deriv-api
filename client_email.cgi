@@ -26,11 +26,17 @@ my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
 my %input = %{request()->params};
 my $email = lc defang($input{email});
 
+my @emails = ($email);
+
 my $new_email;
 if ($input{new_email}) {
     $new_email = lc defang($input{new_email});
-    if ($new_email !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/) {
-        print "invalid new email format";
+    push @emails, $new_email;
+}
+
+foreach my $item (@emails) {
+    if ($item !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/) {
+        print "invalid email format [$item]";
         code_exit_BO();
     }
 }
