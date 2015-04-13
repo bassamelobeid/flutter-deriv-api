@@ -17,7 +17,7 @@ my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 
 Bar("Make dual control code");
 
-my $now   = BOM::Utility::Date->new;
+my $now   = Date::Utility->new;
 my $today = $now->date_ddmmmyy;
 my $input = request()->params;
 

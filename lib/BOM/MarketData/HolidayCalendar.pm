@@ -23,7 +23,7 @@ use File::Copy;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use File::Slurp;
 use Text::CSV::Slurp;
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::MarketData::CurrencyConfig;
 use BOM::MarketData::ExchangeConfig;
 use BOM::Market::Exchange;
@@ -36,7 +36,7 @@ sub process_holidays {
 
     my $self  = shift;
     my $input = shift;
-    my $date  = BOM::Utility::Date->new;
+    my $date  = Date::Utility->new;
     my $calendar;
 
     my $manually_update_individual_holiday    = $input->{'manual_update_individual_holiday'};
@@ -71,7 +71,7 @@ sub process_holidays {
         my $new_holiday;
         push @{$new_holiday},
             {
-            date => BOM::Utility::Date->new($holiday_date),
+            date => Date::Utility->new($holiday_date),
             desc => $holiday_event
             };
 
@@ -89,8 +89,8 @@ sub process_holidays {
         };
 
     } elsif ($update_pseudo_holiday) {
-        my $first_date = BOM::Utility::Date->new($pseudo_start_date);
-        my $last_date  = BOM::Utility::Date->new($pseudo_end_date);
+        my $first_date = Date::Utility->new($pseudo_start_date);
+        my $last_date  = Date::Utility->new($pseudo_end_date);
         my $days       = $last_date->days_between($first_date);
         my $new_holiday;
         for (my $day = 0; $day <= $days; $day++) {
@@ -167,7 +167,7 @@ sub _save_excel_holidays_to_couch {
             }
 
             $existing_data->{holidays}      = $holiday_to_save;
-            $existing_data->{recorded_date} = BOM::Utility::Date->new;
+            $existing_data->{recorded_date} = Date::Utility->new;
 
             my $new_config = $config_db->new($existing_data);
             $new_config->save;
@@ -187,14 +187,14 @@ sub compare_existing_and_new_holidays_data {
 
     my $new_data = $args->{'new'};
     my @existing_epoch =
-        map { BOM::Utility::Date->new($_)->epoch } keys %$existing_holiday;
+        map { Date::Utility->new($_)->epoch } keys %$existing_holiday;
     foreach my $new (@$new_data) {
         if (!grep { $new->{date}->epoch == $_ } @existing_epoch) {
             $existing_holiday->{$new->{date}->date_ddmmmyyyy} = $new->{desc};
         }
     }
 
-    %$existing_holiday = map { BOM::Utility::Date->new($_)->date_ddmmmyyyy => $existing_holiday->{$_} } keys %$existing_holiday;
+    %$existing_holiday = map { Date::Utility->new($_)->date_ddmmmyyyy => $existing_holiday->{$_} } keys %$existing_holiday;
 
     return $existing_holiday;
 
@@ -217,7 +217,7 @@ sub compare_existing_and_new_early_close_data {
     if (keys %{$existing_early_close}) {
 
         my @existing_epoch =
-            map { BOM::Utility::Date->new($_)->epoch } keys %{$existing_early_close};
+            map { Date::Utility->new($_)->epoch } keys %{$existing_early_close};
         foreach my $new (@$new_data) {
             if (!grep { $new->{date}->epoch == $_ } @existing_epoch) {
 
@@ -254,7 +254,7 @@ sub compare_existing_and_new_early_close_data {
 
     }
 
-    %$existing_early_close = map { BOM::Utility::Date->new($_)->date_ddmmmyyyy => $existing_early_close->{$_} } keys %$existing_early_close;
+    %$existing_early_close = map { Date::Utility->new($_)->date_ddmmmyyyy => $existing_early_close->{$_} } keys %$existing_early_close;
 
     return $existing_early_close;
 
@@ -295,9 +295,9 @@ sub parse_holiday_calendar {
                 if ($year < 99) {
                     $year = '20' . $year;
                 }
-                $date = BOM::Utility::Date->new($year . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
+                $date = Date::Utility->new($year . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
             } elsif ($date =~ /(\d{1,2})\/(\d{1,2})\/(\d{4})$/) {
-                $date = BOM::Utility::Date->new($3 . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
+                $date = Date::Utility->new($3 . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
             }
 
         }
@@ -369,7 +369,7 @@ sub _save_holidays_to_couch {
 
     }
 
-    $existing_data->{recorded_date} = BOM::Utility::Date->new;
+    $existing_data->{recorded_date} = Date::Utility->new;
     my $new_config = $config_db->new($existing_data);
 
     $new_config->save;
@@ -425,19 +425,19 @@ sub _save_holidays_for_opi {
         foreach my $date (keys %$first_exchange_holidays) {
             push @{$combined_exchange_holidays->{holidays}},
                 {
-                date => BOM::Utility::Date->new($date),
+                date => Date::Utility->new($date),
                 desc => $first_exchange_holidays->{$date}};
         }
 
         foreach my $second_exchange_holiday (keys %$second_exchange_holidays) {
             if (
-                !grep { BOM::Utility::Date->new($second_exchange_holiday)->epoch == BOM::Utility::Date->new($_)->epoch }
+                !grep { Date::Utility->new($second_exchange_holiday)->epoch == Date::Utility->new($_)->epoch }
                 keys %$first_exchange_holidays
                 )
             {
                 push @{$combined_exchange_holidays->{holidays}},
                     {
-                    date => BOM::Utility::Date->new($second_exchange_holiday),
+                    date => Date::Utility->new($second_exchange_holiday),
                     desc => $second_exchange_holidays->{$second_exchange_holiday}};
             }
         }
@@ -448,19 +448,19 @@ sub _save_holidays_for_opi {
         foreach my $ec_date (keys %$first_exchange_ec_data) {
             push @{$combined_exchange_holidays->{early_closes}},
                 {
-                date => BOM::Utility::Date->new($ec_date),
+                date => Date::Utility->new($ec_date),
                 desc => $first_exchange_ec_data->{$ec_date}};
         }
 
         foreach my $second_exchange_ec_date (keys %$second_exchange_ec_data) {
             if (
-                !grep { BOM::Utility::Date->new($second_exchange_ec_date)->epoch == BOM::Utility::Date->new($_)->epoch }
+                !grep { Date::Utility->new($second_exchange_ec_date)->epoch == Date::Utility->new($_)->epoch }
                 keys %$first_exchange_ec_data
                 )
             {
                 push @{$combined_exchange_holidays->{early_closes}},
                     {
-                    date => BOM::Utility::Date->new($second_exchange_ec_date),
+                    date => Date::Utility->new($second_exchange_ec_date),
                     desc => $second_exchange_ec_data->{$second_exchange_ec_date}};
             }
         }
@@ -482,7 +482,7 @@ sub _save_holidays_for_opi {
         $opi_exchange_existing_data->{holidays} = $holiday_to_save;
         $opi_exchange_existing_data->{market_times}->{early_closes} = $early_close_to_save;
 
-        $opi_exchange_existing_data->{recorded_date} = BOM::Utility::Date->new;
+        $opi_exchange_existing_data->{recorded_date} = Date::Utility->new;
 
         my $new_config = $config_db->new($opi_exchange_existing_data);
         $new_config->save;

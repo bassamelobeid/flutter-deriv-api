@@ -72,7 +72,7 @@ if (request()->param('perform_actions')) {
                 bet_data => {
                     id         => $fmb_id,
                     sell_price => $action eq 'win' ? $bet_info->{payout} : 0,
-                    sell_time  => BOM::Utility::Date->new->db_timestamp,
+                    sell_time  => Date::Utility->new->db_timestamp,
                 },
                 account_data => {client_loginid => $bet_info->{loginid}, currency_code => $bet_info->{currency}},
                 db           => $broker_db

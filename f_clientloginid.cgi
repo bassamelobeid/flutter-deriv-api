@@ -26,10 +26,10 @@ if ($broker eq 'FOG') {
 }
 
 # Check staff authorization
-my $now       = BOM::Utility::Date->new;
+my $now       = Date::Utility->new;
 my $today     = $now->date_ddmmmyy;
-my $last_week = BOM::Utility::Date->new($now->epoch - 7 * 24 * 60 * 60)->date_ddmmmyy;
-my $last_year = BOM::Utility::Date->new($now->epoch - 365 * 24 * 60 * 60)->date_ddmmmyy;
+my $last_week = Date::Utility->new($now->epoch - 7 * 24 * 60 * 60)->date_ddmmmyy;
+my $last_year = Date::Utility->new($now->epoch - 365 * 24 * 60 * 60)->date_ddmmmyy;
 
 # CLIENT DETAILS
 Bar('CLIENT ACCOUNT DETAILS');

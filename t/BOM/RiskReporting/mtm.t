@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::RiskReporting::MarkedToModel;
 use BOM::Platform::Runtime;
@@ -21,10 +21,10 @@ use BOM::Database::DataMapper::CollectorReporting;
 initialize_realtime_ticks_db();
 
 my $fix        = 'BOM::Test::Data::Utility::TestDatabaseFixture';
-my $now        = BOM::Utility::Date->new;
-my $plus5mins  = BOM::Utility::Date->new(time + 300);
-my $plus30mins = BOM::Utility::Date->new(time + 1800);
-my $minus5mins = BOM::Utility::Date->new(time - 300);
+my $now        = Date::Utility->new;
+my $plus5mins  = Date::Utility->new(time + 300);
+my $plus30mins = Date::Utility->new(time + 1800);
+my $minus5mins = Date::Utility->new(time - 300);
 
 $fix->new('exchange', {symbol => $_})->create for qw(FOREX RANDOM);
 
@@ -39,7 +39,7 @@ my %date_string = (
 foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
-        $date = BOM::Utility::Date->new($date);
+        $date = Date::Utility->new($date);
         $fix->new(
             'tick',
             {
