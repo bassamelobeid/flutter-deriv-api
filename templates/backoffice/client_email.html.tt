@@ -1,0 +1,24 @@
+<div>
+    <span>
+        [% IF list == 1 %]
+            List of clients's accounts with email [% email %] are:
+        [% ELSEIF updated == 1 %]
+            Client's email has been changed from [% old_email %] to [% new_email %]<br/>
+            Updated clients' accounts are:
+        [% END %]
+    </span>
+    <ul>
+        [% FOREACH loginid IN loginids %]
+            <li> [% loginid %] </li>
+        [% END %]
+    </ul>
+
+    [% IF list == 1 %]
+        <hr>To change client's email:</br>
+        <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
+            <b>New Email: </b>
+            <input type=text size=15 name="new_email">&nbsp;&nbsp;
+            <input type="submit" value="Update Email">
+        </form>
+    [% END %]
+</div>
