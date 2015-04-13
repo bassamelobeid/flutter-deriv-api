@@ -5,6 +5,7 @@ use open qw[ :encoding(UTF-8) ];
 use Try::Tiny;
 
 use f_brokerincludeall;
+use BOM::Utility::Format::Strings qw( defang );
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -15,15 +16,24 @@ use BOM::Database::ClientDB;
 
 BOM::Platform::Sysinit::init();
 
-my %input = %{request()->params};
-my $email = $input{email};
+PrintContentType();
+BrokerPresentation("Client's Email Details");
+Bar("View / Edit Client's Email");
 
 my $staff  = BOM::Platform::Auth0::can_access(['CS']);
 my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
 
-PrintContentType();
-BrokerPresentation("Client's Email Details");
-Bar("View / Edit Client's Email");
+my %input = %{request()->params};
+my $email = lc defang($input{email});
+
+my $new_email;
+if ($input{new_email}) {
+    $new_email = lc defang($input{new_email});
+    if ($new_email !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/) {
+        print "invalid new email format";
+        code_exit_BO();
+    }
+}
 
 my $user = BOM::Platform::User->new({ email => $email });
 if (not $user->id) {
@@ -33,17 +43,7 @@ if (not $user->id) {
 };
 
 my @loginids = $user->loginid_array;
-
-
-use Data::Dumper;
-warn "email [$email]....";
-warn "loginids ........." . Dumper(@loginids);
-
-
 if (not $input{email_edit}) {
-
-    warn "111111111111";
-
     # list loginids with email
     BOM::Platform::Context::template->process(
         'backoffice/client_email.html.tt',
@@ -54,11 +54,6 @@ if (not $input{email_edit}) {
         },
     ) || die BOM::Platform::Context::template->error();
 } else {
-
-    warn "222222222222";
-
-    my $new_email = $input{new_email};
-
     if ($email ne $new_email) {
         try {
             $user->email($new_email);
