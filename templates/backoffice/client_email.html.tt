@@ -2,7 +2,7 @@
     <span>
         [% IF list == 1 %]
             Client's Email: <b>[% email %]</b></br></br>
-            List of accounts with this email are:
+            List of loginids with this email are:
         [% ELSIF updated == 1 %]
             Client's email has been changed from <b>[% old_email %] to [% new_email %]</b><br/><br/>
             Updated clients' accounts are:
@@ -22,6 +22,7 @@
             <input type="hidden" name="email" value="[% email %]">
             <input type="hidden" name="email_edit" value="1">
             <input type="submit" value="Update Email">
+            &nbsp;&nbsp; (Note: This will update email for all the listed loginids above)
         </form>
     [% END %]
 </div>
