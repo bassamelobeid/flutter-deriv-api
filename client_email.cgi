@@ -34,7 +34,16 @@ if (not $user->id) {
 
 my @loginids = $user->loginid_array;
 
+
+use Data::Dumper;
+warn "email [$email]....";
+warn "loginids ........." . Dumper(@loginids);
+
+
 if (not $input{email_edit}) {
+
+    warn "111111111111";
+
     # list loginids with email
     BOM::Platform::Context::template->process(
         'backoffice/client_email.html.tt',
@@ -45,6 +54,9 @@ if (not $input{email_edit}) {
         },
     ) || die BOM::Platform::Context::template->error();
 } else {
+
+    warn "222222222222";
+
     my $new_email = $input{new_email};
 
     if ($email ne $new_email) {
@@ -60,7 +72,7 @@ if (not $input{email_edit}) {
                         broker_code => $broker,
                     })->db->dbh;
 
-                $sth = $dbh->prepare(q{
+                my $sth = $dbh->prepare(q{
                         UPDATE betonmarkets.client
                         SET email = $1
                         WHERE loginid = $2

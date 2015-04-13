@@ -80,8 +80,8 @@ Bar("VIEW/EDIT CLIENT'S Email");
 print '<form action="'
     . request()->url_for('backoffice/client_email.cgi')
     . '" method="post">'
-    . '<b>Client\'s Email: </b>';
-print '<input type=text size=15 name="email">';
+    . '<b>Client\'s Email : </b>';
+print '<input type=text size=30 name="email">';
 print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
 
 Bar("CLOSED/DISABLED ACCOUNTS");
