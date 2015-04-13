@@ -3,7 +3,7 @@ use Encode;
 use Carp qw( croak );
 
 use BOM::Utility::Format::Strings qw( set_selected_item );
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -395,7 +395,7 @@ sub show_client_id_docs {
             ($file_name) = $document_file =~ m[clientIDscans/\w+/(.+)$];
             $download_file = $client->broker . "/$file_name";
             my $date = $doc->expiration_date || '';
-            $date = BOM::Utility::Date->new($date)->date_ddmmmyyyy if $date;
+            $date = Date::Utility->new($date)->date_ddmmmyyyy if $date;
             $input = qq{expires on <input type="text" style="width:100px" maxlength="15" name="expiration_date_$doc_id" value="$date">};
         }
         my $file_size = -s $document_file || next;
@@ -494,7 +494,7 @@ sub client_statement_for_backoffice {
     });
 
     my $balance = {
-        date   => BOM::Utility::Date->today,
+        date   => Date::Utility->today,
         amount => $acnt_dm->get_balance(),
     };
 
@@ -514,7 +514,7 @@ sub get_client_login_history_arrayref {
 
         foreach my $login_history (@{$login_history_result}) {
             my $login_detail = {
-                login_date        => BOM::Utility::Date->new($login_history->{login_date}),
+                login_date        => Date::Utility->new($login_history->{login_date}),
                 login_status      => ($login_history->{'login_successful'} ? 'Successful login' : 'Failed login'),
                 login_environment => $login_history->{'login_environment'},
             };

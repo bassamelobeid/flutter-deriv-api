@@ -13,7 +13,7 @@ BOM::Platform::Auth0::can_access(['Accounts']);
 
 my $args = request()->params;
 $args->{broker}   ||= 'FOG';
-$args->{month}    ||= BOM::Utility::Date->today->months_ahead(0);
+$args->{month}    ||= Date::Utility->today->months_ahead(0);
 $args->{whattodo} ||= 'TURNOVER';
 
 Bar("DAILY TURNOVER REPORT for " . $args->{month});

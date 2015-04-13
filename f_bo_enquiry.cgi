@@ -39,8 +39,8 @@ if ($broker ne 'FOG') {
 
     print "<hr/><FORM ACTION=\"" . request()->url_for('backoffice/f_profit_table.cgi') . "\" METHOD=\"POST\">";
     print "Check Profit Table of LoginID : <input id='profit_check_loginID' name=loginID type=text size=10 value='$broker'>";
-    print "From : <input name=startdate type=text size=10 value='" . BOM::Utility::Date->today()->minus_time_interval('30d')->date . "'/>";
-    print "To : <input name=enddate type=text size=10 value='" . BOM::Utility::Date->today()->date . "'/>";
+    print "From : <input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
+    print "To : <input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/>";
     print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
     print "<INPUT type=checkbox name=\"all\">All (No pagination) </INPUT>";
@@ -49,8 +49,8 @@ if ($broker ne 'FOG') {
 
     print "<hr/><FORM ACTION=\"" . request()->url_for('backoffice/f_profit_check.cgi') . "\" METHOD=\"POST\">";
     print "Check Profit of LoginID : <input id='profit_check_loginID' name=loginID type=text size=10 value='$broker'>";
-    print "From : <input name=startdate type=text size=10 value='" . BOM::Utility::Date->today()->minus_time_interval('30d')->date . "'/>";
-    print "To : <input name=enddate type=text size=10 value='" . BOM::Utility::Date->today()->date . "'/>";
+    print "From : <input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
+    print "To : <input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/>";
     print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
     print "<INPUT type=hidden name=\"l\" value=\"EN\">";
     print "<INPUT type=\"submit\" value=\"Client Profit\">";
