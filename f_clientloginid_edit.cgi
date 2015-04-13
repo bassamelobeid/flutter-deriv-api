@@ -47,7 +47,6 @@ if ($input{impersonate_user}) {
     my $user = BOM::Platform::User->new({ email => $email });
 
     my $cookie = BOM::Platform::SessionCookie->new(
-        impersonating => 1,
         loginid       => $loginid,
         token         => $token,
         email         => $email,
