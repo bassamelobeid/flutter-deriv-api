@@ -42,7 +42,6 @@ if ($input{impersonate_user}) {
         scopes          => ['price', 'chart'],
     );
     my $cookie = BOM::Platform::SessionCookie->new(
-        impersonating => 1,
         loginid       => $loginid,
         token         => $token,
     );
