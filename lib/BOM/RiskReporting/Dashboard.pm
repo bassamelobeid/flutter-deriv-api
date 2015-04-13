@@ -21,7 +21,7 @@ use Try::Tiny;
 extends 'BOM::RiskReporting::Base';
 
 use Cache::RedisDB;
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Platform::CustomClientLimits;
 use BOM::Utility::Format::Numbers qw(roundnear);
@@ -49,7 +49,7 @@ The end date of the period over which the instance reports.
 
 has [qw( start )] => (
     is         => 'ro',
-    isa        => 'Date::Utility',
+    isa        => 'BOM::Utility::Date',
     lazy_build => 1,
 );
 
@@ -219,7 +219,7 @@ sub _open_bets_report {
     $report->{big_mtms} =
         [((scalar @open_bets <= 10) ? @open_bets : @open_bets[0 .. 9])];
 
-    my $today      = Date::Utility->today;
+    my $today      = BOM::Utility::Date->today;
     my $total_open = 0;
 
     foreach my $bet_details (@open_bets) {
@@ -227,7 +227,7 @@ sub _open_bets_report {
 
         my $normalized_mtm = $self->amount_in_usd($bet_details->{market_price}, $bet_details->{currency_code});
 
-        my $seconds_to_expiry = Date::Utility->new($bet_details->{expiry_time})->epoch - time;
+        my $seconds_to_expiry = BOM::Utility::Date->new($bet_details->{expiry_time})->epoch - time;
         $total_open += $normalized_mtm;
         my $til_expiry = Time::Duration::Concise::Localize->new(
             interval => max(0, $seconds_to_expiry),

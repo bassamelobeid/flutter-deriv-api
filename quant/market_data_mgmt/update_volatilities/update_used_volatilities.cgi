@@ -119,7 +119,7 @@ foreach my $market (@markets) {
 
 BrokerPresentation();
 
-my $now = Date::Utility->new;
+my $now = BOM::Utility::Date->new;
 Bar('Update Volatility ' . $now->date_ddmmmyy . '   ' . $now->hour . $now->minute . ' GMT');
 
 print q~<table width='100%'>~;

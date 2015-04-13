@@ -48,7 +48,7 @@ if (my $self_exclusion = $client->self_exclusion) {
     $self_exclusion_form->set_field_value('MAXOPENPOS',         $self_exclusion->max_open_bets);
     $self_exclusion_form->set_field_value('SESSIONDURATION',    $self_exclusion->session_duration_limit);
     if (my $exclude_until_date = $self_exclusion->exclude_until) {
-        $exclude_until_date = Date::Utility->new($exclude_until_date)->date_ddmmmyy;
+        $exclude_until_date = BOM::Utility::Date->new($exclude_until_date)->date_ddmmmyy;
         $self_exclusion_form->set_field_value('EXCLUDEUNTIL', $exclude_until_date);
     }
 

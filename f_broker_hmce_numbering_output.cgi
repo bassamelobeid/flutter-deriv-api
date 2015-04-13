@@ -24,8 +24,8 @@ my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Accounts']);
 
 my $action_type = request()->param('action_type');
-my $start       = Date::Utility->new(request()->param('start'))->db_timestamp;
-my $end         = Date::Utility->new(request()->param('end'))->db_timestamp;
+my $start       = BOM::Utility::Date->new(request()->param('start'))->db_timestamp;
+my $end         = BOM::Utility::Date->new(request()->param('end'))->db_timestamp;
 
 my $txn_mapper = BOM::Database::DataMapper::Transaction->new({
     'broker_code' => $broker,
@@ -42,7 +42,7 @@ print "$action_type transactions\n";
 print "transaction time,transaction id, betid, client loginid,residence,quantity,currency code, amount,bet description,is_random";
 foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $bet              = $bets->{$transaction_id};
-    my $transaction_time = Date::Utility->new($bet->{'transaction_time'})->datetime_ddmmmyy_hhmmss_TZ;
+    my $transaction_time = BOM::Utility::Date->new($bet->{'transaction_time'})->datetime_ddmmmyy_hhmmss_TZ;
     my $id               = $bet->{'id'};
     my $bet_id           = $bet->{'bet_id'};
     my $client_loginid   = $bet->{'client_loginid'};

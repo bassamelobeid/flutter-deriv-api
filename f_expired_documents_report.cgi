@@ -28,7 +28,7 @@ print q~
   </tr>
 ~;
 
-my $date      = Date::Utility->new(request()->param('date'));
+my $date      = BOM::Utility::Date->new(request()->param('date'));
 my $frmid     = 1;
 my $login_ids = BOM::Database::DAO::Client::get_loginids_for_clients_with_expired_documents_arrayref({
     'broker' => $broker,

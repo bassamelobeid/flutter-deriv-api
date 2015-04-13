@@ -16,14 +16,14 @@ if ($ENV{REQUEST_METHOD}) {
     croak 'REQUEST_METHOD[' . $ENV{REQUEST_METHOD} . '] exists!?';
 }
 
-my $check_date = Date::Utility->new(time - 86400)->date;
+my $check_date = BOM::Utility::Date->new(time - 86400)->date;
 
 #connect to collector for getting data
 my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
     broker_code => 'FOG',
     operation   => 'collector'
 });
-my $client_dup_list = $report_mapper->check_clients_duplication(Date::Utility->new($check_date)->truncate_to_day);
+my $client_dup_list = $report_mapper->check_clients_duplication(BOM::Utility::Date->new($check_date)->truncate_to_day);
 
 # Duplicate new client found
 my $note_header = qq{

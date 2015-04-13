@@ -28,7 +28,7 @@ BOM::Platform::Sysinit::init();
 # out characters from my URL encoded JSON, breaking it.
 my $cgi           = CGI->new;
 my $underlying    = BOM::Market::Underlying->new($cgi->param('symbol'));
-my $recorded_date = Date::Utility->new($cgi->param('recorded_epoch'));
+my $recorded_date = BOM::Utility::Date->new($cgi->param('recorded_epoch'));
 my $type          = $cgi->param('type');
 my $spot          = $cgi->param('spot');
 

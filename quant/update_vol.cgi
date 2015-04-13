@@ -31,7 +31,7 @@ my $cgi           = CGI->new;
 my $underlying    = BOM::Market::Underlying->new($cgi->param('symbol'));
 my $which         = $cgi->param('which');
 my $spot          = $cgi->param('spot');
-my $recorded_date = Date::Utility->new($cgi->param('recorded_epoch'));
+my $recorded_date = BOM::Utility::Date->new($cgi->param('recorded_epoch'));
 
 my $surface_string = url_decode($cgi->param('surface'));
 $surface_string =~ s/point/./g;

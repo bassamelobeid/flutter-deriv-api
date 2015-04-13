@@ -5,7 +5,7 @@ use Getopt::Long;
 use Path::Tiny;
 use FileHandle;
 
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Utility::Log4perl;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::ActivityReporter;
@@ -34,18 +34,18 @@ if (!$optres) {
     exit;
 }
 
-my $yesterday_yyyymmdd = Date::Utility->new(time - 86400);
+my $yesterday_yyyymmdd = BOM::Utility::Date->new(time - 86400);
 #Alway start to regenerate the files from start of the month.
-my $from_yyyymmdd = Date::Utility->new('01-' . $yesterday_yyyymmdd->month_as_string . '-' . $yesterday_yyyymmdd->year);
+my $from_yyyymmdd = BOM::Utility::Date->new('01-' . $yesterday_yyyymmdd->month_as_string . '-' . $yesterday_yyyymmdd->year);
 
 $from_date_str ||= $from_yyyymmdd->date_yyyymmdd;
 $to_date_str   ||= $yesterday_yyyymmdd->date_yyyymmdd;
 
-my $from_date = Date::Utility->new($from_date_str);
-my $to_date   = Date::Utility->new($to_date_str);
+my $from_date = BOM::Utility::Date->new($from_date_str);
+my $to_date   = BOM::Utility::Date->new($to_date_str);
 
 my $reporter        = BOM::Platform::MyAffiliates::ActivityReporter->new();
-my $processing_date = Date::Utility->new($from_date->epoch);
+my $processing_date = BOM::Utility::Date->new($from_date->epoch);
 my @csv_filenames;
 
 while ($to_date->days_between($processing_date) >= 0) {
@@ -67,7 +67,7 @@ while ($to_date->days_between($processing_date) >= 0) {
 
     push @csv_filenames, $output_filename;
 
-    $processing_date = Date::Utility->new($processing_date->epoch + 86400);
+    $processing_date = BOM::Utility::Date->new($processing_date->epoch + 86400);
 }
 
 # email CSV out for reporting purposes

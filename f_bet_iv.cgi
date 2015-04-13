@@ -107,8 +107,8 @@ if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_liv
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }
 
-my $start = Date::Utility->new;
-my $end   = Date::Utility->new($start->epoch + (86400 * 200));
+my $start = BOM::Utility::Date->new;
+my $end   = BOM::Utility::Date->new($start->epoch + (86400 * 200));
 my $rq    = BOM::MarketData::Parser::Bloomberg::RequestFiles->new;
 
 # On 26Sept07, BBDL informed that the TIME field expects a time value of the form HHMM, where HH=00-23 and MM=00-59

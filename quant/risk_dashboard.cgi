@@ -20,7 +20,7 @@ Bar('Risk Dashboard');
 
 my $report = BOM::RiskReporting::Dashboard->new->fetch;
 
-my $today = Date::Utility->today;
+my $today = BOM::Utility::Date->today;
 
 $report->{dtr_link} = request()->url_for('backoffice/f_dailyturnoverreport.cgi');
 
@@ -32,8 +32,8 @@ $report->{link_to_pnl} = sub {
         {
             loginID   => $loginid,
             broker    => $broker,
-            startdate => Date::Utility->new->minus_time_interval('180d')->datetime,
-            enddate   => Date::Utility->new->plus_time_interval('1d')->datetime,
+            startdate => BOM::Utility::Date->new->minus_time_interval('180d')->datetime,
+            enddate   => BOM::Utility::Date->new->plus_time_interval('1d')->datetime,
         });
 };
 $report->{monify}  = \&to_monetary_number_format;

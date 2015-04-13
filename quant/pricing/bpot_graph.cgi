@@ -33,8 +33,8 @@ perlchartdir::setLicenseCode('RDST-2556-FV5X-NX9G-BD82-E751');
 
 my $bet = produce_contract(request()->param('shortcode'), request()->param('currency'));
 my $timestep = Time::Duration::Concise::Localize->new(interval => request()->param('timestep'));
-my $start    = Date::Utility->new(request()->param('start'));
-my $end      = Date::Utility->new(request()->param('end'));
+my $start    = BOM::Utility::Date->new(request()->param('start'));
+my $end      = BOM::Utility::Date->new(request()->param('end'));
 
 my $barrier = ($bet->bet_type->category->code eq 'digits') ? $bet->current_spot : (defined $bet->barrier) ? $bet->barrier->as_absolute : undef;
 my $barrier2 = ($bet->barrier2) ? $bet->barrier2->as_absolute : $barrier;    # No idea how this might be changed by digit two barriers.

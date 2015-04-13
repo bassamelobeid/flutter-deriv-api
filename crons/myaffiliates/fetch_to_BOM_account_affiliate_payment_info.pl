@@ -22,7 +22,7 @@ use BOM::Platform::Email qw(send_email);
 
 BOM::Utility::Log4perl::init_log4perl_console;
 
-my $runtime = Date::Utility->new;
+my $runtime = BOM::Utility::Date->new;
 
 # get arg if any
 my ($from_arg, $to_arg);
@@ -38,13 +38,13 @@ if (not $opt_result) {
 # define period that we're requesting over
 my ($from, $to);
 if ($from_arg and $to_arg) {
-    $from = Date::Utility->new($from_arg);
-    $to   = Date::Utility->new($to_arg);
+    $from = BOM::Utility::Date->new($from_arg);
+    $to   = BOM::Utility::Date->new($to_arg);
 } else {
     $to =
-        Date::Utility->new(
-        Date::Utility->new('1-' . $runtime->month_as_string . '-' . $runtime->year_in_two_digit . ' 00:00:00')->epoch - 1);
-    $from = Date::Utility->new('1-' . $to->month_as_string . '-' . $to->year_in_two_digit . ' 00:00:00');
+        BOM::Utility::Date->new(
+        BOM::Utility::Date->new('1-' . $runtime->month_as_string . '-' . $runtime->year_in_two_digit . ' 00:00:00')->epoch - 1);
+    $from = BOM::Utility::Date->new('1-' . $to->month_as_string . '-' . $to->year_in_two_digit . ' 00:00:00');
 }
 
 my @csv_file_locs = BOM::Platform::MyAffiliates::PaymentToBOMAccountManager->new(

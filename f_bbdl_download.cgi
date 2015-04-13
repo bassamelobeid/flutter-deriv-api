@@ -39,7 +39,7 @@ my $message;
 
 if ($file_stat) {
     my $mdtm     = $file_stat->mtime;
-    my $mod_time = Date::Utility->new($mdtm);
+    my $mod_time = BOM::Utility::Date->new($mdtm);
     my $mtime    = $mod_time->datetime . ' = ' . (time - $mod_time->epoch) . 'seconds ago';
     my $size     = $file_stat->size;
 

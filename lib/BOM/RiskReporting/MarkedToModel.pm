@@ -187,7 +187,7 @@ sub cache_daily_turnover {
 
     $self->logger->info('query daily turnover to cache in redis');
 
-    my $curr_month    = Date::Utility->new('1-' . Date::Utility->today->months_ahead(0));
+    my $curr_month    = BOM::Utility::Date->new('1-' . BOM::Utility::Date->today->months_ahead(0));
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'
@@ -220,7 +220,7 @@ sub cache_daily_turnover {
 
         # get latest time of previous month
         foreach my $time (@{$redis_time}) {
-            my $bom_date = Date::Utility->new($time);
+            my $bom_date = BOM::Utility::Date->new($time);
             if ($bom_date->month == ($curr_month->month - 1)) {
                 push @prev_month, $bom_date;
 

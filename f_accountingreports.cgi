@@ -20,7 +20,7 @@ my $feedloc          = BOM::Platform::Runtime->instance->app_config->system->dir
 my $dbloc            = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $tmp_dir          = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
-my $now       = Date::Utility->new;
+my $now       = BOM::Utility::Date->new;
 my $lastmonth = $now->months_ahead(-1);
 
 # Daily Turnover Report
@@ -42,7 +42,7 @@ foreach my $currl (@{$all_currencies}) {
     my $fileext = ($currl eq 'USD') ? '' : ".$currl";
 
     for (my $i = 0; $i < 90; $i++) {
-        my $day          = Date::Utility->new($now->epoch - 86400 * $i)->date_ddmmmyy;
+        my $day          = BOM::Utility::Date->new($now->epoch - 86400 * $i)->date_ddmmmyy;
         my $summary_file = "$dbloc/f_broker/$broker/dailysummary/$day.summary$fileext";
         if (-e $summary_file) {
             $RECENTDAYS .= "<OPTION value='$summary_file'>$day$fileext";
@@ -141,7 +141,7 @@ print "<form action=\""
 
 Bar("USEFUL EXCHANGE RATES");
 
-print "The following exchange rates are from our live data feed. They are live rates as of right now (" . Date::Utility->new->datetime . "<ul>";
+print "The following exchange rates are from our live data feed. They are live rates as of right now (" . BOM::Utility::Date->new->datetime . "<ul>";
 
 foreach my $curr (qw(GBPUSD EURUSD USDHKD USDCNY AUDUSD GBPHKD AUDHKD EURHKD)) {
     my $underlying = BOM::Market::Underlying->new('frx' . $curr);
