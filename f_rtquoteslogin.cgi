@@ -27,7 +27,7 @@ my $feedloc = BOM::Platform::Runtime->instance->app_config->system->directory->f
 my $dbloc   = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
 
-my $now          = Date::Utility->new;
+my $now          = BOM::Utility::Date->new;
 my @providerlist = qw(gtis idata random telekurs sd tenfore bloomberg olsen test combined);
 
 Bar("Compare providers");

@@ -51,7 +51,7 @@ my $fileextention       = "gif";
 my $graph_outputfile    = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif . "/$hashcat.$fileextention";
 my $graph_outputfile_ht = request()->url_for("temp/$hashcat.$fileextention");
 
-my $now           = Date::Utility->new;
+my $now           = BOM::Utility::Date->new;
 my $currenthour   = $now->hour;
 my $currentminute = $now->minute;
 my $today         = $now->date_ddmmmyy;
@@ -241,12 +241,12 @@ if ($daily) {
 elsif (scalar @overlay and not $merge) {
     Bar("Intraday Graph for $overlay");
 
-    my $now = Date::Utility->new;
+    my $now = BOM::Utility::Date->new;
     for (my $i = 0; $i < $count; $i++) {
         $graph_outputfile =~ s/.gif/$i.gif/;
         $graph_outputfile_ht =~ s/.gif/$i.gif/;
         my $which = ($yday) ? $yday + $i : $i;
-        my $daytochart = Date::Utility->new($now->epoch - 86400 * $which)->date_ddmmmyy;
+        my $daytochart = BOM::Utility::Date->new($now->epoch - 86400 * $which)->date_ddmmmyy;
 
         my $graphs_gnuplot = BOM::Utility::GNUPlot->new({
             'top_title'        => "Intraday Chart - $overlay on $daytochart",
@@ -330,13 +330,13 @@ elsif (scalar @overlay and not $merge) {
                         next if (($upper ne '' and $y > $upper) or ($lower ne '' and $y < $lower));
 
                         # Filter by time barriers
-                        my $graphx_date = Date::Utility->new($daytochart . ' ' . $graph_x->[$n]);
+                        my $graphx_date = BOM::Utility::Date->new($daytochart . ' ' . $graph_x->[$n]);
                         if ($time_upper) {
-                            my $upper_date = Date::Utility->new($daytochart . ' ' . $time_upper . 'GMT');
+                            my $upper_date = BOM::Utility::Date->new($daytochart . ' ' . $time_upper . 'GMT');
                             next if $graphx_date->epoch > $upper_date->epoch;
                         }
                         if ($time_lower) {
-                            my $lower_date = Date::Utility->new($daytochart . ' ' . $time_lower . 'GMT');
+                            my $lower_date = BOM::Utility::Date->new($daytochart . ' ' . $time_lower . 'GMT');
                             next if $graphx_date->epoch < $lower_date->epoch;
                         }
 
@@ -416,7 +416,7 @@ elsif (scalar @overlay and $merge) {
 
             for (my $j = $count - 1; $j >= 0; $j--) {
                 my $which      = ($yday) ? $yday + $j : $j;
-                my $chart_date = Date::Utility->new($now->epoch - 86400 * $which);
+                my $chart_date = BOM::Utility::Date->new($now->epoch - 86400 * $which);
                 my $daytochart = $chart_date->date_ddmmmyy;
 
                 my $ddmmyy =
@@ -507,7 +507,7 @@ else {
 
     print "<center>&nbsp;<br>";
 
-    my $yesterday = Date::Utility->new($now->epoch - 86400)->date_ddmmmyy;
+    my $yesterday = BOM::Utility::Date->new($now->epoch - 86400)->date_ddmmmyy;
 
     foreach my $forexitem (
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -592,7 +592,7 @@ else {
         if (scalar @{$ohlcs} > 0) {
             print "<b>$forexitem</b><br/>";
             foreach my $ohlc (reverse @{$ohlcs}) {
-                print join(' ', Date::Utility->new($ohlc->epoch)->date_ddmmmyy, $ohlc->open, $ohlc->high, $ohlc->low, $ohlc->close) . '<br/>';
+                print join(' ', BOM::Utility::Date->new($ohlc->epoch)->date_ddmmmyy, $ohlc->open, $ohlc->high, $ohlc->low, $ohlc->close) . '<br/>';
             }
         } else {
             print "<font color=red><b>Can't get OHLC daily data";

@@ -22,7 +22,7 @@ use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::Market::Underlying;
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::MarketData::VolSurface::Converter qw( get_delta_for_strike get_strike_for_spot_delta get_1vol_butterfly);
@@ -190,7 +190,7 @@ sub _get_rates {
         if ($day != int($day)) {
             $day = sprintf('%.5f', $day);
         }
-        my $date = Date::Utility->new({epoch => (Date::Utility->new->epoch + int($day) * 86400)})->date;
+        my $date = BOM::Utility::Date->new({epoch => (BOM::Utility::Date->new->epoch + int($day) * 86400)})->date;
         push @{$rows}, [$day, $date, $q, $r, $forward_spot_price];
     }
 
@@ -800,14 +800,14 @@ sub _get_cost_of_greeks {
 
     my $cost_greeks;
     if ($bet->pricing_engine_name eq 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated') {
-        my $bet_duration   = $bet->date_expiry->days_between(Date::Utility->new);
+        my $bet_duration   = $bet->date_expiry->days_between(BOM::Utility::Date->new);
         my $days_to_expiry = $bet->volsurface->term_by_day;
         foreach my $days (grep { /^\d+$/ } @{$days_to_expiry}) {    # Integer number of days only, now matter what the surface says.
             my $new_bet;
             if ($days == $bet_duration) {
                 $new_bet = $bet;
             } else {
-                my $date_expiry = Date::Utility->new({epoch => Date::Utility->new->epoch + $days * 86400})->date;
+                my $date_expiry = BOM::Utility::Date->new({epoch => BOM::Utility::Date->new->epoch + $days * 86400})->date;
                 $new_bet = produce_contract({
                     'current_spot' => $bet->current_spot,
                     'market'       => $bet->underlying->market,

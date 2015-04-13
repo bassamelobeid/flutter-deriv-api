@@ -36,11 +36,11 @@ sub DailyTurnOverReport {
     my $action_ss = 'sell';
     my ($lastaggbets, $allprevaggbets);
 
-    my $now         = Date::Utility->new;
+    my $now         = BOM::Utility::Date->new;
     my $month_to_do = $args->{month};
     my $this_month  = ($now->date_ddmmmyy =~ /$month_to_do/) ? 1 : 0;    # A rather inelegant way to see if we are doing this month.
 
-    my $currdate = Date::Utility->new('1-' . $args->{'month'});
+    my $currdate = BOM::Utility::Date->new('1-' . $args->{'month'});
 
     my (%allbuys, %allsells);
     my ($allUSDsells, $allUSDbuys, $allpl);
@@ -51,7 +51,7 @@ sub DailyTurnOverReport {
 
     my $latest_time;
     foreach my $time (@{$redis_time}) {
-        my $bom_date = Date::Utility->new($time);
+        my $bom_date = BOM::Utility::Date->new($time);
         if ($bom_date->month == $currdate->month) {
             if (not $latest_time) {
                 $latest_time = $bom_date;
@@ -80,7 +80,7 @@ sub DailyTurnOverReport {
     foreach my $day (1 .. $days_in_month) {
 
         my $date = $day . '-' . $args->{'month'};
-        my $when = Date::Utility->new($date);
+        my $when = BOM::Utility::Date->new($date);
 
         my %tday = (
             is_weekend => $when->is_a_weekend,
@@ -161,7 +161,7 @@ sub DailyTurnOverReport {
     $template{agg_bets_diff}     = int $aggbetsdiff;
     $template{all_prev_agg_bets} = $allprevaggbets;
 
-    my $start_of_month   = Date::Utility->new('1-' . $month_to_do);
+    my $start_of_month   = BOM::Utility::Date->new('1-' . $month_to_do);
     my $end_of_month     = $start_of_month->plus_time_interval($days_in_month . 'd')->minus_time_interval('1s');
     my $month_completed  = min(1, max(1e-5, ($latest_time->epoch - $start_of_month->epoch) / ($end_of_month->epoch - $start_of_month->epoch)));
     my $projection_ratio = 1 / $month_completed;

@@ -28,8 +28,8 @@ unless (request()->param('from') and request()->param('to')) {
     code_exit_BO();
 }
 
-my $from = Date::Utility->new(request()->param('from'));
-my $to   = Date::Utility->new(request()->param('to'));
+my $from = BOM::Utility::Date->new(request()->param('from'));
+my $to   = BOM::Utility::Date->new(request()->param('to'));
 
 my $lf = '/var/run/bom-daemon/fetch_myaffiliate_payment.lock';
 

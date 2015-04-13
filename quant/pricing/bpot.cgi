@@ -33,12 +33,12 @@ my $bet =
     : '';
 my ($start, $end, $timestep, $graph_url, $debug_link);
 if ($bet) {
-    $start = (request()->param('start')) ? Date::Utility->new(request()->param('start')) : $bet->date_start;
+    $start = (request()->param('start')) ? BOM::Utility::Date->new(request()->param('start')) : $bet->date_start;
     $end =
-          (request()->param('end')) ? Date::Utility->new(request()->param('end'))
+          (request()->param('end')) ? BOM::Utility::Date->new(request()->param('end'))
         : ($bet->tick_expiry)       ? $bet->date_start->plus_time_interval($bet->max_tick_expiry_duration)
         :                             $bet->date_expiry;
-    $end = Date::Utility->new if ($end->epoch > time);
+    $end = BOM::Utility::Date->new if ($end->epoch > time);
     my $duration = $end->epoch - $start->epoch;
     my $interval = ($bet->tick_expiry) ? '1s' : request()->param('timestep') || max(1, int($duration / 5));
     $timestep = Time::Duration::Concise::Localize->new(interval => $interval);

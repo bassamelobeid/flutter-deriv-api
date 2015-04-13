@@ -9,7 +9,7 @@ use warnings;
 use Getopt::Long;
 use Path::Tiny;
 
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Database::ClientDB;
@@ -37,7 +37,7 @@ if (!$optres) {
 my $logger = get_logger;
 
 # By default we run all brokers and currencies for today.
-$for_date ||= Date::Utility->new->date_yyyymmdd;
+$for_date ||= BOM::Utility::Date->new->date_yyyymmdd;
 
 my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::Runtime->instance->broker_codes->all_codes;
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : BOM::Platform::Runtime->instance->landing_companies->all_currencies;
@@ -47,8 +47,8 @@ if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_liv
     exit 0;
 }
 
-my $run_for           = Date::Utility->new($for_date);
-my $start_of_next_day = Date::Utility->new($run_for->epoch - $run_for->seconds_after_midnight)->datetime_iso8601;
+my $run_for           = BOM::Utility::Date->new($for_date);
+my $start_of_next_day = BOM::Utility::Date->new($run_for->epoch - $run_for->seconds_after_midnight)->datetime_iso8601;
 my $temp_suffix       = '.temp';
 
 # Now iterate over them in some kind of order.
@@ -89,7 +89,7 @@ foreach my $currency (sort @currencies) {
         my $broker_path = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/' . $broker . '/';
         my $ds_path     = $broker_path . 'dailysummary/';
 
-        my $now = Date::Utility->new;
+        my $now = BOM::Utility::Date->new;
         local $\ = "\n";
         my $fileext = ($currency eq 'USD') ? "" : '.' . $currency;
 

@@ -19,7 +19,7 @@ if (length($broker) < 2) {
         "We cannot process your request because it would seem that your browser is not configured to accept cookies.  Please check that the 'enable cookies' function is set if your browser, then please try again.";
     code_exit_BO();
 }
-my $today = Date::Utility->new->date_ddmmmyy;
+my $today = BOM::Utility::Date->new->date_ddmmmyy;
 
 # SHOW CLIENT DOCS
 if (request()->param('whattodo') eq 'showdocs') {

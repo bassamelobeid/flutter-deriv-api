@@ -62,7 +62,7 @@ if ($confirm) {
         my $validcode = dual_control_code_for_file_content(
             $fellow_staff,
             BOM::Platform::Context::request()->bo_cookie->token,
-            Date::Utility->new->date_ddmmmyy,
+            BOM::Utility::Date->new->date_ddmmmyy,
             join("\n", @payment_lines),
         );
 
@@ -271,7 +271,7 @@ if ($preview and @invalid_lines == 0) {
     send_email({
         'from'    => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
         'to'      => BOM::Platform::Runtime->instance->app_config->accounting->email,
-        'subject' => 'Batch debit/credit client account on ' . Date::Utility->new->date_ddmmmyy,
+        'subject' => 'Batch debit/credit client account on ' . BOM::Utility::Date->new->date_ddmmmyy,
         'message' => \@clients_has_been_processed,
     });
 }

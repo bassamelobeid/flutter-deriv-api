@@ -2,7 +2,7 @@ package BOM::MarketData::Display::VolatilitySurface;
 
 use Moose;
 
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request template);
 use BOM::Utility::Format::Numbers qw( roundnear );
@@ -58,7 +58,7 @@ sub rmg_table_format {
 
     my $dates_tt;
     foreach my $date (@{$dates}) {
-        my $surface_date   = Date::Utility->new($date);
+        my $surface_date   = BOM::Utility::Date->new($date);
         my $new_volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
             underlying => $volsurface->underlying,
             for_date   => $surface_date
@@ -78,7 +78,7 @@ sub rmg_table_format {
     }
 
     my @headers  = ('days');
-    my $hour_age = sprintf('%.2f', (Date::Utility->new->epoch - $volsurface->recorded_date->epoch) / 3600);
+    my $hour_age = sprintf('%.2f', (BOM::Utility::Date->new->epoch - $volsurface->recorded_date->epoch) / 3600);
     my $title    = $volsurface->recorded_date->datetime . ' (' . $hour_age . ' hours ago)';
     my $cut      = $volsurface->cutoff->code;
 
@@ -189,7 +189,7 @@ sub rmg_table_format {
         my $day  = $_;
         my $date = 'n/a';
         if (grep { $day eq $_ } @{$volsurface->original_term_for_smile}) {
-            $date = Date::Utility->new($volsurface->recorded_date->epoch + $day * 86400)->date;
+            $date = BOM::Utility::Date->new($volsurface->recorded_date->epoch + $day * 86400)->date;
         }
         $date;
     } @days;
@@ -205,7 +205,7 @@ sub rmg_table_format {
     };
 
     my $ON_cut_date =
-        $volsurface->cutoff->cutoff_date_for_effective_day(Date::Utility->new($volsurface->effective_date->epoch + $volsurface->_ON_day * 86400),
+        $volsurface->cutoff->cutoff_date_for_effective_day(BOM::Utility::Date->new($volsurface->effective_date->epoch + $volsurface->_ON_day * 86400),
         $underlying);
 
     my $template_param = {
@@ -265,7 +265,7 @@ sub get_forward_vol {
 
     my %weights;
     for (my $i = 1; $i <= $days[scalar(@days) - 1]; $i++) {
-        my $date = Date::Utility->new({epoch => ($volsurface->recorded_date->epoch + $i * 86400)});
+        my $date = BOM::Utility::Date->new({epoch => ($volsurface->recorded_date->epoch + $i * 86400)});
         $weights{$i} = $volsurface->underlying->weight_on($date);
     }
 

@@ -4,7 +4,7 @@ package main;
 use strict 'vars';
 use POSIX;
 use BOM::Database::DataMapper::Account;
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Utility::CurrencyConverter qw(in_USD);
 use BOM::Platform::Email qw(send_email);
@@ -304,7 +304,7 @@ sub get_client_by_status {
     my %SUMMARYFILE;
 
     ## Read dailysummary file into memory
-    my $yesterday = Date::Utility->new(time - 86400)->date_ddmmmyy;
+    my $yesterday = BOM::Utility::Date->new(time - 86400)->date_ddmmmyy;
     foreach my $curr (@{request()->available_currencies}) {
         my $summaryfilename =
             BOM::Platform::Runtime->instance->app_config->system->directory->db . "/f_broker/$broker/dailysummary/" . $yesterday . ".summary";
@@ -495,7 +495,7 @@ sub RecoverFromClientAccount {
     my $acc_balance = $client->currency . $bal;
 
     Path::Tiny::path("/var/log/fixedodds/$broker.funds_withdrawn")
-        ->append(Date::Utility->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
+        ->append(BOM::Utility::Date->new->datetime . " $loginID balance $acc_balance withdrawn by $clerk");
 
     $result->{'msg'}          = "<br><span style='color:green;font-weight:bold;'>RECOVERED $acc_balance</span>";
     $result->{'notification'} = $acc_balance;

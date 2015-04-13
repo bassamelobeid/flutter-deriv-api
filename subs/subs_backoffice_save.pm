@@ -23,7 +23,7 @@ sub save_difflog {
         flock(DATA, 2);
         local $\ = "\n";
         print DATA "\n=============================================================";
-        print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
+        print DATA BOM::Utility::Date->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
         close DATA;
@@ -66,7 +66,7 @@ sub save_log_staff_difflog {
         flock(DATA, 2);
         local $\ = "\n";
         print DATA "\n=============================================================";
-        print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
+        print DATA BOM::Utility::Date->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
         close DATA;
@@ -103,7 +103,7 @@ sub save_log_save_complete_log {
         flock(DATA, 2);
         local $\ = "\n";
         print DATA "\n=============================================================";
-        print DATA Date::Utility->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
+        print DATA BOM::Utility::Date->new->datetime . " $loginID $staff $ENV{'REMOTE_ADDR'} newsize=" . (-s $overridefilename);
         print DATA "=============================================================";
         print DATA $diff;
         close DATA;

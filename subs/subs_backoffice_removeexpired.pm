@@ -28,8 +28,8 @@ sub Rescind_FreeGifts {
         broker_code => $broker,
     });
 
-    my $now                       = Date::Utility->new;
-    my $befor_than                = Date::Utility->new(($now->epoch - ($inactivedays * 24 * 60 * 60)))->truncate_to_day;
+    my $now                       = BOM::Utility::Date->new;
+    my $befor_than                = BOM::Utility::Date->new(($now->epoch - ($inactivedays * 24 * 60 * 60)))->truncate_to_day;
     my $account_dont_use_freegift = $freegift_mapper->get_clients_with_only_one_freegift_transaction_and_inactive($befor_than);
     LOGINID:
     foreach my $account (@{$account_dont_use_freegift}) {

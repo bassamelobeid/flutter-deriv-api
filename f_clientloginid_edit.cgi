@@ -276,7 +276,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             my $val = $input{$key} || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
             next CLIENT_KEY unless $doc;
-            my $date = $val eq 'clear' ? undef : Date::Utility->new($val)->date_yyyymmdd;
+            my $date = $val eq 'clear' ? undef : BOM::Utility::Date->new($val)->date_yyyymmdd;
             unless (eval { $doc->expiration_date($date); 1 }) {
                 my $err = $@;
                 print qq{<p style="color:red">ERROR: Could not set expiry date for doc $id: $err</p>};

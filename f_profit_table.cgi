@@ -2,7 +2,7 @@
 package main;
 use strict 'vars';
 
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
@@ -50,7 +50,7 @@ my $startdate = request()->param('startdate');
 my $enddate   = request()->param('enddate');
 
 if ($enddate) {
-    $enddate = Date::Utility->new($enddate)->plus_time_interval('1d')->date_yyyymmdd;
+    $enddate = BOM::Utility::Date->new($enddate)->plus_time_interval('1d')->date_yyyymmdd;
 }
 
 my $db = BOM::Database::ClientDB->new({
@@ -73,7 +73,7 @@ my $sold_contracts = $fmb_dm->get_sold({
 
 my $open_contracts = $fmb_dm->get_open_bets_of_account();
 foreach my $contract (@{$open_contracts}) {
-    $contract->{purchase_date} = Date::Utility->new($contract->{purchase_time});
+    $contract->{purchase_date} = BOM::Utility::Date->new($contract->{purchase_time});
 }
 
 BOM::Platform::Context::template->process(

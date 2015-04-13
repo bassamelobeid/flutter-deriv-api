@@ -10,7 +10,7 @@ use Try::Tiny;
 use Path::Tiny;
 use File::ReadBackwards;
 
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Utility::Format::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -32,7 +32,7 @@ my $staff   = BOM::Platform::Auth0::can_access(['Quants']);
 my $clerk   = BOM::Platform::Auth0::from_cookie()->{nickname};
 my $betcode = request()->param('betcode');
 $betcode =~ s/\s+//;
-my $now = Date::Utility->new;
+my $now = BOM::Utility::Date->new;
 # Get inputs
 my $loginID  = request()->param('loginid');
 my $currency = request()->param('curr');

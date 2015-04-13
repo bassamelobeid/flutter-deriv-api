@@ -130,7 +130,7 @@ if (!BOM::Platform::Runtime->instance->app_config->system->on_development || $am
         code_exit_BO();
     }
 
-    my $validcode = DualControlCode($DCstaff, $token, $curr, $amount, Date::Utility->new->date_ddmmmyy, $ttype, $loginID);
+    my $validcode = DualControlCode($DCstaff, $token, $curr, $amount, BOM::Utility::Date->new->date_ddmmmyy, $ttype, $loginID);
 
     if (substr(uc($DCcode), 0, 5) ne substr(uc($validcode), 0, 5)) {
         print "ERROR: Dual Control Code $DCcode is invalid (code FMDO). Check the fellow staff name, amount, date and transaction type.";
@@ -171,7 +171,7 @@ my $payment_mapper = BOM::Database::DataMapper::Payment->new({
 if (
     $payment_mapper->is_duplicate_payment({
             remark => ($params{remark} || ''),
-            date   => Date::Utility->new,
+            date   => BOM::Utility::Date->new,
             amount => $signed_amount,
         }))
 {
@@ -248,7 +248,7 @@ BOM::Platform::Transaction->unfreeze_client($toLoginID) if $toLoginID;
 
 code_exit_BO() if $leave;
 
-my $now = Date::Utility->new;
+my $now = BOM::Utility::Date->new;
 # Logging
 Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
     ->append($now->datetime . " $ttype $curr$amount $loginID clerk=$clerk fellow=$DCstaff DCcode=$DCcode $ENV{REMOTE_ADDR}");
@@ -271,7 +271,7 @@ print qq[<p class="success_message">$success_message</p>];
 
 Bar("Today's entries for $loginID");
 
-my $today  = Date::Utility->today;
+my $today  = BOM::Utility::Date->today;
 my $after  = $today->datetime_yyyymmdd_hhmmss;
 my $before = $today->plus_time_interval('1d')->datetime_yyyymmdd_hhmmss;
 

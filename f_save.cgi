@@ -8,7 +8,7 @@ use Text::Diff;
 use Path::Tiny;
 
 use f_brokerincludeall;
-use Date::Utility;
+use BOM::Utility::Date;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Format::Numbers qw( virgule );
 use BOM::MarketData::InterestRate;
@@ -103,7 +103,7 @@ if ($filen eq 'editvol') {
     my %surface_args = (
         underlying    => $underlying,
         surface       => $surface_data,
-        recorded_date => Date::Utility->new,
+        recorded_date => BOM::Utility::Date->new,
         (request()->param('spot_reference') ? (spot_reference => request()->param('spot_reference')) : ()),
     );
     my $existing_surface_args = {
@@ -177,7 +177,7 @@ if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
     my $interest_rates = BOM::MarketData::InterestRate->new(
         symbol => $symbol,
         rates  => $rates,
-        date   => Date::Utility->new,
+        date   => BOM::Utility::Date->new,
     );
     $interest_rates->save;
 
@@ -273,7 +273,7 @@ if ((-s "/var/log/fixedodds/fsave.log") > 300000) {
     system("mv /var/log/fixedodds/fsave.log /var/log/fixedodds/fsave.log.1");
 }
 Path::Tiny::path("/var/log/fixedodds/fsave.log")
-    ->append(Date::Utility->new->datetime . " $broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename));
+    ->append(BOM::Utility::Date->new->datetime . " $broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename));
 
 # DISPLAY SAVED FILE
 print "<b><p>FILE was saved as follows :</p></b><br>";
