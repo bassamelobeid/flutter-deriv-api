@@ -30,7 +30,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange', $_, 'exchange_config',
     {
         symbol          => $_,
-        date            => BOM::Utility::Date->new->datetime_iso8601,
+        date            => Date::Utility->new->datetime_iso8601,
     }) for (qw/FOREX RANDOM/);
 
 my %date_string = (
