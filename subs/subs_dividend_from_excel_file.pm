@@ -4,7 +4,7 @@ use open qw[ :encoding(UTF-8) ];
 use Try::Tiny;
 use Spreadsheet::ParseExcel;
 use BOM::Utility::Format::Numbers qw(roundnear);
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::Market::Underlying;
 use YAML::XS;
 
@@ -35,7 +35,7 @@ sub save_dividends {
         }
 
         if (not $discrete_points) {
-            my $now = BOM::Utility::Date->new->date_yyyymmdd;
+            my $now = Date::Utility->new->date_yyyymmdd;
             $discrete_points = {$now => 0};
 
         }
@@ -44,7 +44,7 @@ sub save_dividends {
                 symbol          => $symbol,
                 rates           => $rates,
                 discrete_points => $discrete_points,
-                recorded_date   => BOM::Utility::Date->new,
+                recorded_date   => Date::Utility->new,
             );
             $dividends->save;
         }
@@ -76,7 +76,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
     }
 
     my $data;
-    my $now = BOM::Utility::Date->new;
+    my $now = Date::Utility->new;
 
     my $sheet_counter = 1;
 
@@ -127,9 +127,9 @@ sub read_discrete_forecasted_dividend_from_excel_files {
                     if ($year < 99) {
                         $year = '20' . $year;
                     }
-                    $ex_div = BOM::Utility::Date->new($year . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
+                    $ex_div = Date::Utility->new($year . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
                 } elsif ($ex_date =~ /(\w{3})\s+(\d{1,2})\s+(\d{4})\s?$/) {
-                    $ex_div = BOM::Utility::Date->new(sprintf('%02d', $2) . '-' . $1 . '-' . sprintf('%02d', $3));
+                    $ex_div = Date::Utility->new(sprintf('%02d', $2) . '-' . $1 . '-' . sprintf('%02d', $3));
                 }
 
                 my $fix_term = $ex_div->days_between($now);

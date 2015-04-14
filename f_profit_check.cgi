@@ -2,7 +2,7 @@
 package main;
 use strict 'vars';
 
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
@@ -32,8 +32,8 @@ if (not $client) {
 my $startdate = request()->param('startdate');
 my $enddate   = request()->param('enddate');
 
-$startdate = BOM::Utility::Date->new($startdate);
-$enddate   = BOM::Utility::Date->new($enddate);
+$startdate = Date::Utility->new($startdate);
+$enddate   = Date::Utility->new($enddate);
 
 my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,

@@ -18,7 +18,7 @@ use BOM::MarketData::Parser::ForexFactoryEconomicEvent;
 use BOM::MarketData::Display::EconomicEvent;
 use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Utility::Log4perl qw( get_logger );
 
@@ -82,7 +82,7 @@ if ($autoupdate) {
         print $num_of_events_updated . ' economic events were successfully saved on couch.</br></br>';
     };
     if (my $error = $@) {
-        my $msg    = 'Error while fetching economic events on date [' . BOM::Utility::Date->new->datetime . ']';
+        my $msg    = 'Error while fetching economic events on date [' . Date::Utility->new->datetime . ']';
         my $sender = Mail::Sender->new({
             smtp    => 'localhost',
             from    => 'Market tools <market-tools@binary.com>',
@@ -95,7 +95,7 @@ if ($autoupdate) {
         get_logger->error("Error while updating news calendar: $error");
     }
 } elsif ($save_economic_event) {
-    eval { BOM::Utility::Date->new($release_date); };
+    eval { Date::Utility->new($release_date); };
 
     if ($@) {
         print 'The economic event was not saved. Please enter a valid date (2012-11-19T23:00:00Z)</br></br>';
@@ -114,7 +114,7 @@ if ($autoupdate) {
     }
 }
 # Display economic events calendar
-my $today = BOM::Utility::Date->new;
+my $today = Date::Utility->new;
 print '<b>The table below shows the economic events that will take place today (' . $today->date_ddmmmyyyy . ')</b></br></br>';
 print $display->events_for_today;
 
