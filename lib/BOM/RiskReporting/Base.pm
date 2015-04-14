@@ -28,7 +28,7 @@ has run_by => (is => 'ro');
 
 has [qw( end )] => (
     is         => 'ro',
-    isa        => 'BOM::Utility::Date',
+    isa        => 'Date::Utility',
     lazy_build => 1,
 );
 
@@ -39,7 +39,7 @@ has send_alerts => (
 );
 
 sub _build_end {
-    return BOM::Utility::Date->new;
+    return Date::Utility->new;
 }
 
 has _usd_rates => (
