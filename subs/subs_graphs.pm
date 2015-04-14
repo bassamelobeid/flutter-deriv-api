@@ -5,7 +5,7 @@ use Path::Tiny;
 use BOM::Utility::GNUPlot;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Hash;
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -247,7 +247,7 @@ sub doPlot {
 
     # set default value if null
     if (not $daytochart) {
-        $daytochart = BOM::Utility::Date->new->date_ddmmmyy;
+        $daytochart = Date::Utility->new->date_ddmmmyy;
         $interval   = 600;
     }
 
@@ -261,8 +261,8 @@ sub doPlot {
         my $feed_hash_ref = BOM::View::Charting::getFeedsFromHistoryServer({
             stock     => $underlying_symbol,
             interval  => $interval,
-            beginTime => BOM::Utility::Date->new($daytochart)->epoch,
-            endTime   => BOM::Utility::Date->new($daytochart)->epoch + 86400,
+            beginTime => Date::Utility->new($daytochart)->epoch,
+            endTime   => Date::Utility->new($daytochart)->epoch + 86400,
             limit     => 86400,
         });
 
@@ -298,7 +298,7 @@ sub doPlot {
             $price = $underlying->pipsized_value($price);
 
             # Determine the timestamp to show
-            my $quote_date = BOM::Utility::Date->new({epoch => $dt});
+            my $quote_date = Date::Utility->new({epoch => $dt});
 
             $gtime = $quote_date->time_hhmmss;
 
@@ -378,7 +378,7 @@ sub doDailyPlot {
     }
 
     foreach my $ohlc (@{$ohlcs}) {
-        my $then = BOM::Utility::Date->new($ohlc->epoch);
+        my $then = Date::Utility->new($ohlc->epoch);
 
         my $date = $then->date_ddmmyy;
 

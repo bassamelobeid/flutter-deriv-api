@@ -68,7 +68,7 @@ sub _retrieve_table_data {
     my ($rf, $current_broker, $server_ip_addr) = @_;
 
     my $mdtm            = $rf->{"a"}->mtime;
-    my $bom_mdtm        = BOM::Utility::Date->new($mdtm);
+    my $bom_mdtm        = Date::Utility->new($mdtm);
     my $how_long_ago    = time - $bom_mdtm->epoch;
     my $more_than_a_day = (time > $mdtm + 86400) ? 1 : 0;
     my $file_size       = $rf->{"a"}->size;

@@ -6,7 +6,7 @@ BEGIN {
     push @INC, "/home/git/bom/cgi";
 }
 
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::Platform::Runtime;
 use BOM::Platform::Sysinit ();
 
@@ -16,7 +16,7 @@ use subs::subs_backoffice_reports;
 
 BOM::Platform::Sysinit::init();
 
-my $now  = BOM::Utility::Date->new;
+my $now  = Date::Utility->new;
 my $hour = $now->hour;
 my $wday = $now->day_of_week;
 

@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
-use BOM::Utility::Date;
+use Date::Utility;
 use BOM::Platform::Plack qw( PrintContentType_JSON );
 use BOM::Platform::Sysinit ();
 
@@ -31,7 +31,7 @@ my $calibration_error  = $cgi->param('calibration_error_' . $cgi->param('symbol'
 my $clone = $surface->clone({
         parameterization => {
             values            => \%calibration_params,
-            date              => BOM::Utility::Date->new->datetime_iso8601,
+            date              => Date::Utility->new->datetime_iso8601,
             calibration_error => $calibration_error
         }});
 
