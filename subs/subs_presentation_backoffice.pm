@@ -300,7 +300,8 @@ sub vk_BObottomPRES {
 sub code_exit_BO {
     if ($vk_BarIsDoneOnce) { BarEnd(); }             #backoffice closing bar output (must be before vk_BObottomPRES)
     if ($vk_didBOtopPRES)  { vk_BObottomPRES(); }    #backoffice closing presentation
-
+    undef ${"main::vk_BarIsDoneOnce"};
+    undef ${"main::vk_didBOtopPRES"};
     BOM::Platform::Sysinit::code_exit();
 }
 1;

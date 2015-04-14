@@ -231,11 +231,11 @@ foreach my $client (@clients) {
     }
 
     my $account_age;
-    my $now         = BOM::Utility::Date->new;
+    my $now         = Date::Utility->new;
     my $date_joined = $client->date_joined;
 
     if ($date_joined) {
-        my $joined = BOM::Utility::Date->new($date_joined);
+        my $joined = Date::Utility->new($date_joined);
         $date_joined = $joined->date_ddmmmyy;
         $account_age = $now->days_between($joined);
 

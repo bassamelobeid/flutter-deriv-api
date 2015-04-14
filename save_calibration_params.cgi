@@ -9,7 +9,7 @@ use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::Utility::Format::Numbers qw(roundnear);
-use BOM::Utility::Date;
+use Date::Utility;
 
 use JSON qw(to_json);
 use CGI;
@@ -25,7 +25,7 @@ my $new_calibration_error = $volsurface->function_to_optimize(\@param_in_array);
 my $clone_volsurface      = $volsurface->clone({
         parameterization => {
             values            => \%new_params,
-            date              => BOM::Utility::Date->new->datetime_iso8601,
+            date              => Date::Utility->new->datetime_iso8601,
             calibration_error => $new_calibration_error,
         }});
 

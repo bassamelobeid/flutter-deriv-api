@@ -10,7 +10,7 @@ use BOM::Database::ClientDB;
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
 use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Utility::Date;
+use Date::Utility;
 
 BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();
@@ -19,7 +19,7 @@ my $logger = get_logger();
 
 my @all_currencies = ('USD', 'GBP', 'EUR', 'AUD', 'JPY');
 
-my $update_time = BOM::Utility::Date->new($ARGV[0] || time());
+my $update_time = Date::Utility->new($ARGV[0] || time());
 
 $logger->debug('Update exchange rate for date [' . $update_time->db_timestamp . ']');
 
