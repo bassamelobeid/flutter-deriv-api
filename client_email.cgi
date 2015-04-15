@@ -3,6 +3,7 @@ package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 use Try::Tiny;
+use Email::Valid;
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Strings qw( defang );
@@ -35,7 +36,7 @@ if ($input{new_email}) {
 }
 
 foreach my $item (@emails) {
-    if ($item !~ /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/) {
+    if (not Email::Valid->address($item)) {
         print "invalid email format [$item]";
         code_exit_BO();
     }
