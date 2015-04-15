@@ -45,7 +45,7 @@ foreach my $item (@emails) {
 my $user = BOM::Platform::User->new({ email => $email });
 if (not $user->id) {
     my $self_href = request()->url_for('backoffice/client_email.cgi');
-    print "<p>ERROR: Clients with email [$email] not found. <br> Please try again: $self_href</p>";
+    print "<p>ERROR: Clients with email <b>$email</b> not found.</p>";
     code_exit_BO();
 };
 
