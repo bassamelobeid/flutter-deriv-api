@@ -85,8 +85,6 @@ sub BarEnd {
 }
 
 sub ServerWarningBar {
-    my $brokercodesonthisserver;
-
     #log out
     print qq~
  <table width=100\% cellpadding="0" cellspacing="0">
@@ -95,23 +93,8 @@ sub ServerWarningBar {
 
     my $switchservers = "<b>You are on " . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name . "</b><br/>";
 
-    my $runtime = BOM::Platform::Runtime->instance;
-    my @bconserver = map { $_->code } $runtime->broker_codes->all;
-
-    if (@bconserver) {
-        $brokercodesonthisserver = "Your IP: $ENV{'REMOTE_ADDR'} - Bcodes : ";
-        foreach my $br (sort @bconserver) {
-            if ($br ne request()->broker_code) {
-                my $url = Mojo::URL->new($ENV{'REQUEST_URI'});
-                if ($url->path =~ /backoffice\/(.*)?/) {
-                    $url->query(['broker' => $br]);
-                    $brokercodesonthisserver .= "<a href='" . request()->url_for("backoffice/$1", $url->query) . "'>$br</a> ";
-                }
-            } else {
-                $brokercodesonthisserver .= "$br ";
-            }
-        }
-    }
+    my $runtime   = BOM::Platform::Runtime->instance;
+    my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
 
     my $topbarbackground;
     my $systemisoff;
@@ -129,7 +112,7 @@ sub ServerWarningBar {
     print qq~
  <table width="100%" cellpadding="4" cellspacing="0" border="0">
  <tr><td width="100%" bgcolor="$topbarbackground" align="center"><font class="whitetop">
- $switchservers<b>$systemisoff $brokercodesonthisserver $systemisoff</b></font>
+ $switchservers<b>$systemisoff $ipmessage $systemisoff</b></font>
  </td></tr></table>
  </td></tr><tr>
  <td colspan="2" style="background-repeat: repeat-x;" background="~
@@ -142,7 +125,10 @@ sub ServerWarningBar {
 
 sub vk_BOtopPRES    #this sub executed in BrokerPresentation
 {
-    my $broker = request()->broker_code;
+
+    my @codes = sort { $a->code cmp $b->code }
+        BOM::Platform::Runtime->instance->broker_codes->get_brokers_on_server(BOM::Platform::Runtime->instance->hosts->localhost);
+    my $broker = $codes[0]->code;
 
     my $rand           = '?' . rand(9999);                                                   #to avoid caching on these fast navigation links
     my $vk_BOurl       = request()->url_for("backoffice/f_broker_login.cgi", {_r => $rand});
