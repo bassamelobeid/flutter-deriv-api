@@ -56,7 +56,7 @@ sub save_dividends {
                     symbol          => 'SYN' . $symbol,
                     rates           => $rates,
                     discrete_points => $discrete_points,
-                    recorded_date   => BOM::Utility::Date->new,
+                    recorded_date   => Date::Utility->new,
                 );
                 $synthetic_dividend->save;
             }
