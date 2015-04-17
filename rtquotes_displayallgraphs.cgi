@@ -484,8 +484,8 @@ elsif (scalar @overlay and $merge) {
             }
 
             $graphs_gnuplot->set_data_properties({
-                'using' => '1:2',
-                'title' => "$market from [$p]",
+                'using'      => '1:2',
+                'title'      => "$market from [$p]",
                 'graph_type' => 'lines',
                 'line_style' => '',
                 'fill_style' => '',

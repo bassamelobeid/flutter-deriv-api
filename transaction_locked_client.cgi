@@ -26,7 +26,7 @@ my @clients = $cgi->param('clients');
 foreach my $client_loginid (@clients) {
     try {
         my $client_data_mapper = BOM::Database::DataMapper::Client->new({
-                        client_loginid => $client_loginid,
+            client_loginid => $client_loginid,
         });
         $client_data_mapper->unlock_client_loginid();
         print '<em>Unlocked: ' . $client_loginid . '</em><br>';
@@ -37,7 +37,7 @@ foreach my $client_loginid (@clients) {
 }
 
 my $client_data_mapper = BOM::Database::DataMapper::Client->new({
-        broker_code => request()->broker->code,
+    broker_code => request()->broker->code,
 });
 
 my $clients_list = $client_data_mapper->locked_client_list();

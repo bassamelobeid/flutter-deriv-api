@@ -93,12 +93,12 @@ subtest 'realtime report generation' => sub {
         $bet_hash{payout_price}, $start_time->epoch, $expiry_time->epoch, $bet_hash{relative_barrier}, 0
     );
 
-    $fix->new(
-        'fmb_higher_lower',
-        {
-            %bet_hash,
-            account_id => $USDaccount->id,
-            short_code => uc join('_', @shortcode_param)})->create;
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
 
     $start_time  = $now;
     $expiry_time = $plus5mins;
@@ -114,12 +114,12 @@ subtest 'realtime report generation' => sub {
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
 
-    $fix->new(
-        'fmb_higher_lower',
-        {
-            %bet_hash,
-            account_id => $USDaccount->id,
-            short_code => uc join('_', @shortcode_param)})->create;
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
 
     $start_time  = $plus5mins;
     $expiry_time = $plus30mins;
@@ -135,18 +135,17 @@ subtest 'realtime report generation' => sub {
         settlement_time   => $expiry_time->datetime_yyyymmdd_hhmmss,
     );
 
-    $fix->new(
-        'fmb_higher_lower',
-        {
-            %bet_hash,
-            account_id => $USDaccount->id,
-            short_code => uc join('_', @shortcode_param)})->create;
+    BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type => 'fmb_higher_lower',
+        %bet_hash,
+        account_id => $USDaccount->id,
+        short_code => uc join('_', @shortcode_param),
+    });
 
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
     my $results;
-    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate }
-    'Report generation does not die.';
+    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');

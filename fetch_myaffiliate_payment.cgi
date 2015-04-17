@@ -51,7 +51,8 @@ if (not defined $pid) {
     if ($?) {
         print "An error has occurred -- child comes back with $?";
     } else {
-        print "Fetch Myaffiliates payment triggered, info will be emailed soon to " . BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email;
+        print "Fetch Myaffiliates payment triggered, info will be emailed soon to "
+            . BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email;
     }
 } else {
     # 1st, break parent/child relationship
@@ -64,14 +65,14 @@ if (not defined $pid) {
     syswrite $lock, "$$\n";
 
     # next daemonize
-    for my $fd (0..1000) {
+    for my $fd (0 .. 1000) {
         next if $fd == fileno $lock;
         POSIX::close $fd;
     }
 
-    POSIX::open( "/dev/null", &POSIX::O_RDONLY ); # stdin
-    POSIX::open( "/dev/null", &POSIX::O_WRONLY ); # stdout
-    POSIX::open( "/dev/null", &POSIX::O_WRONLY ); # stderr
+    POSIX::open("/dev/null", &POSIX::O_RDONLY);    # stdin
+    POSIX::open("/dev/null", &POSIX::O_WRONLY);    # stdout
+    POSIX::open("/dev/null", &POSIX::O_WRONLY);    # stderr
 
     BOM::Utility::Log4perl->init(1);
     $SIG{__WARN__} = sub { get_logger->warn($_[0]) };
@@ -79,7 +80,7 @@ if (not defined $pid) {
     $0 = "fetch myaffiliate payment info worker";
     POSIX::setsid;
 
-    $SIG{ALRM} = sub {truncate $lock, 0; POSIX::_exit 19};
+    $SIG{ALRM} = sub { truncate $lock, 0; POSIX::_exit 19 };
     alarm 900;
 
     try {

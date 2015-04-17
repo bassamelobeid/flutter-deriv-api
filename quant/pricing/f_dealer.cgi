@@ -121,17 +121,18 @@ if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') 
         my $fmbs = $fmb_mapper->get_fmb_by_shortcode($betcode);
         if ($fmbs and @$fmbs) {
             BOM::Database::Helper::FinancialMarketBet->new({
-                account_data     => {client_loginid => $loginID, currency_code => $currency},
-                transaction_data => [({staff_loginid => $clerk, remark => request()->param('comment')}) x @$fmbs],
-                bet_data => [map {
-                    {
-                        sell_price => 0,
-                        sell_time  => $now->db_timestamp,
-                        id         => $_->id,
-                    }
-                } @{$fmbs}],
-                db  => BOM::Database::ClientDB->new({broker_code => $broker})->db,
-            })->batch_sell_bet;
+                    account_data => {
+                        client_loginid => $loginID,
+                        currency_code  => $currency
+                    },
+                    transaction_data => [({
+                                staff_loginid => $clerk,
+                                remark        => request()->param('comment')}
+                        ) x @$fmbs
+                    ],
+                    bet_data => [map { {sell_price => 0, sell_time => $now->db_timestamp, id => $_->id,} } @{$fmbs}],
+                    db => BOM::Database::ClientDB->new({broker_code => $broker})->db,
+                })->batch_sell_bet;
         }
     } else {
         # check short code

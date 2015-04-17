@@ -63,15 +63,15 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
 Bar("Update the news events database");
 
 # Input fields
-my $symbol                    = request()->param('symbol');
-my $impact                    = request()->param('impact');
-my $event_name                = request()->param('event_name');
-my $release_date              = request()->param('release_date');
-my $source                    = request()->param('source');
-my $add_news_event            = request()->param('add_news_event');
-my $save_economic_event       = request()->param('save_economic_event');
-my $autoupdate                = request()->param('autoupdate');
-my $display                   = BOM::MarketData::Display::EconomicEvent->new;
+my $symbol              = request()->param('symbol');
+my $impact              = request()->param('impact');
+my $event_name          = request()->param('event_name');
+my $release_date        = request()->param('release_date');
+my $source              = request()->param('source');
+my $add_news_event      = request()->param('add_news_event');
+my $save_economic_event = request()->param('save_economic_event');
+my $autoupdate          = request()->param('autoupdate');
+my $display             = BOM::MarketData::Display::EconomicEvent->new;
 
 # Manual cron runner for economic events
 print $display->economic_event_forms(request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'));

@@ -17,7 +17,7 @@ BrokerPresentation('EDIT PROMOTIONAL CODE DETAILS');
 
 my %input = %{request()->params};
 
-my $staff  = BOM::Platform::Auth0::can_access(['Marketing']);
+my $staff = BOM::Platform::Auth0::can_access(['Marketing']);
 
 my $pc;
 if (my $code = $input{promocode}) {
