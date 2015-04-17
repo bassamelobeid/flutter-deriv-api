@@ -28,7 +28,7 @@ my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
 my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
-my $skip_validation   = $cgi->param('skip_validation')||0;
+my $skip_validation   = $cgi->param('skip_validation') || 0;
 my $format            = $confirm || $preview || die "either preview or confirm";
 
 Bar('Batch Credit/Debit to Clients Accounts');
@@ -118,15 +118,14 @@ read_csv_row_and_callback(
         my $error;
         {
             $cols_found == $cols_expected or $error = "Found $cols_found fields, needed $cols_expected for $format payments", last;
-            $action !~ /^(debit|credit)$/  and $error = "Invalid transaction type [$action]",    last;
+            $action !~ /^(debit|credit)$/ and $error = "Invalid transaction type [$action]", last;
             $amount !~ /^\d+\.?\d?\d?$/ || $amount == 0 and $error = "Invalid amount [$amount]", last;
             !$statement_comment and $error = 'Statement comment can not be empty', last;
             $client = eval { BOM::Platform::Client->new({loginid => $login_id}) } or $error = ($@ || 'No such client'), last;
             my $signed_amount = $action eq 'debit' ? $amount * -1 : $amount;
 
             unless ($skip_validation) {
-                try   { $client->validate_payment(currency=>$currency, amount=>$signed_amount) }
-                catch { $error = $_ };
+                try { $client->validate_payment(currency => $currency, amount => $signed_amount) } catch { $error = $_ };
                 last if $error;
             }
 
@@ -183,7 +182,7 @@ read_csv_row_and_callback(
                     staff             => $clerk,
                     payment_processor => $payment_processor,
                     trace_id          => $trace_id,
-                    ($skip_validation? (skip_validation=>1): ()),
+                    ($skip_validation ? (skip_validation => 1) : ()),
                 );
             } or $err = $@;
             BOM::Platform::Transaction->unfreeze_client($login_id);

@@ -36,16 +36,16 @@ for (qw/account amount currency ttype range/) {
 # Why all the delete-params?  Because any remaining form params just get passed directly
 # to the new-style database payment-handlers.  There's no need to mention those in this module.
 
-my $curr      = $params{currency};
-my $loginID   = uc((delete $params{account}    || ''));
-my $toLoginID = uc((delete $params{to_account} || ''));
-my $amount    = delete $params{amount};
-my $informclient   = delete $params{informclientbyemail};
-my $ttype          = delete $params{ttype};
-my $ajax_only      = delete $params{ajax_only};
-my $DCstaff        = delete $params{DCstaff};
-my $DCcode         = delete $params{DCcode};
-my $range          = delete $params{range};
+my $curr         = $params{currency};
+my $loginID      = uc((delete $params{account} || ''));
+my $toLoginID    = uc((delete $params{to_account} || ''));
+my $amount       = delete $params{amount};
+my $informclient = delete $params{informclientbyemail};
+my $ttype        = delete $params{ttype};
+my $ajax_only    = delete $params{ajax_only};
+my $DCstaff      = delete $params{DCstaff};
+my $DCcode       = delete $params{DCcode};
+my $range        = delete $params{range};
 
 BOM::Platform::Auth0::can_access(['Payments']);
 my $token = BOM::Platform::Context::request()->bo_cookie->token;
@@ -188,11 +188,11 @@ unless ($params{skip_validation}) {
     my $cli = $client;
     eval {
         if ($ttype eq 'TRANSFER') {
-            $cli->validate_payment( %params, amount=>-$amount);
+            $cli->validate_payment(%params, amount => -$amount);
             $cli = $toClient;
-            $cli->validate_payment( %params, amount=>$amount);
+            $cli->validate_payment(%params, amount => $amount);
         } else {
-            $cli->validate_payment( %params, amount=>$signed_amount);
+            $cli->validate_payment(%params, amount => $signed_amount);
         }
     };
     if (my $err = $@) {
@@ -224,9 +224,9 @@ my $leave;
 try {
     if ($ttype eq 'CREDIT' || $ttype eq 'DEBIT') {
         $client->smart_payment(
-            %params, # these are payment-type-specific params from the html form.
-            amount   => $signed_amount,
-            staff    => $clerk,
+            %params,    # these are payment-type-specific params from the html form.
+            amount => $signed_amount,
+            staff  => $clerk,
         );
 
     } elsif ($ttype eq 'TRANSFER') {
@@ -235,9 +235,10 @@ try {
             toClient => $toClient,
             amount   => $amount,
             staff    => $clerk,
-            )
+        );
     }
-} catch {
+}
+catch {
     print "<p>TRANSACTION ERROR: This payment violated a fundamental database rule.  Details:<br/>$_</p>";
     $leave = 1;
     printf STDERR "got here\n";

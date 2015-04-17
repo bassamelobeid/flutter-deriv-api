@@ -38,7 +38,8 @@ foreach my $underlying_symbol (@underlyings) {
         $calibration_results{$underlying_symbol} = display($underlying_symbol);
         $template_name = 'backoffice/calibrator_param.html.tt';
     } else {
-        $calibration_results{$underlying_symbol} = BOM::MarketData::VolSurface::Moneyness->new({underlying => BOM::Market::Underlying->new($underlying_symbol)})->parameterization || {};
+        $calibration_results{$underlying_symbol} =
+            BOM::MarketData::VolSurface::Moneyness->new({underlying => BOM::Market::Underlying->new($underlying_symbol)})->parameterization || {};
         $template_name = 'backoffice/manual_update_calibration_param.html.tt';
     }
 }

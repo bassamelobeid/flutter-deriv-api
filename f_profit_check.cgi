@@ -37,7 +37,7 @@ $enddate   = Date::Utility->new($enddate);
 
 my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
-            })->db;
+    })->db;
 
 Bar($loginID . " - Profit between " . $startdate->datetime . " and " . $enddate->datetime);
 

@@ -30,8 +30,9 @@ my $rt = BOM::Platform::Runtime->instance;
 
 if (
     my $err_msg =
-      (!request()->is_logged_into_bo)                      ? 'Not Logged into BO'
-    :                                                        ''
+    (!request()->is_logged_into_bo)
+    ? 'Not Logged into BO'
+    : ''
     )
 {
     print('<h1>' . $err_msg . '</h1>');
@@ -44,8 +45,8 @@ if ($localhost->has_role('master_live_server')) {
     die "This tool can't be accessed from Master Live Server. It can only be accessed from dealing server's BO";
 }
 
-my $broker_db    = BOM::Database::ClientDB->new({
-                broker_code => request()->param('broker'),
+my $broker_db = BOM::Database::ClientDB->new({
+        broker_code => request()->param('broker'),
     })->db;
 
 # We're going to presume things won't change too much underneath us.
@@ -66,17 +67,20 @@ if (request()->param('perform_actions')) {
             die $fmb_id . '  cannot be settled with this tool.' unless $bet_info;
 
             BOM::Database::Helper::FinancialMarketBet->new({
-                transaction_data => {
-                    staff_loginid => $staff_name,
-                },
-                bet_data => {
-                    id         => $fmb_id,
-                    sell_price => $action eq 'win' ? $bet_info->{payout} : 0,
-                    sell_time  => Date::Utility->new->db_timestamp,
-                },
-                account_data => {client_loginid => $bet_info->{loginid}, currency_code => $bet_info->{currency}},
-                db           => $broker_db
-            })->sell_bet;
+                    transaction_data => {
+                        staff_loginid => $staff_name,
+                    },
+                    bet_data => {
+                        id         => $fmb_id,
+                        sell_price => $action eq 'win' ? $bet_info->{payout} : 0,
+                        sell_time  => Date::Utility->new->db_timestamp,
+                    },
+                    account_data => {
+                        client_loginid => $bet_info->{loginid},
+                        currency_code  => $bet_info->{currency}
+                    },
+                    db => $broker_db
+                })->sell_bet;
 
             if ($action eq 'cancel') {
                 # For cancelled bets, now adjust their account for the purchase price
@@ -98,7 +102,7 @@ if (request()->param('perform_actions')) {
 }
 
 my $cancel_info = {};
-$cancel_info->{unsettled} = current_unsaleable($broker_db);
+$cancel_info->{unsettled}   = current_unsaleable($broker_db);
 $cancel_info->{broker_code} = request()->param('broker');
 BOM::Platform::Context::template->process('backoffice/settle_contracts.html.tt', $cancel_info);
 
