@@ -128,7 +128,7 @@ sub vk_BOtopPRES    #this sub executed in BrokerPresentation
 
     my @codes = sort { $a->code cmp $b->code }
         BOM::Platform::Runtime->instance->broker_codes->get_brokers_on_server(BOM::Platform::Runtime->instance->hosts->localhost);
-    my $broker = $codes[0]->code;
+    my $broker = @codes ? $codes[0]->code : 'CR';
 
     my $rand           = '?' . rand(9999);                                                   #to avoid caching on these fast navigation links
     my $vk_BOurl       = request()->url_for("backoffice/f_broker_login.cgi", {_r => $rand});
