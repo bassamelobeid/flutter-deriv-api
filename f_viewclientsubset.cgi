@@ -404,7 +404,7 @@ sub get_client_by_status {
 
     my $dbh = BOM::Database::ClientDB->new({
             broker_code => $broker,
-                    })->db->dbh;
+        })->db->dbh;
     my $sth = $dbh->prepare($sql);
     $sth->execute($show, $broker);
     my $results = $sth->fetchall_hashref('loginid');

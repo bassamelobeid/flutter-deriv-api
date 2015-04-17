@@ -41,9 +41,7 @@ if ($from_arg and $to_arg) {
     $from = Date::Utility->new($from_arg);
     $to   = Date::Utility->new($to_arg);
 } else {
-    $to =
-        Date::Utility->new(
-        Date::Utility->new('1-' . $runtime->month_as_string . '-' . $runtime->year_in_two_digit . ' 00:00:00')->epoch - 1);
+    $to   = Date::Utility->new(Date::Utility->new('1-' . $runtime->month_as_string . '-' . $runtime->year_in_two_digit . ' 00:00:00')->epoch - 1);
     $from = Date::Utility->new('1-' . $to->month_as_string . '-' . $to->year_in_two_digit . ' 00:00:00');
 }
 
