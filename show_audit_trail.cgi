@@ -28,7 +28,7 @@ if ($broker eq 'FOG') {
 }
 
 my $db = BOM::Database::ClientDB->new({
-                broker_code => $broker,
+        broker_code => $broker,
     })->db;
 
 my $category    = request()->param('category');

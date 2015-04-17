@@ -61,7 +61,7 @@ subtest 'realtime report generation' => sub {
         broker_code => 'CR',
     });
     my $USDaccount = BOM::Test::Data::Utility::UnitTestDatabase::create_account({
-        client_loginid  => $client->loginid,
+        client_loginid => $client->loginid,
     });
 
     BOM::Test::Data::Utility::TestDatabaseFixture->new(
@@ -143,8 +143,7 @@ subtest 'realtime report generation' => sub {
     is($dm->get_last_generated_historical_marked_to_market_time, undef, 'Start with a clean slate.');
 
     my $results;
-    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate }
-    'Report generation does not die.';
+    lives_ok { $results = BOM::RiskReporting::MarkedToModel->new(end => $now, send_alerts => 0)->generate } 'Report generation does not die.';
 
     note 'This may not be checking what you think.  It can not tell when things sold.';
     is($dm->get_last_generated_historical_marked_to_market_time, $now->db_timestamp, 'It ran and updated our timestamp.');
