@@ -134,6 +134,7 @@ sub _save_excel_holidays_to_couch {
 
         $config_db = "BOM::MarketData::ExchangeConfig";
     }
+    my %synthetic_symbols = map {$_ => 1} BOM::Market::UnderlyingDB->get_symbols_for(market => 'smarties', submarket => 'smart_index');
 
     foreach my $symbol (keys %{$calendar_data}) {
 
@@ -169,6 +170,9 @@ sub _save_excel_holidays_to_couch {
             $existing_data->{holidays}      = $holiday_to_save;
             $existing_data->{recorded_date} = Date::Utility->new;
 
+            if ($synthetic_symbols{'SYN'.$couch_symbol}) {
+                $config_db->new({%$existing_data, symbol => 'SYN'.$couch_symbol})->save;
+            }
             my $new_config = $config_db->new($existing_data);
             $new_config->save;
 
