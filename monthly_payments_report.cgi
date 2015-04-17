@@ -65,7 +65,7 @@ HERE
 
 my $dbh = BOM::Database::ClientDB->new({
         broker_code => $broker,
-            })->db->dbh;
+    })->db->dbh;
 
 my $sth   = $dbh->prepare($sql);
 my @binds = (

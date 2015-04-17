@@ -42,8 +42,8 @@ if ($input{impersonate_user}) {
         scopes          => ['price', 'chart'],
     );
     my $cookie = BOM::Platform::SessionCookie->new(
-        loginid       => $loginid,
-        token         => $token,
+        loginid => $loginid,
+        token   => $token,
     );
     my $session_cookie = CGI::cookie(
         -name    => BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login,

@@ -55,7 +55,7 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $is_random = ($symbol =~ /^RD/ or $symbol =~ /^R_/) ? 1 : 0;
     my $long_code = '';
     try {
-	($long_code) = simple_contract_info($bet->{'short_code'}, $currency_code);
+        ($long_code) = simple_contract_info($bet->{'short_code'}, $currency_code);
         $long_code =~ s/,/ /g;
     }
     catch {
