@@ -24,9 +24,7 @@ if (not BOM::Platform::Auth0::from_cookie()) {
     PrintContentType();
 }
 
-my @codes = sort { $a->code cmp $b->code }
-    BOM::Platform::Runtime->instance->broker_codes->get_brokers_on_server(BOM::Platform::Runtime->instance->hosts->localhost);
-my $broker = @codes ? $codes[0]->code : 'CR';
+my $broker = request()->broker_code;
 
 BrokerPresentation('STAFF LOGIN PAGE');
 
