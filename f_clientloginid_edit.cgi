@@ -80,7 +80,7 @@ if ($input{impersonate_user}) {
 
     my $loginid_list_cookie = CGI::cookie(
         -name    => 'loginid_list',
-        -value   => $user->loginids_cookie_string,
+        -value   => $user->cookie_and_default_loginid->{cookie},
         -domain  => request()->cookie_domain,
         -secure  => 0,
         -path    => '/',
