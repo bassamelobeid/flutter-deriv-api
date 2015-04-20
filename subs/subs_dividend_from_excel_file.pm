@@ -145,6 +145,8 @@ sub read_discrete_forecasted_dividend_from_excel_files {
                     $ex_div = Date::Utility->new($year . '-' . sprintf('%02d', $1) . '-' . sprintf('%02d', $2));
                 } elsif ($ex_date =~ /(\w{3})\s+(\d{1,2})\s+(\d{4})\s?$/) {
                     $ex_div = Date::Utility->new(sprintf('%02d', $2) . '-' . $1 . '-' . sprintf('%02d', $3));
+                }elsif ($ex_date =~ /(\d{1,2})\-(\w{3})\-(\d{4})/){
+                    $ex_div = Date::Utility->new($ex_div);
                 }
 
                 my $fix_term = $ex_div->days_between($now);
