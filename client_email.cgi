@@ -67,8 +67,8 @@ if (not $input{email_edit}) {
             $user->save;
 
             foreach my $loginid (@loginids) {
-                $loginid =~ /(\D+)\d+/;
-                my $broker = $1;
+                my $broker;
+                $loginid =~ /^(\D+)\d+$/ and $broker = $1;
 
                 my $dbh = BOM::Database::ClientDB->new({
                         broker_code => $broker,
