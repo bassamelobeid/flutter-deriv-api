@@ -27,8 +27,7 @@ my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange', $_, 'exchange_config',
-    {
+    'exchange', {
         symbol          => $_,
         date            => Date::Utility->new,
     }) for (qw/FOREX RANDOM/);
