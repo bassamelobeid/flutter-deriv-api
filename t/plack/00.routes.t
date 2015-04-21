@@ -18,10 +18,8 @@ my @GETs = (
     '/transaction/payment/doughflow/deposit_validate',
     '/transaction/payment/doughflow/withdrawal_validate'
 );
-my @POSTs = (
-    '/transaction/payment/doughflow/deposit',
-    '/transaction/payment/doughflow/withdrawal', '/transaction/payment/doughflow/withdrawal_reversal'
-);
+my @POSTs =
+    ('/transaction/payment/doughflow/deposit', '/transaction/payment/doughflow/withdrawal', '/transaction/payment/doughflow/withdrawal_reversal');
 
 foreach my $u (@GETs) {
     $r = request('GET', "$u?client_loginid=$loginid&currency_code=USD");

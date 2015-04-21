@@ -82,6 +82,11 @@ sub comment {
     return $line;
 }
 
+sub fee_comment {
+    my ($c, $trx_id) = @_;
+    return 'Fee corresponding to ' . $c->type . ' Ref ' . $trx_id;
+}
+
 sub validate_params {
     my $c   = shift;
     my $log = $c->env->{log};
