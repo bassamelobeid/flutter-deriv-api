@@ -26,7 +26,11 @@ my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
 
-$fix->new('exchange', {symbol => $_})->create for qw(FOREX RANDOM);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange', {
+        symbol          => $_,
+        date            => Date::Utility->new,
+    }) for (qw/FOREX RANDOM/);
 
 my %date_string = (
     R_50      => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
@@ -57,19 +61,16 @@ subtest 'realtime report generation' => sub {
         broker_code => 'FOG',
     });
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_new_client({
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
-    my $USDaccount = BOM::Test::Data::Utility::UnitTestDatabase::create_account({
-        client_loginid => $client->loginid,
-    });
+    my $USDaccount = $client->set_default_account('USD');
 
-    BOM::Test::Data::Utility::TestDatabaseFixture->new(
-        'payment_deposit',
-        {
-            amount     => 5000,
-            account_id => $USDaccount->id,
-        })->create;
+    $client->payment_free_gift(
+        currency    => 'USD',
+        amount      => 5000,
+        remark      => 'free gift',
+    );
 
     my $start_time  = $minus5mins;
     my $expiry_time = $now;
