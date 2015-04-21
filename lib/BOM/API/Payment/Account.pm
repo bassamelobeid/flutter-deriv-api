@@ -7,6 +7,7 @@ with 'BOM::API::Payment::Role::Plack';
 
 use BOM::Platform::Client;
 use BOM::Database::DataMapper::Account;
+use BOM::Utility::CurrencyConverter qw(amount_from_to_currency);
 use Try::Tiny;
 
 sub account_GET {
@@ -28,10 +29,7 @@ sub account_GET {
         return $c->status_bad_request("No $currency_code account for client $client");
     }
 
-    my $limit = $client->get_limit({
-        for      => 'account_balance',
-        currency => $currency_code
-    });
+    my $limit = amount_from_to_currency $client->get_limit_for_account_balance, USD => $currency_code;
 
     return {
         client_loginid => $client->loginid,
