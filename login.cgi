@@ -34,7 +34,6 @@ if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('
         loginid => BOM::Platform::Context::request()->broker->code,
         token   => request()->param('access_token'),
         clerk   => $staff->{nickname},
-        email   => request()->param('email'),
     });
     PrintContentType({'cookies' => $mycookie});
 } elsif (request()->param('whattodo') eq 'logout') {
@@ -42,7 +41,6 @@ if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('
         loginid => "",
         token   => "",
         clerk   => "",
-        email   => "",
         expires => 1,
     });
     BOM::Platform::Auth0::loggout();
