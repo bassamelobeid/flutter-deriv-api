@@ -185,6 +185,10 @@ if (my $check_str = $input{do_id_check}) {
 # SAVE DETAILS
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
 
+    print "<p style=\"color:red; font-weight:bold;\">NOTE: Client settings change is disabled for the time being, please check with IT</p></p>";
+    code_exit_BO();
+
+
     #error checks
     unless ($client->is_virtual) {
         if (length($input{'last_name'}) < 1) {
