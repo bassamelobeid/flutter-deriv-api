@@ -76,8 +76,15 @@ print '</td>'
     . '">View<br />Big Ticket<br />client uploads</a></td>'
     . '</td></tr></table>';
 
-Bar("CLOSED/DISABLED ACCOUNTS");
+Bar("VIEW/EDIT CLIENT'S Email");
+print '<form action="'
+    . request()->url_for('backoffice/client_email.cgi')
+    . '" method="post">'
+    . '<b>Client\'s Email : </b>';
+print '<input type=text size=30 name="email">';
+print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
 
+Bar("CLOSED/DISABLED ACCOUNTS");
 my $client_login                = request()->param('login_id') || $broker . '';
 my $untrusted_disabled_action   = "Disabled/Closed Accounts";
 my $untrusted_cashier_action    = "Cashier Lock Section";
