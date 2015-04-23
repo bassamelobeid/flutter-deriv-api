@@ -13,7 +13,6 @@ use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
-use BOM::Platform::User;
 use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -42,12 +41,9 @@ if ($input{impersonate_user}) {
         login_id        => $loginid,
         scopes          => ['price', 'chart'],
     );
-
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
     my $cookie = BOM::Platform::SessionCookie->new(
-        loginid       => $loginid,
-        token         => $token,
-        email         => $client->email,
+        loginid => $loginid,
+        token   => $token,
     );
     my $session_cookie = CGI::cookie(
         -name    => BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login,
@@ -66,30 +62,7 @@ if ($input{impersonate_user}) {
         -path    => '/',
         -expires => time + 86400,
     );
-
-    my $email_cookie = CGI::cookie(
-        -name    => 'email',
-        -value   => $client->email,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    my $type = ($client->is_virtual) ? 'V' : 'R';
-    my $status = ($client->get_status('disabled')) ? 'D' : 'E';
-    my $cookie_str = "$loginid:$type:$status";
-
-    my $loginid_list_cookie = CGI::cookie(
-        -name    => 'loginid_list',
-        -value   => $cookie_str,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    PrintContentType({'cookies' => [ $session_cookie, $lcookie, $email_cookie, $loginid_list_cookie ]});
+    PrintContentType({'cookies' => [$session_cookie, $lcookie]});
     eval { BrokerPresentation("$loginid CLIENT DETAILS") };
     print '<font color=green><b>SUCCESS!</b></font></p>';
     print qq[You are impersonating $loginid on our <a href="/" target="impersonated">main web site<a/>.];
@@ -208,6 +181,13 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             code_exit_BO();
         }
     }
+    if (length($input{'email'}) < 5) {
+        print "<p style=\"color:red; font-weight:bold;\">ERROR ! EMAIL field appears incorrect or empty.</p></p>";
+        code_exit_BO();
+    }
+
+    # new method is used here as we need to keep old values and then compare them to the changes
+    my $client_old_email = $client->email;
 
     # client promo_code related fields
     if (BOM::Platform::Auth0::has_authorisation(['Marketing'])) {
@@ -322,6 +302,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->custom_max_payout($input{$key});
             next CLIENT_KEY;
         }
+        if ($key eq 'email') {
+            $client->email($input{$key});
+            next CLIENT_KEY;
+        }
         if ($key eq 'phone') {
             $client->phone($input{$key});
             next CLIENT_KEY;
@@ -379,6 +363,27 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     if (not $client->save) {
         print "<p style=\"color:red; font-weight:bold;\">ERROR : Could not update client details for client $loginid</p></p>";
         code_exit_BO();
+    }
+
+    # change of email -> warn Client
+    if (uc $client_old_email ne uc $client->email) {
+        my $website_name  = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($client->broker)->display_name;
+        my $support_email = BOM::Platform::Context::request()->website->config->get('customer_support.email');
+        $support_email = qq{"$website_name" <$support_email>};
+
+        send_email({
+                'from'             => $support_email,
+                'to'               => $client_old_email,
+                'subject'          => $loginid . ' - change in email address',
+                'template_loginid' => $loginid,
+                'message'          => [
+                    localize(
+                        'This is to confirm that your email address for your account [_1] on [_2] has been changed from [_3] to [_4]',
+                        $loginid, $website_name, $client_old_email, $client->email
+                    )
+                ],
+                'use_email_template' => 1,
+            });
     }
 
     print '<p><b>SUCCESS!</b></p>';
