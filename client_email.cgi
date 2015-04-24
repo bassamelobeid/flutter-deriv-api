@@ -4,6 +4,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 use Try::Tiny;
 use Email::Valid;
+use List::MoreUtils qw( uniq any firstval );
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Strings qw( defang );
@@ -14,6 +15,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::ClientDB;
+use BOM::Database::UserDB;
 
 BOM::Platform::Sysinit::init();
 
@@ -62,41 +64,87 @@ if (not $input{email_edit}) {
     ) || die BOM::Platform::Context::template->error();
 } else {
     if ($email ne $new_email) {
-        try {
-            $user->email($new_email);
-            $user->save;
+        my ($delete_old_user, $duplicate_broker);
+        my @loginids_new;
+        my $user_new = BOM::Platform::User->new({ email => $new_email });
+
+        # if new email already exist in db, check whether that user already has account with same broker. If not, allow changes
+        if ($user_new->id) {
+            $delete_old_user = 1;
+            @loginids_new = $user_new->loginid_array;
+            my @brokers_new = uniq map { /^(\D+)\d+$/ ? my $x = $1 : () } @loginids_new;
 
             foreach my $loginid (@loginids) {
                 my $broker;
                 $loginid =~ /^(\D+)\d+$/ and $broker = $1;
 
-                my $dbh = BOM::Database::ClientDB->new({
-                        broker_code => $broker,
-                    })->db->dbh;
-
-                my $sth = $dbh->prepare(q{
-                        UPDATE betonmarkets.client
-                        SET email = $1
-                        WHERE loginid = $2
-                    });
-                $sth->bind_param(1, $new_email);
-                $sth->bind_param(2, $loginid);
-                $sth->execute();
+                if ($broker and (any { $broker eq $_ } @brokers_new)) {
+                    $duplicate_broker = $broker;
+                    last;
+                }
             }
-        } catch {
-            print "Update email for user $email failed, reason: [$_]";
-            code_exit_BO();
-        };
+        }
 
-        BOM::Platform::Context::template->process(
-            'backoffice/client_email.html.tt',
-            {
-                updated     => 1,
-                old_email   => $email,
-                new_email   => $new_email,
-                loginids    => \@loginids,
-            },
-        ) || die BOM::Platform::Context::template->error();
+        if (not $duplicate_broker) {
+            try {
+                if (not $delete_old_user) {
+                    $user->email($new_email);
+                    $user->save;
+                } else {
+                    my $dbh = BOM::Database::UserDB::rose_db()->dbh;
+                    $dbh->{AutoCommit} = 0;
+                    my $update = q{
+                        UPDATE users.loginid SET binary_user_id = ?
+                        WHERE binary_user_id = ?
+                    };
+                    my $sth = $dbh->prepare($update);
+                    $sth->execute($user_new->id, $user->id);
+
+                    my $delete = q{ DELETE FROM users.binary_user WHERE id = ? };
+                    my $sth = $dbh->prepare($delete);
+                    $sth->execute($user->id);
+
+                    $dbh->commit;
+                }
+
+                foreach my $loginid (@loginids) {
+                    my $broker;
+                    $loginid =~ /^(\D+)\d+$/ and $broker = $1;
+
+                    my $dbh = BOM::Database::ClientDB->new({
+                            broker_code => $broker,
+                        })->db->dbh;
+
+                    my $sth = $dbh->prepare(q{
+                            UPDATE betonmarkets.client
+                            SET email = $1
+                            WHERE loginid = $2
+                        });
+                    $sth->bind_param(1, $new_email);
+                    $sth->bind_param(2, $loginid);
+                    $sth->execute();
+                }
+            } catch {
+                print "Update email for user $email failed, reason: [$_]";
+                code_exit_BO();
+            };
+
+            @loginids = (@loginids, @loginids_new) if (@loginids_new > 1);
+            BOM::Platform::Context::template->process(
+                'backoffice/client_email.html.tt',
+                {
+                    updated     => 1,
+                    old_email   => $email,
+                    new_email   => $new_email,
+                    loginids    => \@loginids,
+                },
+            ) || die BOM::Platform::Context::template->error();
+        } else {
+            my $l = firstval { $_ =~ qr/^$duplicate_broker\d+$/ } @loginids_new;
+
+            print "Update email for user $email failed, [$new_email] already has loginid [$l]";
+            code_exit_BO();
+        }
     } else {
         print "Same email [$new_email] provided, no update required";
     }
