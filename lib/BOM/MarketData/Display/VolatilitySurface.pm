@@ -5,7 +5,7 @@ use Moose;
 use Date::Utility;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request template);
-use BOM::Utility::Format::Numbers qw( roundnear );
+use Format::Util::Numbers qw( roundnear );
 use BOM::MarketData::VolSurface::Converter qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Utility::GNUPlot;
