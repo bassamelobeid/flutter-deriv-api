@@ -632,21 +632,29 @@ sub _get_overview {
         delta => 50,
         days  => $bet->timeinyears->amount * 365,
     });
-    my $delta_strike1 = 100 * get_delta_for_strike({
-        strike           => $bet->barrier->as_absolute,
-        atm_vol          => $atm_vol,
-        t                => $bet->timeinyears->amount,
-        spot             => $bet->current_spot,
-        r_rate           => $bet->r_rate,
-        q_rate           => $bet->q_rate,
-        premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
-    });
-    my $delta_strike2;
+    my ($delta_strike1, $delta_strike2);
     if ($bet->two_barriers) {
-
-        # lower barrier
+        $delta_strike1 = 100 * get_delta_for_strike({
+            strike           => $bet->high_barrier->as_absolute,
+            atm_vol          => $atm_vol,
+            t                => $bet->timeinyears->amount,
+            spot             => $bet->current_spot,
+            r_rate           => $bet->r_rate,
+            q_rate           => $bet->q_rate,
+            premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+        });
         $delta_strike2 = 100 * get_delta_for_strike({
-            strike           => $bet->barrier2->as_absolute,
+            strike           => $bet->low_barrier->as_absolute,
+            atm_vol          => $atm_vol,
+            t                => $bet->timeinyears->amount,
+            spot             => $bet->current_spot,
+            r_rate           => $bet->r_rate,
+            q_rate           => $bet->q_rate,
+            premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+        });
+    } else {
+        $delta_strike1 = 100 * get_delta_for_strike({
+            strike           => $bet->barrier->as_absolute,
             atm_vol          => $atm_vol,
             t                => $bet->timeinyears->amount,
             spot             => $bet->current_spot,
@@ -808,17 +816,22 @@ sub _get_cost_of_greeks {
                 $new_bet = $bet;
             } else {
                 my $date_expiry = Date::Utility->new({epoch => Date::Utility->new->epoch + $days * 86400})->date;
+                my %barriers;
+                if ($bet->two_barriers) {
+                    %barriers = (high_barrier => $bet->high_barrier->supplied_barrier, low_barrier => $bet->low_barrier->supplied_barrier);
+                } else {
+                    %barriers = (barrier => $bet->barrier->supplied_barrier);
+                }
                 $new_bet = produce_contract({
                     'current_spot' => $bet->current_spot,
                     'market'       => $bet->underlying->market,
-                    'barrier'      => $bet->barrier,
-                    'barrier2'     => $bet->barrier2,
                     'bet_type'     => $bet->code,
                     'currency'     => $bet->currency,
                     'underlying'   => $bet->underlying,
                     'date_start'   => $bet->date_start,
                     'payout'       => $bet->payout,
                     'date_expiry'  => $date_expiry,
+                    %barriers
                 });
             }
             my $pe = $new_bet->pricing_engine_name->new({bet => $new_bet});
