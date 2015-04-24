@@ -89,12 +89,12 @@ sub debug_link {
     my $greeks_content = $self->_get_greeks();
 
     my $ask_price_content = $self->_get_price({
-        id   => 'buildask' . $bet->bet_type->id,
+        id   => 'buildask' . $bet->id,
         prob => $bet->ask_probability,
     });
 
     my $bid_price_content = $self->_get_price({
-        id   => 'buildbid' . $bet->bet_type->id,
+        id   => 'buildbid' . $bet->id,
         prob => $bet->bid_probability,
     });
 
@@ -154,7 +154,7 @@ sub debug_link {
     BOM::Platform::Context::template->process(
         'backoffice/container/debug_link.html.tt',
         {
-            bet_id => $bet->bet_type->id,
+            bet_id => $bet->id,
             tabs   => $tabs_content
         },
         \$debug_link
@@ -302,7 +302,7 @@ sub _get_dvol {
     BOM::Platform::Context::template->process(
         'backoffice/price_debug/dvol_tab.html.tt',
         {
-            bet_id => $bet->bet_type->id,
+            bet_id => $bet->id,
             deltas => [@deltas],
             days   => [@days_display],
             tabs   => $tabs,
@@ -351,7 +351,7 @@ sub _get_moneyness_surface {
     my $master_display = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
     my $master_surface_content = $master_display->rmg_table_format({
         historical_dates => \@unique_dates,
-        tab_id           => $bet->bet_type->id . $master_vol_url,
+        tab_id           => $bet->id . $master_vol_url,
     });
 
     return $master_surface_content;
@@ -386,7 +386,7 @@ sub _get_volsurface {
         my $tokyo_display = BOM::MarketData::Display::VolatilitySurface->new(surface => $tokyo_surface);
         my $tokyo_surface_content = $tokyo_display->rmg_table_format({
             historical_dates => $dates,
-            tab_id           => $bet->bet_type->id . $tokyo_vol_url,
+            tab_id           => $bet->id . $tokyo_vol_url,
         });
 
         push @{$tabs},
@@ -402,7 +402,7 @@ sub _get_volsurface {
     my $master_display         = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
     my $master_surface_content = $master_display->rmg_table_format({
         historical_dates => $dates,
-        tab_id           => $bet->bet_type->id . $master_vol_url,
+        tab_id           => $bet->id . $master_vol_url,
     });
     push @{$tabs},
         {
@@ -423,7 +423,7 @@ sub _get_volsurface {
         my $volsurface_content = $display->rmg_table_format({
             greeks           => $cost_greeks,
             historical_dates => $dates,
-            tab_id           => $bet->bet_type->id . $used_vol_url,
+            tab_id           => $bet->id . $used_vol_url,
         });
 
         push @{$tabs},
@@ -438,7 +438,7 @@ sub _get_volsurface {
     BOM::Platform::Context::template->process(
         'backoffice/price_debug/vol_tab.html.tt',
         {
-            bet_id => $bet->bet_type->id,
+            bet_id => $bet->id,
             tabs   => $tabs,
         },
         \$vol_content
@@ -642,7 +642,7 @@ sub _get_overview {
         premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
     });
     my $delta_strike2;
-    if ($bet->bet_type->two_barriers) {
+    if ($bet->two_barriers) {
 
         # lower barrier
         $delta_strike2 = 100 * get_delta_for_strike({
@@ -813,7 +813,7 @@ sub _get_cost_of_greeks {
                     'market'       => $bet->underlying->market,
                     'barrier'      => $bet->barrier,
                     'barrier2'     => $bet->barrier2,
-                    'bet_type'     => $bet->bet_type->code,
+                    'bet_type'     => $bet->code,
                     'currency'     => $bet->currency,
                     'underlying'   => $bet->underlying,
                     'date_start'   => $bet->date_start,
