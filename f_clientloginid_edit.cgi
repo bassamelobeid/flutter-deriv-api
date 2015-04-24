@@ -43,13 +43,11 @@ if ($input{impersonate_user}) {
         scopes          => ['price', 'chart'],
     );
 
-    my $email = BOM::Platform::User::get_email_by_loginid($loginid);
-    my $user = BOM::Platform::User->new({ email => $email });
-
+    my $client = BOM::Platform::Client->new({loginid => $loginid});
     my $cookie = BOM::Platform::SessionCookie->new(
         loginid       => $loginid,
         token         => $token,
-        email         => $email,
+        email         => $client->email,
     );
     my $session_cookie = CGI::cookie(
         -name    => BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login,
@@ -71,16 +69,20 @@ if ($input{impersonate_user}) {
 
     my $email_cookie = CGI::cookie(
         -name    => 'email',
-        -value   => $email,
+        -value   => $client->email,
         -domain  => request()->cookie_domain,
         -secure  => 0,
         -path    => '/',
         -expires => time + 86400,
     );
 
+    my $type = ($client->is_virtual) ? 'V' : 'R';
+    my $status = ($client->get_status('disabled')) ? 'D' : 'E';
+    my $cookie_str = "$loginid:$type:$status";
+
     my $loginid_list_cookie = CGI::cookie(
         -name    => 'loginid_list',
-        -value   => $user->cookie_and_default_loginid->{cookie},
+        -value   => $cookie_str,
         -domain  => request()->cookie_domain,
         -secure  => 0,
         -path    => '/',
@@ -182,7 +184,6 @@ if (my $check_str = $input{do_id_check}) {
 
 # SAVE DETAILS
 if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
-
     #error checks
     unless ($client->is_virtual) {
         if (length($input{'last_name'}) < 1) {
