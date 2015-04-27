@@ -37,7 +37,7 @@ $report->{link_to_pnl} = sub {
         });
 };
 $report->{monify}  = \&to_monetary_number_format;
-$report->{virgule} = \&virgule;
+$report->{commas} = \&commas;
 $report->{titlfy}  = sub {
     my $href  = shift;
     my $title = $href->{name};

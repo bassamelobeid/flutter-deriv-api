@@ -23,7 +23,7 @@ BOM::Platform::Context::template->process(
     'backoffice/daily_turnover_report.html.tt',
     {
         dtr     => \%template,
-        virgule => \&virgule,
+        commas => \&commas,
     });
 
 code_exit_BO();
