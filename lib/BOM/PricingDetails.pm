@@ -25,7 +25,7 @@ use BOM::Market::Underlying;
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
-use BOM::MarketData::VolSurface::Converter qw( get_delta_for_strike get_strike_for_spot_delta get_1vol_butterfly);
+use VolSurface::Utils qw( get_delta_for_strike get_strike_for_spot_delta get_1vol_butterfly);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 use BOM::Greeks::FiniteDifference;

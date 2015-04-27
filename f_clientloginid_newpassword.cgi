@@ -42,7 +42,7 @@ my $link = request()->url_for(
     {
         action => 'recover',
         email  => url_encode($email),
-        token  => BOM::View::LostPassword->new(email => $email)->token,
+        reset_token  => BOM::View::LostPassword->new(email => $email)->token,
         login  => $client->loginid
     });
 

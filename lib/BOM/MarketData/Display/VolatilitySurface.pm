@@ -6,7 +6,7 @@ use Date::Utility;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request template);
 use Format::Util::Numbers qw( roundnear );
-use BOM::MarketData::VolSurface::Converter qw( get_1vol_butterfly );
+use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Utility::GNUPlot;
 use Try::Tiny;
