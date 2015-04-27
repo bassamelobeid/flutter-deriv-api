@@ -7,7 +7,7 @@ use Email::Valid;
 use List::MoreUtils qw( uniq any firstval );
 
 use f_brokerincludeall;
-use BOM::Utility::Format::Strings qw( defang );
+use Format::Util::Strings qw( defang );
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
