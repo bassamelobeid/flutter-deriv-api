@@ -62,7 +62,7 @@ if (my $self_exclusion = $client->get_self_exclusion) {
     }
     if ($self_exclusion->max_turnover) {
         $page .= '<li>'
-            . localize('Daily Turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
+            . localize('Daily stake limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
             . '</li>';
     }
     if ($self_exclusion->max_losses) {
@@ -72,7 +72,7 @@ if (my $self_exclusion = $client->get_self_exclusion) {
     }
     if ($self_exclusion->max_7day_turnover) {
         $page .= '<li>'
-            . localize('7-Day Turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_turnover)
+            . localize('7-Day stake limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_turnover)
             . '</li>';
     }
     if ($self_exclusion->max_7day_losses) {
