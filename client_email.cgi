@@ -8,6 +8,7 @@ use List::MoreUtils qw( uniq any firstval );
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Strings qw( defang );
+use Text::Trim;
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -27,13 +28,13 @@ my $staff  = BOM::Platform::Auth0::can_access(['CS']);
 my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
 
 my %input = %{request()->params};
-my $email = lc defang($input{email});
+my $email = trim(lc defang($input{email}));
 
 my @emails = ($email);
 
 my $new_email;
 if ($input{new_email}) {
-    $new_email = lc defang($input{new_email});
+    $new_email = trim(lc defang($input{new_email}));
     push @emails, $new_email;
 }
 
