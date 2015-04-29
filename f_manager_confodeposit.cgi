@@ -113,7 +113,7 @@ my $last_name  = $client->last_name;
 # Check Dual Control Code
 
 # We can do development tests without hassling with DCCs.. but to test DCCs on dev, make the amount as below.
-if (!BOM::Platform::Runtime->instance->app_config->system->on_development || $amount == 1234.56) {
+if (BOM::Platform::Runtime->instance->app_config->system->on_production || $amount == 1234.56) {
 
     if (!$DCstaff) {
         print "ERROR: fellow staff name for dual control code not specified";
