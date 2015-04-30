@@ -8,6 +8,7 @@ use List::MoreUtils qw( uniq any firstval );
 
 use f_brokerincludeall;
 use BOM::Utility::Format::Strings qw( defang );
+use Text::Trim;
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -27,13 +28,13 @@ my $staff  = BOM::Platform::Auth0::can_access(['CS']);
 my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
 
 my %input = %{request()->params};
-my $email = lc defang($input{email});
+my $email = trim(lc defang($input{email}));
 
 my @emails = ($email);
 
 my $new_email;
 if ($input{new_email}) {
-    $new_email = lc defang($input{new_email});
+    $new_email = trim(lc defang($input{new_email}));
     push @emails, $new_email;
 }
 
@@ -62,7 +63,7 @@ if (not $input{email_edit}) {
             loginids    => \@loginids,
         },
     ) || die BOM::Platform::Context::template->error();
-} else {
+} elsif ($input{email_edit} == 1) {
     if ($email ne $new_email) {
         my ($delete_old_user, $duplicate_broker);
         my @loginids_new;
@@ -145,6 +146,77 @@ if (not $input{email_edit}) {
             print "Update email for user $email failed, [$new_email] already has loginid [$l]";
             code_exit_BO();
         }
+    } else {
+        print "Same email [$new_email] provided, no update required";
+    }
+} elsif ($input{email_edit} == 2) {
+    my $loginid = trim(uc $input{loginid});
+
+    if ($email ne $new_email) {
+        my $user_dbh = BOM::Database::UserDB::rose_db()->dbh;
+        $user_dbh->{AutoCommit} = 0;
+        my $update = q{
+            UPDATE users.loginid SET binary_user_id = ?
+            WHERE loginid = ?
+        };
+        my $user_sth = $user_dbh->prepare($update);
+
+        my $broker;
+        $loginid =~ /^(\D+)\d+$/ and $broker = $1;
+        my $client_dbh = BOM::Database::ClientDB->new({
+                broker_code => $broker,
+            })->db->dbh;
+        my $client_sth = $client_dbh->prepare(q{
+                UPDATE betonmarkets.client
+                SET email = $1
+                WHERE loginid = $2
+            });
+
+        my $user_new = BOM::Platform::User->new({ email => $new_email });
+        if (not $user_new->id) {
+            $user_new->password($user->password);
+            $user_new->save;
+
+            $user_sth->execute($user_new->id, $loginid);
+            $client_sth->execute($new_email, $loginid);
+        } else {
+            my @loginids_new = $user_new->loginid_array;
+            my @brokers_new = uniq map { /^(\D+)\d+$/ ? my $x = $1 : () } @loginids_new;
+
+            if ($broker and (any { $broker eq $_ } @brokers_new)) {
+                my $l = firstval { $_ =~ qr/^$broker\d+$/ } @loginids_new;
+                print "Update email for client [$loginid] failed, new email [$new_email] already has loginid with [$l]";
+                code_exit_BO();
+            } else {
+                $user_sth->execute($user_new->id, $loginid);
+                $client_sth->execute($new_email, $loginid);
+            }
+        }
+
+        # check old email still has any loginid. If not, delete it
+        my $cnt_sth = $user_dbh->prepare(q{
+            SELECT count(*) FROM users.loginid l, users.binary_user u
+            WHERE l.binary_user_id = u.id AND email = ?
+        });
+        $cnt_sth->execute($email);
+        my $count = $cnt_sth->fetchrow_arrayref();
+
+        unless ($count and $count->[0] > 0) {
+            my $del_sth = $user_dbh->prepare(q{ DELETE FROM users.binary_user WHERE email = ? });
+            $del_sth->execute($email);
+        }
+        $user_dbh->commit;
+        $user_dbh->{AutoCommit} = 1;
+
+        BOM::Platform::Context::template->process(
+            'backoffice/client_email.html.tt',
+            {
+                updated     => 1,
+                old_email   => $email,
+                new_email   => $new_email,
+                loginids    => [$loginid],
+            },
+        ) || die BOM::Platform::Context::template->error();
     } else {
         print "Same email [$new_email] provided, no update required";
     }

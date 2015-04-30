@@ -15,14 +15,26 @@
     </ul>
 
     [% IF list == 1 %]
-        <hr>To change client's email:</br></br>
+        <hr>Change client's email for all loginids listed above:</br></br>
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
             <b>New Email: </b>
             <input type="text" size="30" name="new_email">&nbsp;&nbsp;
             <input type="hidden" name="email" value="[% email %]">
             <input type="hidden" name="email_edit" value="1">
             <input type="submit" value="Update Email">
-            &nbsp;&nbsp; (Note: This will update email for all the listed loginids above)
+            &nbsp;&nbsp; <b>(Note: This will update email for all the listed loginids above)</b>
+        </form>
+
+        <hr>Change client's email for a single loginid:</br></br>
+        <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
+            <b>Loginid: </b>
+            <input type="text" size="30" name="loginid">&nbsp;&nbsp;
+            <b>New Email: </b>
+            <input type="text" size="30" name="new_email">&nbsp;&nbsp;
+            <input type="hidden" name="email" value="[% email %]">
+            <input type="hidden" name="email_edit" value="2">
+            <input type="submit" value="Update Email">
+            &nbsp;&nbsp; <b>(Note: This only update email for a single loginid specified)</b>
         </form>
     [% END %]
 </div>
