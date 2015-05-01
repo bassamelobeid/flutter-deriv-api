@@ -28,7 +28,7 @@
                 amount = amount[index[i]];
             }
 
-            return { "title" : uname +': '+ virgule(Math.round(amount)) };
+            return { "title" : uname +': '+ commas(Math.round(amount)) };
         };
       \$(window).load(function(){
     \$('#exposure_spark').sparkline(sparkline_info.mtm , line_config);
