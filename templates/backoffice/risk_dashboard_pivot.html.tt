@@ -3,7 +3,7 @@
 <script type="text/javascript">
       \$(window).load(function(){
     var pivot = [% pivot %];
-    pivot.formatter = function (V,f) { var res=0; if (typeof(V) === "number") { res = commas(Math.round(V)); } return res; };
+    pivot.formatter = function (V,f) { var res=0; if (typeof(V) === "number") { res = virgule(Math.round(V)); } return res; };
               \$("#pivot1").jbPivot(pivot)
           });
 </script>
