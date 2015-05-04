@@ -2,7 +2,7 @@ use strict 'vars';
 use Encode;
 use Carp qw( croak );
 
-use BOM::Utility::Format::Strings qw( set_selected_item );
+use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;

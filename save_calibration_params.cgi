@@ -8,7 +8,7 @@ use f_brokerincludeall;
 use BOM::MarketData::Display::VolatilitySurface;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 
 use JSON qw(to_json);

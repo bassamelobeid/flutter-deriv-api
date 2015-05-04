@@ -2,7 +2,7 @@
 package main;
 use strict 'vars';
 
-use BOM::Utility::Format::Strings qw( defang );
+use Format::Util::Strings qw( defang );
 use f_brokerincludeall;
 use Path::Tiny;
 use BOM::Platform::Plack qw( PrintContentType );

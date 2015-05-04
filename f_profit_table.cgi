@@ -3,7 +3,7 @@ package main;
 use strict 'vars';
 
 use Date::Utility;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;

@@ -10,7 +10,7 @@ use Path::Tiny;
 use f_brokerincludeall;
 use Date::Utility;
 use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Utility::Format::Numbers qw( virgule );
+use Format::Util::Numbers qw( commas );
 use BOM::MarketData::InterestRate;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Moneyness;
@@ -285,7 +285,7 @@ if (length $shorttext != length $text) {
 }
 print "</pre>";
 
-print "<p>New file size is " . (virgule(-s "$overridefilename")) . " bytes</p><hr/>";
+print "<p>New file size is " . (commas(-s "$overridefilename")) . " bytes</p><hr/>";
 
 # DISPLAY diff
 print
