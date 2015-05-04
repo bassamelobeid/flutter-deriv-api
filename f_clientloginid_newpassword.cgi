@@ -10,7 +10,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
-use BOM::View::LostPassword;
+use BOM::View::EmailToken;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -40,10 +40,10 @@ my $lang = request()->language;
 my $link = request()->url_for(
     'reset_password.cgi',
     {
-        action => 'recover',
-        email  => url_encode($email),
-        reset_token  => BOM::View::LostPassword->new(email => $email)->token,
-        login  => $client->loginid
+        action      => 'recover',
+        email       => url_encode($email),
+        reset_token => BOM::View::EmailToken->new(email => $email)->token,
+        login       => $client->loginid
     });
 
 my $lost_pass_email;
