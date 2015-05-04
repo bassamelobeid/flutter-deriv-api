@@ -20,7 +20,7 @@ use Path::Tiny;
 use File::Temp ();
 use Try::Tiny;
 use File::Copy;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use File::Slurp;
 use Text::CSV::Slurp;
 use Date::Utility;

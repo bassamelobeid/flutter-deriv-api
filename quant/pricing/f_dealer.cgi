@@ -11,7 +11,7 @@ use Path::Tiny;
 use File::ReadBackwards;
 
 use Date::Utility;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Helper::FinancialMarketBet;

@@ -24,7 +24,7 @@ use Cache::RedisDB;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Platform::CustomClientLimits;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use BOM::Database::Model::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Account;
