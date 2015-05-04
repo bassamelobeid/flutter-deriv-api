@@ -101,7 +101,7 @@ install:
     # -- authdb
     - sudo pg_createcluster 9.3 authdb -p 5435 --locale 'en_US.UTF-8'
     - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/authdb/postgresql.conf"
-    - sudo cp -f t/config/pg_hba.conf /etc/postgresql/9.3/authdb/
+    - sudo cp -f /home/git/bom/t/config/pg_hba.conf /etc/postgresql/9.3/authdb/
     - sudo pg_ctlcluster 9.3 authdb start
     - sudo -u postgres createdb -p 5435 auth
     - sudo -u postgres psql -p 5435 -f /home/git/bom/database/config/sql/rmgdb/roles.sql
@@ -114,7 +114,7 @@ install:
     # -- users db
     - sudo pg_createcluster 9.3 users -p 5436 --locale 'en_US.UTF-8'
     - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/users/postgresql.conf"
-    - sudo cp -f t/config/pg_hba.conf /etc/postgresql/9.3/users/
+    - sudo cp -f /home/git/bom/t/config/pg_hba.conf /etc/postgresql/9.3/users/
     - sudo pg_ctlcluster 9.3 users start
     - sudo -u postgres psql -p 5436 -f /home/git/bom/database/config/sql/userdb/initialize_db.sql
     - sudo -u postgres psql -p 5436 -c "ALTER ROLE read WITH password 'letmein'"
