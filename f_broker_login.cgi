@@ -8,7 +8,7 @@ use BOM::Market::Registry;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Utility::Format::Strings qw( set_selected_item );
+use Format::Util::Strings qw( set_selected_item );
 use BOM::Platform::Auth0;
 use BOM::StaffPages;
 use BOM::Platform::Plack qw( PrintContentType );

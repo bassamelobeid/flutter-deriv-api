@@ -41,10 +41,13 @@ my $page =
     '<h2> The Client [loginid: ' . $loginid . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
 #to generate existing limits
-if (my $self_exclusion = $client->self_exclusion) {
+if (my $self_exclusion = $client->get_self_exclusion) {
     $page .= '<ul>';
     $self_exclusion_form->set_field_value('MAXCASHBAL',         $self_exclusion->max_balance);
     $self_exclusion_form->set_field_value('DAILYTURNOVERLIMIT', $self_exclusion->max_turnover);
+    $self_exclusion_form->set_field_value('DAILYLOSSLIMIT',     $self_exclusion->max_losses);
+    $self_exclusion_form->set_field_value('7DAYTURNOVERLIMIT',  $self_exclusion->max_7day_turnover);
+    $self_exclusion_form->set_field_value('7DAYLOSSLIMIT',      $self_exclusion->max_7day_losses);
     $self_exclusion_form->set_field_value('MAXOPENPOS',         $self_exclusion->max_open_bets);
     $self_exclusion_form->set_field_value('SESSIONDURATION',    $self_exclusion->session_duration_limit);
     if (my $exclude_until_date = $self_exclusion->exclude_until) {
@@ -59,7 +62,22 @@ if (my $self_exclusion = $client->self_exclusion) {
     }
     if ($self_exclusion->max_turnover) {
         $page .= '<li>'
-            . localize('Daily Turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
+            . localize('Daily stake limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
+            . '</li>';
+    }
+    if ($self_exclusion->max_losses) {
+        $page .= '<li>'
+            . localize('Daily limit on losses is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_losses)
+            . '</li>';
+    }
+    if ($self_exclusion->max_7day_turnover) {
+        $page .= '<li>'
+            . localize('7-Day stake limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_turnover)
+            . '</li>';
+    }
+    if ($self_exclusion->max_7day_losses) {
+        $page .= '<li>'
+            . localize('7-Day limit on losses is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_losses)
             . '</li>';
     }
     if ($self_exclusion->max_open_bets) {

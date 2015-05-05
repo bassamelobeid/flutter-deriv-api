@@ -9,7 +9,7 @@ use Path::Tiny;
 use Try::Tiny;
 
 use f_brokerincludeall;
-use BOM::Utility::Format::Numbers qw(to_monetary_number_format roundnear);
+use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);

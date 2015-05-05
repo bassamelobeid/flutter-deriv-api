@@ -6,7 +6,7 @@ use JSON qw(from_json to_json);
 use List::Util qw( min max );
 
 use Cache::RedisDB;
-use BOM::Utility::Format::Numbers qw(virgule roundnear);
+use Format::Util::Numbers qw(commas roundnear);
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(in_USD);
 

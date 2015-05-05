@@ -3,7 +3,7 @@ package main;
 
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Utility::Format::Strings qw( set_selected_item );
+use Format::Util::Strings qw( set_selected_item );
 
 use f_brokerincludeall;
 use BOM::View::Language;

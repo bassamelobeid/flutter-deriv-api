@@ -11,7 +11,7 @@ use Path::Tiny;
 
 use Date::Utility;
 use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();

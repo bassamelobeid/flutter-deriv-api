@@ -3,7 +3,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use Try::Tiny;
 use Spreadsheet::ParseExcel;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Market::Underlying;
 use YAML::XS;
