@@ -89,12 +89,12 @@ sub debug_link {
     my $greeks_content = $self->_get_greeks();
 
     my $ask_price_content = $self->_get_price({
-        id   => 'buildask' . $bet->bet_type->id,
+        id   => 'buildask' . $bet->id,
         prob => $bet->ask_probability,
     });
 
     my $bid_price_content = $self->_get_price({
-        id   => 'buildbid' . $bet->bet_type->id,
+        id   => 'buildbid' . $bet->id,
         prob => $bet->bid_probability,
     });
 
@@ -154,7 +154,7 @@ sub debug_link {
     BOM::Platform::Context::template->process(
         'backoffice/container/debug_link.html.tt',
         {
-            bet_id => $bet->bet_type->id,
+            bet_id => $bet->id,
             tabs   => $tabs_content
         },
         \$debug_link
@@ -302,7 +302,7 @@ sub _get_dvol {
     BOM::Platform::Context::template->process(
         'backoffice/price_debug/dvol_tab.html.tt',
         {
-            bet_id => $bet->bet_type->id,
+            bet_id => $bet->id,
             deltas => [@deltas],
             days   => [@days_display],
             tabs   => $tabs,
@@ -351,7 +351,7 @@ sub _get_moneyness_surface {
     my $master_display = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
     my $master_surface_content = $master_display->rmg_table_format({
         historical_dates => \@unique_dates,
-        tab_id           => $bet->bet_type->id . $master_vol_url,
+        tab_id           => $bet->id . $master_vol_url,
     });
 
     return $master_surface_content;
@@ -386,7 +386,7 @@ sub _get_volsurface {
         my $tokyo_display = BOM::MarketData::Display::VolatilitySurface->new(surface => $tokyo_surface);
         my $tokyo_surface_content = $tokyo_display->rmg_table_format({
             historical_dates => $dates,
-            tab_id           => $bet->bet_type->id . $tokyo_vol_url,
+            tab_id           => $bet->id . $tokyo_vol_url,
         });
 
         push @{$tabs},
@@ -402,7 +402,7 @@ sub _get_volsurface {
     my $master_display         = BOM::MarketData::Display::VolatilitySurface->new(surface => $self->master_surface);
     my $master_surface_content = $master_display->rmg_table_format({
         historical_dates => $dates,
-        tab_id           => $bet->bet_type->id . $master_vol_url,
+        tab_id           => $bet->id . $master_vol_url,
     });
     push @{$tabs},
         {
@@ -423,7 +423,7 @@ sub _get_volsurface {
         my $volsurface_content = $display->rmg_table_format({
             greeks           => $cost_greeks,
             historical_dates => $dates,
-            tab_id           => $bet->bet_type->id . $used_vol_url,
+            tab_id           => $bet->id . $used_vol_url,
         });
 
         push @{$tabs},
@@ -438,7 +438,7 @@ sub _get_volsurface {
     BOM::Platform::Context::template->process(
         'backoffice/price_debug/vol_tab.html.tt',
         {
-            bet_id => $bet->bet_type->id,
+            bet_id => $bet->id,
             tabs   => $tabs,
         },
         \$vol_content
@@ -632,21 +632,29 @@ sub _get_overview {
         delta => 50,
         days  => $bet->timeinyears->amount * 365,
     });
-    my $delta_strike1 = 100 * get_delta_for_strike({
-        strike           => $bet->barrier->as_absolute,
-        atm_vol          => $atm_vol,
-        t                => $bet->timeinyears->amount,
-        spot             => $bet->current_spot,
-        r_rate           => $bet->r_rate,
-        q_rate           => $bet->q_rate,
-        premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
-    });
-    my $delta_strike2;
-    if ($bet->bet_type->two_barriers) {
-
-        # lower barrier
+    my ($delta_strike1, $delta_strike2);
+    if ($bet->two_barriers) {
+        $delta_strike1 = 100 * get_delta_for_strike({
+            strike           => $bet->high_barrier->as_absolute,
+            atm_vol          => $atm_vol,
+            t                => $bet->timeinyears->amount,
+            spot             => $bet->current_spot,
+            r_rate           => $bet->r_rate,
+            q_rate           => $bet->q_rate,
+            premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+        });
         $delta_strike2 = 100 * get_delta_for_strike({
-            strike           => $bet->barrier2->as_absolute,
+            strike           => $bet->low_barrier->as_absolute,
+            atm_vol          => $atm_vol,
+            t                => $bet->timeinyears->amount,
+            spot             => $bet->current_spot,
+            r_rate           => $bet->r_rate,
+            q_rate           => $bet->q_rate,
+            premium_adjusted => $bet->underlying->{market_convention}->{delta_premium_adjusted},
+        });
+    } else {
+        $delta_strike1 = 100 * get_delta_for_strike({
+            strike           => $bet->barrier->as_absolute,
             atm_vol          => $atm_vol,
             t                => $bet->timeinyears->amount,
             spot             => $bet->current_spot,
@@ -808,17 +816,22 @@ sub _get_cost_of_greeks {
                 $new_bet = $bet;
             } else {
                 my $date_expiry = Date::Utility->new({epoch => Date::Utility->new->epoch + $days * 86400})->date;
+                my %barriers;
+                if ($bet->two_barriers) {
+                    %barriers = (high_barrier => $bet->high_barrier->supplied_barrier, low_barrier => $bet->low_barrier->supplied_barrier);
+                } else {
+                    %barriers = (barrier => $bet->barrier->supplied_barrier);
+                }
                 $new_bet = produce_contract({
                     'current_spot' => $bet->current_spot,
                     'market'       => $bet->underlying->market,
-                    'barrier'      => $bet->barrier,
-                    'barrier2'     => $bet->barrier2,
-                    'bet_type'     => $bet->bet_type->code,
+                    'bet_type'     => $bet->code,
                     'currency'     => $bet->currency,
                     'underlying'   => $bet->underlying,
                     'date_start'   => $bet->date_start,
                     'payout'       => $bet->payout,
                     'date_expiry'  => $date_expiry,
+                    %barriers
                 });
             }
             my $pe = $new_bet->pricing_engine_name->new({bet => $new_bet});
