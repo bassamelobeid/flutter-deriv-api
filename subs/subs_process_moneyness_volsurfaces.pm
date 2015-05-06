@@ -16,7 +16,7 @@ use BOM::MarketData::Display::VolatilitySurface;
 my @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market       => ['indices'],
     broker       => 'VRT',
-    bet_category => 'ANY'
+    contract_category => 'ANY'
 );
 
 sub upload_and_process_moneyness_volsurfaces {
