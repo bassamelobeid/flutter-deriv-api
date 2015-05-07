@@ -34,13 +34,13 @@ if ($market) {
     if ($tolist eq 'List All') {
         @sym = BOM::Market::UnderlyingDB->instance->get_symbols_for(
             market       => $market,
-            bet_category => 'ANY',
+            contract_category => 'ANY',
         );
         $all = 'all';
     } else {
         @sym = BOM::Market::UnderlyingDB->instance->get_symbols_for(
             market       => $market,
-            bet_category => 'IV',
+            contract_category => 'IV',
             broker       => request()->broker_code,
         );
         $all = '';
