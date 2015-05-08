@@ -37,7 +37,6 @@ before_install:
     # bom
     - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo cp /etc/rmg/couchdb.yml /etc/
 
 install:
     - sudo mkdir -p /home/git
@@ -45,6 +44,7 @@ install:
     - sudo cp -R /tmp/bom/config/environments/development/ /etc/rmg
     - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
+    - sudo cp /etc/rmg/couchdb.yml /etc/
 
     # Setting up databases
     # -- client db
