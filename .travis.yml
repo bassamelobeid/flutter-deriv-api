@@ -54,6 +54,7 @@ before_install:
     - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bom /home/git/
+    - sudo cp /etc/rmg/couchdb.yml /etc/
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-backoffice
