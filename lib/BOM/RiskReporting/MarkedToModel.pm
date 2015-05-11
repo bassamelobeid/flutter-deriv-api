@@ -307,7 +307,7 @@ sub sell_expired_contracts {
         local ($/, $\) = ("\n", undef); # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
-        my $subject = 'AutoSell Failures on ' . $this_box->name;
+        my $subject = 'AutoSell Failures during riskd operation';
         # I dislike building URLs this way, but I don't seem to have much choice.
         my @msg = ($subject, '', 'Review and settle at https://backoffice.binary.com/d/backoffice/quant/settle_contracts.cgi', '', $sep);
 
