@@ -197,6 +197,7 @@ sub sell_expired_contracts {
     my %map_to_bb = reverse BOM::MarketData::Parser::Bloomberg::RequestFiles->new->bloomberg_to_rmg;
     my $csv       = Text::CSV->new;
 
+    my $rmgenv = BOM::System::Config::env;
     while (scalar @error_lines < $self->permitted_failures and my $id = shift @full_list) {
         my $fmb_id         = $open_bets_ref->{$id}->{financial_market_bet_id};
         my $client_id      = $open_bets_ref->{$id}->{client_loginid};
@@ -211,6 +212,21 @@ sub sell_expired_contracts {
           BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0];
 
         my $bet = produce_contract($fmb, $currency);
+
+        my $stats_data = do {
+            my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$bet->code};
+            my $broker    = lc($client->broker_code);
+            my $virtual   = $client->is_virtual ? 'yes' : 'no';
+            my $tags      = {tags => ["broker:$broker", "virtual:$virtual",
+                                      "rmgenv:$rmgenv", "contract_class:$bet_class",
+                                          "sell_type:autosell"]};
+            stats_inc("transaction.sell.attempt", $tags);
+            +{
+                tags    => $tags,
+                virtual => $virtual,
+            };
+        };
+
         my $bb_lookup = '--';
         if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
             $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
@@ -250,19 +266,34 @@ sub sell_expired_contracts {
             try {
                 if ($bet->is_valid_to_sell) {
                     BOM::Database::Helper::FinancialMarketBet->new({
-                        transaction_data => {
-                            staff_loginid => 'AUTOSELL',
-                        },
-                        bet_data => {
-                            id         => $fmb_id,
-                            sell_price => $bet->value,
-                            sell_time  => $bet->date_pricing->db_timestamp,
-                        },
-                        account_data => {client_loginid => $client_id, currency_code => $currency},
-                        db           => $self->_local_db
-                    })->sell_bet;
-                } else {
-                    $bet_info->{reason} = $bet->primary_validation_error->message;
+                            transaction_data => {
+                                staff_loginid => 'AUTOSELL',
+                            },
+                            bet_data => {
+                                id         => $fmb_id,
+                                sell_price => $bet->value,
+                                sell_time  => $bet->date_pricing->db_timestamp,
+                            },
+                            account_data => {
+                                client_loginid => $client_id,
+                                currency_code  => $currency
+                            },
+                            db => BOM::Database::ClientDB->new({client_loginid => $client_loginid,})->db,
+                        })->sell_bet;
+
+                    stats_inc("transaction.sell.success", $stats_data->{tags});
+                    if ($rmgenv eq 'production' and $stats_data->{virtual} eq 'no') {
+                        my $usd_amount = int(in_USD($bet->value, $currency) * 100);
+                        stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
+                    }
+                } else{
+                    if (@{$bet->corporate_actions}){
+
+                        $bet_info->{reason} = "This contract is affected by corporate action. Can you please verify the contract has been adjusted correctly to the corporte action.";
+                    }else{
+
+                        $bet_info->{reason} = $bet->primary_validation_error->message;
+                    }
                 }
             }
             catch {
@@ -273,7 +304,7 @@ sub sell_expired_contracts {
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef); # in case overridden elsewhere 
+        local ($/, $\) = ("\n", undef); # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures on ' . $this_box->name;
@@ -283,7 +314,7 @@ sub sell_expired_contracts {
         foreach my $failure (@error_lines) {
             # We could have done this above, but whatever.
             push @msg,
-              (
+                (
                 'Shortcode:   ' . $failure->{shortcode},
                 'Ref No.:     ' . $failure->{ref},
                 'Client:      ' . $failure->{loginid},
@@ -291,14 +322,14 @@ sub sell_expired_contracts {
                 'Buy Price:   ' . $failure->{currency} . ' ' . $failure->{buy_price},
                 'Full Payout: ' . $failure->{currency} . ' ' . $failure->{payout},
                 $sep
-              );
+                );
         }
 
         my $sender = Mail::Sender->new({
-                smtp    => 'localhost',
-                from    => '"Autosell" <autosell@regentmarkets.com>',
-                to      => 'quants-market-data@regentmarkets.com',
-                subject => $subject,
+            smtp    => 'localhost',
+            from    => '"Autosell" <autosell@regentmarkets.com>',
+            to      => 'quants-market-data@regentmarkets.com',
+            subject => $subject,
         });
         $sender->MailMsg({msg => join("\n", @msg) . "\n\n"});
     }
