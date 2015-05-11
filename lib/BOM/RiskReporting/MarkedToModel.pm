@@ -106,8 +106,8 @@ sub generate {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
-                    $open_bets_expired_ref{$open_fmb_id} = $open_fmb;
-                    $open_bets_expired_ref{$open_fmb_id}->{market_price} = $value;
+                    $open_bets_expired_ref->{$open_fmb_id} = $open_fmb;
+                    $open_bets_expired_ref->{$open_fmb_id}->{market_price} = $value;
                 } else {
                     map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
                     $dbh->do(
