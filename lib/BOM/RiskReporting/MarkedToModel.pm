@@ -33,6 +33,8 @@ use BOM::Database::DataMapper::CollectorReporting;
 use BOM::System::Config;
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use Text::CSV;
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::Model::Constants;
 
 # This report will only be run on the MLS.
 sub generate {
@@ -201,7 +203,7 @@ sub sell_expired_contracts {
     my $csv       = Text::CSV->new;
 
     my $rmgenv = BOM::System::Config::env;
-    while (scalar @error_lines < $self->permitted_failures and my $id = shift @full_list) {
+    while (scalar @error_lines < 100 and my $id = shift @full_list) {
         my $fmb_id         = $open_bets_ref->{$id}->{financial_market_bet_id};
         my $client_id      = $open_bets_ref->{$id}->{client_loginid};
         my $expected_value = $open_bets_ref->{$id}->{market_price};
