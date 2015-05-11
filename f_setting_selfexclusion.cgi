@@ -112,13 +112,20 @@ if (not $self_exclusion_form->validate()) {
     code_exit_BO();
 }
 
-my $v = request()->param('MAXOPENPOS');
+my $v;
+$v = request()->param('MAXOPENPOS');
 $client->set_exclusion->max_open_bets(looks_like_number($v) ? $v : undef);
-my $v = request()->param('DAILYTURNOVERLIMIT');
+$v = request()->param('DAILYTURNOVERLIMIT');
 $client->set_exclusion->max_turnover(looks_like_number($v) ? $v : undef);
-my $v = request()->param('MAXCASHBAL');
+$v = request()->param('DAILYLOSSLIMIT');
+$client->set_exclusion->max_losses(looks_like_number($v) ? $v : undef);
+$v = request()->param('7DAYTURNOVERLIMIT');
+$client->set_exclusion->max_7day_turnover(looks_like_number($v) ? $v : undef);
+$v = request()->param('7DAYLOSSLIMIT');
+$client->set_exclusion->max_7day_losses(looks_like_number($v) ? $v : undef);
+$v = request()->param('MAXCASHBAL');
 $client->set_exclusion->max_balance(looks_like_number($v) ? $v : undef);
-my $v = request()->param('SESSIONDURATION');
+$v = request()->param('SESSIONDURATION');
 $client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : undef);
 
 # by or-ing to 'undef' here we turn any blank exclude_until date to no-date.
