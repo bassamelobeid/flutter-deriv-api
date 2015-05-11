@@ -278,7 +278,7 @@ sub sell_expired_contracts {
                                 client_loginid => $client_id,
                                 currency_code  => $currency
                             },
-                            db => BOM::Database::ClientDB->new({client_loginid => $client_loginid,})->db,
+                            db => BOM::Database::ClientDB->new({client_loginid => $client_id,})->db,
                         })->sell_bet;
 
                     stats_inc("transaction.sell.success", $stats_data->{tags});
