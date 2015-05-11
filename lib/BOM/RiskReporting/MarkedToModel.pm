@@ -30,6 +30,9 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
+use BOM::System::Config;
+use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Text::CSV;
 
 # This report will only be run on the MLS.
 sub generate {
