@@ -24,7 +24,7 @@ use Cache::RedisDB;
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Platform::CustomClientLimits;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use BOM::Database::Model::Account;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Account;
@@ -243,8 +243,7 @@ sub _open_bets_report {
         my $payout_usd    = $self->amount_in_usd($bet_details->{payout_price}, $currency);
         my $mtm_profit    = $buy_usd - $normalized_mtm;
         my $underlying    = $bet->underlying;
-        my $bet_type      = $bet->bet_type;
-        my $bet_cat       = $bet_type->category;
+        my $bet_cat       = $bet->category;
         push @{$pivot_info->{data}},
             {
             login_id      => $bet_details->{loginid},
@@ -252,7 +251,7 @@ sub _open_bets_report {
             ref_no        => $bet_details->{ref},
             underlying    => $underlying->symbol,
             market        => $underlying->market->name,
-            bet_type      => $bet_type->code,
+            bet_type      => $bet->code,
             bet_category  => $bet_cat->code,
             expiry_date   => $bet->date_expiry->date_yyyymmdd,
             expiry_period => $expiry_period,

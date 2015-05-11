@@ -3,7 +3,7 @@ use open qw[ :encoding(UTF-8) ];
 
 use Try::Tiny;
 use Spreadsheet::ParseExcel;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
 use BOM::Market::Underlying;
 use YAML::XS;
@@ -146,7 +146,7 @@ sub read_discrete_forecasted_dividend_from_excel_files {
                 } elsif ($ex_date =~ /(\w{3})\s+(\d{1,2})\s+(\d{4})\s?$/) {
                     $ex_div = Date::Utility->new(sprintf('%02d', $2) . '-' . $1 . '-' . sprintf('%02d', $3));
                 }elsif ($ex_date =~ /(\d{1,2})\-(\w{3})\-(\d{4})/){
-                    $ex_div = Date::Utility->new($ex_div);
+                    $ex_div = Date::Utility->new($ex_date);
                 }
 
                 my $fix_term = $ex_div->days_between($now);

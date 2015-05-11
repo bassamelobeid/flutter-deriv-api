@@ -83,14 +83,14 @@ if ($update_including_intraday_double) {
     push @markets,
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market       => \@update_markets,
-        bet_category => 'ANY',
+        contract_category => 'ANY',
         broker       => 'VRT',
         );
 } else {
     push @markets,
         BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market       => \@update_markets,
-        bet_category => 'IV',
+        contract_category => 'IV',
         broker       => $broker,
         );
 }

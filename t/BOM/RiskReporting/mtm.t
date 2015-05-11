@@ -7,10 +7,9 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Data::Utility::TestDatabaseFixture;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
-use BOM::Test::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -20,13 +19,16 @@ use BOM::Database::DataMapper::CollectorReporting;
 
 initialize_realtime_ticks_db();
 
-my $fix        = 'BOM::Test::Data::Utility::TestDatabaseFixture';
 my $now        = Date::Utility->new;
 my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
 
-$fix->new('exchange', {symbol => $_})->create for qw(FOREX RANDOM);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange', {
+        symbol          => $_,
+        date            => Date::Utility->new,
+    }) for (qw/FOREX RANDOM/);
 
 my %date_string = (
     R_50      => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
@@ -40,13 +42,12 @@ foreach my $symbol (keys %date_string) {
     my @dates = @{$date_string{$symbol}};
     foreach my $date (@dates) {
         $date = Date::Utility->new($date);
-        $fix->new(
-            'tick',
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick(
             {
                 underlying => $symbol,
                 epoch      => $date->epoch,
                 quote      => 100
-            })->create;
+            });
     }
 }
 
@@ -57,19 +58,16 @@ subtest 'realtime report generation' => sub {
         broker_code => 'FOG',
     });
 
-    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_new_client({
+    my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
-    my $USDaccount = BOM::Test::Data::Utility::UnitTestDatabase::create_account({
-        client_loginid => $client->loginid,
-    });
+    my $USDaccount = $client->set_default_account('USD');
 
-    BOM::Test::Data::Utility::TestDatabaseFixture->new(
-        'payment_deposit',
-        {
-            amount     => 5000,
-            account_id => $USDaccount->id,
-        })->create;
+    $client->payment_free_gift(
+        currency    => 'USD',
+        amount      => 5000,
+        remark      => 'free gift',
+    );
 
     my $start_time  = $minus5mins;
     my $expiry_time = $now;

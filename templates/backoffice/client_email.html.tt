@@ -1,0 +1,40 @@
+<div>
+    <span>
+        [% IF list == 1 %]
+            Client's Email: <b>[% email %]</b></br></br>
+            List of loginids with this email are:
+        [% ELSIF updated == 1 %]
+            Client's email has been changed from <b>[% old_email %] to [% new_email %]</b><br/><br/>
+            Updated clients' accounts are:
+        [% END %]
+    </span>
+    <ul>
+        [% FOREACH loginid IN loginids %]
+            <li> [% loginid %] </li>
+        [% END %]
+    </ul>
+
+    [% IF list == 1 %]
+        <hr>Change client's email for all loginids listed above:</br></br>
+        <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
+            <b>New Email: </b>
+            <input type="text" size="30" name="new_email">&nbsp;&nbsp;
+            <input type="hidden" name="email" value="[% email %]">
+            <input type="hidden" name="email_edit" value="1">
+            <input type="submit" value="Update Email">
+            &nbsp;&nbsp; <b>(Note: This will update email for all the listed loginids above)</b>
+        </form>
+
+        <hr>Change client's email for a single loginid:</br></br>
+        <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
+            <b>Loginid: </b>
+            <input type="text" size="30" name="loginid">&nbsp;&nbsp;
+            <b>New Email: </b>
+            <input type="text" size="30" name="new_email">&nbsp;&nbsp;
+            <input type="hidden" name="email" value="[% email %]">
+            <input type="hidden" name="email_edit" value="2">
+            <input type="submit" value="Update Email">
+            &nbsp;&nbsp; <b>(Note: This only update email for a single loginid specified)</b>
+        </form>
+    [% END %]
+</div>
