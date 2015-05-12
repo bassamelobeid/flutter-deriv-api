@@ -35,7 +35,10 @@ use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use Text::CSV;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Constants;
-use DataDog::DogStatsd::Helper qw (stats_inc stats_timing);
+use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
+use BOM::Platform::Client;
+use BOM::Database::Helper::FinancialMarketBet;
+use BOM::Utility::CurrencyConverter qw (in_USD);
 
 # This report will only be run on the MLS.
 sub generate {
@@ -181,8 +184,10 @@ sub generate {
         try { $dbh->rollback };
     };
 
+    $self->logger->debug('Cache Daily Turnover.');
     $self->cache_daily_turnover($pricing_date);
 
+    $self->logger->debug('Sell Expired Contracts.');
     $self->sell_expired_contracts($open_bets_expired_ref);
 
     return {
