@@ -35,6 +35,7 @@ use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use Text::CSV;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Constants;
+use DataDog::DogStatsd::Helper qw (stats_inc stats_timing);
 
 # This report will only be run on the MLS.
 sub generate {
@@ -204,11 +205,11 @@ sub sell_expired_contracts {
 
     my $rmgenv = BOM::System::Config::env;
     while (scalar @error_lines < 100 and my $id = shift @full_list) {
-        my $fmb_id         = $open_bets_ref->{$id}->{financial_market_bet_id};
+        my $fmb_id         = $open_bets_ref->{$id}->{id};
         my $client_id      = $open_bets_ref->{$id}->{client_loginid};
         my $expected_value = $open_bets_ref->{$id}->{market_price};
         my $currency       = $open_bets_ref->{$id}->{currency_code};
-        my $ref_number     = $open_bets_ref->{$id}->{ref_number};
+        my $ref_number     = $open_bets_ref->{$id}->{transaction_id};
         my $buy_price      = $open_bets_ref->{$id}->{buy_price};
 
         my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
@@ -330,13 +331,15 @@ sub sell_expired_contracts {
                 );
         }
 
-        my $sender = Mail::Sender->new({
-            smtp    => 'localhost',
-            from    => '"Autosell" <autosell@regentmarkets.com>',
-            to      => 'quants-market-data@regentmarkets.com',
-            subject => $subject,
-        });
-        $sender->MailMsg({msg => join("\n", @msg) . "\n\n"});
+        if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
+            my $sender = Mail::Sender->new({
+                smtp    => 'localhost',
+                from    => '"Autosell" <autosell@regentmarkets.com>',
+                to      => 'quants-market-data@regentmarkets.com',
+                subject => $subject,
+            });
+            $sender->MailMsg({msg => join("\n", @msg) . "\n\n"});
+        }
     }
 
     return 0;
