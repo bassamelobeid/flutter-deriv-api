@@ -60,7 +60,6 @@ sub process_holidays {
         try {
             $calendar = parse_holiday_calendar($filename);
             _save_excel_holidays_to_couch($calendar);
-            _save_holidays_for_opi();
         }
         catch {
             print "Could not save economic calendar. Reason: $_";
@@ -135,7 +134,7 @@ sub _save_excel_holidays_to_couch {
         $config_db = "BOM::MarketData::ExchangeConfig";
     }
     my %synthetic_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
-        market    => 'smarties',
+        market    => 'indices',
         submarket => 'smart_index'
     );
 
@@ -402,103 +401,8 @@ sub generate_holiday_upload_form {
     return $form;
 }
 
-sub _save_holidays_for_opi {
-    my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market       => 'smarties',
-        contract_category => 'ANY',
-    );
-    my @exchanges;
-    my $config_db = "BOM::MarketData::ExchangeConfig";
-
-    foreach my $symbol (@underlying_symbols) {
-        my $underlying = BOM::Market::Underlying->new($symbol);
-        if ($underlying->submarket->name ne 'smart_opi') { next; }
-        my $exchange = BOM::Market::Underlying->new($symbol)->exchange->symbol;
-        if (!grep { $exchange =~ /$_$/ } @exchanges) {
-            push @exchanges, $exchange;
-        }
-    }
-
-    foreach my $exchange (@exchanges) {
-        my ($first_exchange, $second_exchange) = split '-', $exchange;
-        my $first_exchange_existing_data  = $config_db->new({symbol => $first_exchange})->get_parameters;
-        my $second_exchange_existing_data = $config_db->new({symbol => $second_exchange})->get_parameters;
-        my $opi_exchange_existing_data    = $config_db->new({symbol => $exchange})->get_parameters;
-
-        my $first_exchange_holidays  = $first_exchange_existing_data->{holidays};
-        my $second_exchange_holidays = $second_exchange_existing_data->{holidays};
-        my $combined_exchange_holidays;
-
-        foreach my $date (keys %$first_exchange_holidays) {
-            push @{$combined_exchange_holidays->{holidays}},
-                {
-                date => Date::Utility->new($date),
-                desc => $first_exchange_holidays->{$date}};
-        }
-
-        foreach my $second_exchange_holiday (keys %$second_exchange_holidays) {
-            if (
-                !grep { Date::Utility->new($second_exchange_holiday)->epoch == Date::Utility->new($_)->epoch }
-                keys %$first_exchange_holidays
-                )
-            {
-                push @{$combined_exchange_holidays->{holidays}},
-                    {
-                    date => Date::Utility->new($second_exchange_holiday),
-                    desc => $second_exchange_holidays->{$second_exchange_holiday}};
-            }
-        }
-
-        my $first_exchange_ec_data  = $first_exchange_existing_data->{market_times}->{early_closes};
-        my $second_exchange_ec_data = $second_exchange_existing_data->{market_times}->{early_closes};
-
-        foreach my $ec_date (keys %$first_exchange_ec_data) {
-            push @{$combined_exchange_holidays->{early_closes}},
-                {
-                date => Date::Utility->new($ec_date),
-                desc => $first_exchange_ec_data->{$ec_date}};
-        }
-
-        foreach my $second_exchange_ec_date (keys %$second_exchange_ec_data) {
-            if (
-                !grep { Date::Utility->new($second_exchange_ec_date)->epoch == Date::Utility->new($_)->epoch }
-                keys %$first_exchange_ec_data
-                )
-            {
-                push @{$combined_exchange_holidays->{early_closes}},
-                    {
-                    date => Date::Utility->new($second_exchange_ec_date),
-                    desc => $second_exchange_ec_data->{$second_exchange_ec_date}};
-            }
-        }
-
-        my $holiday_to_save = compare_existing_and_new_holidays_data({
-            'existing' => $opi_exchange_existing_data->{holidays},
-            'new'      => $combined_exchange_holidays->{holidays},
-        });
-
-        my $early_close_to_save = compare_existing_and_new_early_close_data({
-
-                'existing' => $opi_exchange_existing_data->{market_times},
-                'new'      => $combined_exchange_holidays->{early_closes},
-                'exchange' => BOM::Market::Exchange->new($first_exchange),
-                'action'   => 'excel',
-
-        });
-
-        $opi_exchange_existing_data->{holidays} = $holiday_to_save;
-        $opi_exchange_existing_data->{market_times}->{early_closes} = $early_close_to_save;
-
-        $opi_exchange_existing_data->{recorded_date} = Date::Utility->new;
-
-        my $new_config = $config_db->new($opi_exchange_existing_data);
-        $new_config->save;
-    }
-    return;
-}
-
 sub get_all_exchanges {
-    my @all = ('forex', 'indices', 'commodities', 'smarties');
+    my @all = ('forex', 'indices', 'commodities');
     my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market       => \@all,
         contract_category => 'ANY',
