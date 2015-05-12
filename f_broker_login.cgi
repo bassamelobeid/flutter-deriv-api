@@ -39,7 +39,7 @@ if (BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_se
 
 print "<center>";
 
-my $allbrokercodes = join("<option>", BOM::Platform::Runtime->instance->broker_codes->all_codes);
+my $allbrokercodes = '<option>' .join("<option>", BOM::Platform::Runtime->instance->broker_codes->all_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 
