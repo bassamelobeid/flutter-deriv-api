@@ -5,6 +5,7 @@ use strict 'vars';
 
 use f_brokerincludeall;
 use Auth::DuoWeb;
+use BOM::System::Config;
 use BOM::Platform::Auth0;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -22,9 +23,10 @@ my $email       = $staff->{email};
 my $post_action = "login.cgi";
 
 my $sig_request = Auth::DuoWeb::sign_request(
-    BOM::Platform::Runtime->instance->app_config->system->duoweb->IKEY,
-    BOM::Platform::Runtime->instance->app_config->system->duoweb->SKEY,
-    BOM::Platform::Runtime->instance->app_config->system->duoweb->AKEY, $email,
+    BOM::System::Config::third_party->{duosecurity}->{ikey},
+    BOM::System::Config::third_party->{duosecurity}->{skey},
+    BOM::System::Config::third_party->{duosecurity}->{akey},
+    $email,
 );
 
 if ($sig_request) {
