@@ -14,7 +14,7 @@ PrintContentType();
 BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
-use BOM::MarketData::Parser::ForexFactoryEconomicEvent;
+use ForexFactory;
 use BOM::MarketData::Display::EconomicEvent;
 use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
@@ -78,7 +78,7 @@ print $display->economic_event_forms(request()->url_for('backoffice/quant/market
 
 if ($autoupdate) {
     eval {
-        my $num_of_events_updated = BOM::MarketData::Parser::ForexFactoryEconomicEvent->new()->update_economic_events;
+        my $num_of_events_updated = ForexFactory->new()->extract_economic_events;
         print $num_of_events_updated . ' economic events were successfully saved on couch.</br></br>';
     };
     if (my $error = $@) {
