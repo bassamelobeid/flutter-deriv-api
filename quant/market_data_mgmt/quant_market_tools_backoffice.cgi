@@ -57,7 +57,17 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     my $filetoupload = $cgi->param('filetoupload');
     local $CGI::POST_MAX        = 1024 * 100 * 8;    # max 800K posts
     local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads
-    print upload_and_process_correlations($filetoupload);
+
+    my ($data, @to_print) =upload_and_process_correlations($filetoupload);
+
+    my $correlation_matrix = BOM::MarketData::CorrelationMatrix->new({
+        symbol        => 'indices',
+        recorded_date => Date::Utility->new
+    });
+    $correlation_matrix->correlations($data);
+    $correlation_matrix->save;
+    print join "<p> ", @to_print;
+
 }
 
 Bar("Update the news events database");
