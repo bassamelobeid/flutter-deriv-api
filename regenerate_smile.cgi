@@ -11,6 +11,8 @@ use BOM::Platform::Runtime;
 use BOM::Utility::Graph::GD;
 use BOM::Platform::Plack qw( PrintContentType_JSON );
 use BOM::Platform::Sysinit ();
+use BOM::Utility;
+
 BOM::Platform::Sysinit::init();
 
 use BOM::Platform::Context qw(request);
@@ -46,7 +48,6 @@ try {
     }
 
     my @x_axis = @{$volsurface->moneynesses};
-    my $GD     = BOM::Utility::Graph::GD->new();
     my $new_graphs;
     my @tenor = sort @{$volsurface->term_by_day};
     my $y_max_value = max map { values %{$ori_surface{$_}}, values %{$calibrated_surface->{$_}}, values %{$altered_calibrated_surface->{$_}} } @tenor;
@@ -54,7 +55,7 @@ try {
         my @ori_smile                = map { $ori_surface{$term}->{$_}                  || undef } @x_axis;
         my @ori_calibrated_smile     = map { $calibrated_surface->{$term}->{$_}         || undef } @x_axis;
         my @altered_calibrated_smile = map { $altered_calibrated_surface->{$term}->{$_} || undef } @x_axis;
-        my $calib_filename           = $GD->generate_img({
+        my $calib_filename           = BOM::Utility::generate_line_graph({
                 title  => "Plot comparison for $term day smile",
                 x_axis => \@x_axis,
                 charts => {
