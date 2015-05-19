@@ -24,45 +24,6 @@ BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker->code;
 my $staff  = BOM::Platform::Auth0::can_access(['Quants']);
 
-my $market   = request()->param('market');
-my $tolist   = request()->param('tolist');
-my $viewalso = request()->param('viewalso');
-
-my @sym;
-my $all = '';
-if ($market) {
-    if ($tolist eq 'List All') {
-        @sym = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-            market       => $market,
-            contract_category => 'ANY',
-        );
-        $all = 'all';
-    } else {
-        @sym = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-            market       => $market,
-            contract_category => 'IV',
-            broker       => request()->broker_code,
-        );
-        $all = '';
-    }
-}
-
-if ($viewalso !~ /^\w*$/) {
-    $viewalso = "";
-}
-
-if ($viewalso) {
-    #check that exists
-    my $underlying = BOM::Market::Underlying->new($viewalso);
-    unless ($underlying->spot) {
-        print "<P><font color=red><B>ERROR : $viewalso/$market appears to be wrong ! Typo ?";
-        code_exit_BO();
-    }
-
-    push @sym, $viewalso;
-}
-
-Bar("Update volatilities");
 
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 print get_update_volatilities_form({'all_markets' => \@all_markets});
