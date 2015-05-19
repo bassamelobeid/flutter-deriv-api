@@ -5,7 +5,7 @@ use strict 'vars';
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/bom/cgi/oop);
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlations_upload_form upload_and_process_correlations );
+use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -21,6 +21,7 @@ use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Utility::Log4perl qw( get_logger );
+use BOM::Platform::Context;
 
 my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Quants']);
@@ -47,10 +48,16 @@ if (request()->param('whattodo') eq 'process_dividend') {
 }
 
 Bar("Upload Correlations");
-print generate_correlations_upload_form({
-    broker     => $broker,
-    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-});
+
+BOM::Platform::Context::template->process(
+        'backoffice/correlations_upload_form.html.tt',
+        {
+            broker     => $broker,
+            upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+        },
+        \$form
+    );
+
 
 if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     my $cgi          = new CGI;
