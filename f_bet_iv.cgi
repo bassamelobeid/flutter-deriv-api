@@ -24,7 +24,7 @@ BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker->code;
 my $staff  = BOM::Platform::Auth0::can_access(['Quants']);
 
-
+Bar("Update volatilities");
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 print get_update_volatilities_form({'all_markets' => \@all_markets});
 
