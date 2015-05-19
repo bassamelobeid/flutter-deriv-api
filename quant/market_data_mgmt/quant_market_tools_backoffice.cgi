@@ -48,16 +48,10 @@ if (request()->param('whattodo') eq 'process_dividend') {
 }
 
 Bar("Upload Correlations");
-
-BOM::Platform::Context::template->process(
-        'backoffice/correlations_upload_form.html.tt',
-        {
-            broker     => $broker,
-            upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
-        },
-        \$form
-    );
-
+print generate_correlations_upload_form({
+      broker     => $broker,
+      upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+});
 
 if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     my $cgi          = new CGI;

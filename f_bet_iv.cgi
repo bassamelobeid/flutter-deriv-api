@@ -10,7 +10,6 @@ use subs::subs_dividend_from_excel_file;
 
 use BOM::Market::UnderlyingDB;
 use BOM::MarketData::Fetcher::CorporateAction;
-use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlations_upload_form );
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use BOM::MarketData::HolidayCalendar qw( generate_holiday_upload_form );
