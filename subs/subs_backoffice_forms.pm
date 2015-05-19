@@ -40,6 +40,5 @@ sub generate_correlations_upload_form {
         \$form
     );
     return $form;
-
 }
 1;
