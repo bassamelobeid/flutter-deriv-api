@@ -14,7 +14,6 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::Market::Underlying;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
-use BOM::Utility;
 
 BOM::Platform::Sysinit::init();
 

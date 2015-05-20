@@ -4,7 +4,6 @@ use POSIX;
 use Path::Tiny;
 use BOM::Utility::GNUPlot;
 use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Utility;
 use Date::Utility;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;

@@ -8,10 +8,8 @@ use f_brokerincludeall;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
-use BOM::Utility::Graph::GD;
 use BOM::Platform::Plack qw( PrintContentType_JSON );
 use BOM::Platform::Sysinit ();
-use BOM::Utility;
 
 BOM::Platform::Sysinit::init();
 

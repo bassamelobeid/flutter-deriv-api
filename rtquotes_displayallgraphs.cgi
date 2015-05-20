@@ -5,7 +5,6 @@ use strict;
 use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
 use BOM::Utility::GNUPlot;
-use BOM::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use subs::subs_graphs;

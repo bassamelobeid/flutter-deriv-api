@@ -3,7 +3,6 @@ use open qw[ :encoding(UTF-8) ];
 use Devel::StackTrace;
 use JSON;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Utility;
 
 sub DualControlCode_CS {
     my ($clerk, $password, $today, $clientloginid, $filetype) = @_;
