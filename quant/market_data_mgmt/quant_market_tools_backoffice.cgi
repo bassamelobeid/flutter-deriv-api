@@ -5,7 +5,7 @@ use strict 'vars';
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/bom/cgi/oop);
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( upload_and_process_correlations );
+use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
