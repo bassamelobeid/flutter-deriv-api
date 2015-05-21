@@ -14,6 +14,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::Market::Underlying;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Utility::Utils;
 
 BOM::Platform::Sysinit::init();
 
@@ -106,7 +107,7 @@ sub display {
     foreach my $term (@tenor) {
         my @implied_smile    = map { $implied_surface->{$term}->{smile}->{$_}   || undef } @x_axis;
         my @calibrated_smile = map { $calibrated_implied_surface->{$term}->{$_} || undef } @x_axis;
-        my $calib_filename   = BOM::Utility::generate_line_graph({
+        my $calib_filename   = BOM::Utility::Utils::generate_line_graph({
                 title  => "Plot comparison for $term day smile",
                 x_axis => \@x_axis,
                 charts => {

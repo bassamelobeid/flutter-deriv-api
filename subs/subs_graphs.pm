@@ -4,6 +4,7 @@ use POSIX;
 use Path::Tiny;
 use BOM::Utility::GNUPlot;
 use BOM::Utility::Log4perl qw( get_logger );
+use BOM::Utility::Utils;
 use Date::Utility;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
@@ -50,7 +51,7 @@ sub graph_setup {
         $hashcat .= "$hashkey=" . request()->param($hashkey);
     }
     $hashcat .= request()->loginid;    #to make it unique - in case we are plotting client trade points
-    $hashcat = BOM::Utility::md5($hashcat);
+    $hashcat = BOM::Utility::Utils::md5($hashcat);
     $hashcat .= int(rand 100);
 
     my $graph_outputfile    = "$gif_dir/$hashcat.gif";

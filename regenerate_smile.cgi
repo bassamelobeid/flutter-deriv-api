@@ -10,6 +10,7 @@ use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType_JSON );
 use BOM::Platform::Sysinit ();
+use BOM::Utility::Utils;
 
 BOM::Platform::Sysinit::init();
 
@@ -53,7 +54,7 @@ try {
         my @ori_smile                = map { $ori_surface{$term}->{$_}                  || undef } @x_axis;
         my @ori_calibrated_smile     = map { $calibrated_surface->{$term}->{$_}         || undef } @x_axis;
         my @altered_calibrated_smile = map { $altered_calibrated_surface->{$term}->{$_} || undef } @x_axis;
-        my $calib_filename           = BOM::Utility::generate_line_graph({
+        my $calib_filename           = BOM::Utility::Utils::generate_line_graph({
                 title  => "Plot comparison for $term day smile",
                 x_axis => \@x_axis,
                 charts => {

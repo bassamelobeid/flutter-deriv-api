@@ -3,6 +3,7 @@ use open qw[ :encoding(UTF-8) ];
 use Devel::StackTrace;
 use JSON;
 use Format::Util::Numbers qw(roundnear);
+use BOM::Utility::Utils;
 
 sub DualControlCode_CS {
     my ($clerk, $password, $today, $clientloginid, $filetype) = @_;
@@ -10,11 +11,11 @@ sub DualControlCode_CS {
     $clientloginid = uc($clientloginid);
     $clerk         = lc($clerk);
 
-    my $a = uc(substr(BOM::Utility::md5(ucfirst("$clerk/$today $filetype")), 1, 5));
+    my $a = uc(substr(BOM::Utility::Utils::md5(ucfirst("$clerk/$today $filetype")), 1, 5));
 
-    my $b = uc(substr(BOM::Utility::md5(lcfirst("$password$clerk/$today $filetype$clientloginid" . $^T . $$)), 0, 5));
+    my $b = uc(substr(BOM::Utility::Utils::md5(lcfirst("$password$clerk/$today $filetype$clientloginid" . $^T . $$)), 0, 5));
 
-    my $c = uc(substr(BOM::Utility::md5(ucfirst($a . 'u' . $b)), 1, 5));
+    my $c = uc(substr(BOM::Utility::Utils::md5(ucfirst($a . 'u' . $b)), 1, 5));
 
     return $a . $b . $c;
 }
@@ -24,9 +25,9 @@ sub dual_control_code_for_file_content {
 
     $clerk = lc $clerk;
 
-    my $a = uc(substr(BOM::Utility::md5(ucfirst("$clerk/$today $file_content")),                     1, 5));
-    my $b = uc(substr(BOM::Utility::md5(lcfirst("$password$clerk/$today $file_content" . $^T . $$)), 0, 5));
-    my $c = uc(substr(BOM::Utility::md5(ucfirst($a . 'u' . $b)),                                     1, 5));
+    my $a = uc(substr(BOM::Utility::Utils::md5(ucfirst("$clerk/$today $file_content")),                     1, 5));
+    my $b = uc(substr(BOM::Utility::Utils::md5(lcfirst("$password$clerk/$today $file_content" . $^T . $$)), 0, 5));
+    my $c = uc(substr(BOM::Utility::Utils::md5(ucfirst($a . 'u' . $b)),                                     1, 5));
 
     return $a . $b . $c;
 }
@@ -39,9 +40,9 @@ sub DualControlCode {
     $transtype     = lc($transtype);
     $amount        = roundnear(0.01, $amount);
 
-    my $a = uc(substr(BOM::Utility::md5(ucfirst("$clerk/$today $amount$currency$transtype$clientloginid")),                     1, 5));
-    my $b = uc(substr(BOM::Utility::md5(lcfirst("$password$clerk/$today $amount$currency$transtype$clientloginid" . $^T . $$)), 0, 5));
-    my $c = uc(substr(BOM::Utility::md5(ucfirst($a . 'u' . $b)),                                                                1, 5));
+    my $a = uc(substr(BOM::Utility::Utils::md5(ucfirst("$clerk/$today $amount$currency$transtype$clientloginid")),                     1, 5));
+    my $b = uc(substr(BOM::Utility::Utils::md5(lcfirst("$password$clerk/$today $amount$currency$transtype$clientloginid" . $^T . $$)), 0, 5));
+    my $c = uc(substr(BOM::Utility::Utils::md5(ucfirst($a . 'u' . $b)),                                                                1, 5));
     return $a . $b . $c;
 }
 
@@ -52,7 +53,7 @@ sub ValidDualControlCode {
     my $a = substr($code, 0,  5);
     my $b = substr($code, 5,  5);
     my $c = substr($code, 10, 5);
-    my $goodc = uc(substr(BOM::Utility::md5(ucfirst($a . 'u' . $b)), 1, 5));
+    my $goodc = uc(substr(BOM::Utility::Utils::md5(ucfirst($a . 'u' . $b)), 1, 5));
     if ($c ne $goodc) { return 0; }
 
     return 1;
