@@ -570,10 +570,21 @@ print qq{
 </form>
 };
 
+my $financial_assessment = $client->financial_assessment();
+if ($financial_assessment) {
+    my $user_data_json = $financial_assessment->data;
+    my $is_professional = $financial_assessment->is_professional ? 'yes': 'no';
+    Bar("Financial Assessment");
+    print qq{<table class="collapsed">
+        <tr><td>User Data</td><td><textarea rows=10 cols=150>$user_data_json</textarea></td></tr>
+        <tr><td></td><td></td></tr>
+        <tr><td>Is professional</td><td>$is_professional</td></tr>
+        </table>
+    };
+}
+
 Bar("$loginid Login history");
-
 print '<div><br/>';
-
 my $loglim = 200;
 my $logins = $client->find_login_history(
     sort_by => 'login_date desc',
@@ -583,9 +594,7 @@ my $logins = $client->find_login_history(
 if (@$logins == 0) {
     print qq{<p>There is no login history</p>};
 } else {
-
     print qq{<p color="red">Showing last $loglim logins only</p>} if @$logins > $loglim;
-
     print qq{<table class="collapsed">};
     foreach my $login (reverse @$logins) {
         my $date        = $login->login_date->strftime('%F %T');
@@ -598,7 +607,6 @@ if (@$logins == 0) {
     }
     print qq{</table>};
 }
-
 print '</div>';
 
 code_exit_BO();
