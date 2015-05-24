@@ -43,17 +43,6 @@ my $page =
 #to generate existing limits
 if (my $self_exclusion = $client->get_self_exclusion) {
     $page .= '<ul>';
-    $self_exclusion_form->set_field_value('MAXCASHBAL',         $self_exclusion->max_balance);
-    $self_exclusion_form->set_field_value('DAILYTURNOVERLIMIT', $self_exclusion->max_turnover);
-    $self_exclusion_form->set_field_value('DAILYLOSSLIMIT',     $self_exclusion->max_losses);
-    $self_exclusion_form->set_field_value('7DAYTURNOVERLIMIT',  $self_exclusion->max_7day_turnover);
-    $self_exclusion_form->set_field_value('7DAYLOSSLIMIT',      $self_exclusion->max_7day_losses);
-    $self_exclusion_form->set_field_value('MAXOPENPOS',         $self_exclusion->max_open_bets);
-    $self_exclusion_form->set_field_value('SESSIONDURATION',    $self_exclusion->session_duration_limit);
-    if (my $exclude_until_date = $self_exclusion->exclude_until) {
-        $exclude_until_date = Date::Utility->new($exclude_until_date)->date_ddmmmyy;
-        $self_exclusion_form->set_field_value('EXCLUDEUNTIL', $exclude_until_date);
-    }
 
     if ($self_exclusion->max_balance) {
         $page .= '<li>'
