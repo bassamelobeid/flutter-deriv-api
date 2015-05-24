@@ -16,7 +16,6 @@ use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::View::Controller::Bet;
-use BOM::View::Cashier;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
