@@ -5,7 +5,7 @@ use strict;
 use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
 use BOM::Utility::GNUPlot;
-use BOM::Utility::Hash;
+use BOM::Utility::Utils;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use subs::subs_graphs;
@@ -45,7 +45,7 @@ my $hashcat;
 foreach my $hashkey (keys %{request()->params}) {
     $hashcat .= "$hashkey=" . request()->param($hashkey);
 }
-$hashcat = BOM::Utility::Hash::md5($hashcat);
+$hashcat = BOM::Utility::Utils::md5($hashcat);
 $hashcat .= int(rand 100);
 my $fileextention       = "gif";
 my $graph_outputfile    = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif . "/$hashcat.$fileextention";

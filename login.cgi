@@ -14,6 +14,7 @@ use BOM::Platform::Plack qw( http_redirect PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw(request);
 use BOM::StaffPages;
+use BOM::System::Config;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -22,8 +23,10 @@ my $passwd = request()->param('pass');
 
 if (request()->param('sig_response')) {
     my $email = Auth::DuoWeb::verify_response(
-        BOM::Platform::Runtime->instance->app_config->system->duoweb->IKEY, BOM::Platform::Runtime->instance->app_config->system->duoweb->SKEY,
-        BOM::Platform::Runtime->instance->app_config->system->duoweb->AKEY, request()->param('sig_response'),
+        BOM::System::Config::third_party->{duosecurity}->{ikey},
+        BOM::System::Config::third_party->{duosecurity}->{skey},
+        BOM::System::Config::third_party->{duosecurity}->{akey},
+        request()->param('sig_response'),
     );
 
     $try_to_login = ($email eq request()->param('email'));
@@ -81,4 +84,3 @@ sub session_cookie {
 
     return [$login];
 }
-
