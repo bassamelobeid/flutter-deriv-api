@@ -511,10 +511,35 @@ if ($link_acc) {
         'backoffice/f_clientloginid_edit.cgi',
         {
             broker  => $1,
-            loginid => $link_loginid
+            loginID => $link_loginid
         });
     $link_acc .= "<a href='$link_href'>$link_loginid</a></p></br>";
     print $link_acc;
+}
+
+# show corresponding MF / MLT client
+if ( not $client->get_status('disabled') and ($broker eq 'MLT' or $broker eq 'MF') ) {
+    my @loginids = BOM::Platform::User->new({ email => $client->email })->loginid_array;
+    my $broker_pair = ($client->broker eq 'MLT') ? 'MF' : 'MLT';
+
+    foreach my $client_id (@loginids) {
+        $client_id =~ /^(\D+)\d+/;
+        if ($1 eq $broker_pair) {
+            my $client_pair = BOM::Platform::Client::get_instance({ loginid => $client_id });
+            if (not $client_pair->get_status('disabled')) {
+                my $link_acc = '<p>Corresponding MF / MLT account: ';
+                my $link_href = request()->url_for(
+                    'backoffice/f_clientloginid_edit.cgi',
+                    {
+                        broker  => $broker_pair,
+                        loginID => $client_id
+                    });
+                $link_acc .= "<a href='$link_href'>$client_id</a></p></br>";
+                print $link_acc;
+                last;
+            }
+        }
+    }
 }
 
 my $log_args = {
