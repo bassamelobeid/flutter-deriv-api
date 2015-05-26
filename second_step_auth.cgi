@@ -18,6 +18,7 @@ if (not $staff) {
     print "Login failed";
     code_exit_BO();
 }
+
 my $post_action = "login.cgi";
 my $email       = $staff->{email};
 my $post_action = "login.cgi";

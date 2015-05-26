@@ -19,7 +19,18 @@ sub login {
         }
     }
 
-    BOM::Platform::Context::template->process('backoffice/staff/login.html.tt', $params);
+    print qq~
+    <html><body>
+    <form action="$params->{submit}" method="POST">
+    <label>Email</label>
+    <input type="text" name="email"><br>
+    <label>Password</label>
+    <input type="password" name="password"><br>
+    <input type="submit" value="Sign in with Email/Password">
+    </form>
+    </script>
+    </body></html>
+    ~;
 
     return;
 }
