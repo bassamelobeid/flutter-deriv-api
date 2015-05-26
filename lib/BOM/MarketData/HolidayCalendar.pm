@@ -173,22 +173,22 @@ sub _save_excel_holidays_to_couch {
 
     }
 
-    my @synthetic_exchange = map {BOM::Market::Underlying->new($_)->exchange->name}BOM::Market::UnderlyingDB->get_symbols_for(
+    my @synthetic_exchange = map {BOM::Market::Underlying->new($_)->exchange->symbol}BOM::Market::UnderlyingDB->get_symbols_for(
         market    => 'indices',
         submarket => 'smart_index'
     );
 
     my %mapper = (
         SYNSTOXX => [qw(STOXX EUREX)],
-        SYNEURONEXT=> [qw(EURONEXTEEI_AM)],
+        SYNEURONEXT=> [qw(EURONEXT EEI_AM)],
         SYNLSE=> [qw(LSE ICE_LIFFE)],
-        SYNBSE=> [qw(BSEBSE)],
-        SYNNYSE_DJI=> [qw( NYSE CME)],
-        SYNFSE=> [qw(FSEEUREX)],
+        SYNBSE=> [qw(BSE BSE)],
+        SYNNYSE_DJI=> [qw(NYSE CME)],
+        SYNFSE=> [qw(FSE EUREX)],
         SYNHKSE=> [qw(HKSE HKF)],
-        SYNTSE=> [qw(TSECME)],
-        SYNSWX=> [qw(SWXEUREX_SWISS)],
-        SYNNYSE_SPC=> [qw(NYSE_SPCCME)],
+        SYNTSE=> [qw(TSE CME)],
+        SYNSWX=> [qw(SWX EUREX_SWISS)],
+        SYNNYSE_SPC=> [qw(NYSE_SPC CME)],
     );
     # take care of synthetic holidays now
     foreach my $syn_exchange (@synthetic_exchange) {
