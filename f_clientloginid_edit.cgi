@@ -519,18 +519,22 @@ if ($link_acc) {
 
 # show all loginids for user
 my @loginids = BOM::Platform::User->new({ email => $client->email })->loginid_array;
-foreach my $client_id (@loginids) {
-    next if ($client_id eq $client->loginid);
+if (@loginids > 1) {
+    print "<p>Corresponding accounts: </p><ul>";
+    foreach my $client_id (@loginids) {
+        next if ($client_id eq $client->loginid);
 
-    $client_id =~ /^(\D+)\d+/;
-    my $client_broker = $1;
-    my $link_href = request()->url_for(
-        'backoffice/f_clientloginid_edit.cgi',
-        {
-            broker  => $client_broker,
-            loginID => $client_id
-        });
-    print "<p>Corresponding $client_broker account: <a href='$link_href'>$client_id</a></p></br>";
+        $client_id =~ /^(\D+)\d+/;
+        my $client_broker = $1;
+        my $link_href = request()->url_for(
+            'backoffice/f_clientloginid_edit.cgi',
+            {
+                broker  => $client_broker,
+                loginID => $client_id
+            });
+        print "<li><a href='$link_href'>$client_id</a></li>";
+    }
+    print "</ul>";
 }
 
 my $log_args = {
