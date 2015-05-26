@@ -5,12 +5,9 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use subs::subs_process_moneyness_volsurfaces;
 use subs::subs_dividend_from_excel_file;
-
 use BOM::Market::UnderlyingDB;
 use BOM::MarketData::Fetcher::CorporateAction;
-use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlations_upload_form );
 use BOM::MarketData::Parser::Bloomberg::FileDownloader;
 use BOM::MarketData::Parser::Bloomberg::RequestFiles;
 use BOM::MarketData::HolidayCalendar qw( generate_holiday_upload_form );
@@ -24,46 +21,7 @@ BrokerPresentation('I.V. DATABASE');
 my $broker = request()->broker->code;
 my $staff  = BOM::Platform::Auth0::can_access(['Quants']);
 
-my $market   = request()->param('market');
-my $tolist   = request()->param('tolist');
-my $viewalso = request()->param('viewalso');
-
-my @sym;
-my $all = '';
-if ($market) {
-    if ($tolist eq 'List All') {
-        @sym = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-            market       => $market,
-            contract_category => 'ANY',
-        );
-        $all = 'all';
-    } else {
-        @sym = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-            market       => $market,
-            contract_category => 'IV',
-            broker       => request()->broker_code,
-        );
-        $all = '';
-    }
-}
-
-if ($viewalso !~ /^\w*$/) {
-    $viewalso = "";
-}
-
-if ($viewalso) {
-    #check that exists
-    my $underlying = BOM::Market::Underlying->new($viewalso);
-    unless ($underlying->spot) {
-        print "<P><font color=red><B>ERROR : $viewalso/$market appears to be wrong ! Typo ?";
-        code_exit_BO();
-    }
-
-    push @sym, $viewalso;
-}
-
 Bar("Update volatilities");
-
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 print get_update_volatilities_form({'all_markets' => \@all_markets});
 
@@ -78,16 +36,6 @@ print
 print '<tr><td><INPUT type="checkbox" name="calibrate" value="1" checked="checked">Calibrates Volatility Surfaces</td></tr>';
 print '<tr><td><INPUT type="submit" value="GO"></td></tr>';
 print '</TABLE>';
-print '</FORM>';
-
-# Upload Moneyness volsurfaces
-Bar("Upload Moneyness Volsurfaces");
-print '<FORM ACTION="'
-    . request()->url_for('backoffice/f_moneyness_surface_comparison.cgi')
-    . '" METHOD="POST" ENCTYPE="multipart/form-data" id="upload_moneyness_vol_form">';
-print '<INPUT type=hidden name="broker" value="' . $broker . '">';
-print '<INPUT type="file" id="upload_moneyness_vol_file_field" name="filetoupload">';
-print '<INPUT type="submit" id="upload_moneyness_vol_submit" value="Process Excel File">';
 print '</FORM>';
 
 # Manually update interest rates
