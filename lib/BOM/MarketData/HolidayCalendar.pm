@@ -133,11 +133,6 @@ sub _save_excel_holidays_to_couch {
 
         $config_db = "BOM::MarketData::ExchangeConfig";
     }
-    my %synthetic_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
-        market    => 'indices',
-        submarket => 'smart_index'
-    );
-
     foreach my $symbol (keys %{$calendar_data}) {
 
         if ($symbol eq 'calendar_type') {
@@ -171,10 +166,6 @@ sub _save_excel_holidays_to_couch {
 
             $existing_data->{holidays}      = $holiday_to_save;
             $existing_data->{recorded_date} = Date::Utility->new;
-
-            if ($synthetic_symbols{'SYN' . $couch_symbol}) {
-                $config_db->new({%$existing_data, symbol => 'SYN' . $couch_symbol})->save;
-            }
             my $new_config = $config_db->new($existing_data);
             $new_config->save;
 
@@ -182,6 +173,39 @@ sub _save_excel_holidays_to_couch {
 
     }
 
+    my @synthetic_exchange = map {BOM::Market::Underlying->new($_)->exchange->name}BOM::Market::UnderlyingDB->get_symbols_for(
+        market    => 'indices',
+        submarket => 'smart_index'
+    );
+
+    my %mapper = (
+        SYNSTOXX => [qw(STOXX EUREX)],
+        SYNEURONEXT=> [qw(EURONEXTEEI_AM)],
+        SYNLSE=> [qw(LSE ICE_LIFFE)],
+        SYNBSE=> [qw(BSEBSE)],
+        SYNNYSE_DJI=> [qw( NYSE CME)],
+        SYNFSE=> [qw(FSEEUREX)],
+        SYNHKSE=> [qw(HKSE HKF)],
+        SYNTSE=> [qw(TSECME)],
+        SYNSWX=> [qw(SWXEUREX_SWISS)],
+        SYNNYSE_SPC=> [qw(NYSE_SPCCME)],
+    );
+    # take care of synthetic holidays now
+    foreach my $syn_exchange (@synthetic_exchange) {
+        if ($mapper{$syn_exchange}) {
+            my $existing_data = $config_db->new({symbol => $syn_exchange})->get_parameters;
+            my %holidays = map {%{BOM::Market::Exchange->new($_)->holidays}} @{$mapper{$syn_exchange}};
+            my %new_holidays_hash;
+            foreach my $days_since_epoch (keys %holidays) {
+                my $holiday = $holidays{$days_since_epoch};
+                my $holiday_date = Date::Utility->new(0)->plus_time_interval($days_since_epoch .'d')->date_ddmmmyyyy;
+                $new_holidays_hash{$holiday_date} = $holiday;
+            }
+            $existing_data->{holidays} = \%new_holidays_hash;
+            $existing_data->{recorded_date} = Date::Utility->new;
+            $config_db->new($existing_data)->save;
+        }
+    }
     return;
 }
 
