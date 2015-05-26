@@ -20,16 +20,25 @@ sub login {
     }
 
     print qq~
-    <html><body>
-    <form action="$params->{submit}" method="POST">
-    <label>Email</label>
-    <input type="text" name="email"><br>
-    <label>Password</label>
-    <input type="password" name="password"><br>
-    <input type="submit" value="Sign in with Email/Password">
-    </form>
-    </script>
-    </body></html>
+    <html><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <title>Binary.com BackOffice System</title>
+
+    <body><form action="$params->{submit}" method="POST">
+    <table align="center">
+
+    <tr><td><div class="form-group">
+      <label for="userEmail">Email address</label>
+      <input type="email" class="form-control" name="email" id="userEmail" placeholder="Enter email">
+    </div></td></tr>
+
+    <tr><td><div class="form-group">
+      <label for="userPassword">Password</label>
+      <input type="password" class="form-control" name="password" id="userPassword" placeholder="Password">
+    </div></td></tr>
+
+    <tr><td><input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default"></td></tr>
+    </table></form></body>
+    </html>
     ~;
 
     return;
