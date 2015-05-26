@@ -5,7 +5,7 @@ use strict 'vars';
 use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/bom/cgi/oop);
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::Parser::SuperDerivatives::Correlation qw( generate_correlations_upload_form upload_and_process_correlations );
+use SuperDerivatives::Correlation qw( upload_and_process_correlations );
 use subs::subs_dividend_from_excel_file;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -21,6 +21,7 @@ use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Utility::Log4perl qw( get_logger );
+use BOM::Platform::Context;
 
 my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Quants']);
@@ -48,8 +49,8 @@ if (request()->param('whattodo') eq 'process_dividend') {
 
 Bar("Upload Correlations");
 print generate_correlations_upload_form({
-    broker     => $broker,
-    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+      broker     => $broker,
+      upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
 });
 
 if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
@@ -57,7 +58,14 @@ if (request()->param('whattodo') eq 'process_superderivatives_correlations') {
     my $filetoupload = $cgi->param('filetoupload');
     local $CGI::POST_MAX        = 1024 * 100 * 8;    # max 800K posts
     local $CGI::DISABLE_UPLOADS = 0;                 # enable uploads
-    print upload_and_process_correlations($filetoupload);
+    my ($data, @to_print) =upload_and_process_correlations($filetoupload);
+    my $correlation_matrix = BOM::MarketData::CorrelationMatrix->new({
+        symbol        => 'indices',
+        recorded_date => Date::Utility->new
+    });
+    $correlation_matrix->correlations($data);
+    $correlation_matrix->save;
+    print join "<p> ", @to_print;
 }
 
 Bar("Update the news events database");
