@@ -11,12 +11,22 @@
 %]
 
 <style>
-    .insider { margin: 0px 20px; padding: 12px }
+    table.easy_search    { border-collapse: collapse }
+    table.easy_search td { border: 1px solid gray; vertical-align: top; padding: 4px }
+    table.grants td { border: 0px; padding: 0px 4px }
+    table.grants td.token { font-family: monospace }
+    div.brk { display: inline-block }
+    div.brk label { display: inline-block; width: 60px; background-color: #ddd }
 </style>
 
 <form method="POST">
-    <input name="search" placeholder="[%search||"Search.."%]"></input>
-    <input name="broker" type="hidden" value="[%broker%]"></input>
+    [% FOR b IN ['CR', 'MX', 'MF', 'MLT', 'VRTC'] %]
+    <div class="brk">
+        <input name="broker" type="radio" id="[%b%]" value="[%b%]" [% b == broker? 'checked': ''%]></input>
+        <label for="[%b%]">[%b%]</label>
+    </div>
+    [% END %]
+    <br/><br/><input name="search" placeholder="Search.."></input>
 </form>
 
 <div class="insider">
@@ -33,10 +43,64 @@
 
 [% ELSIF client %]
 
-    <h3>
-       <a href=[%client_href%]>[%client%]</a><br/><br/>
-       Country: [%client.residence%] Joined: [%client.date_joined%]
-    </h3>
+    <h2><a href=[%client_href%]>[%client%]</a></h2>
+
+    <table class="easy_search">
+    <tr>
+        <td>
+           <h3>Client DB</h3>
+           <ul>
+               <li>Country:  [%client.residence%]</li>
+               <li>Joined:   [%client.date_joined%]</li>
+               <li>Email:    [%client.email%]</li>
+               <li>Fullname: [%client.full_name%]</li>
+           </ul>
+        </td>
+        <td>
+            <h3>User DB</h3>
+            [%binary_user || '(has no user-db entry)'%]
+            <br/>
+            [%binary_user.failed_login || '(no failed logins pending)'%]
+            <ul>
+            [% FOR loginid IN binary_user.loginid %]
+                <li><a href="?loginid=$loginid&broker=$broker">$loginid</a></li>
+            [% END %]
+            </ul>
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <h3>Auth DB</h3>
+            [% IF auth_user %]
+                [% SET self_params = "?loginid=$client.loginid&broker=$broker" %]
+                [% "id$auth_user.id: $auth_user.login" %] has [%auth_user.grants_count%] tokens.  
+                <a href="[%"$self_params&revoke_all=1"%]">Expire all of them.</a>
+                Most recent:
+                <table class="grants">
+                <tr>
+                    <th>Token</th><th>From</th><th>Expires</th>
+                </tr>
+                [% FOR grant IN grants_limited %]
+                    <tr>
+                        <td class="token" title="[%grant.scopes|html%]">[%grant.token%]</td>
+                        <td>[%grant.client.description%]</td>
+                        <td>[%grant.expires%]</td>
+                        <td>
+                            [% IF grant.expires > now %]
+                            <a href="[%"$self_params&revoke=$grant.token"%]">Expire</a>
+                            [% ELSE %]
+                            &nbsp;
+                            [% END %]
+                        </td>
+                    </tr>
+                [% END %]
+                </table>
+            [% ELSE %]
+                has no auth-db entry.
+            [% END %]
+        </td>
+    </tr>
+    </table>
 
     [% 
     FOR class IN one_to_one_classes;
