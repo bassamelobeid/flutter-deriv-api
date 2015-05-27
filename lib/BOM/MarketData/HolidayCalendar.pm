@@ -195,7 +195,7 @@ sub _save_excel_holidays_to_couch {
         if ($mapper{$syn_exchange}) {
             my $existing_data = $config_db->new({symbol => $syn_exchange})->get_parameters;
             my %holidays = map {%{BOM::Market::Exchange->new($_)->holidays}} @{$mapper{$syn_exchange}};
-            my %early_closes =  map {%{BOM::Market::Exchange->new($_)->{market_times}->{early_closes}}} @{$mapper{$symbol}};
+            my %early_closes =  map {%{BOM::Market::Exchange->new($_)->{market_times}->{early_closes}}} @{$mapper{$syn_exchange}};
 
             my %new_holidays_hash;
             foreach my $days_since_epoch (keys %holidays) {
