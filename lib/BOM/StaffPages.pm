@@ -23,7 +23,7 @@ sub login {
 
     print qq~
     <!doctype html>
-    <html><script src="http://cdn.auth0.com/js/lock-7.min.js"></script>
+    <html><script src="https://cdn.auth0.com/js/lock-7.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
     <script>
     function resetPassword() {
@@ -48,9 +48,11 @@ sub login {
       <input type="password" class="form-control" name="password" id="userPassword" placeholder="Password">
     </div></td></tr>
 
-    <tr><td><input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default"></td></tr>
-    <tr><td><br /><br />
+    <tr><td>
+    <input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default">
     <input type="button" value="Reset password" class="btn btn-default" onClick="resetPassword();">
+    </td></tr>
+    <tr><td>
     </td></tr>
     </table>
     </form></body>
