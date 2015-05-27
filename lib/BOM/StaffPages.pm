@@ -25,6 +25,7 @@ sub login {
 
     <body><form action="$params->{submit}" method="POST">
     <table align="center">
+    <tr><td><h1>BackOffice Login</h1></td></tr>
 
     <tr><td><div class="form-group">
       <label for="userEmail">Email address</label>
@@ -37,7 +38,11 @@ sub login {
     </div></td></tr>
 
     <tr><td><input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default"></td></tr>
-    </table></form></body>
+    <tr><td><br /><br />
+    To reset password, go <a href="https://manage.auth0.com/login">here</a> and click reset password
+    </td></tr>
+    </table>
+    </form></body>
     </html>
     ~;
 
