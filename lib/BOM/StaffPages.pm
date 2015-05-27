@@ -19,7 +19,32 @@ sub login {
         }
     }
 
-    BOM::Platform::Context::template->process('backoffice/staff/login.html.tt', $params);
+    print qq~
+    <html><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <title>Binary.com BackOffice System</title>
+
+    <body><form action="$params->{submit}" method="POST">
+    <table align="center">
+    <tr><td><h1>BackOffice Login</h1></td></tr>
+
+    <tr><td><div class="form-group">
+      <label for="userEmail">Email address</label>
+      <input type="email" class="form-control" name="email" id="userEmail" placeholder="Enter email">
+    </div></td></tr>
+
+    <tr><td><div class="form-group">
+      <label for="userPassword">Password</label>
+      <input type="password" class="form-control" name="password" id="userPassword" placeholder="Password">
+    </div></td></tr>
+
+    <tr><td><input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default"></td></tr>
+    <tr><td><br /><br />
+    To reset password, go <a href="https://manage.auth0.com/login">here</a> and click reset password
+    </td></tr>
+    </table>
+    </form></body>
+    </html>
+    ~;
 
     return;
 }

@@ -1,4 +1,5 @@
 use strict 'vars';
+use BOM::Platform::Context;
 
 sub get_update_volatilities_form {
     my ($markets, $warndifference, $all_markets) = @{$_[0]}{'selected_markets', 'warndifference', 'all_markets'};
@@ -27,4 +28,17 @@ sub get_update_interest_rates_form {
     return $form;
 }
 
+sub generate_correlations_upload_form {
+    my $args = shift;
+    my $form;
+    BOM::Platform::Context::template->process(
+        'backoffice/correlations_upload_form.html.tt',
+        {
+           broker     => $args->{broker},
+           upload_url => $args->{upload_url},
+        },
+        \$form
+    );
+    return $form;
+}
 1;

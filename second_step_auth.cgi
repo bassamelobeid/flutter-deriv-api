@@ -12,14 +12,16 @@ use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 PrintContentType();
 
-my $access_token = BOM::Platform::Auth0::exchange_code(request()->param('code'));
+my $email = request()->param('email');
+my $password = request()->param('password');
+
+my $access_token = BOM::Platform::Auth0::exchange_code($email, $password);
 my $staff        = BOM::Platform::Auth0::user_by_access_token($access_token);
 if (not $staff) {
     print "Login failed";
     code_exit_BO();
 }
-my $post_action = "login.cgi";
-my $email       = $staff->{email};
+
 my $post_action = "login.cgi";
 
 my $sig_request = Auth::DuoWeb::sign_request(

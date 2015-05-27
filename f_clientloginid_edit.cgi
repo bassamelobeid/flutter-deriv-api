@@ -511,10 +511,30 @@ if ($link_acc) {
         'backoffice/f_clientloginid_edit.cgi',
         {
             broker  => $1,
-            loginid => $link_loginid
+            loginID => $link_loginid
         });
     $link_acc .= "<a href='$link_href'>$link_loginid</a></p></br>";
     print $link_acc;
+}
+
+# show all loginids for user
+my @loginids = BOM::Platform::User->new({ email => $client->email })->loginid_array;
+if (@loginids > 1) {
+    print "<p>Corresponding accounts: </p><ul>";
+    foreach my $client_id (@loginids) {
+        next if ($client_id eq $client->loginid);
+
+        $client_id =~ /^(\D+)\d+/;
+        my $client_broker = $1;
+        my $link_href = request()->url_for(
+            'backoffice/f_clientloginid_edit.cgi',
+            {
+                broker  => $client_broker,
+                loginID => $client_id
+            });
+        print "<li><a href='$link_href'>$client_id</a></li>";
+    }
+    print "</ul>";
 }
 
 my $log_args = {
