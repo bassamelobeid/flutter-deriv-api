@@ -3,11 +3,13 @@ package BOM::StaffPages;
 use MooseX::Singleton;
 use Data::Dumper;
 use BOM::Platform::Context;
+use BOM::System::Config;
 
 sub login {
     my $self   = shift;
     my $bet    = shift;
     my $params = {};
+    my $clientId = BOM::System::Config::third_party->{auth0}->{client_id};
 
     $params->{submit}   = BOM::Platform::Context::request()->url_for('backoffice/second_step_auth.cgi');
     $params->{bet}      = $bet;
@@ -19,15 +21,13 @@ sub login {
         }
     }
 
-
-
     print qq~
     <!doctype html>
     <html><script src="http://cdn.auth0.com/js/lock-7.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
     <script>
     function resetPassword() {
-      var widget = new Auth0Lock('rq5T7D0rL3lwS5Wp1bEv9i99wfyoU7S4', 'binary.auth0.com');
+      var widget = new Auth0Lock('$clientId', 'binary.auth0.com');
       widget.showReset();
       }
     </script>
@@ -50,7 +50,7 @@ sub login {
 
     <tr><td><input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default"></td></tr>
     <tr><td><br /><br />
-    <input type="button" value="Reset password" onClick="resetPassword();">
+    <input type="button" value="Reset password" class="btn btn-default" onClick="resetPassword();">
     </td></tr>
     </table>
     </form></body>
