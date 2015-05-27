@@ -19,8 +19,19 @@ sub login {
         }
     }
 
+
+
     print qq~
-    <html><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <!doctype html>
+    <html><script src="http://cdn.auth0.com/js/lock-7.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <script>
+    function resetPassword() {
+      var widget = new Auth0Lock('rq5T7D0rL3lwS5Wp1bEv9i99wfyoU7S4', 'binary.auth0.com');
+      widget.showReset();
+      }
+    </script>
+
     <title>Binary.com BackOffice System</title>
 
     <body><form action="$params->{submit}" method="POST">
@@ -39,7 +50,7 @@ sub login {
 
     <tr><td><input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default"></td></tr>
     <tr><td><br /><br />
-    To reset password, go <a href="https://manage.auth0.com/login">here</a> and click reset password
+    <input type="button" value="Reset password" onClick="resetPassword();">
     </td></tr>
     </table>
     </form></body>
