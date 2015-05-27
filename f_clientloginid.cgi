@@ -285,68 +285,6 @@ print "<br /><br /><form action=\""
     . "<br /><input type=submit value='Monitor Clients on this list'>"
     . "</form>";
 
-# PoC locking accounts
-Bar('Accounts Subject To PoC Locking');
-
-print qq~
-View all Clients who:<br /><br />
-
-<form action="~ . request()->url_for('backoffice/f_poc_locking_report.cgi') . qq~" method=post>
-  <input type=hidden name="broker" value="$broker">
-  <table>
-    <tr>
-      <td>Joined after:</td>
-      <td><input type="text" style="width:100px" maxlength="15" name="date" value="$last_year"></td>
-    </tr>
-    <tr>
-      <td>Authenticated:</td>
-      <td>
-        <select name="authenticated">
-          <option value="any">Any</option>
-          <option value="yes">Yes</option>
-          <option value="no" selected="selected">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>Lock cashier:</td>
-      <td>
-        <select name="lock_cashier">
-          <option value="any">Any</option>
-          <option value="yes" selected="selected">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>Unwelcome logins:</td>
-      <td>
-        <select name="unwelcome_logins">
-          <option value="any">Any</option>
-          <option value="yes" selected="selected">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>Have funds:</td>
-      <td>
-        <select name="funded">
-          <option value="any" selected="selected">Any</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td></td>
-      <td>
-        <input type="submit" value="Go">
-      </td>
-    </tr>
-  </table>
-</form>
-~;
 
 # Locked accounts
 Bar("List of locked accounts");

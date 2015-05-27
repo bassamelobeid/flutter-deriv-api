@@ -178,21 +178,20 @@ table#client_edit td{
     <tr>
         <td class="label">ID Authentication</td>
         [%
-            small_timer_options = [
-                {'value' => 'yes', 'details' => 'No ID (used to be called \'Smalltimer\' account)' }
-                {'value' => 'no', 'details' => 'Pending Authentication (received ID SCANS; used to be called \'Big Ticket\' account)' }
-                {'value' => 'notarised', 'details' => 'AUTHENTICATED (Submitted CERTIFIED ID by postal mail)' }
-                {'value' => 'notarisedonline_192', 'details' => 'AUTHENTICATED (Authenticated online via 192.com)' }
-                {'value' => 'notarisedonline', 'details' => 'AUTHENTICATED (Authenticated online via URU)' }
+            authentication_options = [
+                {'value' => 'no', 'details' => 'Not Authenticated' }
+                {'value' => 'ADDRESS', 'details' => 'AUTHENTICATED Address' }
+                {'value' => 'ID_DOCUMENT', 'details' => 'AUTHENTICATED ID Documents' }
+                {'value' => 'ID_192', 'details' => 'AUTHENTICATED via Experian (192.com)' }
             ]
         %]
         <td id="verification">: 
-            <select name="small_timer">
-                [% FOREACH small_timer = small_timer_options %]
-                    [% IF small_timer.value == client.small_timer %]
-                        <option value="[% small_timer.value %]" selected="selected">[% small_timer.details %]</option>
+            <select name="client_authentication">
+                [% FOREACH authentication = authentication_options %]
+                    [% IF  client.get_authentication(authentication.value).status eq 'pass' %]
+                        <option value="[% authentication.value %]" selected="selected">[% authentication.details %]</option>
                     [% ELSE %]
-                        <option value="[% small_timer.value %]">[% small_timer.details %]</option>
+                        <option value="[% authentication.value %]">[% authentication.details %]</option>
                     [% END %]
                 [% END %]
             </select>

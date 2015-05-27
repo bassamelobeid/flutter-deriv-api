@@ -143,11 +143,6 @@ if ($input{whattodo} eq 'uploadID') {
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
 
-    # if no doc status, set pending..
-    if (not $client->get_authentication('ID_DOCUMENT')) {
-        $client->set_authentication('ID_DOCUMENT')->status('pending');
-    }
-
     $client->add_client_authentication_document({    # Rose
         document_type              => $doctype,
         document_format            => $docformat,
@@ -285,10 +280,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
         if ($key eq 'residence') {
             $client->residence($input{$key});
-            next CLIENT_KEY;
-        }
-        if ($key eq 'small_timer') {
-            $client->small_timer($input{$key});
             next CLIENT_KEY;
         }
         if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
