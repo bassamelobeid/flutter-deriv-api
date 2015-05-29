@@ -136,7 +136,7 @@ for my $table (@tables) {
             )
         ),
     );
-    my $firstrow = $rows->[0] || next;
+    next unless @$rows;
     # accumulate new non-system column names into %hdrs
     my %cols = map { $_->name => 1 } $rows->[0]->meta->columns;
     delete $cols{$_} for (@system_cols, @noshow_cols);
@@ -149,6 +149,7 @@ for my $table (@tables) {
         for my $col (@system_cols) {
             $data->{$col} = $row->$col if $row->can($col);
         }
+        $data->{staff_name} ||= $row->pg_userid;    # as set by audit.set_staff
         for my $col (keys %cols) {
             $data->{$col} = $row->$col;
             if ($loginid && $prevrow) {
