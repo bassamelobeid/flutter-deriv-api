@@ -3,11 +3,13 @@ package BOM::StaffPages;
 use MooseX::Singleton;
 use Data::Dumper;
 use BOM::Platform::Context;
+use BOM::System::Config;
 
 sub login {
     my $self   = shift;
     my $bet    = shift;
     my $params = {};
+    my $clientId = BOM::System::Config::third_party->{auth0}->{client_id};
 
     $params->{submit}   = BOM::Platform::Context::request()->url_for('backoffice/second_step_auth.cgi');
     $params->{bet}      = $bet;
@@ -20,7 +22,16 @@ sub login {
     }
 
     print qq~
-    <html><link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <!doctype html>
+    <html><script src="https://cdn.auth0.com/js/lock-7.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <script>
+    function resetPassword() {
+      var widget = new Auth0Lock('$clientId', 'binary.auth0.com');
+      widget.showReset();
+      }
+    </script>
+
     <title>Binary.com BackOffice System</title>
 
     <body><form action="$params->{submit}" method="POST">
@@ -37,9 +48,11 @@ sub login {
       <input type="password" class="form-control" name="password" id="userPassword" placeholder="Password">
     </div></td></tr>
 
-    <tr><td><input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default"></td></tr>
-    <tr><td><br /><br />
-    To reset password, go <a href="https://manage.auth0.com/login">here</a> and click reset password
+    <tr><td>
+    <input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default">
+    <input type="button" value="Reset password" class="btn btn-default" onClick="resetPassword();">
+    </td></tr>
+    <tr><td>
     </td></tr>
     </table>
     </form></body>
