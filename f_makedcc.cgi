@@ -11,7 +11,7 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
-BOM::Platform::Auth0::can_access(['Payment']);
+BOM::Platform::Auth0::can_access(['Payments']);
 my $token = BOM::Platform::Context::request()->bo_cookie->token;
 my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 
