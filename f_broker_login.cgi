@@ -50,7 +50,7 @@ if (request()->param('only')) {
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 
 # TRANSaction REPORTS
-if (BOM::Platform::Auth0::has_authorisation(['IT'])) {
+if (BOM::Platform::Auth0::has_authorisation(['CS'])) {
     print qq~
 	<table class="GreenDarkCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
