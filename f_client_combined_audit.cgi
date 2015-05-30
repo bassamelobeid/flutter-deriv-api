@@ -30,7 +30,7 @@ if (not $client) {
     code_exit_BO();
 }
 
-my $audit_hash = {};
+my @audit_entries;
 my %wd_query = (
     login_date => {ge_le => [DateTime->from_epoch(epoch => Date::Utility->new({datetime => $startdate})->epoch), DateTime->from_epoch(epoch => Date::Utility->new({datetime => $enddate})->epoch)]},
 );
@@ -44,7 +44,7 @@ my $logins = $client->find_login_history(
 foreach my $login (@$logins) {
     my $date        = $login->login_date->strftime('%F %T');
     my $status      = $login->login_successful ? 'ok' : 'failed';
-    $audit_hash->{$date} = $date . " logged in: " . $status . " " . $login->login_environment;
+    push @audit_entries, {timestring => $date, description => $date . " logged in: " . $status . " " . $login->login_environment};
 }
 
 my $currency = $client->currency;
@@ -63,12 +63,12 @@ foreach my $transaction (@{$statement->{transactions}}) {
         my $key_value = $key . " staff: " . $transaction->{staff_loginid} . " ref: " . $transaction->{id} . " description: " . $info->{longcode};
         $key_value .= " buy_price: " . $transaction->{buy_price} if $transaction->{buy_price};
         $key_value .= " sell_price: " . $transaction->{sell_price} if $transaction->{sell_price};
-        $audit_hash->{$key} = $key_value;
+        push @audit_entries, { timestring => $key, description => $key_value };
     }
 }
 
 print "<table>";
-foreach (sort { Date::Utility->new($a)->is_after(Date::Utility->new($b)) } keys %{$audit_hash} ) {
-    print "<tr><td>" . $audit_hash->{$_} . "</td></tr>";
+foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries ) {
+    print "<tr><td>" . $_->{description} . "</td></tr>";
 }
 print "</table>";
