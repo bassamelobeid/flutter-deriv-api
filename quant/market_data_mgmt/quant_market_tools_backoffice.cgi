@@ -22,7 +22,7 @@ use Date::Utility;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Context;
-
+use BOM::MarketData::CorrelationMatrix;
 my $broker = request()->broker->code;
 BOM::Platform::Auth0::can_access(['Quants']);
 

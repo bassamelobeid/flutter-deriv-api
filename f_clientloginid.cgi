@@ -67,14 +67,7 @@ print '<hr><form class="bo_ajax_form" action="'
     . '<b>LoginID : </b>';
 print "<input type=text size=15 name='show' onChange='CheckLoginIDformat(this)' value=''>";
 print '&nbsp;&nbsp;<input type="submit" value="Send Account recovery email to client\'s registered email address"></b>' . '</form>';
-
-# big ticket upload
-print '</td>'
-    . '<td align=right>'
-    . '<a href="'
-    . request()->url_for('backoffice/download_document.cgi')
-    . '">View<br />Big Ticket<br />client uploads</a></td>'
-    . '</td></tr></table>';
+print '</td></tr></table>';
 
 Bar("VIEW/EDIT CLIENT'S Email");
 print '<form action="'
