@@ -24,8 +24,8 @@ if (request()->param('loginid_desk')) {
     $loginid = uc(request()->param('loginid_desk'));
 }
 
-my $created  = 'today';
-if(request()->param('created')) {
+my $created = 'today';
+if (request()->param('created')) {
     $created = lc(request()->param('created'));
 }
 
@@ -35,21 +35,29 @@ if (not $client) {
     code_exit_BO();
 }
 
-my $curl_url = BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url . "cases/search?q=custom_loginid:$loginid+created:$created -u " . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":" . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
+my $curl_url =
+      BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url
+    . "cases/search?q=custom_loginid:$loginid+created:$created -u "
+    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":"
+    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
+    . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
 
 my $response = `curl $curl_url`;
 try {
     $response = decode_json $response;
     if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
         print '<table>';
-        foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch } @{$response->{_embedded}->{entries}} ) {
+        foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
+            @{$response->{_embedded}->{entries}})
+        {
             print '<tr>';
             print '<td>' . Date::Utility->new($_->{created_at})->datetime . '</td>';
-            my $case = '<strong>ID</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} .  ' <strong>status</strong>: ' . $_->{status};
-            $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime if $_->{updated_at};
+            my $case =
+                '<strong>ID</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
+            $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
             $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
-            $case .= ' <strong>type</strong>: ' . $_->{type} if $_->{type};
-            $case .= ' <strong>subject</strong>: ' . $_->{subject} if $_->{subject};
+            $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};
+            $case .= ' <strong>subject</strong>: ' . $_->{subject}                                       if $_->{subject};
             print '<td>' . $case . '</td>';
             print '</tr>';
         }
@@ -57,7 +65,8 @@ try {
     } else {
         print "No record found";
     }
-} catch {
+}
+catch {
     print "Desk.com response is " . Dumper($response) . "</br></br>";
     print "Error is " . $_;
 }
