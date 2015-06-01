@@ -357,7 +357,7 @@ sub cache_daily_turnover {
 
     $self->logger->info('query daily turnover to cache in redis');
 
-    my $curr_month    = Date::Utility->new('1-' . Date::Utility->today->months_ahead(0));
+    my $curr_month    = Date::Utility->new('1-' . $pricing_date->months_ahead(0));
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'
