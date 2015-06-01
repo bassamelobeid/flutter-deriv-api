@@ -24,6 +24,7 @@ BOM::Platform::Context::template->process(
     {
         dtr     => \%template,
         commas => \&commas,
+        this_month => $args->{month},
     });
 
 code_exit_BO();
