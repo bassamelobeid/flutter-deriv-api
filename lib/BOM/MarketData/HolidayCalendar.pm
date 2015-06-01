@@ -163,20 +163,20 @@ sub _save_excel_holidays_to_couch {
                 $existing_data->{market_times}->{early_closes} = $early_close_to_save;
 
             }
-
             $existing_data->{holidays}      = $holiday_to_save;
             $existing_data->{recorded_date} = Date::Utility->new;
             my $new_config = $config_db->new($existing_data);
-            $new_config->save;
-
+            $new_config->save if ($couch_symbol !~ /^SYN/);
         }
 
     }
 
-    my @synthetic_exchange = map {BOM::Market::Underlying->new($_)->exchange->symbol}BOM::Market::UnderlyingDB->get_symbols_for(
+    my @tmp_list = map {BOM::Market::Underlying->new($_)->exchange->symbol}BOM::Market::UnderlyingDB->get_symbols_for(
         market    => 'indices',
         submarket => 'smart_index'
     );
+
+    my @synthetic_exchange = do { my %duplicate_exchange; grep { !$duplicate_exchange{$_}++ } @tmp_list };
 
     my %mapper = (
         SYNSTOXX => [qw(STOXX EUREX)],
