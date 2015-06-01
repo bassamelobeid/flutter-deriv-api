@@ -14,6 +14,8 @@ use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::View::Controller::Bet;
+use feature "state";
+
 
 BOM::Platform::Sysinit::init();
 PrintContentType();
@@ -76,16 +78,13 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
     foreach my $stamp (sort keys %{$u_db}) {
         my $new = $u_db->{$stamp};
         my $diffs;
+        if (not $old) {
+            $old = $new;
+        }
         foreach my $key (sort keys %{$u_db->{$stamp}}) {
             $new->{secret_answer} = BOM::Platform::Client::Utility::decrypt_secret_answer($new->{secret_answer}) if $key eq 'secret_answer';
             if ($key eq 'client_addr') {
-                my $ip = $new->{client_addr};
-                $ip =~ s/\/32//g;
-                my $reverse = `/usr/bin/host $ip`;
-                $reverse =~ /\s([^\s]+)\.$/;
-                if ($1) {
-                    $new->{client_addr} = $1;
-                }
+                    $old->{client_addr} = revers_ip($old->{client_addr});
             }
             $new->{$key} = '' if not $new->{$key};
             if ($key !~ /(stamp|operation|pg_userid|client_addr|client_port)/) {
@@ -97,12 +96,12 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
         }
         if ($diffs) {
 
-            my $desc=$u_db->{$stamp}->{stamp} . " [$table audit table] " . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
+            my $desc=$old->{stamp} . " [$table audit table] " . join(' ', map {$old->{$_}} qw(operation client_addr)).'<ul>';
 
             foreach my $key (keys %{$diffs}) {
                 $desc .= "<li> $key ". ' ' . 'change from <b>'. $old->{$key} . '</b> to <b>' . $new->{$key} . '</b> </li> ';
             }
-            push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => 'blue' };
+            push @audit_entries, { timestring => $old->{stamp}, description =>  "$desc</ul>", color => 'blue' };
         }
         $old = $new;
 
@@ -112,7 +111,7 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
 $u_db = $dbh->selectall_hashref("SELECT * FROM audit.login_history WHERE client_loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp", 'stamp');
 
 foreach my $stamp (sort keys %{$u_db}) {
-    my $new = $u_db->{$stamp};
+    $u_db->{$stamp}->{client_addr} = revers_ip($u_db->{$stamp}->{client_addr});
     my $desc=$u_db->{$stamp}->{stamp} . " [login_history audit table] " . join(' ', map {$u_db->{$stamp}->{$_}} qw( client_addr )).'<ul>';
     delete $u_db->{$stamp}->{login_action};
     delete $u_db->{$stamp}->{operation};
@@ -120,6 +119,7 @@ foreach my $stamp (sort keys %{$u_db}) {
     delete $u_db->{$stamp}->{client_loginid};
     delete $u_db->{$stamp}->{pg_userid};
     delete $u_db->{$stamp}->{client_port};
+    delete $u_db->{$stamp}->{client_addr};
     delete $u_db->{$stamp}->{stamp};
     delete $u_db->{$stamp}->{login_date};
     foreach my $key (keys %{$u_db->{$stamp}}) {
@@ -129,6 +129,7 @@ foreach my $stamp (sort keys %{$u_db}) {
     push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => $color };
 }
 
+print "<div style='background-color:yellow'>$loginid</div>";
 print "<div style='background-color:white'>";
 my $old;
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries ) {
@@ -137,3 +138,22 @@ foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->n
     $old = $_;
 }
 print "</div>";
+
+
+sub revers_ip {
+    my $client_ip = shift;
+    state $r;
+    if ($r->{$client_ip}) {
+        return $r->{$client_ip};
+    }
+    my $ip = $client_ip;
+    $ip =~ s/\/32//g;
+    my $reverse = `/usr/bin/host $ip`;
+    $reverse =~ /\s([^\s]+)\.$/;
+    if ($1) {
+        $r->{$client_ip} = $1;
+    }  else {
+        $r->{$client_ip} = $ip;
+    }
+    return $r->{$client_ip};
+}
