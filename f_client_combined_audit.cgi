@@ -81,7 +81,7 @@ $dbh->{RaiseError} = 1;
 
 my $u_db;
 my $prefix;
-foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document) ) {
+foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document login_history self_exclusion) ) {
     $prefix = ($table eq 'client')? '':'client_';
     $u_db = $dbh->selectall_hashref("SELECT * FROM audit.$table WHERE ".$prefix."loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp", 'stamp');
 
@@ -91,17 +91,17 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
         my $diffs;
         foreach my $key (sort keys %{$u_db->{$stamp}}) {
             $new->{secret_answer} = BOM::Platform::Client::Utility::decrypt_secret_answer($new->{secret_answer}) if $key eq 'secret_answer';
-#            if ($key eq 'client_addr') {
-#                my $ip = $new->{client_addr};
-#                $ip =~ s/\/32//g;
-#                my $reverse = `/usr/bin/host $ip`;
-#                $reverse =~ /\s([^\s]+)\.$/;
-#                if ($1) {
-#                    $new->{client_addr} = $1;
-#                }
-#            }
+            if ($key eq 'client_addr') {
+                my $ip = $new->{client_addr};
+                $ip =~ s/\/32//g;
+                my $reverse = `/usr/bin/host $ip`;
+                $reverse =~ /\s([^\s]+)\.$/;
+                if ($1) {
+                    $new->{client_addr} = $1;
+                }
+            }
             $new->{$key} = '' if not $new->{$key};
-            if ($key !~ /(stamp|operation|pg_userid|client_addr|client_port)/) {
+            if ($key !~ /(stamp|operation|pg_userid|client_addr|client_port|id)/) {
                 if ($old and $old->{$key} ne $new->{$key}) {
                     $diffs->{$key} = 1;
                 }
@@ -110,12 +110,12 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
         }
         if ($diffs) {
 
-            my $desc=$u_db->{$stamp}->{stamp} . ' ' . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
+            my $desc=$u_db->{$stamp}->{stamp} . " $table " . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
 
             foreach my $key (keys %{$diffs}) {
                 $desc .= "<li> $key ". ' ' . 'change from <b>'. $old->{$key} . '</b> to <b>' . $new->{$key} . '</b> </li> ';
             }
-            push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => 'black' };
+            push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => 'blue' };
         }
         $old = $new;
 
