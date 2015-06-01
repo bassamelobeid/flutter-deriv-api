@@ -35,18 +35,6 @@ my %wd_query = (
     login_date => {ge_le => [DateTime->from_epoch(epoch => Date::Utility->new({datetime => $startdate})->epoch), DateTime->from_epoch(epoch => Date::Utility->new({datetime => $enddate})->epoch)]},
 );
 
-my $logins = $client->find_login_history(
-    query   => [%wd_query],
-    sort_by => 'login_date',
-    limit   => 200,
-);
-
-foreach my $login (@$logins) {
-    my $date        = $login->login_date->strftime('%F %T');
-    my $status      = $login->login_successful ? 'ok' : 'failed';
-    push @audit_entries, {timestring => $date, description => $date . " logged in: " . $status . " " . $login->login_environment , color => 'green' };
-}
-
 my $currency = $client->currency;
 
 my $statement = client_statement_for_backoffice({
@@ -81,7 +69,7 @@ $dbh->{RaiseError} = 1;
 
 my $u_db;
 my $prefix;
-foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document login_history self_exclusion) ) {
+foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion) ) {
     $prefix = ($table eq 'client')? '':'client_';
     $u_db = $dbh->selectall_hashref("SELECT * FROM audit.$table WHERE ".$prefix."loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp", 'stamp');
 
@@ -101,7 +89,7 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
                 }
             }
             $new->{$key} = '' if not $new->{$key};
-            if ($key !~ /(stamp|operation|pg_userid|client_addr|client_port|id)/) {
+            if ($key !~ /(stamp|operation|pg_userid|client_addr|client_port)/) {
                 if ($old and $old->{$key} ne $new->{$key}) {
                     $diffs->{$key} = 1;
                 }
@@ -122,6 +110,17 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
     }
 }
 
+$u_db = $dbh->selectall_hashref("SELECT * FROM audit.login_history WHERE client_loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp", 'stamp');
+
+foreach my $stamp (sort keys %{$u_db}) {
+    my $new = $u_db->{$stamp};
+    my $desc=$u_db->{$stamp}->{stamp} . " login_history " . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
+
+    foreach my $key (keys %{$u_db->{$stamp}}) {
+        $desc .= "<li> $key  <b>". $u_db->{$stamp}->{$key} . '</b> </li> ';
+    }
+    push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => 'green' };
+}
 
 print "<table style='background-color:white'>";
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries ) {
