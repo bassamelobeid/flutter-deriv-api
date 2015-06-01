@@ -5,8 +5,6 @@ use strict;
 use warnings;
 use open qw[ :encoding(UTF-8) ];
 use JSON;
-use WWW::Desk;
-use WWW::Desk::Auth::HTTP;
 use Date::Utility;
 use Try::Tiny;
 use Data::Dumper;
@@ -21,8 +19,15 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation("SHOW CLIENT DESK CASES");
 
-my $loginid  = uc(request()->param('loginid_desk'));
-my $created  = request()->param('created');
+my $loginid;
+if (request()->param('loginid_desk')) {
+    $loginid = uc(request()->param('loginid_desk'));
+}
+
+my $created  = 'today';
+if(request()->param('created')) {
+    $created = lc(request()->param('created'));
+}
 
 my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid});
 if (not $client) {
@@ -30,36 +35,27 @@ if (not $client) {
     code_exit_BO();
 }
 
-my $auth = WWW::Desk::Auth::HTTP->new(
-    'username' => BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username,
-    'password' => BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
-);
+my $curl_url = BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url . "cases/search?q=custom_loginid:$loginid+created:$created -u " . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":" . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
 
-my $desk = WWW::Desk->new(
-    'desk_url'       => BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url,
-    'authentication' => $auth,
-);
-
-my $query_string = "?q=custom_loginid:$loginid";
-$query_string .= "+created:" . lc($created) if $created;
-
-my $response = $desk->call('/cases/search' . $query_string, 'GET', {'locale' => 'en_US'});
+my $response = `curl $curl_url`;
 try {
     $response = decode_json $response;
-    if ($response->{_embedded} and $response->{_embedded}->{entries}) {
+    if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
         print '<table>';
         foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch } @{$response->{_embedded}->{entries}} ) {
             print '<tr>';
             print '<td>' . Date::Utility->new($_->{created_at})->datetime . '</td>';
-            my $case = 'ID: ' . $_->{id} . ' description: ' . $_->{blurb} .  ' status: ' . $_->{status};
-            $case .= ' updated at: ' . Date::Utility->new($_->{updated_at})->datetime if $_->{updated_at};
-            $case .= ' resolved at: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
-            $case .= ' type: ' . $_->{type} if $_->{type};
-            $case .= ' subject ' . $_->{subject} if $_->{subject};
+            my $case = '<strong>ID</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} .  ' <strong>status</strong>: ' . $_->{status};
+            $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime if $_->{updated_at};
+            $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
+            $case .= ' <strong>type</strong>: ' . $_->{type} if $_->{type};
+            $case .= ' <strong>subject</strong>: ' . $_->{subject} if $_->{subject};
             print '<td>' . $case . '</td>';
             print '</tr>';
         }
         print '</table>';
+    } else {
+        print "No record found";
     }
 } catch {
     print "Desk.com response is " . Dumper($response) . "</br></br>";
