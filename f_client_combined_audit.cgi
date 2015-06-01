@@ -17,7 +17,6 @@ use BOM::View::Controller::Bet;
 
 BOM::Platform::Sysinit::init();
 PrintContentType();
-BrokerPresentation("SHOW CLIENT COMBINED TRACE");
 
 my $loginid    = uc(request()->param('loginid'));
 my $startdate  = request()->param('startdate');
@@ -98,7 +97,7 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
         }
         if ($diffs) {
 
-            my $desc=$u_db->{$stamp}->{stamp} . " $table " . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
+            my $desc=$u_db->{$stamp}->{stamp} . " [$table audit table] " . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
 
             foreach my $key (keys %{$diffs}) {
                 $desc .= "<li> $key ". ' ' . 'change from <b>'. $old->{$key} . '</b> to <b>' . $new->{$key} . '</b> </li> ';
@@ -114,16 +113,27 @@ $u_db = $dbh->selectall_hashref("SELECT * FROM audit.login_history WHERE client_
 
 foreach my $stamp (sort keys %{$u_db}) {
     my $new = $u_db->{$stamp};
-    my $desc=$u_db->{$stamp}->{stamp} . " login_history " . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
-
+    my $desc=$u_db->{$stamp}->{stamp} . " [login_history audit table] " . join(' ', map {$u_db->{$stamp}->{$_}} qw( client_addr )).'<ul>';
+    delete $u_db->{$stamp}->{login_action};
+    delete $u_db->{$stamp}->{operation};
+    delete $u_db->{$stamp}->{id};
+    delete $u_db->{$stamp}->{client_loginid};
+    delete $u_db->{$stamp}->{pg_userid};
+    delete $u_db->{$stamp}->{client_port};
+    delete $u_db->{$stamp}->{stamp};
+    delete $u_db->{$stamp}->{login_date};
     foreach my $key (keys %{$u_db->{$stamp}}) {
         $desc .= "<li> $key  <b>". $u_db->{$stamp}->{$key} . '</b> </li> ';
     }
-    push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => 'green' };
+    my $color = ($u_db->{$stamp}->{login_successful})? 'green' : 'orange';
+    push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => $color };
 }
 
-print "<table style='background-color:white'>";
+print "<div style='background-color:white'>";
+my $old;
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries ) {
-    print "<tr><td><div style='color:".$_->{color}."'>" . $_->{description} . "</div></td></tr>";
+    print '<hr>' if (substr($_->{timestring},0,10) ne substr($old->{timestring},0,10) );
+    print "<div style='color:".$_->{color}."'>" . $_->{description} . "</div>";
+    $old = $_;
 }
-print "</table>";
+print "</div>";
