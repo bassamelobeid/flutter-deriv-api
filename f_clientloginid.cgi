@@ -368,8 +368,35 @@ print "Expired before <input type=\"text\" style=\"width:100px\" maxlength=\"15\
 print "<input type=\"submit\" value=\"Go\">";
 print '</form>';
 
-Bar('Client Desk.com cases');
+Bar('Client complete audit log');
+print 'View client sequential combined activity<br/><br/>';
 
+print "<form action=\"" . request()->url_for('backoffice/f_client_combined_audit.cgi') . "\" method=post>";
+print qq~
+    <table>
+        <tr>
+            <td>
+            <b>Loginid</b>
+            </td>
+            <td>
+            <input type=text size=15 name="loginid" value="">
+            </td>
+        </tr>
+        <tr>
+            <td>
+            <b>From</b>
+            </td>
+            <td>
+~;
+print "<input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/></td></tr>";
+print "<tr><td><b>To</b></td><td>";
+print "<input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/></td></tr>";
+print "</table>";
+print "<input type=\"submit\" value=\"Submit\">";
+print "</form>";
+
+
+Bar('Client Desk.com cases');
 print "<form action=\"" . request()->url_for('backoffice/f_client_deskcom.cgi') . "\" method=post>";
 print qq~
     <table>
