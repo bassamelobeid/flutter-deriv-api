@@ -120,7 +120,7 @@ $u_db = $dbh->selectall_hashref("SELECT * FROM audit.login_history WHERE client_
 
 foreach my $stamp (sort keys %{$u_db}) {
     $u_db->{$stamp}->{client_addr} = revers_ip($u_db->{$stamp}->{client_addr});
-    my $desc=$u_db->{$stamp}->{stamp} . " [login_history audit table] " . join(' ', map {$u_db->{$stamp}->{$_}} qw( client_addr )).'<ul>';
+    my $desc=$u_db->{$stamp}->{stamp} . " [login_history audit table] " . join(' ', map {$u_db->{$stamp}->{$_}} qw( client_addr  ));
     delete $u_db->{$stamp}->{login_action};
     delete $u_db->{$stamp}->{operation};
     delete $u_db->{$stamp}->{id};
@@ -131,10 +131,10 @@ foreach my $stamp (sort keys %{$u_db}) {
     delete $u_db->{$stamp}->{stamp};
     delete $u_db->{$stamp}->{login_date};
     foreach my $key (keys %{$u_db->{$stamp}}) {
-        $desc .= "<li> $key  <b>". $u_db->{$stamp}->{$key} . '</b> </li> ';
+        $desc .= "$key  <b>". $u_db->{$stamp}->{$key} . '</b> ';
     }
     my $color = ($u_db->{$stamp}->{login_successful})? 'green' : 'orange';
-    push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => $color };
+    push @audit_entries, { timestring => $stamp, description =>  "$desc", color => $color };
 }
 
 print "<div style='background-color:yellow'>$loginid</div>";
@@ -142,7 +142,7 @@ print "<div style='background-color:white'>";
 my $old;
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries ) {
     print '<hr>' if (substr($_->{timestring},0,10) ne substr($old->{timestring},0,10) );
-    print "<div style='color:".$_->{color}."'>" . $_->{description} . "</div>";
+    print "<div style='font-size:11px;color:".$_->{color}."'>" . $_->{description} . "</div>";
     $old = $_;
 }
 print "</div>";
