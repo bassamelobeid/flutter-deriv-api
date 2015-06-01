@@ -67,7 +67,45 @@ foreach my $transaction (@{$statement->{transactions}}) {
     }
 }
 
-print "<table>";
+
+my $dbh = BOM::Database::ClientDB->new({
+        client_loginid => $loginid,
+        operation   => 'backoffice_replica',
+    })->db->dbh or die "[$0] cannot create connection";
+$dbh->{AutoCommit} = 0;
+$dbh->{RaiseError} = 1;
+
+my $u_db;
+my $prefix;
+foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document) ) {
+    $prefix = ($table eq 'client')? '':'client_';
+    $u_db = $dbh->selectall_hashref("SELECT * FROM audit.$table WHERE ".$prefix."loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp", 'stamp');
+
+    my $old;
+    foreach my $stamp (keys %{$u_db}) {
+        my $new = $u_db->{$stamp};
+        my $diffs;
+        foreach my $key (keys %{$u_db->{$stamp}}) {
+            if ($key !~ /(stamp|operation|pg_userid|client_addr|client_port)/) {
+                if ($old->{$key} ne $new->{$key}) {
+                    $diffs->{$key} = 1;
+                } 
+            }
+        }
+        if ($diffs) { 
+            my $desc= '<ul>';
+            foreach my $key (keys %{$diffs}) {
+                $desc .= "<li> $key ". ' ' . 'change from <b>'. $old->{$key} . '</b> to <b>' . $new->{$key} . '</b> </li> ';
+            }
+            push @audit_entries, { timestring => $stamp, description => $u_db->{$stamp}->{stamp} .' ' . "$desc</ul>" };
+        }
+        $old = $new;
+
+    }
+}
+
+
+print "<table style='background-color:white'>";
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries ) {
     print "<tr><td>" . $_->{description} . "</td></tr>";
 }
