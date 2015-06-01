@@ -43,6 +43,7 @@ my $statement = client_statement_for_backoffice({
     before   => Date::Utility->new({datetime => $enddate})->plus_time_interval('1d')->date,
     after    => $startdate,
     currency => $currency,
+    max_number_of_lines => 10000,
 });
 
 foreach my $transaction (@{$statement->{transactions}}) {
