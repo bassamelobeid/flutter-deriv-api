@@ -81,6 +81,14 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
         if (not $old) {
             $old = $new;
         }
+        if ($new->{operation} eq 'INSERT') {
+            my $desc=$new->{stamp} . " [$table audit table] " . join(' ', map {$new->{$_}} qw(operation client_addr)).'<ul>';
+            foreach my $key (keys %{$new}) {
+                $desc .= "<li> $key is <b>" . ($new->{$key} || '') . '</b> </li> ';
+            }
+            push @audit_entries, { timestring => $new->{stamp}, description =>  "$desc</ul>", color => 'purple' };
+            $old = $new;
+        }
         foreach my $key (sort keys %{$u_db->{$stamp}}) {
             $new->{secret_answer} = BOM::Platform::Client::Utility::decrypt_secret_answer($new->{secret_answer}) if $key eq 'secret_answer';
             if ($key eq 'client_addr') {
