@@ -44,7 +44,7 @@ my $logins = $client->find_login_history(
 foreach my $login (@$logins) {
     my $date        = $login->login_date->strftime('%F %T');
     my $status      = $login->login_successful ? 'ok' : 'failed';
-    push @audit_entries, {timestring => $date, description => $date . " logged in: " . $status . " " . $login->login_environment};
+    push @audit_entries, {timestring => $date, description => $date . " logged in: " . $status . " " . $login->login_environment , color => 'green' };
 }
 
 my $currency = $client->currency;
@@ -63,7 +63,11 @@ foreach my $transaction (@{$statement->{transactions}}) {
         my $key_value = $key . " staff: " . $transaction->{staff_loginid} . " ref: " . $transaction->{id} . " description: " . $info->{longcode};
         $key_value .= " buy_price: " . $transaction->{buy_price} if $transaction->{buy_price};
         $key_value .= " sell_price: " . $transaction->{sell_price} if $transaction->{sell_price};
-        push @audit_entries, { timestring => $key, description => $key_value };
+        push @audit_entries, { timestring => $key, description => $key_value, color => 'gray' };
+    } else {
+        my $key = $transaction->{date}->datetime;
+        my $key_value = $key . " staff: " . $transaction->{staff_loginid} . " ref: " . $transaction->{id} . " description: " . $transaction->{payment_remark} . " amount: $currency " . $transaction->{amount};
+        push @audit_entries, { timestring => $key, description => $key_value, color => 'red' };
     }
 }
 
@@ -82,22 +86,36 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
     $u_db = $dbh->selectall_hashref("SELECT * FROM audit.$table WHERE ".$prefix."loginid='$loginid' and stamp between '$startdate'::TIMESTAMP and '$enddate'::TIMESTAMP order by stamp", 'stamp');
 
     my $old;
-    foreach my $stamp (keys %{$u_db}) {
+    foreach my $stamp (sort keys %{$u_db}) {
         my $new = $u_db->{$stamp};
         my $diffs;
-        foreach my $key (keys %{$u_db->{$stamp}}) {
+        foreach my $key (sort keys %{$u_db->{$stamp}}) {
+            $new->{secret_answer} = BOM::Platform::Client::Utility::decrypt_secret_answer($new->{secret_answer}) if $key eq 'secret_answer';
+#            if ($key eq 'client_addr') {
+#                my $ip = $new->{client_addr};
+#                $ip =~ s/\/32//g;
+#                my $reverse = `/usr/bin/host $ip`;
+#                $reverse =~ /\s([^\s]+)\.$/;
+#                if ($1) {
+#                    $new->{client_addr} = $1;
+#                }
+#            }
+            $new->{$key} = '' if not $new->{$key};
             if ($key !~ /(stamp|operation|pg_userid|client_addr|client_port)/) {
-                if ($old->{$key} ne $new->{$key}) {
+                if ($old and $old->{$key} ne $new->{$key}) {
                     $diffs->{$key} = 1;
-                } 
+                }
             }
+            
         }
-        if ($diffs) { 
-            my $desc= '<ul>';
+        if ($diffs) {
+
+            my $desc=$u_db->{$stamp}->{stamp} . ' ' . join(' ', map {$u_db->{$stamp}->{$_}} qw(operation pg_userid client_addr client_port)).'<ul>';
+
             foreach my $key (keys %{$diffs}) {
                 $desc .= "<li> $key ". ' ' . 'change from <b>'. $old->{$key} . '</b> to <b>' . $new->{$key} . '</b> </li> ';
             }
-            push @audit_entries, { timestring => $stamp, description => $u_db->{$stamp}->{stamp} .' ' . "$desc</ul>" };
+            push @audit_entries, { timestring => $stamp, description =>  "$desc</ul>", color => 'black' };
         }
         $old = $new;
 
@@ -107,6 +125,6 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
 
 print "<table style='background-color:white'>";
 foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->new($b->{timestring})->epoch } @audit_entries ) {
-    print "<tr><td>" . $_->{description} . "</td></tr>";
+    print "<tr><td><div style='color:".$_->{color}."'>" . $_->{description} . "</div></td></tr>";
 }
 print "</table>";
