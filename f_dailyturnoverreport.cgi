@@ -9,7 +9,7 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("DAILY TURNOVER REPORT FOR " . request()->param('month'));
-BOM::Platform::Auth0::can_access(['Accounts']);
+BOM::Platform::Auth0::can_access(['Accounts', 'Quants']);
 
 my $args = request()->params;
 $args->{broker}   ||= 'FOG';
