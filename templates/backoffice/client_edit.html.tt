@@ -194,7 +194,7 @@ table#client_edit td{
                 ) <br>
             <select name="client_authentication">
                 [% FOREACH authentication = authentication_options %]
-                    [% IF  client.get_authentication(authentication.value).status == 'pass' %]
+                    [% IF  authentication.value == '' %]
                         <option value="[% authentication.value %]" selected="selected">[% authentication.details %]</option>
                     [% ELSE %]
                         <option value="[% authentication.value %]">[% authentication.details %]</option>
