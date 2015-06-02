@@ -7,15 +7,16 @@ use open qw[ :encoding(UTF-8) ];
 use JSON;
 use Data::Dumper;
 use Date::Utility;
-use DateTime;
+use Try::Tiny;
 
 use f_brokerincludeall;
 use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::View::Controller::Bet;
+use BOM::Platform::Runtime;
+use BOM::Platform::Client;
 use feature "state";
-
 
 BOM::Platform::Sysinit::init();
 PrintContentType();
@@ -31,11 +32,6 @@ if (not $client) {
     code_exit_BO();
 }
 
-my @audit_entries;
-my %wd_query = (
-    login_date => {ge_le => [DateTime->from_epoch(epoch => Date::Utility->new({datetime => $startdate})->epoch), DateTime->from_epoch(epoch => Date::Utility->new({datetime => $enddate})->epoch)]},
-);
-
 my $currency = $client->currency;
 
 my $statement = client_statement_for_backoffice({
@@ -46,6 +42,7 @@ my $statement = client_statement_for_backoffice({
     max_number_of_lines => 10000,
 });
 
+my @audit_entries;
 foreach my $transaction (@{$statement->{transactions}}) {
     if (defined $transaction->{financial_market_bet_id}) {
         my $key = $transaction->{date}->datetime;
@@ -101,7 +98,6 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
                     $diffs->{$key} = 1;
                 }
             }
-            
         }
         if ($diffs) {
 
@@ -138,6 +134,39 @@ foreach my $stamp (sort keys %{$u_db}) {
     push @audit_entries, { timestring => $stamp, description =>  "$desc", color => $color };
 }
 
+# add desk.com cases
+my $curl_url =
+      BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url
+    . "cases/search?q=custom_loginid:$loginid+created:" . _get_desk_created_string($startdate, $enddate) . " -u "
+    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":"
+    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
+    . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
+
+my $response = `curl $curl_url`;
+try {
+    $response = decode_json $response;
+    if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
+        foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
+            @{$response->{_embedded}->{entries}})
+        {
+            my $stamp = Date::Utility->new($_->{created_at})->datetime;
+            my $case =
+                '<strong>ID</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
+            $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
+            $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
+            $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};
+            $case .= ' <strong>subject</strong>: ' . $_->{subject}                                       if $_->{subject};
+
+            push @audit_entries, { timestring => $stamp, description => $case};
+        }
+    } else {
+        push @audit_entries, { timestring => Date::Utility::today->datetime, description => 'No desk.com record found' };
+    }
+}
+catch {
+    push @audit_entries, { timestring => Date::Utility::today->datetime, description => 'Error occurred while accessing desk.com' };
+};
+
 print "<div style='background-color:yellow'>$loginid</div>";
 print "<div style='background-color:white'>";
 my $old;
@@ -147,7 +176,6 @@ foreach (sort { Date::Utility->new($a->{timestring})->epoch <=> Date::Utility->n
     $old = $_;
 }
 print "</div>";
-
 
 sub revers_ip {
     my $client_ip = shift;
@@ -165,4 +193,25 @@ sub revers_ip {
         $r->{$client_ip} = $ip;
     }
     return $r->{$client_ip};
+}
+
+sub _get_desk_created_string {
+    my $start_date = shift;
+    my $end_date = shift;
+
+    $start_date = Date::Utility->new($start_date);
+    $end_date = Date::Utility->new($end_date);
+
+    my $created = 'today';
+    my $days_between = $end_date->days_between($start_date);
+    if ($days_between < 1) {
+        $created = 'today';
+    } elsif ($days_between >= 1 and $days_between <= 7) {
+        $created = 'week';
+    } elsif ($days_between <= 31) {
+        $created = 'month';
+    } else {
+        $created = 'year';
+    }
+    return $created;
 }
