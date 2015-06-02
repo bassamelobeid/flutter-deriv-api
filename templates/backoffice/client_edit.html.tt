@@ -187,6 +187,11 @@ table#client_edit td{
             ]
         %]
         <td id="verification">: 
+                Current methods:(
+                    [% IF  client.get_authentication('ADDRESS').status == 'pass' %]ADDRESS,[% END %]
+                    [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]ID_DOCUMENT,[% END %]
+                    [% IF  client.get_authentication('ID_192').status == 'pass' %]ID_192,[% END %]
+                ) <br>
             <select name="client_authentication">
                 [% FOREACH authentication = authentication_options %]
                     [% IF  client.get_authentication(authentication.value).status == 'pass' %]
