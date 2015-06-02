@@ -298,6 +298,12 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client->clr_status('can_authenticate');
             }
         }
+
+        if ($key eq 'client_authentication') {
+            if ($input{$key} ne '') {
+                $client->set_authentication('ID_192')->status('pass');
+            }
+        }
     }
 
     if (not $client->save) {

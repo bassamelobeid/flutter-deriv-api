@@ -179,7 +179,7 @@ table#client_edit td{
         <td class="label">ID Authentication</td>
         [%
             authentication_options = [
-                {'value' => 'no', 'details' => 'Not Authenticated' }
+                {'value' => '', 'details' => 'Not Authenticated' }
                 {'value' => 'ADDRESS', 'details' => 'AUTHENTICATED Address' }
                 {'value' => 'ID_DOCUMENT', 'details' => 'AUTHENTICATED ID Documents' }
                 {'value' => 'ID_192', 'details' => 'AUTHENTICATED via Experian (192.com)' }
@@ -188,7 +188,7 @@ table#client_edit td{
         <td id="verification">: 
             <select name="client_authentication">
                 [% FOREACH authentication = authentication_options %]
-                    [% IF  client.get_authentication(authentication.value).status eq 'pass' %]
+                    [% IF  client.get_authentication(authentication.value).status == 'pass' %]
                         <option value="[% authentication.value %]" selected="selected">[% authentication.details %]</option>
                     [% ELSE %]
                         <option value="[% authentication.value %]">[% authentication.details %]</option>
