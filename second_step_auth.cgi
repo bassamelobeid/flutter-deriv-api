@@ -12,11 +12,9 @@ use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 PrintContentType();
 
-my $email = request()->param('email');
-my $password = request()->param('password');
-
-my $access_token = BOM::Platform::Auth0::exchange_code($email, $password);
+my $access_token = request()->param('token');
 my $staff        = BOM::Platform::Auth0::user_by_access_token($access_token);
+
 if (not $staff) {
     print "Login failed";
     code_exit_BO();
@@ -28,7 +26,7 @@ my $sig_request = Auth::DuoWeb::sign_request(
     BOM::System::Config::third_party->{duosecurity}->{ikey},
     BOM::System::Config::third_party->{duosecurity}->{skey},
     BOM::System::Config::third_party->{duosecurity}->{akey},
-    $email,
+    $staff->{email},
 );
 
 if ($sig_request) {
@@ -66,7 +64,7 @@ if ($sig_request) {
         <form method="POST" id="duo_form">
          <input type="hidden" name="whattodo" value="login" />
          <input type="hidden" name="access_token" value="$access_token">
-         <input type="hidden" name="email" value="$email">
+         <input type="hidden" name="email" value="$staff->{email}">
          <input type="hidden" name="post_action" value="$post_action">
          <input type="hidden" name="brokercode" value="$brokercode" />
         </form>

@@ -35,68 +35,6 @@ my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mi
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
 my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
 
-if ($input{impersonate_user}) {
-    my $token = BOM::Platform::Authorization->issue_token(
-        client_id       => 1,
-        expiration_time => time + 86400,
-        login_id        => $loginid,
-        scopes          => ['price', 'chart'],
-    );
-
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
-    my $cookie = BOM::Platform::SessionCookie->new(
-        loginid       => $loginid,
-        token         => $token,
-        email         => $client->email,
-    );
-    my $session_cookie = CGI::cookie(
-        -name    => BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login,
-        -value   => $cookie->value,
-        -domain  => request()->cookie_domain,
-        -secure  => 1,
-        -path    => '/',
-        -expires => '+30d',
-    );
-
-    my $lcookie = CGI::cookie(
-        -name    => 'loginid',
-        -value   => $loginid,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    my $email_cookie = CGI::cookie(
-        -name    => 'email',
-        -value   => $client->email,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    my $type = ($client->is_virtual) ? 'V' : 'R';
-    my $status = ($client->get_status('disabled')) ? 'D' : 'E';
-    my $cookie_str = "$loginid:$type:$status";
-
-    my $loginid_list_cookie = CGI::cookie(
-        -name    => 'loginid_list',
-        -value   => $cookie_str,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    PrintContentType({'cookies' => [ $session_cookie, $lcookie, $email_cookie, $loginid_list_cookie ]});
-    eval { BrokerPresentation("$loginid CLIENT DETAILS") };
-    print '<font color=green><b>SUCCESS!</b></font></p>';
-    print qq[You are impersonating $loginid on our <a href="/" target="impersonated">main web site<a/>.];
-
-    code_exit_BO();
-}
-
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
 eval { BrokerPresentation("$loginid CLIENT DETAILS") };
@@ -538,7 +476,6 @@ print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $loginid
 
 print qq[<form action="$self_post" method="POST">
     <input type="submit" value="Save Client Details">
-    <input type="submit" name="impersonate_user" value="Impersonate">
     <input type="hidden" name="broker" value="$broker">
     <input type="hidden" name="loginID" value="$loginid">
     <input type="hidden" name="l" value="$language">];
