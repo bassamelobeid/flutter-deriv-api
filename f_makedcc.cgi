@@ -7,6 +7,7 @@ use f_brokerincludeall;
 use Path::Tiny;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use BOM::System::AuditLog;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -91,14 +92,12 @@ if ($input->{'dcctype'} eq 'file_content') {
         . " is: <font size=+1><b>$code</b></font><br>This code is valid for today ($today) only.</p>";
 
     # Logging
-    Path::Tiny::path("/var/log/fixedodds/cs_dcc.log")
-        ->append($now->datetime
-            . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
+    BOM::System::AuditLog::log("$clerk MAKES DUAL CONTROL CODE FOR "
             . $input->{'filetype'}
             . " loginID="
             . $input->{'clientloginid'}
             . " $ENV{'REMOTE_ADDR'} REMINDER="
-            . $input->{'reminder'});
+            . $input->{'reminder'}, $input->{'clientloginid'}, $clerk);
 } else {
     $code = DualControlCode($clerk, $token, $input->{'currency'}, $input->{'amount'}, $today, $input->{'transtype'}, $input->{'clientloginid'},);
 

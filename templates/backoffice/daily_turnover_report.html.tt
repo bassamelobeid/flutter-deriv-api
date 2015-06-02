@@ -1,3 +1,14 @@
+<div>
+    <p>View Daily Turnover Report</p>
+    <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') %]" method="post">
+        Month: <input type="text" size="12" name="month" value="[% this_month %]"></input>
+        <br/><br/>
+        <input type="submit" value="View Daily Turnover Report"></input>
+    </form>
+</div>
+<hr/>
+<br/>
+
 [% IF dtr.risk_report %]
 <p>See, also: <a href="[% dtr.risk_report %]">the lastest risk dashboard</a></p>
 [% END %]

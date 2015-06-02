@@ -23,39 +23,21 @@ sub login {
 
     print qq~
     <!doctype html>
-    <html><script src="https://cdn.auth0.com/js/lock-7.min.js"></script>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
-    <script>
-    function resetPassword() {
-      var widget = new Auth0Lock('$clientId', 'binary.auth0.com');
-      widget.showReset();
-      }
-    </script>
-
     <title>Binary.com BackOffice System</title>
-
-    <body><form action="$params->{submit}" method="POST">
-    <table align="center">
-    <tr><td><h1>BackOffice Login</h1></td></tr>
-
-    <tr><td><div class="form-group">
-      <label for="userEmail">Email address</label>
-      <input type="email" class="form-control" name="email" id="userEmail" placeholder="Enter email">
-    </div></td></tr>
-
-    <tr><td><div class="form-group">
-      <label for="userPassword">Password</label>
-      <input type="password" class="form-control" name="password" id="userPassword" placeholder="Password">
-    </div></td></tr>
-
-    <tr><td>
-    <input type="submit" value="Sign in Binary.com BackOffice" class="btn btn-default">
-    <input type="button" value="Reset password" class="btn btn-default" onClick="resetPassword();">
-    </td></tr>
-    <tr><td>
-    </td></tr>
-    </table>
-    </form></body>
+    <html>
+    <div id="root"></div>
+    <form id='auth-form' name='second_step_auth' action='$params->{submit}'>
+    <input type='hidden' id='auth0-token' name='token' />
+    </form>
+    <script src="https://cdn.auth0.com/js/lock-7.min.js"></script>
+    <script>
+    var lock = new Auth0Lock('$clientId', 'binary.auth0.com');
+      lock.show(function onLogin(err, profile, id_token, access_token) {
+        document.getElementById("auth-form").method = "post";
+        document.getElementById("auth0-token").value = access_token;
+        document.second_step_auth.submit();
+      });
+    </script>
     </html>
     ~;
 
