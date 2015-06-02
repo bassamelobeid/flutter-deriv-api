@@ -180,7 +180,7 @@ table#client_edit td{
         [%
             authentication_options = [
                 {'value' => '', 'details' => '-' }
-                {'value' => 'CLEA ALL', 'details' => 'Delete all authentications' }
+                {'value' => 'CLEAR ALL', 'details' => 'Delete all authentications' }
                 {'value' => 'ADDRESS', 'details' => 'AUTHENTICATED Address' }
                 {'value' => 'ID_DOCUMENT', 'details' => 'AUTHENTICATED ID Documents' }
                 {'value' => 'ID_192', 'details' => 'AUTHENTICATED via Experian (192.com)' }
