@@ -167,7 +167,7 @@ foreach my $stamp (sort keys %{$u_db}) {
     delete $u_db->{$stamp}->{login_date};
 
     foreach my $key (keys %{$u_db->{$stamp}}) {
-        $desc .= "$key  <b>" . $u_db->{$stamp}->{$key} . '</b> ';
+        $desc .= " $key  <b>" . $u_db->{$stamp}->{$key} . '</b> ';
     }
     my $color = ($u_db->{$stamp}->{login_successful}) ? 'green' : 'orange';
     push @audit_entries,
@@ -178,51 +178,9 @@ foreach my $stamp (sort keys %{$u_db}) {
         };
 }
 
-# add desk.com cases
-my $curl_url =
-      BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url
-    . "cases/search?q=custom_loginid:$loginid+created:"
-    . _get_desk_created_string($startdate, $enddate) . " -u "
-    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":"
-    . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
-    . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
-
-my $response = `curl $curl_url`;
-try {
-    $response = decode_json $response;
-    if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
-        foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
-            @{$response->{_embedded}->{entries}})
-        {
-            my $stamp = Date::Utility->new($_->{created_at})->datetime;
-            my $case =
-                $stamp . ' <strong>Desk.com Id</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
-            $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
-            $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
-            $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};
-            $case .= ' <strong>subject</strong>: ' . $_->{subject}                                       if $_->{subject};
-
-            push @audit_entries,
-                {
-                timestring  => $stamp,
-                description => $case
-                };
-        }
-    } else {
-        push @audit_entries,
-            {
-            timestring  => Date::Utility::today->datetime,
-            description => Date::Utility::today->datetime . ' No desk.com record found'
-            };
-    }
-}
-catch {
-    push @audit_entries,
-        {
-        timestring  => Date::Utility::today->datetime,
-        description => Date::Utility::today->datetime . ' Error occurred while accessing desk.com'
-        };
-};
+#add desk.com entries
+push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate);
+push @audit_entries, _get_desk_com_entries($loginid, $startdate, $enddate, 'deleted');
 
 print "<div style='background-color:yellow'>$loginid</div>";
 print "<div style='background-color:white'>";
@@ -271,4 +229,68 @@ sub _get_desk_created_string {
         $created = 'year';
     }
     return $created;
+}
+
+sub _get_desk_com_entries {
+    my $loginid   = shift;
+    my $startdate = shift;
+    my $enddate   = shift;
+    my $status    = shift;
+
+    my $color = 'black';
+    # add desk.com cases not deleted
+    my $curl_url =
+          BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url
+        . "cases/search?q=custom_loginid:$loginid+created:" . _get_desk_created_string($startdate, $enddate);
+    if($status) {
+        $curl_url .= "+status:$status";
+        $color = 'red';
+    }
+    $curl_url .= " -u "
+        . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username . ":"
+        . BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password
+        . " -d 'sort_field=created_at&sort_direction=asc' -G -H 'Accept: application/json'";
+
+    my $response = `curl $curl_url`;
+    my @desk_entries = ();
+    try {
+        $response = decode_json $response;
+        if ($response->{total_entries} > 0 and $response->{_embedded} and $response->{_embedded}->{entries}) {
+            foreach (sort { Date::Utility->new($a->{created_at})->epoch <=> Date::Utility->new($b->{created_at})->epoch }
+                @{$response->{_embedded}->{entries}})
+            {
+                my $stamp = Date::Utility->new($_->{created_at})->datetime;
+                my $case =
+                    $stamp . ' <strong>Desk.com Id</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
+                $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
+                $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
+                $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};
+                $case .= ' <strong>subject</strong>: ' . $_->{subject}                                       if $_->{subject};
+
+                push @desk_entries,
+                    {
+                    timestring  => $stamp,
+                    description => $case,
+                    color       => $color
+                    };
+            }
+        } else {
+            push @desk_entries,
+                {
+                timestring  => Date::Utility::today->datetime,
+                description => Date::Utility::today->datetime . ' No desk.com record found',
+                color       => $color
+                };
+        }
+    }
+    catch {
+        push @desk_entries,
+            {
+            timestring  => Date::Utility::today->datetime,
+            description => Date::Utility::today->datetime . ' Error occurred while accessing desk.com',
+            color       => $color
+            };
+    };
+
+    return @desk_entries;
 }
