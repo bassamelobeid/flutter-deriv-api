@@ -300,8 +300,8 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
 
         if ($key eq 'client_authentication') {
-            if ($input{$key} ne '') {
-                $client->set_authentication('ID_192')->status('pass');
+            if ($input{$key} eq 'ADDRESS' or $input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_192') {
+                $client->set_authentication($input{$key})->status('pass');
             }
         }
     }
