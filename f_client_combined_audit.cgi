@@ -196,7 +196,7 @@ try {
         {
             my $stamp = Date::Utility->new($_->{created_at})->datetime;
             my $case =
-                '<strong>Doughflow Id</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
+                $stamp . ' <strong>Desk.com Id</strong>: ' . $_->{id} . ' <strong>description</strong>: ' . $_->{blurb} . ' <strong>status</strong>: ' . $_->{status};
             $case .= ' <strong>updated at</strong>: ' . Date::Utility->new($_->{updated_at})->datetime   if $_->{updated_at};
             $case .= ' <strong>resolved at</strong>: ' . Date::Utility->new($_->{resolved_at})->datetime if $_->{resolved_at};
             $case .= ' <strong>type</strong>: ' . $_->{type}                                             if $_->{type};
@@ -212,7 +212,7 @@ try {
         push @audit_entries,
             {
             timestring  => Date::Utility::today->datetime,
-            description => 'No desk.com record found'
+            description => Date::Utility::today->datetime . ' No desk.com record found'
             };
     }
 }
@@ -220,7 +220,7 @@ catch {
     push @audit_entries,
         {
         timestring  => Date::Utility::today->datetime,
-        description => 'Error occurred while accessing desk.com'
+        description => Date::Utility::today->datetime . ' Error occurred while accessing desk.com'
         };
 };
 
