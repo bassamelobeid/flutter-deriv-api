@@ -123,7 +123,7 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_production || $amou
         }
     }
 
-    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $ttype})->validate_payment_control_code($control_code, $loginID, $curr, $amount);
+    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $ttype})->validate_payment_control_code($DCcode, $loginID, $curr, $amount);
     if ($error) {
         print $error->get_mesg();
         code_exit_BO();
