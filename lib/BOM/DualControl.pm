@@ -22,6 +22,7 @@ use DateTime;
 use Error::Base;
 
 use BOM::Utility::Crypt;
+use BOM::Platform::Runtime;
 
 has staff => (
     is       => 'ro',
@@ -92,11 +93,10 @@ sub validate_payment_control_code {
     $error_status = $self->_validate_payment_loginid($code, $loginid);
     $error_status = $self->_validate_payment_currency($code, $currency);
     $error_status = $self->_validate_payment_amount($code, $amount);
-    if ($error_status) {
-        return $error_status;
-    }
-    return;
+    $error_status = $self->_validate_staff_payment_limit($code, $amount);
+    return $error_status if $error_status;
 
+    return;
 }
 
 sub _validate_empty_code {
@@ -238,6 +238,22 @@ sub _validate_payment_amount {
             -type => 'DifferentAmount',
             -mesg => 'Amount provided does not match with the amount provided during code generation',
         );
+    }
+    return;
+}
+
+sub _validate_staff_payment_limit {
+    my $self   = shift;
+    my $amount = shift;
+
+    my $payment_limits = JSON::from_json(BOM::Platform::Runtime->instance->app_config->payments->payment_limits);
+    if (exists $payment_limits->{$self->staff}) {
+        if ($amount > $payment_limits->{$self->staff}) {
+            return Error::Base->cuss(
+                -type => 'AmountGreaterThanLimit',
+                -mesg => 'The amount is larger than authorization limit for staff',
+            );
+        }
     }
     return;
 }
