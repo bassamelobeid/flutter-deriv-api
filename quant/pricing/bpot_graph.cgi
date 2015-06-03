@@ -80,7 +80,12 @@ while ($graph_more) {
         push @times, $date_string;
         push @spots, $bet->current_spot;
         foreach my $attr (keys %prices) {
-            my $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
+            my $amount;
+            if ($attr eq 'pricing_iv') {
+                $amount = $bet->pricing_args->{iv};
+            } else {
+                $amount = ($expired and $attr =~ /probability$/) ? $value : (ref $bet->$attr) ? $bet->$attr->amount : $bet->$attr;
+            }
             push @{$prices{$attr}}, roundnear(0.01, (abs $amount > 3) ? $amount : $amount * 100);
         }
 

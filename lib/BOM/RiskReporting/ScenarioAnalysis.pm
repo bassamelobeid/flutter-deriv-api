@@ -197,7 +197,7 @@ sub _calculate_grid_for_max_exposure {
 
     my $current_spot = $bet->current_spot;
     my $spot_epsilon = ($bet->market->name eq 'commodities' and not $bet->underlying->symbol eq 'frxXAUUSD') ? 0.15 : 0.08;
-    my $current_vol  = $bet->pricing_iv;
+    my $current_vol  = $bet->pricing_args->{iv};
     my $vol_epsilon  = 0.25;
     my %pricing_args = %{$bet->pricing_args};
 
