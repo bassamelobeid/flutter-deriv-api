@@ -108,26 +108,20 @@ my $salutation = $client->salutation;
 my $first_name = $client->first_name;
 my $last_name  = $client->last_name;
 
-# Check Dual Control Code
-
-# We can do development tests without hassling with DCCs.. but to test DCCs on dev, make the amount as below.
-if (BOM::Platform::Runtime->instance->app_config->system->on_production || $amount == 1234.56) {
-
-    #check if control code already used
-    my $count    = 0;
-    my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
-    while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
-        if ($l =~ /DCcode\=$DCcode/i) {
-            print "ERROR: this control code has already been used today!";
-            code_exit_BO();
-        }
-    }
-
-    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $ttype})->validate_payment_control_code($DCcode, $loginID, $curr, $amount);
-    if ($error) {
-        print $error->get_mesg();
+#check if control code already used
+my $count    = 0;
+my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
+while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
+    if ($l =~ /DCcode\=$DCcode/i) {
+        print "ERROR: this control code has already been used today!";
         code_exit_BO();
     }
+}
+
+my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $ttype})->validate_payment_control_code($DCcode, $loginID, $curr, $amount);
+if ($error) {
+    print $error->get_mesg();
+    code_exit_BO();
 }
 
 my $acc = $client->set_default_account($curr);    # creates a first account if necessary.
