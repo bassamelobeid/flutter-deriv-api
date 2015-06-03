@@ -7,7 +7,6 @@ use warnings;
 use Scalar::Util qw(looks_like_number);
 use Path::Tiny;
 use Try::Tiny;
-use File::ReadBackwards;
 
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
@@ -107,16 +106,6 @@ my $email      = $client->email;
 my $salutation = $client->salutation;
 my $first_name = $client->first_name;
 my $last_name  = $client->last_name;
-
-#check if control code already used
-my $count    = 0;
-my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
-while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
-    if ($l =~ /DCcode\=$DCcode/i) {
-        print "ERROR: this control code has already been used today!";
-        code_exit_BO();
-    }
-}
 
 my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $ttype})->validate_payment_control_code($DCcode, $loginID, $curr, $amount);
 if ($error) {

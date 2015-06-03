@@ -20,6 +20,7 @@ use 5.010;
 use Moose;
 use DateTime;
 use Error::Base;
+use File::ReadBackwards;
 
 use BOM::Utility::Crypt;
 use BOM::Platform::Runtime;
@@ -64,12 +65,12 @@ sub batch_payment_control_code {
 }
 
 sub validate_client_control_code {
-    my $self  = shift;
-    my $code  = shift;
-    my $type  = shift;
-    my $email = shift;
+    my $self   = shift;
+    my $incode = shift;
+    my $type   = shift;
+    my $email  = shift;
 
-    $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $code);
+    my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
     $error_status = $self->_validate_client_code_is_valid($code);
@@ -85,22 +86,32 @@ sub validate_client_control_code {
 
 sub validate_payment_control_code {
     my $self     = shift;
-    my $code     = shift;
+    my $incode   = shift;
     my $loginid  = shift;
     my $currency = shift;
     my $amount   = shift;
 
-    $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $code);
+    my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_payment_code_is_valid($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_code_expiry($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_payment_loginid($code, $loginid);
+    return $error_status if $error_status;
     $error_status = $self->_validate_payment_currency($code, $currency);
+    return $error_status if $error_status;
     $error_status = $self->_validate_payment_amount($code, $amount);
-    $error_status = $self->_validate_staff_payment_limit($code, $amount);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_staff_payment_limit($amount);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_payment_code_already_used($incode);
     return $error_status if $error_status;
 
     return;
@@ -108,20 +119,26 @@ sub validate_payment_control_code {
 
 sub validate_batch_payment_control_code {
     my $self     = shift;
-    my $code     = shift;
+    my $incode   = shift;
     my $filename = shift;
 
-    $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $code);
+    my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_batch_payment_code_is_valid($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_code_expiry($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_filename($code, $filename);
-    if ($error_status) {
-        return $error_status;
-    }
+    return $error_status if $error_status;
+    $error_status = $self->_validate_payment_code_already_used($incode);
+    return $error_status if $error_status;
+
     return;
 }
 
@@ -132,7 +149,7 @@ sub _validate_empty_code {
     if (not $code) {
         return Error::Base->cuss(
             -type => 'CodeNotProvided',
-            -mesg => 'Dual control code is not specified.',
+            -mesg => 'Dual control code is not specified or is invalid',
         );
     }
     return;
@@ -218,6 +235,24 @@ sub _validate_transaction_type {
             -type => 'InvalidTransactionType',
             -mesg => 'Transaction type does not match with type provided during code generation',
         );
+    }
+    return;
+}
+
+sub _validate_payment_code_already_used {
+    my $self = shift;
+    my $code = shift;
+
+    my $count    = 0;
+    my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
+    while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
+        my @matches = $l =~ /DCcode=([^\s]+)/g;
+        if (grep { $code eq $_ } @matches) {
+            return Error::Base->cuss(
+                -type => 'CodeAlreadyUsed',
+                -mesg => 'This control code has already been used today',
+            );
+        }
     }
     return;
 }

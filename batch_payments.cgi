@@ -4,7 +4,6 @@ package main;
 use strict;
 use warnings;
 
-use File::ReadBackwards;
 use Path::Tiny;
 use Try::Tiny;
 
@@ -52,16 +51,6 @@ if ($confirm) {
     my $control_code = $cgi->param('DCcode');
     my $filename     = $cgi->param('DCfile');
     my $transtype    = $cgi->param('transtype');
-
-    #check if control code already used
-    my $count    = 0;
-    my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
-    while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
-        if ($l =~ /DCcode\=$control_code/i) {
-            print 'ERROR: this control code has already been used today!';
-            code_exit_BO();
-        }
-    }
 
     my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $transtype})->validate_batch_payment_control_code($control_code, $filename);
     if ($error) {
