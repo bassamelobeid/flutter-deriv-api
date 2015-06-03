@@ -65,7 +65,7 @@ if ($confirm) {
             }
         }
 
-        my $error = BOM::DualControl->new({staff => $clerk, transactiontype => 'transtype'})->validate_batch_payment_control_code($control_code, $filename);
+        my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $transtype})->validate_batch_payment_control_code($control_code, $filename);
         if ($error) {
             print $error->get_mesg();
             code_exit_BO();

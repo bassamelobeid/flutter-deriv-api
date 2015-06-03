@@ -42,7 +42,6 @@ my $amount       = delete $params{amount};
 my $informclient = delete $params{informclientbyemail};
 my $ttype        = delete $params{ttype};
 my $ajax_only    = delete $params{ajax_only};
-my $DCstaff      = delete $params{DCstaff};
 my $DCcode       = delete $params{DCcode};
 my $range        = delete $params{range};
 
@@ -114,28 +113,6 @@ my $last_name  = $client->last_name;
 # We can do development tests without hassling with DCCs.. but to test DCCs on dev, make the amount as below.
 if (BOM::Platform::Runtime->instance->app_config->system->on_production || $amount == 1234.56) {
 
-    if (!$DCstaff) {
-        print "ERROR: fellow staff name for dual control code not specified";
-        code_exit_BO();
-    }
-
-    if (!$DCcode) {
-        print "ERROR: dual control code not specified";
-        code_exit_BO();
-    }
-
-    if ($DCstaff eq $clerk) {
-        print "ERROR: fellow staff name for dual control code cannot be yourself!";
-        code_exit_BO();
-    }
-
-    my $validcode = DualControlCode($DCstaff, $token, $curr, $amount, Date::Utility->new->date_ddmmmyy, $ttype, $loginID);
-
-    if (substr(uc($DCcode), 0, 5) ne substr(uc($validcode), 0, 5)) {
-        print "ERROR: Dual Control Code $DCcode is invalid (code FMDO). Check the fellow staff name, amount, date and transaction type.";
-        code_exit_BO();
-    }
-
     #check if control code already used
     my $count    = 0;
     my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
@@ -146,20 +123,14 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_production || $amou
         }
     }
 
-    if (not ValidDualControlCode($DCcode)) {
-        print "ERROR: invalid dual control code!";
+    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $ttype})->validate_payment_control_code($control_code, $loginID, $curr, $amount);
+    if ($error) {
+        print $error->get_mesg();
         code_exit_BO();
     }
 }
 
 my $acc = $client->set_default_account($curr);    # creates a first account if necessary.
-
-# Check Staff Authorisation Limit ##################
-my $staffauthlimit = get_staff_payment_limit($clerk);
-if ($amount > $staffauthlimit) {
-    print "ERROR: The amount ($amount) is larger than authorization limit for $clerk ($staffauthlimit)";
-    code_exit_BO();
-}
 
 # Check didn't hit Reload
 my $payment_mapper = BOM::Database::DataMapper::Payment->new({
@@ -251,7 +222,7 @@ code_exit_BO() if $leave;
 my $now = Date::Utility->new;
 # Logging
 Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-    ->append($now->datetime . " $ttype $curr$amount $loginID clerk=$clerk fellow=$DCstaff DCcode=$DCcode $ENV{REMOTE_ADDR}");
+    ->append($now->datetime . " $ttype $curr$amount $loginID clerk=$clerk DCcode=$DCcode $ENV{REMOTE_ADDR}");
 
 # Print confirmation
 Bar("$ttype confirmed");
