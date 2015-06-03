@@ -116,7 +116,7 @@ sub _validate_client_code_is_valid {
     my $self = shift;
     my $code = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if (scalar @arry != 4) {
         return Error::Base->cuss(
             -type => 'InvalidClientCode',
@@ -130,7 +130,7 @@ sub _validate_payment_code_is_valid {
     my $self = shift;
     my $code = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if (scalar @arry != 6) {
         return Error::Base->cuss(
             -type => 'InvalidClientCode',
@@ -144,7 +144,7 @@ sub _validate_code_expiry {
     my $self = shift;
     my $code = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if (DateTime->from_epoch(epoch => time)->ymd ne DateTime->from_epoch(epoch => $arry[0])->ymd) {
         return Error::Base->cuss(
             -type => 'CodeExpired',
@@ -158,7 +158,7 @@ sub _validate_fellow_staff {
     my $self = shift;
     my $code = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if ($self->staff eq $arry[1]) {
         return Error::Base->cuss(
             -type => 'SameStaff',
@@ -172,7 +172,7 @@ sub _validate_transaction_type {
     my $self = shift;
     my $code = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if ($self->transactiontype ne $arry[2]) {
         return Error::Base->cuss(
             -type => 'InvalidTransactionType',
@@ -187,7 +187,7 @@ sub _validate_client_email {
     my $code  = shift;
     my $email = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if ($email ne $arry[3]) {
         return Error::Base->cuss(
             -type => 'DifferentEmail',
@@ -202,7 +202,7 @@ sub _validate_payment_loginid {
     my $code    = shift;
     my $loginid = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if ($loginid ne $arry[3]) {
         return Error::Base->cuss(
             -type => 'DifferentLoginid',
@@ -217,7 +217,7 @@ sub _validate_payment_currency {
     my $code     = shift;
     my $currency = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if ($currency ne $arry[4]) {
         return Error::Base->cuss(
             -type => 'DifferentCurrency',
@@ -232,7 +232,7 @@ sub _validate_payment_amount {
     my $code   = shift;
     my $amount = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($code)));
+    my @arry = split("_##_", $code);
     if ($amount ne $arry[5]) {
         return Error::Base->cuss(
             -type => 'DifferentAmount',
