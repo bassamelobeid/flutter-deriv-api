@@ -15,6 +15,7 @@ use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::DualControl;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -49,27 +50,10 @@ if ($confirm) {
     unlink $payments_csv_file;
 
     unless (BOM::Platform::Runtime->instance->app_config->system->on_development) {
-
         # Check Dual Control Code
-        my $fellow_staff = $cgi->param('DCstaff');
         my $control_code = $cgi->param('DCcode');
-
-        if ($fellow_staff eq $clerk) {
-            print "ERROR: fellow staff name for dual control code cannot be yourself!";
-            code_exit_BO();
-        }
-
-        my $validcode = dual_control_code_for_file_content(
-            $fellow_staff,
-            BOM::Platform::Context::request()->bo_cookie->token,
-            Date::Utility->new->date_ddmmmyy,
-            join("\n", @payment_lines),
-        );
-
-        if (substr(uc($control_code), 0, 5) ne substr(uc($validcode), 0, 5)) {
-            print "SORRY, the Dual Control Code $control_code is invalid. Please check the csv file, fellow staff name and date of DCC.";
-            code_exit_BO();
-        }
+        my $filename     = $cgi->param('DCfile');
+        my $transtype    = $cgi->param('transtype');
 
         #check if control code already used
         my $count    = 0;
@@ -81,8 +65,9 @@ if ($confirm) {
             }
         }
 
-        if (not ValidDualControlCode($control_code)) {
-            print 'ERROR: invalid dual control code!';
+        my $error = BOM::DualControl->new({staff => $clerk, transactiontype => 'transtype'})->validate_batch_payment_control_code($control_code, $filename);
+        if ($error) {
+            print $error->get_mesg();
             code_exit_BO();
         }
     }
@@ -249,6 +234,9 @@ if ($preview and @invalid_lines == 0) {
         . "<input type=hidden name=\"file_location\" value=\"$payments_csv_file\">"
         . "Make sure you check the above details before you make dual control code"
         . "<br />Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
+        . "Type of transaction: <select name='transtype'>"
+        . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
+        . "</select>"
         . "<br /><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
         . "</form></div>";
 
@@ -258,8 +246,11 @@ if ($preview and @invalid_lines == 0) {
          <input type="hidden" name="skip_validation" value="$skip_validation"/>
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
-				<br>Fellow staff name: <input type=text name=DCstaff required size=8>
 				Control Code: <input type=text name=DCcode required size=16>
+				Filename: <input type=text name=DCfile required size=16>
+				Type of transaction: <select name="transtype">
+				<option value="BATCHACCOUNT">Batch Account</option><option value="BATCHDOUGHFLOW">Batch Doughflow</option>
+				</select>
 				</td></tr></table>
          <button type="submit" name="confirm" value="$format">Confirm (Do it for real!)</button>
          </form></div>];
