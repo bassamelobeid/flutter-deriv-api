@@ -36,8 +36,8 @@ my $loginid     = request()->param('loginid');
 my $page        = request()->param('page') || 0;
 my $pagesize    = request()->param('pagesize') || 40;
 my $offset      = $page * $pagesize;
-my @system_cols = qw/stamp staff_name operation client_addr/;
-my @noshow_cols = qw/pg_userid client_port id/;
+my @system_cols = qw/stamp staff_name operation remote_addr/;
+my @noshow_cols = qw/pg_userid client_port id client_addr/;
 
 my $myself_args = {
     broker   => $broker,
