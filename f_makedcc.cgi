@@ -8,12 +8,12 @@ use Path::Tiny;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::System::AuditLog;
+use BOM::DualControl;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("MAKE DUAL CONTROL CODE");
 BOM::Platform::Auth0::can_access(['Payments']);
-my $token = BOM::Platform::Context::request()->bo_cookie->token;
 my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 
 Bar("Make dual control code");
@@ -57,9 +57,12 @@ if ($input->{'dcctype'} eq 'file_content') {
     }
 
     my $file_location = $input->{'file_location'};
-    my @lines         = Path::Tiny::path($file_location)->lines;
+    my $path          = Path::Tiny::path($file_location);
+    my @lines         = $path->lines;
     my $lines         = join("\n", @lines);
-    $code = dual_control_code_for_file_content($clerk, $token, $today, $lines);
+    $code = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $input->{'transtype'}})->batch_payment_control_code($path->basename);
 
     print "The dual control code created by $clerk for "
         . $input->{'purpose'}
@@ -77,29 +80,10 @@ if ($input->{'dcctype'} eq 'file_content') {
             . $input->{'clientloginid'}
             . " $ENV{'REMOTE_ADDR'} REMINDER="
             . $input->{'reminder'});
-} elsif ($input->{'dcctype'} eq 'cs') {
-    if ($input->{'filetype'} !~ /^\w+$/) {
-        print "ERROR: please select file type";
-        code_exit_BO();
-    }
-
-    $code = DualControlCode_CS($clerk, $token, $today, $input->{'clientloginid'}, $input->{'filetype'});
-
-    print "<p class=\"success_message\">The dual control code created by $clerk for file type <b>'"
-        . $input->{'filetype'}
-        . "'</b> for "
-        . $input->{'clientloginid'}
-        . " is: <font size=+1><b>$code</b></font><br>This code is valid for today ($today) only.</p>";
-
-    # Logging
-    BOM::System::AuditLog::log("$clerk MAKES DUAL CONTROL CODE FOR "
-            . $input->{'filetype'}
-            . " loginID="
-            . $input->{'clientloginid'}
-            . " $ENV{'REMOTE_ADDR'} REMINDER="
-            . $input->{'reminder'}, $input->{'clientloginid'}, $clerk);
 } else {
-    $code = DualControlCode($clerk, $token, $input->{'currency'}, $input->{'amount'}, $today, $input->{'transtype'}, $input->{'clientloginid'},);
+    $code = BOM::DualControl->new({
+            staff           => $clerk,
+            transactiontype => $input->{'transtype'}})->payment_control_code($input->{'clientloginid'}, $input->{'currency'}, $input->{'amount'});
 
     print "<p class=\"success_message\">The dual control code created by $clerk for an amount of "
         . $input->{'currency'}
