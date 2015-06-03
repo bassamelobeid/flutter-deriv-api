@@ -44,7 +44,7 @@ sub client_control_code {
         ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email);
 }
 
-sub client_payment_control_code {
+sub payment_control_code {
     my $self     = shift;
     my $loginid  = shift;
     my $currency = shift;
@@ -53,6 +53,14 @@ sub client_payment_control_code {
     return BOM::Utility::Crypt->new(keyname => 'password_counter')
         ->encrypt_payload(
         data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $loginid . '_##_' . $currency . '_##_' . $amount);
+}
+
+sub batch_payment_control_code {
+    my $self     = shift;
+    my $filename = shift;
+
+    return BOM::Utility::Crypt->new(keyname => 'password_counter')
+        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $filename);
 }
 
 sub validate_client_control_code {
@@ -78,7 +86,6 @@ sub validate_client_control_code {
 sub validate_payment_control_code {
     my $self     = shift;
     my $code     = shift;
-    my $type     = shift;
     my $loginid  = shift;
     my $currency = shift;
     my $amount   = shift;
@@ -96,6 +103,25 @@ sub validate_payment_control_code {
     $error_status = $self->_validate_staff_payment_limit($code, $amount);
     return $error_status if $error_status;
 
+    return;
+}
+
+sub validate_batch_payment_control_code {
+    my $self     = shift;
+    my $code     = shift;
+    my $filename = shift;
+
+    $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $code);
+
+    my $error_status = $self->_validate_empty_code($code);
+    $error_status = $self->_validate_batch_payment_code_is_valid($code);
+    $error_status = $self->_validate_code_expiry($code);
+    $error_status = $self->_validate_fellow_staff($code);
+    $error_status = $self->_validate_transaction_type($code);
+    $error_status = $self->_validate_filename($code, $filename);
+    if ($error_status) {
+        return $error_status;
+    }
     return;
 }
 
@@ -120,7 +146,7 @@ sub _validate_client_code_is_valid {
     if (scalar @arry != 4) {
         return Error::Base->cuss(
             -type => 'InvalidClientCode',
-            -mesg => 'Dula control code is not valid',
+            -mesg => 'Dual control code is not valid',
         );
     }
     return;
@@ -133,8 +159,22 @@ sub _validate_payment_code_is_valid {
     my @arry = split("_##_", $code);
     if (scalar @arry != 6) {
         return Error::Base->cuss(
-            -type => 'InvalidClientCode',
-            -mesg => 'Dula control code is not valid',
+            -type => 'InvalidPaymentCode',
+            -mesg => 'Dual control code is not valid',
+        );
+    }
+    return;
+}
+
+sub _validate_batch_payment_code_is_valid {
+    my $self = shift;
+    my $code = shift;
+
+    my @arry = split("_##_", $code);
+    if (scalar @arry != 4) {
+        return Error::Base->cuss(
+            -type => 'InvalidBatchPaymentCode',
+            -mesg => 'Dual control code is not valid',
         );
     }
     return;
@@ -254,6 +294,21 @@ sub _validate_staff_payment_limit {
                 -mesg => 'The amount is larger than authorization limit for staff',
             );
         }
+    }
+    return;
+}
+
+sub _validate_filename {
+    my $self     = shift;
+    my $code     = shift;
+    my $filename = shift;
+
+    my @arry = split("_##_", $code);
+    if ($filename ne $arry[3]) {
+        return Error::Base->cuss(
+            -type => 'DifferentFilename',
+            -mesg => 'Filename provided does not match with the filename provided during code generation',
+        );
     }
     return;
 }
