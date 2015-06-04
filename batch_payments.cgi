@@ -6,6 +6,7 @@ use warnings;
 
 use Path::Tiny;
 use Try::Tiny;
+use Date::Utility;
 
 use f_brokerincludeall;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
@@ -30,6 +31,7 @@ my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
 my $skip_validation   = $cgi->param('skip_validation') || 0;
 my $format            = $confirm || $preview || die "either preview or confirm";
+my $now               = Date::Utility->new;
 
 Bar('Batch Credit/Debit to Clients Accounts');
 
@@ -44,13 +46,14 @@ if ($preview) {
 
 my @payment_lines = Path::Tiny::path($payments_csv_file)->lines;
 
+my ($transtype, $control_code);
 if ($confirm) {
 
     unlink $payments_csv_file;
 
-    my $control_code = $cgi->param('DCcode');
-    my $filename     = $cgi->param('DCfile');
-    my $transtype    = $cgi->param('transtype');
+    my $filename  = $cgi->param('DCfile');
+    $control_code = $cgi->param('DCcode');
+    $transtype    = $cgi->param('transtype');
 
     my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $transtype})->validate_batch_payment_control_code($control_code, $filename);
     if ($error) {
@@ -243,6 +246,8 @@ if ($preview and @invalid_lines == 0) {
 } elsif (not $preview and $confirm and scalar(keys %client_to_be_processed) > 0) {
     my @clients_has_been_processed = values %client_to_be_processed;
     unshift @clients_has_been_processed, 'These clients have been debited/credited using the backoffice batch debit/credit tool by ' . $clerk;
+
+    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($now->datetime . " $transtype batch transactions done by clerk=$clerk DCcode=$DCcode $ENV{REMOTE_ADDR}");
 
     send_email({
         'from'    => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
