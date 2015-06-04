@@ -67,20 +67,24 @@ sub batch_payment_control_code {
 sub validate_client_control_code {
     my $self   = shift;
     my $incode = shift;
-    my $type   = shift;
     my $email  = shift;
 
     my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_client_code_is_valid($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_code_expiry($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_client_email($code, $email);
-    if ($error_status) {
-        return $error_status;
-    }
+    return $error_status if $error_status;
+    $error_status = $self->_validate_client_code_already_used($incode);
+    return $error_status if $error_status;
     return;
 }
 
@@ -245,6 +249,24 @@ sub _validate_payment_code_already_used {
 
     my $count    = 0;
     my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
+    while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
+        my @matches = $l =~ /DCcode=([^\s]+)/g;
+        if (grep { $code eq $_ } @matches) {
+            return Error::Base->cuss(
+                -type => 'CodeAlreadyUsed',
+                -mesg => 'This control code has already been used today',
+            );
+        }
+    }
+    return;
+}
+
+sub _validate_client_code_already_used {
+    my $self = shift;
+    my $code = shift;
+
+    my $count    = 0;
+    my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fclientdetailsupdate.log");
     while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
         my @matches = $l =~ /DCcode=([^\s]+)/g;
         if (grep { $code eq $_ } @matches) {
