@@ -17,6 +17,7 @@ use base 'Exporter';
 our @EXPORT_OK = qw(generate_holiday_upload_form);
 
 use Path::Tiny;
+use List::MoreUtils qw(uniq);
 use File::Temp ();
 use Try::Tiny;
 use File::Copy;
@@ -176,7 +177,7 @@ sub _save_excel_holidays_to_couch {
         submarket => 'smart_index'
     );
 
-    my @synthetic_exchange = do { my %duplicate_exchange; grep { !$duplicate_exchange{$_}++ } @tmp_list };
+    my @synthetic_exchange = uniq(@tmp_list);
 
     my %mapper = (
         SYNSTOXX => [qw(STOXX EUREX)],
