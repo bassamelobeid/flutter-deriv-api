@@ -51,11 +51,10 @@ if ($confirm) {
 
     unlink $payments_csv_file;
 
-    my $filename  = $cgi->param('DCfile');
     $control_code = $cgi->param('DCcode');
     $transtype    = $cgi->param('transtype');
 
-    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $transtype})->validate_batch_payment_control_code($control_code, $filename);
+    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $transtype})->validate_batch_payment_control_code($control_code, scalar @payment_lines);
     if ($error) {
         print $error->get_mesg();
         code_exit_BO();
@@ -221,8 +220,8 @@ if ($preview and @invalid_lines == 0) {
         . "<input type=hidden name=\"l\" value=\"EN\">"
         . '<input type="hidden" name="purpose" value="batch clients payments" />'
         . "<input type=hidden name=\"file_location\" value=\"$payments_csv_file\">"
-        . "Make sure you check the above details before you make dual control code"
-        . "<br />Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
+        . "Make sure you check the above details before you make dual control code<br>"
+        . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
         . "Type of transaction: <select name='transtype'>"
         . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
         . "</select>"
@@ -236,7 +235,6 @@ if ($preview and @invalid_lines == 0) {
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
 				Control Code: <input type=text name=DCcode required size=16>
-				Filename: <input type=text name=DCfile required size=16>
 				Type of transaction: <select name="transtype">
 				<option value="BATCHACCOUNT">Batch Account</option><option value="BATCHDOUGHFLOW">Batch Doughflow</option>
 				</select>

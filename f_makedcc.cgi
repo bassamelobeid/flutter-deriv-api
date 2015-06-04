@@ -57,16 +57,17 @@ if ($input->{'dcctype'} eq 'file_content') {
     }
 
     my $file_location = $input->{'file_location'};
-    my $path          = Path::Tiny::path($file_location);
-    my @lines         = $path->lines;
+    my @lines         = Path::Tiny::path($file_location)->lines;
     my $lines         = join("\n", @lines);
+
     $code = BOM::DualControl->new({
             staff           => $clerk,
-            transactiontype => $input->{'transtype'}})->batch_payment_control_code($path->basename);
+            transactiontype => $input->{'transtype'}})->batch_payment_control_code(scalar @lines);
 
     print "The dual control code created by $clerk for "
         . $input->{'purpose'}
-        . " is: <font size=+1><b>$code</b></font><br />This code is valid for today ($today) only.";
+        . " is: <font size=+1><b>$code</b></font>"
+        . "<br/>This code is valid for today ($today) only.";
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")

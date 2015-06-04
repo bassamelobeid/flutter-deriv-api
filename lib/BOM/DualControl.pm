@@ -57,11 +57,11 @@ sub payment_control_code {
 }
 
 sub batch_payment_control_code {
-    my $self     = shift;
-    my $filename = shift;
+    my $self  = shift;
+    my $lines = shift;
 
     return BOM::Utility::Crypt->new(keyname => 'password_counter')
-        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $filename);
+        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $lines);
 }
 
 sub validate_client_control_code {
@@ -122,9 +122,9 @@ sub validate_payment_control_code {
 }
 
 sub validate_batch_payment_control_code {
-    my $self     = shift;
-    my $incode   = shift;
-    my $filename = shift;
+    my $self   = shift;
+    my $incode = shift;
+    my $lines  = shift;
 
     my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
@@ -138,7 +138,7 @@ sub validate_batch_payment_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
     return $error_status if $error_status;
-    $error_status = $self->_validate_filename($code, $filename);
+    $error_status = $self->_validate_filelinescount($code, $lines);
     return $error_status if $error_status;
     $error_status = $self->_validate_payment_code_already_used($incode);
     return $error_status if $error_status;
@@ -355,16 +355,16 @@ sub _validate_staff_payment_limit {
     return;
 }
 
-sub _validate_filename {
-    my $self     = shift;
-    my $code     = shift;
-    my $filename = shift;
+sub _validate_filelinescount {
+    my $self  = shift;
+    my $code  = shift;
+    my $lines = shift;
 
     my @arry = split("_##_", $code);
-    if ($filename ne $arry[3]) {
+    if ($lines ne $arry[3]) {
         return Error::Base->cuss(
-            -type => 'DifferentFilename',
-            -mesg => 'Filename provided does not match with the filename provided during code generation',
+            -type => 'DifferentFile',
+            -mesg => 'File provided does not match with the file provided during code generation',
         );
     }
     return;
