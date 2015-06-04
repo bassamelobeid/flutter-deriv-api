@@ -247,7 +247,7 @@ if ($preview and @invalid_lines == 0) {
     my @clients_has_been_processed = values %client_to_be_processed;
     unshift @clients_has_been_processed, 'These clients have been debited/credited using the backoffice batch debit/credit tool by ' . $clerk;
 
-    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($now->datetime . " $transtype batch transactions done by clerk=$clerk DCcode=$DCcode $ENV{REMOTE_ADDR}");
+    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($now->datetime . " $transtype batch transactions done by clerk=$clerk DCcode=$control_code $ENV{REMOTE_ADDR}");
 
     send_email({
         'from'    => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
