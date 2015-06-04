@@ -18,7 +18,9 @@
         <hr>Change client's email for all loginids listed above:</br></br>
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
             <b>Dual Control Code: </b>
-            <input type="text" name="client_dc_code" placeholder="required">
+            <input type="text" name="DCcode" placeholder="required">
+            <input type="checkbox" value="UPDATECLIENTDETAILS" name="transtype"> Update client details
+            <br><br>
             <b>New Email: </b>
             <input type="text" name="new_email" placeholder="required">
             <input type="hidden" name="email" value="[% email %]">
@@ -29,6 +31,10 @@
 
         <hr>Change client's email for a single loginid:</br></br>
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
+            <b>Dual Control Code: </b>
+            <input type="text" name="DCcode" placeholder="required">
+            <input type="checkbox" value="UPDATECLIENTDETAILS" name="transtype"> Update client details
+            <br><br>
             <b>Loginid: </b>
             <input type="text" size="30" name="loginid">
             <b>New Email: </b>
