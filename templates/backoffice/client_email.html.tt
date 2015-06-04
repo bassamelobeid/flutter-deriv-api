@@ -17,20 +17,22 @@
     [% IF list == 1 %]
         <hr>Change client's email for all loginids listed above:</br></br>
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
+            <b>Dual Control Code: </b>
+            <input type="text" name="client_dc_code" placeholder="required">
             <b>New Email: </b>
-            <input type="text" size="30" name="new_email">&nbsp;&nbsp;
+            <input type="text" name="new_email" placeholder="required">
             <input type="hidden" name="email" value="[% email %]">
             <input type="hidden" name="email_edit" value="1">
             <input type="submit" value="Update Email">
-            &nbsp;&nbsp; <b>(Note: This will update email for all the listed loginids above)</b>
+            <br><br><b>(Note: This will update email for all the listed loginids above)</b>
         </form>
 
         <hr>Change client's email for a single loginid:</br></br>
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
             <b>Loginid: </b>
-            <input type="text" size="30" name="loginid">&nbsp;&nbsp;
+            <input type="text" size="30" name="loginid">
             <b>New Email: </b>
-            <input type="text" size="30" name="new_email">&nbsp;&nbsp;
+            <input type="text" size="30" name="new_email">
             <input type="hidden" name="email" value="[% email %]">
             <input type="hidden" name="email_edit" value="2">
             <input type="submit" value="Update Email">

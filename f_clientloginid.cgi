@@ -81,16 +81,17 @@ print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
 Bar("MAKE DUAL CONTROL CODE");
 print "To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.<br><br>";
 print "<form id='clientdetailsDCC' action='"
-    . request()->url_for('backoffice/f_makedcc.cgi')
+    . request()->url_for('backoffice/f_makeclientdcc.cgi')
     . "' method='post' class='bo_ajax_form'>"
     . "<input type='hidden' name='broker' value='$broker'>"
     . "<input type='hidden' name='l' value='EN'>"
     . " Type of transaction: <select name='transtype'>"
-    . "<option value='UPDATECLIENTDETAILS' selected>Update client details</option>"
+    . "<option value='UPDATECLIENTDETAILS'>Update client details</option>"
     . "</select>"
-    . " LoginID of the client: <input type='text' size='12' name='clientloginid'>"
-    . "<br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder'>"
-    . "<br><input type='submit' value='Make Dual Control Code (by $clerk)'>"
+    . "Loginid : <input type='text' name='clientloginid' placeholder='required'>"
+    . "<br><br>New email of the client: <input type='text' name='clientemail' placeholder='required'>"
+    . "<br><br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder'>"
+    . "<br><br><input type='submit' value='Make Dual Control Code (by $clerk)'>"
     . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");
