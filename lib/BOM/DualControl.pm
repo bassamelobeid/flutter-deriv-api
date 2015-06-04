@@ -285,7 +285,7 @@ sub _validate_client_email {
     my $email = shift;
 
     my @arry = split("_##_", $code);
-    if ($email ne $arry[3]) {
+    if (not $email or $email ne $arry[3]) {
         return Error::Base->cuss(
             -type => 'DifferentEmail',
             -mesg => 'Email provided does not match with the email provided during code generation',
