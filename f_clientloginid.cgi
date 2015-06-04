@@ -67,14 +67,7 @@ print '<hr><form class="bo_ajax_form" action="'
     . '<b>LoginID : </b>';
 print "<input type=text size=15 name='show' onChange='CheckLoginIDformat(this)' value=''>";
 print '&nbsp;&nbsp;<input type="submit" value="Send Account recovery email to client\'s registered email address"></b>' . '</form>';
-
-# big ticket upload
-print '</td>'
-    . '<td align=right>'
-    . '<a href="'
-    . request()->url_for('backoffice/download_document.cgi')
-    . '">View<br />Big Ticket<br />client uploads</a></td>'
-    . '</td></tr></table>';
+print '</td></tr></table>';
 
 Bar("VIEW/EDIT CLIENT'S Email");
 print '<form action="'
@@ -375,4 +368,55 @@ print "Expired before <input type=\"text\" style=\"width:100px\" maxlength=\"15\
 print "<input type=\"submit\" value=\"Go\">";
 print '</form>';
 
+Bar('Client complete audit log');
+print 'View client sequential combined activity<br/><br/>';
+
+print "<form action=\"" . request()->url_for('backoffice/f_client_combined_audit.cgi') . "\" method=post>";
+print qq~
+    <table>
+        <tr>
+            <td>
+            <b>Loginid</b>
+            </td>
+            <td>
+            <input type=text size=15 name="loginid" value="">
+            </td>
+        </tr>
+        <tr>
+            <td>
+            <b>From</b>
+            </td>
+            <td>
+~;
+print "<input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/></td></tr>";
+print "<tr><td><b>To</b></td><td>";
+print "<input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/></td></tr>";
+print "</table>";
+print "<input type=\"submit\" value=\"Submit\">";
+print "</form>";
+
+
+Bar('Client Desk.com cases');
+print "<form action=\"" . request()->url_for('backoffice/f_client_deskcom.cgi') . "\" method=post>";
+print qq~
+    <table>
+        <tr>
+            <td>
+            <b>Loginid</b>
+            </td>
+            <td>
+            <input type=text size=15 name="loginid_desk" value="">
+            </td>
+        </tr>
+        <tr>
+            <td>
+            <b>Cases created on</b>
+            </td>
+            <td>
+~;
+print "<input name=created type=text size=10 value='today'/></td></tr>";
+print '<tr><td colspan=2>Case created(Date range "today", "yesterday", "week", "month", "year") as desk.com accepts these parameters</td></tr>';
+print "</table>";
+print "<input type=\"submit\" value=\"Submit\">";
+print "</form>";
 code_exit_BO();
