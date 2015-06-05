@@ -78,10 +78,6 @@ print "<form id=\"paymentDCC\" action=\""
     . "<br>Input a comment/reminder about this DCC: <input type=\"text\" size=\"50\" name=\"reminder\">"
     . "<br><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
     . "</form>";
-print "<br><i>Note: the person issuing the control code is the one taking responsibility for the transaction. If subsequently it is discovered that
-there was an error with the transaction, then the person who issued the control code will be considered responsible.</i>";
-
-my $staffauthlimit = get_staff_payment_limit($clerk);
 
 my $tt = BOM::Platform::Context::template;
 

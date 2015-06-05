@@ -38,7 +38,6 @@
     <th>Currency</th>
     <th>Amount</th>
     <th>Amount Range</th>
-    <th>Control Staff</th>
     <th>Control Code</th> 
     <th>Transaction Date</th> 
 </tr>
@@ -64,7 +63,6 @@
             <option value="10000-99999">10000-99999</option>
         </select>
     </td>
-    <td><input type="text" name="DCstaff" placeholder="required"/></td>
     <td><input type="text" name="DCcode" placeholder="required"/></td>
     <td><input type="text" name="date_received" required class="datepick" placeholder="required"/></td>
 </tr>

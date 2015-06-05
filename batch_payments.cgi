@@ -4,9 +4,9 @@ package main;
 use strict;
 use warnings;
 
-use File::ReadBackwards;
 use Path::Tiny;
 use Try::Tiny;
+use Date::Utility;
 
 use f_brokerincludeall;
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
@@ -15,6 +15,8 @@ use BOM::Platform::Transaction;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::DualControl;
+use BOM::System::AuditLog;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -30,6 +32,7 @@ my $payments_csv_fh   = $cgi->upload('payments_csv');
 my $payments_csv_file = $cgi->param('payments_csv_file') || sprintf '/tmp/batch_payments_%d.csv', rand(1_000_000);
 my $skip_validation   = $cgi->param('skip_validation') || 0;
 my $format            = $confirm || $preview || die "either preview or confirm";
+my $now               = Date::Utility->new;
 
 Bar('Batch Credit/Debit to Clients Accounts');
 
@@ -44,47 +47,18 @@ if ($preview) {
 
 my @payment_lines = Path::Tiny::path($payments_csv_file)->lines;
 
+my ($transtype, $control_code);
 if ($confirm) {
 
     unlink $payments_csv_file;
 
-    unless (BOM::Platform::Runtime->instance->app_config->system->on_development) {
+    $control_code = $cgi->param('DCcode');
+    $transtype    = $cgi->param('transtype');
 
-        # Check Dual Control Code
-        my $fellow_staff = $cgi->param('DCstaff');
-        my $control_code = $cgi->param('DCcode');
-
-        if ($fellow_staff eq $clerk) {
-            print "ERROR: fellow staff name for dual control code cannot be yourself!";
-            code_exit_BO();
-        }
-
-        my $validcode = dual_control_code_for_file_content(
-            $fellow_staff,
-            BOM::Platform::Context::request()->bo_cookie->token,
-            Date::Utility->new->date_ddmmmyy,
-            join("\n", @payment_lines),
-        );
-
-        if (substr(uc($control_code), 0, 5) ne substr(uc($validcode), 0, 5)) {
-            print "SORRY, the Dual Control Code $control_code is invalid. Please check the csv file, fellow staff name and date of DCC.";
-            code_exit_BO();
-        }
-
-        #check if control code already used
-        my $count    = 0;
-        my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
-        while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
-            if ($l =~ /DCcode\=$control_code/i) {
-                print 'ERROR: this control code has already been used today!';
-                code_exit_BO();
-            }
-        }
-
-        if (not ValidDualControlCode($control_code)) {
-            print 'ERROR: invalid dual control code!';
-            code_exit_BO();
-        }
+    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $transtype})->validate_batch_payment_control_code($control_code, scalar @payment_lines);
+    if ($error) {
+        print $error->get_mesg();
+        code_exit_BO();
     }
 }
 
@@ -247,8 +221,11 @@ if ($preview and @invalid_lines == 0) {
         . "<input type=hidden name=\"l\" value=\"EN\">"
         . '<input type="hidden" name="purpose" value="batch clients payments" />'
         . "<input type=hidden name=\"file_location\" value=\"$payments_csv_file\">"
-        . "Make sure you check the above details before you make dual control code"
-        . "<br />Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
+        . "Make sure you check the above details before you make dual control code<br>"
+        . "<br>Input a comment/reminder about this DCC: <input type=text size=50 name=reminder>"
+        . "Type of transaction: <select name='transtype'>"
+        . "<option value='BATCHACCOUNT'>Batch Account</option><option value='BATCHDOUGHFLOW'>Batch Doughflow</option>"
+        . "</select>"
         . "<br /><input type=\"submit\" value='Make Dual Control Code (by $clerk)'>"
         . "</form></div>";
 
@@ -258,14 +235,21 @@ if ($preview and @invalid_lines == 0) {
          <input type="hidden" name="skip_validation" value="$skip_validation"/>
          <table border=0 cellpadding=1 cellspacing=1><tr><td bgcolor=FFFFEE><font color=blue>
 				<b>DUAL CONTROL CODE</b>
-				<br>Fellow staff name: <input type=text name=DCstaff required size=8>
 				Control Code: <input type=text name=DCcode required size=16>
+				Type of transaction: <select name="transtype">
+				<option value="BATCHACCOUNT">Batch Account</option><option value="BATCHDOUGHFLOW">Batch Doughflow</option>
+				</select>
 				</td></tr></table>
          <button type="submit" name="confirm" value="$format">Confirm (Do it for real!)</button>
          </form></div>];
 } elsif (not $preview and $confirm and scalar(keys %client_to_be_processed) > 0) {
     my @clients_has_been_processed = values %client_to_be_processed;
     unshift @clients_has_been_processed, 'These clients have been debited/credited using the backoffice batch debit/credit tool by ' . $clerk;
+
+
+    my $msg = $now->datetime . " $transtype batch transactions done by clerk=$clerk (DCcode=$control_code) $ENV{REMOTE_ADDR}";
+    BOM::System::AuditLog::log($msg, '', $clerk);
+    Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($msg);
 
     send_email({
         'from'    => BOM::Platform::Context::request()->website->config->get('customer_support.email'),

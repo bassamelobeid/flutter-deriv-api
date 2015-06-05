@@ -9,6 +9,8 @@ use List::MoreUtils qw( uniq any firstval );
 use f_brokerincludeall;
 use Format::Util::Strings qw( defang );
 use Text::Trim;
+use Path::Tiny;
+use Date::Utility;
 use BOM::Platform::User;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
@@ -17,6 +19,8 @@ use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
+use BOM::DualControl;
+use BOM::System::AuditLog;
 
 BOM::Platform::Sysinit::init();
 
@@ -26,6 +30,7 @@ Bar("View / Edit Client's Email");
 
 my $staff  = BOM::Platform::Auth0::can_access(['CS']);
 my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $now    = Date::Utility->new;
 
 my %input = %{request()->params};
 my $email = trim(lc defang($input{email}));
@@ -63,7 +68,21 @@ if (not $input{email_edit}) {
             loginids    => \@loginids,
         },
     ) || die BOM::Platform::Context::template->error();
-} elsif ($input{email_edit} == 1) {
+}
+
+if ($input{email_edit} == 1 or $input{email_edit} == 2) {
+    unless ($input{transtype}) {
+        print "Please select transaction type";
+        code_exit_BO();
+    }
+    my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $input{transtype}})->validate_client_control_code($input{DCcode}, $new_email);
+    if ($error) {
+        print $error->get_mesg();
+        code_exit_BO();
+    }
+}
+
+if ($input{email_edit} == 1) {
     if ($email ne $new_email) {
         my ($delete_old_user, $duplicate_broker);
         my @loginids_new;
@@ -129,6 +148,10 @@ if (not $input{email_edit}) {
                 print "Update email for user $email failed, reason: [$_]";
                 code_exit_BO();
             };
+
+            my $msg = $now->datetime . " " . $input{transtype} .  " updated $email to $new_email for @loginids by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";
+            BOM::System::AuditLog::log($msg, $new_email, $clerk);
+            Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
 
             @loginids = (@loginids, @loginids_new) if (@loginids_new > 1);
             BOM::Platform::Context::template->process(
@@ -207,6 +230,10 @@ if (not $input{email_edit}) {
         }
         $user_dbh->commit;
         $user_dbh->{AutoCommit} = 1;
+
+        my $msg = $now->datetime . " " . $input{transtype} .  " updated $email to $new_email for $loginid by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";
+        BOM::System::AuditLog::log($msg, $new_email, $clerk);
+        Path::Tiny::path($msg);
 
         BOM::Platform::Context::template->process(
             'backoffice/client_email.html.tt',

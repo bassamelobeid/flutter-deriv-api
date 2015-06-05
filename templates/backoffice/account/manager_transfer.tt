@@ -9,7 +9,6 @@
     <th>Currency</th>
     <th>Amount</th>
     <th>Amount Range</th>
-    <th>Control Staff</th>
     <th>Control Code</th> 
     <th><label for="skip_validation2">Override Status Checks?</label></th> 
 </tr>
@@ -36,7 +35,6 @@
             <option value="10000-99999">10000-99999</option>
         </select>
     </td>
-    <td><input type="text" name="DCstaff" placeholder="required"/></td>
     <td><input type="text" name="DCcode" placeholder="required"/></td>
     <td style="text-align:center"><input type="checkbox" name="skip_validation" value="on" id="skip_validation2" /></td>
 </tr>
