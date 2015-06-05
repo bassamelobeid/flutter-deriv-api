@@ -66,7 +66,7 @@ if ($input->{'dcctype'} eq 'file_content') {
 
     $message =  "The dual control code created by $clerk for "
         . $input->{'purpose'}
-        . " is: $code. This code is valid for today ($today) only.";
+        . " is: $code This code is valid for today ($today) only.";
 
     print $message;
 
@@ -96,7 +96,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientloginid'}
-        . " is: $code. This code is valid for today ($today) only.";
+        . " is: $code This code is valid for today ($today) only.";
 
     BOM::System::AuditLog::log($message, '', $clerk);
 

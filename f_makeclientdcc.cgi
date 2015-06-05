@@ -53,7 +53,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientemail'}
-        . " is: $code. This code is valid for today ($today) only.";
+        . " is: $code This code is valid for today ($today) only.";
 
     BOM::System::AuditLog::log($message, '', $clerk);
 
