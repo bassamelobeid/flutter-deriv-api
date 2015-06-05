@@ -149,7 +149,7 @@ if ($input{email_edit} == 1) {
                 code_exit_BO();
             };
 
-            my $msg = $now->datetime . " " . $input{transtype} .  " updated $email to $new_email for @loginids by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";$
+            my $msg = $now->datetime . " " . $input{transtype} .  " updated $email to $new_email for @loginids by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";
             BOM::System::AuditLog::log($msg, $new_email, $clerk);
             Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
 
