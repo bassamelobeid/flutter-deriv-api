@@ -14,6 +14,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::View::Language;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
+use BOM::System::AuditLog;
 use BOM::View::Controller::Bet;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -204,8 +205,10 @@ code_exit_BO() if $leave;
 
 my $now = Date::Utility->new;
 # Logging
+my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
+BOM::System::AuditLog::log($msg, $loginID, $clerk);
 Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-    ->append($now->datetime . " $ttype $curr$amount $loginID clerk=$clerk DCcode=$DCcode $ENV{REMOTE_ADDR}");
+    ->append($msg);
 
 # Print confirmation
 Bar("$ttype confirmed");

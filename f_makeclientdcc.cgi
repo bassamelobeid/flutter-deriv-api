@@ -49,12 +49,15 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         staff           => $clerk,
         transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'});
 
-    print "<p class=\"success_message\">The dual control code created by $clerk  (for a "
+    my $message = "The dual control code created by $clerk  (for a "
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientemail'}
-        . " is: <font size=+1><b>$code</b></font><br />This code is valid for today ($today) only.</p>";
+        . " is: $code. This code is valid for today ($today) only.";
 
+    BOM::System::AuditLog::log($message, '', $clerk);
+
+    print $message;
     print "<p>Note: " . $input->{'clientloginid'} . " is " . $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name . ' current email is ' . $client->email;
 
     # Logging

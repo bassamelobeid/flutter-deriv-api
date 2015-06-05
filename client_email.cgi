@@ -20,6 +20,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Database::ClientDB;
 use BOM::Database::UserDB;
 use BOM::DualControl;
+use BOM::System::AuditLog;
 
 BOM::Platform::Sysinit::init();
 
@@ -148,7 +149,9 @@ if ($input{email_edit} == 1) {
                 code_exit_BO();
             };
 
-            Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($now->datetime . " " . $input{transtype} .  " updated $email to $new_email for @loginids by clerk=$clerk DCcode=" . $input{DCcode} . " $ENV{REMOTE_ADDR}");
+            my $msg = $now->datetime . " " . $input{transtype} .  " updated $email to $new_email for @loginids by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";$
+            BOM::System::AuditLog::log($msg, $new_email, $clerk);
+            Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
 
             @loginids = (@loginids, @loginids_new) if (@loginids_new > 1);
             BOM::Platform::Context::template->process(
@@ -228,7 +231,9 @@ if ($input{email_edit} == 1) {
         $user_dbh->commit;
         $user_dbh->{AutoCommit} = 1;
 
-        Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($now->datetime . " " . $input{transtype} .  " updated $email to $new_email for $loginid by clerk=$clerk DCcode=" . $input{DCcode} . " $ENV{REMOTE_ADDR}");
+        my $msg = $now->datetime . " " . $input{transtype} .  " updated $email to $new_email for $loginid by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";
+        BOM::System::AuditLog::log($msg, $new_email, $clerk);
+        Path::Tiny::path($msg);
 
         BOM::Platform::Context::template->process(
             'backoffice/client_email.html.tt',

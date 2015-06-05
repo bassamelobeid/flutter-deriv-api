@@ -19,7 +19,7 @@
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
             <b>Dual Control Code: </b>
             <input type="text" name="DCcode" placeholder="required">
-            <input type="checkbox" value="UPDATECLIENTDETAILS" name="transtype"> Update client details
+            <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
             <br><br>
             <b>New Email: </b>
             <input type="text" name="new_email" placeholder="required">
@@ -33,7 +33,7 @@
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
             <b>Dual Control Code: </b>
             <input type="text" name="DCcode" placeholder="required">
-            <input type="checkbox" value="UPDATECLIENTDETAILS" name="transtype"> Update client details
+            <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
             <br><br>
             <b>Loginid: </b>
             <input type="text" size="30" name="loginid">
