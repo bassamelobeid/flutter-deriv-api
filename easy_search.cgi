@@ -21,7 +21,7 @@ my %params = %{request()->params};
 my $broker = $params{broker} || request()->broker->code;
 BrokerPresentation("EASY SEARCH: $broker");
 
-my $staff = BOM::Platform::Auth0::can_access(['xCS']);
+my $staff = BOM::Platform::Auth0::can_access(['CS']);
 
 my $stash = {now => DateTime->now};
 
