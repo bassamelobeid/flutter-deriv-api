@@ -69,6 +69,8 @@ if (not $input{email_edit}) {
             loginids    => \@loginids,
         },
     ) || die BOM::Platform::Context::template->error();
+
+    code_exit_BO();
 }
 
 unless ($input{transtype}) {
