@@ -37,7 +37,7 @@
         FOR client IN clients;
             href = "?loginid=$client.loginid";
             link = "<a href=$href>$client</a>";
-            "<tr><td>$link</td><td>$client.email</td></tr>";
+            "<tr><td>$link</td><td>$client.default_account</td><td>$client.email</td></tr>";
         END;
     %]</table>
 
@@ -96,7 +96,7 @@
                 [% END %]
                 </table>
             [% ELSE %]
-                has no auth-db entry.
+                (has no auth-db entry)
             [% END %]
         </td>
     </tr>
