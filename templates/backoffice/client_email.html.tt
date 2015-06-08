@@ -24,6 +24,7 @@
             <b>New Email: </b>
             <input type="text" name="new_email" placeholder="required">
             <input type="hidden" name="email" value="[% email %]">
+            <input type="hidden" name="email_edit" value="1">
             <input type="submit" value="Update Email">
             <br><br><b>(Note: This will update email for all the listed loginids above)</b>
         </form>
