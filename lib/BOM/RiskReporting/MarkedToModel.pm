@@ -31,7 +31,7 @@ use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
 use BOM::System::Config;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Bloomberg::UnderlyingConfig;
 use Text::CSV;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Constants;
@@ -205,7 +205,7 @@ sub sell_expired_contracts {
 
     my @error_lines;
     my @full_list = keys %{$open_bets_ref};
-    my %map_to_bb = reverse BOM::MarketData::Parser::Bloomberg::RequestFiles->new->bloomberg_to_rmg;
+    my %map_to_bb = reverse Bloomberg::UnderlyingConfig->bloomberg_to_binary();
     my $csv       = Text::CSV->new;
 
     my $rmgenv = BOM::System::Config::env;
