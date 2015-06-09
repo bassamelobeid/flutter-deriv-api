@@ -66,7 +66,8 @@ if ($input{whattodo} eq 'sync_to_DF') {
     die "NO Doughflow for Virtual Client !!!" if ($client->is_virtual);
 
     my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
-    if (not $df_client->doughflow_currency) {
+    my $currency = $df_client->doughflow_currency;
+    if (not $currency) {
         BOM::Platform::Context::template->process(
             'backoffice/client_edit_msg.tt',
             {
@@ -124,7 +125,7 @@ if ($input{whattodo} eq 'sync_to_DF') {
         code_exit_BO();
     }
 
-    my $msg = $now->datetime . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, " .
+    my $msg = Date::Utility->new->datetime . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, " .
             'loginid: '.$df_client->loginid.', Email: '.$df_client->Email.', Name: '.$df_client->CustName.', Profile: '.$df_client->Profile;
     BOM::System::AuditLog::log($msg, $loginid, $clerk);
     Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
@@ -579,12 +580,13 @@ print qq{<input type=submit value="Save Client Details"></form>};
 if (not $client->is_virtual) {
     Bar("Sync Client Authentication Status to Doughflow");
     print qq{
+        <p>Click to sync client authentication status to Doughflow: </p>
         <form action="$self_post" method="post">
             <input type="hidden" name="whattodo" value="sync_to_DF">
             <input type="hidden" name="broker" value="$broker">
             <input type="hidden" name="loginID" value="$loginid">
             <input type="hidden" name="l" value="$language">
-            <input type="submit" value="Sync Client Authentication to Doughflow">
+            <input type="submit" value="Sync now !!">
         </form>
     };
 }
