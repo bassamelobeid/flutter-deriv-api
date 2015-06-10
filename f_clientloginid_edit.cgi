@@ -3,6 +3,7 @@ package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
+use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
 use Locale::Country 'code2country';
@@ -21,6 +22,10 @@ use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
 use BOM::Platform::Client::Utility ();
 use BOM::Platform::Sysinit         ();
+use BOM::Platform::Client::DoughFlowClient;
+use BOM::Platform::Helper::Doughflow qw( get_sportsbook );
+use BOM::Database::Model::HandoffToken;
+use BOM::Database::ClientDB;
 use BOM::View::CGIForm;
 
 BOM::Platform::Sysinit::init();
@@ -55,6 +60,85 @@ my $client = eval { BOM::Platform::Client->new({loginid => $loginid}) } || do {
 my $broker = $client->broker;
 my $staff  = BOM::Platform::Auth0::can_access(['CS']);
 my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+
+# sync authentication status to Doughflow
+if ($input{whattodo} eq 'sync_to_DF') {
+    die "NO Doughflow for Virtual Client !!!" if ($client->is_virtual);
+
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
+    my $currency = $df_client->doughflow_currency;
+    if (not $currency) {
+        BOM::Platform::Context::template->process(
+            'backoffice/client_edit_msg.tt',
+            {
+                message     => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
+                error       => 1,
+                self_url    => $self_href,
+            },
+        ) || die BOM::Platform::Context::template->error();
+        code_exit_BO();
+    }
+
+    # create handoff token
+    my $client_db = BOM::Database::ClientDB->new({
+        client_loginid => $loginid,
+    })->db;
+
+    my $handoff_token = BOM::Database::Model::HandoffToken->new(
+        db                 => $client_db,
+        data_object_params => {
+            key            => BOM::Database::Model::HandoffToken::generate_session_key,
+            client_loginid => $loginid,
+            expires        => time + 60,
+        },
+    );
+    $handoff_token->save;
+
+    my $doughflow_loc  = BOM::Platform::Runtime->instance->app_config->payments->doughflow->location;
+    my $doughflow_pass = BOM::Platform::Runtime->instance->app_config->payments->doughflow->passcode;
+    my $url            = $doughflow_loc . '/CreateCustomer.asp';
+
+    # hit DF's CreateCustomer API
+    my $ua = LWP::UserAgent->new(timeout => 60);
+    $ua->ssl_opts(
+        verify_hostname => 0,
+        SSL_verify_mode => SSL_VERIFY_NONE
+    );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
+
+    my $result = $ua->post(
+        $url,
+        $df_client->create_customer_property_bag({
+                SecurePassCode => $doughflow_pass,
+                Sportsbook     => get_sportsbook($broker, $currency),
+                IP_Address     => '127.0.0.1',
+                Password       => $handoff_token->key,
+            }));
+    if ($result->{'_content'} ne 'OK') {
+        BOM::Platform::Context::template->process(
+            'backoffice/client_edit_msg.tt',
+            {
+                message     => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
+                error       => 1,
+                self_url    => $self_href,
+            },
+        ) || die BOM::Platform::Context::template->error();
+        code_exit_BO();
+    }
+
+    my $msg = Date::Utility->new->datetime . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, " .
+            'loginid: '.$df_client->loginid.', Email: '.$df_client->Email.', Name: '.$df_client->CustName.', Profile: '.$df_client->Profile;
+    BOM::System::AuditLog::log($msg, $loginid, $clerk);
+    Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
+
+    BOM::Platform::Context::template->process(
+        'backoffice/client_edit_msg.tt',
+        {
+            message     => "Successfully syncing client authentication status to Doughflow",
+            self_url    => $self_href,
+        },
+    ) || die BOM::Platform::Context::template->error();
+    code_exit_BO();
+}
 
 # UPLOAD NEW ID DOC.
 if ($input{whattodo} eq 'uploadID') {
@@ -494,6 +578,20 @@ print qq[<form action="$self_post" method="POST">
 print_client_details($client, $staff);
 
 print qq{<input type=submit value="Save Client Details"></form>};
+
+if (not $client->is_virtual) {
+    Bar("Sync Client Authentication Status to Doughflow");
+    print qq{
+        <p>Click to sync client authentication status to Doughflow: </p>
+        <form action="$self_post" method="post">
+            <input type="hidden" name="whattodo" value="sync_to_DF">
+            <input type="hidden" name="broker" value="$broker">
+            <input type="hidden" name="loginID" value="$loginid">
+            <input type="hidden" name="l" value="$language">
+            <input type="submit" value="Sync now !!">
+        </form>
+    };
+}
 
 #upload new ID doc
 Bar("Upload new ID document");
