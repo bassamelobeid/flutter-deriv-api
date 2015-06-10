@@ -16,6 +16,7 @@ BrokerPresentation("CLIENT LOGINID ADMIN");
 my $staff   = BOM::Platform::Auth0::can_access(['CS']);
 my $broker  = request()->broker->code;
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
+my $clerk   = BOM::Platform::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'FOG') {
     $broker = request()->broker->code;
@@ -76,6 +77,22 @@ print '<form action="'
     . '<b>Client\'s Email : </b>';
 print '<input type=text size=30 name="email">';
 print '&nbsp;&nbsp;<input type="submit" value="View / Edit"></b>' . '</form>';
+
+Bar("MAKE DUAL CONTROL CODE");
+print "To update client details we require 2 staff members to authorise. One staff member needs to generate a 'Dual Control Code' that is then used by the other staff member when updating the details.<br><br>";
+print "<form id='clientdetailsDCC' action='"
+    . request()->url_for('backoffice/f_makeclientdcc.cgi')
+    . "' method='post' class='bo_ajax_form'>"
+    . "<input type='hidden' name='broker' value='$broker'>"
+    . "<input type='hidden' name='l' value='EN'>"
+    . " Type of transaction: <select name='transtype'>"
+    . "<option value='UPDATECLIENTDETAILS'>Update client details</option>"
+    . "</select>"
+    . "Loginid : <input type='text' name='clientloginid' placeholder='required'>"
+    . "<br><br>New email of the client: <input type='text' name='clientemail' placeholder='required'>"
+    . "<br><br>Input a comment/reminder about this DCC: <input type='text' size='50' name='reminder'>"
+    . "<br><br><input type='submit' value='Make Dual Control Code (by $clerk)'>"
+    . "</form>";
 
 Bar("CLOSED/DISABLED ACCOUNTS");
 my $client_login                = request()->param('login_id') || $broker . '';
@@ -278,68 +295,6 @@ print "<br /><br /><form action=\""
     . "<br /><input type=submit value='Monitor Clients on this list'>"
     . "</form>";
 
-# PoC locking accounts
-Bar('Accounts Subject To PoC Locking');
-
-print qq~
-View all Clients who:<br /><br />
-
-<form action="~ . request()->url_for('backoffice/f_poc_locking_report.cgi') . qq~" method=post>
-  <input type=hidden name="broker" value="$broker">
-  <table>
-    <tr>
-      <td>Joined after:</td>
-      <td><input type="text" style="width:100px" maxlength="15" name="date" value="$last_year"></td>
-    </tr>
-    <tr>
-      <td>Authenticated:</td>
-      <td>
-        <select name="authenticated">
-          <option value="any">Any</option>
-          <option value="yes">Yes</option>
-          <option value="no" selected="selected">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>Lock cashier:</td>
-      <td>
-        <select name="lock_cashier">
-          <option value="any">Any</option>
-          <option value="yes" selected="selected">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>Unwelcome logins:</td>
-      <td>
-        <select name="unwelcome_logins">
-          <option value="any">Any</option>
-          <option value="yes" selected="selected">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td>Have funds:</td>
-      <td>
-        <select name="funded">
-          <option value="any" selected="selected">Any</option>
-          <option value="yes">Yes</option>
-          <option value="no">No</option>
-        </select>
-      </td>
-    </tr>
-    <tr>
-      <td></td>
-      <td>
-        <input type="submit" value="Go">
-      </td>
-    </tr>
-  </table>
-</form>
-~;
 
 # Locked accounts
 Bar("List of locked accounts");

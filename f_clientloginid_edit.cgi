@@ -81,11 +81,6 @@ if ($input{whattodo} eq 'uploadID') {
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
 
-    # if no doc status, set pending..
-    if (not $client->get_authentication('ID_DOCUMENT')) {
-        $client->set_authentication('ID_DOCUMENT')->status('pending');
-    }
-
     $client->add_client_authentication_document({    # Rose
         document_type              => $doctype,
         document_format            => $docformat,
@@ -225,10 +220,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->residence($input{$key});
             next CLIENT_KEY;
         }
-        if ($key eq 'small_timer') {
-            $client->small_timer($input{$key});
-            next CLIENT_KEY;
-        }
         if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
             my $val = $input{$key} || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
@@ -305,6 +296,17 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client->set_status('can_authenticate', $clerk, 'No specific reason.');
             } else {
                 $client->clr_status('can_authenticate');
+            }
+        }
+
+        if ($key eq 'client_authentication') {
+            if ($input{$key} eq 'ADDRESS' or $input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_192') {
+                $client->set_authentication($input{$key})->status('pass');
+            }
+            if ($input{$key} eq 'CLEAR ALL') {
+                foreach my $m (@{$client->client_authentication_method}) {
+                    $m->delete;
+                }
             }
         }
     }

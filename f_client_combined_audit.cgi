@@ -104,7 +104,7 @@ foreach my $table (qw(client client_status client_promo_code client_authenticati
         if (not $old) {
             $old = $new;
         }
-        if ($new->{operation} eq 'INSERT') {
+        if ($new->{operation} eq 'INSERT' or $new->{operation} eq 'DELETE') {
             my $desc = $new->{stamp} . " [$table audit table] " . join(' ', map { $new->{$_} } qw(operation client_addr)) . '<ul>';
             foreach my $key (keys %{$new}) {
                 $desc .= "<li> $key is <b>" . ($new->{$key} || '') . '</b> </li> ';

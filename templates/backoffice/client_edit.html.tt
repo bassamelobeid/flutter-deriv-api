@@ -178,21 +178,26 @@ table#client_edit td{
     <tr>
         <td class="label">ID Authentication</td>
         [%
-            small_timer_options = [
-                {'value' => 'yes', 'details' => 'No ID (used to be called \'Smalltimer\' account)' }
-                {'value' => 'no', 'details' => 'Pending Authentication (received ID SCANS; used to be called \'Big Ticket\' account)' }
-                {'value' => 'notarised', 'details' => 'AUTHENTICATED (Submitted CERTIFIED ID by postal mail)' }
-                {'value' => 'notarisedonline_192', 'details' => 'AUTHENTICATED (Authenticated online via 192.com)' }
-                {'value' => 'notarisedonline', 'details' => 'AUTHENTICATED (Authenticated online via URU)' }
+            authentication_options = [
+                {'value' => '', 'details' => '-' }
+                {'value' => 'CLEAR ALL', 'details' => 'Delete all authentications' }
+                {'value' => 'ADDRESS', 'details' => 'Authenticated (deprecated address method)' }
+                {'value' => 'ID_DOCUMENT', 'details' => 'Authenticated (by post)' }
+                {'value' => 'ID_192', 'details' => 'Authenticated (via Experian)' }
             ]
         %]
         <td id="verification">: 
-            <select name="small_timer">
-                [% FOREACH small_timer = small_timer_options %]
-                    [% IF small_timer.value == client.small_timer %]
-                        <option value="[% small_timer.value %]" selected="selected">[% small_timer.details %]</option>
+                Current methods:(
+                    [% IF  client.get_authentication('ADDRESS').status == 'pass' %]Authenticated (deprecated address method),[% END %]
+                    [% IF  client.get_authentication('ID_DOCUMENT').status == 'pass' %]Authenticated (by post),[% END %]
+                    [% IF  client.get_authentication('ID_192').status == 'pass' %]Authenticated (via Experian),[% END %]
+                ) <br>
+            <select name="client_authentication">
+                [% FOREACH authentication = authentication_options %]
+                    [% IF  authentication.value == '' %]
+                        <option value="[% authentication.value %]" selected="selected">[% authentication.details %]</option>
                     [% ELSE %]
-                        <option value="[% small_timer.value %]">[% small_timer.details %]</option>
+                        <option value="[% authentication.value %]">[% authentication.details %]</option>
                     [% END %]
                 [% END %]
             </select>
