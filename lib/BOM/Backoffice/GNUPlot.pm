@@ -1,4 +1,4 @@
-package BOM::Utility::GNUPlot;
+package BOM::Backoffice::GNUPlot;
 use strict;
 use warnings;
 use Time::HiRes ('gettimeofday');
