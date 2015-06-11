@@ -38,7 +38,7 @@ if (not $email) {
 my $lang = request()->language;
 
 my $link = request()->url_for(
-    'reset_password.cgi',
+    '/user/reset_password',
     {
         action      => 'recover',
         email       => url_encode($email),
