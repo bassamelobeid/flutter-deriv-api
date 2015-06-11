@@ -26,6 +26,7 @@ use BOM::Platform::Client::DoughFlowClient;
 use BOM::Platform::Helper::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
+use BOM::System::Config;
 use BOM::View::CGIForm;
 
 BOM::Platform::Sysinit::init();
@@ -94,8 +95,8 @@ if ($input{whattodo} eq 'sync_to_DF') {
     );
     $handoff_token->save;
 
-    my $doughflow_loc  = BOM::Platform::Runtime->instance->app_config->payments->doughflow->location;
-    my $doughflow_pass = BOM::Platform::Runtime->instance->app_config->payments->doughflow->passcode;
+    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
     my $url            = $doughflow_loc . '/CreateCustomer.asp';
 
     # hit DF's CreateCustomer API
