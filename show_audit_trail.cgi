@@ -149,7 +149,20 @@ for my $table (@tables) {
         for my $col (@system_cols) {
             $data->{$col} = $row->$col if $row->can($col);
         }
-        $data->{staff_name} ||= $row->pg_userid;    # as set by audit.set_staff
+        if ($tabname eq 'client') {
+            # as set by audit.set_staff..
+            $data->{staff_name} = $row->pg_userid;
+        } else {
+            # this is because some code just puts 'system' into staff_name,
+            # but other code goes to trouble of putting meaningful data there.
+            # Better show both, if they are different and useful.
+            for ($row->pg_userid) {
+                next if /write|\?/;
+                $data->{staff_name} ||= $_;
+                next if $_ eq $data->{staff_name};
+                $data->{staff_name} .= "/$_";
+            }
+        }
         for my $col (keys %cols) {
             $data->{$col} = $row->$col;
             if ($loginid && $prevrow) {
