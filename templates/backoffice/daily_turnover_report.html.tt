@@ -1,3 +1,14 @@
+<div>
+    <p>View Daily Turnover Report</p>
+    <form action="[% request.url_for('backoffice/f_dailyturnoverreport.cgi') %]" method="post">
+        Month: <input type="text" size="12" name="month" value="[% this_month %]"></input>
+        <br/><br/>
+        <input type="submit" value="View Daily Turnover Report"></input>
+    </form>
+</div>
+<hr/>
+<br/>
+
 [% IF dtr.risk_report %]
 <p>See, also: <a href="[% dtr.risk_report %]">the lastest risk dashboard</a></p>
 [% END %]
@@ -26,16 +37,16 @@
                 <tr[% IF day.is_weekend %] class="weekend"[% END %]>
                     <td>[% day.date %]</td>
                     [% FOREACH currency IN dtr.currencies %]
-                        <td>[% IF day.buys.$currency %][% currency %]<br>[% virgule(day.buys.$currency) %][% ELSE %]&nbsp;[% END %]</td>
-                        <td>[% IF day.sells.$currency %][% currency %]<br>[% virgule(day.sells.$currency) %][% ELSE %]&nbsp;[% END %]</td>
+                        <td>[% IF day.buys.$currency %][% currency %]<br>[% commas(day.buys.$currency) %][% ELSE %]&nbsp;[% END %]</td>
+                        <td>[% IF day.sells.$currency %][% currency %]<br>[% commas(day.sells.$currency) %][% ELSE %]&nbsp;[% END %]</td>
                     [% END %]
-                    <td><strong>USD<br>[% virgule(day.USD_buys) %]</strong></td>
-                    <td><strong>USD<br>[% virgule(day.USD_sells) %]</strong></td>
-                    <td class="[% IF day.pl < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% virgule(day.pl) %]</td>
-                    <td>USD<br>[% virgule(day.agg_bets) %]</td>
-                    <td class="[% IF day.pl_bets < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% virgule(day.pl_bets) %]</strong></td>
+                    <td><strong>USD<br>[% commas(day.USD_buys) %]</strong></td>
+                    <td><strong>USD<br>[% commas(day.USD_sells) %]</strong></td>
+                    <td class="[% IF day.pl < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% commas(day.pl) %]</td>
+                    <td>USD<br>[% commas(day.agg_bets) %]</td>
+                    <td class="[% IF day.pl_bets < 0 %]down[% ELSE %]up[% END %]"><strong>USD<br>[% commas(day.pl_bets) %]</strong></td>
                     <td class="[% IF day.pl_on_day < 0 %]down[% ELSE %]up[% END %]">
-                        <strong>USD<br>[% virgule(day.pl_on_day) %]</strong>
+                        <strong>USD<br>[% commas(day.pl_on_day) %]</strong>
                     </td>
                     <td>[% day.active_clients %]</td>
                 </tr>
@@ -43,14 +54,14 @@
         <tr>
             <td>TOTALS</td>
             [% FOREACH currency IN dtr.currencies %]
-                <td><strong>[% currency %] [% virgule(dtr.all_buys.$currency) %]</strong></td>
-                <td><strong>[% currency %] [% virgule(dtr.all_sells.$currency) %]</strong></td>
+                <td><strong>[% currency %] [% commas(dtr.all_buys.$currency) %]</strong></td>
+                <td><strong>[% currency %] [% commas(dtr.all_sells.$currency) %]</strong></td>
             [% END %]
-            <td><strong>USD [% virgule(dtr.all_USD_buys) %]</strong></td>
-            <td><strong>USD [% virgule(dtr.all_USD_sells) %]</strong></td>
-            <td><span [% IF dtr.all_pl < 0 %] class="warning"[% END %]><strong>USD [% virgule(dtr.all_pl) %]</strong></span></td>
-            <td><span [% IF dtr.agg_bets_diff < 0 %] class="warning"[% END %]><strong>USD [% virgule(dtr.agg_bets_diff) %]</strong></span></td>
-            <td><span [% IF dtr.all_prev_agg_bets < 0 %] class="warning"[% END %]><strong>USD [% virgule(dtr.all_prev_agg_bets) %]</strong></span></td>
+            <td><strong>USD [% commas(dtr.all_USD_buys) %]</strong></td>
+            <td><strong>USD [% commas(dtr.all_USD_sells) %]</strong></td>
+            <td><span [% IF dtr.all_pl < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.all_pl) %]</strong></span></td>
+            <td><span [% IF dtr.agg_bets_diff < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.agg_bets_diff) %]</strong></span></td>
+            <td><span [% IF dtr.all_prev_agg_bets < 0 %] class="warning"[% END %]><strong>USD [% commas(dtr.all_prev_agg_bets) %]</strong></span></td>
             <td>N/A</td>
             <td>N/A</td>
         </tr>
@@ -64,8 +75,8 @@
 <tr><th/><th>Current</th><th>Projected</th></tr>
         </thead>
         <tbody>
-    <tr><th>Turnover</th><td>[% virgule(dtr.all_USD_buys) %]</td><td>[% virgule(dtr.projected_turnover) %]</td></tr>
-    <tr><th>Profit</th><td>[% virgule(dtr.estimated_pl) %]</td><td>[% virgule(dtr.projected_pl) %]</td></tr>
+    <tr><th>Turnover</th><td>[% commas(dtr.all_USD_buys) %]</td><td>[% commas(dtr.projected_turnover) %]</td></tr>
+    <tr><th>Profit</th><td>[% commas(dtr.estimated_pl) %]</td><td>[% commas(dtr.projected_pl) %]</td></tr>
     <tr><th>Hold</th><td colspan="2" class="shared">[% dtr.pct_hold %]%</td></tr>
         </tbody>
     </table>

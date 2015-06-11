@@ -5,26 +5,28 @@ use strict 'vars';
 
 use f_brokerincludeall;
 use Auth::DuoWeb;
+use BOM::System::Config;
 use BOM::Platform::Auth0;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 PrintContentType();
 
-my $access_token = BOM::Platform::Auth0::exchange_code(request()->param('code'));
+my $access_token = request()->param('token');
 my $staff        = BOM::Platform::Auth0::user_by_access_token($access_token);
+
 if (not $staff) {
     print "Login failed";
     code_exit_BO();
 }
-my $post_action = "login.cgi";
-my $email       = $staff->{email};
+
 my $post_action = "login.cgi";
 
 my $sig_request = Auth::DuoWeb::sign_request(
-    BOM::Platform::Runtime->instance->app_config->system->duoweb->IKEY,
-    BOM::Platform::Runtime->instance->app_config->system->duoweb->SKEY,
-    BOM::Platform::Runtime->instance->app_config->system->duoweb->AKEY, $email,
+    BOM::System::Config::third_party->{duosecurity}->{ikey},
+    BOM::System::Config::third_party->{duosecurity}->{skey},
+    BOM::System::Config::third_party->{duosecurity}->{akey},
+    $staff->{email},
 );
 
 if ($sig_request) {
@@ -62,7 +64,7 @@ if ($sig_request) {
         <form method="POST" id="duo_form">
          <input type="hidden" name="whattodo" value="login" />
          <input type="hidden" name="access_token" value="$access_token">
-         <input type="hidden" name="email" value="$email">
+         <input type="hidden" name="email" value="$staff->{email}">
          <input type="hidden" name="post_action" value="$post_action">
          <input type="hidden" name="brokercode" value="$brokercode" />
         </form>

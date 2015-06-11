@@ -36,8 +36,8 @@ my $loginid     = request()->param('loginid');
 my $page        = request()->param('page') || 0;
 my $pagesize    = request()->param('pagesize') || 40;
 my $offset      = $page * $pagesize;
-my @system_cols = qw/stamp staff_name operation client_addr/;
-my @noshow_cols = qw/pg_userid client_port id/;
+my @system_cols = qw/stamp staff_name operation remote_addr/;
+my @noshow_cols = qw/pg_userid client_port id client_addr/;
 
 my $myself_args = {
     broker   => $broker,
@@ -136,7 +136,7 @@ for my $table (@tables) {
             )
         ),
     );
-    my $firstrow = $rows->[0] || next;
+    next unless @$rows;
     # accumulate new non-system column names into %hdrs
     my %cols = map { $_->name => 1 } $rows->[0]->meta->columns;
     delete $cols{$_} for (@system_cols, @noshow_cols);
@@ -148,6 +148,20 @@ for my $table (@tables) {
         my $data = {table => $tabname};
         for my $col (@system_cols) {
             $data->{$col} = $row->$col if $row->can($col);
+        }
+        if ($tabname eq 'client') {
+            # as set by audit.set_staff..
+            $data->{staff_name} = $row->pg_userid;
+        } else {
+            # this is because some code just puts 'system' into staff_name,
+            # but other code goes to trouble of putting meaningful data there.
+            # Better show both, if they are different and useful.
+            for ($row->pg_userid) {
+                next if /write|\?/;
+                $data->{staff_name} ||= $_;
+                next if $_ eq $data->{staff_name};
+                $data->{staff_name} .= "/$_";
+            }
         }
         for my $col (keys %cols) {
             $data->{$col} = $row->$col;

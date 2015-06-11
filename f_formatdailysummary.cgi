@@ -2,7 +2,7 @@
 package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
-use BOM::Utility::Format::Numbers qw(virgule);
+use Format::Util::Numbers qw(commas);
 use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
@@ -58,7 +58,7 @@ if (open(FILE, $filename)) {
                     if (abs($f) > 0) { $sums[$i] += $f; }
 
                     if ($i == 5) {
-                        $thislineout .= "<TD><font size=2 face=verdana>" . virgule($fields[4] - $fields[5]) . "</TD>";
+                        $thislineout .= "<TD><font size=2 face=verdana>" . commas($fields[4] - $fields[5]) . "</TD>";
                     }    #marked-to-market profit/loss
                 }
 
@@ -93,7 +93,7 @@ print @s_to_out;
 print "<TR>";
 my $i = 0;
 foreach my $f (@fields) {
-    if (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . (virgule($sums[$i])) . "</TD>"; }
+    if (abs($sums[$i]) > 0) { print "<TD><B><font size=2 face=verdana> " . (commas($sums[$i])) . "</TD>"; }
     else                    { print "<TD></TD>"; }
     $i++;
 }

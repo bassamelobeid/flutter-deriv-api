@@ -8,7 +8,7 @@ use BOM::Market::Registry;
 
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
-use BOM::Utility::Format::Strings qw( set_selected_item );
+use Format::Util::Strings qw( set_selected_item );
 use BOM::Platform::Auth0;
 use BOM::StaffPages;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -24,9 +24,7 @@ if (not BOM::Platform::Auth0::from_cookie()) {
     PrintContentType();
 }
 
-my @codes = sort { $a->code cmp $b->code }
-    BOM::Platform::Runtime->instance->broker_codes->get_brokers_on_server(BOM::Platform::Runtime->instance->hosts->localhost);
-my $broker = @codes ? $codes[0]->code : 'CR';
+my $broker = request()->broker_code;
 
 BrokerPresentation('STAFF LOGIN PAGE');
 
@@ -41,7 +39,7 @@ if (BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_se
 
 print "<center>";
 
-my $allbrokercodes = join("<option>", BOM::Platform::Runtime->instance->broker_codes->all_codes);
+my $allbrokercodes = '<option>' .join("<option>", BOM::Platform::Runtime->instance->broker_codes->all_codes);
 
 my $brokerselection = "Broker code : <select name=broker>" . set_selected_item($broker, $allbrokercodes) . "</select>";
 
@@ -52,7 +50,7 @@ if (request()->param('only')) {
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 
 # TRANSaction REPORTS
-if (BOM::Platform::Auth0::has_authorisation(['IT'])) {
+if (BOM::Platform::Auth0::has_authorisation(['CS'])) {
     print qq~
 	<table class="GreenDarkCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>

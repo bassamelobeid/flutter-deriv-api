@@ -20,7 +20,7 @@ use Path::Tiny;
 use File::Temp ();
 use Try::Tiny;
 use File::Copy;
-use BOM::Utility::Format::Numbers qw(roundnear);
+use Format::Util::Numbers qw(roundnear);
 use File::Slurp;
 use Text::CSV::Slurp;
 use Date::Utility;
@@ -405,7 +405,7 @@ sub generate_holiday_upload_form {
 sub _save_holidays_for_opi {
     my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market       => 'smarties',
-        bet_category => 'ANY',
+        contract_category => 'ANY',
     );
     my @exchanges;
     my $config_db = "BOM::MarketData::ExchangeConfig";
@@ -501,7 +501,7 @@ sub get_all_exchanges {
     my @all = ('forex', 'indices', 'commodities', 'smarties');
     my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market       => \@all,
-        bet_category => 'ANY',
+        contract_category => 'ANY',
     );
     my @exchanges;
 

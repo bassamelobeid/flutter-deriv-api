@@ -2,7 +2,7 @@ use strict 'vars';
 use Encode;
 use Carp qw( croak );
 
-use BOM::Utility::Format::Strings qw( set_selected_item );
+use Format::Util::Strings qw( set_selected_item );
 use Date::Utility;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::Transaction;
@@ -447,7 +447,11 @@ sub get_trusted_allow_login_reason {
 
 sub client_statement_for_backoffice {
     my $args = shift;
-    my ($client, $before, $after) = @{$args}{'client', 'before', 'after'};
+    my ($client, $before, $after, $max_number_of_lines) = @{$args}{'client', 'before', 'after', 'max_number_of_lines'};
+
+    if (not $max_number_of_lines) {
+        $max_number_of_lines = 200;
+    }
 
     my $currency;
     $currency = $args->{currency} if exists $args->{currency};
@@ -468,7 +472,7 @@ sub client_statement_for_backoffice {
         $transactions = $txn_dm->get_payments({
             before => $before,
             after  => $after,
-            limit  => 50
+            limit  => $max_number_of_lines
         });
         foreach my $transaction (@{$transactions}) {
             $transaction->{balance_after} = $txn_dm->get_balance_after_transaction({transaction_time => $transaction->{transaction_time}});
@@ -478,7 +482,7 @@ sub client_statement_for_backoffice {
         $transactions = $txn_dm->get_transactions({
             after  => $after,
             before => $before,
-            limit  => 200
+            limit  => $max_number_of_lines
         });
 
         foreach my $transaction (@{$transactions}) {

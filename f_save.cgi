@@ -10,7 +10,7 @@ use Path::Tiny;
 use f_brokerincludeall;
 use Date::Utility;
 use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Utility::Format::Numbers qw( virgule );
+use Format::Util::Numbers qw( commas );
 use BOM::MarketData::InterestRate;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Moneyness;
@@ -20,6 +20,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use BOM::System::AuditLog;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -268,12 +269,7 @@ save_log_save_complete_log({
     'diff'             => $diff,
 });
 
-# fsave.log
-if ((-s "/var/log/fixedodds/fsave.log") > 300000) {
-    system("mv /var/log/fixedodds/fsave.log /var/log/fixedodds/fsave.log.1");
-}
-Path::Tiny::path("/var/log/fixedodds/fsave.log")
-    ->append(Date::Utility->new->datetime . " $broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename));
+BOM::System::AuditLog::log("$broker $clerk $ENV{'REMOTE_ADDR'} $overridefilename newsize=" . (-s $overridefilename), '', $clerk);
 
 # DISPLAY SAVED FILE
 print "<b><p>FILE was saved as follows :</p></b><br>";
@@ -285,7 +281,7 @@ if (length $shorttext != length $text) {
 }
 print "</pre>";
 
-print "<p>New file size is " . (virgule(-s "$overridefilename")) . " bytes</p><hr/>";
+print "<p>New file size is " . (commas(-s "$overridefilename")) . " bytes</p><hr/>";
 
 # DISPLAY diff
 print

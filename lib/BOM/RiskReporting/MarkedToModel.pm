@@ -30,6 +30,15 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Time::Duration::Concise::Localize;
 use BOM::Database::DataMapper::CollectorReporting;
+use BOM::System::Config;
+use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Text::CSV;
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::Model::Constants;
+use DataDog::DogStatsd::Helper qw (stats_inc stats_timing stats_count);
+use BOM::Platform::Client;
+use BOM::Database::Helper::FinancialMarketBet;
+use BOM::Utility::CurrencyConverter qw (in_USD);
 
 # This report will only be run on the MLS.
 sub generate {
@@ -42,6 +51,8 @@ sub generate {
     $self->logger->debug('Finding open positions.');
     my $open_bets_ref = $self->live_open_bets;
     my @keys          = keys %{$open_bets_ref};
+
+    my $open_bets_expired_ref;
 
     my $howmany = scalar @keys;
     my $expired = 0;
@@ -104,6 +115,8 @@ sub generate {
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
+                    $open_bets_expired_ref->{$open_fmb_id} = $open_fmb;
+                    $open_bets_expired_ref->{$open_fmb_id}->{market_price} = $value;
                 } else {
                     map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
                     $dbh->do(
@@ -171,13 +184,170 @@ sub generate {
         try { $dbh->rollback };
     };
 
+    $self->logger->debug('Cache Daily Turnover.');
     $self->cache_daily_turnover($pricing_date);
+
+    $self->logger->debug('Sell Expired Contracts.');
+    $self->sell_expired_contracts($open_bets_expired_ref);
 
     return {
         full_count => $howmany,
         errors     => $error_count,
         expired    => $total_expired
     };
+}
+
+sub sell_expired_contracts {
+    my $self          = shift;
+    my $open_bets_ref = shift;
+
+    # Now deal with them one by one.
+
+    my @error_lines;
+    my @full_list = keys %{$open_bets_ref};
+    my %map_to_bb = reverse BOM::MarketData::Parser::Bloomberg::RequestFiles->new->bloomberg_to_rmg;
+    my $csv       = Text::CSV->new;
+
+    my $rmgenv = BOM::System::Config::env;
+    while (scalar @error_lines < 100 and my $id = shift @full_list) {
+        my $fmb_id         = $open_bets_ref->{$id}->{id};
+        my $client_id      = $open_bets_ref->{$id}->{client_loginid};
+        my $expected_value = $open_bets_ref->{$id}->{market_price};
+        my $currency       = $open_bets_ref->{$id}->{currency_code};
+        my $ref_number     = $open_bets_ref->{$id}->{transaction_id};
+        my $buy_price      = $open_bets_ref->{$id}->{buy_price};
+
+        my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
+
+        my $fmb =
+          BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0];
+
+        my $bet = produce_contract($fmb, $currency);
+
+        my $stats_data = do {
+            my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$bet->code};
+            my $broker    = lc($client->broker_code);
+            my $virtual   = $client->is_virtual ? 'yes' : 'no';
+            my $tags      = {tags => ["broker:$broker", "virtual:$virtual",
+                                      "rmgenv:$rmgenv", "contract_class:$bet_class",
+                                          "sell_type:autosell"]};
+            stats_inc("transaction.sell.attempt", $tags);
+            +{
+                tags    => $tags,
+                virtual => $virtual,
+            };
+        };
+
+        my $bb_lookup = '--';
+        if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
+            $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
+            $bb_lookup = $csv->string;
+        }
+
+        my $bet_info = {
+            loginid   => $client_id,
+            ref       => $ref_number,
+            fmb_id    => $fmb_id,
+            buy_price => $buy_price,
+            payout    => $bet->payout,
+            currency  => $currency,
+            shortcode => $bet->shortcode,
+            bb_lookup => $bb_lookup,
+        };
+
+        # We do this here because part of being "initialized_correctly" below
+        # is hidden behind lazy attributes.  Makes you question the name of the method.
+        # Regardless, expiry check will exercise them and we need that info in a couple line anyway.
+        my $expired = $bet->is_expired;
+
+        if (not $bet->initialized_correctly) {
+            $bet_info->{reason} = $bet->primary_validation_error->message;
+        } elsif (not $expired) {
+            $bet_info->{reason} = 'not expired';
+        } elsif (not defined $bet->value) {
+            $bet_info->{reason} = 'indeterminate value';
+        } elsif (0 + $bet->value xor 0 + $expected_value) {
+            # $bet->value above is set when we confirm expiration status, even further above.
+            # We want to be sure that both sides agree that it is either worth nothing or payout.
+            # Sadly, you can't compare the values directly because $expected_value has been
+            # converted to USD and our payout currency might be different.
+            # Since the values can come back as strings, we use the 0 + to force them to be evaluated numerically.
+            $bet_info->{reason} = 'expected to be worth ' . $expected_value . ' got ' . $bet->value;
+        } else {
+            try {
+                if ($bet->is_valid_to_sell) {
+                    BOM::Database::Helper::FinancialMarketBet->new({
+                            transaction_data => {
+                                staff_loginid => 'AUTOSELL',
+                            },
+                            bet_data => {
+                                id         => $fmb_id,
+                                sell_price => $bet->value,
+                                sell_time  => $bet->date_pricing->db_timestamp,
+                            },
+                            account_data => {
+                                client_loginid => $client_id,
+                                currency_code  => $currency
+                            },
+                            db => BOM::Database::ClientDB->new({client_loginid => $client_id,})->db,
+                        })->sell_bet;
+
+                    stats_inc("transaction.sell.success", $stats_data->{tags});
+                    if ($rmgenv eq 'production' and $stats_data->{virtual} eq 'no') {
+                        my $usd_amount = int(in_USD($bet->value, $currency) * 100);
+                        stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
+                    }
+                } else{
+                    if (@{$bet->corporate_actions}){
+
+                        $bet_info->{reason} = "This contract is affected by corporate action. Can you please verify the contract has been adjusted correctly to the corporte action.";
+                    }else{
+
+                        $bet_info->{reason} = $bet->primary_validation_error->message;
+                    }
+                }
+            }
+            catch {
+                $bet_info->{reason} = $_;
+            };
+        }
+        push @error_lines, $bet_info if (exists $bet_info->{reason});
+    }
+
+    if (scalar @error_lines) {
+        local ($/, $\) = ("\n", undef); # in case overridden elsewhere
+        Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
+        my $sep     = '---';
+        my $subject = 'AutoSell Failures during riskd operation';
+        # I dislike building URLs this way, but I don't seem to have much choice.
+        my @msg = ($subject, '', 'Review and settle at https://backoffice.binary.com/d/backoffice/quant/settle_contracts.cgi', '', $sep);
+
+        foreach my $failure (@error_lines) {
+            # We could have done this above, but whatever.
+            push @msg,
+                (
+                'Shortcode:   ' . $failure->{shortcode},
+                'Ref No.:     ' . $failure->{ref},
+                'Client:      ' . $failure->{loginid},
+                'Reason:      ' . $failure->{reason},
+                'Buy Price:   ' . $failure->{currency} . ' ' . $failure->{buy_price},
+                'Full Payout: ' . $failure->{currency} . ' ' . $failure->{payout},
+                $sep
+                );
+        }
+
+        if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
+            my $sender = Mail::Sender->new({
+                smtp    => 'localhost',
+                from    => '"Autosell" <autosell@regentmarkets.com>',
+                to      => 'quants-market-data@regentmarkets.com',
+                subject => $subject,
+            });
+            $sender->MailMsg({msg => join("\n", @msg) . "\n\n"});
+        }
+    }
+
+    return 0;
 }
 
 # cache query result for BO Daily Turnover Report
@@ -187,7 +357,7 @@ sub cache_daily_turnover {
 
     $self->logger->info('query daily turnover to cache in redis');
 
-    my $curr_month    = Date::Utility->new('1-' . Date::Utility->today->months_ahead(0));
+    my $curr_month    = Date::Utility->new('1-' . $pricing_date->months_ahead(0));
     my $report_mapper = BOM::Database::DataMapper::CollectorReporting->new({
         broker_code => 'FOG',
         operation   => 'collector'

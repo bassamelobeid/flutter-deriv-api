@@ -3,6 +3,7 @@ package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
+use LWP::UserAgent;
 use Text::Trim;
 use File::Copy;
 use Locale::Country 'code2country';
@@ -21,6 +22,11 @@ use BOM::Platform::SessionCookie;
 use BOM::Platform::Authorization;
 use BOM::Platform::Client::Utility ();
 use BOM::Platform::Sysinit         ();
+use BOM::Platform::Client::DoughFlowClient;
+use BOM::Platform::Helper::Doughflow qw( get_sportsbook );
+use BOM::Database::Model::HandoffToken;
+use BOM::Database::ClientDB;
+use BOM::System::Config;
 use BOM::View::CGIForm;
 
 BOM::Platform::Sysinit::init();
@@ -34,68 +40,6 @@ my $logger    = get_logger();
 my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mixed case!)';
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
 my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
-
-if ($input{impersonate_user}) {
-    my $token = BOM::Platform::Authorization->issue_token(
-        client_id       => 1,
-        expiration_time => time + 86400,
-        login_id        => $loginid,
-        scopes          => ['price', 'chart'],
-    );
-
-    my $client = BOM::Platform::Client->new({loginid => $loginid});
-    my $cookie = BOM::Platform::SessionCookie->new(
-        loginid       => $loginid,
-        token         => $token,
-        email         => $client->email,
-    );
-    my $session_cookie = CGI::cookie(
-        -name    => BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login,
-        -value   => $cookie->value,
-        -domain  => request()->cookie_domain,
-        -secure  => 1,
-        -path    => '/',
-        -expires => '+30d',
-    );
-
-    my $lcookie = CGI::cookie(
-        -name    => 'loginid',
-        -value   => $loginid,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    my $email_cookie = CGI::cookie(
-        -name    => 'email',
-        -value   => $client->email,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    my $type = ($client->is_virtual) ? 'V' : 'R';
-    my $status = ($client->get_status('disabled')) ? 'D' : 'E';
-    my $cookie_str = "$loginid:$type:$status";
-
-    my $loginid_list_cookie = CGI::cookie(
-        -name    => 'loginid_list',
-        -value   => $cookie_str,
-        -domain  => request()->cookie_domain,
-        -secure  => 0,
-        -path    => '/',
-        -expires => time + 86400,
-    );
-
-    PrintContentType({'cookies' => [ $session_cookie, $lcookie, $email_cookie, $loginid_list_cookie ]});
-    eval { BrokerPresentation("$loginid CLIENT DETAILS") };
-    print '<font color=green><b>SUCCESS!</b></font></p>';
-    print qq[You are impersonating $loginid on our <a href="/" target="impersonated">main web site<a/>.];
-
-    code_exit_BO();
-}
 
 # given a bad-enough loginID, BrokerPresentation can die, leaving an unformatted screen..
 # let the client-check offer a chance to retry.
@@ -117,6 +61,85 @@ my $client = eval { BOM::Platform::Client->new({loginid => $loginid}) } || do {
 my $broker = $client->broker;
 my $staff  = BOM::Platform::Auth0::can_access(['CS']);
 my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+
+# sync authentication status to Doughflow
+if ($input{whattodo} eq 'sync_to_DF') {
+    die "NO Doughflow for Virtual Client !!!" if ($client->is_virtual);
+
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({'loginid' => $loginid});
+    my $currency = $df_client->doughflow_currency;
+    if (not $currency) {
+        BOM::Platform::Context::template->process(
+            'backoffice/client_edit_msg.tt',
+            {
+                message     => 'ERROR: Client never deposited before, no sync to Doughflow is allowed !!',
+                error       => 1,
+                self_url    => $self_href,
+            },
+        ) || die BOM::Platform::Context::template->error();
+        code_exit_BO();
+    }
+
+    # create handoff token
+    my $client_db = BOM::Database::ClientDB->new({
+        client_loginid => $loginid,
+    })->db;
+
+    my $handoff_token = BOM::Database::Model::HandoffToken->new(
+        db                 => $client_db,
+        data_object_params => {
+            key            => BOM::Database::Model::HandoffToken::generate_session_key,
+            client_loginid => $loginid,
+            expires        => time + 60,
+        },
+    );
+    $handoff_token->save;
+
+    my $doughflow_loc  = BOM::System::Config::third_party->{doughflow}->{location};
+    my $doughflow_pass = BOM::System::Config::third_party->{doughflow}->{passcode};
+    my $url            = $doughflow_loc . '/CreateCustomer.asp';
+
+    # hit DF's CreateCustomer API
+    my $ua = LWP::UserAgent->new(timeout => 60);
+    $ua->ssl_opts(
+        verify_hostname => 0,
+        SSL_verify_mode => SSL_VERIFY_NONE
+    );    #temporarily disable host verification as full ssl certificate chain is not available in doughflow.
+
+    my $result = $ua->post(
+        $url,
+        $df_client->create_customer_property_bag({
+                SecurePassCode => $doughflow_pass,
+                Sportsbook     => get_sportsbook($broker, $currency),
+                IP_Address     => '127.0.0.1',
+                Password       => $handoff_token->key,
+            }));
+    if ($result->{'_content'} ne 'OK') {
+        BOM::Platform::Context::template->process(
+            'backoffice/client_edit_msg.tt',
+            {
+                message     => "FAILED syncing client authentication status to Doughflow, ERROR: $result->{_content}",
+                error       => 1,
+                self_url    => $self_href,
+            },
+        ) || die BOM::Platform::Context::template->error();
+        code_exit_BO();
+    }
+
+    my $msg = Date::Utility->new->datetime . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, " .
+            'loginid: '.$df_client->loginid.', Email: '.$df_client->Email.', Name: '.$df_client->CustName.', Profile: '.$df_client->Profile;
+    BOM::System::AuditLog::log($msg, $loginid, $clerk);
+    Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
+
+    BOM::Platform::Context::template->process(
+        'backoffice/client_edit_msg.tt',
+        {
+            message     => "Successfully syncing client authentication status to Doughflow",
+            self_url    => $self_href,
+        },
+    ) || die BOM::Platform::Context::template->error();
+    code_exit_BO();
+}
 
 # UPLOAD NEW ID DOC.
 if ($input{whattodo} eq 'uploadID') {
@@ -142,11 +165,6 @@ if ($input{whattodo} eq 'uploadID') {
 
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
-
-    # if no doc status, set pending..
-    if (not $client->get_authentication('ID_DOCUMENT')) {
-        $client->set_authentication('ID_DOCUMENT')->status('pending');
-    }
 
     $client->add_client_authentication_document({    # Rose
         document_type              => $doctype,
@@ -287,10 +305,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->residence($input{$key});
             next CLIENT_KEY;
         }
-        if ($key eq 'small_timer') {
-            $client->small_timer($input{$key});
-            next CLIENT_KEY;
-        }
         if (my ($id) = $key =~ /^expiration_date_([0-9]+)$/) {
             my $val = $input{$key} || next CLIENT_KEY;
             my ($doc) = grep { $_->id eq $id } $client->client_authentication_document;    # Rose
@@ -367,6 +381,17 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 $client->set_status('can_authenticate', $clerk, 'No specific reason.');
             } else {
                 $client->clr_status('can_authenticate');
+            }
+        }
+
+        if ($key eq 'client_authentication') {
+            if ($input{$key} eq 'ADDRESS' or $input{$key} eq 'ID_DOCUMENT' or $input{$key} eq 'ID_192') {
+                $client->set_authentication($input{$key})->status('pass');
+            }
+            if ($input{$key} eq 'CLEAR ALL') {
+                foreach my $m (@{$client->client_authentication_method}) {
+                    $m->delete;
+                }
             }
         }
     }
@@ -511,10 +536,30 @@ if ($link_acc) {
         'backoffice/f_clientloginid_edit.cgi',
         {
             broker  => $1,
-            loginid => $link_loginid
+            loginID => $link_loginid
         });
     $link_acc .= "<a href='$link_href'>$link_loginid</a></p></br>";
     print $link_acc;
+}
+
+# show all loginids for user
+my @loginids = BOM::Platform::User->new({ email => $client->email })->loginid_array;
+if (@loginids > 1) {
+    print "<p>Corresponding accounts: </p><ul>";
+    foreach my $client_id (@loginids) {
+        next if ($client_id eq $client->loginid);
+
+        $client_id =~ /^(\D+)\d+/;
+        my $client_broker = $1;
+        my $link_href = request()->url_for(
+            'backoffice/f_clientloginid_edit.cgi',
+            {
+                broker  => $client_broker,
+                loginID => $client_id
+            });
+        print "<li><a href='$link_href'>$client_id</a></li>";
+    }
+    print "</ul>";
 }
 
 my $log_args = {
@@ -527,7 +572,6 @@ print qq{<p>Click for <a href="$new_log_href">history of changes</a> to $loginid
 
 print qq[<form action="$self_post" method="POST">
     <input type="submit" value="Save Client Details">
-    <input type="submit" name="impersonate_user" value="Impersonate">
     <input type="hidden" name="broker" value="$broker">
     <input type="hidden" name="loginID" value="$loginid">
     <input type="hidden" name="l" value="$language">];
@@ -535,6 +579,20 @@ print qq[<form action="$self_post" method="POST">
 print_client_details($client, $staff);
 
 print qq{<input type=submit value="Save Client Details"></form>};
+
+if (not $client->is_virtual) {
+    Bar("Sync Client Authentication Status to Doughflow");
+    print qq{
+        <p>Click to sync client authentication status to Doughflow: </p>
+        <form action="$self_post" method="post">
+            <input type="hidden" name="whattodo" value="sync_to_DF">
+            <input type="hidden" name="broker" value="$broker">
+            <input type="hidden" name="loginID" value="$loginid">
+            <input type="hidden" name="l" value="$language">
+            <input type="submit" value="Sync now !!">
+        </form>
+    };
+}
 
 #upload new ID doc
 Bar("Upload new ID document");
@@ -570,10 +628,21 @@ print qq{
 </form>
 };
 
+my $financial_assessment = $client->financial_assessment();
+if ($financial_assessment) {
+    my $user_data_json = $financial_assessment->data;
+    my $is_professional = $financial_assessment->is_professional ? 'yes': 'no';
+    Bar("Financial Assessment");
+    print qq{<table class="collapsed">
+        <tr><td>User Data</td><td><textarea rows=10 cols=150>$user_data_json</textarea></td></tr>
+        <tr><td></td><td></td></tr>
+        <tr><td>Is professional</td><td>$is_professional</td></tr>
+        </table>
+    };
+}
+
 Bar("$loginid Login history");
-
 print '<div><br/>';
-
 my $loglim = 200;
 my $logins = $client->find_login_history(
     sort_by => 'login_date desc',
@@ -583,9 +652,7 @@ my $logins = $client->find_login_history(
 if (@$logins == 0) {
     print qq{<p>There is no login history</p>};
 } else {
-
     print qq{<p color="red">Showing last $loglim logins only</p>} if @$logins > $loglim;
-
     print qq{<table class="collapsed">};
     foreach my $login (reverse @$logins) {
         my $date        = $login->login_date->strftime('%F %T');
@@ -598,7 +665,6 @@ if (@$logins == 0) {
     }
     print qq{</table>};
 }
-
 print '</div>';
 
 code_exit_BO();

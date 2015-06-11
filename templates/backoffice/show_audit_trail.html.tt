@@ -1,5 +1,5 @@
 [%
-    titles = { stamp=>'Date', client_addr=>'IP', staff_name=>'Staff', table=>'Table', operation=>'Operation' };
+    titles = { stamp=>'Date', remote_addr=>'IP', staff_name=>'Staff', table=>'Table', operation=>'Operation' };
 %]
 
 <style type="text/css">

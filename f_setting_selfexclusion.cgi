@@ -41,16 +41,8 @@ my $page =
     '<h2> The Client [loginid: ' . $loginid . '] self-exclusion settings are as follows. You may change it by editing the corresponding value.</h2>';
 
 #to generate existing limits
-if (my $self_exclusion = $client->self_exclusion) {
+if (my $self_exclusion = $client->get_self_exclusion) {
     $page .= '<ul>';
-    $self_exclusion_form->set_field_value('MAXCASHBAL',         $self_exclusion->max_balance);
-    $self_exclusion_form->set_field_value('DAILYTURNOVERLIMIT', $self_exclusion->max_turnover);
-    $self_exclusion_form->set_field_value('MAXOPENPOS',         $self_exclusion->max_open_bets);
-    $self_exclusion_form->set_field_value('SESSIONDURATION',    $self_exclusion->session_duration_limit);
-    if (my $exclude_until_date = $self_exclusion->exclude_until) {
-        $exclude_until_date = Date::Utility->new($exclude_until_date)->date_ddmmmyy;
-        $self_exclusion_form->set_field_value('EXCLUDEUNTIL', $exclude_until_date);
-    }
 
     if ($self_exclusion->max_balance) {
         $page .= '<li>'
@@ -59,7 +51,22 @@ if (my $self_exclusion = $client->self_exclusion) {
     }
     if ($self_exclusion->max_turnover) {
         $page .= '<li>'
-            . localize('Daily Turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
+            . localize('Daily turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_turnover)
+            . '</li>';
+    }
+    if ($self_exclusion->max_losses) {
+        $page .= '<li>'
+            . localize('Daily limit on losses is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_losses)
+            . '</li>';
+    }
+    if ($self_exclusion->max_7day_turnover) {
+        $page .= '<li>'
+            . localize('7-Day turnover limit is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_turnover)
+            . '</li>';
+    }
+    if ($self_exclusion->max_7day_losses) {
+        $page .= '<li>'
+            . localize('7-Day limit on losses is currently set to <strong>[_1] [_2]</strong>', $client->currency, $self_exclusion->max_7day_losses)
             . '</li>';
     }
     if ($self_exclusion->max_open_bets) {
@@ -94,13 +101,20 @@ if (not $self_exclusion_form->validate()) {
     code_exit_BO();
 }
 
-my $v = request()->param('MAXOPENPOS');
+my $v;
+$v = request()->param('MAXOPENPOS');
 $client->set_exclusion->max_open_bets(looks_like_number($v) ? $v : undef);
-my $v = request()->param('DAILYTURNOVERLIMIT');
+$v = request()->param('DAILYTURNOVERLIMIT');
 $client->set_exclusion->max_turnover(looks_like_number($v) ? $v : undef);
-my $v = request()->param('MAXCASHBAL');
+$v = request()->param('DAILYLOSSLIMIT');
+$client->set_exclusion->max_losses(looks_like_number($v) ? $v : undef);
+$v = request()->param('7DAYTURNOVERLIMIT');
+$client->set_exclusion->max_7day_turnover(looks_like_number($v) ? $v : undef);
+$v = request()->param('7DAYLOSSLIMIT');
+$client->set_exclusion->max_7day_losses(looks_like_number($v) ? $v : undef);
+$v = request()->param('MAXCASHBAL');
 $client->set_exclusion->max_balance(looks_like_number($v) ? $v : undef);
-my $v = request()->param('SESSIONDURATION');
+$v = request()->param('SESSIONDURATION');
 $client->set_exclusion->session_duration_limit(looks_like_number($v) ? $v : undef);
 
 # by or-ing to 'undef' here we turn any blank exclude_until date to no-date.

@@ -39,12 +39,6 @@ if (
     code_exit_BO();
 }
 
-my $localhost = $rt->hosts->localhost;
-
-if ($localhost->has_role('master_live_server')) {
-    die "This tool can't be accessed from Master Live Server. It can only be accessed from dealing server's BO";
-}
-
 my $broker_db = BOM::Database::ClientDB->new({
         broker_code => request()->param('broker'),
     })->db;

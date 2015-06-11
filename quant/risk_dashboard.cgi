@@ -6,7 +6,7 @@ use warnings;
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
-use BOM::Utility::Format::Numbers qw( to_monetary_number_format );
+use Format::Util::Numbers qw( to_monetary_number_format );
 use BOM::RiskReporting::Dashboard;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -37,7 +37,7 @@ $report->{link_to_pnl} = sub {
         });
 };
 $report->{monify}  = \&to_monetary_number_format;
-$report->{virgule} = \&virgule;
+$report->{commas} = \&commas;
 $report->{titlfy}  = sub {
     my $href  = shift;
     my $title = $href->{name};
