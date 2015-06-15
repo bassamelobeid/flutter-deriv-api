@@ -15,7 +15,6 @@ BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
 use ForexFactory;
-use BOM::MarketData::Display::EconomicEvent;
 use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
 use Date::Utility;
@@ -79,10 +78,6 @@ my $source              = request()->param('source');
 my $add_news_event      = request()->param('add_news_event');
 my $save_economic_event = request()->param('save_economic_event');
 my $autoupdate          = request()->param('autoupdate');
-my $display             = BOM::MarketData::Display::EconomicEvent->new;
-
-# Manual cron runner for economic events
-print $display->economic_event_forms(request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'));
 
 if ($autoupdate) {
     eval {
@@ -126,14 +121,5 @@ if ($autoupdate) {
         $save_economic_event = 0;
     }
 }
-# Display economic events calendar
-my $today = Date::Utility->new;
-print '<b>The table below shows the economic events that will take place today (' . $today->date_ddmmmyyyy . ')</b></br></br>';
-print $display->events_for_today;
-
-print '</br></br>';
-
-print '<b>The table below shows the economic events saved on couch today (' . $today->date_ddmmmyyyy . ')</b></br></br>';
-print $display->all_events_saved_for_date($today);
 
 code_exit_BO();
