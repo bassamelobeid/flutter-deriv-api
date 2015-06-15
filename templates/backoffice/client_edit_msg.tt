@@ -1,0 +1,5 @@
+[% IF error; style = 'color:red; font-weight:bold;'; ELSE; style = 'color:green; font-weight:bold;'; END; %]
+<p style='[% style %]'>[% message %]</p>
+<p>
+    <a href='[% self_url %]'>&laquo;Return to Client Details<a/>
+</p>

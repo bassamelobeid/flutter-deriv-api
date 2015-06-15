@@ -37,6 +37,38 @@ if ($category eq '192_result') {
 
 local $\ = "";
 
+if (request()->param('deleteit') eq 'yes') {
+    PrintContentType();
+    BrokerPresentation('DELETE DOCUMENT');
+    my $msg;
+    if (-s $full_path) {
+        my $loginid = request()->param('loginid');
+        my $doc_id  = request()->param('doc_id');
+        my $client  = BOM::Platform::Client::get_instance({loginid => $loginid});
+        if ($client) {
+            $client->set_db('write');
+            my ($doc) = $client->find_client_authentication_document(query => [id => $doc_id]);    # Rose
+            if ($doc) {
+                if ($doc->delete) {
+                    $msg = "SUCCESS - $path is deleted!";
+                    rename $full_path, $full_path.'.'.time.'.deleted' ;
+                } else {
+                    $msg = "ERROR: did not remove $path record from db";
+                }
+            } else {
+                $msg = "ERROR: could not find $path record in db";
+            }
+        } else {
+            $msg = "ERROR: with client login $loginid";
+        }
+    } else {
+        $msg = "ERROR: $full_path does not exist or is empty!";
+    }
+    print "<p>$msg</p>";
+    code_exit_BO();
+}
+
+
 if (my ($type) = $path =~ /\.(tif|txt|csv|xls|doc|gif|png|bmp|jpg|jpeg|pdf|zip)$/i) {
     if (-f -r $full_path) {
         PrintContentType_XSendfile($full_path, (lc($type) eq 'pdf' ? 'application/pdf' : 'application/octet-stream'));
