@@ -27,7 +27,7 @@ sub save_dividends {
     my ($data) = @_;
 
     my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->get_symbols_for(
-        market    => 'smarties',
+        market    => 'indices',
         submarket => 'smart_index'
     );
 
