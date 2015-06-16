@@ -2,7 +2,7 @@ use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 use POSIX;
 use Path::Tiny;
-use BOM::Utility::GNUPlot;
+use BOM::Backoffice::GNUPlot;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Utils;
 use Date::Utility;
@@ -69,7 +69,7 @@ sub graph_setup {
     my $graph_link_and_line        = '000080';
 
     #GNU filehandle needs to be global - not sure if this makes mod_perl problems because of SIG_PIPE handling
-    my $gnu_plot = BOM::Utility::GNUPlot::gnuplot_command();
+    my $gnu_plot = BOM::Backoffice::GNUPlot::gnuplot_command();
     open(GNU, "| $gnu_plot") or die "[$0] execute of '$gnu_plot' failed $!";
     print GNU "set key box\n";
     print GNU "set key out horiz\n";
