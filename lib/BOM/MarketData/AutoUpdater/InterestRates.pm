@@ -12,8 +12,7 @@ use BOM::Market::Currency;
 use BOM::Market::UnderlyingDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
-
+use Bloomberg::CurrencyConfig;
 has file => (
     is         => 'ro',
     lazy_build => 1,
@@ -95,11 +94,11 @@ sub _passes_sanity_check {
 sub _get_currency_and_term_from_BB_ticker {
     my ($self, $ticker) = @_;
 
-    my $tickerlist = BOM::MarketData::Parser::Bloomberg::RequestFiles::tickerlist_interest_rates();
+    my %tickerlist = Bloomberg::CurrencyConfig->get_interest_rate_list();
 
-    foreach my $currency (keys %{$tickerlist}) {
-        foreach my $term (keys %{$tickerlist->{$currency}}) {
-            if ($ticker eq $tickerlist->{$currency}->{$term}) {
+    foreach my $currency (keys %tickerlist) {
+        foreach my $term (keys %{$tickerlist-$currency}}) {
+            if ($ticker eq $tickerlist{$currency}{$term}) {
                 return {
                     currency => $currency,
                     term     => $term

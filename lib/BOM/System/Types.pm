@@ -60,7 +60,6 @@ use MooseX::Types -declare => [
         transaction_type
         cutoff_code
         surface_type
-        volatility_source
         bom_time_interval
         )];
 use Moose::Util::TypeConstraints;
@@ -68,14 +67,6 @@ use Time::Duration::Concise;
 use Try::Tiny;
 
 =head1 DEFINED_TYPES
-
-=head2 bom_volatility_source
-
-A valid volatility source from Bloomberg
-
-=cut
-
-subtype 'bom_volatility_source', as Str, where { /^(?:OVDV|vol_points)$/ }, message { "Invalid volatility_source[$_]" };
 
 =head2 bom_broker_code
 

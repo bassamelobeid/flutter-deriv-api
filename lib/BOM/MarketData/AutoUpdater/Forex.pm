@@ -20,6 +20,9 @@ use BOM::Market::UnderlyingDB;
 use Date::Utility;
 use Try::Tiny;
 use File::Find::Rule;
+use BOM::Market::Underlying;
+use BOM::MarketData::Fetcher::VolSurface;
+use BOM::MarketData::VolSurface::Delta;
 use List::Util qw( first );
 has file => (
     is         => 'ro',
@@ -30,7 +33,7 @@ sub _build_file {
     my $self = shift;
 
     my $now = Date::Utility->new;
-    my $loc = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/BBDL/' . $self->source;
+    my $loc = '/feed//BBDL/' ;
     my $on  = Date::Utility->new($now->epoch);
 
     while (not -d $loc . '/' . $on->date_yyyymmdd) {
@@ -44,7 +47,7 @@ sub _build_file {
     my @non_quanto_filename = grep { $_ !~ /quantovol/ } @filenames;
 
     my $file = first {
-        my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_?(OVDV|vol_points)?\.csv$/);
+        my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_points\.csv$/);
         my $date = Date::Utility->new("$day $h:$m:$s");
         return $date->epoch <= $now->epoch;
     }
@@ -58,10 +61,6 @@ sub _build_file {
     return \@files;
 }
 
-has source => (
-    is      => 'ro',
-    default => BOM::Platform::Runtime->instance->app_config->quants->market_data->volatility_source,
-);
 
 has symbols_to_update => (
     is         => 'ro',
@@ -105,8 +104,15 @@ sub _build_surfaces_from_file {
     my $self = shift;
     my @volsurface;
     foreach my $file (@{$self->file}) {
-        push @volsurface, BOM::MarketData::Parser::Bloomberg::VolSurfaces->new->parse_data_for($file, $self->source);
+        my $surface = BOM::MarketData::Parser::Bloomberg::VolSurfaces->new->parse_data_for($file);
+        foreach my $underlying (keys %{$surface}){
+        if (scalar keys %{$surface->{$underlying}->{surface}} ==2){
+           $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
+        }
+        }
+        push @volsurface, $surface;
     }
+
     my $combined = {%{$volsurface[0]}, %{$volsurface[1]}};
     return $combined;
 }
@@ -145,7 +151,14 @@ sub run {
             };
             next;
         }
-        my $volsurface = $surfaces_from_file->{$symbol};
+        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $raw_volsurface = $surfaces_from_file->{$symbol};
+        my $volsurface = BOM::MarketData::VolSurface::Delta->new({
+           underlying    => $underlying,
+           recorded_date => $raw_volsurface->{recorded_date},
+           surface       => $raw_volsurface->{surface},
+         });
+
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
@@ -163,6 +176,28 @@ sub run {
     $self->SUPER::run();
     return 1;
 }
+
+sub _append_to_existing_surface {
+    my ($new_surface, $underlying_symbol) = @_;
+    my $underlying = BOM::Market::Underlying->new( $underlying_symbol);
+    my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
+            underlying => $underlying,
+            cutoff     => 'New York 10:00'
+        })->surface;
+
+    foreach my $term (keys %{$existing_surface}) {
+
+        my $tenor = $existing_surface->{$term}->{tenor};
+
+        if ($tenor ne 'ON' and $tenor ne '1W') {
+            $new_surface->{$tenor} = $existing_surface->{$term};
+        }
+    }
+
+    return $new_surface;
+
+}
+
 
 sub passes_additional_check {
     my ($self, $volsurface) = @_;

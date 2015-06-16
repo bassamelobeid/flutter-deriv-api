@@ -48,10 +48,6 @@
 ---
 AEX:
   asset: AEX
-  bbdl:
-    region: europe
-    symbols:
-    - AEX Index
   contracts: limited_equities
   commission_level: 1
   display_name: Dutch Index
@@ -87,10 +83,6 @@ AORD:
   symbol: AORD
 AS51:
   asset: AS51
-  bbdl:
-    region: asia
-    symbols:
-    - AS51 Index
   contracts: limited_ao_equities
   commission_level: 1
   display_name: Australian Index
@@ -109,9 +101,6 @@ AS51:
   symbol: AS51
 AUANZ:
   asset: AUANZ
-  bbdl:
-    symbols:
-    - ANZ AU Equity
   contracts: none
   commission_level: 3
   display_name: ANZ Banking Group Ltd
@@ -130,9 +119,6 @@ AUANZ:
   symbol: AUANZ
 AUBHP:
   asset: AUBHP
-  bbdl:
-    symbols:
-    - BHP AU Equity
   contracts: none
   commission_level: 3
   display_name: BHP Billiton Ltd
@@ -151,9 +137,6 @@ AUBHP:
   symbol: AUBHP
 AUCBA:
   asset: AUCBA
-  bbdl:
-    symbols:
-    - CBA AU Equity
   contracts: none
   commission_level: 3
   display_name: Commbank (Australia)
@@ -172,9 +155,6 @@ AUCBA:
   symbol: AUCBA
 AUNAB:
   asset: AUNAB
-  bbdl:
-    symbols:
-    - NAB AU Equity
   contracts: none
   commission_level: 3
   display_name: National Australia Bank Ltd
@@ -193,9 +173,6 @@ AUNAB:
   symbol: AUNAB
 AUWBC:
   asset: AUWBC
-  bbdl:
-    symbols:
-    - WBC AU Equity
   contracts: none
   commission_level: 3
   display_name: Westpac Banking Co.
@@ -214,9 +191,6 @@ AUWBC:
   symbol: AUWBC
 BBABI:
   asset: BBABI
-  bbdl:
-    symbols:
-    - ABI BB Equity
   commission_level: 3
   display_name: AB Inbev
   esig_symbol: ABI-EEB
@@ -234,9 +208,6 @@ BBABI:
   symbol: BBABI
 BBBELG:
   asset: BBBELG
-  bbdl:
-    symbols:
-    - BELG BB Equity
   commission_level: 3
   display_name: Belgacom
   esig_symbol: BELG-EEB
@@ -254,9 +225,6 @@ BBBELG:
   symbol: BBBELG
 BBGBLB:
   asset: BBGBLB
-  bbdl:
-    symbols:
-    - GBLB BB Equity
   commission_level: 3
   display_name: Groupe Bruxelles Lambert
   esig_symbol: GBLB-EEB
@@ -274,9 +242,6 @@ BBGBLB:
   symbol: BBGBLB
 BBKBC:
   asset: BBKBC
-  bbdl:
-    symbols:
-    - KBC BB Equity
   commission_level: 3
   display_name: KBC Groep
   esig_symbol: KBC-EEB
@@ -294,9 +259,6 @@ BBKBC:
   symbol: BBKBC
 BBUCB:
   asset: BBUCB
-  bbdl:
-    symbols:
-    - UCB BB Equity
   commission_level: 3
   display_name: UCB
   esig_symbol: UCB-EEB
@@ -314,10 +276,6 @@ BBUCB:
   symbol: BBUCB
 BFX:
   asset: BFX
-  bbdl:
-    region: europe
-    symbols:
-    - BEL20 Index
   contracts: limited_callput
   commission_level: 1
   display_name: Belgian Index
@@ -336,10 +294,6 @@ BFX:
   symbol: BFX
 BSESENSEX30:
   asset: BSESENSEX30
-  bbdl:
-    region: asia
-    symbols:
-    - SENSEX Index
   contracts: forward_and_daily
   commission_level: 2
   display_name: Bombay Index
@@ -358,9 +312,6 @@ BSESENSEX30:
   symbol: BSESENSEX30
 DEADS:
   asset: DEADS
-  bbdl:
-    symbols:
-    - ADS GY Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: ADIDAS AG
@@ -379,9 +330,6 @@ DEADS:
   symbol: DEADS
 DEALV:
   asset: DEALV
-  bbdl:
-    symbols:
-    - ALV GY Equity
   contracts: none
   commission_level: 3
   display_name: Allianz SE
@@ -400,9 +348,6 @@ DEALV:
   symbol: DEALV
 DEDAI:
   asset: DEDAI
-  bbdl:
-    symbols:
-    - DAI GY Equity
   contracts: none
   commission_level: 3
   display_name: Daimler AG
@@ -421,9 +366,6 @@ DEDAI:
   symbol: DEDAI
 DEDBK:
   asset: DEDBK
-  bbdl:
-    symbols:
-    - DBK GY Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: Deutsche Bank AG
@@ -442,9 +384,6 @@ DEDBK:
   symbol: DEDBK
 DELHA:
   asset: DELHA
-  bbdl:
-    symbols:
-    - LHA GY Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: Deutsche Lufthansa
@@ -463,10 +402,6 @@ DELHA:
   symbol: DELHA
 DJI:
   asset: DJI
-  bbdl:
-    region: us
-    symbols:
-    - INDU Index
   contracts: full_equities
   commission_level: 1
   display_name: Wall Street Index
@@ -485,9 +420,6 @@ DJI:
   symbol: DJI
 ESBBVA:
   asset: ESBBVA
-  bbdl:
-    symbols:
-    - BBVA SM Equity
   contracts: none
   commission_level: 3
   display_name: BBVA (Banco Bilbao)
@@ -506,9 +438,6 @@ ESBBVA:
   symbol: ESBBVA
 ESIBE:
   asset: ESIBE
-  bbdl:
-    symbols:
-    - IBE SM Equity
   contracts: none
   commission_level: 3
   display_name: Iberdrola SA
@@ -527,9 +456,6 @@ ESIBE:
   symbol: ESIBE
 ESITX:
   asset: ESITX
-  bbdl:
-    symbols:
-    - ITX SM Equity
   contracts: none
   commission_level: 3
   display_name: Inditex SA
@@ -548,9 +474,6 @@ ESITX:
   symbol: ESITX
 ESSAN:
   asset: ESSAN
-  bbdl:
-    symbols:
-    - SAN SM Equity
   contracts: none
   commission_level: 3
   display_name: Banco Santander SA
@@ -569,9 +492,6 @@ ESSAN:
   symbol: ESSAN
 ESTEF:
   asset: ESTEF
-  bbdl:
-    symbols:
-    - TEF SM Equity
   contracts: none
   commission_level: 3
   display_name: Telefonica SA
@@ -590,10 +510,6 @@ ESTEF:
   symbol: ESTEF
 FCHI:
   asset: FCHI
-  bbdl:
-    region: europe
-    symbols:
-    - CAC Index
   contracts: limited_equities
   commission_level: 1
   display_name: French Index
@@ -612,9 +528,6 @@ FCHI:
   symbol: FCHI
 FPACA:
   asset: FPACA
-  bbdl:
-    symbols:
-    - ACA FP Equity
   commission_level: 3
   display_name: Credit Agricole
   esig_symbol: ACA-EEB
@@ -632,9 +545,6 @@ FPACA:
   symbol: FPACA
 FPAI:
   asset: FPAI
-  bbdl:
-    symbols:
-    - AI FP Equity
   commission_level: 3
   display_name: Air Liquide
   esig_symbol: AI-EEB
@@ -652,9 +562,6 @@ FPAI:
   symbol: FPAI
 FPAIR:
   asset: FPAIR
-  bbdl:
-    symbols:
-    - AIR FP Equity
   commission_level: 3
   display_name: Airbus Group
   esig_symbol: AIR-EEB
@@ -672,9 +579,6 @@ FPAIR:
   symbol: FPAIR
 FPBN:
   asset: FPBN
-  bbdl:
-    symbols:
-    - BN FP Equity
   commission_level: 3
   display_name: Danone
   esig_symbol: BN-EEB
@@ -692,9 +596,6 @@ FPBN:
   symbol: FPBN
 FPBNP:
   asset: FPBNP
-  bbdl:
-    symbols:
-    - BNP FP Equity
   commission_level: 3
   display_name: BNP Paribas
   esig_symbol: BNP-EEB
@@ -712,9 +613,6 @@ FPBNP:
   symbol: FPBNP
 FPCA:
   asset: FPCA
-  bbdl:
-    symbols:
-    - CA FP Equity
   commission_level: 3
   display_name: Carrefour
   esig_symbol: CA-EEB
@@ -732,9 +630,6 @@ FPCA:
   symbol: FPCA
 FPCS:
   asset: FPCS
-  bbdl:
-    symbols:
-    - CS FP Equity
   commission_level: 3
   display_name: AXA
   esig_symbol: CS-EEB
@@ -752,9 +647,6 @@ FPCS:
   symbol: FPCS
 FPDG:
   asset: FPDG
-  bbdl:
-    symbols:
-    - DG FP Equity
   commission_level: 3
   display_name: Vinci
   esig_symbol: DG-EEB
@@ -772,9 +664,6 @@ FPDG:
   symbol: FPDG
 FPEDF:
   asset: FPEDF
-  bbdl:
-    symbols:
-    - EDF FP Equity
   commission_level: 3
   display_name: Electricite de France
   esig_symbol: EDF-EEB
@@ -792,9 +681,6 @@ FPEDF:
   symbol: FPEDF
 FPEI:
   asset: FPEI
-  bbdl:
-    symbols:
-    - EI FP Equity
   commission_level: 3
   display_name: Essilor International
   esig_symbol: EI-EEB
@@ -812,9 +698,6 @@ FPEI:
   symbol: FPEI
 FPFP:
   asset: FPFP
-  bbdl:
-    symbols:
-    - FP FP Equity
   commission_level: 3
   display_name: TOTAL
   esig_symbol: FP-EEB
@@ -832,9 +715,6 @@ FPFP:
   symbol: FPFP
 FPGLE:
   asset: FPGLE
-  bbdl:
-    symbols:
-    - GLE FP Equity
   commission_level: 3
   display_name: Societe Generale
   esig_symbol: GLE-EEB
@@ -852,9 +732,6 @@ FPGLE:
   symbol: FPGLE
 FPGSZ:
   asset: FPGSZ
-  bbdl:
-    symbols:
-    - GSZ FP Equity
   commission_level: 3
   display_name: GDF Suez
   esig_symbol: GSZ-EEB
@@ -872,9 +749,6 @@ FPGSZ:
   symbol: FPGSZ
 FPKER:
   asset: FPKER
-  bbdl:
-    symbols:
-    - KER FP Equity
   commission_level: 3
   display_name: Kering
   esig_symbol: KER-EEB
@@ -892,9 +766,6 @@ FPKER:
   symbol: FPKER
 FPLG:
   asset: FPLG
-  bbdl:
-    symbols:
-    - LG FP Equity
   commission_level: 3
   display_name: Lafarge
   esig_symbol: LG-EEB
@@ -912,9 +783,6 @@ FPLG:
   symbol: FPLG
 FPMC:
   asset: FPMC
-  bbdl:
-    symbols:
-    - MC FP Equity
   commission_level: 3
   display_name: Moet Hennessy Louis Vuitton
   esig_symbol: MC-EEB
@@ -932,9 +800,6 @@ FPMC:
   symbol: FPMC
 FPOR:
   asset: FPOR
-  bbdl:
-    symbols:
-    - OR FP Equity
   commission_level: 3
   display_name: L'Oreal
   esig_symbol: OR-EEB
@@ -952,9 +817,6 @@ FPOR:
   symbol: FPOR
 FPORA:
   asset: FPORA
-  bbdl:
-    symbols:
-    - ORA FP Equity
   commission_level: 3
   display_name: Orange
   esig_symbol: ORA-EEB
@@ -972,9 +834,6 @@ FPORA:
   symbol: FPORA
 FPRI:
   asset: FPRI
-  bbdl:
-    symbols:
-    - RI FP Equity
   commission_level: 3
   display_name: Pernod Ricard
   esig_symbol: RI-EEB
@@ -992,9 +851,6 @@ FPRI:
   symbol: FPRI
 FPRNO:
   asset: FPRNO
-  bbdl:
-    symbols:
-    - RNO FP Equity
   commission_level: 3
   display_name: Renault
   esig_symbol: RNO-EEB
@@ -1012,9 +868,6 @@ FPRNO:
   symbol: FPRNO
 FPSAF:
   asset: FPSAF
-  bbdl:
-    symbols:
-    - SAF FP Equity
   commission_level: 3
   display_name: Safran
   esig_symbol: SAF-EEB
@@ -1032,9 +885,6 @@ FPSAF:
   symbol: FPSAF
 FPSAN:
   asset: FPSAN
-  bbdl:
-    symbols:
-    - SAN FP Equity
   commission_level: 3
   display_name: SANOFI
   esig_symbol: SAN-EEB
@@ -1052,9 +902,6 @@ FPSAN:
   symbol: FPSAN
 FPSGO:
   asset: FPSGO
-  bbdl:
-    symbols:
-    - SGO FP Equity
   commission_level: 3
   display_name: Cie de Saint-Gobain
   esig_symbol: SGO-EEB
@@ -1072,9 +919,6 @@ FPSGO:
   symbol: FPSGO
 FPSU:
   asset: FPSU
-  bbdl:
-    symbols:
-    - SU FP Equity
   commission_level: 3
   display_name: Schneider Electric
   esig_symbol: SU-EEB
@@ -1092,9 +936,6 @@ FPSU:
   symbol: FPSU
 FPVIV:
   asset: FPVIV
-  bbdl:
-    symbols:
-    - VIV FP Equity
   commission_level: 3
   display_name: Vivendi
   esig_symbol: VIV-EEB
@@ -1129,10 +970,6 @@ FTAW01:
   symbol: FTAW01
 FTSE:
   asset: FTSE
-  bbdl:
-    region: europe
-    symbols:
-    - UKX Index
   contracts: full_equities
   commission_level: 1
   display_name: UK Index
@@ -1151,10 +988,6 @@ FTSE:
   symbol: FTSE
 FTSEMIB:
   asset: FTSEMIB
-  bbdl:
-    region: europe
-    symbols:
-    - FTSEMIB Index
   contracts: none
   commission_level: 1
   display_name: Italian Index
@@ -1173,9 +1006,6 @@ FTSEMIB:
   symbol: FTSEMIB
 FUTGAEX:
   asset: FUTGAEX
-  bbdl:
-    symbols:
-    - EO1 Index
   commission_level: 3
   display_name: AEX Generic Future
   esig_symbol: AEX 1!-EEI
@@ -1193,9 +1023,6 @@ FUTGAEX:
   symbol: FUTGAEX
 FUTGAS51:
   asset: FUTGAS51
-  bbdl:
-    symbols:
-    - XP1 Index
   commission_level: 3
   display_name: AS51 Generic Future
   esig_symbol: APS 1!-SFE
@@ -1213,9 +1040,6 @@ FUTGAS51:
   symbol: FUTGAS51
 FUTGBFX:
   asset: FUTGBFX
-  bbdl:
-    symbols:
-    - XP1 Index
   commission_level: 3
   display_name: BFX Generic Future
   esig_symbol: BXF 1!-EEI
@@ -1233,9 +1057,6 @@ FUTGBFX:
   symbol: FUTGBFX
 FUTGBSESENSEX30:
   asset: FUTGBSESENSEX30
-  bbdl:
-    symbols:
-    - SHY1 Index
   commission_level: 3
   display_name: BSESENX30 Generic Future
   esig_symbol: BSX 1!-BOF
@@ -1253,9 +1074,6 @@ FUTGBSESENSEX30:
   symbol: FUTGBSESENSEX30
 FUTGDJI:
   asset: FUTGDJI
-  bbdl:
-    symbols:
-    - DJ1 Index
   commission_level: 3
   display_name: DJI Generic Future
   esig_symbol: YM 1!
@@ -1273,9 +1091,6 @@ FUTGDJI:
   symbol: FUTGDJI
 FUTGFCHI:
   asset: FUTGFCHI
-  bbdl:
-    symbols:
-    - CF1 Index
   commission_level: 3
   display_name: FCHI Generic Future
   esig_symbol: FCE 1!-EEI
@@ -1293,9 +1108,6 @@ FUTGFCHI:
   symbol: FUTGFCHI
 FUTGFTSE:
   asset: FUTGFTSE
-  bbdl:
-    symbols:
-    - Z1 Index
   commission_level: 3
   display_name: FTSE Generic Future
   esig_symbol: Z 1!-ICL
@@ -1313,9 +1125,6 @@ FUTGFTSE:
   symbol: FUTGFTSE
 FUTGFTSEMIB:
   asset: FUTGFTSEMIB
-  bbdl:
-    symbols:
-    - ST1 Index
   commission_level: 3
   display_name: FTSEMIB Generic Future
   esig_symbol: FTMIB 1!-IDM
@@ -1333,9 +1142,6 @@ FUTGFTSEMIB:
   symbol: FUTGFTSEMIB
 FUTGGDAXI:
   asset: FUTGGDAXI
-  bbdl:
-    symbols:
-    - GX1 Index
   commission_level: 3
   display_name: GDAXI Generic Future
   esig_symbol: AX 1!-EUX
@@ -1353,9 +1159,6 @@ FUTGGDAXI:
   symbol: FUTGGDAXI
 FUTGHSI:
   asset: FUTGHSI
-  bbdl:
-    symbols:
-    - HI1 Index
   commission_level: 3
   display_name: HSI Generic Future
   esig_symbol: HSI 1!-HKF
@@ -1373,9 +1176,6 @@ FUTGHSI:
   symbol: FUTGHSI
 FUTGIBEX35:
   asset: FUTGIBEX35
-  bbdl:
-    symbols:
-    - IB1 Index
   commission_level: 3
   display_name: IBEX35 Generic Future
   esig_symbol: IBX 1!-MRV
@@ -1393,9 +1193,6 @@ FUTGIBEX35:
   symbol: FUTGIBEX35
 FUTGIBOV:
   asset: FUTGIBOV
-  bbdl:
-    symbols:
-    - BZ1 Index
   commission_level: 3
   display_name: IBOV Generic Future
   esig_symbol: IND 1!-BMF
@@ -1413,9 +1210,6 @@ FUTGIBOV:
   symbol: FUTGIBOV
 FUTGKOSPI2:
   asset: FUTGKOSPI2
-  bbdl:
-    symbols:
-    - KM1 Index
   commission_level: 3
   display_name: KOSPI2 Generic Future
   esig_symbol: K21 1!-KSP
@@ -1433,9 +1227,6 @@ FUTGKOSPI2:
   symbol: FUTGKOSPI2
 FUTGMDJI:
   asset: FUTGMDJI
-  bbdl:
-    symbols:
-    - DM1 Index
   commission_level: 3
   display_name: Emini DJI Generic Future
   exchange_name: CME
@@ -1452,9 +1243,6 @@ FUTGMDJI:
   symbol: FUTGMDJI
 FUTGMN225Y:
   asset: FUTGMN225Y
-  bbdl:
-    symbols:
-    - YME1 Index
   commission_level: 3
   display_name: Emini N225 Yen Dominated Generic Future
   exchange_name: CME
@@ -1471,9 +1259,6 @@ FUTGMN225Y:
   symbol: FUTGMN225Y
 FUTGMNDX:
   asset: FUTGMNDX
-  bbdl:
-    symbols:
-    - NQ1 Index
   commission_level: 3
   display_name: Emini Nasdaq 100 Generic Future
   exchange_name: CME
@@ -1490,9 +1275,6 @@ FUTGMNDX:
   symbol: FUTGMNDX
 FUTGMSP400:
   asset: FUTGMSP400
-  bbdl:
-    symbols:
-    - FA1 Index
   commission_level: 3
   display_name: Emini S&P MidCap 400 Generic Future
   exchange_name: CME
@@ -1509,9 +1291,6 @@ FUTGMSP400:
   symbol: FUTGMSP400
 FUTGMSPC:
   asset: FUTGMSPC
-  bbdl:
-    symbols:
-    - ES1 Index
   commission_level: 3
   display_name: Emini SPC Generic Future
   exchange_name: CME
@@ -1528,9 +1307,6 @@ FUTGMSPC:
   symbol: FUTGMSPC
 FUTGN225:
   asset: FUTGN225
-  bbdl:
-    symbols:
-    - NK1 Index
   commission_level: 3
   display_name: N225 Generic Future
   esig_symbol: NI225 1!-OSM
@@ -1548,9 +1324,6 @@ FUTGN225:
   symbol: FUTGN225
 FUTGN225U:
   asset: FUTGN225U
-  bbdl:
-    symbols:
-    - NX1 Index
   commission_level: 3
   display_name: N225 USD Dominated Generic Future
   exchange_name: CME
@@ -1567,9 +1340,6 @@ FUTGN225U:
   symbol: FUTGN225U
 FUTGN225Y:
   asset: FUTGN225Y
-  bbdl:
-    symbols:
-    - NH1 Index
   commission_level: 3
   display_name: N225 Yen Dominated Generic Future
   exchange_name: CME
@@ -1586,9 +1356,6 @@ FUTGN225Y:
   symbol: FUTGN225Y
 FUTGNDX:
   asset: FUTGNDX
-  bbdl:
-    symbols:
-    - ND1 Index
   commission_level: 3
   display_name: Nasdaq 100 Generic Future
   exchange_name: CME
@@ -1605,9 +1372,6 @@ FUTGNDX:
   symbol: FUTGNDX
 FUTGPSI20:
   asset: FUTGPSI20
-  bbdl:
-    symbols:
-    - PP1 Index
   commission_level: 3
   display_name: PSI Generic Future
   esig_symbol: PSI 1!-EEI
@@ -1628,9 +1392,6 @@ FUTGRTSI:
     delta_premium_adjusted: 0
     delta_style: spot_delta
   asset: FUTGRTSI
-  bbdl:
-    symbols:
-    - VE1 Index
   commission_level: 3
   display_name: RTSI Generic Future
   esig_symbol: RI 1!-MOF
@@ -1646,9 +1407,6 @@ FUTGRTSI:
   symbol: FUTGRTSI
 FUTGSP400:
   asset: FUTGSP400
-  bbdl:
-    symbols:
-    - MD1 Index
   commission_level: 3
   display_name: S&P MidCap 400 Generic Future
   exchange_name: CME
@@ -1665,9 +1423,6 @@ FUTGSP400:
   symbol: FUTGSP400
 FUTGSPC:
   asset: FUTGSPC
-  bbdl:
-    symbols:
-    - SP1 Index
   commission_level: 3
   display_name: Emini SPC Generic Future
   esig_symbol: SP 1!
@@ -1685,9 +1440,6 @@ FUTGSPC:
   symbol: FUTGSPC
 FUTGSSMI:
   asset: FUTGSSMI
-  bbdl:
-    symbols:
-    - SM1 Index
   commission_level: 3
   display_name: SSMI Generic Future
   esig_symbol: SM 1!-EUX
@@ -1705,9 +1457,6 @@ FUTGSSMI:
   symbol: FUTGSSMI
 FUTGSTI:
   asset: FUTGSTI
-  bbdl:
-    symbols:
-    - SD1 Index
   commission_level: 3
   display_name: STI Generic Future
   esig_symbol: ST 1!-SGX
@@ -1725,9 +1474,6 @@ FUTGSTI:
   symbol: FUTGSTI
 FUTGSX5E:
   asset: FUTGSX5E
-  bbdl:
-    symbols:
-    - VG1 Index
   commission_level: 3
   display_name: STOXX 50 Generic Future
   esig_symbol: ET 1!-EUX
@@ -1745,10 +1491,6 @@ FUTGSX5E:
   symbol: FUTGSX5E
 GDAXI:
   asset: GDAXI
-  bbdl:
-    region: europe
-    symbols:
-    - DAX Index
   contracts: limited_equities
   commission_level: 1
   display_name: German Index
@@ -1767,10 +1509,6 @@ GDAXI:
   symbol: GDAXI
 HSCEI:
   asset: HSCEI
-  bbdl:
-    region: asia
-    symbols:
-    - HSCEI Index
   contracts: none
   commission_level: 1
   display_name: Hang Seng China
@@ -1788,10 +1526,6 @@ HSCEI:
   symbol: HSCEI
 HSI:
   asset: HSI
-  bbdl:
-    region: asia
-    symbols:
-    - HSI Index
   contracts: limited_ao_equities
   commission_level: 1
   display_name: Hong Kong Index
@@ -1810,10 +1544,6 @@ HSI:
   symbol: HSI
 IBEX35:
   asset: IBEX35
-  bbdl:
-    region: europe
-    symbols:
-    - IBEX Index
   contracts: forward_and_daily
   commission_level: 1
   display_name: Spanish Index
@@ -1831,10 +1561,6 @@ IBEX35:
   symbol: IBEX35
 IBOV:
   asset: IBOV
-  bbdl:
-    region: us
-    symbols:
-    - IBOV Index
   contracts: forward_and_daily
   commission_level: 3
   display_name: Brazilian Index
@@ -1853,9 +1579,6 @@ IBOV:
   symbol: IBOV
 INHDFC:
   asset: INHDFC
-  bbdl:
-    symbols:
-    - HDFCB IN Equity
   contracts: none
   commission_level: 3
   display_name: HDFC Bank Ltd
@@ -1874,9 +1597,6 @@ INHDFC:
   symbol: INHDFC
 INICICIBC:
   asset: INICICIBC
-  bbdl:
-    symbols:
-    - ICICIBC IN Equity
   contracts: none
   commission_level: 3
   display_name: ICICI Bank Ltd
@@ -1895,9 +1615,6 @@ INICICIBC:
   symbol: INICICIBC
 ININFO:
   asset: ININFO
-  bbdl:
-    symbols:
-    - INFO IN Equity
   contracts: none
   commission_level: 3
   display_name: Infosys Ltd
@@ -1916,9 +1633,6 @@ ININFO:
   symbol: ININFO
 INITC:
   asset: INITC
-  bbdl:
-    symbols:
-    - ITC IN Equity
   contracts: none
   commission_level: 3
   display_name: ITC Ltd
@@ -1937,9 +1651,6 @@ INITC:
   symbol: INITC
 INRIL:
   asset: INRIL
-  bbdl:
-    symbols:
-    - RIL IN Equity
   contracts: none
   commission_level: 3
   display_name: Reliance Industries Ltd
@@ -1958,10 +1669,6 @@ INRIL:
   symbol: INRIL
 ISEQ:
   asset: ISEQ
-  bbdl:
-    region: europe
-    symbols:
-    - ISEQ Index
   contracts: limited_callput
   commission_level: 1
   display_name: Irish Index
@@ -1981,9 +1688,6 @@ ISEQ:
   volatility_surface_type: flat
 ITAGS:
   asset: ITAGS
-  bbdl:
-    symbols:
-    - G IM Equity
   contracts: none
   commission_level: 3
   display_name: Assicurazioni Generali SpA
@@ -2002,9 +1706,6 @@ ITAGS:
   symbol: ITAGS
 ITENEL:
   asset: ITENEL
-  bbdl:
-    symbols:
-    - ENEL IM Equity
   contracts: none
   commission_level: 3
   display_name: ENEL
@@ -2023,9 +1724,6 @@ ITENEL:
   symbol: ITENEL
 ITENI:
   asset: ITENI
-  bbdl:
-    symbols:
-    - ENI IM Equity
   contracts: none
   commission_level: 3
   display_name: ENI SpA
@@ -2044,9 +1742,6 @@ ITENI:
   symbol: ITENI
 ITFIAT:
   asset: ITFIAT
-  bbdl:
-    symbols:
-    - F IM Equity
   contracts: none
   commission_level: 3
   display_name: Fiat
@@ -2065,9 +1760,6 @@ ITFIAT:
   symbol: ITFIAT
 ITISP:
   asset: ITISP
-  bbdl:
-    symbols:
-    - ISP IM Equity
   contracts: none
   commission_level: 3
   display_name: Intesa Sanpaolo
@@ -2086,10 +1778,6 @@ ITISP:
   symbol: ITISP
 IXIC:
   asset: IXIC
-  bbdl:
-    region: us
-    symbols:
-    - CCMP Index
   contracts: none
   commission_level: 1
   display_name: US Tech Composite Index
@@ -2107,10 +1795,6 @@ IXIC:
   symbol: IXIC
 JCI:
   asset: JCI
-  bbdl:
-    region: asia
-    symbols:
-    - JCI Index
   contracts: none
   commission_level: 1
   display_name: Jakarta Index
@@ -2128,9 +1812,6 @@ JCI:
   symbol: JCI
 JPHM:
   asset: JPHM
-  bbdl:
-    symbols:
-    - 7267 JT Equity
   contracts: none
   commission_level: 3
   display_name: Honda Motor Co. Ltd
@@ -2150,9 +1831,6 @@ JPHM:
   divisor: 10
 JPHT:
   asset: JPHT
-  bbdl:
-    symbols:
-    - 6501 JT Equity
   contracts: none
   commission_level: 3
   display_name: Hitachi Ltd
@@ -2172,9 +1850,6 @@ JPHT:
   divisor: 10
 JPSB:
   asset: JPSB
-  bbdl:
-    symbols:
-    - 9984 JT Equity
   contracts: none
   commission_level: 3
   display_name: SoftBank Co.
@@ -2194,9 +1869,6 @@ JPSB:
   divisor: 10
 JPTE:
   asset: JPTE
-  bbdl:
-    symbols:
-    - 9501 JT Equity
   contracts: none
   commission_level: 3
   display_name: Tokyo Electric Power Co. Inc
@@ -2216,9 +1888,6 @@ JPTE:
   divisor: 10
 JPTM:
   asset: JPTM
-  bbdl:
-    symbols:
-    - 7203 JT Equity
   contracts: none
   commission_level: 3
   display_name: Toyota Motor
@@ -2238,10 +1907,6 @@ JPTM:
   divisor: 10
 KOSPI2:
   asset: KOSPI2
-  bbdl:
-    region: asia
-    symbols:
-    - KOSPI2 Index
   contracts: forward_and_daily
   commission_level: 1
   display_name: Korean Index
@@ -2259,9 +1924,6 @@ KOSPI2:
   symbol: KOSPI2
 KRHY:
   asset: KRHY
-  bbdl:
-    symbols:
-    - 005380 KS Equity
   contracts: none
   commission_level: 3
   display_name: Hyundai Motor Co.
@@ -2281,9 +1943,6 @@ KRHY:
   divisor: 1000
 KRPOSCO:
   asset: KRPOSCO
-  bbdl:
-    symbols:
-    - 005490 KS Equity
   contracts: none
   commission_level: 3
   display_name: POSCO
@@ -2303,9 +1962,6 @@ KRPOSCO:
   divisor: 1000
 KRSFG:
   asset: KRSFG
-  bbdl:
-    symbols:
-    - 055550 KS Equity
   contracts: none
   commission_level: 3
   display_name: Shinhan Financial
@@ -2325,9 +1981,6 @@ KRSFG:
   divisor: 1000
 KRSKH:
   asset: KRSKH
-  bbdl:
-    symbols:
-    - 000660 KS Equity
   contracts: none
   commission_level: 3
   display_name: SK Hynix Inc.
@@ -2347,9 +2000,6 @@ KRSKH:
   divisor: 1000
 KRSS:
   asset: KRSS
-  bbdl:
-    symbols:
-    - 005930 KS Equity
   contracts: none
   commission_level: 3
   display_name: Samsung Electronics
@@ -2386,10 +2036,6 @@ MIB30:
   symbol: MIB30
 N100:
   asset: N100
-  bbdl:
-    region: europe
-    symbols:
-    - N100 Index
   contracts: none
   commission_level: 1
   display_name: Euro 100 Index
@@ -2408,10 +2054,6 @@ N100:
   symbol: N100
 N150:
   asset: N150
-  bbdl:
-    region: europe
-    symbols:
-    - N150 Index
   contracts: none
   commission_level: 1
   display_name: Euro 150 Index
@@ -2430,10 +2072,6 @@ N150:
   symbol: N150
 N225:
   asset: N225
-  bbdl:
-    region: asia
-    symbols:
-    - NKY Index
   commission_level: 1
   display_name: Japanese Index
   esig_symbol: $N225-NKI
@@ -2451,9 +2089,6 @@ N225:
   symbol: N225
 NAASML:
   asset: NAASML
-  bbdl:
-    symbols:
-    - ASML NA Equity
   commission_level: 3
   display_name: ASML Holding
   esig_symbol: ASML-EEB
@@ -2471,9 +2106,6 @@ NAASML:
   symbol: NAASML
 NAHEIA:
   asset: NAHEIA
-  bbdl:
-    symbols:
-    - HEIA NA Equity
   commission_level: 3
   display_name: Heineken
   esig_symbol: HEIA-EEB
@@ -2491,9 +2123,6 @@ NAHEIA:
   symbol: NAHEIA
 NAINGA:
   asset: NAINGA
-  bbdl:
-    symbols:
-    - INGA NA Equity
   commission_level: 3
   display_name: ING
   esig_symbol: INGA-EEB
@@ -2511,9 +2140,6 @@ NAINGA:
   symbol: NAINGA
 NARDSA:
   asset: NARDSA
-  bbdl:
-    symbols:
-    - RDSA NA Equity
   commission_level: 3
   display_name: Royal Dutch Shell
   esig_symbol: RDSA-EEB
@@ -2531,9 +2157,6 @@ NARDSA:
   symbol: NARDSA
 NAUNA:
   asset: NAUNA
-  bbdl:
-    symbols:
-    - UNA NA Equity
   commission_level: 3
   display_name: Unilever
   esig_symbol: UNA-EEB
@@ -2551,10 +2174,6 @@ NAUNA:
   symbol: NAUNA
 NDX:
   asset: NDX
-  bbdl:
-    region: us
-    symbols:
-    - NDX Index
   contracts: none
   commission_level: 1
   display_name: US Tech 100 Index
@@ -2572,10 +2191,6 @@ NDX:
   symbol: NDX
 NIFTY:
   asset: NIFTY
-  bbdl:
-    region: asia
-    symbols:
-    - NIFTY Index
   contracts: none
   commission_level: 2
   display_name: Indian 50 Index
@@ -2593,9 +2208,6 @@ NIFTY:
   symbol: NIFTY
 NODNB:
   asset: NODNB
-  bbdl:
-    symbols:
-    - DNB NO Equity
   contracts: none
   commission_level: 3
   display_name: DNB
@@ -2614,9 +2226,6 @@ NODNB:
   symbol: NODNB
 NOSDRL:
   asset: NOSDRL
-  bbdl:
-    symbols:
-    - SDRL NO Equity
   contracts: none
   commission_level: 3
   display_name: Seadrill
@@ -2635,9 +2244,6 @@ NOSDRL:
   symbol: NOSDRL
 NOSTL:
   asset: NOSTL
-  bbdl:
-    symbols:
-    - STL NO Equity
   contracts: none
   commission_level: 3
   display_name: Statoil
@@ -2656,9 +2262,6 @@ NOSTL:
   symbol: NOSTL
 NOTEL:
   asset: NOTEL
-  bbdl:
-    symbols:
-    - TEL NO Equity
   contracts: none
   commission_level: 3
   display_name: Telenor
@@ -2677,9 +2280,6 @@ NOTEL:
   symbol: NOTEL
 NOYAR:
   asset: NOYAR
-  bbdl:
-    symbols:
-    - YAR NO Equity
   contracts: none
   commission_level: 3
   display_name: Yara International
@@ -2698,10 +2298,6 @@ NOYAR:
   symbol: NOYAR
 NZ50:
   asset: NZ50
-  bbdl:
-    region: asia
-    symbols:
-    - NZSE50FG Index
   contracts: none
   commission_level: 1
   display_name: New Zealand Index
@@ -2719,10 +2315,6 @@ NZ50:
   symbol: NZ50
 OBX:
   asset: OBX
-  bbdl:
-    region: europe
-    symbols:
-    - OBX Index
   contracts: forward_and_daily
   commission_level: 3
   display_name: Norwegian Index
@@ -2741,9 +2333,6 @@ OBX:
   symbol: OBX
 OEX:
   asset: OEX
-  bbdl:
-    symbols:
-    - OEX Index
   contracts: none
   commission_level: 1
   display_name: US S&P 100
@@ -2761,10 +2350,6 @@ OEX:
   symbol: OEX
 OMXS30:
   asset: OMXS30
-  bbdl:
-    region: europe
-    symbols:
-    - OMX Index
   contracts: none
   commission_level: 1
   display_name: Swedish Index
@@ -2782,10 +2367,6 @@ OMXS30:
   symbol: OMXS30
 PSI20:
   asset: PSI20
-  bbdl:
-    region: europe
-    symbols:
-    - PSI20 Index
   contracts: none
   commission_level: 2
   display_name: Portuguese Index
@@ -2948,10 +2529,6 @@ RDYIN:
   symbol: RDYIN
 RTSI:
   asset: RTSI
-  bbdl:
-    region: europe
-    symbols:
-    - RTSI$ Index
   contracts: none
   display_name: Russian Regular Index
   exchange_name: RTS
@@ -3036,10 +2613,6 @@ R_75:
   symbol: R_75
 SGES:
   asset: SGES
-  bbdl:
-    region: sector
-    symbols:
-    - SGES Index
   commission_level: 3
   display_name: Global Energy Index
   exchange_name: SP_GLOBAL
@@ -3056,10 +2629,6 @@ SGES:
   symbol: SGES
 SGFS:
   asset: SGFS
-  bbdl:
-    region: sector
-    symbols:
-    - SGFS Index
   commission_level: 3
   display_name: Global Financial Index
   exchange_name: SP_GLOBAL
@@ -3076,10 +2645,6 @@ SGFS:
   symbol: SGFS
 SGH:
   asset: SGH
-  bbdl:
-    region: sector
-    symbols:
-    - SGH Index
   commission_level: 3
   display_name: Global Health Care Index
   exchange_name: SP_GLOBAL
@@ -3096,10 +2661,6 @@ SGH:
   symbol: SGH
 SGI:
   asset: SGI
-  bbdl:
-    region: sector
-    symbols:
-    - SGI Index
   commission_level: 3
   display_name: Global Info Tech Index
   exchange_name: SP_GLOBAL
@@ -3116,10 +2677,6 @@ SGI:
   symbol: SGI
 SGM:
   asset: SGM
-  bbdl:
-    region: sector
-    symbols:
-    - SGM Index
   commission_level: 3
   display_name: Global Materials Index
   exchange_name: SP_GLOBAL
@@ -3136,10 +2693,6 @@ SGM:
   symbol: SGM
 SGN:
   asset: SGN
-  bbdl:
-    region: sector
-    symbols:
-    - SGN Index
   commission_level: 3
   display_name: Global Industrial Index
   exchange_name: SP_GLOBAL
@@ -3156,10 +2709,6 @@ SGN:
   symbol: SGN
 SGT:
   asset: SGT
-  bbdl:
-    region: sector
-    symbols:
-    - SGT Index
   commission_level: 3
   display_name: Global Telecom Srv Index
   exchange_name: SP_GLOBAL
@@ -3176,10 +2725,6 @@ SGT:
   symbol: SGT
 SGU:
   asset: SGU
-  bbdl:
-    region: sector
-    symbols:
-    - SGU Index
   commission_level: 3
   display_name: Global Utilities Index
   exchange_name: SP_GLOBAL
@@ -3196,10 +2741,6 @@ SGU:
   symbol: SGU
 SPBMGUU:
   asset: SPBMGUU
-  bbdl:
-    region: sector
-    symbols:
-    - SPBMGUU Index
   commission_level: 3
   display_name: Global Property Index
   exchange_name: SP_GLOBAL
@@ -3216,10 +2757,6 @@ SPBMGUU:
   symbol: SPBMGUU
 SPC:
   asset: SPC
-  bbdl:
-    region: us
-    symbols:
-    - SPX Index
   commission_level: 1
   display_name: US Index
   exchange_name: NYSE_SPC
@@ -3236,10 +2773,6 @@ SPC:
   symbol: SPC
 SPGSAM:
   asset: SPGSAM
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSAM Index
   commission_level: 3
   display_name: Metals Index
   exchange_name: SP_GSCI
@@ -3256,10 +2789,6 @@ SPGSAM:
   symbol: SPGSAM
 SPGSBF:
   asset: SPGSBF
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSBF Index
   commission_level: 3
   display_name: Biofuel Index
   exchange_name: SP_GSCI
@@ -3276,10 +2805,6 @@ SPGSBF:
   symbol: SPGSBF
 SPGSBO:
   asset: SPGSBO
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSBO Index
   commission_level: 3
   display_name: Bean Oil Index
   exchange_name: SP_GSCI
@@ -3296,10 +2821,6 @@ SPGSBO:
   symbol: SPGSBO
 SPGSBR:
   asset: SPGSBR
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSBR Index
   commission_level: 3
   display_name: Brent Crude Index
   exchange_name: SP_GSCI
@@ -3316,10 +2837,6 @@ SPGSBR:
   symbol: SPGSBR
 SPGSCC:
   asset: SPGSCC
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSCC Index
   commission_level: 3
   display_name: Cocoa Index
   exchange_name: SP_GSCI
@@ -3336,10 +2853,6 @@ SPGSCC:
   symbol: SPGSCC
 SPGSCN:
   asset: SPGSCN
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSCN Index
   commission_level: 3
   display_name: Corn Index
   exchange_name: SP_GSCI
@@ -3356,10 +2869,6 @@ SPGSCN:
   symbol: SPGSCN
 SPGSCR:
   asset: SPGSCR
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSCR Index
   commission_level: 3
   display_name: Crude Index
   exchange_name: SP_GSCI
@@ -3376,10 +2885,6 @@ SPGSCR:
   symbol: SPGSCR
 SPGSCT:
   asset: SPGSCT
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSCT Index
   commission_level: 3
   display_name: Cotton Index
   exchange_name: SP_GSCI
@@ -3396,10 +2901,6 @@ SPGSCT:
   symbol: SPGSCT
 SPGSEN:
   asset: SPGSEN
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSEM Index
   commission_level: 3
   display_name: Energy & Metals Index
   exchange_name: SP_GSCI
@@ -3416,10 +2917,6 @@ SPGSEN:
   symbol: SPGSEN
 SPGSGO:
   asset: SPGSGO
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSGO Index
   commission_level: 3
   display_name: Gasoil Index
   exchange_name: SP_GSCI
@@ -3436,10 +2933,6 @@ SPGSGO:
   symbol: SPGSGO
 SPGSGR:
   asset: SPGSGR
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSGR Index
   commission_level: 3
   display_name: Grains Index
   exchange_name: SP_GSCI
@@ -3456,10 +2949,6 @@ SPGSGR:
   symbol: SPGSGR
 SPGSHO:
   asset: SPGSHO
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSHO Index
   commission_level: 3
   display_name: Heating Oil Index
   exchange_name: SP_GSCI
@@ -3476,10 +2965,6 @@ SPGSHO:
   symbol: SPGSHO
 SPGSIC:
   asset: SPGSIC
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSIC Index
   commission_level: 3
   display_name: Copper Index
   exchange_name: SP_GSCI
@@ -3496,10 +2981,6 @@ SPGSIC:
   symbol: SPGSIC
 SPGSIK:
   asset: SPGSIK
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSIK Index
   commission_level: 3
   display_name: Nickel Index
   exchange_name: SP_GSCI
@@ -3516,10 +2997,6 @@ SPGSIK:
   symbol: SPGSIK
 SPGSIL:
   asset: SPGSIL
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSIL Index
   commission_level: 3
   display_name: Lead Index
   exchange_name: SP_GSCI
@@ -3536,10 +3013,6 @@ SPGSIL:
   symbol: SPGSIL
 SPGSIZ:
   asset: SPGSIZ
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSIZ Index
   commission_level: 3
   display_name: Zinc Index
   exchange_name: SP_GSCI
@@ -3556,10 +3029,6 @@ SPGSIZ:
   symbol: SPGSIZ
 SPGSKC:
   asset: SPGSKC
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSKC Index
   commission_level: 3
   display_name: Coffee Index
   exchange_name: SP_GSCI
@@ -3576,10 +3045,6 @@ SPGSKC:
   symbol: SPGSKC
 SPGSKW:
   asset: SPGSKW
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSKW Index
   commission_level: 3
   display_name: Kansas Wheat Index
   exchange_name: SP_GSCI
@@ -3596,10 +3061,6 @@ SPGSKW:
   symbol: SPGSKW
 SPGSNG:
   asset: SPGSNG
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSNG Index
   commission_level: 1
   display_name: Natural Gas Index
   exchange_name: SP_GSCI
@@ -3616,10 +3077,6 @@ SPGSNG:
   symbol: SPGSNG
 SPGSPT:
   asset: SPGSPT
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSPT Index
   commission_level: 3
   display_name: Petroleum Index
   exchange_name: SP_GSCI
@@ -3636,10 +3093,6 @@ SPGSPT:
   symbol: SPGSPT
 SPGSSB:
   asset: SPGSSB
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSSB Index
   commission_level: 3
   display_name: Sugar Index
   exchange_name: SP_GSCI
@@ -3656,10 +3109,6 @@ SPGSSB:
   symbol: SPGSSB
 SPGSSO:
   asset: SPGSSO
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSSO Index
   commission_level: 3
   display_name: Soybeans Index
   exchange_name: SP_GSCI
@@ -3676,10 +3125,6 @@ SPGSSO:
   symbol: SPGSSO
 SPGSWT:
   asset: SPGSWT
-  bbdl:
-    region: sector
-    symbols:
-    - SPGSWT Index
   commission_level: 3
   display_name: Wheat Index
   exchange_name: SP_GSCI
@@ -3696,10 +3141,6 @@ SPGSWT:
   symbol: SPGSWT
 SPGTECOL:
   asset: SPGTECOL
-  bbdl:
-    region: sector
-    symbols:
-    - SPGTECOL Index
   commission_level: 3
   display_name: Global Ecology Index
   exchange_name: SP_GLOBAL
@@ -3716,10 +3157,6 @@ SPGTECOL:
   symbol: SPGTECOL
 SPGTIND:
   asset: SPGTIND
-  bbdl:
-    region: sector
-    symbols:
-    - SPGTIND Index
   commission_level: 3
   display_name: Global Infrastructure Index
   exchange_name: SP_GLOBAL
@@ -3736,10 +3173,6 @@ SPGTIND:
   symbol: SPGTIND
 SPGTNE:
   asset: SPGTNE
-  bbdl:
-    region: sector
-    symbols:
-    - SPGTNE Index
   commission_level: 3
   display_name: Global Nuclear Index
   exchange_name: SP_GLOBAL
@@ -3756,10 +3189,6 @@ SPGTNE:
   symbol: SPGTNE
 SPSIAD:
   asset: SPSIAD
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIAD Index
   commission_level: 3
   display_name: Aerospace Index
   exchange_name: NYSE_SPC
@@ -3776,10 +3205,6 @@ SPSIAD:
   symbol: SPSIAD
 SPSIBC:
   asset: SPSIBC
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIBC Index
   commission_level: 3
   display_name: Construction Index
   exchange_name: NYSE_SPC
@@ -3796,10 +3221,6 @@ SPSIBC:
   symbol: SPSIBC
 SPSIBI:
   asset: SPSIBI
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIBI Index
   commission_level: 3
   display_name: Biotechnology Index
   exchange_name: NYSE_SPC
@@ -3816,10 +3237,6 @@ SPSIBI:
   symbol: SPSIBI
 SPSIBK:
   asset: SPSIBK
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIBK Index
   commission_level: 3
   display_name: Banking Index
   exchange_name: NYSE_SPC
@@ -3836,10 +3253,6 @@ SPSIBK:
   symbol: SPSIBK
 SPSICH:
   asset: SPSICH
-  bbdl:
-    region: sector
-    symbols:
-    - SPSICH Index
   contracts: none
   commission_level: 3
   display_name: Comp Hardware Index
@@ -3857,10 +3270,6 @@ SPSICH:
   symbol: SPSICH
 SPSICS:
   asset: SPSICS
-  bbdl:
-    region: sector
-    symbols:
-    - SPSICS Index
   commission_level: 3
   display_name: Comp Software Index
   exchange_name: NYSE_SPC
@@ -3877,10 +3286,6 @@ SPSICS:
   symbol: SPSICS
 SPSIINS:
   asset: SPSIINS
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIINS Index
   commission_level: 3
   display_name: Insurance Index
   exchange_name: NYSE_SPC
@@ -3897,10 +3302,6 @@ SPSIINS:
   symbol: SPSIINS
 SPSILT:
   asset: SPSILT
-  bbdl:
-    region: sector
-    symbols:
-    - SPSILT Index
   commission_level: 3
   display_name: Leisure Time Index
   exchange_name: NYSE_SPC
@@ -3917,10 +3318,6 @@ SPSILT:
   symbol: SPSILT
 SPSIMF:
   asset: SPSIMF
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIMF Index
   commission_level: 3
   display_name: Mortgage Finance Index
   exchange_name: NYSE_SPC
@@ -3937,10 +3334,6 @@ SPSIMF:
   symbol: SPSIMF
 SPSIPH:
   asset: SPSIPH
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIPH Index
   commission_level: 3
   display_name: Pharmaceuticals Index
   exchange_name: NYSE_SPC
@@ -3957,10 +3350,6 @@ SPSIPH:
   symbol: SPSIPH
 SPSIRE:
   asset: SPSIRE
-  bbdl:
-    region: sector
-    symbols:
-    - SPSIRE Index
   commission_level: 3
   display_name: Retail Index
   exchange_name: NYSE_SPC
@@ -3977,10 +3366,6 @@ SPSIRE:
   symbol: SPSIRE
 SPSISC:
   asset: SPSISC
-  bbdl:
-    region: sector
-    symbols:
-    - SPSISC Index
   commission_level: 3
   display_name: Semiconductors Index
   exchange_name: NYSE_SPC
@@ -3997,10 +3382,6 @@ SPSISC:
   symbol: SPSISC
 SPSITN:
   asset: SPSITN
-  bbdl:
-    region: sector
-    symbols:
-    - SPSITN Index
   commission_level: 3
   display_name: Transportation Index
   exchange_name: NYSE_SPC
@@ -4017,10 +3398,6 @@ SPSITN:
   symbol: SPSITN
 SPTSX60:
   asset: SPTSX60
-  bbdl:
-    region: us
-    symbols:
-    - SPTSX60 Index
   contracts: limited_callput
   commission_level: 1
   display_name: Canadian Index
@@ -4038,10 +3415,6 @@ SPTSX60:
   symbol: SPTSX60
 SREITGUP:
   asset: SREITGUP
-  bbdl:
-    region: sector
-    symbols:
-    - SREITGUP Index
   commission_level: 3
   display_name: Global REIT Index
   exchange_name: SP_GLOBAL
@@ -4059,10 +3432,6 @@ SREITGUP:
 SSECOMP:
   active: 1
   asset: SSECOMP
-  bbdl:
-    region: asia
-    symbols:
-    - SHCOMP Index
   contracts: forward_only_china
   commission_level: 4
   display_name: Shanghai Index
@@ -4081,10 +3450,6 @@ SSECOMP:
   symbol: SSECOMP
 SSMI:
   asset: SSMI
-  bbdl:
-    region: europe
-    symbols:
-    - SMI Index
   contracts: limited_equities
   commission_level: 1
   display_name: Swiss Index
@@ -4103,10 +3468,6 @@ SSMI:
   symbol: SSMI
 STI:
   asset: STI
-  bbdl:
-    region: asia
-    symbols:
-    - FSSTI Index
   contracts: limited_callput
   commission_level: 1
   display_name: Singapore Index
@@ -4125,10 +3486,6 @@ STI:
   symbol: STI
 SX5E:
   asset: SX5E
-  bbdl:
-    region: europe
-    symbols:
-    - SX5E Index
   contracts: limited_equities
   commission_level: 2
   display_name: Euro 50 Index
@@ -4367,10 +3724,6 @@ SYNSX5E:
 SZSECOMP:
   active: 1
   asset: SZSECOMP
-  bbdl:
-    region: asia
-    symbols:
-    - SZCOMP Index
   contracts: forward_only_china
   commission_level: 4
   display_name: Shenzhen Index
@@ -4389,10 +3742,6 @@ SZSECOMP:
   symbol: SZSECOMP
 TOP40:
   asset: TOP40
-  bbdl:
-    region: europe
-    symbols:
-    - TOP40 Index
   contracts: forward_and_daily
   commission_level: 2
   display_name: South African Index
@@ -4411,9 +3760,6 @@ TOP40:
   symbol: TOP40
 UKAAL:
   asset: UKAAL
-  bbdl:
-    symbols:
-    - AAL LN Equity
   contracts: none
   commission_level: 3
   display_name: Anglo American plc
@@ -4432,9 +3778,6 @@ UKAAL:
   symbol: UKAAL
 UKAZN:
   asset: UKAZN
-  bbdl:
-    symbols:
-    - AZN LN Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: AstraZeneca plc
@@ -4453,9 +3796,6 @@ UKAZN:
   symbol: UKAZN
 UKBARC:
   asset: UKBARC
-  bbdl:
-    symbols:
-    - BARC LN Equity
   contracts: none
   commission_level: 3
   display_name: Barclays plc
@@ -4474,9 +3814,6 @@ UKBARC:
   symbol: UKBARC
 UKBATS:
   asset: UKBATS
-  bbdl:
-    symbols:
-    - BATS LN Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: British American Tobacco
@@ -4495,9 +3832,6 @@ UKBATS:
   symbol: UKBATS
 UKBG:
   asset: UKBG
-  bbdl:
-    symbols:
-    - BG/ LN Equity
   contracts: none
   commission_level: 3
   display_name: BG Group plc
@@ -4516,9 +3850,6 @@ UKBG:
   symbol: UKBG
 UKBP:
   asset: UKBP
-  bbdl:
-    symbols:
-    - BP/ LN Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: BP plc
@@ -4537,9 +3868,6 @@ UKBP:
   symbol: UKBP
 UKDGE:
   asset: UKDGE
-  bbdl:
-    symbols:
-    - DGE LN Equity
   contracts: none
   commission_level: 3
   display_name: Diageo plc
@@ -4558,9 +3886,6 @@ UKDGE:
   symbol: UKDGE
 UKGLEN:
   asset: UKGLEN
-  bbdl:
-    symbols:
-    - GLEN LN Equity
   contracts: none
   commission_level: 3
   display_name: Glencore Xstrat
@@ -4579,9 +3904,6 @@ UKGLEN:
   symbol: UKGLEN
 UKGSK:
   asset: UKGSK
-  bbdl:
-    symbols:
-    - GSK LN Equity
   contracts: none
   commission_level: 3
   display_name: GlaxoSmithKline plc
@@ -4600,9 +3922,6 @@ UKGSK:
   symbol: UKGSK
 UKHSBA:
   asset: UKHSBA
-  bbdl:
-    symbols:
-    - HSBA LN Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: HSBC Holdings plc
@@ -4621,9 +3940,6 @@ UKHSBA:
   symbol: UKHSBA
 UKIAG:
   asset: UKIAG
-  bbdl:
-    symbols:
-    - IAG LN Equity
   contracts: none
   commission_level: 3
   display_name: ICAG (British Airways)
@@ -4642,9 +3958,6 @@ UKIAG:
   symbol: UKIAG
 UKLLOY:
   asset: UKLLOY
-  bbdl:
-    symbols:
-    - LLOY LN Equity
   contracts: none
   commission_level: 3
   display_name: Lloyds Banking Group plc
@@ -4663,9 +3976,6 @@ UKLLOY:
   symbol: UKLLOY
 UKRB:
   asset: UKRB
-  bbdl:
-    symbols:
-    - RB/ LN Equity
   contracts: none
   commission_level: 3
   display_name: Reckitt Benckiser Group plc
@@ -4684,9 +3994,6 @@ UKRB:
   symbol: UKRB
 UKRDSA:
   asset: UKRDSA
-  bbdl:
-    symbols:
-    - RDSA LN Equity
   contracts: none
   commission_level: 3
   display_name: Royal Dutch Shell plc
@@ -4705,9 +4012,6 @@ UKRDSA:
   symbol: UKRDSA
 UKRIO:
   asset: UKRIO
-  bbdl:
-    symbols:
-    - RIO LN Equity
   contracts: none
   commission_level: 3
   display_name: Rio Tinto plc
@@ -4726,9 +4030,6 @@ UKRIO:
   symbol: UKRIO
 UKSAB:
   asset: UKSAB
-  bbdl:
-    symbols:
-    - SAB LN Equity
   contracts: none
   commission_level: 3
   display_name: SABMiller plc
@@ -4747,9 +4048,6 @@ UKSAB:
   symbol: UKSAB
 UKSTAN:
   asset: UKSTAN
-  bbdl:
-    symbols:
-    - STAN LN Equity
   contracts: none
   commission_level: 3
   display_name: Standard Chartered plc
@@ -4768,9 +4066,6 @@ UKSTAN:
   symbol: UKSTAN
 UKTSCO:
   asset: UKTSCO
-  bbdl:
-    symbols:
-    - TSCO LN Equity
   contracts: forward_and_daily
   commission_level: 3
   display_name: Tesco plc
@@ -4789,9 +4084,6 @@ UKTSCO:
   symbol: UKTSCO
 UKULVR:
   asset: UKULVR
-  bbdl:
-    symbols:
-    - ULVR LN Equity
   contracts: none
   commission_level: 3
   display_name: Unilever plc
@@ -4810,9 +4102,6 @@ UKULVR:
   symbol: UKULVR
 UKVOD:
   asset: UKVOD
-  bbdl:
-    symbols:
-    - VOD LN Equity
   contracts: none
   commission_level: 3
   display_name: Vodafone
@@ -4831,9 +4120,6 @@ UKVOD:
   symbol: UKVOD
 USAAPL:
   asset: USAAPL
-  bbdl:
-    symbols:
-    - AAPL US Equity
   contracts: none
   commission_level: 3
   display_name: Apple Inc.
@@ -4852,9 +4138,6 @@ USAAPL:
   symbol: USAAPL
 USATNT:
   asset: USATNT
-  bbdl:
-    symbols:
-    - T US Equity
   contracts: none
   commission_level: 3
   display_name: AT&T
@@ -4873,9 +4156,6 @@ USATNT:
   symbol: USATNT
 USCVX:
   asset: USCVX
-  bbdl:
-    symbols:
-    - CVX US Equity
   contracts: none
   commission_level: 3
   display_name: Chevron Co.
@@ -4894,9 +4174,6 @@ USCVX:
   symbol: USCVX
 USGE:
   asset: USGE
-  bbdl:
-    symbols:
-    - GE US Equity
   contracts: none
   commission_level: 3
   display_name: General Electric Company
@@ -4915,9 +4192,6 @@ USGE:
   symbol: USGE
 USGOOG:
   asset: USGOOG
-  bbdl:
-    symbols:
-    - GOOG US Equity
   contracts: none
   commission_level: 3
   display_name: Google Inc.
@@ -4936,9 +4210,6 @@ USGOOG:
   symbol: USGOOG
 USIBM:
   asset: USIBM
-  bbdl:
-    symbols:
-    - IBM US Equity
   contracts: none
   commission_level: 3
   display_name: IBM
@@ -4957,9 +4228,6 @@ USIBM:
   symbol: USIBM
 USINTC:
   asset: USINTC
-  bbdl:
-    symbols:
-    - INTC US Equity
   contracts: none
   commission_level: 3
   display_name: Intel
@@ -4978,9 +4246,6 @@ USINTC:
   symbol: USINTC
 USJNJ:
   asset: USJNJ
-  bbdl:
-    symbols:
-    - JNJ US Equity
   contracts: none
   commission_level: 3
   display_name: Johnson & Johnson
@@ -4999,9 +4264,6 @@ USJNJ:
   symbol: USJNJ
 USJPM:
   asset: USJPM
-  bbdl:
-    symbols:
-    - JPM US Equity
   contracts: none
   commission_level: 3
   display_name: JP Morgan Chase & Co.
@@ -5020,9 +4282,6 @@ USJPM:
   symbol: USJPM
 USKO:
   asset: USKO
-  bbdl:
-    symbols:
-    - KO US Equity
   contracts: none
   commission_level: 3
   display_name: The Coca-Cola Company
@@ -5041,9 +4300,6 @@ USKO:
   symbol: USKO
 USMRK:
   asset: USMRK
-  bbdl:
-    symbols:
-    - MRK US Equity
   contracts: none
   commission_level: 3
   display_name: Merck & Co. Inc.
@@ -5062,9 +4318,6 @@ USMRK:
   symbol: USMRK
 USMSFT:
   asset: USMSFT
-  bbdl:
-    symbols:
-    - MSFT US Equity
   contracts: none
   commission_level: 3
   display_name: Microsoft
@@ -5083,9 +4336,6 @@ USMSFT:
   symbol: USMSFT
 USORCL:
   asset: USORCL
-  bbdl:
-    symbols:
-    - ORCL US Equity
   contracts: none
   commission_level: 3
   display_name: Oracle
@@ -5104,9 +4354,6 @@ USORCL:
   symbol: USORCL
 USPFE:
   asset: USPFE
-  bbdl:
-    symbols:
-    - PFE US Equity
   contracts: none
   commission_level: 3
   display_name: Pfizer Inc.
@@ -5125,9 +4372,6 @@ USPFE:
   symbol: USPFE
 USPG:
   asset: USPG
-  bbdl:
-    symbols:
-    - PG US Equity
   contracts: none
   commission_level: 3
   display_name: Procter & Gamble Co.
@@ -5146,9 +4390,6 @@ USPG:
   symbol: USPG
 USPM:
   asset: USPM
-  bbdl:
-    symbols:
-    - PM US Equity
   contracts: none
   commission_level: 3
   display_name: Philip Morris International
@@ -5167,9 +4408,6 @@ USPM:
   symbol: USPM
 USQCOM:
   asset: USQCOM
-  bbdl:
-    symbols:
-    - QCOM US Equity
   contracts: none
   commission_level: 3
   display_name: QUALCOMM
@@ -5188,9 +4426,6 @@ USQCOM:
   symbol: USQCOM
 USQQQQ:
   asset: USQQQQ
-  bbdl:
-    symbols:
-    - QQQ US Equity
   contracts: none
   commission_level: 3
   display_name: PowerShares QQQ
@@ -5209,9 +4444,6 @@ USQQQQ:
   symbol: USQQQQ
 USWFC:
   asset: USWFC
-  bbdl:
-    symbols:
-    - WFC US Equity
   contracts: none
   commission_level: 3
   display_name: Wells Fargo & Company
@@ -5230,9 +4462,6 @@ USWFC:
   symbol: USWFC
 USWMT:
   asset: USWMT
-  bbdl:
-    symbols:
-    - WMT US Equity
   contracts: none
   commission_level: 3
   display_name: Wal-Mart Stores Inc.
@@ -5251,9 +4480,6 @@ USWMT:
   symbol: USWMT
 USXOM:
   asset: USXOM
-  bbdl:
-    symbols:
-    - XOM US Equity
   contracts: none
   commission_level: 3
   display_name: ExxonMobil
@@ -5344,10 +4570,6 @@ WLDUSD:
   symbol: WLDUSD
 frxAUDBRL:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDBRL Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: AUD/BRL
   exchange_name: FOREX
@@ -5370,26 +4592,11 @@ frxAUDBRL:
   symbol: frxAUDBRL
 frxAUDCAD:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDCAD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: AUD/CAD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDCAD12M BGN Curncy
-    1M: AUDCAD1M BGN Curncy
-    1W: AUDCAD1W BGN Curncy
-    2M: AUDCAD2M BGN Curncy
-    3M: AUDCAD3M BGN Curncy
-    6M: AUDCAD6M BGN Curncy
-    9M: AUDCAD9M BGN Curncy
-    ON: AUDCADON BGN Curncy
-    SP: AUDCAD BGN Curncy
-    TN: AUDCADTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5408,26 +4615,11 @@ frxAUDCAD:
   uses_dst_shifted_seasonality: 0
 frxAUDCHF:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDCHF Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: AUD/CHF
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDCHF12M BGN Curncy
-    1M: AUDCHF1M BGN Curncy
-    1W: AUDCHF1W BGN Curncy
-    2M: AUDCHF2M BGN Curncy
-    3M: AUDCHF3M BGN Curncy
-    6M: AUDCHF6M BGN Curncy
-    9M: AUDCHF9M BGN Curncy
-    ON: AUDCHFON BGN Curncy
-    SP: AUDCHF BGN Curncy
-    TN: AUDCHFTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5446,10 +4638,6 @@ frxAUDCHF:
   uses_dst_shifted_seasonality: 0
 frxAUDCNY:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDCNY Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: AUD/CNY
   exchange_name: FOREX
@@ -5472,10 +4660,6 @@ frxAUDCNY:
   symbol: frxAUDCNY
 frxAUDCZK:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDCZK Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: AUD/CZK
   exchange_name: FOREX
@@ -5498,10 +4682,6 @@ frxAUDCZK:
   symbol: frxAUDCZK
 frxAUDDKK:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDDKK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: AUD/DKK
@@ -5521,10 +4701,6 @@ frxAUDDKK:
   symbol: frxAUDDKK
 frxAUDHKD:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDHKD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: AUD/HKD
   exchange_name: FOREX
@@ -5547,10 +4723,6 @@ frxAUDHKD:
   symbol: frxAUDHKD
 frxAUDINR:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDINR Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: AUD/INR
   exchange_name: FOREX
@@ -5572,28 +4744,12 @@ frxAUDINR:
   symbol: frxAUDINR
 frxAUDJPY:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDJPY Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: AUD/JPY
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDJPY12M BGN Curncy
-    1M: AUDJPY1M BGN Curncy
-    1W: AUDJPY1W BGN Curncy
-    2M: AUDJPY2M BGN Curncy
-    2W: AUDJPY2W BGN Curncy
-    3M: AUDJPY3M BGN Curncy
-    6M: AUDJPY6M BGN Curncy
-    9M: AUDJPY9M BGN Curncy
-    ON: AUDJPYON BGN Curncy
-    SP: AUDJPY BGN Curncy
-    TN: AUDJPYTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5612,10 +4768,6 @@ frxAUDJPY:
   uses_dst_shifted_seasonality: 0
 frxAUDKRW:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDKRW Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: AUD/KRW
   exchange_name: FOREX
@@ -5638,10 +4790,6 @@ frxAUDKRW:
   symbol: frxAUDKRW
 frxAUDMXN:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDMXN Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: AUD/MXN
   exchange_name: FOREX
@@ -5663,26 +4811,11 @@ frxAUDMXN:
   symbol: frxAUDMXN
 frxAUDNOK:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDNOK Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: AUD/NOK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDNOK12M BGN Curncy
-    1M: AUDNOK1M BGN Curncy
-    1W: AUDNOK1W BGN Curncy
-    2M: AUDNOK2M BGN Curncy
-    3M: AUDNOK3M BGN Curncy
-    6M: AUDNOK6M BGN Curncy
-    9M: AUDNOK9M BGN Curncy
-    ON: AUDNOKON BGN Curncy
-    SP: AUDNOK BGN Curncy
-    TN: AUDNOKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5700,26 +4833,11 @@ frxAUDNOK:
   symbol: frxAUDNOK
 frxAUDNZD:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDNZD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: AUD/NZD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDNZD12M BGN Curncy
-    1M: AUDNZD1M BGN Curncy
-    1W: AUDNZD1W BGN Curncy
-    2M: AUDNZD2M BGN Curncy
-    3M: AUDNZD3M BGN Curncy
-    6M: AUDNZD6M BGN Curncy
-    9M: AUDNZD9M BGN Curncy
-    ON: AUDNZDON BGN Curncy
-    SP: AUDNZD BGN Curncy
-    TN: AUDNZDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5738,23 +4856,11 @@ frxAUDNZD:
   uses_dst_shifted_seasonality: 1
 frxAUDPLN:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDPLN Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: AUD/PLN
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDPLN12M BGN Curncy
-    1M: AUDPLN1M BGN Curncy
-    2M: AUDPLN2M BGN Curncy
-    3M: AUDPLN3M BGN Curncy
-    6M: AUDPLN6M BGN Curncy
-    9M: AUDPLN9M BGN Curncy
-    SP: AUDPLN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5773,27 +4879,12 @@ frxAUDPLN:
   uses_dst_shifted_seasonality: 1
 frxAUDSEK:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDSEK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: AUD/SEK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDSEK12M BGN Curncy
-    1M: AUDSEK1M BGN Curncy
-    1W: AUDSEK1W BGN Curncy
-    2M: AUDSEK2M BGN Curncy
-    3M: AUDSEK3M BGN Curncy
-    6M: AUDSEK6M BGN Curncy
-    9M: AUDSEK9M BGN Curncy
-    ON: AUDSEKON BGN Curncy
-    SP: AUDSEK BGN Curncy
-    TN: AUDSEKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5811,10 +4902,6 @@ frxAUDSEK:
   symbol: frxAUDSEK
 frxAUDSGD:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDSGD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: AUD/SGD
   exchange_name: FOREX
@@ -5837,28 +4924,12 @@ frxAUDSGD:
   symbol: frxAUDSGD
 frxAUDUSD:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDUSD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: AUD/USD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: AUDUSD12M BGN Curncy
-    1M: AUDUSD1M BGN Curncy
-    1W: AUDUSD1W BGN Curncy
-    2M: AUDUSD2M BGN Curncy
-    2W: AUDUSD2W BGN Curncy
-    3M: AUDUSD3M BGN Curncy
-    6M: AUDUSD6M BGN Curncy
-    9M: AUDUSD9M BGN Curncy
-    ON: AUDUSDON BGN Curncy
-    SP: AUDUSD BGN Curncy
-    TN: AUDUSDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -5877,10 +4948,6 @@ frxAUDUSD:
   uses_dst_shifted_seasonality: 0
 frxAUDZAR:
   asset: AUD
-  bbdl:
-    symbols:
-    - AUDZAR Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: AUDZAR
   exchange_name: FOREX
@@ -5991,28 +5058,12 @@ frxBROUSD:
   outlier_tick: 0.1
 frxEURAUD:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURAUD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: EUR/AUD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURAUD12M BGN Curncy
-    1M: EURAUD1M BGN Curncy
-    1W: EURAUD1W BGN Curncy
-    2M: EURAUD2M BGN Curncy
-    2W: EURAUD2W BGN Curncy
-    3M: EURAUD3M BGN Curncy
-    6M: EURAUD6M BGN Curncy
-    9M: EURAUD9M BGN Curncy
-    ON: EURAUDON BGN Curncy
-    SP: EURAUD BGN Curncy
-    TN: EURAUDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6031,10 +5082,6 @@ frxEURAUD:
   uses_dst_shifted_seasonality: 0
 frxEURBRL:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURBRL Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/BRL
   exchange_name: FOREX
@@ -6057,28 +5104,12 @@ frxEURBRL:
   symbol: frxEURBRL
 frxEURCAD:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURCAD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: EUR/CAD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURCAD12M BGN Curncy
-    1M: EURCAD1M BGN Curncy
-    1W: EURCAD1W BGN Curncy
-    2M: EURCAD2M BGN Curncy
-    2W: EURCAD2W BGN Curncy
-    3M: EURCAD3M BGN Curncy
-    6M: EURCAD6M BGN Curncy
-    9M: EURCAD9M BGN Curncy
-    ON: EURCADON BGN Curncy
-    SP: EURCAD BGN Curncy
-    TN: EURCADTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6097,28 +5128,12 @@ frxEURCAD:
   uses_dst_shifted_seasonality: 1
 frxEURCHF:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURCHF Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 2
   display_name: EUR/CHF
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURCHF12M BGN Curncy
-    1M: EURCHF1M BGN Curncy
-    1W: EURCHF1W BGN Curncy
-    2M: EURCHF2M BGN Curncy
-    2W: EURCHF2W BGN Curncy
-    3M: EURCHF3M BGN Curncy
-    6M: EURCHF6M BGN Curncy
-    9M: EURCHF9M BGN Curncy
-    ON: EURCHFON BGN Curncy
-    SP: EURCHF BGN Curncy
-    TN: EURCHFTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6136,10 +5151,6 @@ frxEURCHF:
   symbol: frxEURCHF
 frxEURCNY:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURCNY Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/CNY
   exchange_name: FOREX
@@ -6162,27 +5173,11 @@ frxEURCNY:
   symbol: frxEURCNY
 frxEURCZK:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURCZK Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/CZK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURCZK12M BGN Curncy
-    1M: EURCZK1M BGN Curncy
-    1W: EURCZK1W BGN Curncy
-    2M: EURCZK2M BGN Curncy
-    2W: EURCZK2W BGN Curncy
-    3M: EURCZK3M BGN Curncy
-    6M: EURCZK6M BGN Curncy
-    9M: EURCZK9M BGN Curncy
-    ON: EURCZKON BGN Curncy
-    SP: EURCZK BGN Curncy
-    TN: EURCZKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6200,10 +5195,6 @@ frxEURCZK:
   symbol: frxEURCZK
 frxEURDKK:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURDKK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: EUR/DKK
@@ -6223,28 +5214,12 @@ frxEURDKK:
   symbol: frxEURDKK
 frxEURGBP:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURGBP Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: EUR/GBP
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURGBP12M BGN Curncy
-    1M: EURGBP1M BGN Curncy
-    1W: EURGBP1W BGN Curncy
-    2M: EURGBP2M BGN Curncy
-    2W: EURGBP2W BGN Curncy
-    3M: EURGBP3M BGN Curncy
-    6M: EURGBP6M BGN Curncy
-    9M: EURGBP9M BGN Curncy
-    ON: EURGBPON BGN Curncy
-    SP: EURGBP BGN Curncy
-    TN: EURGBPTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6263,10 +5238,6 @@ frxEURGBP:
   uses_dst_shifted_seasonality: 0
 frxEURHKD:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURHKD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/HKD
   exchange_name: FOREX
@@ -6289,10 +5260,6 @@ frxEURHKD:
   symbol: frxEURHKD
 frxEURHUF:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURHUF Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: EUR/HUF
@@ -6312,10 +5279,6 @@ frxEURHUF:
   symbol: frxEURHUF
 frxEURINR:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURINR Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/INR
   exchange_name: FOREX
@@ -6337,28 +5300,12 @@ frxEURINR:
   symbol: frxEURINR
 frxEURJPY:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURJPY Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: EUR/JPY
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURJPY12M BGN Curncy
-    1M: EURJPY1M BGN Curncy
-    1W: EURJPY1W BGN Curncy
-    2M: EURJPY2M BGN Curncy
-    2W: EURJPY2W BGN Curncy
-    3M: EURJPY3M BGN Curncy
-    6M: EURJPY6M BGN Curncy
-    9M: EURJPY9M BGN Curncy
-    ON: EURJPYON BGN Curncy
-    SP: EURJPY BGN Curncy
-    TN: EURJPYTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6377,10 +5324,6 @@ frxEURJPY:
   uses_dst_shifted_seasonality: 1
 frxEURKRW:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURKRW Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/KRW
   exchange_name: FOREX
@@ -6403,10 +5346,6 @@ frxEURKRW:
   symbol: frxEURKRW
 frxEURMXN:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURMXN Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/MXN
   exchange_name: FOREX
@@ -6428,28 +5367,12 @@ frxEURMXN:
   symbol: frxEURMXN
 frxEURNOK:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURNOK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: EUR/NOK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURNOK12M BGN Curncy
-    1M: EURNOK1M BGN Curncy
-    1W: EURNOK1W BGN Curncy
-    2M: EURNOK2M BGN Curncy
-    2W: EURNOK2W BGN Curncy
-    3M: EURNOK3M BGN Curncy
-    6M: EURNOK6M BGN Curncy
-    9M: EURNOK9M BGN Curncy
-    ON: EURNOKON BGN Curncy
-    SP: EURNOK BGN Curncy
-    TN: EURNOKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6468,27 +5391,11 @@ frxEURNOK:
   uses_dst_shifted_seasonality: 1
 frxEURNZD:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURNZD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/NZD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURNZD12M BGN Curncy
-    1M: EURNZD1M BGN Curncy
-    1W: EURNZD1W BGN Curncy
-    2M: EURNZD2M BGN Curncy
-    2W: EURNZD2W BGN Curncy
-    3M: EURNZD3M BGN Curncy
-    6M: EURNZD6M BGN Curncy
-    9M: EURNZD9M BGN Curncy
-    ON: EURNZDON BGN Curncy
-    SP: EURNZD BGN Curncy
-    TN: EURNZDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6507,27 +5414,11 @@ frxEURNZD:
   uses_dst_shifted_seasonality: 1
 frxEURPLN:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURPLN Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/PLN
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURPLN12M BGN Curncy
-    1M: EURPLN1M BGN Curncy
-    1W: EURPLN1W BGN Curncy
-    2M: EURPLN2M BGN Curncy
-    2W: EURPLN2W BGN Curncy
-    3M: EURPLN3M BGN Curncy
-    6M: EURPLN6M BGN Curncy
-    9M: EURPLN9M BGN Curncy
-    ON: EURPLNON BGN Curncy
-    SP: EURPLN BGN Curncy
-    TN: EURPLNTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6545,28 +5436,12 @@ frxEURPLN:
   symbol: frxEURPLN
 frxEURSEK:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURSEK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 2
   display_name: EUR/SEK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURSEK12M BGN Curncy
-    1M: EURSEK1M BGN Curncy
-    1W: EURSEK1W BGN Curncy
-    2M: EURSEK2M BGN Curncy
-    2W: EURSEK2W BGN Curncy
-    3M: EURSEK3M BGN Curncy
-    6M: EURSEK6M BGN Curncy
-    9M: EURSEK9M BGN Curncy
-    ON: EURSEKON BGN Curncy
-    SP: EURSEK BGN Curncy
-    TN: EURSEKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6584,26 +5459,11 @@ frxEURSEK:
   symbol: frxEURSEK
 frxEURSGD:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURSGD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/SGD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURSGD12M Curncy
-    1M: EURSGD1M Curncy
-    1W: EURSGD1W Curncy
-    2M: EURSGD2M Curncy
-    3M: EURSGD3M Curncy
-    6M: EURSGD6M Curncy
-    9M: EURSGD9M Curncy
-    ON: EURSGDON Curncy
-    SP: EURSGD Curncy
-    TN: EURSGDTN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6621,28 +5481,12 @@ frxEURSGD:
   symbol: frxEURSGD
 frxEURUSD:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURUSD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: EUR/USD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: EURUSD12M BGN Curncy
-    1M: EURUSD1M BGN Curncy
-    1W: EURUSD1W BGN Curncy
-    2M: EURUSD2M BGN Curncy
-    2W: EURUSD2W BGN Curncy
-    3M: EURUSD3M BGN Curncy
-    6M: EURUSD6M BGN Curncy
-    9M: EURUSD9M BGN Curncy
-    ON: EURUSDON BGN Curncy
-    SP: EURUSD BGN Curncy
-    TN: EURUSDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6661,10 +5505,6 @@ frxEURUSD:
   uses_dst_shifted_seasonality: 1
 frxEURZAR:
   asset: EUR
-  bbdl:
-    symbols:
-    - EURZAR Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: EUR/ZAR
   exchange_name: FOREX
@@ -6686,27 +5526,12 @@ frxEURZAR:
   symbol: frxEURZAR
 frxGBPAUD:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPAUD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: GBP/AUD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPAUD12M BGN Curncy
-    1M: GBPAUD1M BGN Curncy
-    1W: GBPAUD1W BGN Curncy
-    2M: GBPAUD2M BGN Curncy
-    3M: GBPAUD3M BGN Curncy
-    6M: GBPAUD6M BGN Curncy
-    9M: GBPAUD9M BGN Curncy
-    ON: GBPAUDON BGN Curncy
-    SP: GBPAUD BGN Curncy
-    TN: GBPAUDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6725,10 +5550,6 @@ frxGBPAUD:
   uses_dst_shifted_seasonality: 0
 frxGBPBRL:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPBRL Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: GBP/BRL
   exchange_name: FOREX
@@ -6751,27 +5572,12 @@ frxGBPBRL:
   symbol: frxGBPBRL
 frxGBPCAD:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPCAD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: GBP/CAD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPCAD12M BGN Curncy
-    1M: GBPCAD1M BGN Curncy
-    1W: GBPCAD1W BGN Curncy
-    2M: GBPCAD2M BGN Curncy
-    3M: GBPCAD3M BGN Curncy
-    6M: GBPCAD6M BGN Curncy
-    9M: GBPCAD9M BGN Curncy
-    ON: GBPCADON BGN Curncy
-    SP: GBPCAD BGN Curncy
-    TN: GBPCADTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6790,10 +5596,6 @@ frxGBPCAD:
   uses_dst_shifted_seasonality: 0
 frxGBPCHF:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPCHF Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: GBP/CHF
@@ -6817,10 +5619,6 @@ frxGBPCHF:
   symbol: frxGBPCHF
 frxGBPCNY:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPCNY Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: GBP/CNY
   exchange_name: FOREX
@@ -6843,27 +5641,12 @@ frxGBPCNY:
   symbol: frxGBPCNY
 frxGBPCZK:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPCZK Curncy
-    vol_source: BLCS
   contracts: none
   commission_level: 3
   display_name: GBP/CZK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPCZK12M Curncy
-    1M: GBPCZK1M Curncy
-    1W: GBPCZK1W Curncy
-    2M: GBPCZK2M Curncy
-    3M: GBPCZK3M Curncy
-    6M: GBPCZK6M Curncy
-    9M: GBPCZK9M Curncy
-    ON: GBPCZKON Curncy
-    SP: GBPCZK Curncy
-    TN: GBPCZKTN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -6882,10 +5665,6 @@ frxGBPCZK:
   uses_dst_shifted_seasonality: 1
 frxGBPDKK:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPDKK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: GBP/DKK
@@ -6909,10 +5688,6 @@ frxGBPDKK:
   symbol: frxGBPDKK
 frxGBPHKD:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPHKD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: GBP/HKD
   exchange_name: FOREX
@@ -6935,10 +5710,6 @@ frxGBPHKD:
   symbol: frxGBPHKD
 frxGBPINR:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPINR Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: GBP/INR
   exchange_name: FOREX
@@ -6960,28 +5731,12 @@ frxGBPINR:
   symbol: frxGBPINR
 frxGBPJPY:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPJPY Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: GBP/JPY
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPJPY12M BGN Curncy
-    1M: GBPJPY1M BGN Curncy
-    1W: GBPJPY1W BGN Curncy
-    2M: GBPJPY2M BGN Curncy
-    2W: GBPJPY2W BGN Curncy
-    3M: GBPJPY3M BGN Curncy
-    6M: GBPJPY6M BGN Curncy
-    9M: GBPJPY9M BGN Curncy
-    ON: GBPJPYON BGN Curncy
-    SP: GBPJPY BGN Curncy
-    TN: GBPJPYTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7000,10 +5755,6 @@ frxGBPJPY:
   uses_dst_shifted_seasonality: 1
 frxGBPKRW:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPKRW Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: GBP/KRW
   exchange_name: FOREX
@@ -7026,10 +5777,6 @@ frxGBPKRW:
   symbol: frxGBPKRW
 frxGBPMXN:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPMXN Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: GBP/MXN
   exchange_name: FOREX
@@ -7051,27 +5798,12 @@ frxGBPMXN:
   symbol: frxGBPMXN
 frxGBPNOK:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPNOK Curncy
-    vol_source: BGN
   contracts: forward_only
   commission_level: 3
   display_name: GBP/NOK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPNOK12M BGN Curncy
-    1M: GBPNOK1M BGN Curncy
-    1W: GBPNOK1W BGN Curncy
-    2M: GBPNOK2M BGN Curncy
-    3M: GBPNOK3M BGN Curncy
-    6M: GBPNOK6M BGN Curncy
-    9M: GBPNOK9M BGN Curncy
-    ON: GBPNOKON BGN Curncy
-    SP: GBPNOK BGN Curncy
-    TN: GBPNOKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7090,26 +5822,11 @@ frxGBPNOK:
   uses_dst_shifted_seasonality: 0
 frxGBPNZD:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPNZD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: GBP/NZD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPNZD12M BGN Curncy
-    1M: GBPNZD1M BGN Curncy
-    1W: GBPNZD1W BGN Curncy
-    2M: GBPNZD2M BGN Curncy
-    3M: GBPNZD3M BGN Curncy
-    6M: GBPNZD6M BGN Curncy
-    9M: GBPNZD9M BGN Curncy
-    ON: GBPNZDON BGN Curncy
-    SP: GBPNZD BGN Curncy
-    TN: GBPNZDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7128,28 +5845,12 @@ frxGBPNZD:
   uses_dst_shifted_seasonality: 1
 frxGBPPLN:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPPLN Curncy
-    vol_source: BGN
   contracts: forward_only
   commission_level: 3
   display_name: GBP/PLN
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPPLN12M Curncy
-    1M: GBPPLN1M Curncy
-    1W: GBPPLN1W Curncy
-    2M: GBPPLN2M Curncy
-    2W: GBPPLN2W Curncy
-    3M: GBPPLN3M Curncy
-    6M: GBPPLN6M Curncy
-    9M: GBPPLN9M Curncy
-    ON: GBPPLNON Curncy
-    SP: GBPPLN Curncy
-    TN: GBPPLNTN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7168,27 +5869,12 @@ frxGBPPLN:
   uses_dst_shifted_seasonality: 1
 frxGBPSEK:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPSEK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: GBP/SEK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPSEK12M BGN Curncy
-    1M: GBPSEK1M BGN Curncy
-    1W: GBPSEK1W BGN Curncy
-    2M: GBPSEK2M BGN Curncy
-    3M: GBPSEK3M BGN Curncy
-    6M: GBPSEK6M BGN Curncy
-    9M: GBPSEK9M BGN Curncy
-    ON: GBPSEKON BGN Curncy
-    SP: GBPSEK BGN Curncy
-    TN: GBPSEKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7206,26 +5892,11 @@ frxGBPSEK:
   symbol: frxGBPSEK
 frxGBPSGD:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPSGD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: GBP/SGD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPSGD12M Curncy
-    1M: GBPSGD1M Curncy
-    1W: GBPSGD1W Curncy
-    2M: GBPSGD2M Curncy
-    3M: GBPSGD3M Curncy
-    6M: GBPSGD6M Curncy
-    9M: GBPSGD9M Curncy
-    ON: GBPSGDON Curncy
-    SP: GBPSGD Curncy
-    TN: GBPSGDTN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7243,28 +5914,12 @@ frxGBPSGD:
   symbol: frxGBPSGD
 frxGBPUSD:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPUSD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: GBP/USD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: GBPUSD12M BGN Curncy
-    1M: GBPUSD1M BGN Curncy
-    1W: GBPUSD1W BGN Curncy
-    2M: GBPUSD2M BGN Curncy
-    2W: GBPUSD2W BGN Curncy
-    3M: GBPUSD3M BGN Curncy
-    6M: GBPUSD6M BGN Curncy
-    9M: GBPUSD9M BGN Curncy
-    ON: GBPUSDON BGN Curncy
-    SP: GBPUSD BGN Curncy
-    TN: GBPUSDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7283,10 +5938,6 @@ frxGBPUSD:
   uses_dst_shifted_seasonality: 0
 frxGBPZAR:
   asset: GBP
-  bbdl:
-    symbols:
-    - GBPZAR Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: GBP/ZAR
   exchange_name: FOREX
@@ -7308,28 +5959,12 @@ frxGBPZAR:
   symbol: frxGBPZAR
 frxNZDJPY:
   asset: NZD
-  bbdl:
-    symbols:
-    - NZDJPY Curncy
-    vol_source: BGN
   contracts: forward_and_daily
   commission_level: 3
   display_name: NZD/JPY
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: NZDJPY12M BGN Curncy
-    1M: NZDJPY1M BGN Curncy
-    1W: NZDJPY1W BGN Curncy
-    2M: NZDJPY2M BGN Curncy
-    2W: NZDJPY2W BGN Curncy
-    3M: NZDJPY3M BGN Curncy
-    6M: NZDJPY6M BGN Curncy
-    9M: NZDJPY9M BGN Curncy
-    ON: NZDJPYON BGN Curncy
-    SP: NZDJPY BGN Curncy
-    TN: NZDJPYTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7346,10 +5981,6 @@ frxNZDJPY:
   symbol: frxNZDJPY
 frxNZDUSD:
   asset: NZD
-  bbdl:
-    symbols:
-    - NZDUSD Curncy
-    vol_source: BGN
   contracts:
     callput:
       daily:
@@ -7382,18 +6013,6 @@ frxNZDUSD:
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: NZDUSD12M BGN Curncy
-    1M: NZDUSD1M BGN Curncy
-    1W: NZDUSD1W BGN Curncy
-    2M: NZDUSD2M BGN Curncy
-    2W: NZDUSD2W BGN Curncy
-    3M: NZDUSD3M BGN Curncy
-    6M: NZDUSD6M BGN Curncy
-    9M: NZDUSD9M BGN Curncy
-    ON: NZDUSDON BGN Curncy
-    SP: NZDUSD BGN Curncy
-    TN: NZDUSDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7412,10 +6031,6 @@ frxNZDUSD:
   uses_dst_shifted_seasonality: 1
 frxUSDBRL:
   asset: USD
-  bbdl:
-    symbols:
-    - USDBRL Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: USD/BRL
   exchange_name: FOREX
@@ -7438,28 +6053,12 @@ frxUSDBRL:
   symbol: frxUSDBRL
 frxUSDCAD:
   asset: USD
-  bbdl:
-    symbols:
-    - USDCAD Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: USD/CAD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDCAD12M BGN Curncy
-    1M: USDCAD1M BGN Curncy
-    1W: USDCAD1W BGN Curncy
-    2M: USDCAD2M BGN Curncy
-    2W: USDCAD2W BGN Curncy
-    3M: USDCAD3M BGN Curncy
-    6M: USDCAD6M BGN Curncy
-    9M: USDCAD9M BGN Curncy
-    ON: USDCADON BGN Curncy
-    SP: USDCAD BGN Curncy
-    TN: USDCADTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7478,10 +6077,6 @@ frxUSDCAD:
   uses_dst_shifted_seasonality: 1
 frxUSDCHF:
   asset: USD
-  bbdl:
-    symbols:
-    - USDCHF Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 1
   display_name: USD/CHF
@@ -7505,10 +6100,6 @@ frxUSDCHF:
   symbol: frxUSDCHF
 frxUSDCNY:
   asset: USD
-  bbdl:
-    symbols:
-    - USDCNY Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: USD/CNY
   exchange_name: FOREX
@@ -7531,10 +6122,6 @@ frxUSDCNY:
   symbol: frxUSDCNY
 frxUSDCZK:
   asset: USD
-  bbdl:
-    symbols:
-    - USDCZK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: USD/CZK
@@ -7558,10 +6145,6 @@ frxUSDCZK:
   symbol: frxUSDCZK
 frxUSDDKK:
   asset: USD
-  bbdl:
-    symbols:
-    - USDDKK Curncy
-    vol_source: BGN
   contracts: none
   commission_level: 3
   display_name: USD/DKK
@@ -7585,27 +6168,11 @@ frxUSDDKK:
   symbol: frxUSDDKK
 frxUSDHKD:
   asset: USD
-  bbdl:
-    symbols:
-    - USDHKD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: USD/HKD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDHKD12M Curncy
-    1M: USDHKD1M Curncy
-    1W: USDHKD1W Curncy
-    2M: USDHKD2M Curncy
-    2W: USDHKD2W Curncy
-    3M: USDHKD3M Curncy
-    6M: USDHKD6M Curncy
-    9M: USDHKD9M Curncy
-    ON: USDHKDON Curncy
-    SP: USDHKD Curncy
-    TN: USDHKDTN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7623,10 +6190,6 @@ frxUSDHKD:
   symbol: frxUSDHKD
 frxUSDINR:
   asset: USD
-  bbdl:
-    symbols:
-    - USDINR Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: USD/INR
   exchange_name: FOREX
@@ -7648,28 +6211,12 @@ frxUSDINR:
   symbol: frxUSDINR
 frxUSDJPY:
   asset: USD
-  bbdl:
-    symbols:
-    - USDJPY Curncy
-    vol_source: BGN
   contracts: active_fx
   commission_level: 1
   display_name: USD/JPY
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDJPY12M BGN Curncy
-    1M: USDJPY1M BGN Curncy
-    1W: USDJPY1W BGN Curncy
-    2M: USDJPY2M BGN Curncy
-    2W: USDJPY2W BGN Curncy
-    3M: USDJPY3M BGN Curncy
-    6M: USDJPY6M BGN Curncy
-    9M: USDJPY9M BGN Curncy
-    ON: USDJPYON BGN Curncy
-    SP: USDJPY BGN Curncy
-    TN: USDJPYTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7688,10 +6235,6 @@ frxUSDJPY:
   uses_dst_shifted_seasonality: 1
 frxUSDKRW:
   asset: USD
-  bbdl:
-    symbols:
-    - USDKRW Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: USD/KRW
   exchange_name: FOREX
@@ -7714,28 +6257,12 @@ frxUSDKRW:
   symbol: frxUSDKRW
 frxUSDMXN:
   asset: USD
-  bbdl:
-    symbols:
-    - USDMXN Curncy
-    vol_source: BGN
   contracts: forward_and_daily
   commission_level: 3
   display_name: USD/MXN
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDMXN12M BGN Curncy
-    1M: USDMXN1M BGN Curncy
-    1W: USDMXN1W BGN Curncy
-    2M: USDMXN2M BGN Curncy
-    2W: USDMXN2W BGN Curncy
-    3M: USDMXN3M BGN Curncy
-    6M: USDMXN6M BGN Curncy
-    9M: USDMXN9M BGN Curncy
-    ON: USDMXNON BGN Curncy
-    SP: USDMXN BGN Curncy
-    TN: USDMXNTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7752,28 +6279,12 @@ frxUSDMXN:
   symbol: frxUSDMXN
 frxUSDNOK:
   asset: USD
-  bbdl:
-    symbols:
-    - USDNOK Curncy
-    vol_source: BGN
   contracts: forward_only
   commission_level: 3
   display_name: USD/NOK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDNOK12M BGN Curncy
-    1M: USDNOK1M BGN Curncy
-    1W: USDNOK1W BGN Curncy
-    2M: USDNOK2M BGN Curncy
-    2W: USDNOK2W BGN Curncy
-    3M: USDNOK3M BGN Curncy
-    6M: USDNOK6M BGN Curncy
-    9M: USDNOK9M BGN Curncy
-    ON: USDNOKON BGN Curncy
-    SP: USDNOK BGN Curncy
-    TN: USDNOKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7792,28 +6303,12 @@ frxUSDNOK:
   uses_dst_shifted_seasonality: 1
 frxUSDPLN:
   asset: USD
-  bbdl:
-    symbols:
-    - USDPLN Curncy
-    vol_source: BGN
   contracts: forward_and_daily
   commission_level: 3
   display_name: USD/PLN
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDPLN12M BGN Curncy
-    1M: USDPLN1M BGN Curncy
-    1W: USDPLN1W BGN Curncy
-    2M: USDPLN2M BGN Curncy
-    2W: USDPLN2W BGN Curncy
-    3M: USDPLN3M BGN Curncy
-    6M: USDPLN6M BGN Curncy
-    9M: USDPLN9M BGN Curncy
-    ON: USDPLNON BGN Curncy
-    SP: USDPLN BGN Curncy
-    TN: USDPLNTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7831,28 +6326,12 @@ frxUSDPLN:
   symbol: frxUSDPLN
 frxUSDSEK:
   asset: USD
-  bbdl:
-    symbols:
-    - USDSEK Curncy
-    vol_source: BGN
   contracts: forward_only
   commission_level: 2
   display_name: USD/SEK
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDSEK12M BGN Curncy
-    1M: USDSEK1M BGN Curncy
-    1W: USDSEK1W BGN Curncy
-    2M: USDSEK2M BGN Curncy
-    2W: USDSEK2W BGN Curncy
-    3M: USDSEK3M BGN Curncy
-    6M: USDSEK6M BGN Curncy
-    9M: USDSEK9M BGN Curncy
-    ON: USDSEKON BGN Curncy
-    SP: USDSEK BGN Curncy
-    TN: USDSEKTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7871,27 +6350,11 @@ frxUSDSEK:
   uses_dst_shifted_seasonality: 1
 frxUSDSGD:
   asset: USD
-  bbdl:
-    symbols:
-    - USDSGD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: USD/SGD
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDSGD12M BGN Curncy
-    1M: USDSGD1M BGN Curncy
-    1W: USDSGD1W BGN Curncy
-    2M: USDSGD2M BGN Curncy
-    2W: USDSGD2W BGN Curncy
-    3M: USDSGD3M BGN Curncy
-    6M: USDSGD6M BGN Curncy
-    9M: USDSGD9M BGN Curncy
-    ON: USDSGDON BGN Curncy
-    SP: USDSGD BGN Curncy
-    TN: USDSGDTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7909,27 +6372,11 @@ frxUSDSGD:
   symbol: frxUSDSGD
 frxUSDZAR:
   asset: USD
-  bbdl:
-    symbols:
-    - USDZAR Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: USDZAR
   exchange_name: FOREX
   feed_license: realtime
   forward_feed: 1
-  forward_tickers:
-    12M: USDZAR12M BGN Curncy
-    1M: USDZAR1M BGN Curncy
-    1W: USDZAR1W BGN Curncy
-    2M: USDZAR2M BGN Curncy
-    2W: USDZAR2W BGN Curncy
-    3M: USDZAR3M BGN Curncy
-    6M: USDZAR6M BGN Curncy
-    9M: USDZAR9M BGN Curncy
-    ON: USDZARON BGN Curncy
-    SP: USDZAR BGN Curncy
-    TN: USDZARTN BGN Curncy
   instrument_type: forex
   market: forex
   market_convention:
@@ -7946,10 +6393,6 @@ frxUSDZAR:
   symbol: frxUSDZAR
 frxXAGAUD:
   asset: XAG
-  bbdl:
-    symbols:
-    - XAGAUD Curncy
-    vol_source: BLCS
   commission_level: 2
   display_name: XAG/AUD
   exchange_name: FOREX
@@ -7971,10 +6414,6 @@ frxXAGAUD:
   symbol: frxXAGAUD
 frxXAGEUR:
   asset: XAG
-  bbdl:
-    symbols:
-    - XAGEUR Curncy
-    vol_source: BGN
   commission_level: 2
   display_name: XAG/EUR
   exchange_name: FOREX
@@ -7996,10 +6435,6 @@ frxXAGEUR:
   symbol: frxXAGEUR
 frxXAGGBP:
   asset: XAG
-  bbdl:
-    symbols:
-    - XAGGBP Curncy
-    vol_source: BLCS
   commission_level: 3
   display_name: XAG/GBP
   exchange_name: FOREX
@@ -8021,10 +6456,6 @@ frxXAGGBP:
   symbol: frxXAGGBP
 frxXAGUSD:
   asset: XAG
-  bbdl:
-    symbols:
-    - XAGUSD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: Silver/USD
   exchange_name: FOREX
@@ -8050,10 +6481,6 @@ frxXAGUSD:
   uses_dst_shifted_seasonality: 1
 frxXAUAUD:
   asset: XAU
-  bbdl:
-    symbols:
-    - XAUAUD Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: Gold/AUD
   exchange_name: FOREX
@@ -8075,10 +6502,6 @@ frxXAUAUD:
   symbol: frxXAUAUD
 frxXAUEUR:
   asset: XAU
-  bbdl:
-    symbols:
-    - XAUEUR Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: Gold/EUR
   exchange_name: FOREX
@@ -8100,10 +6523,6 @@ frxXAUEUR:
   symbol: frxXAUEUR
 frxXAUGBP:
   asset: XAU
-  bbdl:
-    symbols:
-    - XAUGBP Curncy
-    vol_source: BGN
   commission_level: 3
   display_name: Gold/GBP
   exchange_name: FOREX
@@ -8125,10 +6544,6 @@ frxXAUGBP:
   symbol: frxXAUGBP
 frxXAUUSD:
   asset: XAU
-  bbdl:
-    symbols:
-    - XAUUSD Curncy
-    vol_source: BGN
   commission_level: 1
   display_name: Gold/USD
   exchange_name: FOREX
@@ -8154,10 +6569,6 @@ frxXAUUSD:
   uses_dst_shifted_seasonality: 1
 frxXPDAUD:
   asset: XPD
-  bbdl:
-    symbols:
-    - XPDAUD Curncy
-    vol_source: BLCS
   commission_level: 2
   display_name: XPD/AUD
   exchange_name: FOREX
@@ -8180,10 +6591,6 @@ frxXPDAUD:
   volatility_surface_type: flat
 frxXPDEUR:
   asset: XPD
-  bbdl:
-    symbols:
-    - XPDEUR Curncy
-    vol_source: BLCS
   commission_level: 2
   display_name: XPD/EUR
   exchange_name: FOREX
@@ -8205,10 +6612,6 @@ frxXPDEUR:
   symbol: frxXPDEUR
 frxXPDGBP:
   asset: XPD
-  bbdl:
-    symbols:
-    - XPDGBP Curncy
-    vol_source: BLCS
   commission_level: 2
   display_name: XPD/GBP
   exchange_name: FOREX
@@ -8230,10 +6633,6 @@ frxXPDGBP:
   symbol: frxXPDGBP
 frxXPDUSD:
   asset: XPD
-  bbdl:
-    symbols:
-    - XPDUSD Curncy
-    vol_source: BGN
   contracts: restricted_metals
   commission_level: 3
   display_name: Palladium/USD
@@ -8256,10 +6655,6 @@ frxXPDUSD:
   symbol: frxXPDUSD
 frxXPTAUD:
   asset: XPT
-  bbdl:
-    symbols:
-    - XPTAUD Curncy
-    vol_source: BLCS
   commission_level: 2
   display_name: XPT/AUD
   exchange_name: FOREX
@@ -8282,10 +6677,6 @@ frxXPTAUD:
   volatility_surface_type: flat
 frxXPTEUR:
   asset: XPT
-  bbdl:
-    symbols:
-    - XPTEUR Curncy
-    vol_source: BLCS
   commission_level: 2
   display_name: XPT/EUR
   exchange_name: FOREX
@@ -8307,10 +6698,6 @@ frxXPTEUR:
   symbol: frxXPTEUR
 frxXPTGBP:
   asset: XPD
-  bbdl:
-    symbols:
-    - XPTGBP Curncy
-    vol_source: BLCS
   commission_level: 2
   display_name: XPT/GBP
   exchange_name: FOREX
@@ -8332,10 +6719,6 @@ frxXPTGBP:
   symbol: frxXPTGBP
 frxXPTUSD:
   asset: XPT
-  bbdl:
-    symbols:
-    - XPTUSD Curncy
-    vol_source: BGN
   contracts: restricted_metals
   commission_level: 3
   display_name: Platinum/USD

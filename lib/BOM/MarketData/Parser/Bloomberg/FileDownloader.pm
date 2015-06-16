@@ -90,15 +90,11 @@ The company Bloomberg terminal account details are: Username: RTECHNOLOGY, Passw
 
 use Moose;
 use Net::SFTP::Foreign;
-use BOM::Utility::Log4perl qw( get_logger );
 use Path::Tiny;
-
 use Date::Utility;
-use BOM::Market::UnderlyingDB;
-use BOM::Platform::Runtime;
-use BOM::Market::Types;
 use Carp;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use warnings;
+use Bloomberg::UnderlyingConfig;
 
 =head1 ATTRIBUTES
 
@@ -116,7 +112,7 @@ has data_dir => (
 sub _build_data_dir {
     my $self = shift;
 
-    my $loc = BOM::Platform::Runtime->instance->app_config->system->directory->db . '/BBDL';
+    my $loc = '/feed/BBDL';
     path($loc)->mkpath if (not -e $loc);
     return $loc;
 }
@@ -155,30 +151,6 @@ sub _build_sftp_server_ip {
     return $self->sftp_server_ips->[0];
 }
 
-=head2 volatility_source
-
-The current source used to update volatility data
-
-=cut
-
-has volatility_source => (
-    is         => 'ro',
-    isa        => 'bom_volatility_source',
-    lazy_build => 1,
-);
-
-sub _build_volatility_source {
-    return BOM::Platform::Runtime->instance->app_config->quants->market_data->volatility_source;
-}
-
-has _logger => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__logger {
-    return get_logger;
-}
 
 =head1 METHODS
 
@@ -207,19 +179,13 @@ sub grab_files {
     if ($file_type eq 'interest_rate') {
         push @list, 'interest_rate.csv';
     } elsif ($file_type eq 'vols') {
-        my $type;
-        if ($self->volatility_source eq 'OVDV') {
-            $type = 'OVDV';
-        } else {
-            $type = 'points';
             push @list, 'quantovol.csv';
-        }
 
         for (0 .. 23) {
-            push @list, 'fxvol' . sprintf('%02d', $_) . '45_' . $type . '.csv';
+            push @list, 'fxvol' . sprintf('%02d', $_) . '45_points.csv';
         }
     } elsif ($file_type eq 'ohlc') {
-        my $request_files = BOM::MarketData::Parser::Bloomberg::RequestFiles->new->_ohlc_request_files;
+        my $request_files = Bloomberg::UnderlyingConfig->_ohlc_request_files;
         foreach my $request (@{$request_files}) {
             if ($request =~ /^(\w+).req/) { push @list, $1 . '.csv'; }
         }
@@ -234,7 +200,6 @@ sub grab_files {
     my $sftp = $self->login;
     my $now  = Date::Utility->new;
 
-    $self->_logger->debug('Logged into ' . $self->sftp_server_ip);
     FILE:
     foreach my $file (@list) {
         # check file modification fime
@@ -261,9 +226,9 @@ sub grab_files {
             my $size = $file_stat->size;
             my $when = Date::Utility->new;
             if ($size == 0) {
-                $self->_logger->error("Zero size/not exists $file.enc");
+                warn "Zero size/not exists $file.enc";
             } else {
-                $self->_logger->debug("$file.enc SIZE=$size MTIME=$mtime");
+                warn "$file.enc SIZE=$size MTIME=$mtime";
             }
         } else {
             die "no file stat for ($file)";
@@ -272,13 +237,13 @@ sub grab_files {
         $sftp->get("$file.enc", "/tmp/$file.enc");
 
         if ($sftp->error) {
-            $self->_logger->error("Failed to get the $file.enc file:" . $sftp->error);
+            warn "Failed to get the $file.enc file:" . $sftp->error;
         } else {
             unlink "/tmp/$file";
 
             # check file is not empty
             if (-s "/tmp/$file.enc" < 10) {
-                $self->_logger->error("$file.enc file size seems too small.");
+                warn "$file.enc file size seems too small.";
             } else {
                 my $response_file;
                 my $data_dir = path($self->data_dir);
@@ -286,9 +251,7 @@ sub grab_files {
                     my $hhmmss = $mod_time->time_hhmmss;
                     $hhmmss =~ s/://g;
 
-                    if ($file =~ /OVDV/) {
-                        $response_file = 'fx' . $hhmmss . "_OVDV.csv";
-                    } elsif ($file =~ /points/) {
+                    if ($file =~ /points/) {
                         $response_file = 'fx' . $hhmmss . "_vol_points.csv";
                     } elsif ($file =~ /quantovol/) {
                         next;
@@ -296,7 +259,7 @@ sub grab_files {
                         croak 'Invalid file from BBDL[' . $file . '] ';
                     }
 
-                    $dir = $data_dir->child($self->volatility_source, $mod_time->date_yyyymmdd);
+                    $dir = $data_dir->child($mod_time->date_yyyymmdd);
                     $dir->mkpath unless $dir->is_dir;
                 } else {
                     $response_file = $file;
@@ -310,7 +273,7 @@ sub grab_files {
                         push @successfiles, "/$dir/quantovol.csv";
                     }
                 } else {
-                    $self->_logger->error("$file.enc could not decrypt.");
+                    warn "$file.enc could not decrypt.";
                 }
             }
         }
@@ -370,10 +333,10 @@ sub des_decrypt {
     my $fs = (-s $tofile) || 0;
     if ($fs > 20000000) {
         unlink $tofile;
-        $self->_logger->error("des-standalone produced output file[$tofile] of size[$fs]");
+        warn "des-standalone produced output file[$tofile] of size[$fs]";
         return 0;
     } elsif (!-f $tofile) {
-        $self->_logger->error("des-standalone failed, $tofile not created: $!");
+        warn "des-standalone failed, $tofile not created: $!";
         return 0;
     }
 

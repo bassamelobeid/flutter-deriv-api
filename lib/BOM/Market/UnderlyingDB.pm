@@ -270,63 +270,6 @@ sub _matches_types {
     return $found;
 }
 
-=head2 bbdl_parameters
-
-Filtered parameters for use with BBDL.
-
-=cut
-
-sub bbdl_parameters {
-    my $self      = shift;
-    my $filter_by = shift;
-
-    if ($filter_by and ref $filter_by ne 'HASH') {
-        get_logger->warn("[get_bbdl_parameters] filter_by is not a hash");
-        return;
-    }
-
-    my $bbdl_parameters = {};
-    my $contents        = $self->_file_content;
-    foreach my $underlying (keys %{$contents}) {
-        my $value = $contents->{$underlying};
-        if ($value->{bbdl}) {
-            my $matched = 1;
-
-            if ($filter_by) {
-                foreach my $condition (keys %{$filter_by}) {
-                    if ($value->{$condition} ne $filter_by->{$condition}) {
-                        $matched = 0;
-                    }
-                }
-            }
-
-            $bbdl_parameters->{$underlying} = $value->{bbdl} if ($matched);
-        }
-    }
-
-    return $bbdl_parameters;
-}
-
-=head2 $self->bbdl_bom_mapping_for
-
-The filtered parameters mapped back to BBDL symbols.
-
-=cut
-
-sub bbdl_bom_mapping_for {
-    my $self      = shift;
-    my $filter_by = shift;
-
-    my $underlyings = $self->bbdl_parameters($filter_by);
-    my $mapping     = {};
-    foreach my $underlying (keys %{$underlyings}) {
-        foreach my $bbdl_symbol (@{$underlyings->{$underlying}->{symbols}}) {
-            $mapping->{$bbdl_symbol} = $underlying;
-        }
-    }
-
-    return $mapping;
-}
 
 sub _normalize_method_args {
     my ($self, %args) = @_;

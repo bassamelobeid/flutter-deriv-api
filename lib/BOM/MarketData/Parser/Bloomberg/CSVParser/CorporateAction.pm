@@ -17,21 +17,8 @@ use Moose;
 use File::Slurp;
 
 use Date::Utility;
-use BOM::MarketData::CorporateAction;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
-use BOM::Market::Underlying;
-use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Platform::Context qw(localize);
 use Format::Util::Numbers qw(roundnear);
-
-has _logger => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__logger {
-    return get_logger;
-}
+use Bloomberg::UnderyingConfig;
 
 =head2 update_corporate_actions
 
@@ -95,7 +82,7 @@ sub _get_corp_actions_info {
     my $variable_data_expected = $line[-1];
 
     if ($variable_data != $variable_data_expected) {
-        $self->_logger->logwarn('Errorneous corporate actions data for ' . $line[0] . ' received from Bloomberg');
+        warn 'Errorneous corporate actions data for ' . $line[0] . ' received from Bloomberg';
     }
 
     @{$output}{@fields_default} = @line;
@@ -145,11 +132,10 @@ sub _convert_data_to_actions {
     return if ($action_code eq 'DVD_STOCK'  and grep { $corp_info->{CP_DVD_STOCK_TYP} == $_ } @{$self->_ignore_list->{DVD_STOCK}->{ignore}});
     return if ($action_code eq 'STOCK_SPLT' and grep { $corp_info->{CP_STOCK_SPLT_TYP} == $_ } @{$self->_ignore_list->{STOCK_SPLT}->{ignore}});
 
-    my $logger = $self->_logger;
     #CP_AMT: Percent of each share held to be given to shareholders.
     #CP_ADJ: Price adjustment factor. Used for adjusting historical values.
     if ($action_code eq 'DVD_STOCK' and (1 + roundnear(0.0001, $corp_info->{'CP_AMT'} / 100)) != roundnear(0.0001, $corp_info->{'CP_ADJ'})) {
-        $logger->logwarn('Corporate action ignored[' . $corp_info->{Action_ID} . ']. CP_ADJ is != 1+(CP_AMT/100) in DVD stock');
+        warn 'Corporate action ignored[' . $corp_info->{Action_ID} . ']. CP_ADJ is != 1+(CP_AMT/100) in DVD stock';
     }
 
     # For stock split, CP_ADJ will always equal with CP_RATIO, except for CP_STOCK_SPLT_TYP 3006
@@ -160,29 +146,29 @@ sub _convert_data_to_actions {
         and $corp_info->{'CP_STOCK_SPLT_TYP'} != 3006
         and $corp_info->{'CP_RATIO'} != $corp_info->{'CP_ADJ'})
     {
-        $logger->logwarn('Corporate action ignored['
+        warn 'Corporate action ignored['
                 . $corp_info->{Action_ID}
                 . ']. CP_RATIO['
                 . $corp_info->{CP_RATIO}
                 . '] != CP_ADJ['
                 . $corp_info->{CP_ADJ}
-                . ']');
+                . ']';
         return;
     }
     if ($corp_info->{CP_ADJ_DT} and $corp_info->{Eff_date} and $corp_info->{'CP_ADJ_DT'} ne $corp_info->{'Eff_date'}) {
-        $logger->logwarn('Corporate action ignore['
+        warn 'Corporate action ignore['
                 . $corp_info->{Action_ID}
                 . ']. Adjustment date['
                 . $corp_info->{CP_ADJ_DT}
                 . '] != Effective date['
                 . $corp_info->{Eff_date}
-                . ']');
+                . ']';
         return;
     }
 
-    my %bloomberg_to_rmg = BOM::MarketData::Parser::Bloomberg::RequestFiles->new->bloomberg_to_rmg;
+    my %bloomberg_to_binary = Bloomberg::UnderlyingConfig->bloomberg_to_binary;
     $corp_info->{Identifier} =~ s/\s+/ /g;    # remove double spaces
-    my $underlying_symbol = $bloomberg_to_rmg{$corp_info->{Identifier}};
+    my $underlying_symbol = $bloomberg_to_binary{$corp_info->{Identifier}};
 
     if ($corp_info->{Flag} eq 'D' and $corp_info->{Action_ID}) {
         # no further information is required for a deleted
@@ -194,9 +180,8 @@ sub _convert_data_to_actions {
         };
     }
 
-    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
     my %actions    = (
-        symbol         => $underlying->symbol,
+        symbol         => $underlying_symbol,
         flag           => $corp_info->{Flag},
         effective_date => $corp_info->{Eff_date},
         action_id      => $corp_info->{Action_ID},
@@ -204,17 +189,17 @@ sub _convert_data_to_actions {
     );
 
     my %name_mapper = (
-        DVD_CASH     => localize('Cash Dividend'),
-        DVD_STOCK    => localize('Stock Dividend'),
-        STOCK_SPLT   => localize('Stock Split'),
-        DIVEST       => localize('Divestiture'),
-        ACQUIS       => localize('Acquisition'),
-        RIGHTS_OFFER => localize('Rights Offering'),
-        SPIN         => localize('Spin-Off'),
-        BANCR        => localize('Bankruptcy Filing'),
-        STOCK_BUY    => localize('Stock Buyback'),
-        EQY_OFFER    => localize('Equity Offering'),
-        EXCH_OFFER   => localize('Exchange Offering'),
+        DVD_CASH     => 'Cash Dividend',
+        DVD_STOCK    => 'Stock Dividend',
+        STOCK_SPLT   => 'Stock Split',
+        DIVEST       => 'Divestiture',
+        ACQUIS       => 'Acquisition',
+        RIGHTS_OFFER => 'Rights Offering',
+        SPIN         => 'Spin-Off',
+        BANCR        => 'Bankruptcy Filing',
+        STOCK_BUY    => 'Stock Buyback',
+        EQY_OFFER    => 'Equity Offering',
+        EXCH_OFFER   => 'Exchange Offering',
     );
     my $cp_terms = $corp_info->{CP_TERMS} || 'N.A.';
 

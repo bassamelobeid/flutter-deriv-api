@@ -17,42 +17,20 @@ subtest general => sub {
     lives_ok { $r = BOM::MarketData::Parser::Bloomberg::RequestFiles->new() } 'can create object';
 
     can_ok($r, 'request_files_dir');
-    can_ok($r, 'volatility_source');
     can_ok($r, 'master_request_files');
     can_ok($r, 'generate_request_files');
     can_ok($r, 'generate_cancel_files');
-    can_ok($r, 'bloomberg_to_rmg');
-    can_ok($r, 'get_all_indices_by_region');
-
-    my $source;
-    lives_ok { $source = $r->volatility_source } 'can call volatility_source';
-    is($source, 'OVDV', 'default volatility source is ovdv');
-    throws_ok { BOM::MarketData::Parser::Bloomberg::RequestFiles->new(volatility_source => 'unknown') } qr/Invalid volatility_source\[unknown\]/,
-        'throws exception if volatility source is not OVDV or vol_points';
 };
 
 my $dir = File::Temp->newdir;
 my $tmp = "$dir";
 
 subtest daily_request_files => sub {
-    my $ovdv = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
-        request_files_dir => $tmp,
-        volatility_source => 'OVDV'
-    );
-    throws_ok { $ovdv->generate_request_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
-
-    lives_ok { $ovdv->generate_request_files('daily') } 'can generate daily request files';
     my $vp = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
-        volatility_source => 'vol_points'
     );
     throws_ok { $vp->generate_request_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
     lives_ok { $vp->generate_request_files('daily') } 'can generate daily request files';
-
-    foreach my $ovdvfile (@{$ovdv->master_request_files}) {
-        $ovdvfile = 'd_' . $ovdvfile;
-        ok(-e $tmp . '/' . $ovdvfile, 'file[' . $ovdvfile . '] exists');
-    }
 
     foreach my $vpfile (@{$vp->master_request_files}) {
         $vpfile = 'd_' . $vpfile;
@@ -61,23 +39,11 @@ subtest daily_request_files => sub {
 };
 
 subtest onehost_request_files => sub {
-    my $ovdv = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
-        request_files_dir => $tmp,
-        volatility_source => 'OVDV'
-    );
-    throws_ok { $ovdv->generate_request_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
-    lives_ok { $ovdv->generate_request_files('oneshot') } 'can generate oneshot request files';
     my $vp = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
-        volatility_source => 'vol_points'
     );
     throws_ok { $vp->generate_request_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
     lives_ok { $vp->generate_request_files('oneshot') } 'can generate oneshot request files';
-
-    foreach my $ovdvfile (@{$ovdv->master_request_files}) {
-        $ovdvfile = 'os_' . $ovdvfile;
-        ok(-e $tmp . '/' . $ovdvfile, 'file[' . $ovdvfile . '] exists');
-    }
 
     foreach my $vpfile (@{$vp->master_request_files}) {
         $vpfile = 'os_' . $vpfile;
@@ -88,7 +54,6 @@ subtest onehost_request_files => sub {
 subtest cancel_files => sub {
     my $cancel = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
-        volatility_source => 'OVDV'
     );
     throws_ok { $cancel->generate_cancel_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
     lives_ok { $cancel->generate_cancel_files('oneshot') } 'can generate oneshot request files';
@@ -119,7 +84,6 @@ subtest request_files_error => sub {
     # invalid ohlc request files
     my $error = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
-        volatility_source => 'OVDV'
     );
     $error = Test::MockObject::Extends->new($error);
     $error->mock('_ohlc_request_files', sub { return ['ohlc_error_x.req'] });
@@ -129,25 +93,16 @@ subtest request_files_error => sub {
 subtest coverage_for_private_methods => sub {
     my $error = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
-        volatility_source => 'OVDV'
     );
     $error = Test::MockObject::Extends->new($error);
-    # invalid ticker
-    $error->mock('bloomberg_to_rmg', sub { (abc => 'USASEBL') });
-    lives_ok { $error->_tickerlist_stocks } 'lives';
-    throws_ok { $error->_rmg_to_bloomberg('JUNK_something') } qr/Cannot parse/, 'throws exception if junk is pass in to _rmg_to_bloomberg';
-
     lives_ok { $error->_get_vols_template('fxvol_something_OVDV.req', 'OVDV') } 'faulty vol request file';
 
-    $error->mock('_get_currency_list', sub { ('frxBROUSD') });
     lives_ok { $error->_tickerlist_vols({include => 'all', request_time => time}) } 'skip frxBROUSD';
     lives_ok { $error->_get_quanto_template('quantovol.req', 'all') } 'skip frxBROUSD for quanto';
 
     my $volpoints_error = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
-        volatility_source => 'vol_points'
     );
 
     lives_ok { $volpoints_error->_tickerlist_vols({include => 'all', request_time => undef}) } 'request_time undef';
-    lives_ok { $volpoints_error->bloomberg_to_rmg } '';
 };
