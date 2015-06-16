@@ -2,7 +2,7 @@ use Test::Most 0.22 (tests => 3);
 use Test::NoWarnings;
 
 use BOM::Platform::Runtime::AppConfig::Attribute::Global;
-use BOM::Utility::HashDotNotation;
+use Data::Hash::DotNotation;
 
 subtest 'get' => sub {
     subtest 'default' => sub {
@@ -23,7 +23,7 @@ subtest 'get' => sub {
 
     subtest 'from app_config' => sub {
         my $data = {tests => {get => 'b'}};
-        my $app_config = BOM::Utility::HashDotNotation->new(data => $data);
+        my $app_config = Data::Hash::DotNotation->new(data => $data);
 
         my $attribute = BOM::Platform::Runtime::AppConfig::Attribute::Global->new(
             name        => 'get',
@@ -45,10 +45,10 @@ subtest 'get' => sub {
 
     subtest 'from global(couch)' => sub {
         my $data = {tests => {get => 'c'}};
-        my $global = BOM::Utility::HashDotNotation->new(data => $data);
+        my $global = Data::Hash::DotNotation->new(data => $data);
 
         $data = {tests => {get => 'b'}};
-        my $app_config = BOM::Utility::HashDotNotation->new(data => $data);
+        my $app_config = Data::Hash::DotNotation->new(data => $data);
 
         my $attribute = BOM::Platform::Runtime::AppConfig::Attribute::Global->new(
             name        => 'get',
@@ -72,13 +72,13 @@ subtest 'get' => sub {
 
 subtest 'set - where' => sub {
     my $data = {tests => {get => 'd'}};
-    my $app_settings_overrides = BOM::Utility::HashDotNotation->new(data => $data);
+    my $app_settings_overrides = Data::Hash::DotNotation->new(data => $data);
 
     $data = {tests => {get => 'c'}};
-    my $global = BOM::Utility::HashDotNotation->new(data => $data);
+    my $global = Data::Hash::DotNotation->new(data => $data);
 
     $data = {tests => {get => 'b'}};
-    my $app_config = BOM::Utility::HashDotNotation->new(data => $data);
+    my $app_config = Data::Hash::DotNotation->new(data => $data);
 
     my $attribute = BOM::Platform::Runtime::AppConfig::Attribute::Global->new(
         name        => 'get',
