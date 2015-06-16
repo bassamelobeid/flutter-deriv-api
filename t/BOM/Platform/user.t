@@ -68,14 +68,6 @@ subtest 'email untaint' => sub {
     throws_ok { BOM::Platform::User->new({email => "' or '1'='1"}) } qr/wrong email or loginid format/, 'no sql injection';
 };
 
-subtest 'check loginid exist for broker' => sub {
-    is $user->loginid_exist_for_broker('VRTC'),   1,     'VRTC acc exists';
-    is $user->loginid_exist_for_broker('CR'),     undef, 'CR acc not exists';
-    is $user->loginid_exist_for_broker('MX'),     undef, 'MX acc not exists';
-    is $user->loginid_exist_for_broker('MLT'),    undef, 'MLT acc not exists';
-    is $user->loginid_exist_for_broker('XXYYZZ'), undef, 'XXYYZZ acc not exists';
-};
-
 my @loginids;
 my $cr_2;
 subtest 'default loginid & cookie' => sub {
@@ -176,23 +168,9 @@ subtest 'default loginid & cookie' => sub {
     };
 };
 
-subtest 'check loginid exist for broker' => sub {
-    is $user->loginid_exist_for_broker('VRTC'), 1,     'VRTC acc exists';
-    is $user->loginid_exist_for_broker('CR'),   1,     'CR acc not exists';
-    is $user->loginid_exist_for_broker('MLT'),  undef, 'MLT acc not exists';
-    is $user->loginid_exist_for_broker('MX'),   undef, 'MX acc not exists';
-};
-
 subtest 'user / email from loginid' => sub {
-    my $result = BOM::Platform::User::get_email_by_loginid($vr_1);
-    is $user->email, $result, 'email for loginid 1';
-
-    $result = BOM::Platform::User::get_email_by_loginid($cr_1);
-    is $user->email, $result, 'email for loginid 2';
-
     my $user_2 = BOM::Platform::User->new({
         email         => $vr_1,
-        loginid_check => 1
     });
 
     is $user_2->email, $email, 'user from loginid';
@@ -209,7 +187,6 @@ subtest 'User Login' => sub {
         subtest 'with VR acc' => sub {
             my $user = BOM::Platform::User->new({
                 email         => $vr_1,
-                loginid_check => 1
             });
             is $user->email, $email, 'email OK';
             cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
@@ -221,7 +198,6 @@ subtest 'User Login' => sub {
         subtest 'with CR acc' => sub {
             my $user = BOM::Platform::User->new({
                 email         => $vr_1,
-                loginid_check => 1
             });
             is $user->email, $email, 'email OK';
             cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
