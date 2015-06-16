@@ -233,6 +233,7 @@ sub get_client_info {
     return $client_info;
 }
 
+# move to B::P::Client..
 sub cookie_and_default_loginid {
     my $self        = shift;
     my $client_info = $self->get_client_info();
