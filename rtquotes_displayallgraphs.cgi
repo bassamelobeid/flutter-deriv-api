@@ -4,7 +4,7 @@ package main;
 use strict;
 use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
-use BOM::Utility::GNUPlot;
+use BOM::Backoffice::GNUPlot;
 use BOM::Utility::Utils;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -204,7 +204,7 @@ if ($daily) {
         $daily_data .= $graph_x->[$n] . ' ' . $candle_o[$n] . ' ' . $candle_h[$n] . ' ' . $candle_l[$n] . ' ' . $candle_c[$n] . "\n";
     }
 
-    my $graphs_gnuplot = BOM::Utility::GNUPlot->new({
+    my $graphs_gnuplot = BOM::Backoffice::GNUPlot->new({
         'top_title'        => "Daily Charting - $daily",
         'background_color' => 'FFFFFF',
         'output_type'      => 'gif',
@@ -248,7 +248,7 @@ elsif (scalar @overlay and not $merge) {
         my $which = ($yday) ? $yday + $i : $i;
         my $daytochart = Date::Utility->new($now->epoch - 86400 * $which)->date_ddmmmyy;
 
-        my $graphs_gnuplot = BOM::Utility::GNUPlot->new({
+        my $graphs_gnuplot = BOM::Backoffice::GNUPlot->new({
             'top_title'        => "Intraday Chart - $overlay on $daytochart",
             'background_color' => 'FFFFFF',
             'output_type'      => 'gif',
@@ -377,7 +377,7 @@ elsif (scalar @overlay and not $merge) {
 elsif (scalar @overlay and $merge) {
     Bar("Intraday Graph (Merge) for $overlay");
 
-    my $graphs_gnuplot = BOM::Utility::GNUPlot->new({
+    my $graphs_gnuplot = BOM::Backoffice::GNUPlot->new({
         'top_title'        => "Merge Intraday Chart - $overlay",
         'background_color' => 'FFFFFF',
         'output_type'      => 'gif',
