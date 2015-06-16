@@ -17,7 +17,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
-use BOM::Market::AggTicks;
+use BOM::Market::TickCache;
 use Time::Duration::Concise::Localize;
 use Date::Utility;
 
@@ -41,7 +41,7 @@ for (my $i = $duration->seconds; $i > 0; $i--) {
         quote      => 100 + int(rand(100)) / 100
     });
 }
-my $at = BOM::Market::AggTicks->new;
+my $at = BOM::Market::TickCache->new;
 $at->fill_from_historical_feed({
     underlying   => $underlying,
     ending_epoch => $now->epoch,

@@ -1,4 +1,5 @@
----
+# Sesonality calibration for intraday vol estimation. Creates long term & short teerm prediction 
+# which is then used to adjust naked vol, and the final vol is used in the intraday engine--
 volatility_coef:
   WLDAUD:
     data:

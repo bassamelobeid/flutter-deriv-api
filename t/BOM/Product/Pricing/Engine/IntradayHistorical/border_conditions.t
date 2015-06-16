@@ -8,7 +8,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Runtime qw(:normal);
-use BOM::Market::AggTicks;
+use BOM::Market::TickCache;
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -18,7 +18,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-BOM::Market::AggTicks->new->flush;
+BOM::Market::TickCache->new->flush;
 
 foreach my $symbol (qw(NYSE LSE TSE FSE ASX FOREX SES)) {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(

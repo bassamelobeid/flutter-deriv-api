@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use Test::Most;
 use Test::FailWarnings;
 use Test::MockModule;
@@ -9,7 +12,7 @@ use Test::MockObject::Extends;
 use YAML::XS;
 use Cache::RedisDB;
 use BOM::Test::Runtime qw(:normal);
-use BOM::Market::AggTicks;
+use BOM::Market::TickCache;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase;

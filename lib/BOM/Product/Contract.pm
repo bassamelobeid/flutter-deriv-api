@@ -748,8 +748,7 @@ sub _build_volsurface {
 sub _build_pricing_mu {
     my $self = shift;
 
-    # This feels hacky because it kind of is.  Hopefully a better solution in the future.
-    return $self->theo_probability->peek_amount('intraday_mu') // $self->mu;
+    return $self->mu;
 }
 
 sub _build_longcode {
