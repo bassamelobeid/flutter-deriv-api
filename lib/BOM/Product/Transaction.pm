@@ -319,7 +319,7 @@ sub calculate_limits {
     if ($contract->category_code eq 'digits') {
         push @{$self->limits->{specific_turnover_limits}},
             +{
-            bet_type    => [map { {n => $_} } 'DIGITMATCH', 'DIGITDIFF'],
+            bet_type    => [map { {n => $_} } 'DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITEVEN', 'DIGITODD'],
             name        => 'digits_turnover_limit',
             limit       => $ql->digits_turnover_limit,
             tick_expiry => 1,

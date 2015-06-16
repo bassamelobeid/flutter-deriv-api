@@ -3,8 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 9;
-use Test::NoWarnings;
+use Test::More tests => 6;
+use Test::FailWarnings;
+
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -41,27 +43,60 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 my $params = {
     currency    => 'USD',
-    payout      => 100,
+    amount      => 100,
     date_start  => time,
     underlying  => 'R_50',
     tick_expiry => 1,
-    tick_count  => 10
+    tick_count  => 10,
+    amount_type => 'payout',
+    barrier     => 5,
 };
-my $c = produce_contract({
-    %$params,
-    bet_type => 'DIGITMATCH',
-});
-is $c->code, 'DIGITMATCH', 'correct bet type';
-is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Digits', 'correct engine';
-is $c->bs_probability->amount, 0.1, 'bs probability is 0.1';
-is $c->total_markup->amount, 0.0015228426395939, 'total markup is 0.0015228426395939';
 
-$c = produce_contract({
-    %$params,
-    bet_type => 'DIGITDIFF',
-});
-is $c->code, 'DIGITDIFF', 'correct bet type';
-is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Digits', 'correct engine';
-is $c->bs_probability->amount, 0.9, 'bs probability is 0.9';
-is $c->total_markup->amount, 0.00909090909090909, 'total markup 0.00909090909090909';
+my %expectations = (
+    DIGITMATCH => {
+        bs_prob => 0.10,
+        markup  => 0.0015228426395939,
+    },
+    DIGITDIFF => {
+        bs_prob => 0.90,
+        markup  => 0.00909090909090909,
+    },
+    DIGITODD => {
+        bs_prob => 0.50,
+        markup  => 0.005,
+    },
+    DIGITEVEN => {
+        bs_prob => 0.50,
+        markup  => 0.005,
+    },
+    DIGITOVER => {
+        bs_prob => 0.40,
+        markup  => 0.00407317143516382,
+    },
+    DIGITUNDER => {
+        bs_prob => 0.50,
+        markup  => 0.005,
+    },
+);
+
+foreach my $bt_code (sort keys %expectations) {
+    subtest $bt_code => sub {
+
+        my $c = produce_contract({%$params, bet_type => $bt_code});
+
+        my $expect = $expectations{$bt_code};
+
+        is $c->pricing_code, $bt_code, 'contract type';
+        is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Digits', 'pricing engine';
+        _check_amount($c->bs_probability, $expect->{bs_prob}, 'bs_prob');
+        _check_amount($c->total_markup,   $expect->{markup},  'markup');
+    };
+}
+
+sub _check_amount {
+    my ($which, $amount, $desc) = @_;
+
+    cmp_ok(roundnear(1e-4, $which->amount), '==', roundnear(1e-4, $amount), $desc . ' rounds to the correct number');
+}
+
 1;
