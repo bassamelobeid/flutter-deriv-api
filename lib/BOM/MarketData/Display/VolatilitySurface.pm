@@ -8,7 +8,7 @@ use BOM::Platform::Context qw(request template);
 use Format::Util::Numbers qw( roundnear );
 use VolSurface::Utils qw( get_1vol_butterfly );
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Utility::GNUPlot;
+use BOM::Backoffice::GNUPlot;
 use Try::Tiny;
 
 =head1 surface
@@ -690,7 +690,7 @@ sub plot_smile_or_termstructure {
 
     my ($file_name, $dir) = ('volsurface_' . int(rand(1000)) . '.png', BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif);
     my $file           = "$dir/$file_name";
-    my $graphs_gnuplot = BOM::Utility::GNUPlot->new({
+    my $graphs_gnuplot = BOM::Backoffice::GNUPlot->new({
         top_title       => $top_title,
         x_label         => $x_label,
         y_label         => 'Volatility',
