@@ -1,0 +1,1277 @@
+---
+# Make sure holidays are not the same as set on the FOREX exchange.
+# Holidays can have weights, vols for FX contracts will be multiplied by the
+# average weight of the currencies on that day (or 1.0 if it's not a holiday)
+# Bloomberg OVML and OVDV are using country holiday as holiday for currency, we are using the same thing here
+#
+# Example:
+#
+#   AUD:
+#     holidays:
+#       2012-01-26: Australia Day # for holiday
+#       2012-01-27: 0.4 # for quiet time
+#       2011-12-23: 0.5 # for early close
+#CDR AU
+# to check the day count convention on BB: AUD Curncy FLDS DAY_CNT_DES
+AUD:
+  daycount:  365
+  bloomberg_country_code:
+    - AU
+  bloomberg_calendar_code: AU
+  holidays:
+    3-Jan-11: New Year's Day
+    26-Jan-11: Australia Day
+    22-Apr-11: Good Friday
+    25-Apr-11: Easter Monday
+    26-Apr-11: Public holiday
+    13-Jun-11: Queen's Birthday Holiday
+    2011-12-26: Christmas Day
+    2011-12-27: Boxing Day
+    2012-01-02: New Year's Day
+    2012-01-26: Australia Day
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-04-25: Anzac Day
+    2012-06-11: Queen's Birthday Holiday
+    2012-08-06: Bank Holiday
+    2012-10-01: Labour Day
+    2012-12-24: 0.5
+    2012-12-25: Christmas Day
+    2012-12-26: Boxing Day
+    2012-12-31: 0.5
+    2013-01-01: New Year's Day
+    2013-01-28: Australia Day Holiday
+    2013-03-29: Good Friday
+    2013-04-01: Easter Monday
+    2013-04-25: Anzac Day
+    2013-06-10: Queen's Birthday Holiday
+    2013-08-05: Bank Holiday
+    2013-10-07: Labour Day
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-26: Boxing Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-27: Australia Day
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-04-25: ANZAC Day
+    2014-06-09: Queen's Birthday
+    2014-08-04: Bank Holiday
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-26: Boxing Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: ADDR1T Curncy
+    1W: AU0001W Index
+    1M: ADBB1M Curncy
+    2M: ADBB2M Curncy
+    3M: ADBB3M Curncy
+    4M: ADBB4M Curncy
+    5M: ADBB5M Curncy
+    6M: ADBB6M Curncy
+    1Y: ADSWAP1Q Curncy
+
+#CDR JN
+JPY:
+  daycount: 360
+  bloomberg_country_code:
+    - JN
+  bloomberg_calendar_code: JN
+  holidays:
+    3-Jan-11: Market Holiday
+    10-Jan-11: Coming of Age day
+    11-Feb-11: National Foundation Day
+    21-Mar-11: Vernal Equinox Day
+    29-Apr-11: Showa Day
+    3-May-11: Constitution Memorial Day
+    4-May-11: Greenery Day
+    5-May-11: Children's Day
+    18-Jul-11: Marine Day
+    19-Sep-11: Respect for the Aged Day
+    23-Sep-11: Autummal Equinox
+    10-Oct-11: Health and Sports Day
+    3-Nov-11: Culture Day
+    23-Nov-11: Labor Thanksgiving Day
+    2011-12-23: Emperor's Birthday
+    2012-01-02: Market Holiday
+    2012-01-03: Market Holiday
+    2012-01-09: Coming-of-age Day
+    2012-03-20: Vernal Equinox Day
+    2012-04-30: Showa Day
+    2012-05-03: Constitution Memorial Day
+    2012-05-04: Greenery Day
+    2012-07-16: Marine Day
+    2012-09-17: Respect for the Aged Day
+    2012-10-08: Health and Sports Day
+    2012-11-23: Labor Thanksgiving Day
+    2012-12-24: Emperor's Birthday
+    2012-12-31: Market Holiday
+    2013-01-01: New Year's Day
+    2013-01-02: New Year's Day
+    2013-01-03: Bank Holiday
+    2013-01-14: Coming-of-age Day
+    2013-02-11: National Foundation Day
+    2013-03-20: Vernal Equinox Day
+    2013-04-29: Showa Day
+    2013-05-03: Constitution Memorial Day
+    2013-05-04: Greenery Day
+    2013-05-06: Children's Day (obs)
+    2013-07-15: Marine Day
+    2013-09-16: Respect-for-the-aged Day
+    2013-09-23: Autumnal Equinox Day
+    2013-10-14: Health-sports Day
+    2013-11-23: Labor Thanksgiving Day
+    2013-12-23: Emperor's Birthday
+    2013-12-24: 0.5
+    2013-12-31: Bank Holiday
+    2014-01-01: New Year's Day
+    2014-01-02: Bank Holiday
+    2014-01-03: Bank Holiday
+    2014-01-13: Coming of Age Day
+    2014-02-11: National Foundation Day
+    2014-03-21: Vernal Equinox Day
+    2014-04-29: Showa Day
+    2014-05-05: Children's Day
+    2014-05-06: Greenery Day
+    2014-07-21: Marine Day
+    2014-09-15: Respect for the aged Day
+    2014-09-23: Autumnal Equinox Day
+    2014-10-13: Health Sport Day
+    2014-11-03: Culture Day
+    2014-11-24: Labor Thanksgiving
+    2014-12-23: Emperor's Birthday
+    2014-12-24: 0.5
+    2014-12-31: New Year's eve
+  bloomberg_interest_rates_tickerlist:
+    1W: JY0001W Index
+    1M: JY0001M Index
+    2M: JY0002M Index
+    3M: JY0003M Index
+    4M: JY0004M Index
+    5M: JY0005M Index
+    6M: JY0006M Index
+    7M: JY0007M Index
+    8M: JY0008M Index
+    9M: JY0009M Index
+    10M: JY0010M Index
+    11M: JY0011M Index
+    1Y: JY0012M Index
+
+#CDR US
+USD:
+  daycount: 360
+  bloomberg_country_code:
+    - US
+  bloomberg_calendar_code: US
+  holidays:
+    17-Jan-11: Martin Luther King, Jr. Day
+    21-Feb-11: Washington's Birthday (also known as Presidents' Day)
+    22-Apr-11: Good Friday
+    30-May-11: Memorial Day
+    4-Jul-11: Independence Day
+    5-Sep-11: Labour Day
+    24-Nov-11: Thanksgiving Day
+    2011-12-26: Christmas Day
+    2012-01-02: New Years Day
+    2012-01-16: Martin Luther King
+    2012-02-20: Washington's Birthday (also known as Presidents' Day)
+    2012-04-06: Good Friday
+    2012-05-28: Memorial Day
+    2012-07-03: 0.5
+    2012-07-04: Independence Day
+    2012-09-03: Labor Day
+    2012-10-08: Columbus Day
+    2012-11-22: Thanksgiving Day
+    2012-11-23: 0.5
+    2012-12-24: 0.5
+    2012-12-25: Christmas Day
+    2013-01-01: New Year's Day
+    2013-01-21: Martin L. King Day
+    2013-02-18: Presidents' Day
+    2013-03-10: Daylight Saving Begins
+    2013-03-29: Good Friday
+    2013-05-27: Memorial Day
+    2013-07-03: 0.5
+    2013-07-04: Independence Day
+    2013-09-02: Labor Day
+    2013-10-14: Columbus Day
+    2013-11-03: Daylight Saving Ends
+    2013-11-11: Veterans' Day
+    2013-11-28: Thanksgiving Day
+    2013-11-29: 0.5
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-20: Martin Luther King, Jr. Day
+    2014-02-17: Washington's Birthday
+    2014-04-18: Good Friday
+    2014-05-26: Memorial Day
+    2014-07-04: Independence Day
+    2014-09-01: Labor Day
+    2014-10-13: Columbus Day
+    2014-11-11: Veterans' Day
+    2014-11-27: Thanksgiving Day
+    2014-12-24: 0.5
+    2014-12-25: Christmas
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: US00O/N Index
+    1W: US0001W Index
+    2W: US0002W Index
+    1M: US0001M Index
+    2M: US0002M Index
+    3M: US0003M Index
+    4M: USSWD Curncy
+    5M: USSWE Curncy
+    6M: USSWF Curncy
+    7M: USSWG Curncy
+    8M: USSWH Curncy
+    9M: USSWI Curncy
+    10M: USSWJ Curncy
+    11M: USSWK Curncy
+    1Y: USSWAP1 Curncy
+
+#CDR EU
+EUR:
+  daycount: 360
+  bloomberg_country_code:
+    - BE
+    - CC
+    - EE
+    - FI
+    - FR
+    - GE
+    - GR
+    - IR
+    - IT
+    - MB
+    - NE
+    - PO
+    - SO
+    - SP
+    - SV
+    - TE
+    - AS
+  bloomberg_calendar_code: EU
+  holidays:
+    2010-12-31: 0.5
+    22-Apr-11: Good Friday
+    25-Apr-11: Easter Monday
+    2011-12-26: Christmas Holiday
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-05-01: Labour Day
+    2012-12-24: 0.5
+    2012-12-25: Christmas Holiday
+    2012-12-26: Boxing Day
+    2012-12-31: 0.5
+    2013-01-01: Holiday
+    2013-04-01: Holiday
+    2013-12-24: 0.5
+    2013-12-25: Holiday
+    2013-12-26: Holiday
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-05-01: Labour Day
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-26: Christmas Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: EONIA Index
+    1W: EUR001W Index
+    1M: EUR001M Index
+    2M: EUR002M Index
+    3M: EUR003M Index
+    4M: EUR004M Index
+    5M: EUR005M Index
+    6M: EUR006M Index
+    7M: EUSWG Curncy
+    8M: EUSWH Curncy
+    9M: EUSWI Curncy
+    10M: EUSWJ Curncy
+    11M: EUSWK Curncy
+    1Y: EUSA1 Curncy
+
+#CDR CA
+CAD:
+  daycount:  365
+  bloomberg_country_code:
+    - CA
+  bloomberg_calendar_code: CA
+  holidays:
+    3-Jan-11: New Year's Day
+    21-Feb-11: Family Day
+    22-Apr-11: Good Friday
+    23-May-11: Victoria Day
+    1-Jul-11: Canada Day
+    1-Aug-11: Civic Holiday
+    5-Sep-11: Labour Day
+    10-Oct-11: Thanksgiving Day
+    2011-12-26: Christmas Day
+    2011-12-27: Boxing Day
+    2012-01-02: New Year's Day
+    2012-02-20: Family Day
+    2012-04-06: Good Friday
+    2012-05-21: Victoria Day
+    2012-07-02: Canada Day
+    2012-08-06: Civic Holiday
+    2012-09-03: Labour Day
+    2012-10-08: Thanksgiving Day
+    2012-11-12: Remembrance Day
+    2012-12-25: Chirstmas Day
+    2012-12-26: Boxing Day
+    2013-01-01: New Year's Day
+    2013-02-18: Family Day
+    2013-03-29: Good Friday
+    2013-05-20: Victoria Day
+    2013-07-01: Canada Day
+    2013-08-05: Civic Holiday
+    2013-09-02: Labor Day
+    2013-10-14: Thanksgiving Day
+    2013-11-11: Remembrance Day
+    2013-12-24: 0.5
+    2013-12-25: Chirstmas Day
+    2013-12-26: Boxing Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-02-17: Family Day
+    2014-04-18: Good Friday
+    2014-05-19: Victoria Day
+    2014-07-01: Canada Day
+    2014-08-04: Civic Holiday
+    2014-09-01: Labour Day
+    2014-10-13: Thanksgiving Day
+    2014-11-11: Remembrance Day
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-26: Boxing Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: CCLR Index
+    1M: CDOR01 Index
+    2M: CDOR02 Index
+    3M: CDOR03 Index
+    4M: CDSWD Curncy
+    5M: CDSWE Curncy
+    6M: CDSWF Curncy
+    7M: CDSWG Curncy
+    8M: CDSWH Curncy
+    9M: CDSWI Curncy
+    10M: CDSWJ Curncy
+    11M: CDSWK Curncy
+    1Y: CDSW1 Curncy
+
+# CDR SZ
+CHF:
+  daycount:  360
+  bloomberg_country_code:
+    - SZ
+  bloomberg_calendar_code: SZ
+  holidays:
+    22-Apr-11: Good Friday
+    25-Apr-11: Easter Monday
+    2-Jun-11: Ascension
+    13-Jun-11: Whit Monday
+    1-Aug-11: National Day
+    2011-12-26: St.Stephen's Day
+    2012-01-02: New Year's Day
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-05-01: Labour Day
+    2012-05-17: Ascension
+    2012-05-28: Whit Monday
+    2012-08-01: National Day
+    2012-12-24: 0.5
+    2012-12-25: Christmas Day
+    2012-12-26: Boxing Day
+    2012-12-31: New Year's Eve
+    2013-01-01: New Year's Day
+    2013-03-29: Good Friday
+    2013-04-01: Easter Monday
+    2013-05-09: Ascension
+    2013-05-20: Whit Monday
+    2013-08-01: National Day
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-26: Boxing Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's day
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-05-29: Ascension Day
+    2014-06-09: Whit Monday
+    2014-08-01: National Day
+    2014-12-24: 0.5
+    2014-12-25: Christmas 
+    2014-12-26: St. Stephen's day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: SFDR1T Curncy
+    1W: SF0001W Index
+    1M: SF0001M Index
+    2M: SF0002M Index
+    3M: SF0003M Index
+    4M: SF0004M Index
+    5M: SF0005M Index
+    6M: SF0006M Index
+    7M: SF0007M Index
+    8M: SF0008M Index
+    9M: SF0009M Index
+    10M: SF0010M Index
+    11M: SF0011M Index
+    1Y: SF0012M Index
+
+#CDR GB
+GBP:
+  daycount:  365
+  bloomberg_country_code:
+    - GB
+  bloomberg_calendar_code: GB
+  holidays:
+    3-Jan-11: New Year's Day
+    22-Apr-11: Good Friday
+    25-Apr-11: Easter Monday
+    29-Apr-11: Royal Wedding
+    2-May-11: May Day
+    30-May-11: Spring Bank Holiday
+    29-Aug-11: Summer Bank Holiday
+    2011-12-26: Christmas Day
+    2011-12-27: Boxing Day
+    2012-01-02: New Year
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-05-07: Early May
+    2012-06-04: Spring Bank Holiday
+    2012-06-05: Queen's Diamond Jubilee
+    2012-08-27: Summer Bank Holiday
+    2012-12-24: 0.5
+    2012-12-25: Christmas Day
+    2012-12-26: Boxing Day
+    2012-12-31: 0.5
+    2013-01-01: Bank Holiday
+    2013-03-29: Good Friday
+    2013-04-01: Easter Monday
+    2013-05-06: May Day
+    2013-05-27: Spring Bank Holiday
+    2013-08-26: Summer Bank Holiday
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-26: Boxing Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-05-05: Early May Bank Holiday
+    2014-05-26: Late May Bank Holiday
+    2014-08-25: Summer Bank Holiday
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-26: Boxing Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: BP00O/N Index
+    1W: BP0001W Index
+    1M: BP0001M Index
+    2M: BP0002M Index
+    3M: BP0003M Index
+    4M: BP0004M Index
+    5M: BP0005M Index
+    6M: BP0006M Index
+    7M: BP0007M Index
+    8M: BP0008M Index
+    9M: BP0009M Index
+    10M: BP0010M Index
+    11M: BP0011M Index
+    1Y: BP0012M Index
+
+#CDR SW
+SEK:
+  daycount:  360
+  bloomberg_country_code:
+    - SW
+  bloomberg_calendar_code: SW
+  holidays:
+    6-Jan-11: Epiphany
+    22-Apr-11: Good Friday
+    25-Apr-11: Easter Monday
+    2-Jun-11: Ascension
+    6-Jun-11: Swedish National Day
+    24-Jun-11: Midsummer Holiday
+    2011-12-26: Christmas
+    2012-01-06: Epiphany
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-05-01: Labour Day
+    2012-05-17: Ascension
+    2012-06-06: National day
+    2012-06-22: Midsummer holiday
+    2012-12-24: Christmas Eve
+    2012-12-25: Christmas
+    2012-12-26: Boxing Day
+    2012-12-31: New Year's Eve
+    2013-01-01: New Year's Day
+    2013-01-06: Epiphany
+    2013-03-29: Good Friday
+    2013-03-31: Easter
+    2013-04-01: Easter Monday
+    2013-05-01: Labour Day
+    2013-05-19: Pentecost
+    2013-05-20: Holiday
+    2013-06-06: National day
+    2013-06-22: Midsummer holiday
+    2013-11-02: All Saints Day
+    2013-12-24: Christmas Eve
+    2013-12-25: Christmas Day
+    2013-12-26: Boxing Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-06: Epiphany
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-05-01: Labour Day
+    2014-05-29: Ascension
+    2014-06-06: National Day
+    2014-06-20: Midsummer Holiday
+    2014-12-24: Christmas Eve
+    2014-12-25: Christmas Day
+    2014-12-26: Boxing Day
+    2014-12-31: New Year's Eve
+  bloomberg_interest_rates_tickerlist:
+    1W: STIB1W Index
+    1M: STIB1M Index
+    2M: STIB2M Index
+    3M: STIB3M Index
+    6M: STIB6M Index
+    9M: STIB9M Index
+    1Y: STIB1Y Index
+
+#CDR NO
+NOK:
+  daycount:  360
+  bloomberg_country_code:
+    - NO
+  bloomberg_calendar_code: NO
+  holidays:
+    2011-04-21: Maundy Thursday
+    2011-04-22: Good Friday
+    2011-04-25: Easter Monday
+    2011-05-17: Constitution Day
+    2011-06-02: Ascension
+    2011-06-13: Pentecost
+    2011-12-26: Boxing Day
+    2012-04-05: Maundy Thursday
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-05-01: Labour Day
+    2012-05-17: Ascension Day
+    2012-05-28: Whit Monday
+    2012-12-25: Christmas
+    2012-12-26: St. Stephen's Day
+    2013-01-01: New Year's Day
+    2013-03-28: Maundy Thursday
+    2013-03-29: Good Friday
+    2013-04-01: Easter Monday
+    2013-05-01: Labour Day
+    2013-05-09: Ascension Day
+    2013-05-17: Constitution Day
+    2013-05-20: WhitMonday
+    2013-12-24: Christmas Eve
+    2013-12-25: Christmas Day
+    2013-12-26: Boxing Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-04-17: Maundy Thursday
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-05-01: Labour Day
+    2014-05-29: Ascension
+    2014-06-09: Whit Monday
+    2014-12-24: Christmas Eve
+    2014-12-25: Christmas
+    2014-12-26: Boxing Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: NKDR1T Index
+    1M: NIBOR1M Index
+    3M: NIBOR3M Index
+    6M: NIBOR6M Index
+    9M: NIBOR9M Index
+    1Y: NIBOR12M Index
+
+# CDR PD
+PLN:
+  daycount:  365
+  bloomberg_country_code:
+    - PD
+  bloomberg_calendar_code: PD
+  holidays:
+    2011-01-06: Epiphany
+    2011-04-25: Easter Monday
+    2011-05-03: Constitution Day
+    2011-06-23: Corpus Christi Day
+    2011-08-15: Assumption Day
+    2011-11-01: All Saints Day
+    2011-11-11: Independence Day
+    2011-12-26: Chirstmas Holiday
+    2012-01-06: Epiphany
+    2012-04-09: Easter Monday
+    2012-05-01: Labour Day
+    2012-05-03: Constitution Day
+    2012-06-07: Corpus Christi Day
+    2012-08-15: Assumption Day
+    2012-11-01: All Saints Day
+    2012-12-25: Christmas Day
+    2012-12-26: Christmas Holiday
+    2013-01-01: New Year's Day
+    2013-04-01: Easter Monday
+    2013-05-01: Labour Day
+    2013-05-03: Constitution Day
+    2013-05-30: Corpus Christi Day
+    2013-08-15: Assumption Day
+    2013-11-01: All Saints Day
+    2013-11-11: Independence Day
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-26: Christmas Holiday
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-06: Epiphany
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-05-01: Labor Day
+    2014-06-19: Corpus Christi
+    2014-08-15: Assumption of Mary
+    2014-11-01: All Saints' Day
+    2014-11-11: Independence Day
+    2014-12-25: Christmas Day
+    2014-12-26: Boxing Day
+  bloomberg_interest_rates_tickerlist:
+    ON: WIBOON Index
+    1M: WIBO1M Index
+    3M: WIBO3M Index
+    6M: WIBO6M Index
+    9M: WIBO9M Index
+    1Y: PZSW1 Curncy
+
+#CDR NZ
+NZD:
+  daycount:  365
+  bloomberg_country_code:
+    - NZ
+  bloomberg_calendar_code: NZ
+  holidays:
+    3-Jan-11: New Year's Day
+    4-Jan-11: New Year's Holiday
+    22-Apr-11: Good Friday
+    25-Apr-11: Easter Monday
+    6-Jun-11: Queen's Birthday
+    24-Oct-11: Labour Day
+    2011-12-26: Chirstmas Holiday
+    2011-12-27: Boxing Day
+    2012-01-02: New Year's Day
+    2012-01-03: New Year's Day
+    2012-01-23: Wellington Anniversary
+    2012-01-30: Auckland Anniversary
+    2012-02-06: Waitangi Day
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-04-25: Anzac Day
+    2012-06-04: Queen's Birthday
+    2012-10-22: Labour Day
+    2012-12-25: Christmas Day
+    2012-12-26: Boxing Day
+    2013-01-01: New Year's Day
+    2013-01-02: New Year's Holiday
+    2013-01-21: Wellington Anniversary Day
+    2013-01-28: Auckland Anniversary
+    2013-02-06: Waitangi Day
+    2013-03-29: Good Friday
+    2013-04-01: Easter Monday
+    2013-04-25: Anzac Day
+    2013-06-03: Queen's Birthday
+    2013-10-28: Labour Day
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-26: Boxing Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-02: New Year's Day
+    2014-01-20: Wellington Anniversary Day
+    2014-01-27: Auckland Anniversary
+    2014-02-06: Waitangi Day
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-04-25: Anzac Day
+    2014-06-02: Queen's Birthday
+    2014-10-27: Labour Day
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-26: Boxing Day
+  bloomberg_interest_rates_tickerlist:
+    ON: NZOCRS Index
+    1M: NDBB1M Curncy
+    2M: NDBB2M Curncy
+    3M: NDBB3M Curncy
+    4M: NDBB4M Curncy
+    5M: NDBB5M Curncy
+    6M: NDBB6M Curncy
+    1Y: NDSWAP1 Curncy
+
+#CDR CZ
+CZK:
+  daycount:  360
+  bloomberg_country_code:
+    - CZ
+  bloomberg_calendar_code: CZ
+  holidays:
+    2011-04-25: Easter Monday
+    2011-07-05: Ss. Cyril and Meth
+    2011-07-06: Jan Hus
+    2011-09-28: Day Of Czech State
+    2011-10-28: Independence Day
+    2011-11-17: Day Of Fight For Fr
+    2011-12-26: Christmas Day
+    2012-04-09: Easter Monday
+    2012-05-01: Labour Day
+    2012-05-08: Liberation day
+    2012-07-05: Ss. Cyril and Methodius
+    2012-07-06: Jan Hus
+    2012-09-28: Day of Czech Statehood
+    2012-12-24: Christmas Eve
+    2012-12-25: Christmas
+    2012-12-26: Christmas holiday
+    2013-03-31: Easter Day
+    2013-07-06: Jan Hus
+    2013-09-28: Day of Czech Statehood
+    2013-11-17: Day of Fight For Freedom
+    2013-12-24: 0.5
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-04-21: Easter Monday
+    2014-05-01: Labour Day
+    2014-05-08: Liberation Day
+    2014-10-28: Independence Day
+    2014-11-17: Day of Fight For Freedom
+    2014-12-24: Christmas Eve
+    2014-12-25: Christmas 
+    2014-12-26: Chirstmas Holiday
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: PRIBOVN Index
+    1W: PRIB01W  Index
+    1M: PRIB01M Index
+    2M: PRIB02M Index
+    3M: PRIB03M Index
+    6M: CKFROCF Index
+    9M: CKFROFI Index
+    1Y: CKFROI1 Index
+
+#CDR HK
+HKD:
+  daycount:  365
+  bloomberg_country_code:
+    - HK
+  bloomberg_calendar_code: HK
+  holidays:
+    3-Feb-11: Lunar New Year's Day
+    4-Feb-11: The second day of the Lunar New Year
+    5-Apr-11: Ching Ming Festival
+    22-Apr-11: Good Friday
+    25-Apr-11: Easter Monday
+    2-May-11: The day following Labour Day
+    10-May-11: The Buddha's Birthday
+    6-Jun-11: Tuen Ng Festival
+    1-Jul-11: Hong Kong Special Administrative Region Establishment Day
+    13-Sep-11: The day following Chinese Mid-Autumn Festival
+    5-Oct-11: Chung Yeung Festival
+    2011-12-26: Christmas Day
+    2011-12-27: Boxing day
+    2012-01-02: Day after New Year
+    2012-01-23: Lunar New Year
+    2012-01-24: Day after lunar new year
+    2012-01-25: Day after lunar new year
+    2012-04-04: Ching Ming Festival
+    2012-04-06: Good Friday
+    2012-04-09: Easter Monday
+    2012-05-01: Labour Day
+    2012-07-02: Hksar Establisment Day
+    2012-10-01: Day after Mid autumn day
+    2012-10-02: Dat after National Day
+    2012-10-23: Chung Yeung Festival
+    2012-12-24: 0.5
+    2012-12-25: Christmas Day
+    2012-12-26: Christmas Holiday
+    2012-12-31: 0.5
+    2013-01-01: New Year's Day
+    2013-02-11: Day After Lunar New Year
+    2013-02-12: Day After Lunar New Year
+    2013-02-13: Day After Lunar New Year
+    2013-03-29: Good Friday
+    2013-04-01: Easter Monday
+    2013-04-04: Ching Ming Festival
+    2013-05-01: Labour Day
+    2013-05-17: Buddha's Birthday
+    2013-06-21: Tuen Ng Festival
+    2013-07-01: Hksar Establisment Day
+    2013-09-20: Mid-autumn Festival
+    2013-10-01: National Day
+    2013-10-14: Chung Yeung Festival
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-26: Christmas Holiday
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-31: Lunar New Year
+    2014-02-03: Day After Lunar New Year
+    2014-04-18: Good Friday
+    2014-04-21: Easter Monday
+    2014-05-01: Labour Day
+    2014-05-06: Buddha's Birthday
+    2014-06-02: Tuen Ng Festival
+    2014-07-01: Sar Establishment Day
+    2014-09-09: Mid Autumn Festival
+    2014-10-01: National Day
+    2014-10-02: Chung Yeung Festival
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-26: Christmas Holiday
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: HIHDO/N Index
+    1W: HIHD1W Index
+    1M: HIHD01M Index
+    2M: HIHD02M Index
+    3M: HIHD03M Index
+    4M: HIHD04M Index
+    5M: HIHD05M Index
+    6M: HIHD06M Index
+    7M: HIHD07M Index
+    8M: HIHD08M Index
+    9M: HIHD09M Index
+    10M: HIHD10M Index
+    11M: HIHD11M Index
+    1Y: HDSW1 Index
+
+# CDR ID
+IDR:
+  daycount:  360
+  bloomberg_country_code:
+    - ID
+  bloomberg_calendar_code: ID
+  holidays:
+    3-Feb-11: Chinese New Year
+    16-Feb-11: Birth of the Prophet Muhammad SAW
+    22-Apr-11: Good Friday
+    17-May-11: Birth of Buddha 2554 (Vesak Day)
+    2-Jun-11:  Ascension Day of Jesus Christ
+    28-Jun-11: Ascension of the Prophet
+    17-Aug-11: Independence Day
+    31-Aug-11: Eid al-Fitr
+    7-Nov-11: Eid al-Adha
+    2012-01-23: Chinese New Year
+    2012-03-23: Hindu Saka New Year
+    2012-04-06: Good Friday
+    2012-05-17: Ascension Day of Jesus Christ
+    2012-05-18: Ascension day of the Prophet
+    2012-08-17: Independence day
+    2012-08-20: Idul Fitr
+    2012-08-21: Idul Fitr
+    2012-08-22: Idul Fitr
+    2012-10-26: Eid Al-adha
+    2012-11-15: Islamic New Year
+    2012-11-16: Islamic New Year
+    2012-12-24: Christmas Day
+    2012-12-25: Christmas Day
+    2012-12-31: Trading holiday
+    2013-01-01: New Year's Day
+    2013-08-17: Independence day
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-14: Prophet's Birthday
+    2014-01-31: Chinese New Year
+    2014-03-31: Saka New Year
+    2014-04-18: Good Friday
+    2014-05-01: Labour Day
+    2014-05-15: Waisak Day
+    2014-05-27: Isra Mihraj Nabi Muhammad
+    2014-05-29: Ascension Day of Jesus
+    2014-12-25: Christmas Day
+    2014-12-26: Christmas Holiday
+  bloomberg_interest_rates_tickerlist:
+    1Y: IHSWN1 Index
+
+# CDR SK
+KRW:
+  daycount:  365
+  bloomberg_country_code:
+    - SK
+  bloomberg_calendar_code: SK
+  holidays:
+    2-Feb-11: Lunar New Year's Day
+    3-Feb-11: Lunar New Year's Day
+    4-Feb-11: Lunar New Year's Day
+    1-Mar-11: Independence Declaration Day
+    5-May-11: Children's Day
+    10-May-11: Buddha's Birthday
+    6-Jun-11: Memorial Day
+    15-Aug-11: Liberation Day
+    12-Sep-11: Mid-Autumn Festival Day
+    13-Sep-11: Mid-Autumn Festival Day
+    3-Oct-11: National Foundation Day
+    2011-12-30: New Year's Eve
+    2012-01-23: Seollal Holiday
+    2012-01-24: Seollal Holiday
+    2012-03-01: Independence Declaration Day
+    2012-04-11: The Election of the National Assembly Members
+    2012-05-28: Buddha's Birthday
+    2012-06-06: Memorial Day
+    2012-08-15: Liberation Day
+    2012-10-01: Mid-Autumn Festival
+    2012-10-03: National Foundation Day
+    2012-12-19: The President Election
+    2012-12-25: Chirstmas Day
+    2012-12-31: The last working day
+    2013-01-01: New Year's Day
+    2013-02-09: Lunar New Year
+    2013-02-10: Lunar New Year
+    2013-02-11: Lunar New Year
+    2013-03-01: Independence Movement Day
+    2013-05-01: Labor Day
+    2013-05-05: Children's Day
+    2013-05-17: Buddha's Birthday
+    2013-06-06: Memorial Day
+    2013-08-15: Liberation Day
+    2013-09-18: Harvest Moon Day
+    2013-09-19: Harvest Moon Day
+    2013-09-20: Harvest Moon Day
+    2013-10-03: National Foundation Day
+    2013-12-24: 0.5
+    2013-12-25: Chirstmas Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-30: Lunar New Year
+    2014-01-31: Lunar New Year
+    2014-05-01: Labor Day
+    2014-05-05: Children's Day
+    2014-05-06: Buddha's Birthday
+    2014-06-04: Election Day
+    2014-06-06: Memorial Day
+    2014-08-15: Liberation Day
+    2014-09-08: Harvest Moon Day
+    2014-09-09: Harvest Moon Day
+    2014-09-10: Harvest Moon Day
+    2014-10-03: National Foundation Day
+    2014-10-09: Hangul Day
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: KWCR1T Curncy
+    3M: KWCDC Curncy
+    6M: KWSWOF Curncy
+    9M: KWSWOI Curncy
+    1Y: KWSWO1 Curncy
+
+#CDR SI
+SGD:
+  daycount:  365
+  bloomberg_country_code:
+    - SI
+  bloomberg_calendar_code: SI
+  holidays:
+    3-Feb-11: Chinese New Year
+    4-Feb-11: Chinese New Year
+    22-Apr-11: Good Friday
+    2-May-11: Labour Day
+    17-May-11: Vesak Poya Day
+    9-Aug-11: National Day
+    30-Aug-11: Hari Raya Puasa
+    26-Oct-11: Deepavali
+    7-Nov-11: Hari Raya Haji
+    2011-12-26: Christmas holiday
+    2012-01-02: New Year's Day
+    2012-01-23: Chinese New Year
+    2012-01-24: Chinese New Year
+    2012-04-06: Good Friday
+    2012-05-01: Labour Day
+    2012-08-09: National Day
+    2012-08-20: Hari Raya Puasa
+    2012-10-26: Hari Raya Haji
+    2012-11-13: Deepavali
+    2012-12-25: Christmas Day
+    2013-01-01: New Year's Day
+    2013-03-29: Good Friday
+    2013-05-01: Labour Day
+    2013-08-09: National Day
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-31: Chinese New Year
+    2014-04-18: Good Friday
+    2014-05-01: Labour Day
+    2014-05-13: Vesak Poya Day
+    2014-07-28: Hari Raya Puasa
+    2014-10-05: Hari Raya Haji
+    2014-10-06: Hari Raya Haji
+    2014-10-23: Deepavali
+    2014-12-24: 0.5
+    2014-12-25: Christmas
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: SORF1D Index
+    1W: SORF1W Index
+    1M: SORF1M Index
+    2M: SORF2M Index
+    3M: SORF3M Index
+    6M: SORF6M Index
+    9M: SORF9M Index
+    1Y: SDSW1 Curncy
+
+# CDR CH
+CNY:
+  daycount:  365
+  bloomberg_country_code:
+    - CH
+  bloomberg_calendar_code: CH
+  holidays:
+    12-Sep-11: Mid Autumn Festival
+    3-Oct-11: National Day
+    4-Oct-11: National Day
+    5-Oct-11: National Day
+    6-Oct-11: Natonal Day
+    2012-01-02: New Year's Holiday
+    2012-01-03: New Year's Holiday
+    2012-01-23: Chinese New Year
+    2012-01-24: Chinese New Year
+    2012-01-25: Chinese New Year
+    2012-01-26: Chinese New Year
+    2012-01-27: Chinese New Year
+    2012-04-05: Ching Ming Festival
+    2012-04-06: Ching Ming Festival
+    2012-05-01: Labor Day
+    2012-05-02: Labor Day
+    2012-05-03: Labor Day
+    2012-06-22: Tuen Ng Festival
+    2012-10-01: National Day
+    2012-10-02: National Day
+    2012-10-03: National Day
+    2012-10-04: National Day
+    2012-10-05: Natinoal Day
+    2013-01-01: New Year's Day
+    2013-02-11: Lunar New Year
+    2013-04-04: Tomb Sweeping Day
+    2013-05-01: Labor Day
+    2013-06-12: Dragon Boat Day
+    2013-10-01: National Day
+    2013-10-02: National Day
+    2013-10-03: National Day
+    2013-12-24: 0.5
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-30: Lunar New Year
+    2014-01-31: Lunar New Year
+    2014-05-01: Labor Day
+    2014-06-02: Dragon Boat Day
+    2014-10-01: National Day
+    2014-10-02: National Day
+    2014-10-03: National Day
+  bloomberg_interest_rates_tickerlist:
+    ON: CNRR001 Index
+    1W: CNRR007 Index
+    3M: CCSWOC Curncy
+    6M: CCSWOF Curncy
+    9M: CCSWOI Curncy
+    1Y: CCSWO1 Curncy
+
+INR:
+  daycount: 365
+  bloomberg_country_code:
+    - IN
+  bloomberg_calendar_code: IN
+  holidays:
+    2013-05-01: Maharashtra Day
+    2013-08-09: Id-ul-fitr
+    2013-08-15: Independence Day
+    2013-09-09: Ganesh Chaturthi
+    2013-09-30: Bank Holiday
+    2013-10-02: Gandhi Jayanthi
+    2013-10-16: Id-ul-zuha
+    2013-11-04: Diwali
+    2013-11-15: Moharrum
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-31: 0.5
+    2014-04-14: Ambedkar Jayanti
+    2014-04-18: Good Friday
+    2014-05-01: Maharashtra Day
+    2014-08-15: Independence Day
+    2014-10-02: Gandhi Jayanthi
+    2014-12-24: 0.5
+    2014-12-25: Christmas
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    ON: NSERO Index
+    1M: IRSWOA Curncy
+    2M: IRSWOB Curncy
+    3M: IRSWOC Curncy
+    6M: IRSWOF Curncy
+    9M: IRSWOI Curncy
+    1Y: IRSWO1 Curncy
+
+XAU:
+  daycount: 360
+  bloomberg_country_code:
+    - NA
+  bloomberg_calendar_code: NA
+  holidays:
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-31: 0.5
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    1M: .LIBGO1M G Index
+    2M: .LIBGO2M G Index
+    3M: .LIBGO3M G Index
+    6M: .LIBGO6M G Index
+    1Y: .LIBGO12M G Index
+
+XAG:
+  daycount: 360
+  bloomberg_country_code:
+    - NA
+  bloomberg_calendar_code: NA
+  holidays:
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-31: 0.5
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    1M: .LIBSIF1M G Index
+    2M: .LIBSIF2M G Index
+    3M: .LIBSIF3M G Index
+    6M: .LIBSIF6M G Index
+    1Y: .LIBSIF12 G Index
+ZAR:
+  daycount: 365
+  bloomberg_country_code:
+    - SA
+  bloomberg_calendar_code: SA
+  holidays:
+    2013-05-01: Worker's Day
+    2013-06-17: Youth Day
+    2013-08-09: Womens Day
+    2013-09-24: Heritage Day
+    2013-12-16: Day of Reconciliation
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-26: Day of Goodwill
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-03-21: Human Rights Day
+    2014-04-18: Good Friday
+    2014-04-21: Family Day
+    2014-04-28: Freedom day
+    2014-05-01: Labor Day
+    2014-06-16: Youth Da
+    2014-09-24: Heritage Day
+    2014-12-16: Day of Reconciliation
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-26: Day of Goodwill
+    2014-12-31: 0.5
+  bloomberg_interest_rates_tickerlist:
+    1M: JIBA1M Index
+    3M: JIBA3M Index
+    6M: JIBA6M Index
+    9M: JIBA9M Index
+    1Y: SASW1 Curncy
+BRL:
+  daycount: 365
+  bloomberg_country_code:
+    - BZ
+  bloomberg_calendar_code: BZ
+  holidays:
+    2013-05-01: Labor Day
+    2013-05-30: Corpus Christi
+    2013-09-07: Brazilian Independence
+    2013-10-12: Our Lady of Aparecida
+    2013-10-20: Daylight Saving Begins
+    2013-11-02: All Sousl Day
+    2013-11-15: Proclamation of Republic
+    2013-12-24: 0.5
+    2013-12-25: Christmas Day
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-03-03: Carnival
+    2014-03-04: Carnival
+    2014-04-18: Good Friday
+    2014-04-21: Tiradentes Day
+    2014-05-01: Labor Day
+    2014-06-19: Corpus Christi
+    2014-12-24: 0.5
+    2014-12-25: Christmas Day
+    2014-12-31: 0.5 
+  bloomberg_interest_rates_tickerlist:
+    1M: BCSFAPDV Index
+    3M: BCSFDPDV Index
+    6M: BCSFIPDV Index
+    9M: BCSFMPDV Index
+RUB:
+  daycount: 365
+  bloomberg_country_code:
+    - RU
+  bloomberg_calendar_code: RU
+  holidays:
+    2013-06-12: Day of Russia
+    2013-11-04: National Unity Day
+    2013-12-24: 0.5
+    2013-12-31: 0.5
+    2014-01-01: New Year's Day
+    2014-01-02: New Year's Day
+    2014-01-03: New Year's Day
+    2014-01-06: New Year's Day
+    2014-01-07: New Year's Day
+    2014-01-08: New Year's Day
+    2014-05-01: Labor Day
+    2014-05-09: Victory Day
+    2014-06-12: Day of Russia
+    2014-11-04: National Unity Day
+  bloomberg_interest_rates_tickerlist:
+    1W: MOSK1W Index
+    1M: MOSKP1 Index
+    3M: MOSKP3 Index
+    6M: MOSKP6 Index
+    1Y: RRSWM1 Index
+MXN:
+  daycount: 360
+  bloomberg_country_code:
+    - MX
+  bloomberg_calendar_code: MX
+  holidays:
+    2014-03-17: Juarez Birthday
+    2014-04-17: Holy Thursday
+    2014-04-18: Good Friday
+    2014-05-01: Labour Day
+    2014-09-16: Independence Day
+    2014-11-02: All Souls Day
+    2014-11-17: Mexican Revolution
+    2014-12-12: Our Lady of Guadalupe
+    2014-12-25: Christmas Day
+  bloomberg_interest_rates_tickerlist:
+    1M: MXIBTIIE Index
+    3M: MPSWC Index
+    6M: MPSWF Index
+    1Y: MPSW1A Index

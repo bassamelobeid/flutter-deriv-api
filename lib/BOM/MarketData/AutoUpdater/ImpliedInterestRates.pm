@@ -1,0 +1,226 @@
+package BOM::MarketData::AutoUpdater::ImpliedInterestRates;
+use Moose;
+extends 'BOM::MarketData::AutoUpdater';
+
+use List::MoreUtils qw(notall);
+use Scalar::Util qw(looks_like_number);
+use Text::CSV::Slurp;
+
+use Format::Util::Numbers qw(roundnear);
+use BOM::Market::Underlying;
+use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use BOM::MarketData::ImpliedRate;
+use BOM::Platform::Runtime;
+
+has file => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_file {
+    my @files = BOM::MarketData::Parser::Bloomberg::FileDownloader->new->grab_files({file_type => 'forward_rates'});
+    return $files[0];
+}
+
+sub _get_forward_rates {
+    my $self = shift;
+
+    my $logger = $self->_logger;
+    my $csv = Text::CSV::Slurp->load(file => $self->file);
+    my $forward_rates;
+    my $report = $self->report;
+
+    foreach my $line (@$csv) {
+        my $item = $line->{SECURITIES};
+        next if $item eq 'N.A.';
+        my $item_rates = $line->{PX_LAST};
+        my $error_code = $line->{'ERROR CODE'};
+
+        if ($error_code != 0 or $item_rates eq 'N.A.' or not looks_like_number($item_rates)) {
+            push @{$report->{error}},
+                'implied interest rates[' . $item_rates . '] data from Bloomberg has error code[' . $error_code . '] for security[' . $item . ']';
+            next;
+        }
+
+        my ($underlying, $term) = $self->_get_forward_and_term_from_BB_ticker($item);
+
+        if (defined $underlying and defined $term) {
+            $forward_rates->{$underlying}->{rates}->{$term} = $item_rates;
+        } else {
+            push @{$report->{error}}, "Cannot get underlying symbol and term from bloomberg ticker[$item]";
+        }
+    }
+
+    return $forward_rates;
+}
+
+sub run {
+    my $self = shift;
+
+    $self->_logger->debug(ref($self) . ' starting update.');
+    my $report        = $self->report;
+    my $forward_rates = $self->_get_forward_rates();
+    my @tenors        = ('ON', '1W', '2W', '1M', '2M', '3M', '6M', '9M', '12M');
+
+    UNDERLYING:
+    foreach my $underlying_symbol (keys %$forward_rates) {
+        my $underlying                    = BOM::Market::Underlying->new($underlying_symbol);
+        my $spot                          = $forward_rates->{$underlying_symbol}->{rates}->{'SP'};
+        my $currency_to_imply_symbol      = $underlying->rate_to_imply;
+        my $currency_to_imply_from_symbol = $underlying->rate_to_imply_from;
+        my $implied_symbol                = $currency_to_imply_symbol . '-' . $currency_to_imply_from_symbol;
+        my $currency_to_imply             = BOM::Market::Currency->new($currency_to_imply_symbol);
+
+        # According to Bloomberg,
+        # a) Implied rate for asset currency:
+        #    - For ON :
+        #      Implied rate = ((ON_forward_outright * (1 + quoted_currency_rate/100 * tiy))/TN_forward_outright) - 1)/ tiy
+        #
+        #    - While for other tenors other than ON:
+        #      Implied rate = ((spot * (1 + quoted_currency_rate/100 * tiy))/Tenor_forward_outright - 1)/ tiy
+        #
+        # b) Implied rate for quoted currency:
+        #    - For ON :
+        #      Implied rate = ((TN_forward_outright * (1 + asset_currency_rate/100 * tiy))/ON_forward_outright) - 1)/ tiy
+        #
+        #    - While for other tenors other than ON:
+        #      Implied rate = ((Tenor_forward_outright * (1 + asset_currency_rate/100 * tiy))/spot - 1)/ tiy
+
+        my $implied_rates;
+        foreach my $tenor (@tenors) {
+            my $forward_day              = $self->_tenor_mapper($tenor, $underlying);
+            my $asset_currency_daycount  = $underlying->asset->daycount;
+            my $quoted_currency_daycount = $underlying->quoted_currency->daycount;
+            my $tiy                      = $forward_day / 365;
+            my $quoted_currency_rate     = $underlying->quoted_currency->rate_for($tiy);
+            my $asset_currency_rate      = $underlying->asset->rate_for($tiy);
+
+            if ($tenor eq 'ON') {
+                if (    exists $forward_rates->{$underlying_symbol}->{rates}->{'ON'}
+                    and exists $forward_rates->{$underlying_symbol}->{rates}->{'TN'})
+                {
+                    my $ON_forward_outright = $forward_rates->{$underlying_symbol}->{rates}->{'ON'};
+                    my $TN_forward_outright = $forward_rates->{$underlying_symbol}->{rates}->{'TN'};
+
+                    if ($currency_to_imply_symbol eq $underlying->asset_symbol) {
+                        $implied_rates->{$forward_day} = roundnear(
+                            0.0001,
+                            ((
+                                    ($ON_forward_outright * (1 + $quoted_currency_rate * ($forward_day / $quoted_currency_daycount))) /
+                                        $TN_forward_outright
+                                ) - 1
+                            ) / ($forward_day / $asset_currency_daycount) * 100
+                        );
+                    } elsif ($currency_to_imply_symbol eq $underlying->quoted_currency_symbol) {
+                        $implied_rates->{$forward_day} = roundnear(
+                            0.0001,
+                            (
+                                (($TN_forward_outright * (1 + $asset_currency_rate * ($forward_day / $asset_currency_daycount))) /
+                                        $ON_forward_outright) - 1
+                            ) / ($forward_day / $quoted_currency_daycount) * 100
+                        );
+                    }
+                }
+            } else {
+                my $tenor_forward_outright = $forward_rates->{$underlying_symbol}->{rates}->{$tenor};
+
+                if ($tenor_forward_outright) {
+                    if ($currency_to_imply_symbol eq $underlying->asset_symbol) {
+                        $implied_rates->{$forward_day} = roundnear(0.0001,
+                            ((($spot * (1 + $quoted_currency_rate * ($forward_day / $quoted_currency_daycount))) / $tenor_forward_outright) - 1) /
+                                ($forward_day / $asset_currency_daycount) *
+                                100);
+                    } elsif ($currency_to_imply_symbol eq $underlying->quoted_currency_symbol) {
+                        $implied_rates->{$forward_day} = roundnear(0.0001,
+                            ((($tenor_forward_outright * (1 + $asset_currency_rate * ($forward_day / $asset_currency_daycount))) / $spot) - 1) /
+                                ($forward_day / $quoted_currency_daycount) *
+                                100);
+                    }
+                }
+            }
+
+            my $market_rates_for_tenor = $currency_to_imply->rate_for($forward_day / 365);
+
+            next if not $implied_rates->{$forward_day};
+
+            if ($implied_rates->{$forward_day} >= 5) {
+                if (   ($market_rates_for_tenor / ($implied_rates->{$forward_day} / 100) >= 2)
+                    or ($market_rates_for_tenor / ($implied_rates->{$forward_day} / 100) <= 0.5))
+                {
+                    $implied_rates->{$forward_day} = $market_rates_for_tenor;
+                }
+            }
+
+            # Perform some sanity checks for the implied rates.
+            # First condition: Check if the implied_rate is more than 5%
+            # Second condition: If the first condition meet, check if the implied rate is reasonable compare to market rates.
+            # Example: If the implied rate is 8% but the market rate itself is around 7%, then that high implied rate is reasonable
+
+            if ($implied_rates->{$forward_day} > 15 or $implied_rates->{$forward_day} < -3) {
+                $report->{$implied_symbol} = {
+                    success => 0,
+                    reason  => 'The implied rate for '
+                        . $currency_to_imply_symbol
+                        . ' implied from '
+                        . $underlying_symbol
+                        . ' on tenor '
+                        . $tenor . ' is '
+                        . $implied_rates->{$forward_day}
+                        . ' which is not within our acceptable range [-3%, 15%]'
+                };
+                next UNDERLYING;
+            }
+        }
+
+        my $implied = BOM::MarketData::ImpliedRate->new(
+            symbol        => $implied_symbol,
+            rates         => $implied_rates,
+            recorded_date => Date::Utility->new,
+        );
+        $implied->save;
+        $report->{$implied_symbol}->{success} = 1;
+    }
+
+    $self->_logger->debug(ref($self) . ' update complete.');
+    $self->SUPER::run();
+    return 1;
+}
+
+sub _tenor_mapper {
+    my ($self, $tenor, $underlying) = @_;
+
+    my $date = Date::Utility->new();
+
+    my $expiry_spot_date = $underlying->_spot_date($date);
+
+    my $forward_expiry_date = $underlying->forward_expiry_date({
+        from => $date,
+        term => $tenor,
+    });
+
+    # for 1W and above, the number of expiry day is calculated from the spot date
+    my $day =
+        ($tenor eq 'ON')
+        ? $forward_expiry_date->days_between($date)
+        : $forward_expiry_date->days_between($expiry_spot_date);
+
+    return $day;
+}
+
+sub _get_forward_and_term_from_BB_ticker {
+    my ($self, $ticker) = @_;
+    my ($underlying, $term);
+
+    if ($ticker =~ /(\w\w\w\w\w\w)(\w\w\w?) (BGN)?/) {
+        $underlying = 'frx' . $1;
+        $term       = $2;
+    } elsif ($ticker =~ /(\w\w\w\w\w\w) (BGN)?/) {
+        $underlying = 'frx' . $1;
+        $term       = 'SP';
+    }
+    return ($underlying, $term);
+}
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
+1;

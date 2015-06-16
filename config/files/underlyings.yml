@@ -1,0 +1,8358 @@
+---
+## For indices and equities:
+# - The volatilities are not quoted as RR, ATM and BF, infact they are quoted in
+# vol/delta. Hence we no need to worry about their convention for now.
+#- The delta type for indices and equities is the conventional delta N(d1)ie spot
+# delta without premium. (This been confirmed with Bloomberg helpdesk and being
+# verified by running our get_strike function with bloomberg data on OVDV page)
+#
+# The references :
+# - Wystup "FX Volatility Smile Construction" April 2010 paper
+# - Castagna "FX Options and Smile Risk" book
+#
+# If intended to permanent remove the underlying, please turn off the "offered" on exchange.yml too
+#
+###############################################################################
+# NOTE: about the market_convention sections:
+#
+# These should mirror Bloomberg's Composite vol data conventions:
+# Steps to obtain Bloomberg vol convention:
+# - Go to OVDV then Settings->Data Settings->Conventions
+# Types of volatility conventions available:
+#     a) atm_setting:
+#         There are theree types:
+#         -atm_delta_neutral_straddle    (strike so that call delta=-put delta)
+#         -atm_forward                   (strike = forward price)
+#         -atm_spot                      (strike = spot)
+#     b) delta_premium_adjusted:
+#         There are two types:
+#         - 1 for premium adjusted . Premium adjusted means the actual hedge
+#           quantity must be adjusted by the premium received if the premium is
+#           paid in foreign currency.
+#         - 0 for no premium adjusted
+#           For futher explanation please refer to Wystup "FX Volatility Smile
+#           Construction" April 2010 paper, pg 5 and 6.
+#     c) delta_style:
+#         There are two delta convention available:
+#         - spot_delta : with a hedge in the spot market.
+#         - forward_delta: with a hedge in FX forward market
+#     d) rr: call-put / put-call
+#     e) bf:
+#        There are three types of butterfly available in Bloomberg setting:
+#        - (call+put)/2-atm  (which is quoted 1 vol strangle for Composite
+#          sources and 2 vol (a.k.a smile strangle) for BGN sources)
+#        - Base currency strangle - ATM (which is (base currency call + base
+#          currency put)- ATM)
+#        - Foreign currency strangle -ATM (which is (foreign currency call +
+#          foreign currency put)- ATM)
+---
+AEX:
+  asset: AEX
+  bbdl:
+    region: europe
+    symbols:
+    - AEX Index
+  contracts: limited_equities
+  commission_level: 1
+  display_name: Dutch Index
+  esig_symbol: $AEX-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: AEX
+  submarket: europe_africa
+  symbol: AEX
+AORD:
+  asset: AORD
+  contracts: none
+  commission_level: 1
+  display_name: AP Ordinary
+  exchange_name: ASX
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: asia_oceania
+  symbol: AORD
+AS51:
+  asset: AS51
+  bbdl:
+    region: asia
+    symbols:
+    - AS51 Index
+  contracts: limited_ao_equities
+  commission_level: 1
+  display_name: Australian Index
+  esig_symbol: $XJO-ASX
+  exchange_name: ASX
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: AUD
+  sd_symbol: ASX
+  submarket: asia_oceania
+  symbol: AS51
+AUANZ:
+  asset: AUANZ
+  bbdl:
+    symbols:
+    - ANZ AU Equity
+  contracts: none
+  commission_level: 3
+  display_name: ANZ Banking Group Ltd
+  esig_symbol: ANZ-ASX
+  exchange_name: ASX_S
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: AUD
+  sd_symbol: ANZ.AX
+  submarket: australia
+  symbol: AUANZ
+AUBHP:
+  asset: AUBHP
+  bbdl:
+    symbols:
+    - BHP AU Equity
+  contracts: none
+  commission_level: 3
+  display_name: BHP Billiton Ltd
+  esig_symbol: BHP-ASX
+  exchange_name: ASX_S
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: AUD
+  sd_symbol: BHP.AX
+  submarket: australia
+  symbol: AUBHP
+AUCBA:
+  asset: AUCBA
+  bbdl:
+    symbols:
+    - CBA AU Equity
+  contracts: none
+  commission_level: 3
+  display_name: Commbank (Australia)
+  esig_symbol: CBA-ASX
+  exchange_name: ASX_S
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: AUD
+  sd_symbol: CBA.AX
+  submarket: australia
+  symbol: AUCBA
+AUNAB:
+  asset: AUNAB
+  bbdl:
+    symbols:
+    - NAB AU Equity
+  contracts: none
+  commission_level: 3
+  display_name: National Australia Bank Ltd
+  esig_symbol: NAB-ASX
+  exchange_name: ASX_S
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: AUD
+  sd_symbol: NAB.AX
+  submarket: australia
+  symbol: AUNAB
+AUWBC:
+  asset: AUWBC
+  bbdl:
+    symbols:
+    - WBC AU Equity
+  contracts: none
+  commission_level: 3
+  display_name: Westpac Banking Co.
+  esig_symbol: WBC-ASX
+  exchange_name: ASX_S
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: AUD
+  sd_symbol: WBC.AX
+  submarket: australia
+  symbol: AUWBC
+BBABI:
+  asset: BBABI
+  bbdl:
+    symbols:
+    - ABI BB Equity
+  commission_level: 3
+  display_name: AB Inbev
+  esig_symbol: ABI-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: ABI.EB
+  submarket: belgium
+  symbol: BBABI
+BBBELG:
+  asset: BBBELG
+  bbdl:
+    symbols:
+    - BELG BB Equity
+  commission_level: 3
+  display_name: Belgacom
+  esig_symbol: BELG-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: BCOM.EB
+  submarket: belgium
+  symbol: BBBELG
+BBGBLB:
+  asset: BBGBLB
+  bbdl:
+    symbols:
+    - GBLB BB Equity
+  commission_level: 3
+  display_name: Groupe Bruxelles Lambert
+  esig_symbol: GBLB-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: GBLB.EB
+  submarket: belgium
+  symbol: BBGBLB
+BBKBC:
+  asset: BBKBC
+  bbdl:
+    symbols:
+    - KBC BB Equity
+  commission_level: 3
+  display_name: KBC Groep
+  esig_symbol: KBC-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: KBC.EB
+  submarket: belgium
+  symbol: BBKBC
+BBUCB:
+  asset: BBUCB
+  bbdl:
+    symbols:
+    - UCB BB Equity
+  commission_level: 3
+  display_name: UCB
+  esig_symbol: UCB-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: UCB.EB
+  submarket: belgium
+  symbol: BBUCB
+BFX:
+  asset: BFX
+  bbdl:
+    region: europe
+    symbols:
+    - BEL20 Index
+  contracts: limited_callput
+  commission_level: 1
+  display_name: Belgian Index
+  esig_symbol: $BEL20-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: BEL20
+  submarket: europe_africa
+  symbol: BFX
+BSESENSEX30:
+  asset: BSESENSEX30
+  bbdl:
+    region: asia
+    symbols:
+    - SENSEX Index
+  contracts: forward_and_daily
+  commission_level: 2
+  display_name: Bombay Index
+  esig_symbol: $SENSEX-BOM
+  exchange_name: BSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: BSESN
+  submarket: asia_oceania
+  symbol: BSESENSEX30
+DEADS:
+  asset: DEADS
+  bbdl:
+    symbols:
+    - ADS GY Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: ADIDAS AG
+  esig_symbol: ADS-FRA
+  exchange_name: FSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: ADSG.XT
+  submarket: germany
+  symbol: DEADS
+DEALV:
+  asset: DEALV
+  bbdl:
+    symbols:
+    - ALV GY Equity
+  contracts: none
+  commission_level: 3
+  display_name: Allianz SE
+  esig_symbol: ALV-FRA
+  exchange_name: FSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: ALVG.XT
+  submarket: germany
+  symbol: DEALV
+DEDAI:
+  asset: DEDAI
+  bbdl:
+    symbols:
+    - DAI GY Equity
+  contracts: none
+  commission_level: 3
+  display_name: Daimler AG
+  esig_symbol: DAI-FRA
+  exchange_name: FSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: DAIGn.XT
+  submarket: germany
+  symbol: DEDAI
+DEDBK:
+  asset: DEDBK
+  bbdl:
+    symbols:
+    - DBK GY Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: Deutsche Bank AG
+  esig_symbol: DBK-FRA
+  exchange_name: FSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: DBKGn.XT
+  submarket: germany
+  symbol: DEDBK
+DELHA:
+  asset: DELHA
+  bbdl:
+    symbols:
+    - LHA GY Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: Deutsche Lufthansa
+  esig_symbol: LHA-FRA
+  exchange_name: FSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: LHAG.XT
+  submarket: germany
+  symbol: DELHA
+DJI:
+  asset: DJI
+  bbdl:
+    region: us
+    symbols:
+    - INDU Index
+  contracts: full_equities
+  commission_level: 1
+  display_name: Wall Street Index
+  esig_symbol: $INDU
+  exchange_name: NYSE
+  feed_license: chartonly
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: DJIA
+  submarket: americas
+  symbol: DJI
+ESBBVA:
+  asset: ESBBVA
+  bbdl:
+    symbols:
+    - BBVA SM Equity
+  contracts: none
+  commission_level: 3
+  display_name: BBVA (Banco Bilbao)
+  esig_symbol: BBVA-MAC
+  exchange_name: BM
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: BBVA.MD
+  submarket: spain
+  symbol: ESBBVA
+ESIBE:
+  asset: ESIBE
+  bbdl:
+    symbols:
+    - IBE SM Equity
+  contracts: none
+  commission_level: 3
+  display_name: Iberdrola SA
+  esig_symbol: IBE-MAC
+  exchange_name: BM
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: IBE.MD
+  submarket: spain
+  symbol: ESIBE
+ESITX:
+  asset: ESITX
+  bbdl:
+    symbols:
+    - ITX SM Equity
+  contracts: none
+  commission_level: 3
+  display_name: Inditex SA
+  esig_symbol: ITX-MAC
+  exchange_name: BM
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: ITX.MD
+  submarket: spain
+  symbol: ESITX
+ESSAN:
+  asset: ESSAN
+  bbdl:
+    symbols:
+    - SAN SM Equity
+  contracts: none
+  commission_level: 3
+  display_name: Banco Santander SA
+  esig_symbol: SAN-MAC
+  exchange_name: BM
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: SAN.MD
+  submarket: spain
+  symbol: ESSAN
+ESTEF:
+  asset: ESTEF
+  bbdl:
+    symbols:
+    - TEF SM Equity
+  contracts: none
+  commission_level: 3
+  display_name: Telefonica SA
+  esig_symbol: TEF-MAC
+  exchange_name: BM
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: TEF.MD
+  submarket: spain
+  symbol: ESTEF
+FCHI:
+  asset: FCHI
+  bbdl:
+    region: europe
+    symbols:
+    - CAC Index
+  contracts: limited_equities
+  commission_level: 1
+  display_name: French Index
+  esig_symbol: $PX1-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: CAC
+  submarket: europe_africa
+  symbol: FCHI
+FPACA:
+  asset: FPACA
+  bbdl:
+    symbols:
+    - ACA FP Equity
+  commission_level: 3
+  display_name: Credit Agricole
+  esig_symbol: ACA-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: CAGR.EP
+  submarket: france
+  symbol: FPACA
+FPAI:
+  asset: FPAI
+  bbdl:
+    symbols:
+    - AI FP Equity
+  commission_level: 3
+  display_name: Air Liquide
+  esig_symbol: AI-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: AIRP.EP
+  submarket: france
+  symbol: FPAI
+FPAIR:
+  asset: FPAIR
+  bbdl:
+    symbols:
+    - AIR FP Equity
+  commission_level: 3
+  display_name: Airbus Group
+  esig_symbol: AIR-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: AIR.EP
+  submarket: france
+  symbol: FPAIR
+FPBN:
+  asset: FPBN
+  bbdl:
+    symbols:
+    - BN FP Equity
+  commission_level: 3
+  display_name: Danone
+  esig_symbol: BN-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: DANO.EP
+  submarket: france
+  symbol: FPBN
+FPBNP:
+  asset: FPBNP
+  bbdl:
+    symbols:
+    - BNP FP Equity
+  commission_level: 3
+  display_name: BNP Paribas
+  esig_symbol: BNP-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: BNPP.EP
+  submarket: france
+  symbol: FPBNP
+FPCA:
+  asset: FPCA
+  bbdl:
+    symbols:
+    - CA FP Equity
+  commission_level: 3
+  display_name: Carrefour
+  esig_symbol: CA-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: CARR.EP
+  submarket: france
+  symbol: FPCA
+FPCS:
+  asset: FPCS
+  bbdl:
+    symbols:
+    - CS FP Equity
+  commission_level: 3
+  display_name: AXA
+  esig_symbol: CS-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: AXAF.EP
+  submarket: france
+  symbol: FPCS
+FPDG:
+  asset: FPDG
+  bbdl:
+    symbols:
+    - DG FP Equity
+  commission_level: 3
+  display_name: Vinci
+  esig_symbol: DG-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: SGEF.EP
+  submarket: france
+  symbol: FPDG
+FPEDF:
+  asset: FPEDF
+  bbdl:
+    symbols:
+    - EDF FP Equity
+  commission_level: 3
+  display_name: Electricite de France
+  esig_symbol: EDF-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: EDF.EP
+  submarket: france
+  symbol: FPEDF
+FPEI:
+  asset: FPEI
+  bbdl:
+    symbols:
+    - EI FP Equity
+  commission_level: 3
+  display_name: Essilor International
+  esig_symbol: EI-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: ESSI.EP
+  submarket: france
+  symbol: FPEI
+FPFP:
+  asset: FPFP
+  bbdl:
+    symbols:
+    - FP FP Equity
+  commission_level: 3
+  display_name: TOTAL
+  esig_symbol: FP-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: TOTF.EP
+  submarket: france
+  symbol: FPFP
+FPGLE:
+  asset: FPGLE
+  bbdl:
+    symbols:
+    - GLE FP Equity
+  commission_level: 3
+  display_name: Societe Generale
+  esig_symbol: GLE-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: SOGN.EP
+  submarket: france
+  symbol: FPGLE
+FPGSZ:
+  asset: FPGSZ
+  bbdl:
+    symbols:
+    - GSZ FP Equity
+  commission_level: 3
+  display_name: GDF Suez
+  esig_symbol: GSZ-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: GSZ.EP
+  submarket: france
+  symbol: FPGSZ
+FPKER:
+  asset: FPKER
+  bbdl:
+    symbols:
+    - KER FP Equity
+  commission_level: 3
+  display_name: Kering
+  esig_symbol: KER-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: PRTP.EP
+  submarket: france
+  symbol: FPKER
+FPLG:
+  asset: FPLG
+  bbdl:
+    symbols:
+    - LG FP Equity
+  commission_level: 3
+  display_name: Lafarge
+  esig_symbol: LG-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: LAFP.EP
+  submarket: france
+  symbol: FPLG
+FPMC:
+  asset: FPMC
+  bbdl:
+    symbols:
+    - MC FP Equity
+  commission_level: 3
+  display_name: Moet Hennessy Louis Vuitton
+  esig_symbol: MC-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: LVMH.EP
+  submarket: france
+  symbol: FPMC
+FPOR:
+  asset: FPOR
+  bbdl:
+    symbols:
+    - OR FP Equity
+  commission_level: 3
+  display_name: L'Oreal
+  esig_symbol: OR-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: OREP.EP
+  submarket: france
+  symbol: FPOR
+FPORA:
+  asset: FPORA
+  bbdl:
+    symbols:
+    - ORA FP Equity
+  commission_level: 3
+  display_name: Orange
+  esig_symbol: ORA-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: ORAN.EP
+  submarket: france
+  symbol: FPORA
+FPRI:
+  asset: FPRI
+  bbdl:
+    symbols:
+    - RI FP Equity
+  commission_level: 3
+  display_name: Pernod Ricard
+  esig_symbol: RI-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: PERP.EP
+  submarket: france
+  symbol: FPRI
+FPRNO:
+  asset: FPRNO
+  bbdl:
+    symbols:
+    - RNO FP Equity
+  commission_level: 3
+  display_name: Renault
+  esig_symbol: RNO-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: RENA.EP
+  submarket: france
+  symbol: FPRNO
+FPSAF:
+  asset: FPSAF
+  bbdl:
+    symbols:
+    - SAF FP Equity
+  commission_level: 3
+  display_name: Safran
+  esig_symbol: SAF-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: SAF.EP
+  submarket: france
+  symbol: FPSAF
+FPSAN:
+  asset: FPSAN
+  bbdl:
+    symbols:
+    - SAN FP Equity
+  commission_level: 3
+  display_name: SANOFI
+  esig_symbol: SAN-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: SASY.EP
+  submarket: france
+  symbol: FPSAN
+FPSGO:
+  asset: FPSGO
+  bbdl:
+    symbols:
+    - SGO FP Equity
+  commission_level: 3
+  display_name: Cie de Saint-Gobain
+  esig_symbol: SGO-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: SGOB.EP
+  submarket: france
+  symbol: FPSGO
+FPSU:
+  asset: FPSU
+  bbdl:
+    symbols:
+    - SU FP Equity
+  commission_level: 3
+  display_name: Schneider Electric
+  esig_symbol: SU-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: SCHN.EP
+  submarket: france
+  symbol: FPSU
+FPVIV:
+  asset: FPVIV
+  bbdl:
+    symbols:
+    - VIV FP Equity
+  commission_level: 3
+  display_name: Vivendi
+  esig_symbol: VIV-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: VIV.EP
+  submarket: france
+  symbol: FPVIV
+FTAW01:
+  asset: FTAW01
+  commission_level: 3
+  display_name: World Index
+  esig_symbol: $AW01-FTSE
+  exchange_name: FS
+  feed_license: chartonly
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: FTAW01
+FTSE:
+  asset: FTSE
+  bbdl:
+    region: europe
+    symbols:
+    - UKX Index
+  contracts: full_equities
+  commission_level: 1
+  display_name: UK Index
+  esig_symbol: $UKX-FTSE
+  exchange_name: LSE
+  feed_license: chartonly
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: FTSE
+  submarket: europe_africa
+  symbol: FTSE
+FTSEMIB:
+  asset: FTSEMIB
+  bbdl:
+    region: europe
+    symbols:
+    - FTSEMIB Index
+  contracts: none
+  commission_level: 1
+  display_name: Italian Index
+  esig_symbol: $FTSEMIB-MIL
+  exchange_name: BI
+  feed_license: chartonly
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: MIB
+  submarket: europe_africa
+  symbol: FTSEMIB
+FUTGAEX:
+  asset: FUTGAEX
+  bbdl:
+    symbols:
+    - EO1 Index
+  commission_level: 3
+  display_name: AEX Generic Future
+  esig_symbol: AEX 1!-EEI
+  exchange_name: EEI_AM
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGAEX
+FUTGAS51:
+  asset: FUTGAS51
+  bbdl:
+    symbols:
+    - XP1 Index
+  commission_level: 3
+  display_name: AS51 Generic Future
+  esig_symbol: APS 1!-SFE
+  exchange_name: SFE
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: AUD
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGAS51
+FUTGBFX:
+  asset: FUTGBFX
+  bbdl:
+    symbols:
+    - XP1 Index
+  commission_level: 3
+  display_name: BFX Generic Future
+  esig_symbol: BXF 1!-EEI
+  exchange_name: EEI_BU
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGBFX
+FUTGBSESENSEX30:
+  asset: FUTGBSESENSEX30
+  bbdl:
+    symbols:
+    - SHY1 Index
+  commission_level: 3
+  display_name: BSESENX30 Generic Future
+  esig_symbol: BSX 1!-BOF
+  exchange_name: BSE
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: INR
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGBSESENSEX30
+FUTGDJI:
+  asset: FUTGDJI
+  bbdl:
+    symbols:
+    - DJ1 Index
+  commission_level: 3
+  display_name: DJI Generic Future
+  esig_symbol: YM 1!
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGDJI
+FUTGFCHI:
+  asset: FUTGFCHI
+  bbdl:
+    symbols:
+    - CF1 Index
+  commission_level: 3
+  display_name: FCHI Generic Future
+  esig_symbol: FCE 1!-EEI
+  exchange_name: EEI_PA
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGFCHI
+FUTGFTSE:
+  asset: FUTGFTSE
+  bbdl:
+    symbols:
+    - Z1 Index
+  commission_level: 3
+  display_name: FTSE Generic Future
+  esig_symbol: Z 1!-ICL
+  exchange_name: ICE_LIFFE
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGFTSE
+FUTGFTSEMIB:
+  asset: FUTGFTSEMIB
+  bbdl:
+    symbols:
+    - ST1 Index
+  commission_level: 3
+  display_name: FTSEMIB Generic Future
+  esig_symbol: FTMIB 1!-IDM
+  exchange_name: IDM
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGFTSEMIB
+FUTGGDAXI:
+  asset: FUTGGDAXI
+  bbdl:
+    symbols:
+    - GX1 Index
+  commission_level: 3
+  display_name: GDAXI Generic Future
+  esig_symbol: AX 1!-EUX
+  exchange_name: EUREX
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGGDAXI
+FUTGHSI:
+  asset: FUTGHSI
+  bbdl:
+    symbols:
+    - HI1 Index
+  commission_level: 3
+  display_name: HSI Generic Future
+  esig_symbol: HSI 1!-HKF
+  exchange_name: HKF
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: HKD
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGHSI
+FUTGIBEX35:
+  asset: FUTGIBEX35
+  bbdl:
+    symbols:
+    - IB1 Index
+  commission_level: 3
+  display_name: IBEX35 Generic Future
+  esig_symbol: IBX 1!-MRV
+  exchange_name: MEFF
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGIBEX35
+FUTGIBOV:
+  asset: FUTGIBOV
+  bbdl:
+    symbols:
+    - BZ1 Index
+  commission_level: 3
+  display_name: IBOV Generic Future
+  esig_symbol: IND 1!-BMF
+  exchange_name: BMF
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: BRL
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGIBOV
+FUTGKOSPI2:
+  asset: FUTGKOSPI2
+  bbdl:
+    symbols:
+    - KM1 Index
+  commission_level: 3
+  display_name: KOSPI2 Generic Future
+  esig_symbol: K21 1!-KSP
+  exchange_name: KRX
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: KRW
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGKOSPI2
+FUTGMDJI:
+  asset: FUTGMDJI
+  bbdl:
+    symbols:
+    - DM1 Index
+  commission_level: 3
+  display_name: Emini DJI Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGMDJI
+FUTGMN225Y:
+  asset: FUTGMN225Y
+  bbdl:
+    symbols:
+    - YME1 Index
+  commission_level: 3
+  display_name: Emini N225 Yen Dominated Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: JPY
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGMN225Y
+FUTGMNDX:
+  asset: FUTGMNDX
+  bbdl:
+    symbols:
+    - NQ1 Index
+  commission_level: 3
+  display_name: Emini Nasdaq 100 Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGMNDX
+FUTGMSP400:
+  asset: FUTGMSP400
+  bbdl:
+    symbols:
+    - FA1 Index
+  commission_level: 3
+  display_name: Emini S&P MidCap 400 Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGMSP400
+FUTGMSPC:
+  asset: FUTGMSPC
+  bbdl:
+    symbols:
+    - ES1 Index
+  commission_level: 3
+  display_name: Emini SPC Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGMSPC
+FUTGN225:
+  asset: FUTGN225
+  bbdl:
+    symbols:
+    - NK1 Index
+  commission_level: 3
+  display_name: N225 Generic Future
+  esig_symbol: NI225 1!-OSM
+  exchange_name: OSE
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: JPY
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGN225
+FUTGN225U:
+  asset: FUTGN225U
+  bbdl:
+    symbols:
+    - NX1 Index
+  commission_level: 3
+  display_name: N225 USD Dominated Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGN225U
+FUTGN225Y:
+  asset: FUTGN225Y
+  bbdl:
+    symbols:
+    - NH1 Index
+  commission_level: 3
+  display_name: N225 Yen Dominated Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: JPY
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGN225Y
+FUTGNDX:
+  asset: FUTGNDX
+  bbdl:
+    symbols:
+    - ND1 Index
+  commission_level: 3
+  display_name: Nasdaq 100 Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGNDX
+FUTGPSI20:
+  asset: FUTGPSI20
+  bbdl:
+    symbols:
+    - PP1 Index
+  commission_level: 3
+  display_name: PSI Generic Future
+  esig_symbol: PSI 1!-EEI
+  exchange_name: EEI_LI
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGPSI20
+FUTGRTSI:
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  asset: FUTGRTSI
+  bbdl:
+    symbols:
+    - VE1 Index
+  commission_level: 3
+  display_name: RTSI Generic Future
+  esig_symbol: RI 1!-MOF
+  exchange_name: MOF
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  divisor: 100
+  submarket: europe_africa_future
+  symbol: FUTGRTSI
+FUTGSP400:
+  asset: FUTGSP400
+  bbdl:
+    symbols:
+    - MD1 Index
+  commission_level: 3
+  display_name: S&P MidCap 400 Generic Future
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGSP400
+FUTGSPC:
+  asset: FUTGSPC
+  bbdl:
+    symbols:
+    - SP1 Index
+  commission_level: 3
+  display_name: Emini SPC Generic Future
+  esig_symbol: SP 1!
+  exchange_name: CME
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas_future
+  symbol: FUTGSPC
+FUTGSSMI:
+  asset: FUTGSSMI
+  bbdl:
+    symbols:
+    - SM1 Index
+  commission_level: 3
+  display_name: SSMI Generic Future
+  esig_symbol: SM 1!-EUX
+  exchange_name: EUREX_SWISS
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: CHF
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGSSMI
+FUTGSTI:
+  asset: FUTGSTI
+  bbdl:
+    symbols:
+    - SD1 Index
+  commission_level: 3
+  display_name: STI Generic Future
+  esig_symbol: ST 1!-SGX
+  exchange_name: SGX
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: SGD
+  sd_symbol: NA
+  submarket: asia_oceania_future
+  symbol: FUTGSTI
+FUTGSX5E:
+  asset: FUTGSX5E
+  bbdl:
+    symbols:
+    - VG1 Index
+  commission_level: 3
+  display_name: STOXX 50 Generic Future
+  esig_symbol: ET 1!-EUX
+  exchange_name: EUREX
+  feed_license: chartonly
+  instrument_type: future
+  market: futures
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa_future
+  symbol: FUTGSX5E
+GDAXI:
+  asset: GDAXI
+  bbdl:
+    region: europe
+    symbols:
+    - DAX Index
+  contracts: limited_equities
+  commission_level: 1
+  display_name: German Index
+  esig_symbol: $DAX-XET
+  exchange_name: FSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: DAX
+  submarket: europe_africa
+  symbol: GDAXI
+HSCEI:
+  asset: HSCEI
+  bbdl:
+    region: asia
+    symbols:
+    - HSCEI Index
+  contracts: none
+  commission_level: 1
+  display_name: Hang Seng China
+  exchange_name: HKSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: HKD
+  sd_symbol: NA
+  submarket: asia_oceania
+  symbol: HSCEI
+HSI:
+  asset: HSI
+  bbdl:
+    region: asia
+    symbols:
+    - HSI Index
+  contracts: limited_ao_equities
+  commission_level: 1
+  display_name: Hong Kong Index
+  esig_symbol: $HSI-HKG
+  exchange_name: HKSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: HKD
+  sd_symbol: HSI
+  submarket: asia_oceania
+  symbol: HSI
+IBEX35:
+  asset: IBEX35
+  bbdl:
+    region: europe
+    symbols:
+    - IBEX Index
+  contracts: forward_and_daily
+  commission_level: 1
+  display_name: Spanish Index
+  exchange_name: BM
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: IBEX
+  submarket: europe_africa
+  symbol: IBEX35
+IBOV:
+  asset: IBOV
+  bbdl:
+    region: us
+    symbols:
+    - IBOV Index
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: Brazilian Index
+  esig_symbol: $IBOV-BSP
+  exchange_name: BOVESPA
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: BRL
+  sd_symbol: BVSP
+  submarket: americas
+  symbol: IBOV
+INHDFC:
+  asset: INHDFC
+  bbdl:
+    symbols:
+    - HDFCB IN Equity
+  contracts: none
+  commission_level: 3
+  display_name: HDFC Bank Ltd
+  esig_symbol: HDFCBANK-BOM
+  exchange_name: BSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: HDBK.NS
+  submarket: india
+  symbol: INHDFC
+INICICIBC:
+  asset: INICICIBC
+  bbdl:
+    symbols:
+    - ICICIBC IN Equity
+  contracts: none
+  commission_level: 3
+  display_name: ICICI Bank Ltd
+  esig_symbol: ICICIBANK-BOM
+  exchange_name: BSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: ICBK.NS
+  submarket: india
+  symbol: INICICIBC
+ININFO:
+  asset: ININFO
+  bbdl:
+    symbols:
+    - INFO IN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Infosys Ltd
+  esig_symbol: INFY-BOM
+  exchange_name: BSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: INFY.NS
+  submarket: india
+  symbol: ININFO
+INITC:
+  asset: INITC
+  bbdl:
+    symbols:
+    - ITC IN Equity
+  contracts: none
+  commission_level: 3
+  display_name: ITC Ltd
+  esig_symbol: ITC-BOM
+  exchange_name: BSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: ITC.NS
+  submarket: india
+  symbol: INITC
+INRIL:
+  asset: INRIL
+  bbdl:
+    symbols:
+    - RIL IN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Reliance Industries Ltd
+  esig_symbol: RELIANCE-BOM
+  exchange_name: BSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: RELI.NS
+  submarket: india
+  symbol: INRIL
+ISEQ:
+  asset: ISEQ
+  bbdl:
+    region: europe
+    symbols:
+    - ISEQ Index
+  contracts: limited_callput
+  commission_level: 1
+  display_name: Irish Index
+  esig_symbol: $IEOP-DUB
+  exchange_name: ISE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa
+  symbol: ISEQ
+  volatility_surface_type: flat
+ITAGS:
+  asset: ITAGS
+  bbdl:
+    symbols:
+    - G IM Equity
+  contracts: none
+  commission_level: 3
+  display_name: Assicurazioni Generali SpA
+  esig_symbol: G-MIL
+  exchange_name: BI
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: GASI.MI
+  submarket: italy
+  symbol: ITAGS
+ITENEL:
+  asset: ITENEL
+  bbdl:
+    symbols:
+    - ENEL IM Equity
+  contracts: none
+  commission_level: 3
+  display_name: ENEL
+  esig_symbol: ENEL-MIL
+  exchange_name: BI
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: ENEI.MI
+  submarket: italy
+  symbol: ITENEL
+ITENI:
+  asset: ITENI
+  bbdl:
+    symbols:
+    - ENI IM Equity
+  contracts: none
+  commission_level: 3
+  display_name: ENI SpA
+  esig_symbol: ENI-MIL
+  exchange_name: BI
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: ENI.MI
+  submarket: italy
+  symbol: ITENI
+ITFIAT:
+  asset: ITFIAT
+  bbdl:
+    symbols:
+    - F IM Equity
+  contracts: none
+  commission_level: 3
+  display_name: Fiat
+  esig_symbol: F-MIL
+  exchange_name: BI
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: FIA.MI
+  submarket: italy
+  symbol: ITFIAT
+ITISP:
+  asset: ITISP
+  bbdl:
+    symbols:
+    - ISP IM Equity
+  contracts: none
+  commission_level: 3
+  display_name: Intesa Sanpaolo
+  esig_symbol: ISP-MIL
+  exchange_name: BI
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: EUR
+  sd_symbol: ISP.MI
+  submarket: italy
+  symbol: ITISP
+IXIC:
+  asset: IXIC
+  bbdl:
+    region: us
+    symbols:
+    - CCMP Index
+  contracts: none
+  commission_level: 1
+  display_name: US Tech Composite Index
+  exchange_name: NASDAQ_INDEX
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas
+  symbol: IXIC
+JCI:
+  asset: JCI
+  bbdl:
+    region: asia
+    symbols:
+    - JCI Index
+  contracts: none
+  commission_level: 1
+  display_name: Jakarta Index
+  exchange_name: JSC
+  feed_license: realtime
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: IDR
+  sd_symbol: NA
+  submarket: asia_oceania
+  symbol: JCI
+JPHM:
+  asset: JPHM
+  bbdl:
+    symbols:
+    - 7267 JT Equity
+  contracts: none
+  commission_level: 3
+  display_name: Honda Motor Co. Ltd
+  esig_symbol: 7267-TSE
+  exchange_name: TSE_S
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: JPY
+  sd_symbol: 7267.TK
+  submarket: japan
+  symbol: JPHM
+  divisor: 10
+JPHT:
+  asset: JPHT
+  bbdl:
+    symbols:
+    - 6501 JT Equity
+  contracts: none
+  commission_level: 3
+  display_name: Hitachi Ltd
+  esig_symbol: 6501-TSE
+  exchange_name: TSE_S
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: JPY
+  sd_symbol: 6501.TK
+  submarket: japan
+  symbol: JPHT
+  divisor: 10
+JPSB:
+  asset: JPSB
+  bbdl:
+    symbols:
+    - 9984 JT Equity
+  contracts: none
+  commission_level: 3
+  display_name: SoftBank Co.
+  esig_symbol: 9984-TSE
+  exchange_name: TSE_S
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: JPY
+  sd_symbol: 9984.TK
+  submarket: japan
+  symbol: JPSB
+  divisor: 10
+JPTE:
+  asset: JPTE
+  bbdl:
+    symbols:
+    - 9501 JT Equity
+  contracts: none
+  commission_level: 3
+  display_name: Tokyo Electric Power Co. Inc
+  esig_symbol: 9501-TSE
+  exchange_name: TSE_S
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: JPY
+  sd_symbol: 9501.TK
+  submarket: japan
+  symbol: JPTE
+  divisor: 10
+JPTM:
+  asset: JPTM
+  bbdl:
+    symbols:
+    - 7203 JT Equity
+  contracts: none
+  commission_level: 3
+  display_name: Toyota Motor
+  esig_symbol: 7203-TSE
+  exchange_name: TSE_S
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: JPY
+  sd_symbol: 7203.TK
+  submarket: japan
+  symbol: JPTM
+  divisor: 10
+KOSPI2:
+  asset: KOSPI2
+  bbdl:
+    region: asia
+    symbols:
+    - KOSPI2 Index
+  contracts: forward_and_daily
+  commission_level: 1
+  display_name: Korean Index
+  exchange_name: KRX
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: KRW
+  sd_symbol: KS200
+  submarket: asia_oceania
+  symbol: KOSPI2
+KRHY:
+  asset: KRHY
+  bbdl:
+    symbols:
+    - 005380 KS Equity
+  contracts: none
+  commission_level: 3
+  display_name: Hyundai Motor Co.
+  esig_symbol: 005380-KOR
+  exchange_name: KRX
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: KRW
+  sd_symbol: 005380.KS
+  submarket: korea
+  symbol: KRHY
+  divisor: 1000
+KRPOSCO:
+  asset: KRPOSCO
+  bbdl:
+    symbols:
+    - 005490 KS Equity
+  contracts: none
+  commission_level: 3
+  display_name: POSCO
+  esig_symbol: 005490-KOR
+  exchange_name: KRX
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: KRW
+  sd_symbol: 005490.KS
+  submarket: korea
+  symbol: KRPOSCO
+  divisor: 1000
+KRSFG:
+  asset: KRSFG
+  bbdl:
+    symbols:
+    - 055550 KS Equity
+  contracts: none
+  commission_level: 3
+  display_name: Shinhan Financial
+  esig_symbol: 055550-KOR
+  exchange_name: KRX
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: KRW
+  sd_symbol: 055550.KS
+  submarket: korea
+  symbol: KRSFG
+  divisor: 1000
+KRSKH:
+  asset: KRSKH
+  bbdl:
+    symbols:
+    - 000660 KS Equity
+  contracts: none
+  commission_level: 3
+  display_name: SK Hynix Inc.
+  esig_symbol: 000660-KOR
+  exchange_name: KRX
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: KRW
+  sd_symbol: 000660.KS
+  submarket: korea
+  symbol: KRSKH
+  divisor: 1000
+KRSS:
+  asset: KRSS
+  bbdl:
+    symbols:
+    - 005930 KS Equity
+  contracts: none
+  commission_level: 3
+  display_name: Samsung Electronics
+  esig_symbol: 005930-KOR
+  exchange_name: KRX
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: KRW
+  sd_symbol: 005930.KS
+  submarket: korea
+  symbol: KRSS
+  divisor: 1000
+MIB30:
+  asset: MIB30
+  contracts: none
+  commission_level: 1
+  display_name: Italian 30 Index
+  exchange_name: BI
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa
+  symbol: MIB30
+N100:
+  asset: N100
+  bbdl:
+    region: europe
+    symbols:
+    - N100 Index
+  contracts: none
+  commission_level: 1
+  display_name: Euro 100 Index
+  esig_symbol: $N100-EEB
+  exchange_name: EURONEXT
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: N100
+  submarket: europe_africa
+  symbol: N100
+N150:
+  asset: N150
+  bbdl:
+    region: europe
+    symbols:
+    - N150 Index
+  contracts: none
+  commission_level: 1
+  display_name: Euro 150 Index
+  esig_symbol: $N150-EEB
+  exchange_name: EURONEXT
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: europe_africa
+  symbol: N150
+N225:
+  asset: N225
+  bbdl:
+    region: asia
+    symbols:
+    - NKY Index
+  commission_level: 1
+  display_name: Japanese Index
+  esig_symbol: $N225-NKI
+  exchange_name: TSE
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: JPY
+  sd_symbol: N225
+  submarket: asia_oceania
+  symbol: N225
+NAASML:
+  asset: NAASML
+  bbdl:
+    symbols:
+    - ASML NA Equity
+  commission_level: 3
+  display_name: ASML Holding
+  esig_symbol: ASML-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: ASML.EA
+  submarket: amsterdam
+  symbol: NAASML
+NAHEIA:
+  asset: NAHEIA
+  bbdl:
+    symbols:
+    - HEIA NA Equity
+  commission_level: 3
+  display_name: Heineken
+  esig_symbol: HEIA-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: HEIN.EA
+  submarket: amsterdam
+  symbol: NAHEIA
+NAINGA:
+  asset: NAINGA
+  bbdl:
+    symbols:
+    - INGA NA Equity
+  commission_level: 3
+  display_name: ING
+  esig_symbol: INGA-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: ING.EA
+  submarket: amsterdam
+  symbol: NAINGA
+NARDSA:
+  asset: NARDSA
+  bbdl:
+    symbols:
+    - RDSA NA Equity
+  commission_level: 3
+  display_name: Royal Dutch Shell
+  esig_symbol: RDSA-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: RDSA.EA
+  submarket: amsterdam
+  symbol: NARDSA
+NAUNA:
+  asset: NAUNA
+  bbdl:
+    symbols:
+    - UNA NA Equity
+  commission_level: 3
+  display_name: Unilever
+  esig_symbol: UNA-EEB
+  exchange_name: EURONEXT
+  feed_license: realtime
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: UNC.EA
+  submarket: amsterdam
+  symbol: NAUNA
+NDX:
+  asset: NDX
+  bbdl:
+    region: us
+    symbols:
+    - NDX Index
+  contracts: none
+  commission_level: 1
+  display_name: US Tech 100 Index
+  exchange_name: NASDAQ_INDEX
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NDX
+  submarket: americas
+  symbol: NDX
+NIFTY:
+  asset: NIFTY
+  bbdl:
+    region: asia
+    symbols:
+    - NIFTY Index
+  contracts: none
+  commission_level: 2
+  display_name: Indian 50 Index
+  exchange_name: NSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: NIFTY
+  submarket: asia_oceania
+  symbol: NIFTY
+NODNB:
+  asset: NODNB
+  bbdl:
+    symbols:
+    - DNB NO Equity
+  contracts: none
+  commission_level: 3
+  display_name: DNB
+  esig_symbol: DNB-OSL
+  exchange_name: OSLO
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: NOK
+  sd_symbol: DNB.OL
+  submarket: norway
+  symbol: NODNB
+NOSDRL:
+  asset: NOSDRL
+  bbdl:
+    symbols:
+    - SDRL NO Equity
+  contracts: none
+  commission_level: 3
+  display_name: Seadrill
+  esig_symbol: SDRL-OSL
+  exchange_name: OSLO
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: NOK
+  sd_symbol: SDRL.OL
+  submarket: norway
+  symbol: NOSDRL
+NOSTL:
+  asset: NOSTL
+  bbdl:
+    symbols:
+    - STL NO Equity
+  contracts: none
+  commission_level: 3
+  display_name: Statoil
+  esig_symbol: STL-OSL
+  exchange_name: OSLO
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: NOK
+  sd_symbol: STL.OL
+  submarket: norway
+  symbol: NOSTL
+NOTEL:
+  asset: NOTEL
+  bbdl:
+    symbols:
+    - TEL NO Equity
+  contracts: none
+  commission_level: 3
+  display_name: Telenor
+  esig_symbol: TEL-OSL
+  exchange_name: OSLO
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: NOK
+  sd_symbol: TEL.OL
+  submarket: norway
+  symbol: NOTEL
+NOYAR:
+  asset: NOYAR
+  bbdl:
+    symbols:
+    - YAR NO Equity
+  contracts: none
+  commission_level: 3
+  display_name: Yara International
+  esig_symbol: YAR-OSL
+  exchange_name: OSLO
+  feed_license: daily
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: NOK
+  sd_symbol: YAR.OL
+  submarket: norway
+  symbol: NOYAR
+NZ50:
+  asset: NZ50
+  bbdl:
+    region: asia
+    symbols:
+    - NZSE50FG Index
+  contracts: none
+  commission_level: 1
+  display_name: New Zealand Index
+  exchange_name: NZSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: NZD
+  sd_symbol: NA
+  submarket: asia_oceania
+  symbol: NZ50
+OBX:
+  asset: OBX
+  bbdl:
+    region: europe
+    symbols:
+    - OBX Index
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: Norwegian Index
+  esig_symbol: $OBX-OSL
+  exchange_name: OSLO
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: NOK
+  sd_symbol: OBX
+  submarket: europe_africa
+  symbol: OBX
+OEX:
+  asset: OEX
+  bbdl:
+    symbols:
+    - OEX Index
+  contracts: none
+  commission_level: 1
+  display_name: US S&P 100
+  exchange_name: NYSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: americas
+  symbol: OEX
+OMXS30:
+  asset: OMXS30
+  bbdl:
+    region: europe
+    symbols:
+    - OMX Index
+  contracts: none
+  commission_level: 1
+  display_name: Swedish Index
+  exchange_name: OMX
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: SEK
+  sd_symbol: OMXS30
+  submarket: europe_africa
+  symbol: OMXS30
+PSI20:
+  asset: PSI20
+  bbdl:
+    region: europe
+    symbols:
+    - PSI20 Index
+  contracts: none
+  commission_level: 2
+  display_name: Portuguese Index
+  esig_symbol: $PSI20-EEB
+  exchange_name: EURONEXT
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: PSI20
+  submarket: europe_africa
+  symbol: PSI20
+RDBEAR:
+  asset: RDBEAR
+  commission_level: 1
+  display_name: Random Bear
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_daily
+  symbol: RDBEAR
+RDBULL:
+  asset: RDBULL
+  commission_level: 1
+  display_name: Random Bull
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_daily
+  symbol: RDBULL
+RDMARS:
+  asset: RDMARS
+  contracts: reset_randoms
+  commission_level: 1
+  display_name: Random Mars
+  exchange_name: RANDOM_NOCTURNE
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_nightly
+  symbol: RDMARS
+  volatility_surface_type: phased
+RDMOON:
+  asset: RDMOON
+  contracts: reset_randoms
+  commission_level: 1
+  display_name: Random Moon
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_daily
+  symbol: RDMOON
+  volatility_surface_type: phased
+RDSUN:
+  asset: RDSUN
+  contracts: reset_randoms
+  commission_level: 1
+  display_name: Random Sun
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_daily
+  symbol: RDSUN
+  volatility_surface_type: phased
+RDVENUS:
+  asset: RDVENUS
+  contracts: reset_randoms
+  commission_level: 1
+  display_name: Random Venus
+  exchange_name: RANDOM_NOCTURNE
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_nightly
+  symbol: RDVENUS
+  volatility_surface_type: phased
+RDYANG:
+  asset: RDYANG
+  commission_level: 1
+  display_name: Random Yang
+  exchange_name: RANDOM_NOCTURNE
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_nightly
+  symbol: RDYANG
+RDYIN:
+  asset: RDYIN
+  commission_level: 1
+  display_name: Random Yin
+  exchange_name: RANDOM_NOCTURNE
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_nightly
+  symbol: RDYIN
+RTSI:
+  asset: RTSI
+  bbdl:
+    region: europe
+    symbols:
+    - RTSI$ Index
+  contracts: none
+  display_name: Russian Regular Index
+  exchange_name: RTS
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: IRTS
+  submarket: europe_africa
+  symbol: RTSI
+R_100:
+  asset: R_100
+  commission_level: 1
+  display_name: Random 100 Index
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_index
+  symbol: R_100
+R_25:
+  asset: R_25
+  commission_level: 1
+  display_name: Random 25 Index
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_index
+  symbol: R_25
+R_50:
+  asset: R_50
+  commission_level: 1
+  display_name: Random 50 Index
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_index
+  symbol: R_50
+R_75:
+  asset: R_75
+  commission_level: 1
+  display_name: Random 75 Index
+  exchange_name: RANDOM
+  feed_license: realtime
+  instrument_type: stockindex
+  market: random
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: ~
+  sd_symbol: NA
+  spot_spread_size: 0
+  submarket: random_index
+  symbol: R_75
+SGES:
+  asset: SGES
+  bbdl:
+    region: sector
+    symbols:
+    - SGES Index
+  commission_level: 3
+  display_name: Global Energy Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGES
+SGFS:
+  asset: SGFS
+  bbdl:
+    region: sector
+    symbols:
+    - SGFS Index
+  commission_level: 3
+  display_name: Global Financial Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGFS
+SGH:
+  asset: SGH
+  bbdl:
+    region: sector
+    symbols:
+    - SGH Index
+  commission_level: 3
+  display_name: Global Health Care Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGH
+SGI:
+  asset: SGI
+  bbdl:
+    region: sector
+    symbols:
+    - SGI Index
+  commission_level: 3
+  display_name: Global Info Tech Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGI
+SGM:
+  asset: SGM
+  bbdl:
+    region: sector
+    symbols:
+    - SGM Index
+  commission_level: 3
+  display_name: Global Materials Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGM
+SGN:
+  asset: SGN
+  bbdl:
+    region: sector
+    symbols:
+    - SGN Index
+  commission_level: 3
+  display_name: Global Industrial Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGN
+SGT:
+  asset: SGT
+  bbdl:
+    region: sector
+    symbols:
+    - SGT Index
+  commission_level: 3
+  display_name: Global Telecom Srv Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGT
+SGU:
+  asset: SGU
+  bbdl:
+    region: sector
+    symbols:
+    - SGU Index
+  commission_level: 3
+  display_name: Global Utilities Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SGU
+SPBMGUU:
+  asset: SPBMGUU
+  bbdl:
+    region: sector
+    symbols:
+    - SPBMGUU Index
+  commission_level: 3
+  display_name: Global Property Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SPBMGUU
+SPC:
+  asset: SPC
+  bbdl:
+    region: us
+    symbols:
+    - SPX Index
+  commission_level: 1
+  display_name: US Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: SPX
+  submarket: americas
+  symbol: SPC
+SPGSAM:
+  asset: SPGSAM
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSAM Index
+  commission_level: 3
+  display_name: Metals Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals_sector
+  symbol: SPGSAM
+SPGSBF:
+  asset: SPGSBF
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSBF Index
+  commission_level: 3
+  display_name: Biofuel Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSBF
+SPGSBO:
+  asset: SPGSBO
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSBO Index
+  commission_level: 3
+  display_name: Bean Oil Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSBO
+SPGSBR:
+  asset: SPGSBR
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSBR Index
+  commission_level: 3
+  display_name: Brent Crude Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSBR
+SPGSCC:
+  asset: SPGSCC
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSCC Index
+  commission_level: 3
+  display_name: Cocoa Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSCC
+SPGSCN:
+  asset: SPGSCN
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSCN Index
+  commission_level: 3
+  display_name: Corn Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSCN
+SPGSCR:
+  asset: SPGSCR
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSCR Index
+  commission_level: 3
+  display_name: Crude Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSCR
+SPGSCT:
+  asset: SPGSCT
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSCT Index
+  commission_level: 3
+  display_name: Cotton Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSCT
+SPGSEN:
+  asset: SPGSEN
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSEM Index
+  commission_level: 3
+  display_name: Energy & Metals Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSEN
+SPGSGO:
+  asset: SPGSGO
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSGO Index
+  commission_level: 3
+  display_name: Gasoil Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSGO
+SPGSGR:
+  asset: SPGSGR
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSGR Index
+  commission_level: 3
+  display_name: Grains Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSGR
+SPGSHO:
+  asset: SPGSHO
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSHO Index
+  commission_level: 3
+  display_name: Heating Oil Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSHO
+SPGSIC:
+  asset: SPGSIC
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSIC Index
+  commission_level: 3
+  display_name: Copper Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals_sector
+  symbol: SPGSIC
+SPGSIK:
+  asset: SPGSIK
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSIK Index
+  commission_level: 3
+  display_name: Nickel Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals_sector
+  symbol: SPGSIK
+SPGSIL:
+  asset: SPGSIL
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSIL Index
+  commission_level: 3
+  display_name: Lead Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals_sector
+  symbol: SPGSIL
+SPGSIZ:
+  asset: SPGSIZ
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSIZ Index
+  commission_level: 3
+  display_name: Zinc Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals_sector
+  symbol: SPGSIZ
+SPGSKC:
+  asset: SPGSKC
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSKC Index
+  commission_level: 3
+  display_name: Coffee Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSKC
+SPGSKW:
+  asset: SPGSKW
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSKW Index
+  commission_level: 3
+  display_name: Kansas Wheat Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSKW
+SPGSNG:
+  asset: SPGSNG
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSNG Index
+  commission_level: 1
+  display_name: Natural Gas Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSNG
+SPGSPT:
+  asset: SPGSPT
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSPT Index
+  commission_level: 3
+  display_name: Petroleum Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy_sector
+  symbol: SPGSPT
+SPGSSB:
+  asset: SPGSSB
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSSB Index
+  commission_level: 3
+  display_name: Sugar Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSSB
+SPGSSO:
+  asset: SPGSSO
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSSO Index
+  commission_level: 3
+  display_name: Soybeans Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSSO
+SPGSWT:
+  asset: SPGSWT
+  bbdl:
+    region: sector
+    symbols:
+    - SPGSWT Index
+  commission_level: 3
+  display_name: Wheat Index
+  exchange_name: SP_GSCI
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: agriculture
+  symbol: SPGSWT
+SPGTECOL:
+  asset: SPGTECOL
+  bbdl:
+    region: sector
+    symbols:
+    - SPGTECOL Index
+  commission_level: 3
+  display_name: Global Ecology Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SPGTECOL
+SPGTIND:
+  asset: SPGTIND
+  bbdl:
+    region: sector
+    symbols:
+    - SPGTIND Index
+  commission_level: 3
+  display_name: Global Infrastructure Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SPGTIND
+SPGTNE:
+  asset: SPGTNE
+  bbdl:
+    region: sector
+    symbols:
+    - SPGTNE Index
+  commission_level: 3
+  display_name: Global Nuclear Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SPGTNE
+SPSIAD:
+  asset: SPSIAD
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIAD Index
+  commission_level: 3
+  display_name: Aerospace Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: industrials
+  symbol: SPSIAD
+SPSIBC:
+  asset: SPSIBC
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIBC Index
+  commission_level: 3
+  display_name: Construction Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: industrials
+  symbol: SPSIBC
+SPSIBI:
+  asset: SPSIBI
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIBI Index
+  commission_level: 3
+  display_name: Biotechnology Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: healthcare
+  symbol: SPSIBI
+SPSIBK:
+  asset: SPSIBK
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIBK Index
+  commission_level: 3
+  display_name: Banking Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: financial
+  symbol: SPSIBK
+SPSICH:
+  asset: SPSICH
+  bbdl:
+    region: sector
+    symbols:
+    - SPSICH Index
+  contracts: none
+  commission_level: 3
+  display_name: Comp Hardware Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: technology
+  symbol: SPSICH
+SPSICS:
+  asset: SPSICS
+  bbdl:
+    region: sector
+    symbols:
+    - SPSICS Index
+  commission_level: 3
+  display_name: Comp Software Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: technology
+  symbol: SPSICS
+SPSIINS:
+  asset: SPSIINS
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIINS Index
+  commission_level: 3
+  display_name: Insurance Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: financial
+  symbol: SPSIINS
+SPSILT:
+  asset: SPSILT
+  bbdl:
+    region: sector
+    symbols:
+    - SPSILT Index
+  commission_level: 3
+  display_name: Leisure Time Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: consumer_services
+  symbol: SPSILT
+SPSIMF:
+  asset: SPSIMF
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIMF Index
+  commission_level: 3
+  display_name: Mortgage Finance Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: financial
+  symbol: SPSIMF
+SPSIPH:
+  asset: SPSIPH
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIPH Index
+  commission_level: 3
+  display_name: Pharmaceuticals Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: healthcare
+  symbol: SPSIPH
+SPSIRE:
+  asset: SPSIRE
+  bbdl:
+    region: sector
+    symbols:
+    - SPSIRE Index
+  commission_level: 3
+  display_name: Retail Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: consumer_services
+  symbol: SPSIRE
+SPSISC:
+  asset: SPSISC
+  bbdl:
+    region: sector
+    symbols:
+    - SPSISC Index
+  commission_level: 3
+  display_name: Semiconductors Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: technology
+  symbol: SPSISC
+SPSITN:
+  asset: SPSITN
+  bbdl:
+    region: sector
+    symbols:
+    - SPSITN Index
+  commission_level: 3
+  display_name: Transportation Index
+  exchange_name: NYSE_SPC
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: industrials
+  symbol: SPSITN
+SPTSX60:
+  asset: SPTSX60
+  bbdl:
+    region: us
+    symbols:
+    - SPTSX60 Index
+  contracts: limited_callput
+  commission_level: 1
+  display_name: Canadian Index
+  exchange_name: TRSE
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: CAD
+  sd_symbol: TSX
+  submarket: americas
+  symbol: SPTSX60
+SREITGUP:
+  asset: SREITGUP
+  bbdl:
+    region: sector
+    symbols:
+    - SREITGUP Index
+  commission_level: 3
+  display_name: Global REIT Index
+  exchange_name: SP_GLOBAL
+  feed_license: daily
+  instrument_type: sectorindex
+  market: sectors
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: global
+  symbol: SREITGUP
+SSECOMP:
+  active: 1
+  asset: SSECOMP
+  bbdl:
+    region: asia
+    symbols:
+    - SHCOMP Index
+  contracts: forward_only_china
+  commission_level: 4
+  display_name: Shanghai Index
+  esig_symbol: $000001-SHG
+  exchange_name: SSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: CNY
+  sd_symbol: SSEC
+  submarket: asia_oceania
+  symbol: SSECOMP
+SSMI:
+  asset: SSMI
+  bbdl:
+    region: europe
+    symbols:
+    - SMI Index
+  contracts: limited_equities
+  commission_level: 1
+  display_name: Swiss Index
+  esig_symbol: $SMI-SWX
+  exchange_name: SWX
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: CHF
+  sd_symbol: SMI
+  submarket: europe_africa
+  symbol: SSMI
+STI:
+  asset: STI
+  bbdl:
+    region: asia
+    symbols:
+    - FSSTI Index
+  contracts: limited_callput
+  commission_level: 1
+  display_name: Singapore Index
+  esig_symbol: $STI-SES
+  exchange_name: SES
+  feed_license: daily
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: SGD
+  sd_symbol: NA
+  submarket: asia_oceania
+  symbol: STI
+SX5E:
+  asset: SX5E
+  bbdl:
+    region: europe
+    symbols:
+    - SX5E Index
+  contracts: limited_equities
+  commission_level: 2
+  display_name: Euro 50 Index
+  esig_symbol: $SX5E-STX
+  exchange_name: STOXX
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: SX5E
+  submarket: europe_africa
+  symbol: SX5E
+SYNAEX:
+  asset: SYNAEX
+  contracts: special_syn
+  commission_level: 3
+  display_name: Dutch Smart Index
+  exchange_name: SYNEURONEXT
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNAEX
+SYNBFX:
+  asset: SYNBFX
+  contracts: none
+  commission_level: 3
+  display_name: Belgian Smart Index
+  exchange_name: SYNEURONEXT
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNBFX
+SYNBSESENSEX30:
+  asset: SYNBSESENSEX30
+  contracts: none
+  commission_level: 3
+  display_name: Bombay Smart Index
+  exchange_name: SYNBSE
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: INR
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNBSESENSEX30
+SYNDJI:
+  asset: SYNDJI
+  contracts: special_syn
+  commission_level: 3
+  display_name: Wall Street Smart Index
+  exchange_name: SYNNYSE_DJI
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNDJI
+SYNFCHI:
+  asset: SYNFCHI
+  contracts: special_syn
+  commission_level: 3
+  display_name: French Smart Index
+  exchange_name: SYNEURONEXT
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNFCHI
+SYNGDAXI:
+  asset: SYNGDAXI
+  contracts: special_syn
+  commission_level: 3
+  display_name: German Smart Index
+  exchange_name: SYNFSE
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNGDAXI
+SYNHSI:
+  asset: SYNHSI
+  contracts: none
+  commission_level: 3
+  display_name: Hong Kong Smart Index
+  exchange_name: SYNHKSE
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: HKD
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNHSI
+SYNN225:
+  asset: SYNN225
+  contracts: none
+  commission_level: 3
+  display_name: Japanese Smart Index
+  exchange_name: SYNTSE
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: JPY
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNN225
+SYNPSI20:
+  asset: SYNPSI20
+  contracts: none
+  commission_level: 3
+  display_name: Portuguese Smart Index
+  exchange_name: SYNEURONEXT
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: synthetic_index
+  symbol: SYNPSI20
+SYNFTSE:
+  asset: SYNFTSE
+  contracts: special_syn
+  commission_level: 3
+  display_name: UK Smart Index
+  exchange_name: SYNLSE
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNFTSE
+SYNSPC:
+  asset: SYNSPC
+  contracts: special_syn
+  commission_level: 3
+  display_name: US Smart Index
+  exchange_name: SYNNYSE_SPC
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNSPC
+SYNSSMI:
+  asset: SYNSSMI
+  contracts: none
+  commission_level: 3
+  display_name: Swiss Smart Index
+  exchange_name: SYNSWX
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: CHF
+  sd_symbol: NA
+  submarket: synthetic_index
+  symbol: SYNSSMI
+SYNSX5E:
+  asset: SYNSX5E
+  contracts: special_syn
+  commission_level: 3
+  display_name: Euro 50 Smart Index
+  exchange_name: SYNSTOXX
+  feed_license: realtime
+  instrument_type: synthetic
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: smart_index
+  symbol: SYNSX5E
+SZSECOMP:
+  active: 1
+  asset: SZSECOMP
+  bbdl:
+    region: asia
+    symbols:
+    - SZCOMP Index
+  contracts: forward_only_china
+  commission_level: 4
+  display_name: Shenzhen Index
+  esig_symbol: $399106-SHE
+  exchange_name: SZSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quoted_currency: CNY
+  sd_symbol: NA
+  submarket: asia_oceania
+  symbol: SZSECOMP
+TOP40:
+  asset: TOP40
+  bbdl:
+    region: europe
+    symbols:
+    - TOP40 Index
+  contracts: forward_and_daily
+  commission_level: 2
+  display_name: South African Index
+  esig_symbol: $J200-FTSJ
+  exchange_name: JSE
+  feed_license: delayed
+  instrument_type: stockindex
+  market: indices
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: ZAR
+  sd_symbol: JTOPI
+  submarket: europe_africa
+  symbol: TOP40
+UKAAL:
+  asset: UKAAL
+  bbdl:
+    symbols:
+    - AAL LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Anglo American plc
+  esig_symbol: AAL-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: AAL.LN
+  submarket: uk
+  symbol: UKAAL
+UKAZN:
+  asset: UKAZN
+  bbdl:
+    symbols:
+    - AZN LN Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: AstraZeneca plc
+  esig_symbol: AZN-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: AZN.LN
+  submarket: uk
+  symbol: UKAZN
+UKBARC:
+  asset: UKBARC
+  bbdl:
+    symbols:
+    - BARC LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Barclays plc
+  esig_symbol: BARC-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: BARC.LN
+  submarket: uk
+  symbol: UKBARC
+UKBATS:
+  asset: UKBATS
+  bbdl:
+    symbols:
+    - BATS LN Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: British American Tobacco
+  esig_symbol: BATS-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: BATS.LN
+  submarket: uk
+  symbol: UKBATS
+UKBG:
+  asset: UKBG
+  bbdl:
+    symbols:
+    - BG/ LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: BG Group plc
+  esig_symbol: BG.-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: BG.LN
+  submarket: uk
+  symbol: UKBG
+UKBP:
+  asset: UKBP
+  bbdl:
+    symbols:
+    - BP/ LN Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: BP plc
+  esig_symbol: BP.-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: BP.LN
+  submarket: uk
+  symbol: UKBP
+UKDGE:
+  asset: UKDGE
+  bbdl:
+    symbols:
+    - DGE LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Diageo plc
+  esig_symbol: DGE-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: DGE.LN
+  submarket: uk
+  symbol: UKDGE
+UKGLEN:
+  asset: UKGLEN
+  bbdl:
+    symbols:
+    - GLEN LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Glencore Xstrat
+  esig_symbol: GLEN-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: GLEN.LN
+  submarket: uk
+  symbol: UKGLEN
+UKGSK:
+  asset: UKGSK
+  bbdl:
+    symbols:
+    - GSK LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: GlaxoSmithKline plc
+  esig_symbol: GSK-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: GSK.LN
+  submarket: uk
+  symbol: UKGSK
+UKHSBA:
+  asset: UKHSBA
+  bbdl:
+    symbols:
+    - HSBA LN Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: HSBC Holdings plc
+  esig_symbol: HSBA-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: HSBA.LN
+  submarket: uk
+  symbol: UKHSBA
+UKIAG:
+  asset: UKIAG
+  bbdl:
+    symbols:
+    - IAG LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: ICAG (British Airways)
+  esig_symbol: IAG-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: ICAG.LN
+  submarket: uk
+  symbol: UKIAG
+UKLLOY:
+  asset: UKLLOY
+  bbdl:
+    symbols:
+    - LLOY LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Lloyds Banking Group plc
+  esig_symbol: LLOY-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: LLOY.LN
+  submarket: uk
+  symbol: UKLLOY
+UKRB:
+  asset: UKRB
+  bbdl:
+    symbols:
+    - RB/ LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Reckitt Benckiser Group plc
+  esig_symbol: RB.-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: uk
+  symbol: UKRB
+UKRDSA:
+  asset: UKRDSA
+  bbdl:
+    symbols:
+    - RDSA LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Royal Dutch Shell plc
+  esig_symbol: RDSA-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: RDSa.LN
+  submarket: uk
+  symbol: UKRDSA
+UKRIO:
+  asset: UKRIO
+  bbdl:
+    symbols:
+    - RIO LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Rio Tinto plc
+  esig_symbol: RIO-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: RIO.LN
+  submarket: uk
+  symbol: UKRIO
+UKSAB:
+  asset: UKSAB
+  bbdl:
+    symbols:
+    - SAB LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: SABMiller plc
+  esig_symbol: SAB-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: SAB.LN
+  submarket: uk
+  symbol: UKSAB
+UKSTAN:
+  asset: UKSTAN
+  bbdl:
+    symbols:
+    - STAN LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Standard Chartered plc
+  esig_symbol: STAN-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: STAN.LN
+  submarket: uk
+  symbol: UKSTAN
+UKTSCO:
+  asset: UKTSCO
+  bbdl:
+    symbols:
+    - TSCO LN Equity
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: Tesco plc
+  esig_symbol: TSCO-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: TSCO.LN
+  submarket: uk
+  symbol: UKTSCO
+UKULVR:
+  asset: UKULVR
+  bbdl:
+    symbols:
+    - ULVR LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Unilever plc
+  esig_symbol: ULVR-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: ULVR.LN
+  submarket: uk
+  symbol: UKULVR
+UKVOD:
+  asset: UKVOD
+  bbdl:
+    symbols:
+    - VOD LN Equity
+  contracts: none
+  commission_level: 3
+  display_name: Vodafone
+  esig_symbol: VOD-LON
+  exchange_name: LSE
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: GBP
+  sd_symbol: VOD.LN
+  submarket: uk
+  symbol: UKVOD
+USAAPL:
+  asset: USAAPL
+  bbdl:
+    symbols:
+    - AAPL US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Apple Inc.
+  esig_symbol: AAPL
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: AAPL.NQ
+  submarket: us
+  symbol: USAAPL
+USATNT:
+  asset: USATNT
+  bbdl:
+    symbols:
+    - T US Equity
+  contracts: none
+  commission_level: 3
+  display_name: AT&T
+  esig_symbol: T
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: ATNT.NQ
+  submarket: us
+  symbol: USATNT
+USCVX:
+  asset: USCVX
+  bbdl:
+    symbols:
+    - CVX US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Chevron Co.
+  esig_symbol: CVX
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USCVX
+USGE:
+  asset: USGE
+  bbdl:
+    symbols:
+    - GE US Equity
+  contracts: none
+  commission_level: 3
+  display_name: General Electric Company
+  esig_symbol: GE
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USGE
+USGOOG:
+  asset: USGOOG
+  bbdl:
+    symbols:
+    - GOOG US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Google Inc.
+  esig_symbol: GOOG
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: GOOG.NQ
+  submarket: us
+  symbol: USGOOG
+USIBM:
+  asset: USIBM
+  bbdl:
+    symbols:
+    - IBM US Equity
+  contracts: none
+  commission_level: 3
+  display_name: IBM
+  esig_symbol: IBM
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USIBM
+USINTC:
+  asset: USINTC
+  bbdl:
+    symbols:
+    - INTC US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Intel
+  esig_symbol: INTC
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: INTC.NQ
+  submarket: us
+  symbol: USINTC
+USJNJ:
+  asset: USJNJ
+  bbdl:
+    symbols:
+    - JNJ US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Johnson & Johnson
+  esig_symbol: JNJ
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USJNJ
+USJPM:
+  asset: USJPM
+  bbdl:
+    symbols:
+    - JPM US Equity
+  contracts: none
+  commission_level: 3
+  display_name: JP Morgan Chase & Co.
+  esig_symbol: JPM
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USJPM
+USKO:
+  asset: USKO
+  bbdl:
+    symbols:
+    - KO US Equity
+  contracts: none
+  commission_level: 3
+  display_name: The Coca-Cola Company
+  esig_symbol: KO
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USKO
+USMRK:
+  asset: USMRK
+  bbdl:
+    symbols:
+    - MRK US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Merck & Co. Inc.
+  esig_symbol: MRK
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USMRK
+USMSFT:
+  asset: USMSFT
+  bbdl:
+    symbols:
+    - MSFT US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Microsoft
+  esig_symbol: MSFT
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: MSFT.NQ
+  submarket: us
+  symbol: USMSFT
+USORCL:
+  asset: USORCL
+  bbdl:
+    symbols:
+    - ORCL US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Oracle
+  esig_symbol: ORCL
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: ORCL.NQ
+  submarket: us
+  symbol: USORCL
+USPFE:
+  asset: USPFE
+  bbdl:
+    symbols:
+    - PFE US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Pfizer Inc.
+  esig_symbol: PFE
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USPFE
+USPG:
+  asset: USPG
+  bbdl:
+    symbols:
+    - PG US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Procter & Gamble Co.
+  esig_symbol: PG
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USPG
+USPM:
+  asset: USPM
+  bbdl:
+    symbols:
+    - PM US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Philip Morris International
+  esig_symbol: PM
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USPM
+USQCOM:
+  asset: USQCOM
+  bbdl:
+    symbols:
+    - QCOM US Equity
+  contracts: none
+  commission_level: 3
+  display_name: QUALCOMM
+  esig_symbol: QCOM
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quoted_currency: USD
+  sd_symbol: QCOM.NQ
+  submarket: us
+  symbol: USQCOM
+USQQQQ:
+  asset: USQQQQ
+  bbdl:
+    symbols:
+    - QQQ US Equity
+  contracts: none
+  commission_level: 3
+  display_name: PowerShares QQQ
+  esig_symbol: QQQ
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: QQQ.NQ
+  submarket: us
+  symbol: USQQQQ
+USWFC:
+  asset: USWFC
+  bbdl:
+    symbols:
+    - WFC US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Wells Fargo & Company
+  esig_symbol: WFC
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USWFC
+USWMT:
+  asset: USWMT
+  bbdl:
+    symbols:
+    - WMT US Equity
+  contracts: none
+  commission_level: 3
+  display_name: Wal-Mart Stores Inc.
+  esig_symbol: WMT
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USWMT
+USXOM:
+  asset: USXOM
+  bbdl:
+    symbols:
+    - XOM US Equity
+  contracts: none
+  commission_level: 3
+  display_name: ExxonMobil
+  esig_symbol: XOM
+  exchange_name: NASDAQ
+  feed_license: delayed
+  instrument_type: individualstock
+  market: stocks
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: us
+  symbol: USXOM
+WLDAUD:
+  asset: AUD
+  commision_level: 3
+  display_name: AUD Index
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: smart_fx
+  market: forex
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: WLDAUD
+  sd_symbol: NA
+  submarket: smart_fx
+  symbol: WLDAUD
+WLDEUR:
+  asset: EUR
+  commision_level: 3
+  display_name: EUR Index
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: smart_fx
+  market: forex
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: WLDEUR
+  sd_symbol: NA
+  submarket: smart_fx
+  symbol: WLDEUR
+WLDGBP:
+  asset: GBP
+  commision_level: 3
+  display_name: GBP Index
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: smart_fx
+  market: forex
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: WLDGBP
+  sd_symbol: NA
+  submarket: smart_fx
+  symbol: WLDGBP
+WLDUSD:
+  asset: USD
+  commision_level: 3
+  display_name: USD Index
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: smart_fx
+  market: forex
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: WLDUSD
+  sd_symbol: NA
+  submarket: smart_fx
+  symbol: WLDUSD
+frxAUDBRL:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDBRL Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: AUD/BRL
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: BRL
+  sd_symbol: NA
+  spot_spread_size: 3.5
+  submarket: minor_pairs
+  symbol: frxAUDBRL
+frxAUDCAD:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDCAD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: AUD/CAD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDCAD12M BGN Curncy
+    1M: AUDCAD1M BGN Curncy
+    1W: AUDCAD1W BGN Curncy
+    2M: AUDCAD2M BGN Curncy
+    3M: AUDCAD3M BGN Curncy
+    6M: AUDCAD6M BGN Curncy
+    9M: AUDCAD9M BGN Curncy
+    ON: AUDCADON BGN Curncy
+    SP: AUDCAD BGN Curncy
+    TN: AUDCADTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: CAD
+  sd_symbol: NA
+  spot_spread_size: 6
+  submarket: minor_pairs
+  symbol: frxAUDCAD
+  uses_dst_shifted_seasonality: 0
+frxAUDCHF:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDCHF Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: AUD/CHF
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDCHF12M BGN Curncy
+    1M: AUDCHF1M BGN Curncy
+    1W: AUDCHF1W BGN Curncy
+    2M: AUDCHF2M BGN Curncy
+    3M: AUDCHF3M BGN Curncy
+    6M: AUDCHF6M BGN Curncy
+    9M: AUDCHF9M BGN Curncy
+    ON: AUDCHFON BGN Curncy
+    SP: AUDCHF BGN Curncy
+    TN: AUDCHFTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: CHF
+  sd_symbol: NA
+  spot_spread_size: 6
+  submarket: minor_pairs
+  symbol: frxAUDCHF
+  uses_dst_shifted_seasonality: 0
+frxAUDCNY:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDCNY Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: AUD/CNY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CNY
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxAUDCNY
+frxAUDCZK:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDCZK Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: AUD/CZK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CZK
+  sd_symbol: NA
+  spot_spread_size: 90
+  submarket: minor_pairs
+  symbol: frxAUDCZK
+frxAUDDKK:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDDKK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: AUD/DKK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: DKK
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxAUDDKK
+frxAUDHKD:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDHKD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: AUD/HKD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: HKD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxAUDHKD
+frxAUDINR:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDINR Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: AUD/INR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: INR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxAUDINR
+frxAUDJPY:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDJPY Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: AUD/JPY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDJPY12M BGN Curncy
+    1M: AUDJPY1M BGN Curncy
+    1W: AUDJPY1W BGN Curncy
+    2M: AUDJPY2M BGN Curncy
+    2W: AUDJPY2W BGN Curncy
+    3M: AUDJPY3M BGN Curncy
+    6M: AUDJPY6M BGN Curncy
+    9M: AUDJPY9M BGN Curncy
+    ON: AUDJPYON BGN Curncy
+    SP: AUDJPY BGN Curncy
+    TN: AUDJPYTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: JPY
+  sd_symbol: NA
+  spot_spread_size: 45
+  submarket: major_pairs
+  symbol: frxAUDJPY
+  uses_dst_shifted_seasonality: 0
+frxAUDKRW:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDKRW Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: AUD/KRW
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: KRW
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxAUDKRW
+frxAUDMXN:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDMXN Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: AUD/MXN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: MXN
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxAUDMXN
+frxAUDNOK:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDNOK Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: AUD/NOK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDNOK12M BGN Curncy
+    1M: AUDNOK1M BGN Curncy
+    1W: AUDNOK1W BGN Curncy
+    2M: AUDNOK2M BGN Curncy
+    3M: AUDNOK3M BGN Curncy
+    6M: AUDNOK6M BGN Curncy
+    9M: AUDNOK9M BGN Curncy
+    ON: AUDNOKON BGN Curncy
+    SP: AUDNOK BGN Curncy
+    TN: AUDNOKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: NOK
+  sd_symbol: NA
+  spot_spread_size: 60
+  submarket: minor_pairs
+  symbol: frxAUDNOK
+frxAUDNZD:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDNZD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: AUD/NZD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDNZD12M BGN Curncy
+    1M: AUDNZD1M BGN Curncy
+    1W: AUDNZD1W BGN Curncy
+    2M: AUDNZD2M BGN Curncy
+    3M: AUDNZD3M BGN Curncy
+    6M: AUDNZD6M BGN Curncy
+    9M: AUDNZD9M BGN Curncy
+    ON: AUDNZDON BGN Curncy
+    SP: AUDNZD BGN Curncy
+    TN: AUDNZDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: NZD
+  sd_symbol: NA
+  spot_spread_size: 20
+  submarket: minor_pairs
+  symbol: frxAUDNZD
+  uses_dst_shifted_seasonality: 1
+frxAUDPLN:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDPLN Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: AUD/PLN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDPLN12M BGN Curncy
+    1M: AUDPLN1M BGN Curncy
+    2M: AUDPLN2M BGN Curncy
+    3M: AUDPLN3M BGN Curncy
+    6M: AUDPLN6M BGN Curncy
+    9M: AUDPLN9M BGN Curncy
+    SP: AUDPLN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: PLN
+  sd_symbol: NA
+  spot_spread_size: 90
+  submarket: minor_pairs
+  symbol: frxAUDPLN
+  uses_dst_shifted_seasonality: 1
+frxAUDSEK:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDSEK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: AUD/SEK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDSEK12M BGN Curncy
+    1M: AUDSEK1M BGN Curncy
+    1W: AUDSEK1W BGN Curncy
+    2M: AUDSEK2M BGN Curncy
+    3M: AUDSEK3M BGN Curncy
+    6M: AUDSEK6M BGN Curncy
+    9M: AUDSEK9M BGN Curncy
+    ON: AUDSEKON BGN Curncy
+    SP: AUDSEK BGN Curncy
+    TN: AUDSEKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: SEK
+  sd_symbol: NA
+  spot_spread_size: 90
+  submarket: minor_pairs
+  symbol: frxAUDSEK
+frxAUDSGD:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDSGD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: AUD/SGD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: SGD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxAUDSGD
+frxAUDUSD:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDUSD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: AUD/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: AUDUSD12M BGN Curncy
+    1M: AUDUSD1M BGN Curncy
+    1W: AUDUSD1W BGN Curncy
+    2M: AUDUSD2M BGN Curncy
+    2W: AUDUSD2W BGN Curncy
+    3M: AUDUSD3M BGN Curncy
+    6M: AUDUSD6M BGN Curncy
+    9M: AUDUSD9M BGN Curncy
+    ON: AUDUSDON BGN Curncy
+    SP: AUDUSD BGN Curncy
+    TN: AUDUSDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  spot_spread_size: 2
+  submarket: major_pairs
+  symbol: frxAUDUSD
+  uses_dst_shifted_seasonality: 0
+frxAUDZAR:
+  asset: AUD
+  bbdl:
+    symbols:
+    - AUDZAR Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: AUDZAR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: ZAR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxAUDZAR
+frxBROAUD:
+  asset: BRO
+  commission_level: 1
+  display_name: Oil/AUD
+  exchange_name: ODLS
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 1
+  quoted_currency: AUD
+  sd_symbol: NA
+  submarket: energy
+  symbol: frxBROAUD
+  volatility_surface_type: flat
+frxBROEUR:
+  asset: BRO
+  commission_level: 1
+  display_name: Oil/EUR
+  exchange_name: ODLS
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 1
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: energy
+  symbol: frxBROEUR
+  volatility_surface_type: flat
+frxBROGBP:
+  asset: BRO
+  commission_level: 1
+  display_name: Oil/GBP
+  exchange_name: ODLS
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 1
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: energy
+  symbol: frxBROGBP
+  volatility_surface_type: flat
+frxBROUSD:
+  asset: BRO
+  commission_level: 1
+  display_name: Oil/USD
+  exchange_name: ODLS
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: energy
+  symbol: frxBROUSD
+  volatility_surface_type: flat
+  outlier_tick: 0.1
+frxEURAUD:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURAUD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: EUR/AUD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURAUD12M BGN Curncy
+    1M: EURAUD1M BGN Curncy
+    1W: EURAUD1W BGN Curncy
+    2M: EURAUD2M BGN Curncy
+    2W: EURAUD2W BGN Curncy
+    3M: EURAUD3M BGN Curncy
+    6M: EURAUD6M BGN Curncy
+    9M: EURAUD9M BGN Curncy
+    ON: EURAUDON BGN Curncy
+    SP: EURAUD BGN Curncy
+    TN: EURAUDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: AUD
+  sd_symbol: NA
+  spot_spread_size: 10
+  submarket: major_pairs
+  symbol: frxEURAUD
+  uses_dst_shifted_seasonality: 0
+frxEURBRL:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURBRL Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/BRL
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: BRL
+  sd_symbol: NA
+  spot_spread_size: 3.5
+  submarket: minor_pairs
+  symbol: frxEURBRL
+frxEURCAD:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURCAD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: EUR/CAD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURCAD12M BGN Curncy
+    1M: EURCAD1M BGN Curncy
+    1W: EURCAD1W BGN Curncy
+    2M: EURCAD2M BGN Curncy
+    2W: EURCAD2W BGN Curncy
+    3M: EURCAD3M BGN Curncy
+    6M: EURCAD6M BGN Curncy
+    9M: EURCAD9M BGN Curncy
+    ON: EURCADON BGN Curncy
+    SP: EURCAD BGN Curncy
+    TN: EURCADTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: CAD
+  sd_symbol: NA
+  spot_spread_size: 10
+  submarket: major_pairs
+  symbol: frxEURCAD
+  uses_dst_shifted_seasonality: 1
+frxEURCHF:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURCHF Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 2
+  display_name: EUR/CHF
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURCHF12M BGN Curncy
+    1M: EURCHF1M BGN Curncy
+    1W: EURCHF1W BGN Curncy
+    2M: EURCHF2M BGN Curncy
+    2W: EURCHF2W BGN Curncy
+    3M: EURCHF3M BGN Curncy
+    6M: EURCHF6M BGN Curncy
+    9M: EURCHF9M BGN Curncy
+    ON: EURCHFON BGN Curncy
+    SP: EURCHF BGN Curncy
+    TN: EURCHFTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CHF
+  sd_symbol: NA
+  spot_spread_size: 4
+  submarket: major_pairs
+  symbol: frxEURCHF
+frxEURCNY:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURCNY Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/CNY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CNY
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxEURCNY
+frxEURCZK:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURCZK Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/CZK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURCZK12M BGN Curncy
+    1M: EURCZK1M BGN Curncy
+    1W: EURCZK1W BGN Curncy
+    2M: EURCZK2M BGN Curncy
+    2W: EURCZK2W BGN Curncy
+    3M: EURCZK3M BGN Curncy
+    6M: EURCZK6M BGN Curncy
+    9M: EURCZK9M BGN Curncy
+    ON: EURCZKON BGN Curncy
+    SP: EURCZK BGN Curncy
+    TN: EURCZKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CZK
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxEURCZK
+frxEURDKK:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURDKK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: EUR/DKK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: DKK
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxEURDKK
+frxEURGBP:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURGBP Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: EUR/GBP
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURGBP12M BGN Curncy
+    1M: EURGBP1M BGN Curncy
+    1W: EURGBP1W BGN Curncy
+    2M: EURGBP2M BGN Curncy
+    2W: EURGBP2W BGN Curncy
+    3M: EURGBP3M BGN Curncy
+    6M: EURGBP6M BGN Curncy
+    9M: EURGBP9M BGN Curncy
+    ON: EURGBPON BGN Curncy
+    SP: EURGBP BGN Curncy
+    TN: EURGBPTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: GBP
+  sd_symbol: NA
+  spot_spread_size: 5
+  submarket: major_pairs
+  symbol: frxEURGBP
+  uses_dst_shifted_seasonality: 0
+frxEURHKD:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURHKD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/HKD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: HKD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxEURHKD
+frxEURHUF:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURHUF Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: EUR/HUF
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+  pip_size: 0.01
+  quanto_only: 0
+  quoted_currency: HUF
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxEURHUF
+frxEURINR:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURINR Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/INR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: INR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxEURINR
+frxEURJPY:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURJPY Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: EUR/JPY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURJPY12M BGN Curncy
+    1M: EURJPY1M BGN Curncy
+    1W: EURJPY1W BGN Curncy
+    2M: EURJPY2M BGN Curncy
+    2W: EURJPY2W BGN Curncy
+    3M: EURJPY3M BGN Curncy
+    6M: EURJPY6M BGN Curncy
+    9M: EURJPY9M BGN Curncy
+    ON: EURJPYON BGN Curncy
+    SP: EURJPY BGN Curncy
+    TN: EURJPYTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: JPY
+  sd_symbol: NA
+  spot_spread_size: 25
+  submarket: major_pairs
+  symbol: frxEURJPY
+  uses_dst_shifted_seasonality: 1
+frxEURKRW:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURKRW Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/KRW
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: KRW
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxEURKRW
+frxEURMXN:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURMXN Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/MXN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: MXN
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxEURMXN
+frxEURNOK:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURNOK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: EUR/NOK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURNOK12M BGN Curncy
+    1M: EURNOK1M BGN Curncy
+    1W: EURNOK1W BGN Curncy
+    2M: EURNOK2M BGN Curncy
+    2W: EURNOK2W BGN Curncy
+    3M: EURNOK3M BGN Curncy
+    6M: EURNOK6M BGN Curncy
+    9M: EURNOK9M BGN Curncy
+    ON: EURNOKON BGN Curncy
+    SP: EURNOK BGN Curncy
+    TN: EURNOKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: NOK
+  sd_symbol: NA
+  spot_spread_size: 60
+  submarket: minor_pairs
+  symbol: frxEURNOK
+  uses_dst_shifted_seasonality: 1
+frxEURNZD:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURNZD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/NZD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURNZD12M BGN Curncy
+    1M: EURNZD1M BGN Curncy
+    1W: EURNZD1W BGN Curncy
+    2M: EURNZD2M BGN Curncy
+    2W: EURNZD2W BGN Curncy
+    3M: EURNZD3M BGN Curncy
+    6M: EURNZD6M BGN Curncy
+    9M: EURNZD9M BGN Curncy
+    ON: EURNZDON BGN Curncy
+    SP: EURNZD BGN Curncy
+    TN: EURNZDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: NZD
+  sd_symbol: NA
+  spot_spread_size: 22
+  submarket: minor_pairs
+  symbol: frxEURNZD
+  uses_dst_shifted_seasonality: 1
+frxEURPLN:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURPLN Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/PLN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURPLN12M BGN Curncy
+    1M: EURPLN1M BGN Curncy
+    1W: EURPLN1W BGN Curncy
+    2M: EURPLN2M BGN Curncy
+    2W: EURPLN2W BGN Curncy
+    3M: EURPLN3M BGN Curncy
+    6M: EURPLN6M BGN Curncy
+    9M: EURPLN9M BGN Curncy
+    ON: EURPLNON BGN Curncy
+    SP: EURPLN BGN Curncy
+    TN: EURPLNTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: PLN
+  sd_symbol: NA
+  spot_spread_size: 60
+  submarket: minor_pairs
+  symbol: frxEURPLN
+frxEURSEK:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURSEK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 2
+  display_name: EUR/SEK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURSEK12M BGN Curncy
+    1M: EURSEK1M BGN Curncy
+    1W: EURSEK1W BGN Curncy
+    2M: EURSEK2M BGN Curncy
+    2W: EURSEK2W BGN Curncy
+    3M: EURSEK3M BGN Curncy
+    6M: EURSEK6M BGN Curncy
+    9M: EURSEK9M BGN Curncy
+    ON: EURSEKON BGN Curncy
+    SP: EURSEK BGN Curncy
+    TN: EURSEKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: SEK
+  sd_symbol: NA
+  spot_spread_size: 60
+  submarket: major_pairs
+  symbol: frxEURSEK
+frxEURSGD:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURSGD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/SGD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURSGD12M Curncy
+    1M: EURSGD1M Curncy
+    1W: EURSGD1W Curncy
+    2M: EURSGD2M Curncy
+    3M: EURSGD3M Curncy
+    6M: EURSGD6M Curncy
+    9M: EURSGD9M Curncy
+    ON: EURSGDON Curncy
+    SP: EURSGD Curncy
+    TN: EURSGDTN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: SGD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxEURSGD
+frxEURUSD:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURUSD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: EUR/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: EURUSD12M BGN Curncy
+    1M: EURUSD1M BGN Curncy
+    1W: EURUSD1W BGN Curncy
+    2M: EURUSD2M BGN Curncy
+    2W: EURUSD2W BGN Curncy
+    3M: EURUSD3M BGN Curncy
+    6M: EURUSD6M BGN Curncy
+    9M: EURUSD9M BGN Curncy
+    ON: EURUSDON BGN Curncy
+    SP: EURUSD BGN Curncy
+    TN: EURUSDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  spot_spread_size: 2
+  submarket: major_pairs
+  symbol: frxEURUSD
+  uses_dst_shifted_seasonality: 1
+frxEURZAR:
+  asset: EUR
+  bbdl:
+    symbols:
+    - EURZAR Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: EUR/ZAR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: ZAR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxEURZAR
+frxGBPAUD:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPAUD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: GBP/AUD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPAUD12M BGN Curncy
+    1M: GBPAUD1M BGN Curncy
+    1W: GBPAUD1W BGN Curncy
+    2M: GBPAUD2M BGN Curncy
+    3M: GBPAUD3M BGN Curncy
+    6M: GBPAUD6M BGN Curncy
+    9M: GBPAUD9M BGN Curncy
+    ON: GBPAUDON BGN Curncy
+    SP: GBPAUD BGN Curncy
+    TN: GBPAUDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: AUD
+  sd_symbol: NA
+  spot_spread_size: 4
+  submarket: major_pairs
+  symbol: frxGBPAUD
+  uses_dst_shifted_seasonality: 0
+frxGBPBRL:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPBRL Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: GBP/BRL
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: BRL
+  sd_symbol: NA
+  spot_spread_size: 3.5
+  submarket: minor_pairs
+  symbol: frxGBPBRL
+frxGBPCAD:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPCAD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: GBP/CAD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPCAD12M BGN Curncy
+    1M: GBPCAD1M BGN Curncy
+    1W: GBPCAD1W BGN Curncy
+    2M: GBPCAD2M BGN Curncy
+    3M: GBPCAD3M BGN Curncy
+    6M: GBPCAD6M BGN Curncy
+    9M: GBPCAD9M BGN Curncy
+    ON: GBPCADON BGN Curncy
+    SP: GBPCAD BGN Curncy
+    TN: GBPCADTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: CAD
+  sd_symbol: NA
+  spot_spread_size: 13
+  submarket: major_pairs
+  symbol: frxGBPCAD
+  uses_dst_shifted_seasonality: 0
+frxGBPCHF:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPCHF Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: GBP/CHF
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CHF
+  sd_symbol: NA
+  spot_spread_size: 7
+  submarket: minor_pairs
+  symbol: frxGBPCHF
+frxGBPCNY:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPCNY Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: GBP/CNY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CNY
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxGBPCNY
+frxGBPCZK:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPCZK Curncy
+    vol_source: BLCS
+  contracts: none
+  commission_level: 3
+  display_name: GBP/CZK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPCZK12M Curncy
+    1M: GBPCZK1M Curncy
+    1W: GBPCZK1W Curncy
+    2M: GBPCZK2M Curncy
+    3M: GBPCZK3M Curncy
+    6M: GBPCZK6M Curncy
+    9M: GBPCZK9M Curncy
+    ON: GBPCZKON Curncy
+    SP: GBPCZK Curncy
+    TN: GBPCZKTN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: CZK
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxGBPCZK
+  uses_dst_shifted_seasonality: 1
+frxGBPDKK:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPDKK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: GBP/DKK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: DKK
+  sd_symbol: NA
+  spot_spread_size: 7
+  submarket: minor_pairs
+  symbol: frxGBPDKK
+frxGBPHKD:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPHKD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: GBP/HKD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: HKD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxGBPHKD
+frxGBPINR:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPINR Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: GBP/INR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: INR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxGBPINR
+frxGBPJPY:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPJPY Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: GBP/JPY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPJPY12M BGN Curncy
+    1M: GBPJPY1M BGN Curncy
+    1W: GBPJPY1W BGN Curncy
+    2M: GBPJPY2M BGN Curncy
+    2W: GBPJPY2W BGN Curncy
+    3M: GBPJPY3M BGN Curncy
+    6M: GBPJPY6M BGN Curncy
+    9M: GBPJPY9M BGN Curncy
+    ON: GBPJPYON BGN Curncy
+    SP: GBPJPY BGN Curncy
+    TN: GBPJPYTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: JPY
+  sd_symbol: NA
+  spot_spread_size: 60
+  submarket: major_pairs
+  symbol: frxGBPJPY
+  uses_dst_shifted_seasonality: 1
+frxGBPKRW:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPKRW Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: GBP/KRW
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: KRW
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxGBPKRW
+frxGBPMXN:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPMXN Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: GBP/MXN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: MXN
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxGBPMXN
+frxGBPNOK:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPNOK Curncy
+    vol_source: BGN
+  contracts: forward_only
+  commission_level: 3
+  display_name: GBP/NOK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPNOK12M BGN Curncy
+    1M: GBPNOK1M BGN Curncy
+    1W: GBPNOK1W BGN Curncy
+    2M: GBPNOK2M BGN Curncy
+    3M: GBPNOK3M BGN Curncy
+    6M: GBPNOK6M BGN Curncy
+    9M: GBPNOK9M BGN Curncy
+    ON: GBPNOKON BGN Curncy
+    SP: GBPNOK BGN Curncy
+    TN: GBPNOKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: NOK
+  sd_symbol: NA
+  spot_spread_size: 90
+  submarket: minor_pairs
+  symbol: frxGBPNOK
+  uses_dst_shifted_seasonality: 0
+frxGBPNZD:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPNZD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: GBP/NZD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPNZD12M BGN Curncy
+    1M: GBPNZD1M BGN Curncy
+    1W: GBPNZD1W BGN Curncy
+    2M: GBPNZD2M BGN Curncy
+    3M: GBPNZD3M BGN Curncy
+    6M: GBPNZD6M BGN Curncy
+    9M: GBPNZD9M BGN Curncy
+    ON: GBPNZDON BGN Curncy
+    SP: GBPNZD BGN Curncy
+    TN: GBPNZDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: NZD
+  sd_symbol: NA
+  spot_spread_size: 15
+  submarket: minor_pairs
+  symbol: frxGBPNZD
+  uses_dst_shifted_seasonality: 1
+frxGBPPLN:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPPLN Curncy
+    vol_source: BGN
+  contracts: forward_only
+  commission_level: 3
+  display_name: GBP/PLN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPPLN12M Curncy
+    1M: GBPPLN1M Curncy
+    1W: GBPPLN1W Curncy
+    2M: GBPPLN2M Curncy
+    2W: GBPPLN2W Curncy
+    3M: GBPPLN3M Curncy
+    6M: GBPPLN6M Curncy
+    9M: GBPPLN9M Curncy
+    ON: GBPPLNON Curncy
+    SP: GBPPLN Curncy
+    TN: GBPPLNTN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: PLN
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxGBPPLN
+  uses_dst_shifted_seasonality: 1
+frxGBPSEK:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPSEK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: GBP/SEK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPSEK12M BGN Curncy
+    1M: GBPSEK1M BGN Curncy
+    1W: GBPSEK1W BGN Curncy
+    2M: GBPSEK2M BGN Curncy
+    3M: GBPSEK3M BGN Curncy
+    6M: GBPSEK6M BGN Curncy
+    9M: GBPSEK9M BGN Curncy
+    ON: GBPSEKON BGN Curncy
+    SP: GBPSEK BGN Curncy
+    TN: GBPSEKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: SEK
+  sd_symbol: NA
+  spot_spread_size: 90
+  submarket: minor_pairs
+  symbol: frxGBPSEK
+frxGBPSGD:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPSGD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: GBP/SGD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPSGD12M Curncy
+    1M: GBPSGD1M Curncy
+    1W: GBPSGD1W Curncy
+    2M: GBPSGD2M Curncy
+    3M: GBPSGD3M Curncy
+    6M: GBPSGD6M Curncy
+    9M: GBPSGD9M Curncy
+    ON: GBPSGDON Curncy
+    SP: GBPSGD Curncy
+    TN: GBPSGDTN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: SGD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxGBPSGD
+frxGBPUSD:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPUSD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: GBP/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: GBPUSD12M BGN Curncy
+    1M: GBPUSD1M BGN Curncy
+    1W: GBPUSD1W BGN Curncy
+    2M: GBPUSD2M BGN Curncy
+    2W: GBPUSD2W BGN Curncy
+    3M: GBPUSD3M BGN Curncy
+    6M: GBPUSD6M BGN Curncy
+    9M: GBPUSD9M BGN Curncy
+    ON: GBPUSDON BGN Curncy
+    SP: GBPUSD BGN Curncy
+    TN: GBPUSDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  spot_spread_size: 2.5
+  submarket: major_pairs
+  symbol: frxGBPUSD
+  uses_dst_shifted_seasonality: 0
+frxGBPZAR:
+  asset: GBP
+  bbdl:
+    symbols:
+    - GBPZAR Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: GBP/ZAR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: ZAR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxGBPZAR
+frxNZDJPY:
+  asset: NZD
+  bbdl:
+    symbols:
+    - NZDJPY Curncy
+    vol_source: BGN
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: NZD/JPY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: NZDJPY12M BGN Curncy
+    1M: NZDJPY1M BGN Curncy
+    1W: NZDJPY1W BGN Curncy
+    2M: NZDJPY2M BGN Curncy
+    2W: NZDJPY2W BGN Curncy
+    3M: NZDJPY3M BGN Curncy
+    6M: NZDJPY6M BGN Curncy
+    9M: NZDJPY9M BGN Curncy
+    ON: NZDJPYON BGN Curncy
+    SP: NZDJPY BGN Curncy
+    TN: NZDJPYTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: JPY
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxNZDJPY
+frxNZDUSD:
+  asset: NZD
+  bbdl:
+    symbols:
+    - NZDUSD Curncy
+    vol_source: BGN
+  contracts:
+    callput:
+      daily:
+        spot:
+          euro_atm: day_to_year
+          euro_non_atm: day_to_year
+      intraday:
+        forward:
+          euro_atm: five_mins_to_eod
+        spot:
+          euro_atm:
+            max: 1d
+            min: 1m
+            historical_pricer_min: 1m
+            historical_pricer_max: 5h
+    endsinout:
+      daily:
+        spot:
+          euro_non_atm: day_to_year
+    staysinout:
+      daily:
+        spot:
+          american: day_to_year
+    touchnotouch:
+      daily:
+        spot:
+          american: day_to_year
+  commission_level: 2
+  display_name: NZD/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: NZDUSD12M BGN Curncy
+    1M: NZDUSD1M BGN Curncy
+    1W: NZDUSD1W BGN Curncy
+    2M: NZDUSD2M BGN Curncy
+    2W: NZDUSD2W BGN Curncy
+    3M: NZDUSD3M BGN Curncy
+    6M: NZDUSD6M BGN Curncy
+    9M: NZDUSD9M BGN Curncy
+    ON: NZDUSDON BGN Curncy
+    SP: NZDUSD BGN Curncy
+    TN: NZDUSDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  spot_spread_size: 3
+  submarket: minor_pairs
+  symbol: frxNZDUSD
+  uses_dst_shifted_seasonality: 1
+frxUSDBRL:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDBRL Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: USD/BRL
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: BRL
+  sd_symbol: NA
+  spot_spread_size: 3.5
+  submarket: minor_pairs
+  symbol: frxUSDBRL
+frxUSDCAD:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDCAD Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: USD/CAD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDCAD12M BGN Curncy
+    1M: USDCAD1M BGN Curncy
+    1W: USDCAD1W BGN Curncy
+    2M: USDCAD2M BGN Curncy
+    2W: USDCAD2W BGN Curncy
+    3M: USDCAD3M BGN Curncy
+    6M: USDCAD6M BGN Curncy
+    9M: USDCAD9M BGN Curncy
+    ON: USDCADON BGN Curncy
+    SP: USDCAD BGN Curncy
+    TN: USDCADTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.00001
+  quanto_only: 0
+  quoted_currency: CAD
+  sd_symbol: NA
+  spot_spread_size: 3.5
+  submarket: major_pairs
+  symbol: frxUSDCAD
+  uses_dst_shifted_seasonality: 1
+frxUSDCHF:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDCHF Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 1
+  display_name: USD/CHF
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CHF
+  sd_symbol: NA
+  spot_spread_size: 3.5
+  submarket: major_pairs
+  symbol: frxUSDCHF
+frxUSDCNY:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDCNY Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: USD/CNY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: CNY
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxUSDCNY
+frxUSDCZK:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDCZK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: USD/CZK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: CZK
+  sd_symbol: NA
+  spot_spread_size: 45
+  submarket: minor_pairs
+  symbol: frxUSDCZK
+frxUSDDKK:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDDKK Curncy
+    vol_source: BGN
+  contracts: none
+  commission_level: 3
+  display_name: USD/DKK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: DKK
+  sd_symbol: NA
+  spot_spread_size: 3.5
+  submarket: minor_pairs
+  symbol: frxUSDDKK
+frxUSDHKD:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDHKD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: USD/HKD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDHKD12M Curncy
+    1M: USDHKD1M Curncy
+    1W: USDHKD1W Curncy
+    2M: USDHKD2M Curncy
+    2W: USDHKD2W Curncy
+    3M: USDHKD3M Curncy
+    6M: USDHKD6M Curncy
+    9M: USDHKD9M Curncy
+    ON: USDHKDON Curncy
+    SP: USDHKD Curncy
+    TN: USDHKDTN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: HKD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxUSDHKD
+frxUSDINR:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDINR Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: USD/INR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: INR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxUSDINR
+frxUSDJPY:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDJPY Curncy
+    vol_source: BGN
+  contracts: active_fx
+  commission_level: 1
+  display_name: USD/JPY
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDJPY12M BGN Curncy
+    1M: USDJPY1M BGN Curncy
+    1W: USDJPY1W BGN Curncy
+    2M: USDJPY2M BGN Curncy
+    2W: USDJPY2W BGN Curncy
+    3M: USDJPY3M BGN Curncy
+    6M: USDJPY6M BGN Curncy
+    9M: USDJPY9M BGN Curncy
+    ON: USDJPYON BGN Curncy
+    SP: USDJPY BGN Curncy
+    TN: USDJPYTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.001
+  quanto_only: 0
+  quoted_currency: JPY
+  sd_symbol: NA
+  spot_spread_size: 25
+  submarket: major_pairs
+  symbol: frxUSDJPY
+  uses_dst_shifted_seasonality: 1
+frxUSDKRW:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDKRW Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: USD/KRW
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 1
+  quoted_currency: KRW
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxUSDKRW
+frxUSDMXN:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDMXN Curncy
+    vol_source: BGN
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: USD/MXN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDMXN12M BGN Curncy
+    1M: USDMXN1M BGN Curncy
+    1W: USDMXN1W BGN Curncy
+    2M: USDMXN2M BGN Curncy
+    2W: USDMXN2W BGN Curncy
+    3M: USDMXN3M BGN Curncy
+    6M: USDMXN6M BGN Curncy
+    9M: USDMXN9M BGN Curncy
+    ON: USDMXNON BGN Curncy
+    SP: USDMXN BGN Curncy
+    TN: USDMXNTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: MXN
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxUSDMXN
+frxUSDNOK:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDNOK Curncy
+    vol_source: BGN
+  contracts: forward_only
+  commission_level: 3
+  display_name: USD/NOK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDNOK12M BGN Curncy
+    1M: USDNOK1M BGN Curncy
+    1W: USDNOK1W BGN Curncy
+    2M: USDNOK2M BGN Curncy
+    2W: USDNOK2W BGN Curncy
+    3M: USDNOK3M BGN Curncy
+    6M: USDNOK6M BGN Curncy
+    9M: USDNOK9M BGN Curncy
+    ON: USDNOKON BGN Curncy
+    SP: USDNOK BGN Curncy
+    TN: USDNOKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: NOK
+  sd_symbol: NA
+  spot_spread_size: 60
+  submarket: minor_pairs
+  symbol: frxUSDNOK
+  uses_dst_shifted_seasonality: 1
+frxUSDPLN:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDPLN Curncy
+    vol_source: BGN
+  contracts: forward_and_daily
+  commission_level: 3
+  display_name: USD/PLN
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDPLN12M BGN Curncy
+    1M: USDPLN1M BGN Curncy
+    1W: USDPLN1W BGN Curncy
+    2M: USDPLN2M BGN Curncy
+    2W: USDPLN2W BGN Curncy
+    3M: USDPLN3M BGN Curncy
+    6M: USDPLN6M BGN Curncy
+    9M: USDPLN9M BGN Curncy
+    ON: USDPLNON BGN Curncy
+    SP: USDPLN BGN Curncy
+    TN: USDPLNTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: PLN
+  sd_symbol: NA
+  spot_spread_size: 45
+  submarket: minor_pairs
+  symbol: frxUSDPLN
+frxUSDSEK:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDSEK Curncy
+    vol_source: BGN
+  contracts: forward_only
+  commission_level: 2
+  display_name: USD/SEK
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDSEK12M BGN Curncy
+    1M: USDSEK1M BGN Curncy
+    1W: USDSEK1W BGN Curncy
+    2M: USDSEK2M BGN Curncy
+    2W: USDSEK2W BGN Curncy
+    3M: USDSEK3M BGN Curncy
+    6M: USDSEK6M BGN Curncy
+    9M: USDSEK9M BGN Curncy
+    ON: USDSEKON BGN Curncy
+    SP: USDSEK BGN Curncy
+    TN: USDSEKTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: SEK
+  sd_symbol: NA
+  spot_spread_size: 60
+  submarket: minor_pairs
+  symbol: frxUSDSEK
+  uses_dst_shifted_seasonality: 1
+frxUSDSGD:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDSGD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: USD/SGD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDSGD12M BGN Curncy
+    1M: USDSGD1M BGN Curncy
+    1W: USDSGD1W BGN Curncy
+    2M: USDSGD2M BGN Curncy
+    2W: USDSGD2W BGN Curncy
+    3M: USDSGD3M BGN Curncy
+    6M: USDSGD6M BGN Curncy
+    9M: USDSGD9M BGN Curncy
+    ON: USDSGDON BGN Curncy
+    SP: USDSGD BGN Curncy
+    TN: USDSGDTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: SGD
+  sd_symbol: NA
+  spot_spread_size: 50
+  submarket: minor_pairs
+  symbol: frxUSDSGD
+frxUSDZAR:
+  asset: USD
+  bbdl:
+    symbols:
+    - USDZAR Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: USDZAR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 1
+  forward_tickers:
+    12M: USDZAR12M BGN Curncy
+    1M: USDZAR1M BGN Curncy
+    1W: USDZAR1W BGN Curncy
+    2M: USDZAR2M BGN Curncy
+    2W: USDZAR2W BGN Curncy
+    3M: USDZAR3M BGN Curncy
+    6M: USDZAR6M BGN Curncy
+    9M: USDZAR9M BGN Curncy
+    ON: USDZARON BGN Curncy
+    SP: USDZAR BGN Curncy
+    TN: USDZARTN BGN Curncy
+  instrument_type: forex
+  market: forex
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 1
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: ZAR
+  sd_symbol: NA
+  submarket: minor_pairs
+  symbol: frxUSDZAR
+frxXAGAUD:
+  asset: XAG
+  bbdl:
+    symbols:
+    - XAGAUD Curncy
+    vol_source: BLCS
+  commission_level: 2
+  display_name: XAG/AUD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: AUD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAGAUD
+frxXAGEUR:
+  asset: XAG
+  bbdl:
+    symbols:
+    - XAGEUR Curncy
+    vol_source: BGN
+  commission_level: 2
+  display_name: XAG/EUR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAGEUR
+frxXAGGBP:
+  asset: XAG
+  bbdl:
+    symbols:
+    - XAGGBP Curncy
+    vol_source: BLCS
+  commission_level: 3
+  display_name: XAG/GBP
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAGGBP
+frxXAGUSD:
+  asset: XAG
+  bbdl:
+    symbols:
+    - XAGUSD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: Silver/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  inefficient_periods:
+  - end: 23h59m59s
+    start: 21h
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAGUSD
+  uses_dst_shifted_seasonality: 1
+frxXAUAUD:
+  asset: XAU
+  bbdl:
+    symbols:
+    - XAUAUD Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: Gold/AUD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 1
+  quoted_currency: AUD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAUAUD
+frxXAUEUR:
+  asset: XAU
+  bbdl:
+    symbols:
+    - XAUEUR Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: Gold/EUR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 1
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAUEUR
+frxXAUGBP:
+  asset: XAU
+  bbdl:
+    symbols:
+    - XAUGBP Curncy
+    vol_source: BGN
+  commission_level: 3
+  display_name: Gold/GBP
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 1
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAUGBP
+frxXAUUSD:
+  asset: XAU
+  bbdl:
+    symbols:
+    - XAUUSD Curncy
+    vol_source: BGN
+  commission_level: 1
+  display_name: Gold/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  inefficient_periods:
+  - end: 23h59m59s
+    start: 21h
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXAUUSD
+  uses_dst_shifted_seasonality: 1
+frxXPDAUD:
+  asset: XPD
+  bbdl:
+    symbols:
+    - XPDAUD Curncy
+    vol_source: BLCS
+  commission_level: 2
+  display_name: XPD/AUD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: AUD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPDAUD
+  volatility_surface_type: flat
+frxXPDEUR:
+  asset: XPD
+  bbdl:
+    symbols:
+    - XPDEUR Curncy
+    vol_source: BLCS
+  commission_level: 2
+  display_name: XPD/EUR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPDEUR
+frxXPDGBP:
+  asset: XPD
+  bbdl:
+    symbols:
+    - XPDGBP Curncy
+    vol_source: BLCS
+  commission_level: 2
+  display_name: XPD/GBP
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPDGBP
+frxXPDUSD:
+  asset: XPD
+  bbdl:
+    symbols:
+    - XPDUSD Curncy
+    vol_source: BGN
+  contracts: restricted_metals
+  commission_level: 3
+  display_name: Palladium/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPDUSD
+frxXPTAUD:
+  asset: XPT
+  bbdl:
+    symbols:
+    - XPTAUD Curncy
+    vol_source: BLCS
+  commission_level: 2
+  display_name: XPT/AUD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: AUD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPTAUD
+  volatility_surface_type: flat
+frxXPTEUR:
+  asset: XPT
+  bbdl:
+    symbols:
+    - XPTEUR Curncy
+    vol_source: BLCS
+  commission_level: 2
+  display_name: XPT/EUR
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: EUR
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPTEUR
+frxXPTGBP:
+  asset: XPD
+  bbdl:
+    symbols:
+    - XPTGBP Curncy
+    vol_source: BLCS
+  commission_level: 2
+  display_name: XPT/GBP
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.0001
+  quanto_only: 1
+  quoted_currency: GBP
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPTGBP
+frxXPTUSD:
+  asset: XPT
+  bbdl:
+    symbols:
+    - XPTUSD Curncy
+    vol_source: BGN
+  contracts: restricted_metals
+  commission_level: 3
+  display_name: Platinum/USD
+  exchange_name: FOREX
+  feed_license: realtime
+  forward_feed: 0
+  instrument_type: commodities
+  market: commodities
+  market_convention:
+    atm_setting: atm_delta_neutral_straddle
+    bf: 2_vol
+    delta_premium_adjusted: 0
+    delta_style: spot_delta
+    rr: call-put
+  pip_size: 0.01
+  quanto_only: 0
+  quoted_currency: USD
+  sd_symbol: NA
+  submarket: metals
+  symbol: frxXPTUSD

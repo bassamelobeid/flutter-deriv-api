@@ -1,0 +1,24 @@
+START-OF-FILE
+FIRMNAME=dl623471
+USERNUMBER=7442974
+WS=1
+SN=747601
+REPLYFILENAME=corporate.csv.enc
+COLUMNHEADER=yes
+DELIMITER=,
+DATEFORMAT=dd-mmm-yy
+HEADER=no
+#gzip output
+#COMPRESS=yes
+
+#cancel/getactions/getdata/gethistory/getallticks/getticks
+PROGRAMNAME=getactions
+ACTIONS_DATE=both
+DATERANGE=[% date_range %]
+#oneshot/daily/weekend/weekly/weekday/monthly
+PROGRAMFLAG=[% flag %]
+
+START-OF-DATA
+[% list %]
+END-OF-DATA
+END-OF-FILE

@@ -1,0 +1,201 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Test::Most;
+use Test::FailWarnings;
+
+use BOM::Test::Runtime qw(:normal);
+use BOM::Market::Registry;
+
+subtest 'Build Registry' => sub {
+    plan tests => 2;
+    my $registry;
+
+    lives_ok {
+        $registry = BOM::Market::Registry->instance;
+    }
+    'Able to load registry';
+
+    ok $registry->get('forex'), 'We get forex';
+};
+
+subtest 'display_markets' => sub {
+    plan tests => 1;
+    my $registry = BOM::Market::Registry->instance;
+
+    eq_or_diff [sort map { $_->name } $registry->display_markets],
+        [sort 'forex', 'indices', 'commodities', 'random', 'stocks'], "correct list of financial markets";
+};
+
+subtest 'Market builds or configs test' => sub {
+    subtest 'config' => sub {
+        plan tests => 17;
+        my $registry = BOM::Market::Registry->instance;
+
+        my $config = $registry->get('config');
+
+        isa_ok $config, 'BOM::Market';
+        ok !$config->display_name,      'Display Name';
+        ok !$config->contracts_offered, 'Contracts Offered';
+        ok !$config->equity;
+        ok !$config->disabled,                 'disabled';
+        ok !$config->reduced_display_decimals, 'Reduced Display Decimals';
+        is $config->asset_type, 'asset';
+        ok !$config->markups->digital_spread,              'Digital Spread';
+        ok !$config->markups->apply_butterfly_markup,      'Butterfly Markup';
+        ok !$config->markups->apply_traded_markets_markup, 'Market Markup';
+        is $config->vol_cut_off, 'Default', 'Vol cut off';
+        ok !$config->foreign_bs_probability;
+        ok !$config->absolute_barrier_multiplier;
+        ok !$config->display_order;
+
+        ok !$config->providers->[0];
+        is $config->license, 'realtime';
+        ok !$config->official_ohlc, 'Official OHLC';
+    };
+
+    subtest 'forex' => sub {
+        plan tests => 17;
+        my $registry = BOM::Market::Registry->instance;
+
+        my $forex = $registry->get('forex');
+
+        isa_ok $forex, 'BOM::Market';
+        is $forex->display_name, 'Forex', 'Correct display name';
+        is $forex->display_order,     1;
+        ok $forex->contracts_offered, 'No contracts here, sorry';
+        ok !$forex->equity;
+        ok !$forex->disabled, 'But its not disabled';
+        ok $forex->reduced_display_decimals;
+        is $forex->asset_type, 'currency';
+
+        cmp_deeply(
+            $forex->markups->digital_spread,
+            {
+                european       => 3.5,
+                single_barrier => 4,
+                double_barrier => 5,
+            },
+        );
+        ok $forex->markups->apply_butterfly_markup,      'Butterfly Markup';
+        ok $forex->markups->apply_traded_markets_markup, 'Market Markup';
+        is $forex->vol_cut_off, 'NY1000', 'Vol cut off';
+        ok $forex->foreign_bs_probability;
+        ok $forex->absolute_barrier_multiplier;
+
+        cmp_deeply($forex->providers, ['idata', 'olsen', 'smart']);
+
+        is $forex->license, 'realtime';
+        ok !$forex->official_ohlc;
+    };
+
+    subtest 'commodities' => sub {
+        plan tests => 17;
+        my $registry = BOM::Market::Registry->instance;
+
+        my $commodities = $registry->get('commodities');
+
+        isa_ok $commodities, 'BOM::Market';
+        is $commodities->display_name,  'Commodities';
+        is $commodities->display_order, 4;
+        ok $commodities->contracts_offered;
+        ok !$commodities->equity;
+        ok !$commodities->disabled;
+        ok $commodities->reduced_display_decimals;
+        is $commodities->asset_type, 'currency';
+
+        cmp_deeply(
+            $commodities->markups->digital_spread,
+            {
+                european       => 4,
+                single_barrier => 7,
+                double_barrier => 10,
+            },
+        );
+
+        ok !$commodities->markups->apply_butterfly_markup, 'Butterfly Markup';
+        ok $commodities->markups->apply_traded_markets_markup, 'Market Markup';
+        is $commodities->vol_cut_off, 'NY1000', 'Vol cut off';
+        ok !$commodities->foreign_bs_probability;
+        ok $commodities->absolute_barrier_multiplier;
+
+        cmp_deeply($commodities->providers,, ['idata', 'sd'],);
+
+        is $commodities->license, 'realtime';
+        ok !$commodities->official_ohlc;
+    };
+
+    subtest 'indices' => sub {
+        plan tests => 17;
+        my $registry = BOM::Market::Registry->instance;
+
+        my $indices = $registry->get('indices');
+
+        isa_ok $indices, 'BOM::Market';
+        is $indices->display_name,  'Indices';
+        is $indices->display_order, 2;
+        ok $indices->contracts_offered;
+        ok $indices->equity;
+        ok !$indices->disabled;
+        ok !$indices->reduced_display_decimals;
+        is $indices->asset_type, 'index';
+
+        cmp_deeply(
+            $indices->markups->digital_spread,
+            {
+                european       => 4,
+                single_barrier => 6,
+                double_barrier => 8,
+            },
+        );
+
+        ok !$indices->markups->apply_butterfly_markup, 'Butterfly Markup';
+        ok $indices->markups->apply_traded_markets_markup, 'Market Markup';
+        is $indices->vol_cut_off, 'Default', 'Vol cut off';
+        ok !$indices->foreign_bs_probability;
+        ok !$indices->absolute_barrier_multiplier;
+
+        cmp_deeply($indices->providers, ['idata', 'telekurs', 'tenfore', 'synthetic']);
+
+        is $indices->license, 'daily';
+        ok $indices->official_ohlc;
+    };
+
+    subtest 'random' => sub {
+        plan tests => 17;
+        my $registry = BOM::Market::Registry->instance;
+
+        my $random = $registry->get('random');
+
+        isa_ok $random, 'BOM::Market';
+        is $random->display_name,  'Randoms';
+        is $random->display_order, 5;
+        ok $random->contracts_offered;
+        ok !$random->equity;
+        ok !$random->disabled;
+        ok $random->reduced_display_decimals;
+        is $random->asset_type, 'synthetic';
+
+        cmp_deeply(
+            $random->markups->digital_spread,
+            {
+                european       => 3,
+                single_barrier => 3,
+                double_barrier => 3,
+            },
+        );
+        ok !$random->markups->apply_butterfly_markup,      'Butterfly Markup';
+        ok !$random->markups->apply_traded_markets_markup, 'Market Markup';
+        is $random->vol_cut_off, 'Default', 'Vol cut off';
+        ok !$random->foreign_bs_probability;
+        ok $random->absolute_barrier_multiplier;
+
+        cmp_deeply($random->providers, ['random',]);
+        is $random->license, 'realtime';
+        ok !$random->official_ohlc;
+    };
+};
+
+done_testing;

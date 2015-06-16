@@ -1,0 +1,162 @@
+'Binary (IOM) Ltd':
+    short: iom
+    address:
+      - 'First Floor, Millennium House'
+      - Victoria Road
+      - Douglas
+      - IM2 4RW
+      - Isle of Man
+      - British Isles
+    fax: +44 207 6813557
+    country: Isle of Man
+    legal_allowed_currencies:
+      - GBP
+      - USD
+    legal_allowed_markets:
+      - commodities
+      - forex
+      - indices
+      - stocks
+      - smarties
+      - random
+    legal_default_currency: GBP
+    counterparty_for:
+      - UNITED KINGDOM
+      - ISLE OF MAN
+      - JERSEY
+      - GUERNSEY
+'Binary (Europe) Ltd':
+    short: malta
+    address:
+      - Mompalao Building
+      - Suite 2
+      - Tower Road
+      - Msida MSD1825
+      - Malta
+    fax: +356 25401037
+    country: Malta
+    legal_allowed_currencies:
+      - USD
+      - EUR
+      - GBP
+    legal_allowed_markets:
+      - random
+    legal_default_currency: EUR
+    counterparty_for:
+      - AUSTRIA
+      - BELGIUM
+      - BULGARIA
+      - CROATIA
+      - CYPRUS
+      - CZECH REPUBLIC
+      - DENMARK
+      - ESTONIA
+      - FINLAND
+      - FRANCE
+      - GERMANY
+      - GREECE
+      - HUNGARY
+      - IRELAND
+      - ITALY
+      - LATVIA
+      - LITHUANIA
+      - LUXEMBOURG
+      - MALTA
+      - NETHERLANDS
+      - POLAND
+      - PORTUGAL
+      - ROMANIA
+      - SLOVAKIA
+      - SLOVENIA
+      - SPAIN
+      - SWEDEN
+    has_reality_check: 1
+'Binary Investments (Europe) Ltd':
+    short: maltainvest
+    address:
+      - Mompalao Building
+      - Suite 2
+      - Tower Road
+      - Msida MSD1825
+      - Malta
+    fax: +356 25401037
+    country: Malta
+    legal_allowed_currencies:
+      - USD
+      - EUR
+      - GBP
+    legal_allowed_markets:
+      - commodities
+      - forex
+      - indices
+      - stocks
+      - smarties
+    legal_default_currency: EUR
+    counterparty_for:
+      - AUSTRIA
+      - BELGIUM
+      - BULGARIA
+      - CROATIA
+      - CYPRUS
+      - CZECH REPUBLIC
+      - DENMARK
+      - ESTONIA
+      - FINLAND
+      - FRANCE
+      - GERMANY
+      - GREECE
+      - HUNGARY
+      - IRELAND
+      - ITALY
+      - LATVIA
+      - LITHUANIA
+      - LUXEMBOURG
+      - MALTA
+      - NETHERLANDS
+      - POLAND
+      - PORTUGAL
+      - ROMANIA
+      - SLOVAKIA
+      - SLOVENIA
+      - SPAIN
+      - SWEDEN
+    has_reality_check: 1
+'Binary (C.R.) S.A.':
+    short: costarica
+    name: Binary (C.R.) S.A.
+    fax: +44 207 6813557
+    country: Costa Rica
+    legal_allowed_currencies:
+      - USD
+      - EUR
+      - GBP
+      - AUD
+    legal_allowed_markets:
+      - commodities
+      - forex
+      - indices
+      - stocks
+      - smarties
+      - random
+    legal_default_currency: USD
+    allows_payment_agents: 1
+    payment_agents_residence_disable: jp
+    counterparty_for:
+      - "*"
+'Binary Ltd':
+    short: fog
+    name: Binary Ltd
+    fax: +61 2 94751035
+    country: Bahamas
+    legal_default_currency: USD
+    legal_allowed_markets:
+      - commodities
+      - forex
+      - indices
+      - stocks
+      - smarties
+      - random
+    legal_allowed_currencies:
+      - USD
+    counterparty_for:
+      - "*"

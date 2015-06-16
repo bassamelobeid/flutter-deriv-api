@@ -1,0 +1,36 @@
+---
+system:
+  on_development: 1
+  alerts:
+    default_recipient: _DEVELOPER_
+    quants: _DEVELOPER_
+    sysadmins: _DEVELOPER_
+    email_subject_prefix: "[DEVELOPER PC _HOST_] "
+  send_email_to_clients: 0
+  directory:
+    db: /db
+    feed: /feed
+price_streamer:
+  workers: 2
+cgi:
+  daemon:
+    realtime_tick:
+      min_servers: 1
+      min_spare_servers: 1
+      max_spare_servers: 3
+      max_servers: 7
+tick_streamer:
+  workers: 2
+payments:
+  email: "testing_payments@binary.com"
+marketing:
+  email: _DEVELOPER_
+  myaffiliates_email: _DEVELOPER_
+compliance:
+  email: _DEVELOPER_
+accounting:
+  email: _DEVELOPER_
+cs:
+  email: _DEVELOPER_
+tech:
+    email: _DEVELOPER_

@@ -1,0 +1,304 @@
+random_index:
+    name: random_index
+    display_name: "Indices"
+    display_order: 1
+    market: random
+    contracts:
+      asian:
+        tick:
+          spot:
+            asian:
+              min: 5
+              max: 10
+              payout_limit: 10000
+      touchnotouch: random_path_dependent
+      callput:
+        intraday:
+          spot:
+            euro_non_atm: two_mins_to_eod
+            euro_atm:
+              min: '15s'
+              max: '1d'
+          forward:
+            euro_atm: two_mins_to_eod
+        daily:
+          spot:
+            euro_atm: day_to_year
+            euro_non_atm: day_to_year
+        tick:
+          spot:
+            euro_atm:
+              min: 5
+              max: 10
+      staysinout: random_path_dependent
+      endsinout:
+        intraday:
+          spot:
+            euro_non_atm: two_mins_to_eod
+        daily:
+          spot:
+            euro_non_atm: day_to_year
+      digits: standard_digits
+    explanation: 'Associated with a number that represents the relative volatility of the market. For example, the Random 100 Index is twice as volatile as the Random 50 Index.'
+random_daily:
+    name: random_daily
+    display_name: "Quotidians"
+    display_order: 2
+    intradays_must_be_same_day: 1
+    resets_at_open: 1
+    market: random
+    explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (00:00GMT).'
+    sod_blackout_start: '5m'
+    eod_blackout_expiry: '10m'
+random_nightly:
+    name: random_nightly
+    display_name: "Nocturnes"
+    display_order: 3
+    intradays_must_be_same_day: 1
+    resets_at_open: 1
+    market: random
+    explanation: 'Represent a single day of trading with different market factors. They are reset at the start of each trading day (12:00GMT).'
+    sod_blackout_start: '5m'
+    eod_blackout_expiry: '10m'
+asia_oceania:
+    name: asia_oceania
+    display_name: "Asia/Oceania"
+    display_order: 1
+    market: indices
+europe_africa:
+    name: europe_africa
+    display_name: "Europe/Africa"
+    display_order: 2
+    market: indices
+americas:
+    name: americas
+    display_name: "Americas"
+    display_order: 3
+    market: indices
+smart_index:
+    name: smart_index
+    display_name: 'Smart Indices'
+    display_order: 4
+    asset_type: 'index'
+    market: indices
+    explanation: 'Smart Indices'
+    volatility_surface_type: "moneyness"
+major_pairs:
+    name: major_pairs
+    display_name: "Major Pairs"
+    display_order: 1
+    market: forex
+    explanation: 'The most widely traded and liquid forex pairs.'
+minor_pairs:
+    name: minor_pairs
+    display_name: "Minor Pairs"
+    display_order: 2
+    market: forex
+    contracts:
+      callput:
+        intraday:
+          spot:
+            euro_atm:
+              min: '1m'
+              max: '1d'
+              historical_pricer_min: '1m'
+              historical_pricer_max: '5h'
+          forward:
+            euro_atm: five_mins_to_eod
+        daily:
+          spot:
+            euro_atm: day_to_year
+    explanation: 'Forex pairs of interest, but with less liquid international markets.'
+smart_fx:
+    name: smart_fx
+    display_name: 'Smart FX'
+    volatility_surface_type: "flat"
+    display_order: 3
+    market: forex
+    asset_type: 'currency'
+    contracts:
+      callput:
+        tick:
+          spot:
+            euro_atm:
+              min: 5
+              max: 10
+              payout_limit: 10000
+        intraday:
+          spot:
+            euro_atm:
+              min: '15s'
+              max: '10h'
+              historical_pricer_min: '15s'
+              historical_pricer_max: '10h'
+              payout_limit: 1000
+    explanation: 'Smart FX indices'
+metals:
+    name: metals
+    display_name: "Metals"
+    display_order: 1
+    market: commodities
+energy:
+    name: energy
+    display_name: "Energy"
+    display_order: 2
+    market: commodities
+    contracts:
+      callput:
+        intraday:
+          forward:
+            euro_atm: five_mins_to_eod
+        daily:
+          spot:
+            euro_atm: day_to_year
+
+uk:
+    name: uk
+    offered: 0
+    display_name: "United Kingdom Stocks"
+    display_order: 11
+    market: stocks
+us:
+    name: us
+    offered: 0
+    display_name: "United States Stocks"
+    display_order: 12
+    market: stocks
+australia:
+    name: australia
+    offered: 0
+    display_name: "Australia Stocks"
+    display_order: 13
+    market: stocks
+japan:
+    name: japan
+    offered: 0
+    display_name: "Japan Stocks"
+    display_order: 4
+    market: stocks
+germany:
+    name: germany
+    offered: 0
+    display_name: "Germany Stocks"
+    display_order: 5
+    market: stocks
+india:
+    name: india
+    offered: 0
+    display_name: "India Stocks"
+    display_order: 6
+    market: stocks
+italy:
+    name: italy
+    offered: 0
+    display_name: "Italy Stocks"
+    display_order: 7
+    market: stocks
+korea:
+    name: korea
+    offered: 0
+    display_name: "Korea Stocks"
+    display_order: 8
+    market: stocks
+spain:
+    name: spain
+    offered: 0
+    display_name: "Spain Stocks"
+    display_order: 9
+    market: stocks
+norway:
+    name: norway
+    offered: 0
+    display_name: "Norway Stocks"
+    display_order: 10
+    market: stocks
+france:
+    name: france
+    display_name: "French Stocks"
+    display_order: 1
+    market: stocks
+belgium:
+    name: belgium
+    display_name: "Belgian Stocks"
+    display_order: 2
+    market: stocks
+amsterdam:
+    name: amsterdam
+    display_name: "Dutch Stocks"
+    display_order: 3
+    market: stocks
+
+global:
+    name: global
+    display_name: "Global Sector"
+    display_order: 1
+    market: sectors
+agriculture:
+    name: agriculture
+    display_name: "Agriculture Sector"
+    display_order: 2
+    market: sectors
+financial:
+    name: financial
+    display_name: "Financial Sector"
+    display_order: 3
+    market: sectors
+energy_sector:
+    name: energy_sector
+    display_name: "Energy Sector"
+    display_order: 4
+    market: sectors
+metals_sector:
+    name: metals_sector
+    display_name: "Metals Sector"
+    display_order: 5
+    market: sectors
+technology:
+    name: technology
+    display_name: "Technology Sector"
+    display_order: 6
+    market: sectors
+healthcare:
+    name: healthcare
+    display_name: "Health Care Sector"
+    display_order: 7
+    market: sectors
+industrials:
+    name: industrials
+    display_name: "Industrials Sector"
+    display_order: 8
+    market: sectors
+consumer_services:
+    name: consumer_services
+    display_name: "Consumer Srv Sector"
+    display_order: 9
+    market: sectors
+
+asia_oceania_future:
+    name: asia_oceania_future
+    display_name: "Asia/Oceania Future"
+    display_order: 1
+    market: futures
+europe_africa_future:
+    name: europe_africa_future
+    display_name: "Europe/Africa Future"
+    display_order: 2
+    market: futures
+americas_future:
+    name: americas_future
+    display_name: "Americas Future"
+    display_order: 3
+    market: futures
+synthetic_index:
+    name: synthetic_index
+    display_name: 'Synthetic Index'
+    display_order: 11
+    asset_type: 'index'
+    market: synthetic
+    explanation: 'Synthetic Indices'
+#This is just a fake submarket to default to when not defined.
+config:
+    name: config
+    market: config
+    display_order: -1
+    display_name: "config-only"

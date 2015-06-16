@@ -1,0 +1,181 @@
+package BOM::Product::Pricing::Engine::Intraday::Index;
+
+use Moose;
+extends 'BOM::Product::Pricing::Engine::Intraday';
+
+use YAML::CacheLoader;
+use Time::Duration::Concise;
+use BOM::Platform::Context qw(localize);
+
+sub BUILD {
+    my $self = shift;
+
+    is_compatible($self->bet);
+
+    return;
+}
+
+has pricing_vol => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_pricing_vol {
+    return shift->bet->pricing_args->{iv};
+}
+
+has [qw(probability intraday_trend model_markup)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has _supported_types => (
+    is      => 'ro',
+    isa     => 'HashRef',
+    default => sub {
+        return {
+            CALL => 1,
+            PUT  => 1,
+        };
+    },
+);
+
+has _calibration_coefficient => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__calibration_coefficient {
+    my $self = shift;
+
+    my $bet  = $self->bet;
+    my $coef = YAML::CacheLoader::LoadFile('/home/git/bom/config/files/intraday_index_calibration_coefficient.yml')->{$bet->underlying->symbol};
+    my %ref;
+
+    foreach my $key (keys %$coef) {
+        my $val = $coef->{$key};
+        my @months = split '-', $key;
+        %ref = map { $_ => $val } @months;
+    }
+
+    return \%ref;
+}
+
+sub is_compatible {
+    my $bet = shift;
+
+    my %ref = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_index;
+
+    return (defined $ref{$bet->underlying->symbol} and BOM::Product::Pricing::Engine::Intraday::is_compatible($bet));
+}
+
+sub _build_probability {
+    my $self = shift;
+
+    my $bet      = $self->bet;
+    my $coef_ref = $self->_calibration_coefficient->{$bet->date_start->month_as_string};
+
+    # if calibration coefficients are not present, we could not price
+    if (not $coef_ref) {
+        $bet->add_errors({
+            severity => 100,
+            message  => 'Calibration coefficient missing for symbol[' . $bet->underlying->symbol . ']',
+            message_to_client =>
+                localize('Trading on [_1] is suspended due to missing market data.', $bet->underlying->translated_display_name()),
+        });
+    }
+    # give it some dummy coefficient if we don't have them
+    my @coef                = $coef_ref ? @{$coef_ref} : (0.1) x 5;
+    my $duration_in_minutes = $bet->pricing_args->{t} * 365 * 24 * 60;
+    my $pricing_vol         = $bet->pricing_args->{iv};
+    my $trend               = $self->intraday_trend->amount;
+
+    my $factor = $trend / ($pricing_vol**0.5 * $duration_in_minutes);
+
+    $factor = $coef[3] if ($factor < $coef[3]);
+    $factor = $coef[4] if ($factor > $coef[4]);
+
+    my $z = $coef[1] * $factor;
+    #Generate the classification probability using sigmoid function
+    my $boundary_classification = 1 / (1 + exp(-$z));
+    #Adjust the slope and apply a flat adjustment as per the insample calibration
+    my $final_adjustment = $coef[0] * $boundary_classification - $coef[0] / 2 + $coef[2];
+    #Adjustment is opposite for 'down' contracts
+    my $w = ($bet->sentiment eq 'up') ? 1 : -1;
+    $final_adjustment *= $w;
+
+    my $adjustment = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability_adjustment',
+        description => 'theoretical probability adjustment for indices',
+        set_by      => __PACKAGE__,
+        base_amount => $final_adjustment,
+    });
+
+    my $prob = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theoretical_probability',
+        description => 'theoretical probability for index',
+        set_by      => __PACKAGE__,
+        minimum     => 0,
+        maximum     => 1,
+        base_amount => $self->formula->($self->_formula_args),
+    });
+
+    $prob->include_adjustment('add', $adjustment);
+
+    return $prob;
+}
+
+=head1 intraday_trend
+
+The current observed trend in the market movements.  Math::Util::CalculatedValue::Validatable
+
+=cut
+
+sub _build_intraday_trend {
+    my $self = shift;
+
+    my $trend_amount =
+        int(($self->period_closing_value->amount - $self->period_opening_value->amount) / $self->period_opening_value->amount * 100000) / 5;
+    my $trend = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'intraday_trend',
+            description => 'trend over the last '
+                . Time::Duration::Concise->new(
+                interval => $self->bet->timeindays->amount * 86400,
+                )->as_string,
+            set_by      => __PACKAGE__,
+            base_amount => $trend_amount,
+        });
+    $trend->include_adjustment('info', $self->period_closing_value);
+    $trend->include_adjustment('info', $self->period_opening_value);
+
+    return $trend;
+}
+
+sub _build_model_markup {
+    my $self = shift;
+
+    # model markup is risk_markup + commission_markup.
+    # Since risk_markup will always be zero and we have a fixed commision of 3%,
+    # we set model_markup to 0.03.
+    my $base_amount    = 0.03;
+    my $ul             = $self->bet->underlying;
+    my $submarket_name = $ul->submarket->name;
+
+    # for smart opi, it need to have commission of 4%.
+    if ($submarket_name eq 'smart_opi') {
+        $base_amount = 0.04;
+    }
+
+    my $markup = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'model_markup',
+        description => 'model markup for intraday index',
+        set_by      => __PACKAGE__,
+        base_amount => $base_amount,
+    });
+
+    return $markup;
+}
+
+no Moose;
+__PACKAGE__->meta->make_immutable;
+1;

@@ -1,0 +1,17 @@
+START-OF-FILE
+FIRMNAME=dl623471
+USERNUMBER=7442974
+WS=1
+SN=747601
+REPLYFILENAME=[% reply_file_name %].csv.enc
+HEADER=no
+
+PROGRAMNAME=getallquotes
+DATERANGE = [% start_date %]|[% end_date %]
+TICKOUTPUTTZ=23
+
+START-OF-DATA
+[% list %]
+END-OF-DATA
+END-OF-FILE 
+  

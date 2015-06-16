@@ -1,0 +1,118 @@
+use strict;
+use warnings;
+
+use Test::Deep qw( cmp_deeply );
+use Test::More (tests => 2);
+use Test::FailWarnings;
+use Test::Exception;
+use Test::MockModule;
+
+use File::Spec;
+use JSON qw(decode_json);
+use Date::Utility;
+use BOM::Market::Underlying;
+use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestDatabase qw( :init );
+
+use BOM::Market::Data::Tick;
+use BOM::Product::ContractFactory qw( produce_contract );
+use BOM::Product::ContractFactory::Parser qw(
+    shortcode_to_parameters
+    financial_market_bet_to_parameters
+);
+
+use BOM::Product::ContractFactory qw( produce_contract );
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange',
+    {
+        symbol => 'FOREX',
+        date   => Date::Utility->new,
+    });
+
+subtest 'financial_market_bet_to_parameters' => sub {
+    plan tests => 5;
+
+    throws_ok {
+        financial_market_bet_to_parameters('NotAFMBInstance.', 'USD');
+    }
+    qr/Expected BOM::Database::Model::FinancialMarketBet instance/;
+
+    my $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type    => 'fmb_range_bet',
+        buy_bet => 0,
+    });
+
+    my $params = financial_market_bet_to_parameters($fmb, 'USD');
+    is($params->{bet_type}, 'RANGE', 'RangeBet is a RANGE.');
+
+    $fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type    => 'fmb_touch_bet_buy',
+        buy_bet => 0,
+    });
+    $params = financial_market_bet_to_parameters($fmb, 'USD');
+    is($params->{bet_type}, 'ONETOUCH', 'TouchBet is a ONETOUCH.');
+
+    my $tick_expiry_fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({
+        type       => 'fmb_higher_lower',
+        buy_bet    => 0,
+        tick_count => 5,
+    });
+    my $new_params = financial_market_bet_to_parameters($tick_expiry_fmb, 'USD');
+    ok($new_params->{tick_expiry}, 'is a tick expiry contract');
+    is($new_params->{tick_count}, 5, 'tick count is 5');
+};
+
+subtest 'shortcode_to_parameters' => sub {
+    plan tests => 5;
+
+    my $frxUSDJPY = BOM::Market::Underlying->new('frxUSDJPY');
+
+    my $legacy = shortcode_to_parameters('DOUBLEDBL_frxUSDJPY_100_10_OCT_12_I_10H10_U_11H10_D_12H10', 'USD');
+    is($legacy->{bet_type}, 'Invalid', 'Legacy shortcode.');
+
+    my $rmg_dated_call = shortcode_to_parameters('CALL_frxUSDJPY_100_10_OCT_12_17_OCT_12_S1P_S2P', 'USD');
+    is($rmg_dated_call->{bet_type}, 'Invalid', 'RMG dated CALL shortcode is marked as legacy');
+
+    my $call = shortcode_to_parameters('CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P', 'USD');
+    my $expected = {
+        underlying   => $frxUSDJPY,
+        high_barrier => 'S1P',
+        shortcode    => 'CALL_frxUSDJPY_100.00_1352351000_1352354600_S1P_S2P',
+        low_barrier  => 'S2P',
+        date_expiry  => '1352354600',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        date_start   => '1352351000',
+        prediction   => undef,
+        amount_type  => 'payout',
+        amount       => '100.00',
+        fixed_expiry => undef,
+        tick_count   => undef,
+        tick_expiry  => undef,
+    };
+    cmp_deeply($call, $expected, 'CALL shortcode.');
+
+    my $put = shortcode_to_parameters('PUT_frxUSDJPY_100.00_1352351000_9_NOV_12_80_90', 'USD');
+    is($put->{bet_type}, 'Invalid', 'Invalid bet_type for RMG-dated PUT shortcode.');
+
+    my $tickup = shortcode_to_parameters('FLASHU_frxUSDJPY_100.00_1352351000_9T_0_0', 'USD');
+    $expected = {
+        underlying   => $frxUSDJPY,
+        barrier      => '0',
+        shortcode    => 'FLASHU_frxUSDJPY_100.00_1352351000_9T_0_0',
+        date_expiry  => undef,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        date_start   => '1352351000',
+        prediction   => undef,
+        amount_type  => 'payout',
+        amount       => '100.00',
+        fixed_expiry => undef,
+        tick_count   => 9,
+        tick_expiry  => 1,
+    };
+    cmp_deeply($tickup, $expected, 'FLASH tick expiry shortcode.');
+};
+
+1;

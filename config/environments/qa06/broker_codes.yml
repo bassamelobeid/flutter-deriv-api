@@ -1,0 +1,33 @@
+---
+definitions:
+  - code:
+      - MX
+    server: qa06
+    landing_company: iom
+    transaction_db_cluster: qa06
+  - code:
+      - MF
+    server: qa06
+    landing_company: maltainvest
+    transaction_db_cluster: qa06
+  - code:
+      - MLT
+    server: qa06
+    landing_company: malta
+    transaction_db_cluster: qa06
+  - code:
+      - CR
+    server: qa06
+    landing_company: costarica
+    transaction_db_cluster: qa06
+  - code:
+      - VRTC
+    server: qa06
+    landing_company: fog
+    is_virtual: 1
+    transaction_db_cluster: vrclientdb
+  - code:
+      - FOG
+    server: qa06
+    landing_company: fog
+    transaction_db_cluster: fogclientdb
