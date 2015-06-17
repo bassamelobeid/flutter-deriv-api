@@ -141,6 +141,20 @@ sub shortcode_to_parameters {
         };
     }
 
+    if ($shortcode =~ /^SPREAD/ and $shortcode =~ /^(SPREADUP|SPREADDOWN)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+)_(\d+)_(\d+)/) {
+        return {
+            shortcode => $shortcode,
+            bet_type => $1,
+            underlying => $2,
+            amount_per_point => $3,
+            date_start => $4,
+            stop_loss_point => $5,
+            stop_profit_point => $6,
+            spread => $7,
+            currency => $currency,
+        };
+    }
+
     # Legacy shortcode: purchase is a date string e.g. '01-Jan-01'.
     if ($shortcode =~ /^([^_]+)_([\w\d]+)_(\d+)_(\d\d?)_(\w\w\w)_(\d\d)_(\d\d?)_(\w\w\w)_(\d\d)_(S?-?\d+P?)_(S?-?\d+P?)$/) {
         $bet_type          = $1;
