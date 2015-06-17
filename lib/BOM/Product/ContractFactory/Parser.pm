@@ -141,7 +141,7 @@ sub shortcode_to_parameters {
         };
     }
 
-    if ($shortcode =~ /^SPREAD/ and $shortcode =~ /^(SPREADUP|SPREADDOWN)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+)_(\d+)_(\d+)/) {
+    if ($shortcode =~ /^(SPREADUP|SPREADDOWN)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+)_(\d+)_(\d+)/) {
         return {
             shortcode         => $shortcode,
             bet_type          => $1,
