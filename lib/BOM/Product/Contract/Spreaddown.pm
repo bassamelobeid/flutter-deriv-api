@@ -18,26 +18,6 @@ sub localizable_description {
     return 'You will win (lose) [_1] for every point that the [_2] rises (falls) from the entry spot.';
 }
 
-around BUILDARGS => sub {
-    my $orig   = shift;
-    my $class  = shift;
-    my $params = shift;
-
-    if ($params->{date_pricing}) {
-        $params->{date_pricing} = Date::Utility->new($params->{date_pricing});
-        if (not ref $params->{underlying}) {
-            $params->{underlying} = BOM::Market::Underlying->new({
-                    symbol   => $params->{underlying},
-                    for_date => $params->{date_pricing}});
-        } elsif ($params->{underlying}->for_date->epoch != $params->{date_pricing}->epoch) {
-            $params->{underlying} = BOM::Market::Underlying->new({
-                    symbol   => $params->{underlying}->symbol,
-                    for_date => $params->{date_pricing}});
-        }
-    }
-    return $class->$orig($params);
-};
-
 has amount_per_point => (
     is       => 'ro',
     isa      => 'PositiveNum',
