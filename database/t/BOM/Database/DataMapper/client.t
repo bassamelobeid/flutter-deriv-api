@@ -39,7 +39,6 @@ subtest 'client_account_statistics' => sub {
             gender                   => 'm',
             cashier_setting_password => '',
             fax                      => '',
-            driving_license          => '',
             date_of_birth            => '1980-01-01',
         );
 
@@ -71,7 +70,6 @@ subtest 'client_account_statistics' => sub {
             gender                   => 'm',
             cashier_setting_password => '',
             fax                      => '',
-            driving_license          => '',
             date_of_birth            => '1980-01-01',
         );
         $thi_client->db($conn->db);
