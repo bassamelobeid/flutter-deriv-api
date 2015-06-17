@@ -105,7 +105,7 @@ sub produce_contract {
     }
 
     my $contract_obj;
-    if ($contract_class->contract_category eq 'spreads') {
+    if ($contract_class->category_code eq 'spreads') {
         $contract_obj = $contract_class->new(\%input_params);
     } else {
         delete $input_params{expiry_daily};
