@@ -278,10 +278,6 @@ table#client_edit td{
     </tr>
     [% END %]
     <tr>
-        <td class="label">Driving Licence</td>
-        <td>: <input type="text" name="driving_license" value="[% client.driving_license %]" size="25" /></td>
-    </tr>
-    <tr>
         <td class="small_header" colspan="2">#Custom Limits </td>
     </tr>
     [% IF self_exclusion_enabled == 'yes' %]

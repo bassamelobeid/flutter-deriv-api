@@ -359,10 +359,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->latest_environment($input{$key});
             next CLIENT_KEY;
         }
-        if ($key eq 'driving_license') {
-            $client->driving_license($input{$key});
-            next CLIENT_KEY;
-        }
         if ($key eq 'is_vip') {
             $client->is_vip($input{$key});
             next CLIENT_KEY;
