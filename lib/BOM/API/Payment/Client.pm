@@ -27,7 +27,6 @@ sub client_GET {
         address_postcode      => $client->address_postcode,
         country               => $client->residence,
         phone                 => $client->phone,
-        fax                   => $client->fax,
         date_joined           => $client->date_joined,
         restricted_ip_address => $client->restricted_ip_address,
         gender                => $client->gender,
