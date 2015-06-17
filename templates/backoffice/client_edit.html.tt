@@ -321,10 +321,6 @@ table#client_edit td{
         <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" /> Note: this number's intl. code is: <b>[% client_phone_country %]</b></td>
     </tr>
     <tr>
-        <td class="label">Fax</td>
-        <td>: <input type="text" name="fax" value="[% client.fax %]" size="20" /> Note: this number's intl. code is: <b>[% client_fax_country %]</b></td>
-    </tr>
-    <tr>
         <td class="small_header" colspan="2">#Secrets</td>
     </tr>
     <tr>

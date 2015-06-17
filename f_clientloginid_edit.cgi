@@ -335,10 +335,6 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             $client->phone($input{$key});
             next CLIENT_KEY;
         }
-        if ($key eq 'fax') {
-            $client->fax($input{$key});
-            next CLIENT_KEY;
-        }
         if ($key eq 'secret_question') {
             $client->secret_question($input{$key});
             next CLIENT_KEY;
