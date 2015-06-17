@@ -39,8 +39,6 @@ __PACKAGE__->meta->setup(
         cashier_setting_password                 => { type => 'varchar', length => 255, not_null => 1 },
         date_of_birth                            => { type => 'date' },
         small_timer                              => { type => 'varchar', default => 'yes', length => 30, not_null => 1 },
-        fax                                      => { type => 'varchar', length => 255, not_null => 1 },
-        driving_license                          => { type => 'varchar', length => 50, not_null => 1 },
         comment                                  => { type => 'text', default => '', not_null => 1 },
         myaffiliates_token                       => { type => 'varchar', length => 32 },
         myaffiliates_token_registered            => { type => 'boolean', default => 'false', not_null => 1 },
