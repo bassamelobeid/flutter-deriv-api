@@ -38,12 +38,12 @@ before_install:
     - sudo mv tmp/var/lib/couchdb/1.2.0/*.couch /var/lib/couchdb/
     - sudo service couchdb start
     # carton/cpan
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/cpan.git /tmp/cpan
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/cpan.git /tmp/cpan
     - pushd /tmp/cpan && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - pushd /tmp/cpan && ( sudo sh build.sh ) && popd
     - sudo mv /tmp/cpan /home/git/regentmarkets/
     # bom-utility
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
     - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bom-utility /home/git/regentmarkets/
     # binary-static
@@ -51,7 +51,7 @@ before_install:
     - pushd /tmp/binary-static && ( git checkout gh-pages || true ) && popd
     - sudo mv /tmp/binary-static /home/git/binary-com/
     # bom
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom.git /tmp/bom
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bom /home/git/
     - sudo wget --no-verbose -O /etc/redis/redis_appsettings.conf 'https://www.dropbox.com/s/7k1yujxwb1d1q54/redis_appsettings.conf?dl=1'
