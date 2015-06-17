@@ -194,7 +194,7 @@ has _cache => (
 # On every spread contract, we will have both buy and sell quote.
 # We call them 'buy_level' and 'sell_level' to avoid confusion with 'quote' in tick.
 has [qw(buy_level sell_level)] => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -209,7 +209,7 @@ sub _build_sell_level {
 }
 
 has [qw(is_valid_to_buy is_valid_to_sell)] => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
