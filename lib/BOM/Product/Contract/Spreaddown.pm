@@ -5,6 +5,7 @@ use Format::Util::Numbers qw(roundnear);
 
 use BOM::Market::Underlying;
 
+with 'MooseX::Role::Validatable';
 # Static methods
 
 sub id              { return 260; }
