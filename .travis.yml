@@ -27,15 +27,15 @@ before_install:
     - sudo rm -f /tmp/unittest_*
     ### prereqs
     # carton/cpan
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/cpan.git /tmp/cpan
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/cpan.git /tmp/cpan
     - pushd /tmp/cpan && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - pushd /tmp/cpan && ( sudo sh build.sh ) && popd
     - sudo mv /tmp/cpan /home/git/regentmarkets/
     # bom-utility
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
     - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
     # bom
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom.git /tmp/bom
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
 
 install:
