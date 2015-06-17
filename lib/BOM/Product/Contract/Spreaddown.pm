@@ -208,6 +208,36 @@ sub _build_sell_level {
     return $self->underlying->spot_tick->quote - $self->spread / 2;
 }
 
+has [qw(is_valid_to_buy is_valid_to_sell)] => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_is_valid_to_buy {
+    my $self = shift;
+    return $self->confirm_validity;
+}
+
+sub _build_is_valid_to_sell {
+    my $self = shift;
+    return $self->confirm_validity;
+}
+
+sub _validate_entry_tick {
+    my $self = shift;
+
+    my @err;
+    if ($self->date_pricing->epoch - $self->underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch) {
+        push @err,
+            {
+            message           => 'Quote too old [' . $self->underlying->symbol . ']',
+            severity          => 100,
+            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            };
+    }
+    return @err;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

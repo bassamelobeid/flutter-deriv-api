@@ -2,9 +2,10 @@ package BOM::Product::Contract::Spreadup;
 
 use Moose;
 use Format::Util::Numbers qw(roundnear);
-
+use BOM::Platform::Context qw(localize);
 use BOM::Market::Underlying;
 
+with 'MooseX::Role::Validatable';
 # Static methods
 
 sub id              { return 250; }
@@ -56,6 +57,16 @@ has [qw(stop_loss_point stop_profit_point spread)] => (
     isa      => 'PositiveNum',
     required => 1,
 );
+
+has current_tick => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_current_tick {
+    my $self = shift;
+    return $self->current_tick;
+}
 
 has entry_tick => (
     is         => 'ro',
@@ -152,7 +163,7 @@ sub _recalculate_current_value {
     my $self = shift;
 
     return if $self->is_expired;
-    my $current_tick = $self->underlying->spot_tick;
+    my $current_tick = $self->current_tick;
     if ($current_tick) {
         my $current_sell_price = $current_tick->quote - $self->spread / 2;
         my $current_value      = ($current_sell_price - $self->strike) * $self->amount_per_point;
@@ -200,12 +211,42 @@ has [qw(buy_level sell_level)] => (
 
 sub _build_buy_level {
     my $self = shift;
-    return $self->underlying->spot_tick->quote + $self->spread / 2;
+    return $self->current_tick->quote + $self->spread / 2;
 }
 
 sub _build_sell_level {
     my $self = shift;
-    return $self->underlying->spot_tick->quote - $self->spread / 2;
+    return $self->current_tick->quote - $self->spread / 2;
+}
+
+has [qw(is_valid_to_buy is_valid_to_sell)] => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_is_valid_to_buy {
+    my $self = shift;
+    return $self->confirm_validity;
+}
+
+sub _build_is_valid_to_sell {
+    my $self = shift;
+    return $self->confirm_validity;
+}
+
+sub _validate_entry_tick {
+    my $self = shift;
+
+    my @err;
+    if ($self->date_pricing->epoch - $self->underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch) {
+        push @err,
+            {
+            message           => 'Quote too old [' . $self->underlying->symbol . ']',
+            severity          => 98,
+            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            };
+    }
+    return @err;
 }
 
 no Moose;
