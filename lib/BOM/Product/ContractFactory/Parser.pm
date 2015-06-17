@@ -143,15 +143,15 @@ sub shortcode_to_parameters {
 
     if ($shortcode =~ /^SPREAD/ and $shortcode =~ /^(SPREADUP|SPREADDOWN)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+)_(\d+)_(\d+)/) {
         return {
-            shortcode => $shortcode,
-            bet_type => $1,
-            underlying => $2,
-            amount_per_point => $3,
-            date_start => $4,
-            stop_loss_point => $5,
+            shortcode         => $shortcode,
+            bet_type          => $1,
+            underlying        => $2,
+            amount_per_point  => $3,
+            date_start        => $4,
+            stop_loss_point   => $5,
             stop_profit_point => $6,
-            spread => $7,
-            currency => $currency,
+            spread            => $7,
+            currency          => $currency,
         };
     }
 

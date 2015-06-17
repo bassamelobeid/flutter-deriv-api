@@ -155,7 +155,7 @@ sub _recalculate_current_value {
     my $current_tick = $self->underlying->spot_tick;
     if ($current_tick) {
         my $current_buy_price = $current_tick->quote + $self->spread / 2;
-        my $current_value      = ($self->strike - $current_buy_price) * $self->amount_per_point;
+        my $current_value     = ($self->strike - $current_buy_price) * $self->amount_per_point;
         $self->value($current_value);
     }
 

@@ -104,7 +104,6 @@ sub produce_contract {
             if (not($input_params{underlying}->for_date and $input_params{underlying}->for_date->is_same_as($pricing)));
     }
 
-
     my $contract_obj;
     if ($contract_class->contract_category eq 'spreads') {
         $contract_obj = $contract_class->new(\%input_params);
