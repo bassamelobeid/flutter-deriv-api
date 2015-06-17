@@ -191,6 +191,23 @@ has _cache => (
     default => sub { {} },
 );
 
+# On every spread contract, we will have both buy and sell quote.
+# We call them 'buy_level' and 'sell_level' to avoid confusion with 'quote' in tick.
+has [qw(buy_level sell_level)] => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_buy_level {
+    my $self = shift;
+    return $self->underlying->spot_tick->quote + $self->spread / 2;
+}
+
+sub _build_sell_level {
+    my $self = shift;
+    return $self->underlying->spot_tick->quote - $self->spread / 2;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
