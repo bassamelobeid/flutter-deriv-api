@@ -66,6 +66,13 @@ asian:
     available_types:
       - BOM::Product::Contract::Asianu
       - BOM::Product::Contract::Asiand
+spreads:
+    display_order: 7
+    display_name: "Spreads"
+    explanation: ""
+    available_types:
+      - BOM::Product::Contract::Spreadup
+      - BOM::Product::Contract::Spreaddown
 vanilla:
     offer: 0
     display_order: 0

@@ -1,0 +1,97 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Test::More tests => 2;
+use Test::Exception;
+use Test::NoWarnings;
+
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+
+use BOM::Product::Contract::Spreadup;
+use Date::Utility;
+
+my $now = Date::Utility->new();
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'RANDOM'});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol        => 'R_100',
+        recorded_date => $now
+    });
+
+subtest 'spread up' => sub {
+    my $params = {
+        underlying        => 'R_100',
+        date_start        => $now,
+        stop_loss_point   => 10,
+        stop_profit_point => 25,
+        amount_per_point  => 2,
+        spread            => 2,
+    };
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch,
+        quote      => 100
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 1,
+        quote      => 101
+    });
+    lives_ok {
+        $params->{date_pricing} = $now->epoch + 1;
+        my $c = BOM::Product::Contract::Spreadup->new($params);
+        cmp_ok $c->ask_price, '==', 20.00, 'correct ask price';
+        cmp_ok $c->strike,    '==', 102,   'strike with correct pipsize';
+        ok !$c->is_expired, 'not expired';
+        $params->{date_pricing} = $now->epoch + 2;
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 2,
+            quote      => 104
+        });
+        $c = BOM::Product::Contract::Spreadup->new($params);
+        cmp_ok $c->strike, '==', 102, 'strike with correct pipsize';
+        ok $c->current_value, 'current value is defined';
+        ok !$c->is_expired, 'position not expired';
+        cmp_ok $c->current_value, '==', 2, 'current value is positive 6';
+    }
+    'general checks';
+
+    lives_ok {
+        $params->{date_pricing} = $now->epoch + 3;
+        my $c = BOM::Product::Contract::Spreadup->new($params);
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 3,
+            quote      => 92
+        });
+        ok $c->is_expired;
+        cmp_ok $c->value, '==', -20, 'value is -20';
+    }
+    'hit stop loss';
+
+    lives_ok {
+        $params->{date_start}   = $now->epoch + 3;
+        $params->{date_pricing} = $now->epoch + 5;
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 4,
+            quote      => 93
+        });
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 5,
+            quote      => 119
+        });
+        my $c = BOM::Product::Contract::Spreadup->new($params);
+        ok $c->is_expired;
+        cmp_ok $c->value, '==', 50, 'value is 50';
+    }
+    'hit stop profit';
+};
