@@ -38,7 +38,6 @@ subtest 'client_account_statistics' => sub {
             date_joined              => Date::Utility->new('20010108')->date_yyyymmdd,
             gender                   => 'm',
             cashier_setting_password => '',
-            fax                      => '',
             date_of_birth            => '1980-01-01',
         );
 
@@ -69,7 +68,6 @@ subtest 'client_account_statistics' => sub {
             date_joined              => Date::Utility->new()->date_yyyymmdd,
             gender                   => 'm',
             cashier_setting_password => '',
-            fax                      => '',
             date_of_birth            => '1980-01-01',
         );
         $thi_client->db($conn->db);
