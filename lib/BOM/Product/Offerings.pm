@@ -33,6 +33,7 @@ our $BARRIER_CATEGORIES = {
     staysinout   => ['american'],
     digits       => ['non_financial'],
     asian        => ['asian'],
+    spreads      => ['spreads'],
 };
 
 my %record_map = (
