@@ -1,4 +1,4 @@
-package BOM::Product::Contract::Spreadup;
+package BOM::Product::Contract::Spreaddown;
 
 use Moose;
 use Format::Util::Numbers qw(roundnear);
