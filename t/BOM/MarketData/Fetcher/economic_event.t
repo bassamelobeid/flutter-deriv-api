@@ -31,7 +31,6 @@ subtest create_doc => sub {
 subtest retrieve_doc_with_view => sub {
     plan tests => 10;
     my $eco = BOM::MarketData::Fetcher::EconomicEvent->new();
-    can_ok($eco, 'get_events_saved_on_date');
     my $test_data1 = {
         recorded_date => '2012-09-12T02:10:00Z',
         release_date  => Date::Utility->new('12-Dec-12 03:00')->epoch,
