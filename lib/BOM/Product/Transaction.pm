@@ -1120,7 +1120,7 @@ sub _is_valid_to_sell {
     my $contract = $self->contract;
 
     # we shouldn't we recreating contract for spreads.
-    if ($contract->date_pricing->is_after($contract->date_start) and $contract->contract_category ne 'spreads') {
+    if ($contract->date_pricing->is_after($contract->date_start) and $contract->category_code ne 'spreads') {
 
         # It's started, get one prepared for sale.
         $contract = make_similar_contract($contract, {for_sale => 1});
