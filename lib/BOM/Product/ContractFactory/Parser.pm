@@ -148,8 +148,8 @@ sub shortcode_to_parameters {
             underlying        => $2,
             amount_per_point  => $3,
             date_start        => $4,
-            stop_loss_point   => $5,
-            stop_profit_point => $6,
+            stop_loss   => $5,
+            stop_profit => $6,
             spread            => $7,
             currency          => $currency,
         };

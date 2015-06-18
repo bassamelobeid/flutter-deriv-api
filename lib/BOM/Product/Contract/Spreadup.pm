@@ -58,7 +58,7 @@ has value => (
     init_arg => undef,
 );
 
-has [qw(stop_loss_point stop_profit_point spread)] => (
+has [qw(stop_loss stop_profit spread)] => (
     is       => 'ro',
     isa      => 'PositiveNum',
     required => 1,
@@ -102,12 +102,12 @@ has [qw(stop_loss_price stop_profit_price)] => (
 
 sub _build_stop_loss_price {
     my $self = shift;
-    return $self->strike - $self->stop_loss_point;
+    return $self->strike - $self->stop_loss;
 }
 
 sub _build_stop_profit_price {
     my $self = shift;
-    return $self->strike + $self->stop_profit_point;
+    return $self->strike + $self->stop_profit;
 }
 
 has is_expired => (
@@ -127,11 +127,11 @@ sub _build_is_expired {
     if ($high and $low) {
         if ($low <= $self->stop_loss_price) {
             $is_expired = 1;
-            my $loss = $self->stop_loss_point * $self->amount_per_point;
+            my $loss = $self->stop_loss * $self->amount_per_point;
             $self->value(-$loss);
         } elsif ($high >= $self->stop_profit_price) {
             $is_expired = 1;
-            my $profit = $self->stop_profit_point * $self->amount_per_point;
+            my $profit = $self->stop_profit * $self->amount_per_point;
             $self->value($profit);
         }
     }
@@ -152,7 +152,7 @@ has [qw(ask_price bid_price)] => (
 
 sub _build_ask_price {
     my $self = shift;
-    return roundnear(0.01, $self->stop_loss_point * $self->amount_per_point);
+    return roundnear(0.01, $self->stop_loss * $self->amount_per_point);
 }
 
 sub _build_bid_price {

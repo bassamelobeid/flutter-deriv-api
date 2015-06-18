@@ -30,8 +30,8 @@ subtest 'spread up' => sub {
         currency          => 'USD',
         underlying        => 'R_100',
         date_start        => $now,
-        stop_loss_point   => 10,
-        stop_profit_point => 25,
+        stop_loss   => 10,
+        stop_profit => 25,
         amount_per_point  => 2,
         spread            => 2,
     };
