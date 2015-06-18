@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most (tests => 6);
+use Test::Most (tests => 5);
 use Test::NoWarnings;
 use Test::Exception;
 
