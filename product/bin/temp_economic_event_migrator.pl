@@ -2,10 +2,13 @@ use Data::Dumper;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::System::Chronicle;
 
+my $start = Date::Utility->new('2014-06-01');
+my $end = Date::Utility->new('2016-06-01');
+
 my $events =
 BOM::MarketData::Fetcher::EconomicEvent->new()->get_latest_events_for_period({
-		from => Date::Utility->new("2013-06-01"),
-		to=>    Date::Utility->new("2016-06-01"),
+		from => $start,
+		to=>    $end,
 		}
 	)
 ;
@@ -24,5 +27,18 @@ foreach my $e (@$events) {
 	}
 	BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS' , $s{release_date}, JSON::to_json(\%s));
 }
+
+
+my $original_event = BOM::MarketData::Fetcher::EconomicEvent->new()->get_latest_events_for_period({
+	from => $start,
+	to   => $end,
+});
+
+my $new_events;
+my $docs = BOM::System::Chronicle->_redis_read->zrangebyscore('ECONOMIC_EVENTS', $start->epoch, $end->epoch);
+foreach my $data (@{$docs}) {
+   push @$new_events, BOM::MarketData::EconomicEvent->new(JSON::from_json($data));
+}
+print Data::Dumper::Dumper($events);
 
 print "[$i]\n";
