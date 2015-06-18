@@ -29,7 +29,7 @@ subtest create_doc => sub {
 };
 
 subtest retrieve_doc_with_view => sub {
-    plan tests => 10;
+    plan tests => 3;
     my $eco = BOM::MarketData::Fetcher::EconomicEvent->new();
     my $test_data1 = {
         recorded_date => '2012-09-12T02:10:00Z',
