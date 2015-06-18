@@ -660,10 +660,7 @@ if (@$login_history == 0) {
         my $action      = $login->action;
         my $status      = $login->successful ? 'ok' : 'failed';
         my $environment = $login->environment;
-        if (length($environment) > 100) {
-            substr($environment, 100) = '..';
-        }
-        print qq{<tr><td>$date UTC</td><td>$action</td><td>$status</td><td>$environment</td></tr>};
+        print qq{<tr><td width='150'>$date UTC</td><td>$action</td><td>$status</td><td>$environment</td></tr>};
     }
     print qq{</table>};
 }
