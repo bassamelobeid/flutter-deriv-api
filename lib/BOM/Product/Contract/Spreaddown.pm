@@ -19,6 +19,12 @@ sub localizable_description {
     return 'You will win (lose) [_1] for every point that the [_2] rises (falls) from the entry spot.';
 }
 
+has build_parameters => (
+    is => 'ro',
+    isa => 'HashRef',
+    required => 1,
+);
+
 has amount_per_point => (
     is       => 'ro',
     isa      => 'PositiveNum',
