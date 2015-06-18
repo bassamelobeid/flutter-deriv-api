@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most (tests => 6);
+use Test::Most (tests => 5);
 use Test::NoWarnings;
 use Test::Exception;
 
@@ -12,13 +12,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use String::Random;
-
-subtest error_check => sub {
-    plan tests => 2;
-    lives_ok { BOM::MarketData::Fetcher::EconomicEvent->new() } 'lives';
-    my $eco = BOM::MarketData::Fetcher::EconomicEvent->new(data_location => 'something_else');
-    throws_ok { $eco->get_events_saved_on_date() } qr /start date is not set/, 'throws exception if start or end date is undef';
-};
 
 subtest create_doc => sub {
     plan tests => 4;
@@ -36,9 +29,8 @@ subtest create_doc => sub {
 };
 
 subtest retrieve_doc_with_view => sub {
-    plan tests => 10;
+    plan tests => 3;
     my $eco = BOM::MarketData::Fetcher::EconomicEvent->new();
-    can_ok($eco, 'get_events_saved_on_date');
     my $test_data1 = {
         recorded_date => '2012-09-12T02:10:00Z',
         release_date  => Date::Utility->new('12-Dec-12 03:00')->epoch,
@@ -60,16 +52,6 @@ subtest retrieve_doc_with_view => sub {
     lives_ok { $eco->create_doc($test_data1) } 'test data1 lives';
     lives_ok { $eco->create_doc($test_data2) } 'test data2 lives';
     lives_ok { $eco->create_doc($test_data3) } 'test data3 lives';
-    my $events;
-
-    lives_ok { $events = $eco->get_events_saved_on_date(Date::Utility->new('2012-09-12')) } 'can get events for date';
-
-    is(ref $events, 'ARRAY', 'events is an array ref');
-
-    foreach my $event (@$events) {
-        cmp_ok($event->{recorded_date}->epoch, '>=', Date::Utility->new('2012-09-12')->epoch);
-        cmp_ok($event->{recorded_date}->epoch, '<=', Date::Utility->new('2012-09-13')->epoch);
-    }
 };
 
 subtest get_latest_events_for_period => sub {
