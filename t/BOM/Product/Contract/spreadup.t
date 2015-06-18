@@ -11,7 +11,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-use BOM::Product::Contract::Spreadup;
+use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 
 my $now = Date::Utility->new();
@@ -26,6 +26,8 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 subtest 'spread up' => sub {
     my $params = {
+        bet_type          => 'SPREADUP',
+        currency          => 'USD',
         underlying        => 'R_100',
         date_start        => $now,
         stop_loss_point   => 10,
@@ -45,7 +47,7 @@ subtest 'spread up' => sub {
     });
     lives_ok {
         $params->{date_pricing} = $now->epoch + 1;
-        my $c = BOM::Product::Contract::Spreadup->new($params);
+        my $c = produce_contract($params);
         cmp_ok $c->ask_price, '==', 20.00, 'correct ask price';
         cmp_ok $c->strike,    '==', 102,   'strike with correct pipsize';
         ok !$c->is_expired, 'not expired';
@@ -55,7 +57,7 @@ subtest 'spread up' => sub {
             epoch      => $now->epoch + 2,
             quote      => 104
         });
-        $c = BOM::Product::Contract::Spreadup->new($params);
+        $c = produce_contract($params);
         cmp_ok $c->strike, '==', 102, 'strike with correct pipsize';
         ok $c->current_value, 'current value is defined';
         ok !$c->is_expired, 'position not expired';
@@ -65,7 +67,7 @@ subtest 'spread up' => sub {
 
     lives_ok {
         $params->{date_pricing} = $now->epoch + 3;
-        my $c = BOM::Product::Contract::Spreadup->new($params);
+        my $c = produce_contract($params);
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 3,
@@ -89,7 +91,7 @@ subtest 'spread up' => sub {
             epoch      => $now->epoch + 5,
             quote      => 119
         });
-        my $c = BOM::Product::Contract::Spreadup->new($params);
+        my $c = produce_contract($params);
         ok $c->is_expired;
         cmp_ok $c->value, '==', 50, 'value is 50';
     }

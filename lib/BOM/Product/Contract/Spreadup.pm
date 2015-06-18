@@ -65,7 +65,7 @@ has current_tick => (
 
 sub _build_current_tick {
     my $self = shift;
-    return $self->current_tick;
+    return $self->underlying->spot_tick;
 }
 
 has entry_tick => (
