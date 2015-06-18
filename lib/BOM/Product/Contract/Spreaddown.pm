@@ -20,8 +20,8 @@ sub localizable_description {
 }
 
 has build_parameters => (
-    is => 'ro',
-    isa => 'HashRef',
+    is       => 'ro',
+    isa      => 'HashRef',
     required => 1,
 );
 
