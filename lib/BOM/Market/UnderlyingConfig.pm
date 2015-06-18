@@ -110,7 +110,7 @@ Return list of all available contract categories
 =cut
 
 sub available_contract_categories {
-    return qw(asian digits callput endsinout touchnotouch staysinout);
+    return qw(asian digits callput endsinout spreads touchnotouch staysinout);
 }
 
 =head2 $self->available_expiry_types
@@ -140,7 +140,7 @@ Return list of all available barrier_categories
 =cut
 
 sub available_barrier_categories {
-    return qw(euro_atm euro_non_atm american non_financial asian);
+    return qw(euro_atm euro_non_atm american non_financial asian spreads);
 }
 
 =head2 $self->available_iv_categories

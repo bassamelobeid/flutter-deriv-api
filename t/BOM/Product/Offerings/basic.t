@@ -59,7 +59,7 @@ subtest 'get_offerings_with_filter' => sub {
     delete $filtration->{contract_category};
     eq_or_diff(
         [sort(get_offerings_with_filter($to, $filtration))],
-        [sort qw(CALL PUT EXPIRYMISS EXPIRYRANGE ONETOUCH NOTOUCH RANGE UPORDOWN)],
+        [sort qw(CALL PUT EXPIRYMISS EXPIRYRANGE ONETOUCH NOTOUCH RANGE SPREADDOWN SPREADUP UPORDOWN)],
         '... explodes without a contract category'
     );
     $filtration->{expiry_type} = 'tick';
