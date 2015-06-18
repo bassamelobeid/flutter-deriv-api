@@ -39,11 +39,11 @@ sub script_run {
         my $eco = BOM::MarketData::EconomicEvent->new($event_param);
         $eco->save;
 
-        $event_param->{release_date} = $event_param->{release_date}->epoch;
-        my $cache_key = 'ECONOMIC_EVENTS::' . Date::Utility->new($event_param->{release_date})->date;
+        $event_param->{release_date}  = $event_param->{release_date}->epoch;
+        $event_param->{recorded_date} = Date::Utility->new->epoch;
 
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param)."\n");
-        BOM::System::Chronicle->_redis_write->zadd($cache_key, $event_param->{release_date}, JSON::to_json($event_param));
+        BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS' , $event_param->{release_date}, JSON::to_json($event_param));
     }
 
     my $num_events_saved  = scalar(@$events_received);
