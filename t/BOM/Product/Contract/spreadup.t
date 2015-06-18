@@ -26,14 +26,14 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 subtest 'spread up' => sub {
     my $params = {
-        bet_type          => 'SPREADUP',
-        currency          => 'USD',
-        underlying        => 'R_100',
-        date_start        => $now,
-        stop_loss   => 10,
-        stop_profit => 25,
-        amount_per_point  => 2,
-        spread            => 2,
+        bet_type         => 'SPREADUP',
+        currency         => 'USD',
+        underlying       => 'R_100',
+        date_start       => $now,
+        stop_loss        => 10,
+        stop_profit      => 25,
+        amount_per_point => 2,
+        spread           => 2,
     };
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
