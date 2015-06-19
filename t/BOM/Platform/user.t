@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 7;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 
@@ -137,7 +137,7 @@ subtest 'default loginid & cookie' => sub {
             cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
             my $def_client = ($user->clients)[0];
-            is $def_client->loginid, $cr_2, 'VR acc as default';
+            is $def_client->loginid, $vr_1, 'VR acc as default';
 
             my $cookie_str = "$cr_1:R:D+$cr_2:R:D+$vr_1:V:E";
             is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
@@ -167,7 +167,7 @@ subtest 'user / email from loginid' => sub {
     });
 
     is $user_2->email, $email, 'user from loginid';
-    cmp_deeply(sort @loginids, sort $user_2->loginid_array, 'loginids ok');
+    cmp_deeply(sort @loginids, (sort map { $_->loginid } $user_2->loginid), 'loginids ok');
 };
 
 subtest 'User Login' => sub {
@@ -182,7 +182,7 @@ subtest 'User Login' => sub {
                 email         => $vr_1,
             });
             is $user->email, $email, 'email OK';
-            cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
             $status = $user->login(%pass);
             is $status->{success}, 1, 'login with loginid OK';
@@ -193,7 +193,7 @@ subtest 'User Login' => sub {
                 email         => $vr_1,
             });
             is $user->email, $email, 'email OK';
-            cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
             $status = $user->login(%pass);
             is $status->{success}, 1, 'login with loginid OK';
