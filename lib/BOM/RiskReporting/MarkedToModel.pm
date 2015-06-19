@@ -205,7 +205,7 @@ sub sell_expired_contracts {
 
     my @error_lines;
     my @full_list = keys %{$open_bets_ref};
-    my %map_to_bb = reverse Bloomberg::UnderlyingConfig->bloomberg_to_binary();
+    my %map_to_bb = reverse Bloomberg::UnderlyingConfig::bloomberg_to_binary();
     my $csv       = Text::CSV->new;
 
     my $rmgenv = BOM::System::Config::env;
