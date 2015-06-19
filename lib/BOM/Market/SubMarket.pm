@@ -46,6 +46,11 @@ has [qw (name display_name display_order)] => (
     required => 1,
 );
 
+has official_ohlc => (
+    is      => 'ro',
+    default => sub { shift->market->official_ohlc },
+);
+
 =head2 volatility_surface_type
 Type of surface this financial market should have.
 =cut

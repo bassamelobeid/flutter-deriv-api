@@ -78,7 +78,6 @@ sub _build_symbols_to_update {
                 market    => 'stocks',
                 submarket => ['france', 'belgium', 'amsterdam']});
     }
-    push @symbols_to_update, "FTSE";
     return \@symbols_to_update;
 }
 

@@ -5572,8 +5572,34 @@ frxGBPBRL:
   symbol: frxGBPBRL
 frxGBPCAD:
   asset: GBP
-  contracts: active_fx
-  commission_level: 1
+  contracts:
+    callput:
+      daily:
+        spot:
+          euro_atm: day_to_year
+          euro_non_atm: day_to_year
+      intraday:
+        forward:
+          euro_atm: five_mins_to_eod
+        spot:
+          euro_atm:
+            max: 1d
+            min: 1m
+            historical_pricer_min: 1m
+            historical_pricer_max: 5h
+    endsinout:
+      daily:
+        spot:
+          euro_non_atm: day_to_year
+    staysinout:
+      daily:
+        spot:
+          american: day_to_year
+    touchnotouch:
+      daily:
+        spot:
+          american: day_to_year
+  commission_level: 2
   display_name: GBP/CAD
   exchange_name: FOREX
   feed_license: realtime
@@ -5591,7 +5617,7 @@ frxGBPCAD:
   quoted_currency: CAD
   sd_symbol: NA
   spot_spread_size: 13
-  submarket: major_pairs
+  submarket: minor_pairs
   symbol: frxGBPCAD
   uses_dst_shifted_seasonality: 0
 frxGBPCHF:
