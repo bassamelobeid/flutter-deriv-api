@@ -58,7 +58,17 @@ has value => (
     init_arg => undef,
 );
 
-has [qw(stop_loss stop_profit spread)] => (
+has spread => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_spread {
+    my $self = shift;
+    $self->underlying->base_spread;
+}
+
+has [qw(stop_loss stop_profit)] => (
     is       => 'ro',
     isa      => 'PositiveNum',
     required => 1,
