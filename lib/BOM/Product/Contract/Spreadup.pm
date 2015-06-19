@@ -6,7 +6,7 @@ extends 'BOM::Product::Contract::Spread';
 # Static methods
 sub id              { return 250; }
 sub code            { return 'SPREADUP'; }
-sub category_code   { return 'spread'; }
+sub category_code   { return 'spreads'; }
 sub display_name    { return 'spread up'; }
 sub sentiment       { return 'up'; }
 sub other_side_code { return 'SPREADDOWN'; }
