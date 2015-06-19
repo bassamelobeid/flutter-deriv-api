@@ -94,7 +94,7 @@ sub _passes_sanity_check {
 sub _get_currency_and_term_from_BB_ticker {
     my ($self, $ticker) = @_;
 
-    my %tickerlist = Bloomberg::CurrencyConfig->get_interest_rate_list();
+    my %tickerlist = Bloomberg::CurrencyConfig::get_interest_rate_list();
 
     foreach my $currency (keys %tickerlist) {
         foreach my $term (keys %{$tickerlist-$currency}}) {
