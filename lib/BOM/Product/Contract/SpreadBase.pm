@@ -170,6 +170,37 @@ sub _validate_entry_tick {
     return @err;
 }
 
+sub _validate_underlying {
+    my $self = shift;
+
+    my @err;
+    # we only allow random index for now.
+    if ($self->underlying->submarket->name ne 'random_index') {
+        push @err,
+            {
+            message           => 'Invalid underlying for spread[' . $self->underlying->symbol . ']',
+            severity          => 98,
+            message_to_client => localize('Trading on [_1] is not offered for this contract type.', $self->underlying->translated_display_name),
+            };
+    }
+
+    if (not $self->underlying->exchange->is_open) {
+        push @err,
+            {
+            message           => 'Market is closed [' . $self->underlying->symbol . ']',
+            severity          => 98,
+            message_to_client => localize('This market is presently closed.')
+                . " <a href="
+                . request()->url_for('/resources/trading_times', undef, {no_host => 1}) . ">"
+                . localize('View Trading Times') . "</a> "
+                . localize(
+                "or try out the <a href='[_1]'>Random Indices</a> which are always open.",
+                request()->url_for('trade.cgi', {market => "random"})
+                ),
+            };
+    }
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
