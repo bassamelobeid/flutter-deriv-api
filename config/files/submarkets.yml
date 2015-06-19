@@ -90,6 +90,7 @@ smart_index:
     market: indices
     explanation: 'Smart Indices'
     volatility_surface_type: "moneyness"
+    official_ohlc: 0
 major_pairs:
     name: major_pairs
     display_name: "Major Pairs"

@@ -116,30 +116,6 @@ sub retrieve_doc_with_id {
     return $self->_couchdb->document($doc_id);
 }
 
-=head2 get_events_saved_on_date
-
-Returns all events saved between the specified start and end date
-
-    my $eco = BOM::MarketData::Fetcher::EconomicEvent->new();
-    my $events = $eco->get_events_saved_on_date('2012-12-12 01:00');
-
-=cut
-
-sub get_events_saved_on_date {
-    my ($self, $date) = @_;
-    croak 'start date is not set' unless $date;
-
-    my $start_date = (ref $date eq 'Date::Utility') ? $date : Date::Utility->new($date);
-    my $end_date = Date::Utility->new($start_date->truncate_to_day->epoch + 86400);
-
-    return $self->_get_events({
-        from   => $start_date,
-        to     => $end_date,
-        view   => 'by_recorded_date',
-        source => $self->source,
-    });
-}
-
 =head2 get_latest_events_for_period
 
 Returns all events that will happen on a pre-specified period.

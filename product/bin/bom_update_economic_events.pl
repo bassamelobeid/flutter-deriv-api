@@ -39,12 +39,19 @@ sub script_run {
         my $eco = BOM::MarketData::EconomicEvent->new($event_param);
         $eco->save;
 
-        $event_param->{release_date} = $event_param->{release_date}->epoch;
-        my $cache_key = 'ECONOMIC_EVENTS::' . Date::Utility->new($event_param->{release_date})->date;
+        $event_param->{release_date}  = $event_param->{release_date}->epoch;
+        $event_param->{recorded_date} = Date::Utility->new->epoch;
 
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param)."\n");
-        BOM::System::Chronicle->_redis_write->zadd($cache_key, $event_param->{release_date}, JSON::to_json($event_param));
+        BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS' , $event_param->{release_date}, JSON::to_json($event_param));
+        BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS_TRIMMED' , $event_param->{release_date}, JSON::to_json($event_param));
+
     }
+
+    # Removing older events for chronicle. This trimmed version can be use in back pricing if pricing code changes.
+    BOM::System::Chronicle->_redis_write->zremrangebyscore("ECONOMIC_EVENTS_TRIMMED" , 0, Date::Utility->new->epoch - 2 * 24 * 3600 );
+    BOM::System::Chronicle::add('economic_events' , '', JSON::to_json(BOM::System::Chronicle->_redis_write->zrangebyscore("ECONOMIC_EVENTS_TRIMMED" , 0, "+inf")) );
+
 
     my $num_events_saved  = scalar(@$events_received);
 

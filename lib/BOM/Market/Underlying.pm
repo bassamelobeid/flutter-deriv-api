@@ -1927,7 +1927,7 @@ Should this underlying use official OHLC
 
 sub use_official_ohlc {
     my $self = shift;
-    return $self->market->official_ohlc;
+    return $self->submarket->official_ohlc;
 }
 
 sub forward_starts_on {
