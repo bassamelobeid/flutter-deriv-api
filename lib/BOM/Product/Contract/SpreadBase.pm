@@ -4,7 +4,7 @@ use Moose;
 
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Market::Underlying;
 
 with 'MooseX::Role::Validatable';
