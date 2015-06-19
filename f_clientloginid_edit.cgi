@@ -543,7 +543,8 @@ if ($link_acc) {
 }
 
 # show all loginids for user
-my @loginids = BOM::Platform::User->new({ email => $client->email })->loginid_array;
+my $user = BOM::Platform::User->new({ email => $client->email });
+my @loginids = $user->loginid_array;
 if (@loginids > 1) {
     print "<p>Corresponding accounts: </p><ul>";
     foreach my $client_id (@loginids) {
@@ -641,6 +642,31 @@ if ($financial_assessment) {
     };
 }
 
+Bar($user->email . " Login history");
+print '<div><br/>';
+my $limit = 200;
+my $login_history = $user->find_login_history(
+    sort_by => 'history_date desc',
+    limit   => $limit
+);
+
+if (@$login_history == 0) {
+    print qq{<p>There is no login history</p>};
+} else {
+    print qq{<p color="red">Showing last $limit logins only</p>} if @$login_history > $limit;
+    print qq{<table class="collapsed">};
+    foreach my $login (reverse @$login_history) {
+        my $date        = $login->history_date->strftime('%F %T');
+        my $action      = $login->action;
+        my $status      = $login->successful ? 'ok' : 'failed';
+        my $environment = $login->environment;
+        print qq{<tr><td width='150'>$date UTC</td><td>$action</td><td>$status</td><td>$environment</td></tr>};
+    }
+    print qq{</table>};
+}
+print '</div>';
+
+# to be removed soon, no more login history based on loginid
 Bar("$loginid Login history");
 print '<div><br/>';
 my $loglim = 200;
