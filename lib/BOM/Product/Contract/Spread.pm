@@ -18,6 +18,12 @@ has build_parameters => (
     required => 1,
 );
 
+has currency => (
+    is       => 'ro',
+    isa      => 'Str',
+    required => 1,
+);
+
 has amount_per_point => (
     is       => 'ro',
     isa      => 'PositiveNum',
@@ -178,7 +184,7 @@ sub _build_longcode {
     my $self = shift;
 
     my $description = 'You will win (lose) [_1] [_2] for every point that the [_3] rises (falls) from the entry spot.';
-    return localize($description, ($self->currency, $payout, $self->underlying->translated_display_name));
+    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name));
 }
 
 sub _build_shortcode {
