@@ -1018,6 +1018,9 @@ sub _build_pricing_comment {
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
+    # spreads price doesn't jump
+    return if $self->contract->category_code eq 'spreads';
+
     my $stats_name        = 'transaction.buy.';
     my $stats_name_broker = 'transaction.' . lc($self->client->broker) . '.buy.';
 
@@ -1121,7 +1124,6 @@ sub _is_valid_to_sell {
 
     # we shouldn't we recreating contract for spreads.
     if ($contract->date_pricing->is_after($contract->date_start) and $contract->category_code ne 'spreads') {
-
         # It's started, get one prepared for sale.
         $contract = make_similar_contract($contract, {for_sale => 1});
         $self->contract($contract);
@@ -1240,7 +1242,7 @@ sub _validate_payout_limit {
 
     my $client   = $self->client;
     my $contract = $self->contract;
-    my $payout   = $self->payout;
+    my $payout   = $contract->category_code eq 'spreads' ? $contract->amount_per_point * $contract->stop_profit : $self->payout;
 
     my $custom_limit = BOM::Platform::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
 

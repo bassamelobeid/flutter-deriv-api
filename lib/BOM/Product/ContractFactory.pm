@@ -305,11 +305,13 @@ sub make_similar_contract {
     my %build_parameters = %{$orig_contract->build_parameters};
 
     if ($changes->{as_new}) {
-        if ($orig_contract->two_barriers) {
-            $build_parameters{high_barrier} = $orig_contract->high_barrier->supplied_barrier if $orig_contract->high_barrier;
-            $build_parameters{low_barrier}  = $orig_contract->low_barrier->supplied_barrier  if $orig_contract->low_barrier;
-        } else {
-            $build_parameters{barrier} = $orig_contract->barrier->supplied_barrier if (defined $orig_contract->barrier);
+        if ($orig_contract->category_code ne 'spreads') {
+            if ($orig_contract->two_barriers) {
+                $build_parameters{high_barrier} = $orig_contract->high_barrier->supplied_barrier if $orig_contract->high_barrier;
+                $build_parameters{low_barrier}  = $orig_contract->low_barrier->supplied_barrier  if $orig_contract->low_barrier;
+            } else {
+                $build_parameters{barrier} = $orig_contract->barrier->supplied_barrier if (defined $orig_contract->barrier);
+            }
         }
         delete $build_parameters{date_start};
     }
