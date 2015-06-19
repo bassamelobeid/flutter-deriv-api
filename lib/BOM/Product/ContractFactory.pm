@@ -106,6 +106,7 @@ sub produce_contract {
 
     my $contract_obj;
     if ($contract_class->category_code eq 'spreads') {
+        $input_params{date_start} = Date::Utility->new if not $input_params{date_start};
         $input_params{build_parameters} = {%input_params};
         $contract_obj = $contract_class->new(\%input_params);
     } else {
