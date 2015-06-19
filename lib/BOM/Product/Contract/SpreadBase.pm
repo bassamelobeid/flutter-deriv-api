@@ -68,19 +68,18 @@ sub BUILD {
     # possible initialization error
     my $app = $self->amount_per_point;
     if ($self->stop_type eq 'dollar_amount') {
-        my $err = (fmod($self->stop_loss,$app)) ? 'Stop-loss' : (fmod($self->stop_profit,$app)) ? 'Stop-profit' : undef;
+        my $err = (fmod($self->stop_loss, $app)) ? 'Stop-loss' : (fmod($self->stop_profit, $app)) ? 'Stop-profit' : undef;
         if ($err) {
-            $self->add_errors(
-                {
-                message           => 'stop_loss or stop_profit is not a multiple of amount_per_point.',
-                severity          => 100,
-                message_to_client => localize('[_1] must be a multiple of Amount per point.', $err),
+            $self->add_errors({
+                    message           => 'stop_loss or stop_profit is not a multiple of amount_per_point.',
+                    severity          => 100,
+                    message_to_client => localize('[_1] must be a multiple of Amount per point.', $err),
                 };
             );
         } else {
             # convert to point if no error.
-            $self->stop_loss($self->stop_loss/$app);
-            $self->stop_profit($self->stop_profit/$app);
+            $self->stop_loss($self->stop_loss / $app);
+            $self->stop_profit($self->stop_profit / $app);
         }
     }
 
