@@ -502,7 +502,7 @@ has 'official_ohlc' => (
 );
 
 has base_spread => (
-    is => 'ro',
+    is      => 'ro',
     default => 0,
 );
 

@@ -1910,7 +1910,7 @@ sub breaching_tick {
 }
 
 has base_spread => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 

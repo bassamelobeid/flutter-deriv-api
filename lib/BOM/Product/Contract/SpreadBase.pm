@@ -55,7 +55,7 @@ has [qw(stop_loss stop_profit)] => (
 );
 
 has spread => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -146,10 +146,10 @@ sub _get_highlow {
     my $self = shift;
 
     my ($high, $low) = @{
-            $self->underlying->get_high_low_for_period({
-                    start => $self->entry_tick->epoch,
-                    end   => $self->date_pricing->epoch,
-                })}{'high', 'low'};
+        $self->underlying->get_high_low_for_period({
+                start => $self->entry_tick->epoch,
+                end   => $self->date_pricing->epoch,
+            })}{'high', 'low'};
 
     return ($high, $low);
 }

@@ -229,7 +229,7 @@ sub _build_eod_blackout_expiry {
 }
 
 has base_spread => (
-    is => 'ro',
+    is      => 'ro',
     default => 0,
 );
 
