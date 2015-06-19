@@ -3,6 +3,7 @@ random_index:
     display_name: "Indices"
     display_order: 1
     market: random
+    base_spread: 2
     contracts:
       spreads:
         intraday:
@@ -89,7 +90,6 @@ smart_index:
     market: indices
     explanation: 'Smart Indices'
     volatility_surface_type: "moneyness"
-    base_spread: 2
 major_pairs:
     name: major_pairs
     display_name: "Major Pairs"
