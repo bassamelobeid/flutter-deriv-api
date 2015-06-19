@@ -33,7 +33,7 @@ subtest 'spread up' => sub {
         stop_loss        => 10,
         stop_profit      => 25,
         amount_per_point => 2,
-        spread           => 2,
+        stop_type        => 'point',
     };
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
