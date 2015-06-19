@@ -545,7 +545,7 @@ if ($link_acc) {
 my $user = BOM::Platform::User->new({ email => $client->email });
 
 # show all loginids for user
-my @siblings = grep { !$_->get_status('disabled') } $client->siblings;
+my @siblings = $client->siblings;
 if (@siblings > 1) {
     print "<p>Corresponding accounts: </p><ul>";
     foreach my $sibling (@siblings) {
