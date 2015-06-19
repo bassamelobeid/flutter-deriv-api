@@ -12,10 +12,6 @@ sub display_name    { return 'spread down'; }
 sub sentiment       { return 'down'; }
 sub other_side_code { return 'SPREADUP'; }
 
-sub localizable_description {
-    return 'You will win (lose) [_1] for every point that the [_2] rises (falls) from the entry spot.';
-}
-
 # The price of which the client bought at.
 has strike => (
     is         => 'ro',

@@ -169,6 +169,29 @@ sub _build_is_valid_to_sell {
     return $self->confirm_validity;
 }
 
+has [qw(longcode shortcode)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_longcode {
+    my $self = shift;
+
+    my $description = 'You will win (lose) [_1] [_2] for every point that the [_3] rises (falls) from the entry spot.';
+    return localize($description, ($self->currency, $payout, $self->underlying->translated_display_name));
+}
+
+sub _build_shortcode {
+    my $self = shift;
+
+    my @element = (
+        $self->code, $self->underlying->symbol,
+        $self->amount_per_point, $self->date_start->epoch,
+        $self->stop_loss, $self->stop_profit, $self->spread
+    );
+    return join '_', @element;
+}
+
 sub current_value {
     my $self = shift;
     $self->_recalculate_current_value;
