@@ -57,7 +57,7 @@ sub run {
             next;
         }
 
-        my %bloomberg_to_binary = Bloomberg::UnderlyingConfig->bloomberg_to_binary;
+        my %bloomberg_to_binary = Bloomberg::UnderlyingConfig::bloomberg_to_binary;
         my $csv = Text::CSV::Slurp->load(file => $file);
 
         foreach my $data (@$csv) {
