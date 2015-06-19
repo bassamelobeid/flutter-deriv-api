@@ -61,7 +61,7 @@ has spread => (
 
 sub _build_spread {
     my $self = shift;
-    $self->underlying->base_spread;
+    return $self->underlying->base_spread;
 }
 
 has current_tick => (
