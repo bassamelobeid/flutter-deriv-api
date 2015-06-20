@@ -46,7 +46,7 @@ sub new {
         bless $self, 'BOM::Platform::User';
     }
     catch {
-        warn "BOM::Platform::User instantiation error: $_";
+        warn "BOM::Platform::User lookup error: $_\n";
     };
     return $self;
 }
