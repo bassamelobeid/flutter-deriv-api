@@ -9,8 +9,8 @@ use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Bloomberg::FileDownloader;
+use Bloomberg::RequestFiles;
 
 BOM::Platform::Sysinit::init();
 
@@ -30,11 +30,11 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
     code_exit_BO();
 }
 
-my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
+my $bbdl = Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 
-my $request_file = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(volatility_source => $volatility_source);
+my $request_file = Bloomberg::RequestFiles->new(volatility_source => $volatility_source);
 
 my @files;
 #regenerate request/cancel files

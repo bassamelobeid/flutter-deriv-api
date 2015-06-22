@@ -12,8 +12,8 @@ use Try::Tiny;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_JSON );
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use Bloomberg::RequestFiles;
+use Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -21,7 +21,7 @@ PrintContentType();
 
 my $cgi               = CGI->new;
 my $volatility_source = $cgi->param('master_request_file');
-my $request_file      = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(volatility_source => $volatility_source);
+my $request_file      = Bloomberg::RequestFiles->new(volatility_source => $volatility_source);
 
 # regenerates request files
 eval { $request_file->generate_request_files('daily') };

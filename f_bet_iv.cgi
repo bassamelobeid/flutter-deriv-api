@@ -8,8 +8,8 @@ use f_brokerincludeall;
 use subs::subs_dividend_from_excel_file;
 use BOM::Market::UnderlyingDB;
 use BOM::MarketData::Fetcher::CorporateAction;
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Bloomberg::FileDownloader;
+use Bloomberg::RequestFiles;
 use BOM::MarketData::HolidayCalendar qw( generate_holiday_upload_form );
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -56,7 +56,7 @@ if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_liv
 
 my $start = Date::Utility->new;
 my $end   = Date::Utility->new($start->epoch + (86400 * 200));
-my $rq    = BOM::MarketData::Parser::Bloomberg::RequestFiles->new;
+my $rq    = Bloomberg::RequestFiles->new;
 
 # On 26Sept07, BBDL informed that the TIME field expects a time value of the form HHMM, where HH=00-23 and MM=00-59
 # BBDL informed that the TIME should in TOKYO time zone as our account attached to TOKYO . TOKYO time= GMT+9
@@ -66,7 +66,7 @@ $rq->generate_cancel_files('daily');
 
 print '<UL>';
 
-my $bbdl             = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
+my $bbdl             = Bloomberg::FileDownloader->new();
 my $selectbbdlserver = '<select name="server">';
 foreach my $ip (@{$bbdl->sftp_server_ips}) {
     $selectbbdlserver .= "<option value='$ip'>$ip</option>";
