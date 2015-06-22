@@ -109,18 +109,21 @@ sub login {
 # if called as $user->clients(disabled_ok=>1); will include disableds.
 sub clients {
     my ($self, %args) = @_;
-    return sort { (($a->is_virtual ? 'V' : 'R') . $a->loginid) cmp(($b->is_virtual ? 'V' : 'R') . $b->loginid) }
 
-        grep { $args{disabled_ok} || !$_->get_status('disabled') }
-
+    my @all = sort { (($a->is_virtual ? 'V' : 'R') . $a->loginid) cmp(($b->is_virtual ? 'V' : 'R') . $b->loginid) }
         map { BOM::Platform::Client->new({loginid => $_, db_operation => 'replica'}) } $self->loginid;
+
+    # generate the string needed by the loginid_list cookie (but remove the loginid_list cookie next!)
+    my @parts = map { join ':', $_->loginid, $_->is_virtual ? 'V' : 'R', $_->get_status('disabled') ? 'D' : 'E' } @all;
+    $self->{_cookie_val} = join('+', @parts);
+
+    return grep { $args{disabled_ok} || !$_->get_status('disabled') } @all;
 }
 
-# generate the string needed by the loginid_list cookie (but remove the loginid_list cookie next!)
 sub loginid_list_cookie_val {
     my $self = shift;
-    my @entries = map { join ':', $_->loginid, $_->is_virtual ? 'V' : 'R', $_->get_status('disabled') ? 'D' : 'E' } $self->clients(disabled_ok => 1);
-    return join('+', @entries);
+    $self->{_cookie_val} || $self->clients;
+    return $self->{_cookie_val};
 }
 
 1;
