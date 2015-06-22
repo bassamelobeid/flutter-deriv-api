@@ -278,10 +278,6 @@ table#client_edit td{
     </tr>
     [% END %]
     <tr>
-        <td class="label">Driving Licence</td>
-        <td>: <input type="text" name="driving_license" value="[% client.driving_license %]" size="25" /></td>
-    </tr>
-    <tr>
         <td class="small_header" colspan="2">#Custom Limits </td>
     </tr>
     [% IF self_exclusion_enabled == 'yes' %]
@@ -323,10 +319,6 @@ table#client_edit td{
     <tr>
         <td class="label">Tel</td>
         <td>: <input type="text" name="phone" value="[% client.phone %]" size="20" /> Note: this number's intl. code is: <b>[% client_phone_country %]</b></td>
-    </tr>
-    <tr>
-        <td class="label">Fax</td>
-        <td>: <input type="text" name="fax" value="[% client.fax %]" size="20" /> Note: this number's intl. code is: <b>[% client_fax_country %]</b></td>
     </tr>
     <tr>
         <td class="small_header" colspan="2">#Secrets</td>
