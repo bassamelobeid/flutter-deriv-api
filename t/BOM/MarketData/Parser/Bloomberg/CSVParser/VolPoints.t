@@ -6,25 +6,25 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 use Date::Utility;
-use BOM::MarketData::Parser::Bloomberg::VolSurfaces;
+use Bloomberg::VolSurfaces;
 use Format::Util::Numbers qw( roundnear );
 use File::Basename qw( dirname );
 my $raw_data_dir = dirname(__FILE__) . '/../../../../../data/bbdl';
 
-use_ok('BOM::MarketData::Parser::Bloomberg::CSVParser::VolPoints');
+use_ok('Bloomberg::CSVParser::VolPoints');
 
 subtest sanity_check => sub {
     plan tests => 2;
 
     my $parser;
-    lives_ok { $parser = BOM::MarketData::Parser::Bloomberg::CSVParser::VolPoints->new() } 'can instantiate volpoint csv parser';
+    lives_ok { $parser = Bloomberg::CSVParser::VolPoints->new() } 'can instantiate volpoint csv parser';
     can_ok($parser, 'extract_volsurface_params');
 };
 
 subtest error_check => sub {
     plan tests => 5;
 
-    my $parser = BOM::MarketData::Parser::Bloomberg::CSVParser::VolPoints->new();
+    my $parser = Bloomberg::CSVParser::VolPoints->new();
 
     my $bb_error = $raw_data_dir . '/vol_points/errorcheck/bb_error.csv';
     warning_like { $parser->extract_volsurface_params($bb_error) } qr/Bloomberg has errors/, 'Warns if volsurface data has error';
@@ -59,7 +59,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 subtest 'parse data for volpoints that contains full surface' => sub {
-    my $data = BOM::MarketData::Parser::Bloomberg::VolSurfaces->new->parse_data_for("$raw_data_dir/vol_points/2012-08-13/fx000000.csv", 'vol_points');
+    my $data = Bloomberg::VolSurfaces->new->parse_data_for("$raw_data_dir/vol_points/2012-08-13/fx000000.csv", 'vol_points');
     ok $data->{frxAUDJPY}, 'parsed data for frxAUDJPY';
     ok $data->{frxUSDJPY}, 'parsed data for frxUSDJPY';
     my $audjpy = $data->{frxAUDJPY};
@@ -230,7 +230,7 @@ subtest 'parse data for volpoints that contains full surface' => sub {
 };
 
 subtest 'parse data for volpoints that contains half surface' => sub {
-    my $data = BOM::MarketData::Parser::Bloomberg::VolSurfaces->new->parse_data_for("$raw_data_dir/vol_points/2012-08-13/fx010000.csv", 'vol_points');
+    my $data = Bloomberg::VolSurfaces->new->parse_data_for("$raw_data_dir/vol_points/2012-08-13/fx010000.csv", 'vol_points');
     ok $data->{frxAUDJPY}, 'parsed data for frxAUDJPY';
     my $audjpy = $data->{frxAUDJPY};
     is(

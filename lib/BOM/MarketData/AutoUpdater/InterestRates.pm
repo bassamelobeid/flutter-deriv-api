@@ -7,7 +7,7 @@ use List::MoreUtils qw(notall);
 use Scalar::Util qw(looks_like_number);
 use Text::CSV::Slurp;
 
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use Bloomberg::FileDownloader;
 use BOM::Market::Currency;
 use BOM::Market::UnderlyingDB;
 use Date::Utility;
@@ -19,7 +19,7 @@ has file => (
 );
 
 sub _build_file {
-    my @files = BOM::MarketData::Parser::Bloomberg::FileDownloader->new->grab_files({file_type => 'interest_rate'});
+    my @files = Bloomberg::FileDownloader->new->grab_files({file_type => 'interest_rate'});
     return $files[0];
 }
 

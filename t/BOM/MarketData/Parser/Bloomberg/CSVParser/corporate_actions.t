@@ -12,10 +12,9 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 use Date::Utility;
+use Bloomberg::CorporateAction;
 
-use BOM::MarketData::Parser::Bloomberg::CSVParser::CorporateAction;
-
-my $bbdl                  = 'BOM::MarketData::Parser::Bloomberg::CSVParser::CorporateAction';
+my $bbdl                  = 'Bloomberg::CorporateAction';
 my $dir                   = '/home/git/bom/t/data/bbdl/corporate_actions';
 my $corporate_action_time = Date::Utility->new('2013-08-13');
 set_absolute_time($corporate_action_time->epoch);

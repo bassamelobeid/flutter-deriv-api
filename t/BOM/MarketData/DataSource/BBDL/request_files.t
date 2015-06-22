@@ -10,11 +10,11 @@ use Test::Exception;
 use Test::Differences;
 use File::Temp;
 use Test::MockObject::Extends;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Bloomberg::RequestFiles;
 
 subtest general => sub {
     my $r;
-    lives_ok { $r = BOM::MarketData::Parser::Bloomberg::RequestFiles->new() } 'can create object';
+    lives_ok { $r = Bloomberg::RequestFiles->new() } 'can create object';
 
     can_ok($r, 'request_files_dir');
     can_ok($r, 'master_request_files');
@@ -26,7 +26,7 @@ my $dir = File::Temp->newdir;
 my $tmp = "$dir";
 
 subtest daily_request_files => sub {
-    my $vp = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
+    my $vp = Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
     );
     throws_ok { $vp->generate_request_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
@@ -39,7 +39,7 @@ subtest daily_request_files => sub {
 };
 
 subtest onehost_request_files => sub {
-    my $vp = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
+    my $vp = Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
     );
     throws_ok { $vp->generate_request_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
@@ -52,7 +52,7 @@ subtest onehost_request_files => sub {
 };
 
 subtest cancel_files => sub {
-    my $cancel = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
+    my $cancel = Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
     );
     throws_ok { $cancel->generate_cancel_files() } qr/Undefined flag passed during request file generation/, 'throws exception if flag is undefined';
@@ -66,7 +66,7 @@ subtest cancel_files => sub {
 subtest get_tickerlist => sub {
     plan tests => 5;
 
-    my $r               = BOM::MarketData::Parser::Bloomberg::RequestFiles->new;
+    my $r               = Bloomberg::RequestFiles->new;
     my @expected_asia   = qw(HSCEI JCI HSI NIFTY KOSPI2 N225 AS51 STI BSESENSEX30 NZ50 SZSECOMP SSECOMP);
     my @expected_europe = qw(FCHI N150 BFX TOP40 SX5E ISEQ PSI20 GDAXI FTSEMIB FTSE N100 IBEX35 SSMI OMXS30 AEX);
     my @expected_us     = qw(SPC NDX IXIC DJI SPTSX60);
@@ -82,7 +82,7 @@ subtest get_tickerlist => sub {
 
 subtest request_files_error => sub {
     # invalid ohlc request files
-    my $error = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
+    my $error = Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
     );
     $error = Test::MockObject::Extends->new($error);
@@ -91,7 +91,7 @@ subtest request_files_error => sub {
 };
 
 subtest coverage_for_private_methods => sub {
-    my $error = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
+    my $error = Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
     );
     $error = Test::MockObject::Extends->new($error);
@@ -100,7 +100,7 @@ subtest coverage_for_private_methods => sub {
     lives_ok { $error->_tickerlist_vols({include => 'all', request_time => time}) } 'skip frxBROUSD';
     lives_ok { $error->_get_quanto_template('quantovol.req', 'all') } 'skip frxBROUSD for quanto';
 
-    my $volpoints_error = BOM::MarketData::Parser::Bloomberg::RequestFiles->new(
+    my $volpoints_error = Bloomberg::RequestFiles->new(
         request_files_dir => $tmp,
     );
 

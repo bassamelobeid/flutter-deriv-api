@@ -13,8 +13,8 @@ Auto-updates Forex vols.
 use Moose;
 extends 'BOM::MarketData::AutoUpdater';
 
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-use BOM::MarketData::Parser::Bloomberg::VolSurfaces;
+use Bloomberg::FileDownloader;
+use Bloomberg::VolSurfaces;
 use BOM::Platform::Runtime;
 use BOM::Market::UnderlyingDB;
 use Date::Utility;
@@ -104,7 +104,7 @@ sub _build_surfaces_from_file {
     my $self = shift;
     my @volsurface;
     foreach my $file (@{$self->file}) {
-        my $surface = BOM::MarketData::Parser::Bloomberg::VolSurfaces->new->parse_data_for($file);
+        my $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
         foreach my $underlying (keys %{$surface}){
         if (scalar keys %{$surface->{$underlying}->{surface}} ==2){
            $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
@@ -131,7 +131,7 @@ has _connect_ftp => (
 sub run {
     my $self = shift;
 
-    BOM::MarketData::Parser::Bloomberg::FileDownloader->new->grab_files({file_type => 'vols'}) if $self->_connect_ftp;
+    Bloomberg::FileDownloader->new->grab_files({file_type => 'vols'}) if $self->_connect_ftp;
     my @quanto_currencies = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market      => ['forex', 'commodities',],
         quanto_only => 1,

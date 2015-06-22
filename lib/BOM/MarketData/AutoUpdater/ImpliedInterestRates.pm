@@ -8,7 +8,7 @@ use Text::CSV::Slurp;
 
 use Format::Util::Numbers qw(roundnear);
 use BOM::Market::Underlying;
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use Bloomberg::FileDownloader;
 use BOM::MarketData::ImpliedRate;
 use BOM::Platform::Runtime;
 
@@ -18,7 +18,7 @@ has file => (
 );
 
 sub _build_file {
-    my @files = BOM::MarketData::Parser::Bloomberg::FileDownloader->new->grab_files({file_type => 'forward_rates'});
+    my @files = Bloomberg::FileDownloader->new->grab_files({file_type => 'forward_rates'});
     return $files[0];
 }
 
