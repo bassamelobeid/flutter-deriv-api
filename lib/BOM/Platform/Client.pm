@@ -108,8 +108,6 @@ for (qw/date_joined/) {
 
 my %DEFAULT_VALUES = (
     cashier_setting_password => '',
-    driving_license          => '',
-    fax                      => '',
     gender                   => 'm',
     latest_environment       => '',
     restricted_ip_address    => '',
