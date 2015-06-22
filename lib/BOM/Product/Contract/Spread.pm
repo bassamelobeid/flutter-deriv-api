@@ -227,13 +227,13 @@ has 'staking_limits' => (
 sub _build_staking_limits {
     my $self = shift;
 
-    my $underlying = $self->underlying;
+    my $underlying     = $self->underlying;
     my $contract_specs = get_contract_specifics({
         underlying_symbol => $underlying->symbol,
         contract_category => $self->category_code,
-        expiry_type => 'intraday', # hardcoded
-        start_type => 'spot', #hardcoded
-        barrier_category => $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0],
+        expiry_type       => 'intraday',                                                                   # hardcoded
+        start_type        => 'spot',                                                                       #hardcoded
+        barrier_category  => $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0],
     });
 
     my @possible_payout_maxes = ($contract_specs->{payout_limit});
