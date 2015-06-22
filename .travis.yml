@@ -53,16 +53,16 @@ before_install:
     - sudo mv tmp/var/lib/couchdb/1.2.0/*.couch /var/lib/couchdb/
     - sudo service couchdb start
     # bom-utility
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
     - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bom-utility /home/git/regentmarkets/
     # carton/cpan
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/cpan.git /tmp/cpan
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/cpan.git /tmp/cpan
     - pushd /tmp/cpan && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - pushd /tmp/cpan && ( sudo sh build.sh ) && popd
     - sudo mv /tmp/cpan /home/git/regentmarkets/
     # bdd
-    - git clone https://153ef619a177f9e52a181c15877bd58f6a3537ff@github.com/regentmarkets/bdd.git /tmp/bdd
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bdd.git /tmp/bdd
     - pushd /tmp/bdd && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bdd /home/git/regentmarkets/
     # binary-static

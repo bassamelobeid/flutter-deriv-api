@@ -13,7 +13,7 @@ use BOM::Platform::Client;
 my $login_id = 'CR0022';
 
 subtest "Client load and saving." => sub {
-    plan tests => 44;
+    plan tests => 42;
     # create client object
     my $client;
     lives_ok { $client = BOM::Platform::Client->new({'loginid' => $login_id}); }
@@ -77,11 +77,9 @@ subtest "Client load and saving." => sub {
         'loginid'               => 'CR5089',
         'salutation'            => 'Mr',
         'last_name'             => 'The cat',
-        'fax'                   => '',
         'gender'                => 'm',
         'phone'                 => '21345678',
         'residence'             => 'af',
-        'driving_license'       => '',
         'comment'               => '',
         'first_name'            => 'Felix',
         'citizen'               => 'br'
@@ -121,14 +119,8 @@ subtest "Client load and saving." => sub {
     is($client->loginid,    $client_details->{'loginid'},    'compare loginid between client object instantize with client hash ref');
     is($client->salutation, $client_details->{'salutation'}, 'compare salutation between client object instantize with client hash ref');
     is($client->last_name,  $client_details->{'last_name'},  'compare last_name between client object instantize with client hash ref');
-    is($client->fax,        $client_details->{'fax'},        'compare fax between client object instantize with client hash ref');
     is($client->phone,      $client_details->{'phone'},      'compare phone between client object instantize with client hash ref');
     is($client->residence,  $client_details->{'residence'},  'compare residence between client object instantize with client hash ref');
-    is(
-        $client->driving_license,
-        $client_details->{'driving_license'},
-        'compare driving_license between client object instantize with client hash ref'
-    );
     is($client->first_name, $client_details->{'first_name'}, 'compare first_name between client object instantize with client hash ref');
     is($client->citizen,    $client_details->{'citizen'},    'compare citizen between client object instantize with client hash ref');
 

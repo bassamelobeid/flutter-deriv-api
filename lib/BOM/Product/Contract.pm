@@ -1760,18 +1760,16 @@ sub _validate_underlying {
                 severity          => 98,
                 message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
                 };
-        } elsif ($self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch) {
-            my $throw_err = 1;
-            # only throw errors if quote is too old for forward starting contract during trading hours.
-            $throw_err = 0 if $self->is_forward_starting and not $self->exchange->is_open;
-            if ($throw_err) {
-                push @errors,
-                    {
-                    message           => 'Quote too old [' . $underlying->symbol . ']',
-                    severity          => 98,
-                    message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
-                    };
-            }
+        } elsif ($self->exchange->is_open_at($self->date_pricing)
+            and $self->date_pricing->epoch - $underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch)
+        {
+            # only throw errors for quote too old, if the exchange is open at pricing time
+            push @errors,
+                {
+                message           => 'Quote too old [' . $underlying->symbol . ']',
+                severity          => 98,
+                message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
+                };
         }
     }
 
