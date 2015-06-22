@@ -8,7 +8,6 @@
         <th>Account Status</th>
         <th>Last Login</th>
         <th>Phone</th>
-        <th>Fax</th>
         <th>Address</th>
         <th>Citizen</th>
         <th>Date Joined</th>
@@ -23,7 +22,6 @@
             <td>[% result.status_code %]</td>
             <td align="center">[% result.last_login || '---' %] </td>
             <td>[% result.phone %]</td>
-            <td>[% result.fax %]</td>
             <td>
                 [% IF result.address_line_1 %] [% result.address_line_1 %] </br> [% END %]
                 [% IF result.address_line_2 %] [% result.address_line_2 %] </br> [% END %]

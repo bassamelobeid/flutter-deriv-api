@@ -75,11 +75,6 @@ sub print_client_details {
         $client_phone_country = 'Unknown';
     }
 
-    my $client_fax_country = BOM::Platform::Runtime->instance->countries->code_from_phone($client->fax);
-    if (not $client_fax_country) {
-        $client_fax_country = 'Unknown';
-    }
-
     my @language_options = @{BOM::Platform::Runtime->instance->app_config->cgi->allowed_languages};
 
     # SECURITYS SECTION
@@ -113,7 +108,6 @@ sub print_client_details {
         checkID                 => $checkID,
         show_uploaded_documents => $show_uploaded_documents,
         client_phone_country    => $client_phone_country,
-        client_fax_country      => $client_fax_country,
         language_options        => \@language_options,
         secret_answer           => $secret_answer,
         promo_code_access       => $promo_code_access,
