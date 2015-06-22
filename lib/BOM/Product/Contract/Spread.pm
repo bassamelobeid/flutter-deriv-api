@@ -4,8 +4,10 @@ use Moose;
 
 use POSIX qw(fmod);
 use Date::Utility;
+use BOM::Platform::Runtime;
 
-use Format::Util::Numbers qw(roundnear);
+use BOM::Product::Offerings qw( get_contract_specifics );
+use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Context qw(localize request);
 use BOM::Market::Underlying;
 use BOM::Market::Types;
@@ -103,7 +105,7 @@ sub _build_spread {
     return $self->underlying->base_spread;
 }
 
-has current_tick => (
+has [qw(current_tick current_spot translated_display_name)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -111,6 +113,18 @@ has current_tick => (
 sub _build_current_tick {
     my $self = shift;
     return $self->underlying->spot_tick;
+}
+
+sub _build_current_spot {
+    my $self = shift;
+    return $self->current_tick ? $self->underlying->pipsized_value($self->current_tick->quote) : undef;
+}
+
+sub _build_translated_display_name {
+    my $self = shift;
+
+    return unless ($self->display_name);
+    return localize($self->display_name);
 }
 
 has entry_tick => (
@@ -196,6 +210,67 @@ sub _build_shortcode {
         $self->stop_loss, $self->stop_profit, $self->spread
     );
     return join '_', @element;
+}
+
+sub _payout_limit {
+    my ($self) = @_;
+
+    return $self->offering_specifics->{payout_limit};    # Even if not valid, make it 100k.
+}
+
+has 'staking_limits' => (
+    is         => 'ro',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+sub _build_staking_limits {
+    my $self = shift;
+
+    my $underlying = $self->underlying;
+    my $contract_specs = get_contract_specifics({
+        underlying_symbol => $underlying->symbol,
+        contract_category => $self->category_code,
+        expiry_type => 'intraday', # hardcoded
+        start_type => 'spot', #hardcoded
+        barrier_category => $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0],
+    });
+
+    my @possible_payout_maxes = ($contract_specs->{payout_limit});
+
+    push @possible_payout_maxes, BOM::Platform::Runtime->instance->app_config->quants->bet_limits->maximum_payout;
+    push @possible_payout_maxes, BOM::Platform::Runtime->instance->app_config->quants->bet_limits->maximum_payout_on_new_markets
+        if ($underlying->is_newly_added);
+
+    my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
+    my $stake_max = $payout_max;
+
+    my $payout_min = 1;
+    my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
+
+    # err is included here to allow the web front-end access to the same message generated in the back-end.
+    return {
+        stake => {
+            min => $stake_min,
+            max => $stake_max,
+            err => ($self->built_with_bom_parameters)
+            ? localize('Contract market price is too close to final payout.')
+            : localize(
+                'Stake must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
+                to_monetary_number_format($stake_min, 1),
+                to_monetary_number_format($stake_max, 1)
+            ),
+        },
+        payout => {
+            min => $payout_min,
+            max => $payout_max,
+            err => localize(
+                'Payout must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
+                to_monetary_number_format($payout_min, 1),
+                to_monetary_number_format($payout_max, 1)
+            ),
+        },
+    };
 }
 
 sub current_value {
