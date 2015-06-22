@@ -782,7 +782,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{volsurface}   = $volsurface;
 
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/underlying.*closed/, qr/Quote.*too old/];
+    $expected_reasons = [qr/underlying.*closed/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $orig_list = BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface;
