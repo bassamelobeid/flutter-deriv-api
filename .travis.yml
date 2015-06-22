@@ -74,11 +74,19 @@ before_install:
     - cat  /etc/postgresql/9.*/main/postgresql.conf |grep fsync
     - sudo wget --no-verbose -O /etc/redis/redis_appsettings.conf 'https://www.dropbox.com/s/7k1yujxwb1d1q54/redis_appsettings.conf?dl=1'
     - sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
+    # bom-web
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-web.git /tmp/bom-web
+    - pushd /tmp/bom-web && ( git checkout $TRAVIS_BRANCH || true ) && popd
+    - sudo mv /tmp/bom-web /home/git/regentmarkets/
+    # bom-app
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-app.git /tmp/bom-app
+    - pushd /tmp/bom-app && ( git checkout $TRAVIS_BRANCH || true ) && popd
+    - sudo mv /tmp/bom-app /home/git/regentmarkets/
 
 install:
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
-    - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:$HOME/build/regentmarkets/bom/database/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5
+    - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:$HOME/build/regentmarkets/bom/database/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
     - sudo ln -s $PWD /home/git/bom
     - sudo mkdir /etc/rmg
     - sudo chmod 0777 /etc/rmg
@@ -155,6 +163,10 @@ install:
     - sudo mkdir /db
     - sudo chown nobody.nogroup /db
     - sudo chmod 777 /db
+    - sudo mkdir /var/log/fixedodds
+    - sudo touch /var/log/fixedodds/audit.log
+    - sudo chown nobody.nogroup /var/log/fixedodds/audit.log
+    - sudo chmod 777 /var/log/fixedodds/audit.log
 
 script:
     - make $TEST_SUITE

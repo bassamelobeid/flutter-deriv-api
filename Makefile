@@ -61,7 +61,7 @@ unit_test_system:
 
 unit_test_bdd:
 	@$M
-	(cd /home/git/regentmarkets/bdd && prove bdd.t)
+	(cd /home/git/regentmarkets/bdd && prove -Ilib bdd.t)
 
 unit_test_myaffiliates_extended:
 	@export EXTENDED_TESTING=1; unset SKIP_MYAFFILIATES; $(PROVE) -r t/BOM/Platform/MyAffiliates/
