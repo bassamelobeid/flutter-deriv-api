@@ -71,6 +71,8 @@ sub _build_symbols_to_update {
     my @symbols_to_update;
     if ($market eq 'indices') {
         @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^SYN/ } get_offerings_with_filter('underlying_symbol', {market => 'indices'});
+        # forcing it here since we don't have offerings for the index.
+        push @symbols_to_update, 'FTSE';
     } else {
         @symbols_to_update = get_offerings_with_filter(
             'underlying_symbol',
