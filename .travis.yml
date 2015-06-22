@@ -163,10 +163,10 @@ install:
     - sudo mkdir /db
     - sudo chown nobody.nogroup /db
     - sudo chmod 777 /db
-    - sudo mkdir /var/log/fixedodds
-    - sudo touch /var/log/fixedodds/audit.log
-    - sudo chown nobody.nogroup /var/log/fixedodds/audit.log
-    - sudo chmod 777 /var/log/fixedodds/audit.log
+ #   - sudo mkdir /var/log/fixedodds
+ #   - sudo touch /var/log/fixedodds/audit.log
+ #   - sudo chown nobody.nogroup /var/log/fixedodds/audit.log
+ #   - sudo chmod 777 /var/log/fixedodds/audit.log
 
 script:
     - make $TEST_SUITE
