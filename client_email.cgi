@@ -58,7 +58,7 @@ if (not $user->id) {
     code_exit_BO();
 };
 
-my @loginids = $user->loginid_array;
+my @loginids = map { $_->loginid } $user->loginid;
 if (not $input{email_edit}) {
     # list loginids with email
     BOM::Platform::Context::template->process(
