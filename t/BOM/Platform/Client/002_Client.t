@@ -10,7 +10,7 @@ use BOM::Platform::Client;
 my $login_id = 'CR0009';
 
 subtest 'Almost all accessor/modifiers' => sub {
-    plan tests => 54;
+    plan tests => 50;
 
     my $client;
     lives_ok { $client = BOM::Platform::Client::get_instance({'loginid' => $login_id}); }
@@ -35,14 +35,6 @@ subtest 'Almost all accessor/modifiers' => sub {
     Test::Exception::lives_ok { $client->phone('00869145685791'); } "Can set the telephone number as 00869145685791";
 
     is($client->phone, '00869145685791', "Got the client telephone number");
-
-    Test::Exception::lives_ok { $client->fax('00869145685792'); } "Can set the fax number as 00869145685792";
-
-    is($client->fax, '00869145685792', "Got the client fax number");
-
-    Test::Exception::lives_ok { $client->driving_license('G222956'); } "Can set the driving_license as [G222956]";
-
-    is($client->driving_license, 'G222956', "Got the client driving_license");
 
     Test::Exception::lives_ok { $client->cashier_setting_password('ILOVEBUGS'); } "Can set the cashier_setting_password as [ILOVEBUGS]";
 
