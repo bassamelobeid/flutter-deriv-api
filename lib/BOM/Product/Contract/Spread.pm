@@ -6,6 +6,8 @@ use POSIX qw(fmod);
 use Date::Utility;
 use BOM::Platform::Runtime;
 
+use List::Util qw(min);
+use Scalar::Util qw(looks_like_number);
 use BOM::Product::Offerings qw( get_contract_specifics );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Context qw(localize request);
@@ -233,7 +235,7 @@ sub _build_staking_limits {
         contract_category => $self->category_code,
         expiry_type       => 'intraday',                                                                   # hardcoded
         start_type        => 'spot',                                                                       #hardcoded
-        barrier_category  => $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category->code}->[0],
+        barrier_category  => $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category_code}->[0],
     });
 
     my @possible_payout_maxes = ($contract_specs->{payout_limit});
@@ -246,16 +248,14 @@ sub _build_staking_limits {
     my $stake_max = $payout_max;
 
     my $payout_min = 1;
-    my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
+    my $stake_min = $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
     return {
         stake => {
             min => $stake_min,
             max => $stake_max,
-            err => ($self->built_with_bom_parameters)
-            ? localize('Contract market price is too close to final payout.')
-            : localize(
+            err => localize(
                 'Stake must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
                 to_monetary_number_format($stake_min, 1),
                 to_monetary_number_format($stake_max, 1)
