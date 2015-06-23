@@ -5,7 +5,7 @@ use strict;
 use warnings;
 
 use Test::MockTime;
-use Test::More tests => 7;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::Deep qw(cmp_deeply);
 
@@ -45,8 +45,7 @@ my $status;
 my $user;
 
 lives_ok {
-    $user = BOM::Platform::User->new({email => $email});
-    $user->password($hash_pwd);
+    $user = BOM::Platform::User->create(email => $email, password=>$hash_pwd);
     $user->save;
 
     $user->add_loginid({loginid => $vr_1});
@@ -62,24 +61,18 @@ subtest 'test attributes' => sub {
     is $user->password, $hash_pwd, 'password ok';
 };
 
-subtest 'email untaint' => sub {
-    throws_ok { BOM::Platform::User->new({email => 'xxxxxxx'}) } qr/wrong email or loginid format/,     'wrong email format';
-    throws_ok { BOM::Platform::User->new({email => '93282722'}) } qr/wrong email or loginid format/,    'wrong email format';
-    throws_ok { BOM::Platform::User->new({email => "' or '1'='1"}) } qr/wrong email or loginid format/, 'no sql injection';
-};
-
 my @loginids;
 my $cr_2;
 subtest 'default loginid & cookie' => sub {
     subtest 'only VR acc' => sub {
         @loginids = ($vr_1);
-        cmp_deeply(@loginids, $user->loginid_array, 'loginid match');
+        cmp_deeply(@loginids, (map { $_->loginid } $user->loginid), 'loginid match');
 
-        my $result = $user->cookie_and_default_loginid;
-        is $result->{loginid}, $vr_1, 'no real acc, VR as default';
+        my $def_client = ($user->clients)[0];
+        is $def_client->loginid, $vr_1, 'no real acc, VR as default';
 
         my $cookie_str = "$vr_1:V:E";
-        is $result->{cookie}, $cookie_str, 'cookie string OK';
+        is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
     subtest 'with real acc' => sub {
@@ -87,13 +80,13 @@ subtest 'default loginid & cookie' => sub {
         $user->save;
 
         push @loginids, $cr_1;
-        cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+        cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
-        my $result = $user->cookie_and_default_loginid;
-        is $result->{loginid}, $cr_1, 'real acc as default';
+        my $def_client = ($user->clients)[0];
+        is $def_client->loginid, $cr_1, 'real acc as default';
 
         my $cookie_str = "$cr_1:R:E+$vr_1:V:E";
-        is $result->{cookie}, $cookie_str, 'cookie string OK';
+        is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
     subtest 'add more real acc' => sub {
@@ -108,13 +101,13 @@ subtest 'default loginid & cookie' => sub {
         $user->save;
 
         push @loginids, $cr_2;
-        cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+        cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
-        my $result = $user->cookie_and_default_loginid;
-        is $result->{loginid}, $cr_1, 'still first real acc as default';
+        my $def_client = ($user->clients)[0];
+        is $def_client->loginid, $cr_1, 'still first real acc as default';
 
         my $cookie_str = "$cr_1:R:E+$cr_2:R:E+$vr_1:V:E";
-        is $result->{cookie}, $cookie_str, 'cookie string OK';
+        is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
     };
 
     subtest 'with disabled acc' => sub {
@@ -125,13 +118,13 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
-            my $result = $user->cookie_and_default_loginid;
-            is $result->{loginid}, $cr_2, '2nd real acc as default';
+            my $def_client = ($user->clients)[0];
+            is $def_client->loginid, $cr_2, '2nd real acc as default';
 
             my $cookie_str = "$cr_1:R:D+$cr_2:R:E+$vr_1:V:E";
-            is $result->{cookie}, $cookie_str, 'cookie string OK';
+            is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
         subtest 'disable second real acc' => sub {
@@ -141,13 +134,13 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
-            my $result = $user->cookie_and_default_loginid;
-            is $result->{loginid}, $vr_1, 'VR acc as default';
+            my $def_client = ($user->clients)[0];
+            is $def_client->loginid, $vr_1, 'VR acc as default';
 
             my $cookie_str = "$cr_1:R:D+$cr_2:R:D+$vr_1:V:E";
-            is $result->{cookie}, $cookie_str, 'cookie string OK';
+            is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
 
         subtest 'disable VR acc' => sub {
@@ -157,13 +150,13 @@ subtest 'default loginid & cookie' => sub {
             }
             'disable';
 
-            cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
-            my $result = $user->cookie_and_default_loginid;
-            is $result->{loginid}, undef, 'all acc disabled, no default';
+            my $def_client = ($user->clients)[0];
+            is $def_client, undef, 'all acc disabled, no default';
 
             my $cookie_str = "$cr_1:R:D+$cr_2:R:D+$vr_1:V:D";
-            is $result->{cookie}, $cookie_str, 'cookie string OK';
+            is $user->loginid_list_cookie_val, $cookie_str, 'cookie string OK';
         };
     };
 };
@@ -174,7 +167,7 @@ subtest 'user / email from loginid' => sub {
     });
 
     is $user_2->email, $email, 'user from loginid';
-    cmp_deeply(sort @loginids, sort $user_2->loginid_array, 'loginids ok');
+    cmp_deeply(sort @loginids, (sort map { $_->loginid } $user_2->loginid), 'loginids ok');
 };
 
 subtest 'User Login' => sub {
@@ -189,7 +182,7 @@ subtest 'User Login' => sub {
                 email         => $vr_1,
             });
             is $user->email, $email, 'email OK';
-            cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
             $status = $user->login(%pass);
             is $status->{success}, 1, 'login with loginid OK';
@@ -200,7 +193,7 @@ subtest 'User Login' => sub {
                 email         => $vr_1,
             });
             is $user->email, $email, 'email OK';
-            cmp_deeply(sort @loginids, sort $user->loginid_array, 'loginids array match');
+            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
 
             $status = $user->login(%pass);
             is $status->{success}, 1, 'login with loginid OK';

@@ -22,9 +22,7 @@ client:
     comment: 'This is a test comment'
     date_joined: '1999-09-09 23:59:59'
     date_of_birth: 1978-06-23
-    driving_license: ''
     email: __DUMMY__ # DONNOT REMOVE has internal effect
-    fax: ''
     first_name: bRaD
     gender: m
     last_name: pItT
