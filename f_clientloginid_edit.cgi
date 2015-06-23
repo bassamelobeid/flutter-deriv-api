@@ -534,23 +534,23 @@ if ($link_acc) {
     print $link_acc;
 }
 
-# show all loginids for user
 my $user = BOM::Platform::User->new({ email => $client->email });
-my @loginids = $user->loginid_array;
-if (@loginids > 1) {
-    print "<p>Corresponding accounts: </p><ul>";
-    foreach my $client_id (@loginids) {
-        next if ($client_id eq $client->loginid);
 
-        $client_id =~ /^(\D+)\d+/;
-        my $client_broker = $1;
+# show all loginids for user, include disabled acc
+my @siblings = $user->clients(disabled_ok=>1);
+
+if (@siblings > 1) {
+    print "<p>Corresponding accounts: </p><ul>";
+    foreach my $sibling (@siblings) {
+        my $sibling_id = $sibling->loginid;
+        next if ($sibling_id eq $client->loginid);
         my $link_href = request()->url_for(
             'backoffice/f_clientloginid_edit.cgi',
             {
-                broker  => $client_broker,
-                loginID => $client_id
+                broker  => $sibling->broker_code,
+                loginID => $sibling_id,
             });
-        print "<li><a href='$link_href'>$client_id</a></li>";
+        print "<li><a href='$link_href'>$sibling_id</a></li>";
     }
     print "</ul>";
 }
