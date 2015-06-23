@@ -210,7 +210,7 @@ BBBELG:
   asset: BBBELG
   commission_level: 3
   display_name: Belgacom
-  esig_symbol: BELG-EEB
+  esig_symbol: PROX-EEB
   exchange_name: EURONEXT
   feed_license: realtime
   instrument_type: individualstock
@@ -220,7 +220,7 @@ BBBELG:
     delta_style: spot_delta
   pip_size: 0.01
   quoted_currency: EUR
-  sd_symbol: BCOM.EB
+  sd_symbol: PROX.EB
   submarket: belgium
   symbol: BBBELG
 BBGBLB:
