@@ -9,14 +9,18 @@ sub get_logins_by_ip_and_login_age {
     my $args = shift;
 
     my $last_login_age = $args->{last_login_age} || 10;
-    my $broker         = $args->{broker};
     my $ip             = $args->{ip};
 
     my $sql = q{
-        SELECT client_loginid as loginid,login_date,login_environment
-        FROM betonmarkets.login_history
-        where login_successful is true and
-        (current_date - date(login_date))< $1  and (login_environment like $2 or login_environment like $3) ORDER BY login_date DESC
+        SELECT email, history_date, environment
+        FROM users.login_history l, users.binary_user u
+        WHERE
+            u.id = l.binary_user_id
+            AND successful IS TRUE
+            AND action = 'login'
+            AND (current_date - date(history_date)) < $1
+            AND (environment LIKE $2 OR environment LIKE $3)
+        ORDER BY login_date DESC
     };
 
     my $result;
