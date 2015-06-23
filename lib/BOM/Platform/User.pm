@@ -45,9 +45,7 @@ sub new {
             )->load->binary_user;
         bless $self, 'BOM::Platform::User';
     }
-    catch {
-        warn "BOM::Platform::User lookup error: $_\n";
-    };
+    catch {};
     return $self;
 }
 
