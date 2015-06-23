@@ -406,7 +406,9 @@ sub prepare_bet_data_for_buy {
         : (),
     };
 
-    if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
+    if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
+        $bet_params->{$_} = $contract->$_ for qw(amount_per_point spread stop_profit stop_loss stop_type);
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
         # only store barrier in the database if it is defined.
         # asian contracts have barriers at/after expiry.
         if ($contract->barrier) {
