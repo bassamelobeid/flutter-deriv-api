@@ -46,11 +46,11 @@ compile:
 	prove -v -l t/002_autosyntax.t
 
 syntax_lib:
-	SYNTAX_CHUNK_NAME=lib prove -I./lib -I./database/lib t/BOM/002_autosyntax.t
+	SYNTAX_CHUNK_NAME=lib prove -I./lib -I./database/lib t/002_autosyntax.t
 	prove -l t/BOM/003_yaml_correctness.t
 
 syntax_cgi:
-	SYNTAX_CHUNK_NAME=cgi prove -I./lib -I./database/lib t/BOM/002_autosyntax.t
+	SYNTAX_CHUNK_NAME=cgi prove -I./lib -I./database/lib t/002_autosyntax.t
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
