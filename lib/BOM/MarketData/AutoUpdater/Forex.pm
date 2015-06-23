@@ -33,7 +33,7 @@ sub _build_file {
     my $self = shift;
 
     my $now = Date::Utility->new;
-    my $loc = '/feed//BBDL/' ;
+    my $loc = '/feed/BBDL/';
     my $on  = Date::Utility->new($now->epoch);
 
     while (not -d $loc . '/' . $on->date_yyyymmdd) {
@@ -60,7 +60,6 @@ sub _build_file {
 
     return \@files;
 }
-
 
 has symbols_to_update => (
     is         => 'ro',
@@ -105,10 +104,10 @@ sub _build_surfaces_from_file {
     my @volsurface;
     foreach my $file (@{$self->file}) {
         my $surface = Bloomberg::VolSurfaces->new->parse_data_for($file);
-        foreach my $underlying (keys %{$surface}){
-        if (scalar keys %{$surface->{$underlying}->{surface}} ==2){
-           $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
-        }
+        foreach my $underlying (keys %{$surface}) {
+            if (scalar keys %{$surface->{$underlying}->{surface}} == 2) {
+                $surface->{$underlying}->{surface} = _append_to_existing_surface($surface->{$underlying}->{surface}, $underlying);
+            }
         }
         push @volsurface, $surface;
     }
@@ -151,13 +150,13 @@ sub run {
             };
             next;
         }
-        my $underlying = BOM::Market::Underlying->new($symbol);
+        my $underlying     = BOM::Market::Underlying->new($symbol);
         my $raw_volsurface = $surfaces_from_file->{$symbol};
-        my $volsurface = BOM::MarketData::VolSurface::Delta->new({
-           underlying    => $underlying,
-           recorded_date => $raw_volsurface->{recorded_date},
-           surface       => $raw_volsurface->{surface},
-         });
+        my $volsurface     = BOM::MarketData::VolSurface::Delta->new({
+            underlying    => $underlying,
+            recorded_date => $raw_volsurface->{recorded_date},
+            surface       => $raw_volsurface->{surface},
+        });
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
             $volsurface->save;
@@ -179,7 +178,7 @@ sub run {
 
 sub _append_to_existing_surface {
     my ($new_surface, $underlying_symbol) = @_;
-    my $underlying = BOM::Market::Underlying->new( $underlying_symbol);
+    my $underlying       = BOM::Market::Underlying->new($underlying_symbol);
     my $existing_surface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({
             underlying => $underlying,
             cutoff     => 'New York 10:00'
@@ -197,7 +196,6 @@ sub _append_to_existing_surface {
     return $new_surface;
 
 }
-
 
 sub passes_additional_check {
     my ($self, $volsurface) = @_;

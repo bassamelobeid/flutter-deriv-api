@@ -270,7 +270,6 @@ sub _matches_types {
     return $found;
 }
 
-
 sub _normalize_method_args {
     my ($self, %args) = @_;
     return join "\0", map { $_ => $args{$_} } sort keys %args;

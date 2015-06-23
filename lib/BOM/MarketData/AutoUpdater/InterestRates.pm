@@ -97,7 +97,7 @@ sub _get_currency_and_term_from_BB_ticker {
     my %tickerlist = Bloomberg::CurrencyConfig::get_interest_rate_list();
 
     foreach my $currency (keys %tickerlist) {
-        foreach my $term (keys %{$tickerlist-$currency}}) {
+        foreach my $term (keys %{$tickerlist - $currency}) {
             if ($ticker eq $tickerlist{$currency}{$term}) {
                 return {
                     currency => $currency,

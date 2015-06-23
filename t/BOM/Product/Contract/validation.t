@@ -781,7 +781,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{volsurface}   = $volsurface;
 
-    $bet = produce_contract($bet_params);
+    $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*closed/];
     test_error_list('buy', $bet, $expected_reasons);
 
