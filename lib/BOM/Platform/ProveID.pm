@@ -40,7 +40,7 @@ sub defaults {
         $self->SUPER::defaults,
         logger        => BOM::Utility::Log4perl::get_logger,
         username      => 'search_facility',
-        password      => '0NblgLlC',
+        password      => 'ixIB9Yejqn',
         folder        => $folder,
         residence     => $client->residence,
         postcode      => $client->postcode || '',
