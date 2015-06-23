@@ -1,0 +1,122 @@
+<whitelist>
+        <param><key>login</key></param>
+        <param><key>password</key></param>
+        <param><key>staff</key></param>
+        <param><key>sig_response</key></param>
+        <param><key>callback_url</key></param>
+        <param><key>address_1</key></param>
+        <param><key>address_2</key></param>
+        <param>
+                <key>trades</key>
+                <encoding>json</encoding>
+        </param>
+
+        <!-- email_us.cgi -->
+        <param><key>Message</key></param>
+
+        <!-- landing_page.cgi -->
+        <param><key>webinar_link</key></param>
+
+        <!-- Backoffice -->
+        <param><key>comment</key></param>
+
+        <!-- batch_credit_affiliate_commission.cgi -->
+        <param><key>confirm</key></param>
+ 
+        <!-- API calls with encrypted data -->
+        <param><key>login</key></param>
+
+        <!-- Dynamic settings that are json -->
+        <param>
+                <key>cgi.suspected_linked_accounts</key>
+                <encoding>json</encoding>
+        </param>
+        <param>
+                <key>payments.payment_limits</key>
+                <encoding>json</encoding>
+        </param>
+        <param>
+                <key>quants.commission.deep_otm_threshold</key>
+                <encoding>json</encoding>
+        </param>
+        <param>
+                <key>quants.commission.intraday.historical_bounceback</key>
+                <encoding>json</encoding>
+        </param>
+        <param>
+                <key>quants.underlyings.price_with_parameterized_surface</key>
+                <encoding>json</encoding>
+        </param>
+        <param>
+                <key>quants.client_limits.intraday_forex_iv</key>
+                <encoding>json</encoding>
+        </param>
+        <!-- END OF Dynamic settings that are json -->
+        <!-- Password resets: keys i and c are encrypted data -->
+        <param><key>i</key></param>
+        <param><key>c</key></param>
+        <!-- end of password reset section -->
+        <!-- encrypted fields for payment withdrawal -->
+        <param><key>payment_agent</key></param>
+        <!-- end of payment withdrawal -->
+        <!-- neeed for soon to be retired flash interface for tick trades -->
+        <param><key>cookie</key></param>
+
+        <!-- backoffice/f_manager_confodeposit.cgi -->
+        <param>
+            <key>remark</key>
+            <conditions>
+                <condition><key>account</key></condition>
+                <condition><key>currency</key></condition>
+                <condition><key>amount</key></condition>
+                <condition><key>range</key></condition>
+            </conditions>
+        </param>
+        <!-- backoffice/f_setting_paymentagent.cgi -->
+        <param>
+            <!-- payment agent further info -->
+            <key>pa_info</key>
+        </param>
+        <!-- bo f_accountingreports.cgi cleanup accounts -->
+        <param>
+            <key>message</key>
+            <conditions>
+                <condition><key>listaccounts</key></condition>
+                <condition><key>whattodo</key></condition>
+            </conditions>
+        </param>
+        <!-- google ab testing experiment -->
+        <param>
+            <key>utm_referrer</key>
+        </param>
+        <!-- google adword key param -->
+        <param>
+            <key>gclid</key>
+        </param>
+        <!-- bbdl upload file content textarea name f_bbdl_upload.cgi -->
+        <param>
+            <key>bbdl_file_content</key>
+        </param>
+        <!-- volsurface calibration tool -->
+        <param>
+            <key>initial_guess</key>
+        </param>
+        <param>
+            <key>ori</key>
+        </param>
+        <param>
+            <key>altered</key>
+        </param>
+        <!-- lost password token -->
+        <param>
+            <key>reset_token</key>
+        </param>
+        <!-- backoffice/f_clientloginid_edit.cgi -->
+        <param>
+            <key>cashier_lock_password</key>
+        </param>
+        <!-- verfiy email token -->
+        <param>
+            <key>verify_token</key>
+        </param>
+</whitelist>

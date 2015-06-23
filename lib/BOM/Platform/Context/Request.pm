@@ -572,7 +572,7 @@ sub detect_param_attacks {
     my $self = shift;
 
     my $ids = CGI::IDS->new(
-        whitelist_file  => '/home/git/bom/platform/config/ids_whitelist.xml',
+        whitelist_file  => '/home/git/regentmarkets/bom-platform/config/ids_whitelist.xml',
         disable_filters => ['67']);
     #convert all arrays to a joined string to avoid stringify to return ARRAY string.
     my $impact = $ids->detect_attacks(request => {map { (ref $_ eq 'ARRAY') ? join(',', @$_) : $_ } %{$self->params}});
