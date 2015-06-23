@@ -43,7 +43,7 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 compile:
-	prove -v -l t/BOM/002_autosyntax.t
+	prove -v -l t/002_autosyntax.t
 
 syntax_lib:
 	SYNTAX_CHUNK_NAME=lib prove -I./lib -I./database/lib t/BOM/002_autosyntax.t
