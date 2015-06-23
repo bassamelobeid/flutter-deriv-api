@@ -25,6 +25,7 @@ Readonly our $BET_CLASS_DIGIT_BET        => 'digit_bet';
 
 # Constant reference to volatile hash
 Readonly our $BET_CLASS_TO_TYPE_MAP => {
+    'spreads' => ['SPREADUP', 'SPREADDOWN'],
     'higher_lower_bet' => [
         'FLASHU',      'INTRADU',      'DOUBLEUP',      'FLASHD',         'INTRADD', 'DOUBLEDOWN', 'CALL', 'PUT',
         'TWOFORONEUP', 'TWOFORWARDUP', 'TWOFORONEDOWN', 'TWOFORWARDDOWN', 'ASIANU',  'ASIAND'
