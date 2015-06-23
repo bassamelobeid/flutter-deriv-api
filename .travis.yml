@@ -12,11 +12,6 @@ env:
     - TEST_SUITE=syntax_lib
     - TEST_SUITE=unit_test_marketdata
     - TEST_SUITE=unit_test_market
-    - TEST_SUITE=unit_test_bdd
-notifications:
-  slack:
-    rooms:
-      - binaryteam:AzxKOjpwZXWze8XiQEEcNtij#z-builds
 services:
     - redis-server
 addons:
@@ -61,10 +56,6 @@ before_install:
     - pushd /tmp/cpan && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - pushd /tmp/cpan && ( sudo sh build.sh ) && popd
     - sudo mv /tmp/cpan /home/git/regentmarkets/
-    # bdd
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bdd.git /tmp/bdd
-    - pushd /tmp/bdd && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bdd /home/git/regentmarkets/
     # binary-static
     - git clone https://github.com/binary-com/binary-static.git /tmp/binary-static
     - pushd /tmp/binary-static && ( git checkout gh-pages || true ) && popd
