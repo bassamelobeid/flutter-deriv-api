@@ -97,7 +97,7 @@ install:
     - sudo pg_createcluster 9.3 main -p 5432 --locale 'en_US.UTF-8'
     - echo -n "listen_addresses='*'" > /tmp/tmp_postgresql_line.conf
     - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/main/postgresql.conf"
-    - sudo cp -f t/config/pg_hba.conf /etc/postgresql/9.3/main/
+    - sudo cp -f /home/git/bom/t/config/pg_hba.conf /etc/postgresql/9.3/main/
     - sudo pg_ctlcluster 9.3 main start
     - sudo -u postgres createdb -p 5432 regentmarkets
     - sudo -u postgres psql -f /home/git/bom/database/config/sql/rmgdb/roles.sql
