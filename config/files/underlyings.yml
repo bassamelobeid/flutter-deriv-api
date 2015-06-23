@@ -236,7 +236,7 @@ BBBELG:
   asset: BBBELG
   bbdl:
     symbols:
-    - BELG BB Equity
+    - PROX BB Equity
   commission_level: 3
   display_name: Belgacom
   esig_symbol: BELG-EEB
