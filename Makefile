@@ -32,7 +32,7 @@ unit_test_system:
 
 unit_test_bdd:
 	@$M
-	(cd /home/git/regentmarkets/bdd && prove -I/home/git/bom bdd.t)
+	(cd /home/git/regentmarkets/bdd && prove -I/home/git/bom/lib bdd.t)
 
 unit_test_myaffiliates_extended:
 	@export EXTENDED_TESTING=1; unset SKIP_MYAFFILIATES; $(PROVE) -r t/BOM/Platform/MyAffiliates/
@@ -47,7 +47,6 @@ compile:
 
 syntax_lib:
 	SYNTAX_CHUNK_NAME=lib prove -I./lib -I./database/lib t/002_autosyntax.t
-	prove -l t/BOM/003_yaml_correctness.t
 
 syntax_cgi:
 	SYNTAX_CHUNK_NAME=cgi prove -I./lib -I./database/lib t/002_autosyntax.t
