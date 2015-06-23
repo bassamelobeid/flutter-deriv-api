@@ -32,6 +32,7 @@ subtest 'save new corporate actions' => sub {
     my $now = Date::Utility->new;
     lives_ok {
         my $corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
+        $DB::single=1;
         my $actions = $corp->actions;
         is keys %$actions, 1, 'has only one action';
         my $new_actions = {
