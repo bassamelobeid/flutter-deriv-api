@@ -15,7 +15,7 @@ default:
 	@echo "  tidy         - Run perltidy"
 
 critique:
-	prove -l t/BOM/002_autosyntax.t
+	prove -l t/002_autosyntax.t
 
 test: $(TESTS)
 
