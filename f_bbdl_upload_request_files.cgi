@@ -46,13 +46,13 @@ if ($type eq 'request') {
     @files = map { 'c_' . $_ } @{$request_file->master_request_files};
 }
 
-my $temp_gif_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
+my $temp_dir = '/tmp';
 foreach my $file (@files) {
     if (length($file) >= 25) {
         print "<font color=red>ERROR: $file exceeds 25 characters in length</font><br>";
-    } elsif (not -s $temp_gif_dir . '/' . $file) {
+    } elsif (not -s $temp_dir . '/' . $file) {
         print "<font color=red>ERROR: $file does not exist</font><br>";
-    } elsif ($sftp->put($temp_gif_dir . '/' . $file, $file)) {
+    } elsif ($sftp->put($temp_dir . '/' . $file, $file)) {
         print "UPLOAD $file SUCCESSFUL<br>";
     } else {
         print "<font color=red>UPLOAD $file FAILURE: " . $sftp->error . '</font><br>';
