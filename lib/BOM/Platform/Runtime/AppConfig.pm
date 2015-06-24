@@ -22,7 +22,7 @@ use YAML::CacheLoader;
 
 use BOM::Platform::Runtime::AppConfig::Attribute::Section;
 use BOM::Platform::Runtime::AppConfig::Attribute::Global;
-use BOM::Utility::HashDotNotation;
+use Data::Hash::DotNotation;
 
 use Carp qw(croak);
 use BOM::Utility::Log4perl qw( get_logger );
@@ -210,7 +210,7 @@ sub save_dynamic {
     } or return;
 
     #Cleanup globals
-    my $global = BOM::Utility::HashDotNotation->new();
+    my $global = Data::Hash::DotNotation->new();
     foreach my $key (keys %{$self->dynamic_settings_info->{global}}) {
         if ($self->data_set->{global}->key_exists($key)) {
             $global->set($key, $self->data_set->{global}->get($key));
@@ -231,7 +231,7 @@ sub save_dynamic {
 sub _build_data_set {
     my $self = shift;
 
-    my $data_set->{app_config} = BOM::Utility::HashDotNotation->new(data => YAML::CacheLoader::LoadFile('/etc/rmg/app_config.yml'));
+    my $data_set->{app_config} = Data::Hash::DotNotation->new(data => YAML::CacheLoader::LoadFile('/etc/rmg/app_config.yml'));
 
     try { $self->_add_app_setttings($data_set, $self->couch->document('app_settings')); }
     catch {
@@ -247,7 +247,7 @@ sub _add_app_setttings {
     my $app_settings = shift;
 
     if ($app_settings) {
-        $data_set->{global} = BOM::Utility::HashDotNotation->new(data => $app_settings->{global});
+        $data_set->{global} = Data::Hash::DotNotation->new(data => $app_settings->{global});
         $data_set->{version} = $app_settings->{_rev};
     }
 

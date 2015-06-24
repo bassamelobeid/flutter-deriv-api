@@ -11,7 +11,7 @@ use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-use BOM::Utility::HashDotNotation;
+use Data::Hash::DotNotation;
 use BOM::Platform::Context;
 use BOM::Platform::Client;
 use BOM::Platform::MyAffiliates::TrackingHandler;

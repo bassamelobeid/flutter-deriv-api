@@ -2,7 +2,7 @@ use Test::Most 0.22 (tests => 7);
 use Test::NoWarnings;
 
 use BOM::Platform::Runtime::AppConfig::Attribute;
-use BOM::Utility::HashDotNotation;
+use Data::Hash::DotNotation;
 
 throws_ok {
     BOM::Platform::Runtime::AppConfig::Attribute->new(
@@ -58,7 +58,7 @@ subtest 'get' => sub {
 
     subtest 'from app_config' => sub {
         my $data = {tests => {get => 'b'}};
-        my $app_config = BOM::Utility::HashDotNotation->new(data => $data);
+        my $app_config = Data::Hash::DotNotation->new(data => $data);
 
         my $attribute = BOM::Platform::Runtime::AppConfig::Attribute->new(
             name        => 'get',
@@ -84,7 +84,7 @@ subtest 'get' => sub {
 subtest 'set' => sub {
     subtest 'set after access' => sub {
         my $data = {tests => {get => 'b'}};
-        my $app_config = BOM::Utility::HashDotNotation->new(data => $data);
+        my $app_config = Data::Hash::DotNotation->new(data => $data);
 
         my $data_set = {
             version    => 1,
@@ -114,7 +114,7 @@ subtest 'set' => sub {
 
     subtest 'set before access' => sub {
         my $data = {tests => {get => 'b'}};
-        my $app_config = BOM::Utility::HashDotNotation->new(data => $data);
+        my $app_config = Data::Hash::DotNotation->new(data => $data);
 
         my $data_set = {
             version    => 1,
