@@ -19,7 +19,6 @@ PrintContentType();
 my $cgi               = CGI->new;
 my $server_ip         = $cgi->param('server');
 my $frequency         = $cgi->param('frequency');
-my $volatility_source = $cgi->param('volatility_source');
 my $type              = $cgi->param('type');
 
 Bar("BBDL RequestFiles Upload $server_ip");
@@ -34,7 +33,7 @@ my $bbdl = Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 
-my $request_file = Bloomberg::RequestFiles->new(volatility_source => $volatility_source);
+my $request_file = Bloomberg::RequestFiles->new();
 
 my @files;
 #regenerate request/cancel files

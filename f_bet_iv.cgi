@@ -86,10 +86,6 @@ print qq~<br><form method=post action=$request_files_upload_url>
             <option value='daily'>Daily (Normal)</option>
             <option value='oneshot'>Oneshot</option>
         </select>
-	<select name=volatility_source>
-            <option value='OVDV'>master_OVDV_request_files</option>
-            <option value='vol_points'>master_vol_points_request_files</option>
-        </select>
         <select name=type>
             <option value=request>request file</option>
             <option value=cancel>cancel file</option>
