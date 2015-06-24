@@ -88,7 +88,7 @@ $dbh->{RaiseError} = 1;
 
 my $u_db;
 my $prefix;
-foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion)) {
+foreach my $table (qw(client client_status client_promo_code client_authentication_method client_authentication_document self_exclusion financial_assessment)) {
     $prefix = ($table eq 'client') ? '' : 'client_';
     $u_db = $dbh->selectall_hashref(
         "SELECT * FROM audit.$table WHERE "
