@@ -8,6 +8,7 @@ use Time::HiRes qw(tv_interval gettimeofday time);
 use List::Util qw(min max first);
 use JSON qw( from_json );
 use Date::Utility;
+use ExpiryQueue qw( enqueue_new_transaction );
 use Format::Util::Numbers qw(roundnear to_monetary_number_format);
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
@@ -539,6 +540,8 @@ sub buy {    ## no critic (RequireArgUnpacking)
     $self->balance_after($txn->{balance_after});
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
+
+    enqueue_new_transaction($self);    # For soft realtime expiration notification.
 
     return;
 }
