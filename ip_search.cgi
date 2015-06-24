@@ -20,7 +20,7 @@ if ($ip !~ /^\d+\.\d+\.\d+\.\d+$/) {
     code_exit_BO();
 }
 
-Bar("Searching for LoginIDs corresponding to $ip");
+Bar("Searching for Emails corresponding to $ip");
 
 # Search IP address from clients loginhistory file
 my $last_login_age = request()->param('lastndays');
