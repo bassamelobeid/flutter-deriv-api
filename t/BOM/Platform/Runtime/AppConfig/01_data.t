@@ -1,6 +1,6 @@
 use Test::Most 0.22 (tests => 22);
 use Test::NoWarnings;
-use BOM::Utility::HashDotNotation;
+use Data::Hash::DotNotation;
 use Sys::Hostname qw(hostname);
 
 my $hash = {
@@ -10,7 +10,7 @@ my $hash = {
         camera   => 'ds10',
         versions => ['12', '10', '14'],
     }};
-my $data = BOM::Utility::HashDotNotation->new(data => $hash);
+my $data = Data::Hash::DotNotation->new(data => $hash);
 
 is $data->get('name'),         'P-Body';
 is $data->get('parts.hand'),   'rxi332.22';
@@ -35,7 +35,7 @@ $hash = {
     empty => '',
     count => 10,
 };
-$data = BOM::Utility::HashDotNotation->new(data => $hash);
+$data = Data::Hash::DotNotation->new(data => $hash);
 ok $data->get('count'), 'Count is availabled in root';
 ok !$data->key_exists('users.signups.count'), 'count is not found under users.signups';
 ok !$data->get('users.signups.count'),        'root_var is not defined under users.signups';

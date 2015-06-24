@@ -19,7 +19,7 @@ use Path::Tiny;
 use File::Slurp;
 use JSON qw(decode_json);
 
-use BOM::Utility::HashDotNotation;
+use Data::Hash::DotNotation;
 
 require Locale::Maketext::Lexicon;
 use Carp;
@@ -252,7 +252,7 @@ sub rebuild_config {
     my $config_file = path($self->static_path)->child('config.json');
     my $config_json = File::Slurp::read_file($config_file);
     my $json_data   = decode_json($config_json);
-    return $self->config(BOM::Utility::HashDotNotation->new(data => $json_data));
+    return $self->config(Data::Hash::DotNotation->new(data => $json_data));
 }
 
 sub _build_display_name {
