@@ -22,7 +22,7 @@ before_install:
     - sudo apt-get install -y postgresql-9.3 postgresql-plperl-9.3 postgresql-contrib-9.3
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
-    - cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
+    - sudo cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
     ## fix hostname
     - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
     - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
