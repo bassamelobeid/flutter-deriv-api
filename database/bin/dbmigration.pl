@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-package BOM::DBMigration;
+package BOM::Database::DBMigration;
 
 use Moose;
 use DBIx::Migration;
@@ -215,4 +215,4 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::DBMigration->new->run;
+exit BOM::Database::DBMigration->new->run;
