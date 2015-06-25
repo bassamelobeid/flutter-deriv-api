@@ -408,7 +408,12 @@ has build_parameters => (
     required => 1,
 );
 
-has [qw(volsurface empirical_volsurface)] => (
+has empirical_volsurface => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has [qw(volsurface)] => (
     is         => 'rw',
     isa        => 'BOM::MarketData::VolSurface',
     lazy_build => 1,
@@ -1215,21 +1220,25 @@ sub _build_pricing_args {
 
     my $start_date           = $self->date_pricing;
     my $barriers_for_pricing = $self->_barriers_for_pricing;
-
-    return {
-        spot                 => $self->pricing_spot,
-        r_rate               => $self->r_rate,
-        t                    => $self->timeinyears->amount,
-        barrier1             => $barriers_for_pricing->{barrier1},
-        barrier2             => $barriers_for_pricing->{barrier2},
-        q_rate               => $self->q_rate,
-        iv                   => $self->pricing_vol,
-        payouttime_code      => $self->payouttime_code,
-        starttime            => $start_date->epoch,
-        average_tick_count   => $self->average_tick_count,
-        long_term_prediction => $self->long_term_prediction,
-        iv_with_news         => $self->news_adjusted_pricing_vol,
+    my $args                 = {
+        spot            => $self->pricing_spot,
+        r_rate          => $self->r_rate,
+        t               => $self->timeinyears->amount,
+        barrier1        => $barriers_for_pricing->{barrier1},
+        barrier2        => $barriers_for_pricing->{barrier2},
+        q_rate          => $self->q_rate,
+        iv              => $self->pricing_vol,
+        payouttime_code => $self->payouttime_code,
+        starttime       => $start_date->epoch,
     };
+
+    if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex') {
+        $args->{average_tick_count}   = $self->average_tick_count;
+        $args->{long_term_prediction} = $self->long_term_prediction;
+        $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
+    }
+
+    return $args;
 }
 
 has [qw(pricing_vol news_adjusted_pricing_vol)] => (

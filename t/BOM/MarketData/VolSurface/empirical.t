@@ -124,9 +124,16 @@ subtest 'caching naked vol' => sub {
     $underlying = BOM::Market::Underlying->new('frxUSDJPY');
     my $emp = BOM::MarketData::VolSurface::Empirical->new(underlying => $underlying);
     lives_ok {
-        my $ref = $emp->_naked_vol({current_epoch => $now->epoch, seconds_to_expiration => $duration->seconds});
+        my $ref = $emp->_naked_vol({
+            current_epoch         => $now->epoch,
+            seconds_to_expiration => $duration->seconds
+        });
         ok !$ref->{cache}, 'calculated vol';
-        my $new_ref = $emp->_naked_vol({current_epoch => $now->epoch, seconds_to_expiration => $duration->seconds});
+        my $new_ref = $emp->_naked_vol({
+            current_epoch         => $now->epoch,
+            seconds_to_expiration => $duration->seconds
+        });
         ok $new_ref->{cache}, 'cache vol';
-    } 'cache naked vol';
+    }
+    'cache naked vol';
 };
