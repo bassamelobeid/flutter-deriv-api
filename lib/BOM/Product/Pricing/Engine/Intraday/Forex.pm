@@ -14,8 +14,6 @@ use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
 
-use BOM::MarketData::VolSurface::Empirical;
-
 sub BUILD {
     my $self = shift;
 
@@ -37,10 +35,14 @@ has [qw(average_tick_count long_term_prediction)] => (
     lazy_build => 1,
 );
 
-has pricing_vol => (
+has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     is         => 'rw',
     lazy_build => 1,
 );
+
+sub _build_news_adjusted_pricing_vol {
+    return shift->bet->pricng_args->{iv_with_news};
+}
 
 sub _build_average_tick_count {
     return shift->bet->pricing_args->{average_tick_count};
@@ -585,18 +587,11 @@ has economic_events_volatility_risk_markup => (
 sub _build_economic_events_volatility_risk_markup {
     my $self = shift;
 
-    my $bet                = $self->bet;
-    my $pricing_epoch      = $bet->effective_start->epoch;
-    my $secs_to_expiry     = $bet->get_time_to_expiry({from => $bet->effective_start})->seconds;
     my $markup_base_amount = 0;
-
-    if ($secs_to_expiry and $secs_to_expiry > 10) {
+    # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
+    if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
         my $tv_without_news = $self->probability->amount;
-        my $vol_with_news = BOM::MarketData::VolSurface::Empirical->new(underlying => $bet->underlying)->get_seasonalized_volatility_with_news({
-                current_epoch         => $pricing_epoch,
-                seconds_to_expiration => $secs_to_expiry
-            })->{volatility};
-        my $tv_with_news = $self->clone({pricing_vol => $vol_with_news})->probability->amount;
+        my $tv_with_news = $self->clone({pricing_vol => $self->news_adjusted_pricing_vol})->probability->amount;
         $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
     }
 

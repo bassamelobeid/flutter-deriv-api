@@ -408,7 +408,7 @@ has build_parameters => (
     required => 1,
 );
 
-has volsurface => (
+has [qw(volsurface empirical_volsurface)] => (
     is         => 'rw',
     isa        => 'BOM::MarketData::VolSurface',
     lazy_build => 1,
@@ -712,6 +712,12 @@ sub _build_opposite_bet {
 
     return $self->_produce_contract_ref->(\%build_parameters);
 }
+
+sub _build_empirical_volsurface {
+    my $self = shift;
+    return BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
+}
+
 
 sub _build_volsurface {
     my $self = shift;
@@ -1223,10 +1229,11 @@ sub _build_pricing_args {
         starttime            => $start_date->epoch,
         average_tick_count   => $self->average_tick_count,
         long_term_prediction => $self->long_term_prediction,
+        iv_with_news         => $self->news_adjusted_pricing_vol,
     };
 }
 
-has pricing_vol => (
+has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1245,7 +1252,7 @@ sub _build_pricing_vol {
         });
     } elsif (my ($which) = $pen =~ /Intraday::(Forex|Index)/) {
         # not happy that I have to do it this way.
-        my $volsurface = BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
+        my $volsurface = $self->empirical_volsurface;
         my $vol_args = {
             current_epoch         => $self->date_pricing->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
@@ -1276,6 +1283,20 @@ sub _build_pricing_vol {
     }
 
     return $vol;
+}
+
+sub _build_news_adjusted_pricing_vol {
+    my $self = shift;
+
+    my $secs_to_expiry     = $self->get_time_to_expiry({from => $self->effective_start})->seconds;
+    my $news_adjusted_vol = $self->pricing_vol;
+    if ($secs_to_expiry and $secs_to_expiry > 10) {
+        $news_adjusted_vol = $self->empirical_volsurface->get_seasonalized_volatility_with_news({
+                current_epoch => $self->effective_start->epoch,
+                seconds_to_expiration => $secs_to_expiry,
+            });
+    }
+    return $news_adjusted_vol;
 }
 
 sub _build_vol_at_strike {
