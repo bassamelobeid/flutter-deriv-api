@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE betonmarkets.client ADD SOURCE VARCHAR(50);
+ALTER TABLE audit.client ADD SOURCE VARCHAR(50);
+
+COMMIT;
