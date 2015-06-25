@@ -21,6 +21,11 @@ sub aes_keys {
     return $config;
 }
 
+sub randsrv {
+    state $config = YAML::XS::LoadFile('/etc/rmg/randsrv.yml');
+    return $config;
+}
+
 sub third_party {
     state $config = YAML::XS::LoadFile('/etc/rmg/third_party.yml');
     return $config;
