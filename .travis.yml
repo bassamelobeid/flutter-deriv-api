@@ -39,6 +39,10 @@ before_install:
     - sudo tar --gzip -xf /tmp/couchdb_init.tar.gz -C tmp
     - sudo mv tmp/var/lib/couchdb/1.2.0/*.couch /var/lib/couchdb/
     - sudo service couchdb start
+    # bom
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
+    - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
+    - sudo mv /tmp/bom /home/git/
     # bom-utility
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
     - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
@@ -74,11 +78,10 @@ install:
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
     - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
-    - sudo ln -s $PWD /home/git/bom
     - sudo mkdir /etc/rmg
     - sudo chmod 0777 /etc/rmg
     - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
-    - sudo cp -R $PWD/config/environments/development/*.yml /etc/rmg/
+    - sudo cp -R /home/git/bom/config/environments/development/*.yml /etc/rmg/
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
 
     # Setting up databases
