@@ -123,7 +123,8 @@ sub _naked_vol {
         naked_vol          => $uc_vol,
         average_tick_count => $average_tick_count,
         err                => $err,
-    } $self->_naked_vol_cache->{$cache_key} = $ref;
+    };
+    $self->_naked_vol_cache->{$cache_key} = $ref;
 
     return $ref;
 }
