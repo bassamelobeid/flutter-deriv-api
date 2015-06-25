@@ -5,15 +5,12 @@ use Moose;
 use Cache::RedisDB;
 use List::Util qw(max min sum);
 use List::MoreUtils qw(uniq);
-use Module::Load::Conditional qw(can_load);
 use Tie::Scalar::Timeout;
 use POSIX qw(ceil);
 use Time::Duration::Concise::Localize;
 
-use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
-use BOM::Market::Underlying;
 use BOM::Market::Types;
 
 sub get_volatility {
@@ -113,10 +110,7 @@ sub _naked_vol {
 
     my $average_tick_count = ($real_periods > 0) ? $total_ticks / $real_periods : 0;
     my $err;
-    if ($real_periods + 1 < int($lookback_interval->minutes) * 0.8) {
-        # need to find a standard way of handling market data exception.
-        $err = localize('Trading on [_1] is suspended due to missing market data.', $underlying->translated_display_name());
-    }
+    $err = 1 if ($real_periods + 1 < int($lookback_interval->minutes) * 0.8);
 
     return {
         naked_vol          => $uc_vol,
