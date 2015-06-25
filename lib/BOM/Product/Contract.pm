@@ -656,7 +656,7 @@ sub _build_timeinyears {
 sub _build_timeindays {
     my $self = shift;
 
-    my $start_date = ($self->date_pricing->is_before($self->date_start)) ? $self->date_start : $self->date_pricing;
+    my $start_date = $self->effective_start;
 
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
@@ -1253,7 +1253,7 @@ sub _build_pricing_vol {
         # not happy that I have to do it this way.
         my $volsurface = $self->empirical_volsurface;
         my $vol_args   = {
-            current_epoch         => $self->date_pricing->epoch,
+            current_epoch         => $self->effective_start->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
         };
 
