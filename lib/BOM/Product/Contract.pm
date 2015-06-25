@@ -408,7 +408,12 @@ has build_parameters => (
     required => 1,
 );
 
-has volsurface => (
+has empirical_volsurface => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+has [qw(volsurface)] => (
     is         => 'rw',
     isa        => 'BOM::MarketData::VolSurface',
     lazy_build => 1,
@@ -656,7 +661,7 @@ sub _build_timeinyears {
 sub _build_timeindays {
     my $self = shift;
 
-    my $start_date = ($self->date_pricing->is_before($self->date_start)) ? $self->date_start : $self->date_pricing;
+    my $start_date = $self->effective_start;
 
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
@@ -711,6 +716,11 @@ sub _build_opposite_bet {
     $build_parameters{_original_date_start} = $self->date_start;
 
     return $self->_produce_contract_ref->(\%build_parameters);
+}
+
+sub _build_empirical_volsurface {
+    my $self = shift;
+    return BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
 }
 
 sub _build_volsurface {
@@ -1210,23 +1220,28 @@ sub _build_pricing_args {
 
     my $start_date           = $self->date_pricing;
     my $barriers_for_pricing = $self->_barriers_for_pricing;
-
-    return {
-        spot                 => $self->pricing_spot,
-        r_rate               => $self->r_rate,
-        t                    => $self->timeinyears->amount,
-        barrier1             => $barriers_for_pricing->{barrier1},
-        barrier2             => $barriers_for_pricing->{barrier2},
-        q_rate               => $self->q_rate,
-        iv                   => $self->pricing_vol,
-        payouttime_code      => $self->payouttime_code,
-        starttime            => $start_date->epoch,
-        average_tick_count   => $self->average_tick_count,
-        long_term_prediction => $self->long_term_prediction,
+    my $args                 = {
+        spot            => $self->pricing_spot,
+        r_rate          => $self->r_rate,
+        t               => $self->timeinyears->amount,
+        barrier1        => $barriers_for_pricing->{barrier1},
+        barrier2        => $barriers_for_pricing->{barrier2},
+        q_rate          => $self->q_rate,
+        iv              => $self->pricing_vol,
+        payouttime_code => $self->payouttime_code,
+        starttime       => $start_date->epoch,
     };
+
+    if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Forex') {
+        $args->{average_tick_count}   = $self->average_tick_count;
+        $args->{long_term_prediction} = $self->long_term_prediction;
+        $args->{iv_with_news}         = $self->news_adjusted_pricing_vol;
+    }
+
+    return $args;
 }
 
-has pricing_vol => (
+has [qw(pricing_vol news_adjusted_pricing_vol)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1245,9 +1260,9 @@ sub _build_pricing_vol {
         });
     } elsif (my ($which) = $pen =~ /Intraday::(Forex|Index)/) {
         # not happy that I have to do it this way.
-        my $volsurface = BOM::MarketData::VolSurface::Empirical->new(underlying => $self->underlying);
-        my $vol_args = {
-            current_epoch         => $self->date_pricing->epoch,
+        my $volsurface = $self->empirical_volsurface;
+        my $vol_args   = {
+            current_epoch         => $self->effective_start->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
         };
 
@@ -1276,6 +1291,20 @@ sub _build_pricing_vol {
     }
 
     return $vol;
+}
+
+sub _build_news_adjusted_pricing_vol {
+    my $self = shift;
+
+    my $secs_to_expiry = $self->get_time_to_expiry({from => $self->effective_start})->seconds;
+    my $news_adjusted_vol = $self->pricing_vol;
+    if ($secs_to_expiry and $secs_to_expiry > 10) {
+        $news_adjusted_vol = $self->empirical_volsurface->get_seasonalized_volatility_with_news({
+            current_epoch         => $self->effective_start->epoch,
+            seconds_to_expiration => $secs_to_expiry,
+        });
+    }
+    return $news_adjusted_vol->{volatility};
 }
 
 sub _build_vol_at_strike {

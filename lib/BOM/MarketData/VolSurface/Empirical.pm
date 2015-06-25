@@ -5,15 +5,12 @@ use Moose;
 use Cache::RedisDB;
 use List::Util qw(max min sum);
 use List::MoreUtils qw(uniq);
-use Module::Load::Conditional qw(can_load);
 use Tie::Scalar::Timeout;
 use POSIX qw(ceil);
 use Time::Duration::Concise::Localize;
 
-use BOM::Platform::Context qw(localize);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
-use BOM::Market::Underlying;
 use BOM::Market::Types;
 
 sub get_volatility {
@@ -83,6 +80,14 @@ sub _naked_vol {
     my $underlying = $self->underlying;
     my ($current_epoch, $seconds_to_expiration) =
         @{$args}{'current_epoch', 'seconds_to_expiration'};
+
+    my $cache_key = $underlying->symbol . '-' . $current_epoch . '-' . $seconds_to_expiration;
+    # if parameters to get volatility match, it is the same vol.
+    if (my $cache_vol = $self->_naked_vol_cache->{$cache_key}) {
+        $cache_vol->{cache} = 1;
+        return $cache_vol;
+    }
+
     my $lookback_interval = Time::Duration::Concise::Localize->new(interval => max(900, $seconds_to_expiration) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
@@ -113,16 +118,16 @@ sub _naked_vol {
 
     my $average_tick_count = ($real_periods > 0) ? $total_ticks / $real_periods : 0;
     my $err;
-    if ($real_periods + 1 < int($lookback_interval->minutes) * 0.8) {
-        # need to find a standard way of handling market data exception.
-        $err = localize('Trading on [_1] is suspended due to missing market data.', $underlying->translated_display_name());
-    }
+    $err = 1 if ($real_periods + 1 < int($lookback_interval->minutes) * 0.8);
 
-    return {
+    my $ref = {
         naked_vol          => $uc_vol,
         average_tick_count => $average_tick_count,
         err                => $err,
     };
+    $self->_naked_vol_cache->{$cache_key} = $ref;
+
+    return $ref;
 }
 
 sub _seasonalize {
@@ -344,6 +349,11 @@ sub _get_coefficients {
     my $coef = $self->_coefficients->{$which};
     return $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 }
+
+has _naked_vol_cache => (
+    is      => 'ro',
+    default => sub { {} },
+);
 
 has _cached_economic_events_info => (
     is      => 'ro',
