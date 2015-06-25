@@ -41,7 +41,7 @@ has [qw(pricing_vol news_adjusted_pricing_vol)] => (
 );
 
 sub _build_news_adjusted_pricing_vol {
-    return shift->bet->pricng_args->{iv_with_news};
+    return shift->bet->pricing_args->{iv_with_news};
 }
 
 sub _build_average_tick_count {
