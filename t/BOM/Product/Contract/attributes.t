@@ -18,6 +18,12 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency_config',
+    {
+        symbol => $_,
+        date   => Date::Utility->new,
+    }) for qw( JPY USD );
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
@@ -196,7 +202,7 @@ subtest 'Range on R_100.' => sub {
 
     cmp_bag(
         [keys %{$pricing_args}],
-        [qw(barrier1 barrier2 iv payouttime_code q_rate r_rate spot starttime t long_term_prediction average_tick_count)],
+        [qw(barrier1 barrier2 iv payouttime_code q_rate r_rate spot starttime t)],
         'pricing_args has expected keys.'
     );
 };
