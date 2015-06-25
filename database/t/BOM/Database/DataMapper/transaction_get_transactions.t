@@ -3,7 +3,6 @@ use Test::Most 0.22 (tests => 3);
 use Test::NoWarnings;
 use Test::Exception;
 
-use BOM::Platform::Client;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
 use BOM::Database::Model::Constants;

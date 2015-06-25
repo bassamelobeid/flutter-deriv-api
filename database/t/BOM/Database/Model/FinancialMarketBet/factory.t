@@ -53,13 +53,6 @@ $acc_usd->save;
 my $acc_id = $acc_usd->account_record->id;
 my %account_data = (account_data => {client_loginid => $acc_usd->client_loginid, currency_code => $acc_usd->currency_code});
 
-$client = BOM::Platform::Client->new({loginid => 'CR220169'});
-$client->payment_free_gift(
-    currency    => 'USD',
-    amount      => 500,
-    remark      => 'free gift',
-);
-
 # HigherLowerBet
 my $hl_bet = BOM::Database::Model::FinancialMarketBet::HigherLowerBet->new({
         data_object_params => {

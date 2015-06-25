@@ -8,8 +8,6 @@ use Test::NoWarnings;
 use Test::Exception;
 
 use Date::Utility;
-use BOM::Platform::Client;
-use BOM::Platform::Client::Payments;
 use BOM::Database::Model::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::ClientDB;
