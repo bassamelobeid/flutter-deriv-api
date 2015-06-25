@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use Test::FailWarnings;
 use Format::Util::Numbers qw/roundnear/;
@@ -118,4 +118,15 @@ subtest 'coefficients check' => sub {
             'volatility seasonality coefficient defined ' . $_;
         ok $emp->_get_coefficients('duration_coef', BOM::Market::Underlying->new($_)), 'duration coefficient ' . $_;
     }
+};
+
+subtest 'caching naked vol' => sub {
+    $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+    my $emp = BOM::MarketData::VolSurface::Empirical->new(underlying => $underlying);
+    lives_ok {
+        my $ref = $emp->_naked_vol({current_epoch => $now->epoch, seconds_to_expiration => $duration->seconds});
+        ok !$ref->{cache}, 'calculated vol';
+        my $new_ref = $emp->_naked_vol({current_epoch => $now->epoch, seconds_to_expiration => $duration->seconds});
+        ok $new_ref->{cache}, 'cache vol';
+    } 'cache naked vol';
 };

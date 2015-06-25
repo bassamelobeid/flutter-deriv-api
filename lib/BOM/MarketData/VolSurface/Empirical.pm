@@ -83,8 +83,9 @@ sub _naked_vol {
 
     my $cache_key = $underlying->symbol . '-' . $current_epoch . '-' . $seconds_to_expiration;
     # if parameters to get volatility match, it is the same vol.
-    if (my $cache = $self->_naked_vol_cache->{$cache_key}) {
-        return $cache;
+    if (my $cache_vol = $self->_naked_vol_cache->{$cache_key}) {
+        $cache_vol->{cache} = 1;
+        return $cache_vol;
     }
 
     my $lookback_interval = Time::Duration::Concise::Localize->new(interval => max(900, $seconds_to_expiration) . 's');
@@ -351,7 +352,7 @@ sub _get_coefficients {
 
 has _naked_vol_cache => (
     is      => 'ro',
-    default => sub { [] },
+    default => sub { {} },
 );
 
 has _cached_economic_events_info => (
