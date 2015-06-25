@@ -60,8 +60,9 @@ sub configs_for {
         $config->{$language} = [Gettext => "$po_file_path"];
     }
 
-    $config->{_auto}   = 1;
-    $config->{_decode} = 1;
+    $config->{_auto}     = 1;
+    $config->{_decode}   = 1;
+    $config->{_encoding} = 'utf-8';
 
     return $config;
 }
