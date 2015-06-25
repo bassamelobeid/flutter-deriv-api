@@ -33,7 +33,7 @@ sub _build_file {
     my $self = shift;
 
     my $now = Date::Utility->new;
-    my $loc = '/feed/BBDL/';
+    my $loc = '/feed/BBDL';
     my $on  = Date::Utility->new($now->epoch);
 
     while (not -d $loc . '/' . $on->date_yyyymmdd) {
