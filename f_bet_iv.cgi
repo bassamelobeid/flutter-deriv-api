@@ -71,7 +71,7 @@ Server: $selectbbdlserver
 </form>~;
 
 my $list_request_files_url = request()->url_for('backoffice/f_bbdl_scheduled_request_files.cgi');
-print '<LI><p><b>BBDL scheduled request files listing<b> - click this button to generate the contents of the scheduled request files.>/p>';
+print '<LI><p><b>BBDL scheduled request files listing<b> - click this link to generate the contents of the scheduled request files.</p>';
 print qq~
 <p>
 <a href="$list_request_files_url">Generate files</a>
