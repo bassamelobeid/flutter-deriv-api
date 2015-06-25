@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::Utility::Log4perl;
 use BOM::Platform::Runtime;
+use BOM::System::Config;
 use base 'Experian::IDAuth';
 
 =head1 NOTES
@@ -39,8 +40,8 @@ sub defaults {
     return (
         $self->SUPER::defaults,
         logger        => BOM::Utility::Log4perl::get_logger,
-        username      => 'search_facility',
-        password      => 'ixIB9Yejqn',
+        username      => BOM::System::Config::third_party->{proveid}->{username},
+        password      => BOM::System::Config::third_party->{proveid}->{password},
         folder        => $folder,
         residence     => $client->residence,
         postcode      => $client->postcode || '',
@@ -54,4 +55,3 @@ sub defaults {
 }
 
 1;
-
