@@ -34,7 +34,9 @@ sub _class_for {
     return $rclass if $classes{$rclass};
 
     my $config = configs_for($website, $version);
+    my @where  = (__LINE__ + 3, __FILE__);
     eval <<EOP;    ## no critic
+#line $where[0] "$where[1]"
 package $rclass;
 use parent 'BOM::Platform::Context::I18N::Base';
 sub import_lexicons {
