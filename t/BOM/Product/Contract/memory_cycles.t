@@ -9,7 +9,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Utility::HashDotNotation;
+use Data::Hash::DotNotation;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
