@@ -1304,7 +1304,7 @@ sub _build_news_adjusted_pricing_vol {
             seconds_to_expiration => $secs_to_expiry,
         });
     }
-    return $news_adjusted_vol;
+    return $news_adjusted_vol->{volatility};
 }
 
 sub _build_vol_at_strike {
