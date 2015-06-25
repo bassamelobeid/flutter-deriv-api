@@ -43,7 +43,7 @@ Readonly our $BET_CLASS_TO_TYPE_MAP => {
     'range_bet' => ['RANGE', 'UPORDOWN', 'EXPIRYRANGE', 'EXPIRYMISS'],
 
     'touch_bet' => ['ONETOUCH',   'NOTOUCH'],
-    'digit_bet' => ['DIGITMATCH', 'DIGITDIFF'],
+    'digit_bet' => ['DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITODD', 'DIGITEVEN'],
 };
 
 Readonly our $BET_TYPE_TO_CLASS_MAP => {
