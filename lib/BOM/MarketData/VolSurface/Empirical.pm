@@ -80,6 +80,13 @@ sub _naked_vol {
     my $underlying = $self->underlying;
     my ($current_epoch, $seconds_to_expiration) =
         @{$args}{'current_epoch', 'seconds_to_expiration'};
+
+    my $cache_key = $underlying->symbol . '-' . $current_epoch . '-' . $seconds_to_expiration;
+    # if parameters to get volatility match, it is the same vol.
+    if (my $cache = $self->_naked_vol_cache->{$cache_key}) {
+        return $cache;
+    }
+
     my $lookback_interval = Time::Duration::Concise::Localize->new(interval => max(900, $seconds_to_expiration) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
@@ -112,11 +119,13 @@ sub _naked_vol {
     my $err;
     $err = 1 if ($real_periods + 1 < int($lookback_interval->minutes) * 0.8);
 
-    return {
+    my $ref = {
         naked_vol          => $uc_vol,
         average_tick_count => $average_tick_count,
         err                => $err,
-    };
+    } $self->_naked_vol_cache->{$cache_key} = $ref;
+
+    return $ref;
 }
 
 sub _seasonalize {
@@ -338,6 +347,11 @@ sub _get_coefficients {
     my $coef = $self->_coefficients->{$which};
     return $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 }
+
+has _naked_vol_cache => (
+    is      => 'ro',
+    default => sub { [] },
+);
 
 has _cached_economic_events_info => (
     is      => 'ro',
