@@ -576,7 +576,7 @@ sub _build__attrs_safe_for_eq_ticks_reuse {
 
 # This is not a comprehensive list of safe attributes, but includes the ones which
 # are slow enough to make use want to reuse them
-    return [qw(ticks_for_trend pricing_vol)];
+    return [qw(ticks_for_trend pricing_vol news_adjusted_pricing_vol)];
 }
 
 has economic_events_volatility_risk_markup => (
