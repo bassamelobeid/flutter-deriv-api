@@ -42,7 +42,14 @@ sub plural {
             $header =~ s/\[_([0-9]+)\]/%$1/g;
             die "Invalid expression for plural: $header" if $header =~ /\$|n\s*\(|[A-Za-mo-z]|nn/;
             $header =~ s/n/\$_[0]/g;
-            eval "\$self->{_plural} = sub { return $header }";    ## no critic
+            # eval "\$self->{_plural} = sub { return $header }";    ## no critic
+            my @where = (__LINE__ + 3, __FILE__);
+            $self->{_plural} = eval <<"EOF";    ## no critic
+#line $where[0] "$where[1]"
+sub {
+   return $header;
+}
+EOF
         } else {
             $self->{_plural} = sub { return $_[0] != 1 };
         }
