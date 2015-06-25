@@ -5,7 +5,6 @@ use warnings;
 use Carp;
 use BOM::Utility::Log4perl qw( get_logger );
 
-use BOM::Platform::Context ();
 use Mojo::Exception;
 
 use parent 'Rose::DB';
@@ -143,21 +142,7 @@ sub dbi_connect {
         "application_name=CLIENTPID:$$",
     );
 
-    my $request = BOM::Platform::Context::request();
-
-    # for daemon processes we don't set any statement timeout
-    # for BO it is 15 minutes
-    # for other UI stuff 30 seconds
-
-    # NOTE: we rely here on the default timeout being set in
-    # postgresql.conf to 30 seconds.
-
     my $dbh = DBI->connect(@params) || croak $DBI::errstr;
-    if ($request and $request->from_ui) {
-        $dbh->do("SET statement_timeout TO " . 900_000) if $request->backoffice;
-    } else {
-        $dbh->do("SET statement_timeout TO 0");
-    }
 
     return $dbh;
 }
