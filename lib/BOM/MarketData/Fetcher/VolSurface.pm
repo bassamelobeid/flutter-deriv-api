@@ -17,8 +17,8 @@ asking the instance for data has the effect of loading from DB.
 sub fetch_surface {
     my ($self, $args) = @_;
 
-    my $underlying   = $args->{underlying};
-    my $class        = 'BOM::MarketData::VolSurface::' . ucfirst lc $underlying->volatility_surface_type;
+    my $underlying = $args->{underlying};
+    my $class      = 'BOM::MarketData::VolSurface::' . ucfirst lc $underlying->volatility_surface_type;
 
     if (not can_load(modules => {$class => undef})) {
         croak "Could not load volsurface for " . $underlying->symbol;
