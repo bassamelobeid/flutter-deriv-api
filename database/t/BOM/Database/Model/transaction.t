@@ -6,7 +6,6 @@ use Test::NoWarnings;
 use DBI;
 use DBD::SQLite;
 use Test::Exception;
-use BOM::Platform::Client;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::Transaction;
 use BOM::Database::Model::Constants;
@@ -25,7 +24,6 @@ lives_ok {
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
-    bless $client, 'BOM::Platform::Client';
 
     $account = $client->set_default_account('USD');
     $account_id = $account->id;
