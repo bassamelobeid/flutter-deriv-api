@@ -70,7 +70,10 @@ before_install:
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-app.git /tmp/bom-app
     - pushd /tmp/bom-app && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bom-app /home/git/regentmarkets/
-
+    # bom-postgres
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-postgres.git /tmp/bom-postgres
+    - pushd /tmp/bom-postgres && ( git checkout $TRAVIS_BRANCH || true ) && popd
+    - sudo mv /tmp/bom-postgres /home/git/regentmarkets/
 install:
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
