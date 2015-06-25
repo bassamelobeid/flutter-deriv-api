@@ -24,7 +24,7 @@ DROP DATABASE regentmarkets;
 CREATE DATABASE regentmarkets;
 EOF
 
-/home/git/bom/database/bin/dbmigration.pl \
+/home/git/regentmarkets/bom-postgres/bin/dbmigration.pl \
   --yes --hostname="$PGHOST" --port="$PGPORT" --username=postgres --database=regentmarkets --dbset=rmg
 
 psql -w regentmarkets postgres <<EOF

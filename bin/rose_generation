@@ -11,13 +11,13 @@
 # EXAMPLE USAGE
 
 # to (re-)generate modules for all BOM tables in the main ("regentmarkets") database:
-#               database/bin/rose_generation  regentmarkets --all
+#               bin/rose_generation  regentmarkets --all
 
 # to (re-)generate modules for all BOM tables in the auth database:
-#               PGPORT=5435 database/bin/rose_generation  auth auth
+#               PGPORT=5435 bin/rose_generation  auth auth
 
 # to (re-)generate modules for all BOM tables in the users database:
-#               PGPORT=5436 database/bin/rose_generation  users users
+#               PGPORT=5436 bin/rose_generation  users users
 
 
 
@@ -37,16 +37,16 @@ rm -rf $TMP
 mkdir -p $TMP || exit 1
 
 # target location is relative to project root..
-if [ ! -d "database/lib/$DIR" ]; then
+if [ ! -d "lib/$DIR" ]; then
     echo "$0: should be run from project root"
     exit 1
 fi
 root=$PWD
 
 # temporarily hide any existing classes..
-( cd "database/lib/$DIR" && mkdir -p Rose && mv Rose hide_Rose ) || exit 1
+( cd "lib/$DIR" && mkdir -p Rose && mv Rose hide_Rose ) || exit 1
 # in case we get interrupted..
-trap "cd $root/database/lib/$DIR; [ -d hide_Rose ] && mv hide_Rose Rose" EXIT
+trap "cd $root/lib/$DIR; [ -d hide_Rose ] && mv hide_Rose Rose" EXIT
 
 failed=
 for schema in $schemas; do
@@ -55,11 +55,11 @@ for schema in $schemas; do
         subdir=$schema
         mkdir $TMP/$subdir
     fi
-    perl database/bin/generate_Rose_classes.pl $dbname $schema $TMP $subdir || { failed=1; break; }
+    perl bin/generate_Rose_classes.pl $dbname $schema $TMP $subdir || { failed=1; break; }
 done
 
 # now put everything back..
-cd "database/lib/$DIR"
+cd "lib/$DIR"
 mv hide_Rose Rose
 
 if [ "$failed" ]; then
