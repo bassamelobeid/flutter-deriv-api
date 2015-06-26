@@ -24,7 +24,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-use lib qw(/home/git/bom/cgi);
+use lib qw(/home/git/regentmarkets/bom/cgi);
 
 subtest 'client Balance' => sub {
     plan tests => 16;

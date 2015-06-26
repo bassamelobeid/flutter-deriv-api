@@ -86,7 +86,7 @@ sub PrintContentType {
     my $page_name = request()->http_path;
 
     $page_name =~ s/\/cgi\///g;
-    my $page_rules = YAML::CacheLoader::LoadFile('/home/git/bom/config/files/page_caching_rules.yml')->{$page_name};
+    my $page_rules = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/page_caching_rules.yml')->{$page_name};
     if (    request()->http_method eq 'GET'
         and $page_rules
         and $page_rules->{header}
