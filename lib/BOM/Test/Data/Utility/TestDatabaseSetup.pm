@@ -62,7 +62,7 @@ has 'changesets_location' => (
 
 sub _build_changesets_location {
     my $self = shift;
-    return '/home/git/bom/database/config/sql/' . $self->_db_migrations_dir . '/';
+    return '/home/git/regentmarkets/bom-postgres/config/sql/' . $self->_db_migrations_dir . '/';
 }
 
 has 'collectordb_changesets_location' => (
@@ -75,7 +75,7 @@ sub _build_collectordb_changesets_location {
     my $self = shift;
 
     if ($self->_db_migrations_dir eq 'rmgdb') {
-        return '/home/git/bom/database/config/sql/collectordb/';
+        return '/home/git/regentmarkets/bom-postgres/config/sql/collectordb/';
     }
     return;
 }

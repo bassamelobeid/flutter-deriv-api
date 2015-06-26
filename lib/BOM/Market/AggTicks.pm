@@ -25,7 +25,7 @@ use Cache::RedisDB;
 use Date::Utility;
 use Time::Duration::Concise;
 use Sereal::Encoder;
-use BOM::Market::Underlying;
+use BOM::System::Types;
 
 =head2 agg_interval
 
