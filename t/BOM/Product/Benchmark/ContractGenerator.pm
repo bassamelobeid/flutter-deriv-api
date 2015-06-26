@@ -193,7 +193,7 @@ has 'config' => (
 
 sub _build_config {
     my $self       = shift;
-    my $config_loc = "/home/git/bom/t/BOM/Product/Benchmark/config.yml";
+    my $config_loc = "/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/config.yml";
     die unless $config_loc;
     my $config = LoadFile($config_loc);
     return $config;

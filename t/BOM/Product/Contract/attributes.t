@@ -200,11 +200,7 @@ subtest 'Range on R_100.' => sub {
     my $pricing_args = $bet->pricing_args;
     is(ref $pricing_args, 'HASH', 'Pricing args is a HashRef.');
 
-    cmp_bag(
-        [keys %{$pricing_args}],
-        [qw(barrier1 barrier2 iv payouttime_code q_rate r_rate spot starttime t)],
-        'pricing_args has expected keys.'
-    );
+    cmp_bag([keys %{$pricing_args}], [qw(barrier1 barrier2 iv payouttime_code q_rate r_rate spot starttime t)], 'pricing_args has expected keys.');
 };
 
 subtest 'Exchange' => sub {
