@@ -71,8 +71,8 @@ spreads:
     display_name: "Spreads"
     explanation: ""
     available_types:
-      - BOM::Product::Contract::Spreadup
-      - BOM::Product::Contract::Spreaddown
+      - BOM::Product::Contract::Spreadu
+      - BOM::Product::Contract::Spreadd
 vanilla:
     offer: 0
     display_order: 0

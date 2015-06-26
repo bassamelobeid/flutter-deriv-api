@@ -26,7 +26,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 subtest 'spread up' => sub {
     my $params = {
-        bet_type         => 'SPREADUP',
+        bet_type         => 'SPREADU',
         currency         => 'USD',
         underlying       => 'R_100',
         date_start       => $now,

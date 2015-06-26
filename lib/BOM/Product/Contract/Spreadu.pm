@@ -1,16 +1,15 @@
-package BOM::Product::Contract::Spreaddown;
+package BOM::Product::Contract::Spreadu;
 
 use Moose;
 extends 'BOM::Product::Contract::Spread';
 
 # Static methods
-
-sub id              { return 260; }
-sub code            { return 'SPREADDOWN'; }
+sub id              { return 250; }
+sub code            { return 'SPREADU'; }
 sub category_code   { return 'spreads'; }
-sub display_name    { return 'spread down'; }
-sub sentiment       { return 'down'; }
-sub other_side_code { return 'SPREADUP'; }
+sub display_name    { return 'spread up'; }
+sub sentiment       { return 'up'; }
+sub other_side_code { return 'SPREADD'; }
 
 # The price of which the client bought at.
 has strike => (
@@ -20,7 +19,7 @@ has strike => (
 
 sub _build_strike {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->entry_tick->quote - $self->spread / 2);
+    return $self->underlying->pipsized_value($self->entry_tick->quote + $self->spread / 2);
 }
 
 has [qw(stop_loss_price stop_profit_price)] => (
@@ -30,12 +29,12 @@ has [qw(stop_loss_price stop_profit_price)] => (
 
 sub _build_stop_loss_price {
     my $self = shift;
-    return $self->strike + $self->stop_loss;
+    return $self->strike - $self->stop_loss;
 }
 
 sub _build_stop_profit_price {
     my $self = shift;
-    return $self->strike - $self->stop_profit;
+    return $self->strike + $self->stop_profit;
 }
 
 has is_expired => (
@@ -53,11 +52,11 @@ sub _build_is_expired {
 
     my $is_expired = 0;
     if ($high and $low) {
-        if ($high >= $self->stop_loss_price) {
+        if ($low <= $self->stop_loss_price) {
             $is_expired = 1;
             my $loss = $self->stop_loss * $self->amount_per_point;
             $self->value(-$loss);
-        } elsif ($low <= $self->stop_profit_price) {
+        } elsif ($high >= $self->stop_profit_price) {
             $is_expired = 1;
             my $profit = $self->stop_profit * $self->amount_per_point;
             $self->value($profit);
@@ -71,10 +70,10 @@ sub _recalculate_current_value {
     my $self = shift;
 
     return if $self->is_expired;
-    my $current_tick = $self->underlying->spot_tick;
+    my $current_tick = $self->current_tick;
     if ($current_tick) {
-        my $current_buy_price = $current_tick->quote + $self->spread / 2;
-        my $current_value     = ($self->strike - $current_buy_price) * $self->amount_per_point;
+        my $current_sell_price = $current_tick->quote - $self->spread / 2;
+        my $current_value      = ($current_sell_price - $self->strike) * $self->amount_per_point;
         $self->value($current_value);
     }
 
