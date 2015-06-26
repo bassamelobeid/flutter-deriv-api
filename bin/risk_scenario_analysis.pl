@@ -12,7 +12,7 @@ Determine a value for our curent open positions at risk.
 
 =cut
 
-use lib qw( /home/git/bom/cgi /home/git/bom/cgi/oop );
+use lib qw( /home/git/regentmarkets/bom/cgi /home/git/regentmarkets/bom/cgi/oop );
 
 use Moose;
 

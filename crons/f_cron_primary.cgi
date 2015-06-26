@@ -3,7 +3,7 @@ package main;
 use strict 'vars';
 
 BEGIN {
-    push @INC, "/home/git/bom/cgi";
+    push @INC, "/home/git/regentmarkets/bom/cgi";
 }
 
 use Date::Utility;
