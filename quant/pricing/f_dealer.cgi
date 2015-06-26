@@ -4,7 +4,7 @@ package main;
 use strict 'vars';
 use open qw[ :encoding(UTF-8) ];
 
-use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/bom/cgi);
+use lib qw(/home/git/regentmarkets/bom-backoffice /home/git/regentmarkets/bom/cgi);
 use f_brokerincludeall;
 use Try::Tiny;
 use Path::Tiny;
