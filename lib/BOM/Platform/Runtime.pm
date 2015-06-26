@@ -153,7 +153,7 @@ sub _build_website_list {
     my $self = shift;
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
-        definitions  => YAML::CacheLoader::LoadFile('/home/git/bom/config/files/websites.yml'),
+        definitions  => YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/websites.yml'),
         localhost    => $self->hosts->localhost,
     );
 }

@@ -43,7 +43,7 @@ before_install:
     # bom
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bom /home/git/
+    - sudo mv /tmp/bom /home/git/regentmarkets/
     # bom-utility
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
     - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
@@ -74,18 +74,21 @@ before_install:
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-app.git /tmp/bom-app
     - pushd /tmp/bom-app && ( git checkout $TRAVIS_BRANCH || true ) && popd
     - sudo mv /tmp/bom-app /home/git/regentmarkets/
-
+    # bom-postgres
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-postgres.git /tmp/bom-postgres
+    - pushd /tmp/bom-postgres && ( git checkout $TRAVIS_BRANCH || true ) && popd
+    - sudo mv /tmp/bom-postgres /home/git/regentmarkets/
 install:
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
-    - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom-platform/lib:$HOME/build/regentmarkets/bom/database/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
+    - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
     - sudo mkdir -p /home/git/regentmarkets/bom-platform
     - sudo cp -r $PWD/* /home/git/regentmarkets/bom-platform
     - ls /home/git/regentmarkets/bom-platform/config/
     - sudo mkdir /etc/rmg
     - sudo chmod 0777 /etc/rmg
     - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
-    - sudo cp -R /home/git/bom/config/environments/development/*.yml /etc/rmg/
+    - sudo cp -R /home/git/regentmarkets/bom/config/environments/development/*.yml /etc/rmg/
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
 
     # Setting up databases
@@ -99,51 +102,51 @@ install:
     - sudo pg_createcluster 9.3 main -p 5432 --locale 'en_US.UTF-8'
     - echo -n "listen_addresses='*'" > /tmp/tmp_postgresql_line.conf
     - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/main/postgresql.conf"
-    - sudo cp -f /home/git/bom/t/config/pg_hba.conf /etc/postgresql/9.3/main/
+    - sudo cp -f /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/main/
     - sudo pg_ctlcluster 9.3 main start
     - sudo -u postgres createdb -p 5432 regentmarkets
-    - sudo -u postgres psql -f /home/git/bom/database/config/sql/rmgdb/roles.sql
+    - sudo -u postgres psql -f /home/git/regentmarkets/bom-postgres/config/sql/rmgdb/roles.sql
     - sudo -u postgres psql -c "ALTER ROLE read WITH password 'letmein'"
     - sudo -u postgres psql -c "ALTER ROLE write WITH password 'letmein'"
     - sudo -u postgres psql -c "ALTER ROLE master_write WITH password 'letmein'"
     - sudo -u postgres psql -c "ALTER ROLE postgres WITH password 'letmein'"
     - sudo -u postgres -E printenv
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom/database/lib /home/git/bom/database/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=rmg'
+    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=rmg'
     - sudo -u postgres psql regentmarkets -c "INSERT INTO betonmarkets.broker_code VALUES ('CR'), ('VRTC'), ('MX'),('MLT');"
     # -- feed
     - sudo pg_createcluster 9.3 feed -p 5433 --locale 'en_US.UTF-8'
     - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/feed/postgresql.conf"
-    - sudo cp -f /home/git/bom/t/config/pg_hba.conf /etc/postgresql/9.3/feed/
+    - sudo cp -f /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/feed/
     - sudo pg_ctlcluster 9.3 feed start
     - sudo -u postgres createdb -p 5433 feed
-    - sudo -u postgres psql -p 5433 -f /home/git/bom/database/config/sql/rmgdb/roles.sql
+    - sudo -u postgres psql -p 5433 -f /home/git/regentmarkets/bom-postgres/config/sql/rmgdb/roles.sql
     - sudo -u postgres psql -p 5433 -c "ALTER ROLE read WITH password 'letmein'"
     - sudo -u postgres psql -p 5433 -c "ALTER ROLE write WITH password 'letmein'"
     - sudo -u postgres psql -p 5433 -c "ALTER ROLE master_write WITH password 'letmein'"
     - sudo -u postgres psql -p 5433 -c "ALTER ROLE postgres WITH password 'letmein'"
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom/database/lib /home/git/bom/database/bin/dbmigration.pl --yes --hostname="localhost" --port="5433" --username=postgres --database=feed --dbset=feed'
+    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5433" --username=postgres --database=feed --dbset=feed'
     # -- authdb
     - sudo pg_createcluster 9.3 authdb -p 5435 --locale 'en_US.UTF-8'
     - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/authdb/postgresql.conf"
-    - sudo cp -f /home/git/bom/t/config/pg_hba.conf /etc/postgresql/9.3/authdb/
+    - sudo cp -f /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/authdb/
     - sudo pg_ctlcluster 9.3 authdb start
     - sudo -u postgres createdb -p 5435 auth
-    - sudo -u postgres psql -p 5435 -f /home/git/bom/database/config/sql/rmgdb/roles.sql
+    - sudo -u postgres psql -p 5435 -f /home/git/regentmarkets/bom-postgres/config/sql/rmgdb/roles.sql
     - sudo -u postgres psql -p 5435 -c "ALTER ROLE read WITH password 'letmein'"
     - sudo -u postgres psql -p 5435 -c "ALTER ROLE write WITH password 'letmein'"
     - sudo -u postgres psql -p 5435 -c "ALTER ROLE master_write WITH password 'letmein'"
     - sudo -u postgres psql -p 5435 -c "ALTER ROLE postgres WITH password 'letmein'"
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom/database/lib /home/git/bom/database/bin/dbmigration.pl --yes --hostname="localhost" --port="5435" --username=postgres --database=auth --dbset=auth'
+    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5435" --username=postgres --database=auth --dbset=auth'
     # -- users db
     - sudo pg_createcluster 9.3 users -p 5436 --locale 'en_US.UTF-8'
     - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/users/postgresql.conf"
-    - sudo cp -f /home/git/bom/t/config/pg_hba.conf /etc/postgresql/9.3/users/
+    - sudo cp -f /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/users/
     - sudo pg_ctlcluster 9.3 users start
-    - sudo -u postgres psql -p 5436 -f /home/git/bom/database/config/sql/userdb/initialize_db.sql
+    - sudo -u postgres psql -p 5436 -f /home/git/regentmarkets/bom-postgres/config/sql/userdb/initialize_db.sql
     - sudo -u postgres psql -p 5436 -c "ALTER ROLE read WITH password 'letmein'"
     - sudo -u postgres psql -p 5436 -c "ALTER ROLE write WITH password 'letmein'"
     - sudo -u postgres psql -p 5436 -c "ALTER ROLE postgres WITH password 'letmein'"
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom/database/lib /home/git/bom/database/bin/dbmigration.pl --yes --hostname="localhost" --port="5436" --username=postgres --dbset=users'
+    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5436" --username=postgres --dbset=users'
     - export SHELL=/bin/bash
 
     - sudo mkdir -p /var/log/fixedodds
