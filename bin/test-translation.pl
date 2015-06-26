@@ -342,7 +342,8 @@ for my $lang (@lang) {
                         if ($_[$i] =~ /%d/) {
                             $found_percent_d++;
                         } else {
-                            # 
+                            # $i==2 means it's the singular parameter. This one is allowed to not contain
+                            # %d if the language is like English
                             push @no_percent_d, $i - 1 unless ($i == 2 and $lang_plural_is_like_english);
                         }
                     }
