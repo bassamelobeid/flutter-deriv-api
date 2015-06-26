@@ -4,6 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract';
 with 'BOM::Product::Role::SingleBarrier', 'BOM::Product::Role::ExpireAtEnd';
 
+use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract::Strike::Digit;
 use BOM::Product::Pricing::Engine::Digits;
 use BOM::Product::Pricing::Greeks::Digits;
