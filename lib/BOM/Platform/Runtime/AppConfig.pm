@@ -58,7 +58,7 @@ sub check_for_update {
 has _defdb => (
     is      => 'rw',
     lazy    => 1,
-    default => sub { YAML::CacheLoader::LoadFile('/home/git/bom/config/files/app_config_definitions.yml') },
+    default => sub { YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/app_config_definitions.yml') },
 );
 
 has 'data_set' => (

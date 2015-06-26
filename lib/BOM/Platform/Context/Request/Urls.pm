@@ -158,7 +158,7 @@ sub _is_page_cached {
 
 sub _build__page_caching_rules {
     my $self = shift;
-    return YAML::XS::LoadFile('/home/git/bom/config/files/page_caching_rules.yml');
+    return YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/page_caching_rules.yml');
 }
 
 sub _build__dealing_domain {

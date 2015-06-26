@@ -142,7 +142,7 @@ sub add_contract_categories {
     my $self = shift;
 
     my $fh = $self->pot_append_fh;
-    my @all_categories = map {BOM::Product::Contract::Category->new($_)} keys %{LoadFile('/home/git/bom/config/files/contract_categories.yml')};
+    my @all_categories = map {BOM::Product::Contract::Category->new($_)} keys %{LoadFile('/home/git/regentmarkets/bom/config/files/contract_categories.yml')};
     foreach my $contract_category (@all_categories) {
         if ($contract_category->display_name) {
             my $msgid = $self->msg_id($contract_category->display_name);
