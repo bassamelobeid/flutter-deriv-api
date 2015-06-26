@@ -43,7 +43,7 @@ before_install:
     # bom
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bom /home/git/
+    - sudo mv /tmp/bom /home/git/regentmarkets/
     # bom-utility
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
     - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
