@@ -63,7 +63,9 @@ function fetch_repo() {
     return 0
 }
 
-fetch_repo master     /home/git/regentmarkets/bom;                                 echo
+fetch_repo master     /home/git/regentmarkets/bom;                   echo
+fetch_repo master     /home/git/regentmarkets/bom-platform;          echo
+fetch_repo master     /home/git/regentmarkets/bom-postgres;          echo
 fetch_repo master     /home/git/regentmarkets/bom-app;               echo
 fetch_repo master     /home/git/regentmarkets/bom-utility;           echo
 fetch_repo master     /home/git/regentmarkets/bom-feed;              echo
@@ -74,6 +76,7 @@ fetch_repo master     /home/git/regentmarkets/bom-paymentapi;        echo
 fetch_repo master     /home/git/regentmarkets/cpan;                  echo
 fetch_repo master     /home/git/regentmarkets/chef;                  echo
 fetch_repo master     /home/git/regentmarkets/devbox;                echo
+fetch_repo master     /home/git/regentmarkets/travis-scripts;        echo
 fetch_repo gh-pages   /home/git/regentmarkets/binary-static-backoffice; echo
 fetch_repo production /home/git/regentmarkets/environment-manifests; echo
 fetch_repo gh-pages   /home/git/binary-com/binary-static;            echo
