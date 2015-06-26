@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 BEGIN {
-    push @INC, "/home/git/bom/cgi";
+    push @INC, "/home/git/regentmarkets/bom/cgi";
 }
 
 use strict;

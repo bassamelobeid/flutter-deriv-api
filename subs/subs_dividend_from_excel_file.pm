@@ -200,7 +200,7 @@ sub is_dividend_in_bounds {
 sub convert_SD_symbol_to_BOM_symbol {
     my $sdcode = shift @_;
 
-    my $content = YAML::XS::LoadFile('/home/git/bom/config/files/underlyings.yml');
+    my $content = YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/underlyings.yml');
     my %sd_bom  = map { $_ => $content->{$_}->{sd_symbol} } keys %$content;
     my %bom_sd  = reverse %sd_bom;
 
