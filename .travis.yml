@@ -37,6 +37,7 @@ before_install:
     # bom
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
     - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
+    - sudo cp -r /tmp/bom /home/git/regentmarkets/
     # bom-platform
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-platform.git /tmp/bom-platform
     - pushd /tmp/bom-platform && ( git checkout $TRAVIS_BRANCH || true ) && popd
@@ -44,7 +45,6 @@ before_install:
 
 install:
     - sudo mkdir -p /home/git
-    - sudo ln -s /tmp/bom /home/git/regentmarkets/bom
     - sudo cp -R /tmp/bom/config/environments/development/ /etc/rmg
     - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
