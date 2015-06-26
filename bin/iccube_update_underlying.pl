@@ -6,8 +6,8 @@ use warnings;
 use YAML::XS qw(LoadFile);
 use BOM::Database::ClientDB;
 
-my $u_file = LoadFile('/home/git/bom/config/files/underlyings.yml');
-my $u_subm = LoadFile('/home/git/bom/config/files/submarkets.yml');
+my $u_file = LoadFile('/home/git/regentmarkets/bom/config/files/underlyings.yml');
+my $u_subm = LoadFile('/home/git/regentmarkets/bom/config/files/submarkets.yml');
 
 my $dbh = BOM::Database::ClientDB->new({
         broker_code => 'FOG',
