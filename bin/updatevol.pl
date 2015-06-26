@@ -14,7 +14,7 @@ Updates our vols with the latest quotes we have received from Bloomberg.
 use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
-use lib qw( /home/git/bom/cgi );
+use lib qw( /home/git/regentmarkets/bom/cgi );
 
 use File::Find::Rule;
 

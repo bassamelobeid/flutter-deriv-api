@@ -98,7 +98,7 @@ around BUILDARGS => sub {
         unless $_[0];
 
     my %args   = ref $_[0] eq 'HASH' ? %{$_[0]} : (code => $_[0]);
-    my $config = LoadFile('/home/git/bom/config/files/contract_categories.yml');
+    my $config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_categories.yml');
     my $wanted = $config->{$args{code}};
 
     return $class->$orig(%args) unless $wanted;
