@@ -28,7 +28,7 @@ if ($databases) {
 }
 my $databases_option = '--dbs=' . join(',', @dbs);
 
-my $couch_maintenance = dirname(__FILE__) . '/../../platform/bin/bom_couchdb_maintenance.pm';
+my $couch_maintenance = dirname(__FILE__) . '/bom_couchdb_maintenance.pm';
 my $office_feed       = '\'https://couchdb:7%U4l$ogFl@office-feed.regentmarkets.com:6984/\'';
 
 if ($action eq 'start') {
