@@ -49,7 +49,7 @@ has _markets => (
 sub _build_all_parameters {
     my $self = shift;
 
-    return YAML::CacheLoader::LoadFile('/home/git/bom/config/files/underlyings.yml');
+    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-product/config/files/underlyings.yml');
 }
 
 sub _build__markets {

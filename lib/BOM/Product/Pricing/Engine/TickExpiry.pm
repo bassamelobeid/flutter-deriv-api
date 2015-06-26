@@ -28,7 +28,7 @@ has coeff => (
 
 sub _build_coeff {
     my $self = shift;
-    return YAML::CacheLoader::LoadFile('/home/git/bom/config/files/tick_trade_coefficients.yml')->{$self->bet->underlying->symbol};
+    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-product/config/files/tick_trade_coefficients.yml')->{$self->bet->underlying->symbol};
 }
 
 has _latest_ticks => (

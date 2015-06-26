@@ -16,7 +16,7 @@ use Date::Utility;
 use BOM::MarketData::Parser::Bloomberg::CSVParser::CorporateAction;
 
 my $bbdl                  = 'BOM::MarketData::Parser::Bloomberg::CSVParser::CorporateAction';
-my $dir                   = '/home/git/bom/t/data/bbdl/corporate_actions';
+my $dir                   = '/home/git/regentmarkets/bom-product/t/data/bbdl/corporate_actions';
 my $corporate_action_time = Date::Utility->new('2013-08-13');
 set_absolute_time($corporate_action_time->epoch);
 

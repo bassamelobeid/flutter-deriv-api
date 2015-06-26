@@ -2,7 +2,7 @@ package Benchmark::Runner::Superderivatives_EQ;
 
 use Moose;
 
-use lib ("/home/git/bom/t/BOM/Product");
+use lib ("/home/git/regentmarkets/bom-product/t/BOM/Product");
 use List::Util qw(max sum min);
 use File::Slurp;
 
@@ -42,7 +42,7 @@ sub run_dataset {
     my $self = shift;
 
     write_file($self->report_file->{all}, $self->csv_title . "\n");
-    my $path  = '/home/git/bom/t/BOM/Product/Benchmark/csv/superderivatives';
+    my $path  = '/home/git/regentmarkets/bom-product/t/BOM/Product/Benchmark/csv/superderivatives';
     my @files = @{$self->files};
     my @all_mid_diff;
     my ($all_results, $quanto_all_results);

@@ -20,7 +20,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 BOM::Market::AggTicks->new->flush;
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/bom/t/data/feed');
+BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-product/t/data/feed');
 
 # DO NOT REMOVE THE COMMENT
 #pg_dump -T dbix_migration --disable-triggers -Fc -a -f intraday_index_ticks.dump -U postgres -h localhost -p5433 feed -W
@@ -910,7 +910,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => Date::Utility->new,
     });
 
-my $data = Text::CSV::Slurp->load(file => '/home/git/bom/t/data/test_intraday_index.csv');
+my $data = Text::CSV::Slurp->load(file => '/home/git/regentmarkets/bom-product/t/data/test_intraday_index.csv');
 
 foreach my $d (@$data) {
     my $params = {

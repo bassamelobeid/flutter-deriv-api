@@ -63,7 +63,7 @@ function fetch_repo() {
     return 0
 }
 
-fetch_repo master     /home/git/bom;                                 echo
+fetch_repo master     /home/git/regentmarkets/bom-product;                                 echo
 fetch_repo master     /home/git/regentmarkets/bom-app;               echo
 fetch_repo master     /home/git/regentmarkets/bom-utility;           echo
 fetch_repo master     /home/git/regentmarkets/bom-feed;              echo

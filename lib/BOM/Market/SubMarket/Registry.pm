@@ -38,7 +38,7 @@ The default location of the YML file describing known server roles.
 =cut
 
 sub config_file {
-    return '/home/git/bom/config/files/submarkets.yml';
+    return '/home/git/regentmarkets/bom-product/config/files/submarkets.yml';
 }
 
 =head2 build_registry_object

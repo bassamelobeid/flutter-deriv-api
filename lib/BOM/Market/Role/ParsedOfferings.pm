@@ -34,7 +34,7 @@ has _contracts => (
 sub _build_parsed_contracts {
     my $self = shift;
 
-    my $aliases = YAML::CacheLoader::LoadFile('/home/git/bom/config/files/offerings/aliases.yml');
+    my $aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-product/config/files/offerings/aliases.yml');
 
     my $offerings = _resolve_aliases($self->_contracts, $aliases);
 
