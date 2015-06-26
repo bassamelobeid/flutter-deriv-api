@@ -1360,33 +1360,38 @@ Returns: HashRef, with:
 =cut
 
 sub sell_expired_contracts {
-    my $args   = shift;
-    my $client = $args->{client};
-    my $source = $args->{source};
+    my $args         = shift;
+    my $client       = $args->{client};
+    my $source       = $args->{source};
+    my $contract_ids = $args->{contract_ids};
 
     my $time_start = Time::HiRes::time;
 
     my $currency = $client->currency;
     my $loginid  = $client->loginid;
-    my @bets     = @{BOM::Database::DataMapper::FinancialMarketBet->new({
-                client_loginid => $loginid,
-                currency_code  => $currency,
-                broker_code    => $client->broker_code,
-                operation      => 'replica',
-            }
-            )->get_fmbs_by_loginid_and_currency({
-                exclude_sold => 1,
-                only_expired => $args->{only_expired},
-            })
-            || []};
 
-    return unless @bets;
+    my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+        client_loginid => $loginid,
+        currency_code  => $currency,
+        broker_code    => $client->broker_code,
+        operation      => 'replica',
+    });
+
+    my $bets =
+          (defined $contract_ids)
+        ? [map { $_->financial_market_bet_record } @{$mapper->get_fmb_by_id($contract_ids)}]
+        : $mapper->get_fmbs_by_loginid_and_currency({
+            exclude_sold => 1,
+            only_expired => $args->{only_expired},
+        });
+
+    return unless $bets and @$bets;
 
     my $now = Date::Utility->new;
     my @bets_to_sell;
     my @transdata;
     my %stats_attempt;
-    for my $bet (@bets) {
+    for my $bet (@$bets) {
         my $contract = produce_contract($bet->{short_code}, $currency);
         $stats_attempt{$BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}}++;
         next if not $contract->is_expired or $contract->category_code eq 'legacy';
@@ -1419,6 +1424,7 @@ sub sell_expired_contracts {
     my $virtual = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv  = BOM::System::Config::env;
     my @tags    = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:expired");
+    push @tags, "source:$source" if (defined $source);
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
     }
@@ -1444,7 +1450,7 @@ sub sell_expired_contracts {
 
     return unless $sold and @$sold;    # nothing has been sold
 
-    my $skip_contract  = @bets - @$sold;
+    my $skip_contract  = @$bets - @$sold;
     my $total_credited = 0;
     my %stats_success;
     for my $t (@$sold) {
