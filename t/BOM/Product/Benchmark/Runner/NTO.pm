@@ -1,7 +1,7 @@
 package Benchmark::Runner::NTO;
 
 use Moose;
-use lib qw(/home/git/bom/t/BOM/Product);
+use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
 use BOM::Product::ContractFactory qw( produce_contract );
 use Benchmark::CSVParser::NTO;
 use Format::Util::Numbers qw(roundnear);
@@ -26,7 +26,7 @@ has _report_file => (
 sub run_dataset {
     my $self = shift;
 
-    my $nto_csv = '/home/git/bom/t/BOM/Product/Benchmark/csv/nto/NextTopOption.csv';
+    my $nto_csv = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/nto/NextTopOption.csv';
     my $parser  = Benchmark::CSVParser::NTO->new(
         nto_csv => $nto_csv,
     );

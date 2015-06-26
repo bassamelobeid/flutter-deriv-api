@@ -2,7 +2,7 @@ package Benchmark::Runner::Superderivatives_FX;
 
 use Moose;
 
-use lib ("/home/git/bom/t/BOM/Product");
+use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
 
 use File::Slurp qw(append_file write_file);
 use List::Util qw(sum max);
@@ -59,7 +59,7 @@ sub run_dataset {
     my $num_results;
 
     foreach my $file (@files) {
-        my $file_loc = '/home/git/bom/t/BOM/Product/Benchmark/csv/superderivatives';
+        my $file_loc = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/superderivatives';
         my $file     = $file_loc . '/' . $file . '.csv';
 
         my $records = Benchmark::CSVParser::Superderivatives_FX->new(

@@ -13,7 +13,7 @@ use Test::MockModule;
 use JSON qw(decode_json);
 use File::Spec;
 
-use lib qw(/home/git/bom/t/BOM/Product);
+use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
 use BOM::Test::Data::Utility::UnitTestRedis
 
     use Benchmark::Runner::IntradayFX;
@@ -98,7 +98,7 @@ sub script_run {
 sub analyse_report {
     my ($self, $report, $test) = @_;
 
-    my $benchmark = LoadFile('/home/git/bom/t/BOM/Product/Benchmark/benchmark.yml');
+    my $benchmark = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/benchmark.yml');
     if ($test eq 'intraday_historical') {
         my $test_benchmark = $benchmark->{intraday};
         foreach my $bet_type (keys %$report) {
