@@ -626,7 +626,7 @@ system:
         cgi:
           description: "Directory where our cgi code is stored"
           isa: Str
-          default: "/home/git/regentmarkets/bom-product/cgi"
+          default: "/home/git/regentmarkets/bom/cgi"
         www:
           description: "Directory where www index is located"
           isa: Str

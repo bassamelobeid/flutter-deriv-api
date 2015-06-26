@@ -2,7 +2,7 @@ package Benchmark::Runner::Bloomberg;
 
 use Moose;
 
-use lib ("/home/git/regentmarkets/bom-product/t/BOM/Product");
+use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
 use BOM::Product::Benchmark::ContractGenerator;
 use File::Slurp;
 use List::Util qw(sum max);
@@ -35,7 +35,7 @@ has report_file => (
 sub run_dataset {
     my $self = shift;
 
-    my $file_loc = '/home/git/regentmarkets/bom-product/t/BOM/Product/Benchmark/csv/bloomberg';
+    my $file_loc = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/bloomberg';
     my @files    = @{$self->files};
 
     my $result_all;

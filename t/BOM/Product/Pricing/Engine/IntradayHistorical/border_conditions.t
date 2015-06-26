@@ -29,7 +29,7 @@ foreach my $symbol (qw(NYSE LSE TSE FSE ASX FOREX SES)) {
         });
 }
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom-product/t/data/feed/');
+BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
 

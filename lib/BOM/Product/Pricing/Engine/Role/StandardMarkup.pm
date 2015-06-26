@@ -799,7 +799,7 @@ has _trend_data => (
 sub _build__trend_data {
     my $self = shift;
 
-    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-product/config/files/trend_calibration.yml');
+    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/trend_calibration.yml');
 }
 
 1;

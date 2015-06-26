@@ -49,7 +49,7 @@ sub _build__calibration_coefficient {
     my $self = shift;
 
     my $bet  = $self->bet;
-    my $coef = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-product/config/files/intraday_index_calibration_coefficient.yml')->{$bet->underlying->symbol};
+    my $coef = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/intraday_index_calibration_coefficient.yml')->{$bet->underlying->symbol};
     my %ref;
 
     foreach my $key (keys %$coef) {

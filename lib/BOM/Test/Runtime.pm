@@ -28,7 +28,7 @@ use BOM::Test::Runtime::MockCouchDS;
 use YAML::CacheLoader;
 
 sub _normal {
-    my $app_settings = '/home/git/regentmarkets/bom-product/t/data/app_settings.yml';
+    my $app_settings = '/home/git/regentmarkets/bom/t/data/app_settings.yml';
     if (!-f $app_settings) {
         $app_settings = '../' . $app_settings;
     }
