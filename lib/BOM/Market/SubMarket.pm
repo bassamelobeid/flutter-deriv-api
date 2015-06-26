@@ -238,6 +238,11 @@ has base_spread => (
     default => 0,
 );
 
+has spread_divisor => (
+    is      => 'ro',
+    default => 1,
+);
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

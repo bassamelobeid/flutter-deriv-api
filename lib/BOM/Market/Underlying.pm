@@ -1909,7 +1909,7 @@ sub breaching_tick {
     return $self->feed_api->get_first_tick(%args);
 }
 
-has base_spread => (
+has [qw(base_spread spread_divisor)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -1917,6 +1917,10 @@ has base_spread => (
 sub _build_base_spread {
     my $self = shift;
     return $self->submarket->base_spread || $self->market->base_spread;
+}
+
+sub _build_spread_divisor {
+    return $self->submarket->spread_divisor || $self->market->spread_divisor;
 }
 
 =head2 use_official_ohlc

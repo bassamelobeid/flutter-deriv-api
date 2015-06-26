@@ -86,7 +86,8 @@ sub BUILD {
     return;
 }
 
-has spread => (
+# spread_divisor - needed to reproduce the digit corresponding to one point
+has [qw(spread spread_divisor)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -94,6 +95,11 @@ has spread => (
 sub _build_spread {
     my $self = shift;
     return $self->underlying->base_spread;
+}
+
+sub _build_spread_divisor {
+    my $self = shift;
+    return $self->underlying->spread_divisor;
 }
 
 has [qw(current_tick current_spot translated_display_name)] => (
