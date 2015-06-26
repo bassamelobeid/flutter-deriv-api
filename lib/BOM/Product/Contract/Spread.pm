@@ -228,8 +228,8 @@ sub _build_staking_limits {
     my $contract_specs = get_contract_specifics({
         underlying_symbol => $underlying->symbol,
         contract_category => $self->category_code,
-        expiry_type       => 'intraday',                                                                   # hardcoded
-        start_type        => 'spot',                                                                       #hardcoded
+        expiry_type       => 'intraday',                                                                  # hardcoded
+        start_type        => 'spot',                                                                      #hardcoded
         barrier_category  => $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category_code}->[0],
     });
 
@@ -243,7 +243,7 @@ sub _build_staking_limits {
     my $stake_max = $payout_max;
 
     my $payout_min = 1;
-    my $stake_min = $payout_min / 2;
+    my $stake_min  = $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
     return {

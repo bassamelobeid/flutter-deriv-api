@@ -1920,6 +1920,7 @@ sub _build_base_spread {
 }
 
 sub _build_spread_divisor {
+    my $self = shift;
     return $self->submarket->spread_divisor || $self->market->spread_divisor;
 }
 
