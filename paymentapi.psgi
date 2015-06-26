@@ -4,9 +4,9 @@ use warnings;
 use lib qw!/etc/perl
     /home/git/regentmarkets/cpan/local/lib/perl5
     /home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi
-    /home/git/bom/lib
+    /home/git/regentmarkets/bom/lib
     /home/git/regentmarkets/bom-paymentapi/lib
-    /home/git/bom/database/lib!;
+    /home/git/regentmarkets/bom/database/lib!;
 
 use Plack::Builder;
 
