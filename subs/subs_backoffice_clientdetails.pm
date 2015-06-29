@@ -119,6 +119,7 @@ sub print_client_details {
         show_tnc_status         => (
                    $client->landing_company->short eq 'malta'
                 or $client->landing_company->short eq 'maltainvest'
+                or $client->landing_company->short eq 'iom'
             ) ? 1 : 0,
         tnc_approval_status => $tnc_status,
         client_tnc_version  => $tnc_status ? $tnc_status->reason : '',
