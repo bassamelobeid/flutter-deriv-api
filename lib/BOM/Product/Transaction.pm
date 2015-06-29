@@ -39,7 +39,6 @@ has client => (
 
 has contract => (
     is  => 'rw',
-    isa => 'BOM::Product::Contract',
 );
 
 has price => (
@@ -175,7 +174,11 @@ sub stats_start {
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
     if ($what eq 'buy') {
-        push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
+        if ($self->contract->category_code ne 'spreads') {
+            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
+        } else {
+            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->stop_type);
+        }
     } elsif ($what eq 'sell') {
         push @{$tags->{tags}}, "sell_type:manual";
     }

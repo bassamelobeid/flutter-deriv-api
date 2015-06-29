@@ -27,8 +27,8 @@ has currency => (
     required => 1,
 );
 
-has amount_per_point => (
-    is       => 'ro',
+has [qw(stop_loss stop_profit amount_per_point)] => (
+    is       => 'rw',
     isa      => 'PositiveNum',
     required => 1,
 );
@@ -60,16 +60,15 @@ has value => (
     init_arg => undef,
 );
 
-has [qw(stop_loss stop_profit)] => (
-    is       => 'rw',
-    isa      => 'PositiveNum',
-    required => 1,
-);
-
 # point or dollar amount
 has stop_type => (
     is       => 'ro',
     required => 1,
+);
+
+has is_atm_bet => (
+    is => 'ro',
+    default => 0,
 );
 
 sub BUILD {
@@ -332,6 +331,12 @@ sub _validate_underlying {
             };
     }
     return @err;
+}
+
+sub payout {
+    my $self = shift;
+    $self->_recalculate_current_value;
+    return max(0, $self->value - $self->buy_price);
 }
 
 no Moose;
