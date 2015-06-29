@@ -53,8 +53,8 @@ subtest everything => sub {
     lives_ok {
         $updater->run();
         like($updater->report->{error}->[0], qr/unregconized bloomberg symbol/i, 'added invalid Bloomberg symbol to skipped list');
-        ok !$updater->report->{NIFTY}->{success}, 'NIFTY failed to update because of incorrect date';
-        like($updater->report->{NIFTY}->{reason}, qr/Incorrect date/, 'added incorrect date symbol to skipped list');
+        ok !$updater->report->{N225}->{success}, 'N225 failed to update because of invalid date';
+        like($updater->report->{N225}->{reason}, qr/Incorrect date/, 'added incorrect date symbol to skipped list');
     }
 
 };
@@ -69,9 +69,9 @@ subtest 'valid index' => sub {
     $updater->mock('_passes_sanity_check', sub { '' });
     lives_ok {
         $updater->run();
-        ok($updater->report->{HSCEI}->{success}, 'HSI is updated');
+        ok($updater->report->{HSI}->{success}, 'HSI is updated');
     }
-    'ohlc for HSCEI updated successfully';
+    'ohlc for HSI updated successfully';
 
 };
 
@@ -85,9 +85,9 @@ subtest 'valid stocks' => sub {
     $updater->mock('_passes_sanity_check', sub { '' });
     lives_ok {
         $updater->run();
-        ok($updater->report->{AUWBC}->{success}, 'AUWBC is updated');
+        ok($updater->report->{FPFP}->{success}, 'FPFP is updated');
     }
-    'ohlc for AUWBC updated successfully';
+    'ohlc for FPFP updated successfully';
 };
 
 done_testing;
