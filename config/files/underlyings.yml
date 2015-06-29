@@ -5058,7 +5058,7 @@ frxBROUSD:
   outlier_tick: 0.1
 frxEURAUD:
   asset: EUR
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/AUD
   exchange_name: FOREX
@@ -5104,7 +5104,7 @@ frxEURBRL:
   symbol: frxEURBRL
 frxEURCAD:
   asset: EUR
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/CAD
   exchange_name: FOREX
@@ -5214,7 +5214,7 @@ frxEURDKK:
   symbol: frxEURDKK
 frxEURGBP:
   asset: EUR
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/GBP
   exchange_name: FOREX
@@ -5300,7 +5300,7 @@ frxEURINR:
   symbol: frxEURINR
 frxEURJPY:
   asset: EUR
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/JPY
   exchange_name: FOREX
@@ -5481,7 +5481,7 @@ frxEURSGD:
   symbol: frxEURSGD
 frxEURUSD:
   asset: EUR
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/USD
   exchange_name: FOREX

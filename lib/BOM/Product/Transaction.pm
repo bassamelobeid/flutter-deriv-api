@@ -354,6 +354,23 @@ sub calculate_limits {
             };
     }
 
+    my %euro_pairs = (
+        frxEURUSD => 1,
+        frxEURJPY => 1,
+        frxEURCAD => 1,
+        frxEURNZD => 1,
+        frxEURGBP => 1,
+        frxEURAUD => 1,
+    );
+    if ($euro_pairs{$contract->underlying->symbol}) {
+        push @{$self->limits->{specific_turnover_limits}},
+            +{
+            name    => 'euro_pairs_turnover_limit',
+            limit   => $ql->euro_pairs_turnover_limit,
+            symbols => [map { {n => $_} } keys %euro_pairs],
+            };
+    }
+
     return;
 }
 
