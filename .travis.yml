@@ -26,9 +26,7 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     ## fix hostname
-#    - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
- #   - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
-  #  - sudo service hostname restart
+    - /tmp/travis-scripts/fixHostName.sh
     ### prereqs
     - /tmp/travis-scripts/couchdb.sh
     - /tmp/travis-scripts/clone.sh regentmarkets/cpan
