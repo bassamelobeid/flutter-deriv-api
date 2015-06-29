@@ -6472,7 +6472,6 @@ frxEURNZD:
     symbols:
     - EURNZD Curncy
     vol_source: BGN
-  contracts: euro_pairs_fx
   commission_level: 3
   display_name: EUR/NZD
   exchange_name: FOREX
