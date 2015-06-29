@@ -23,13 +23,13 @@ initialize_realtime_ticks_db();
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'GBP',
+        symbol => 'EUR',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol       => 'LSE',
+        symbol       => 'EURONEXT',
         market_times => {
             standard => {
                 daily_close      => '16h30m',
@@ -47,32 +47,32 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
-        symbol => 'UKAAL',
+        symbol => 'FPFP',
         date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
-        symbol        => 'UKAAL',
+        symbol        => 'FPFP',
         recorded_date => Date::Utility->new,
     });
 
 my $date       = Date::Utility->new('2013-03-27');
-my $opening    = BOM::Market::Underlying->new('UKAAL')->exchange->opening_on($date);
-my $underlying = BOM::Market::Underlying->new('UKAAL');
+my $opening    = BOM::Market::Underlying->new('FPFP')->exchange->opening_on($date);
+my $underlying = BOM::Market::Underlying->new('FPFP');
 my $starting   = $underlying->exchange->opening_on(Date::Utility->new('2013-03-27'))->plus_time_interval('50m');
 my $entry_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'UKAAL',
+    underlying => 'FPFP',
     epoch      => $starting->epoch,
     quote      => 100
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'UKAAL',
+    underlying => 'FPFP',
     epoch      => $starting->epoch + 30,
     quote      => 111
 });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'UKAAL',
+    underlying => 'FPFP',
     epoch      => $starting->epoch + 90,
     quote      => 80
 });
@@ -212,7 +212,7 @@ subtest 'one action' => sub {
         cmp_ok $bet->barrier->as_absolute, '==', 80.00, 'original quote adjusted by corporate action';
         my $expiry = $bet->date_expiry->truncate_to_day;
         BOM::Test::Data::Utility::FeedTestDatabase::create_ohlc_daily({
-            underlying => 'UKAAL',
+            underlying => 'FPFP',
             epoch      => $expiry->epoch,
             close      => 79,
             high       => 79

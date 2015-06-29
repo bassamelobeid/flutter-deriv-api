@@ -2,7 +2,7 @@
 corporate_action:
   class_name: 'BOM::MarketData::CorporateAction'
   data:
-    symbol: 'UKAAL'
+    symbol: 'FPFP'
     actions:
       80004829: {type: 'DVD_CASH', flag: 'N', description: 'Test Corporate Action', modifier: 'divide', value: 1.234}
 

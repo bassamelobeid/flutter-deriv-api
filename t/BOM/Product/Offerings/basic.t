@@ -139,12 +139,14 @@ subtest 'get_historical_pricer_durations' => sub {
     use BOM::Market::Underlying;
     my $eu = BOM::Market::Underlying->new('frxEURUSD');
 
-    ok exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch has intraday durations';
+    ok !exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch intraday durations removed';
     ok !exists $eu_tnt->{daily},   '... but not daily';
     ok !exists $eu_tnt->{tick},    '... nor tick';
-
-    cmp_ok $eu_cp->{intraday}->{min}->seconds, '<', $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
-    cmp_ok $eu_cp->{intraday}->{max}->seconds, '<', $eu_tnt->{intraday}->{max}->seconds, '... but touchnotouch can run for longer';
+    SKIP: {
+        skip 'skip because of euro pairs offerings adjustment', 2 unless exists $eu_tnt->{intraday};
+        cmp_ok $eu_cp->{intraday}->{min}->seconds, '<', $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
+        cmp_ok $eu_cp->{intraday}->{max}->seconds, '<', $eu_tnt->{intraday}->{max}->seconds, '... but touchnotouch can run for longer';
+    };
 
     my $r100_digits_tick = get_permitted_expiries({
         underlying_symbol => 'R_100',

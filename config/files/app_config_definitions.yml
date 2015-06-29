@@ -495,6 +495,11 @@ quants:
           isa: Num
           default: 5000
           global: 1
+        euro_pairs_turnover_limit:
+          description: "Daily euro pairs turnover limit per client"
+          isa: Num
+          default: 30000
+          global: 1
         smart_index_turnover_limit:
           description: "Daily smart index turnover limit per client"
           isa: Num
@@ -528,11 +533,6 @@ quants:
           description: "Determine whether we use market rates or implied rates"
           isa: Str
           default: "market"
-          global: 1
-        volatility_source:
-          description: "Determine the type of volatility format that we process from Bloomberg."
-          isa: Str
-          default: "OVDV"
           global: 1
         economic_announcements_source:
           description: "Determine the economic annoucements source to be used in bet pricing which is either forexfactory or bloomberg."

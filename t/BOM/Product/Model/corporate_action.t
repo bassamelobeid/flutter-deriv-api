@@ -15,7 +15,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
 subtest 'general' => sub {
     plan tests => 5;
-    lives_ok { BOM::MarketData::CorporateAction->new(symbol => 'UKAAL') } 'creates corporate action object with symbol';
+    lives_ok { BOM::MarketData::CorporateAction->new(symbol => 'FPFP') } 'creates corporate action object with symbol';
     throws_ok { BOM::MarketData::CorporateAction->new } qr/Attribute \(symbol\) is required/, 'throws exception if symbol is not provided';
     lives_ok {
         my $corp = BOM::MarketData::CorporateAction->new(symbol => 'UKHBSA');
@@ -31,7 +31,7 @@ subtest 'save new corporate actions' => sub {
     plan tests => 7;
     my $now = Date::Utility->new;
     lives_ok {
-        my $corp = BOM::MarketData::CorporateAction->new(symbol => 'UKAAL');
+        my $corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
         my $actions = $corp->actions;
         is keys %$actions, 1, 'has only one action';
         my $new_actions = {
@@ -43,12 +43,12 @@ subtest 'save new corporate actions' => sub {
                 flag           => 'N'
             }};
         my $new_corp = BOM::MarketData::CorporateAction->new(
-            symbol        => 'UKAAL',
+            symbol        => 'FPFP',
             actions       => $new_actions,
             recorded_date => $now
         );
         ok $new_corp->save, 'saves new action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'UKAAL');
+        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 2, 'has two actions';
     }
@@ -64,12 +64,12 @@ subtest 'save new corporate actions' => sub {
                 flag           => 'N'
             }};
         my $no_dup_corp = BOM::MarketData::CorporateAction->new(
-            symbol        => 'UKAAL',
+            symbol        => 'FPFP',
             actions       => $new_actions,
             recorded_date => $now,
         );
         ok $no_dup_corp->save, 'try to save duplicate action';
-        my $after_save = BOM::MarketData::CorporateAction->new(symbol => 'UKAAL');
+        my $after_save = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
         my $action = $after_save->actions;
         cmp_ok($action->{1122334}->{description}, "ne", 'Duplicate action', 'did not save duplicate action');
     }
@@ -90,12 +90,12 @@ subtest 'update existing corporate actions' => sub {
                 flag           => 'U'
             }};
         my $new_corp = BOM::MarketData::CorporateAction->new(
-            symbol        => 'UKAAL',
+            symbol        => 'FPFP',
             actions       => $new_actions,
             recorded_date => $now
         );
         ok $new_corp->save, 'saves new action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'UKAAL');
+        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 2, 'has two actions';
         my $updated_action = $new_actions_from_couch->{$action_id};
@@ -119,12 +119,12 @@ subtest 'cancel existing corporate actions' => sub {
                 flag           => 'D'
             }};
         my $new_corp = BOM::MarketData::CorporateAction->new(
-            symbol        => 'UKAAL',
+            symbol        => 'FPFP',
             actions       => $new_actions,
             recorded_date => $now
         );
         ok $new_corp->save, 'saves new action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'UKAAL');
+        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 1, 'has one actions';
         ok !$new_actions_from_couch->{$action_id}, 'action deleted from couch';
@@ -146,12 +146,12 @@ subtest 'save critical actions' => sub {
                 flag            => 'N'
             }};
         my $new_corp = BOM::MarketData::CorporateAction->new(
-            symbol        => 'UKAAL',
+            symbol        => 'FPFP',
             actions       => $new_actions,
             recorded_date => $now
         );
         ok $new_corp->save, 'saves critical action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'UKAAL');
+        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 2, 'has two actions';
         ok $new_actions_from_couch->{$action_id}, 'critical action saved on couch';
