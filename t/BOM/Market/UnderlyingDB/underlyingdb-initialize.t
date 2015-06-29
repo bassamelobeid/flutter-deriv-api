@@ -47,10 +47,6 @@ my $sample_expected   = {
     'feed_license'    => 'realtime',
     'quoted_currency' => 'EUR',
     'sd_symbol'       => 'CAC',
-    'bbdl'            => {
-        region  => 'europe',
-        symbols => ['CAC Index'],
-    },
 };
 eq_or_diff $sample_underlying, $sample_expected, "correct data for sample underlying";
 

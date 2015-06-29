@@ -7,20 +7,19 @@ use List::MoreUtils qw(notall);
 use Scalar::Util qw(looks_like_number);
 use Text::CSV::Slurp;
 
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use Bloomberg::FileDownloader;
 use BOM::Market::Currency;
 use BOM::Market::UnderlyingDB;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
-
+use Bloomberg::CurrencyConfig;
 has file => (
     is         => 'ro',
     lazy_build => 1,
 );
 
 sub _build_file {
-    my @files = BOM::MarketData::Parser::Bloomberg::FileDownloader->new->grab_files({file_type => 'interest_rate'});
+    my @files = Bloomberg::FileDownloader->new->grab_files({file_type => 'interest_rate'});
     return $files[0];
 }
 
@@ -94,12 +93,11 @@ sub _passes_sanity_check {
 
 sub _get_currency_and_term_from_BB_ticker {
     my ($self, $ticker) = @_;
+    my %tickerlist = Bloomberg::CurrencyConfig::get_interest_rate_list();
 
-    my $tickerlist = BOM::MarketData::Parser::Bloomberg::RequestFiles::tickerlist_interest_rates();
-
-    foreach my $currency (keys %{$tickerlist}) {
-        foreach my $term (keys %{$tickerlist->{$currency}}) {
-            if ($ticker eq $tickerlist->{$currency}->{$term}) {
+    foreach my $currency (keys %tickerlist) {
+        foreach my $term (keys %{$tickerlist{$currency}}) {
+            if ($ticker eq $tickerlist{$currency}{$term}) {
                 return {
                     currency => $currency,
                     term     => $term

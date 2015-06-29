@@ -23,7 +23,10 @@ Returns a hash reference of underlyings which has corporate actions
 sub get_underlyings_with_corporate_action {
     my $self = shift;
 
-    my @stocks_list = values %{BOM::Market::UnderlyingDB->instance->bbdl_bom_mapping_for({market => 'stocks'})};
+    my @stocks_list = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market            => ['stocks'],
+        contract_category => 'callput'
+    );
 
     my %list;
     foreach my $underlying_symbol (@stocks_list) {

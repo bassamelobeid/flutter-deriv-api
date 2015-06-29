@@ -534,11 +534,6 @@ quants:
           isa: Str
           default: "market"
           global: 1
-        volatility_source:
-          description: "Determine the type of volatility format that we process from Bloomberg."
-          isa: Str
-          default: "OVDV"
-          global: 1
         economic_announcements_source:
           description: "Determine the economic annoucements source to be used in bet pricing which is either forexfactory or bloomberg."
           isa: Str
