@@ -32,8 +32,7 @@ unit_test_system:
 
 unit_test_bdd:
 	@$M
-	(cd /home/git/regentmarkets/bdd && prove -Ilib -I/home/git/regentmarkets/bom-postgres/lib -I/home/git/regentmarkets/bom/lib bdd.t)
-
+	(cd /home/git/regentmarkets/bdd && PERL5OPT="-Ilib  -I/home/git/regentmarkets/bom-postgres/lib -I/home/git/regentmarkets/bom/lib -MTest::MockTime::HiRes" pherkin -l)
 unit_test_myaffiliates_extended:
 	@export EXTENDED_TESTING=1; unset SKIP_MYAFFILIATES; $(PROVE) -r t/BOM/Platform/MyAffiliates/
 
