@@ -5995,7 +5995,7 @@ frxEURAUD:
     symbols:
     - EURAUD Curncy
     vol_source: BGN
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/AUD
   exchange_name: FOREX
@@ -6061,7 +6061,7 @@ frxEURCAD:
     symbols:
     - EURCAD Curncy
     vol_source: BGN
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/CAD
   exchange_name: FOREX
@@ -6227,7 +6227,7 @@ frxEURGBP:
     symbols:
     - EURGBP Curncy
     vol_source: BGN
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/GBP
   exchange_name: FOREX
@@ -6341,7 +6341,7 @@ frxEURJPY:
     symbols:
     - EURJPY Curncy
     vol_source: BGN
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/JPY
   exchange_name: FOREX
@@ -6472,6 +6472,7 @@ frxEURNZD:
     symbols:
     - EURNZD Curncy
     vol_source: BGN
+  contracts: euro_pairs_fx
   commission_level: 3
   display_name: EUR/NZD
   exchange_name: FOREX
@@ -6625,7 +6626,7 @@ frxEURUSD:
     symbols:
     - EURUSD Curncy
     vol_source: BGN
-  contracts: active_fx
+  contracts: euro_pairs_fx
   commission_level: 1
   display_name: EUR/USD
   exchange_name: FOREX
