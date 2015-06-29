@@ -9,7 +9,7 @@ use File::Slurp;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -28,7 +28,7 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
     code_exit_BO();
 }
 
-my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
+my $bbdl = Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 
@@ -36,7 +36,7 @@ my $message;
 if (length($filename) >= 25) {
     $message = "<font color=red>Error: filename length exceeds 25 characters.</font>";
 } else {
-    my $temp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
+    my $temp_dir = '/tmp';
     write_file($temp_dir . '/' . $filename, $content);
 
     my $replyfile;

@@ -227,7 +227,6 @@ sub get_settings_by_group {
                 quants.client_limits.payout_per_symbol_and_bet_type_limit
                 quants.market_data.extra_vol_diff_by_delta
                 quants.market_data.volsurface_calibration_error_threshold
-                quants.market_data.volatility_source
                 quants.market_data.interest_rates_source
                 quants.market_data.economic_announcements_source
                 quants.underlyings.disable_autoupdate_vol

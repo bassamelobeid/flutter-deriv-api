@@ -9,7 +9,7 @@ use Carp qw( croak );
 use f_brokerincludeall;
 
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -20,7 +20,7 @@ my $cgi       = CGI->new;
 my $server_ip = $cgi->param('server');
 my $broker    = $cgi->param('broker');
 
-my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
+my $bbdl = Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 

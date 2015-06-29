@@ -8,8 +8,8 @@ use f_brokerincludeall;
 use subs::subs_dividend_from_excel_file;
 use BOM::Market::UnderlyingDB;
 use BOM::MarketData::Fetcher::CorporateAction;
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Bloomberg::FileDownloader;
+use Bloomberg::RequestFiles;
 use BOM::MarketData::HolidayCalendar qw( generate_holiday_upload_form );
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -42,31 +42,19 @@ Bar("Update interest rate");
 print get_update_interest_rates_form();
 
 Bar("BLOOMBERG DATA LICENSE");
-print "BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requests to the Bloomberg system.
+print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requests to the Bloomberg system.
  There are 2 FTP servers. You can upload the REQUEST (.req) files to either server.
- You can list the contents of the FTP servers by using the 'List Directory' function.
+ You can list the contents of the FTP servers by using the List Directory function.
  <br>Note1: to view currently scheduled batch files, upload the JYSscheduled.req request file.
  Then wait a minute and download scheduled.out.
-";
+<br>Note2: BBDL TIME field should be in the form HHMM, where HH=00-23 and MM=00-59 and should be in TOKYO time zone as our account attached to TOKYO . TOKYO time= GMT+9.</p>';
 
 if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
     print
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }
 
-my $start = Date::Utility->new;
-my $end   = Date::Utility->new($start->epoch + (86400 * 200));
-my $rq    = BOM::MarketData::Parser::Bloomberg::RequestFiles->new;
-
-# On 26Sept07, BBDL informed that the TIME field expects a time value of the form HHMM, where HH=00-23 and MM=00-59
-# BBDL informed that the TIME should in TOKYO time zone as our account attached to TOKYO . TOKYO time= GMT+9
-$rq->generate_request_files('daily');
-$rq->generate_request_files('oneshot');
-$rq->generate_cancel_files('daily');
-
-print '<UL>';
-
-my $bbdl             = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
+my $bbdl             = Bloomberg::FileDownloader->new();
 my $selectbbdlserver = '<select name="server">';
 foreach my $ip (@{$bbdl->sftp_server_ips}) {
     $selectbbdlserver .= "<option value='$ip'>$ip</option>";
@@ -82,19 +70,13 @@ Server: $selectbbdlserver
  <input type=submit value='List Directory'> (click once; will be slow)
 </form>~;
 
-my $selectmasterrequestfile = '<select name="master_request_file">';
-$selectmasterrequestfile .= "<option value='none' selected>please select source</option>";
-$selectmasterrequestfile .= "<option value='OVDV'>master_OVDV_request_files</option>";
-$selectmasterrequestfile .= "<option value='vol_points'>master_vol_points_request_files</option>";
-$selectmasterrequestfile .= '</select>';
-
 my $list_request_files_url = request()->url_for('backoffice/f_bbdl_scheduled_request_files.cgi');
-print '<LI><b>BBDL scheduled request files listing<b> - click this button to list the contents of the scheduled request files.';
+print '<LI><p><b>BBDL scheduled request files listing<b> - click this link to generate the contents of the scheduled request files.</p>';
 print qq~
-<form id='list_request_files' method=post action=$list_request_files_url>
-Request_files: $selectmasterrequestfile
-</form>~;
-print '<table id=request_file_table></table>';
+<p>
+<a href="$list_request_files_url">Generate files</a>
+</p>
+~;
 
 my $request_files_upload_url = request()->url_for('backoffice/f_bbdl_upload_request_files.cgi');
 print '<LI><b>Upload the request files<b> ';
@@ -103,10 +85,6 @@ print qq~<br><form method=post action=$request_files_upload_url>
 	<select name=frequency>
             <option value='daily'>Daily (Normal)</option>
             <option value='oneshot'>Oneshot</option>
-        </select>
-	<select name=volatility_source>
-            <option value='OVDV'>master_OVDV_request_files</option>
-            <option value='vol_points'>master_vol_points_request_files</option>
         </select>
         <select name=type>
             <option value=request>request file</option>

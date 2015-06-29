@@ -10,7 +10,7 @@ use File::Slurp;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
+use Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -28,13 +28,13 @@ if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
     code_exit_BO();
 }
 
-my $bbdl = BOM::MarketData::Parser::Bloomberg::FileDownloader->new();
+my $bbdl = Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
 my $sftp = $bbdl->login;
 
 my $file_stat = $sftp->stat($filename);
 
-my $gif_temp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif;
+my $temp_dir = '/tmp';
 my $message;
 
 if ($file_stat) {
@@ -46,29 +46,29 @@ if ($file_stat) {
     $message .= '<p>File[' . $filename . '] found with size[' . $size . '] modified[' . $mtime . ']</p>';
 }
 
-$sftp->get($filename, "$gif_temp_dir/$filename");
+$sftp->get($filename, "$temp_dir/$filename");
 if ($sftp->error) {
     $message .= '<p>DOWNLOAD FAILURE: ' . $sftp->error . '</p>';
 } else {
     if ($filename =~ /\.err/) {    # error file
-        copy($gif_temp_dir . '/' . $filename, $gif_temp_dir . '/' . $filename . '.txt');
+        copy($temp_dir . '/' . $filename, $temp_dir . '/' . $filename . '.txt');
     } else {
         if ($filename =~ /\.gz/) {    # it's gzipped
             print "<p>Sorry, Decrytion Error</p>" and code_exit_BO()
-                if (not $bbdl->des_decrypt("$gif_temp_dir/$filename", "$gif_temp_dir/$filename.gz"));
-            system("gunzip -c $gif_temp_dir/$filename.gz > $gif_temp_dir/$filename.txt");
+                if (not $bbdl->des_decrypt("$temp_dir/$filename", "$temp_dir/$filename.gz"));
+            system("gunzip -c $temp_dir/$filename.gz > $temp_dir/$filename.txt");
         } else {
-            $bbdl->des_decrypt("$gif_temp_dir/$filename", "$gif_temp_dir/$filename.txt");
+            $bbdl->des_decrypt("$temp_dir/$filename", "$temp_dir/$filename.txt");
         }
     }
 
-    if (-s $gif_temp_dir . '/' . $filename . '.txt') {
-        my @file   = read_file($gif_temp_dir . '/' . $filename . '.txt');
+    if (-s $temp_dir . '/' . $filename . '.txt') {
+        my @file   = read_file($temp_dir . '/' . $filename . '.txt');
         my $rand   = $$ . $^T;
-        my $bo_url = request()->url_for('temp/' . $filename . '.txt', {rand => $rand});
+        my $bo_url = request()->url_for($temp_dir . '/' . $filename . '.txt', {rand => $rand});
         $message .= "<p><a href=$bo_url>$filename.txt</a> (with " . scalar(@file) . " lines)</p>";
     } else {
-        $message .= '<p>Sorry, could not find file[' . $filename . '] in directory[' . $gif_temp_dir . ']</p>';
+        $message .= '<p>Sorry, could not find file[' . $filename . '] in directory[' . $temp_dir . ']</p>';
     }
 }
 
