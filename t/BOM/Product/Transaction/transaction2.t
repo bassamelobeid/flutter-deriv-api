@@ -27,7 +27,12 @@ $atmod->mock('validate', sub { 1 });
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'FOREX'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_delta', {symbol => $_, recorded_date => $now}) for ('frxEURUSD', 'frxEURJPY');
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for ('frxEURUSD', 'frxEURJPY');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
@@ -1075,8 +1080,8 @@ subtest 'euro_pairs_turnover_limit', sub {
             (my $fname = $class) =~ s!::!/!g;
             $INC{$fname . '.pm'} = 1;
             my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(
-                euro_pairs_turnover_limit => sub { note "mocked app_config->quants->client_limits->euro_pairs_turnover_limit returning 149.99"; 149.99 });
+            $mock_limits->mock(euro_pairs_turnover_limit =>
+                    sub { note "mocked app_config->quants->client_limits->euro_pairs_turnover_limit returning 149.99"; 149.99 });
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -1110,7 +1115,7 @@ subtest 'euro_pairs_turnover_limit', sub {
             is $error->get_type, 'euro_pairs_turnover_limitExceeded', 'error is digits_turnover_limit';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg}, 'Exceeds turnover limit on euro_pairs_turnover_limit', 'mesg';
+            is $error->{-mesg},              'Exceeds turnover limit on euro_pairs_turnover_limit',           'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';

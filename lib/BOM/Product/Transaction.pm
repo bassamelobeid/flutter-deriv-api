@@ -363,11 +363,12 @@ sub calculate_limits {
         frxEURAUD => 1,
     );
     if ($euro_pairs{$contract->underlying->symbol}) {
-        push @{$self->limits->{specific_turnover_limits}}, +{
-            name => 'euro_pairs_turnover_limit',
-            limit => $ql->euro_pairs_turnover_limit,
+        push @{$self->limits->{specific_turnover_limits}},
+            +{
+            name    => 'euro_pairs_turnover_limit',
+            limit   => $ql->euro_pairs_turnover_limit,
             symbols => [map { {n => $_} } keys %euro_pairs],
-        };
+            };
     }
 
     return;
