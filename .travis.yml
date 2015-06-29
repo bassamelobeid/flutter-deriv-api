@@ -37,8 +37,7 @@ before_install:
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
-    - sudo wget --no-verbose -O /etc/redis/redis_appsettings.conf 'https://www.dropbox.com/s/7k1yujxwb1d1q54/redis_appsettings.conf?dl=1'
-    - sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
+    - /tmp/travis-scripts/redis.sh
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-backoffice
     - sudo cp -R /home/git/regentmarkets/bom/config/environments/development/ /etc/rmg
