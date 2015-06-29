@@ -26,9 +26,9 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     ## fix hostname
-    - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
-    - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
-    - sudo service hostname restart
+#    - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
+ #   - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
+  #  - sudo service hostname restart
     ### prereqs
     - sudo apt-get -y remove couchdb
     - sudo rm -fvr /var/log/couchdb
