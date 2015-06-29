@@ -58,18 +58,7 @@ install:
     - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
 
-    - export SHELL=/bin/bash
-    - sudo mkdir -p /var/log/fixedodds
-    - sudo touch /var/log/fixedodds/audit.log
-    - sudo chown nobody.nogroup /var/log/fixedodds/audit.log
-    - sudo chmod 777 /var/log/fixedodds/audit.log
-    - sudo mkdir -p /var/log/httpd
-    - sudo touch /var/log/httpd/{db.log,plack.log,log4perl.log}
-    - sudo chown nobody.nogroup /var/log/httpd/{db.log,plack.log,log4perl.log}
-    - sudo chmod 777 /var/log/httpd/{db.log,plack.log,log4perl.log}
-    - sudo mkdir /db
-    - sudo chown nobody.nogroup /db
-    - sudo chmod 777 /db
+    - /tmp/travis-scripts/setup_logs.sh
 
 script:
     - make $TEST_SUITE
