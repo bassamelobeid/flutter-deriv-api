@@ -53,8 +53,8 @@ syntax_cgi:
 
 i18n:
 	xgettext.pl -P haml=haml -P perl=pl,pm -P tt2=tt,tt2 \
-		--output=messages.pot --output-dir=/home/git/translations/binary-static/src/config/locales/ --directory=lib --directory=/home/git/translations/binary-static/src/templates/ --directory=/home/git/regentmarkets/bom-backoffice/ --directory=/home/git/regentmarkets/bom-web/ --directory=/home/git/regentmarkets/bom-app/ --directory=/home/git/regentmarkets/bom-platform/
-	perl -I ./lib platform/bin/extra_translations.pl  /home/git/translations/binary-static/src/config/locales/messages.pot
+		--output=messages.pot --output-dir=/home/git/translations/binary-static/src/config/locales/ --directory=/home/git/translations/binary-static/src/templates/ --directory=/home/git/regentmarkets/bom-backoffice/ --directory=/home/git/regentmarkets/bom-web/ --directory=/home/git/regentmarkets/bom-app/ --directory=/home/git/regentmarkets/bom-platform/ --directory=/home/git/regentmarkets/bom/
+	perl -I /home/git/regentmarkets/bom-platform/lib /home/git/regentmarkets/bom-platform/bin/extra_translations.pl  /home/git/translations/binary-static/src/config/locales/messages.pot
 	for i in $(shell ls /home/git/translations/binary-static/src/config/locales/*.po); do \
 		msgmerge --previous --backup none --no-wrap --update $$i /home/git/translations/binary-static/src/config/locales/messages.pot ; \
 	done
