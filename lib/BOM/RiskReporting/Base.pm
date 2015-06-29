@@ -78,7 +78,7 @@ sub _build__connection_builder {
         broker_code => 'FOG',
         operation   => 'collector',
     });
-    $cdb->db->dbh->do("SET statement_timeout TO " . 900_000);
+    $cdb->db->dbh->do("SET statement_timeout TO " . 1800_000);
     return $cdb;
 }
 
