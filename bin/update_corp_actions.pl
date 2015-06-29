@@ -8,8 +8,8 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-use BOM::MarketData::Parser::Bloomberg::CSVParser::CorporateAction;
+use Bloomberg::FileDownloader;
+use Bloomberg::CorporateAction;
 use BOM::MarketData::Fetcher::CorporateAction;
 use BOM::MarketData::CorporateAction;
 use BOM::Platform::Runtime;
@@ -23,8 +23,8 @@ sub documentation {
 sub script_run {
     my $self = shift;
 
-    my @files = BOM::MarketData::Parser::Bloomberg::FileDownloader->new->grab_files({file_type => 'corporate_actions'});
-    my $parser = BOM::MarketData::Parser::Bloomberg::CSVParser::CorporateAction->new();
+    my @files = Bloomberg::FileDownloader->new->grab_files({file_type => 'corporate_actions'});
+    my $parser = Bloomberg::CorporateAction->new();
     my %report;
     foreach my $file (@files) {
         my %grouped_actions = $parser->process_data($file);

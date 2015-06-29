@@ -10,8 +10,8 @@ use Date::Utility;
 use BOM::Market::Registry;
 use BOM::Market::UnderlyingDB;
 use BOM::Platform::Runtime;
-use BOM::MarketData::Parser::Bloomberg::FileDownloader;
-use BOM::MarketData::Parser::Bloomberg::RequestFiles;
+use Bloomberg::FileDownloader;
+use Bloomberg::RequestFiles;
 
 has directory_to_save => (
     is      => 'ro',
@@ -26,7 +26,7 @@ has file => (
 
 sub _build_file {
     my $self  = shift;
-    my @files = BOM::MarketData::Parser::Bloomberg::FileDownloader->new->grab_files({
+    my @files = Bloomberg::FileDownloader->new->grab_files({
         file_type => 'ohlc',
     });
     return \@files;
@@ -57,7 +57,7 @@ sub run {
             next;
         }
 
-        my %bloomberg_to_rmg = BOM::MarketData::Parser::Bloomberg::RequestFiles->new->bloomberg_to_rmg;
+        my %bloomberg_to_binary = Bloomberg::UnderlyingConfig::bloomberg_to_binary;
         my $csv = Text::CSV::Slurp->load(file => $file);
 
         foreach my $data (@$csv) {
@@ -66,7 +66,7 @@ sub run {
 
             next unless $bb_symbol;
 
-            my $bom_underlying_symbol = $bloomberg_to_rmg{$bb_symbol};
+            my $bom_underlying_symbol = $bloomberg_to_binary{$bb_symbol};
             unless ($bom_underlying_symbol) {
                 push @{$report->{error}}, "Unregconized bloomberg symbol[$bb_symbol]";
                 next;
