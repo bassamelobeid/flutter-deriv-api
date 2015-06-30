@@ -14,21 +14,21 @@ addons:
 cache: apt
 before_install:
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
-    - /tmp/travis-scripts/fixHostName.sh
     
     - /tmp/travis-scripts/couchdb.sh
 
-    - /tmp/travis-scripts/clone.sh regentmarkets/cpan
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-utility
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-web
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-app
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     
     - /tmp/travis-scripts/postgres_restart.sh
