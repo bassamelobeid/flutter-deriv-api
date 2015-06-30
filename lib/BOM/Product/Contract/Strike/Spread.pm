@@ -21,13 +21,45 @@ sub BUILD {
 }
 
 override _build_supplied_type => sub {
-    return 'digit';
+    return 'spread';
 };
 
-override [qw(_build_as_relative _build_as_absolute _build_as_difference _build_as_pip_difference for_short_code display_text)] => sub {
+override _build_as_relative => sub {
     my $self = shift;
+
     return $self->supplied_barrier;
 };
+
+override _build_as_absolute => sub {
+    my $self = shift;
+
+    return $self->supplied_barrier;
+};
+
+override _build_as_difference => sub {
+    my $self = shift;
+
+    return $self->supplied_barrier;
+};
+
+override _build_pip_difference => sub {
+    my $self = shift;
+
+    return $self->supplied_barrier;
+};
+
+override for_shortcode => sub {
+    my $self = shift;
+
+    return $self->supplied_barrier;
+};
+
+override display_text => sub {
+    my $self = shift;
+
+    return $self->supplied_barrier;
+};
+
 
 __PACKAGE__->meta->make_immutable;
 1;
