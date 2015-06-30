@@ -18,19 +18,9 @@ before_install:
     - sudo apt-get install -y postgresql-9.3 postgresql-plperl-9.3 postgresql-contrib-9.3
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
-    ## fix hostname
-    - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
-    - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
-    - sudo service hostname restart
+    - /tmp/travis-scripts/fixHostName.sh
     ### prereqs
-    - sudo apt-get -y remove couchdb
-    - sudo rm -fvr /var/log/couchdb
-    - wget https://launchpad.net/~nilya/+archive/ubuntu/couchdb-1.2/+files/couchdb_1.2.0-0ubuntu4%7Eprecise_all.deb && sudo dpkg -i --force-confnew couchdb_1.2.0-0ubuntu4~precise_all.deb
-    - wget --no-verbose -O /tmp/couchdb_init.tar.gz 'https://www.dropbox.com/s/0b37p2x7m3ridb1/couchdb_init.tar.gz?dl=1'
-    - mkdir tmp
-    - sudo tar --gzip -xf /tmp/couchdb_init.tar.gz -C tmp
-    - sudo mv tmp/var/lib/couchdb/1.2.0/*.couch /var/lib/couchdb/
-    - sudo service couchdb start
+    - /tmp/travis-scripts/couchdb.sh
     - /tmp/travis-scripts/clone.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone.sh regentmarkets/bom
