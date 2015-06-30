@@ -16,13 +16,7 @@ addons:
 cache: apt
 before_install:
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
-    - dpkg -l | grep postgres
-    - pg_lsclusters
-    - sudo /usr/sbin/service postgresql stop
-    - printenv
-    - sudo ifconfig lo:1 172.28.128.3
-    - sudo apt-get update
-    - sudo apt-get install -y postgresql-9.3 postgresql-plperl-9.3 postgresql-contrib-9.3
+    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     ## fix hostname
@@ -36,9 +30,6 @@ before_install:
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-web
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
-    - sudo sed -i 's/.*fsync = .*/fsync = off/g'  /etc/postgresql/9.*/main/postgresql.conf
-    - sudo service postgresql restart
-    - cat  /etc/postgresql/9.*/main/postgresql.conf |grep fsync
     - /tmp/travis-scripts/redis.sh
 install:
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
