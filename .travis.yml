@@ -26,18 +26,9 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     ## fix hostname
-    - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
-    - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
-    - sudo service hostname restart
+    - /tmp/travis-scripts/fixHostName.sh
     ### prereqs
-    - sudo apt-get -y remove couchdb
-    - sudo rm -fvr /var/log/couchdb
-    - wget https://launchpad.net/~nilya/+archive/ubuntu/couchdb-1.2/+files/couchdb_1.2.0-0ubuntu4%7Eprecise_all.deb && sudo dpkg -i --force-confnew couchdb_1.2.0-0ubuntu4~precise_all.deb
-    - wget --no-verbose -O /tmp/couchdb_init.tar.gz 'https://www.dropbox.com/s/0b37p2x7m3ridb1/couchdb_init.tar.gz?dl=1'
-    - mkdir tmp
-    - sudo tar --gzip -xf /tmp/couchdb_init.tar.gz -C tmp
-    - sudo mv tmp/var/lib/couchdb/1.2.0/*.couch /var/lib/couchdb/
-    - sudo service couchdb start
+    - /tmp/travis-scripts/couchdb.sh
     - /tmp/travis-scripts/clone.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-platform
@@ -48,8 +39,7 @@ before_install:
     - sudo sed -i 's/.*fsync = .*/fsync = off/g'  /etc/postgresql/9.*/main/postgresql.conf
     - sudo service postgresql restart
     - cat  /etc/postgresql/9.*/main/postgresql.conf |grep fsync
-    - sudo wget --no-verbose -O /etc/redis/redis_appsettings.conf 'https://www.dropbox.com/s/7k1yujxwb1d1q54/redis_appsettings.conf?dl=1'
-    - sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
+    - /tmp/travis-scripts/redis.sh
 install:
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
@@ -67,18 +57,7 @@ install:
     - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
 
-    - export SHELL=/bin/bash
-    - sudo mkdir -p /var/log/fixedodds
-    - sudo touch /var/log/fixedodds/audit.log
-    - sudo chown nobody.nogroup /var/log/fixedodds/audit.log
-    - sudo chmod 777 /var/log/fixedodds/audit.log
-    - sudo mkdir -p /var/log/httpd
-    - sudo touch /var/log/httpd/{db.log,plack.log,log4perl.log}
-    - sudo chown nobody.nogroup /var/log/httpd/{db.log,plack.log,log4perl.log}
-    - sudo chmod 777 /var/log/httpd/{db.log,plack.log,log4perl.log}
-    - sudo mkdir /db
-    - sudo chown nobody.nogroup /db
-    - sudo chmod 777 /db
+    - /tmp/travis-scripts/setup_logs.sh
 
 script:
     - make $TEST_SUITE
