@@ -55,7 +55,7 @@ has date_pricing => (
 );
 
 has date_expiry => (
-    is => 'ro',
+    is  => 'ro',
     isa => 'Maybe[bom_date_object]',
 );
 
@@ -72,7 +72,7 @@ has stop_type => (
 );
 
 has is_atm_bet => (
-    is => 'ro',
+    is      => 'ro',
     default => 0,
 );
 
@@ -93,17 +93,17 @@ sub BUILD {
 # this is not actually needed. But we use pricing engine name
 # to determine so many things. Bad design!
 has pricing_engine_name => (
-    is => 'ro',
+    is      => 'ro',
     default => 'BOM::Product::Pricing::Engine::Spread',
 );
 
 has tick_expiry => (
-    is => 'ro',
+    is      => 'ro',
     default => 0,
 );
 
 has market => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 

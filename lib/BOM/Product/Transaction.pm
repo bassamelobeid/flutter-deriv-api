@@ -38,7 +38,7 @@ has client => (
 );
 
 has contract => (
-    is  => 'rw',
+    is => 'rw',
 );
 
 has price => (
@@ -403,31 +403,31 @@ sub prepare_bet_data_for_buy {
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
     my $bet_params = {
-        loginid => $loginid,
-        currency => $currency,
-        quantity => 1,
-        short_code => scalar $contract->shortcode,
-        buy_price => $self->price,
-        remark => $comment,
+        loginid           => $loginid,
+        currency          => $currency,
+        quantity          => 1,
+        short_code        => scalar $contract->shortcode,
+        buy_price         => $self->price,
+        remark            => $comment,
         underlying_symbol => scalar $contract->underlying->symbol,
-        bet_type => scalar $contract->code,
-        bet_class => $bet_class,
+        bet_type          => scalar $contract->code,
+        bet_class         => $bet_class,
         purchase_time     => scalar $self->purchase_date->db_timestamp,
         start_time        => scalar $contract->date_start->db_timestamp,
     };
 
     if ($contract->category_code ne 'spreads') {
-        $bet_params->{payout_price} = scalar $self->payout;
-        $bet_params->{expiry_time} = scalar $contract->date_expiry->db_timestamp;
+        $bet_params->{payout_price}    = scalar $self->payout;
+        $bet_params->{expiry_time}     = scalar $contract->date_expiry->db_timestamp;
         $bet_params->{settlement_time} = scalar $contract->date_settlement->db_timestamp;
-        $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
-        $bet_params->{fixed_expiry} = 1 if $contract->fixed_expiry;
+        $bet_params->{expiry_daily}    = 1 if $contract->expiry_daily;
+        $bet_params->{fixed_expiry}    = 1 if $contract->fixed_expiry;
         if ($contract->tick_expiry) {
             $bet_params->{tick_expiry} = 1;
-            $bet_params->{tick_count} = scalar $contract->tick_count;
+            $bet_params->{tick_count}  = scalar $contract->tick_count;
         }
     } else {
-        $bet_params->{payout_price} = 0; # it is always zero at start!
+        $bet_params->{payout_price} = 0;    # it is always zero at start!
     }
 
     if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
@@ -1040,7 +1040,7 @@ sub _build_pricing_comment {
                 map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
         }
     } else {
-        @comment_fields = map {defined $_->[1] ? @$_ : ()} (
+        @comment_fields = map { defined $_->[1] ? @$_ : () } (
             [amount_per_point => $contract->amount_per_point],
             [stop_profit      => $contract->stop_profit],
             [stop_loss        => $contract->stop_loss],

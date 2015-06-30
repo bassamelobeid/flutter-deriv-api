@@ -20,7 +20,7 @@ has barrier => (
 );
 
 sub _build_barrier {
-    my $self = shift;
+    my $self             = shift;
     my $supplied_barrier = $self->underlying->pipsized_value($self->entry_tick->quote + $self->spread / 2);
     return BOM::Product::Contract::Strike::Spread->new(supplied_barrier => $supplied_barrier);
 }
