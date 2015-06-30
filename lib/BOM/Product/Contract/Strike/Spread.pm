@@ -60,6 +60,5 @@ override display_text => sub {
     return $self->supplied_barrier;
 };
 
-
 __PACKAGE__->meta->make_immutable;
 1;
