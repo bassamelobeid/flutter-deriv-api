@@ -355,6 +355,7 @@ has _naked_vol_cache => (
     default => sub { {} },
 );
 
+# This is never used.
 has _cached_economic_events_info => (
     is      => 'ro',
     isa     => 'ArrayRef',

@@ -88,6 +88,7 @@ has [qw(_delta_formula _vega_formula)] => (
     lazy_build => 1,
 );
 
+# This is always empty.
 has _cached_economic_events_info => (
     is      => 'ro',
     isa     => 'ArrayRef',
