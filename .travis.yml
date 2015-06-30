@@ -14,6 +14,8 @@ addons:
 cache: apt
 before_install:
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - dpkg -l | grep postgres
+    - pg_lsclusters
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
