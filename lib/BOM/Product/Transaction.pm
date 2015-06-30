@@ -1359,6 +1359,10 @@ Returns: HashRef, with:
 
 =cut
 
+my %source_to_sell_type = (
+    1063 => 'expiryd',    # app_id for `binaryexpiryd`, see `expiryd.pl`
+);
+
 sub sell_expired_contracts {
     my $args         = shift;
     my $client       = $args->{client};
@@ -1420,11 +1424,11 @@ sub sell_expired_contracts {
         };
     }
 
-    my $broker  = lc($client->broker_code);
-    my $virtual = $client->is_virtual ? 'yes' : 'no';
-    my $rmgenv  = BOM::System::Config::env;
-    my @tags    = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:expired");
-    push @tags, "source:$source" if (defined $source);
+    my $broker    = lc($client->broker_code);
+    my $virtual   = $client->is_virtual ? 'yes' : 'no';
+    my $rmgenv    = BOM::System::Config::env;
+    my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
+    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
     }
