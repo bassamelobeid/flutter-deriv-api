@@ -134,7 +134,7 @@ sub _build_sell_channel {
     my $type   = $self->code . '-' . $self->date_start->epoch;
     my $symbol = uc $self->underlying->symbol;
     $symbol =~ s/_/-/g;
-    my $channel = join '_', ('P', $type, $symbol, $bet->amount_per_point, $bet->stop_loss, $bet->stop_profit, 'c', $bet->currency, $lang)
+    my $channel = join '_', ('P', $type, $symbol, $self->amount_per_point, $self->stop_loss, $self->stop_profit, 'c', $self->currency, $lang);
     return $channel;
 }
 

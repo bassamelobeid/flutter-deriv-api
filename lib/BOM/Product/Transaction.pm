@@ -397,7 +397,6 @@ sub prepare_bet_data_for_buy {
     my $comment = $self->comment // '';
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-    warn "bet class $bet_class";
     $self->contract_class($bet_class);
 
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
