@@ -111,9 +111,8 @@ The final theoretical probability after corrections.  Math::Util::CalculatedValu
 sub _build_probability {
     my ($self) = @_;
 
-    my $bet         = $self->bet;
-    my $bet_minutes = $bet->calendar_minutes->amount;
-    my $args        = $bet->pricing_args;
+    my $bet  = $self->bet;
+    my $args = $bet->pricing_args;
 
     my $ifx_prob;
     if ($bet->two_barriers and not $bet->is_path_dependent) {
@@ -176,7 +175,7 @@ sub _build_intraday_bounceback {
     my $self = shift;
 
     my $bet      = $self->bet;
-    my $how_long = $bet->calendar_minutes->amount;
+    my $how_long = $bet->remaining_time->minutes;
 
 # The bounceback value is based on emprical studies which suggest a bounce back over the duration
 # Zeroes out in very short-term (under 15 minutes) and very long-term (over 10 hours)
@@ -474,7 +473,7 @@ sub _build_commission_markup {
         name        => 'Factor to adjust for bet duration',
         description => 'to smooth transition',
         set_by      => __PACKAGE__,
-        base_amount => $bet->calendar_minutes->amount / 400,
+        base_amount => $bet->remaining_time->minutes / 400,
     });
 
     $stitch->include_adjustment('multiply', $duration_factor);

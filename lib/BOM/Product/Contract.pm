@@ -433,7 +433,7 @@ has [qw(
         bs_probability
         timeinyears
         timeindays
-        calendar_minutes)
+        )
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -566,21 +566,19 @@ sub _build_pricing_engine {
             %{$self->pricing_engine_parameters}});
 }
 
-sub _build_calendar_minutes {
+has remaining_time => (
+    is         => 'ro',
+    isa        => 'Time::Duration::Concise',
+    lazy_build => 1,
+);
+
+sub _build_remaining_time {
     my $self = shift;
 
     my $when = ($self->date_pricing->is_after($self->date_start)) ? $self->date_pricing : $self->date_start;
 
-    my $t = $self->get_time_to_expiry({
+    return $self->get_time_to_expiry({
         from => $when,
-    });
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'calendar_minutes',
-        description => 'The unadjusted time remaining in minutes',
-        set_by      => 'BOM::Product::Contract',
-        minimum     => 0,
-        base_amount => $t->minutes,
     });
 }
 
