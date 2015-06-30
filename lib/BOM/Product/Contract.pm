@@ -1970,11 +1970,11 @@ sub _validate_start_date {
                 interval => '1m',
                 locale   => BOM::Platform::Context::request()->language
             );
-            my $held_secs = $epoch_start - $orig_start->epoch;
-            if ($held_secs < $minimum_hold->seconds) {
+            my $held = Time::Duration::Concise::Localize->new(interval => $epoch_start - $orig_start->epoch);
+            if ($held->seconds < $minimum_hold->seconds) {
                 push @errors, {
-                    severity          => 100,
-                    message           => 'Contract held for [' . $held_secs . 's]; minimum required [' . $minimum_hold->as_concise_string . ']',
+                    severity => 100,
+                    message  => 'Contract held for [' . $held->as_concise_string . ']; minimum required [' . $minimum_hold->as_concise_string . ']',
                     message_to_client => localize('Contract must be held for [_1] before resale is offered.', $minimum_hold->as_string),
 
                 };
@@ -2047,7 +2047,7 @@ sub _validate_start_date {
         if ($epoch_start < $when->epoch + $forward_starting_blackout->seconds) {
             push @errors,
                 {
-                message  => 'cannot buy [' . $self->code . '] less than ' . $forward_starting_blackout->normalized_code . ' before it starts',
+                message  => 'cannot buy [' . $self->code . '] less than ' . $forward_starting_blackout->as_concise_string . ' before it starts',
                 severity => 80,
                 message_to_client =>
                     localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
@@ -2059,12 +2059,12 @@ sub _validate_start_date {
             ($self->tick_expiry)
             ? $self->max_tick_expiry_duration
             : $underlying->eod_blackout_start;
-        my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
-            interval => $eod_blackout_start->normalized_code,
-            locale   => BOM::Platform::Context::request()->language
-        );
 
         if ($sec_to_close < $eod_blackout_start->seconds) {
+            my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
+                interval => $eod_blackout_start->seconds,
+                locale   => BOM::Platform::Context::request()->language
+            );
             push @errors,
                 {
                 message => 'cannot buy bet on underlying['
@@ -2072,7 +2072,7 @@ sub _validate_start_date {
                     . ']; start too close to close (trading left after start['
                     . $sec_to_close
                     . '] < min allowed['
-                    . $eod_blackout_start->as_string . '])',
+                    . $eod_blackout_start->as_concise_string . '])',
                 severity          => 80,
                 message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
                 info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
@@ -2153,9 +2153,9 @@ sub _validate_expiry_date {
                     message => 'cannot buy bet on underlying['
                         . $underlying->symbol
                         . ']; expiry too close to close (trading left after expiry ['
-                        . $expiry_before_close->normalized_code
+                        . $expiry_before_close->as_concise_string
                         . '] < min allowed['
-                        . $eod_blackout_expiry->normalized_code . '])',
+                        . $eod_blackout_expiry->as_concise_string . '])',
                     severity          => 90,
                     message_to_client => localize("Contract may not expire within the last [_1] of trading.", $eod_blackout_expiry->as_string),
                     info_link         => $times_link,
@@ -2215,9 +2215,9 @@ sub _subvalidate_lifetime_tick_expiry {
                 {
                 severity => 100,
                 message  => 'Tick expiry duration ['
-                    . $actual_duration->normalized_code
+                    . $actual_duration->as_concise_string
                     . '] exceeds permitted maximum ['
-                    . $self->max_tick_expiry_duration->normalized_code . '] on '
+                    . $self->max_tick_expiry_duration->as_concise_string . '] on '
                     . $self->underlying->symbol,
                 message_to_client => localize("Missing market data for contract period."),
                 };
