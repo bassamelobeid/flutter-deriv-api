@@ -948,8 +948,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     ok($bet->is_valid_to_buy, '..but when we pick a shorter duration, validates just fine.');
 
-    $bet_params->{date_start}   = Date::Utility->new('2013-03-27 22:01:34')->epoch;
-    $bet_params->{duration}     = '2d';
+    $bet_params->{date_start}   = Date::Utility->new('2013-03-26 22:01:34')->epoch;
+    $bet_params->{duration}     = '3d';
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{barrier}      = 'S10P';
     $bet                        = produce_contract($bet_params);

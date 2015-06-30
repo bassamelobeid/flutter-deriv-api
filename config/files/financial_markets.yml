@@ -12,7 +12,7 @@ commodities:
       callput:
         daily:
           spot:
-            euro_non_atm: day_to_year
+            euro_non_atm: threeday_to_year
             euro_atm: day_to_year
         intraday:
           spot:
@@ -30,7 +30,7 @@ commodities:
       touchnotouch:
         daily:
           spot:
-            american: day_to_year
+            american: threeday_to_year
       endsinout:
         daily:
           spot:
