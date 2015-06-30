@@ -27,8 +27,9 @@ before_install:
     - /tmp/travis-scripts/clone.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     
-    - /tmp/travis-scripts/redis.sh
     - /tmp/travis-scripts/couchdb.sh
+    - /tmp/travis-scripts/postgres_restart.sh
+    - /tmp/travis-scripts/redis.sh
 
 install:
     - /tmp/travis-scripts/devbox.sh
