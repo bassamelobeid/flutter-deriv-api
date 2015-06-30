@@ -5,7 +5,7 @@ use Moose;
 use Date::Utility;
 use BOM::Platform::Runtime;
 
-use List::Util qw(min);
+use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
 use BOM::Product::Offerings qw( get_contract_specifics );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
@@ -54,6 +54,11 @@ has date_pricing => (
     default => sub { Date::Utility->new },
 );
 
+has date_expiry => (
+    is => 'ro',
+    isa => 'Maybe[bom_date_object]',
+);
+
 # the value of the position at close
 has value => (
     is       => 'rw',
@@ -83,6 +88,27 @@ sub BUILD {
     }
 
     return;
+}
+
+# this is not actually needed. But we use pricing engine name
+# to determine so many things. Bad design!
+has pricing_engine_name => (
+    is => 'ro',
+    default => 'BOM::Product::Pricing::Engine::Spread',
+);
+
+has tick_expiry => (
+    is => 'ro',
+    default => 0,
+);
+
+has market => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_market {
+    return shift->underlying->market;
 }
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
@@ -130,7 +156,7 @@ has entry_tick => (
 
 sub _build_entry_tick {
     my $self = shift;
-    return $self->underlying->next_tick_after($self->date_start);
+    return $self->underlying->next_tick_after($self->date_start) // $self->current_tick;
 }
 
 has [qw(ask_price bid_price)] => (
@@ -148,7 +174,7 @@ sub _build_bid_price {
 
     $self->_recalculate_current_value;
     # we need to take into account the stop loss premium paid.
-    my $bid = $self->buy_price + $self->value;
+    my $bid = $self->ask_price + $self->value;
 
     return roundnear(0.01, $bid);
 }
@@ -336,7 +362,7 @@ sub _validate_underlying {
 sub payout {
     my $self = shift;
     $self->_recalculate_current_value;
-    return max(0, $self->value - $self->buy_price);
+    return max(0, $self->value + $self->ask_price);
 }
 
 no Moose;

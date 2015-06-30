@@ -12,12 +12,12 @@ sub sentiment       { return 'up'; }
 sub other_side_code { return 'SPREADD'; }
 
 # The price of which the client bought at.
-has strike => (
+has barrier => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_strike {
+sub _build_barrier {
     my $self = shift;
     return $self->underlying->pipsized_value($self->entry_tick->quote + $self->spread / 2);
 }
@@ -29,12 +29,12 @@ has [qw(stop_loss_price stop_profit_price)] => (
 
 sub _build_stop_loss_price {
     my $self = shift;
-    return $self->strike - $self->stop_loss;
+    return $self->barrier - $self->stop_loss;
 }
 
 sub _build_stop_profit_price {
     my $self = shift;
-    return $self->strike + $self->stop_profit;
+    return $self->barrier + $self->stop_profit;
 }
 
 has is_expired => (
@@ -73,7 +73,7 @@ sub _recalculate_current_value {
     my $current_tick = $self->current_tick;
     if ($current_tick) {
         my $current_sell_price = $current_tick->quote - $self->spread / 2;
-        my $current_value      = ($current_sell_price - $self->strike) * $self->amount_per_point;
+        my $current_value      = ($current_sell_price - $self->barrier) * $self->amount_per_point;
         $self->value($current_value);
     }
 

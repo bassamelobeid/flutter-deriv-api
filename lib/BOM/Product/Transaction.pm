@@ -397,34 +397,38 @@ sub prepare_bet_data_for_buy {
     my $comment = $self->comment // '';
 
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+    warn "bet class $bet_class";
     $self->contract_class($bet_class);
 
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
     my $bet_params = {
-        loginid           => $loginid,
-        currency          => $currency,
-        quantity          => 1,
-        short_code        => scalar $contract->shortcode,
-        buy_price         => scalar $self->price,
-        payout_price      => scalar $self->payout,
-        remark            => $comment,
+        loginid => $loginid,
+        currency => $currency,
+        quantity => 1,
+        short_code => scalar $contract->shortcode,
+        buy_price => $self->price,
+        remark => $comment,
         underlying_symbol => scalar $contract->underlying->symbol,
-        bet_type          => scalar $contract->code,
-        bet_class         => $bet_class,
+        bet_type => scalar $contract->code,
+        bet_class => $bet_class,
         purchase_time     => scalar $self->purchase_date->db_timestamp,
         start_time        => scalar $contract->date_start->db_timestamp,
-        expiry_time       => scalar $contract->date_expiry->db_timestamp,
-        settlement_time   => scalar $contract->date_settlement->db_timestamp,
-        $contract->expiry_daily ? (expiry_daily => 1) : (),
-        $contract->fixed_expiry ? (fixed_expiry => 1) : (),
-        $contract->tick_expiry
-        ? (
-            tick_expiry => 1,
-            tick_count  => scalar $contract->tick_count,
-            )
-        : (),
     };
+
+    if ($contract->category_code ne 'spreads') {
+        $bet_params->{payout_price} = scalar $self->payout;
+        $bet_params->{expiry_time} = scalar $contract->date_expiry->db_timestamp;
+        $bet_params->{settlement_time} = scalar $contract->date_settlement->db_timestamp;
+        $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
+        $bet_params->{fixed_expiry} = 1 if $contract->fixed_expiry;
+        if ($contract->tick_expiry) {
+            $bet_params->{tick_expiry} = 1;
+            $bet_params->{tick_count} = scalar $contract->tick_count;
+        }
+    } else {
+        $bet_params->{payout_price} = 0; # it is always zero at start!
+    }
 
     if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
         $bet_params->{$_} = $contract->$_ for qw(amount_per_point spread stop_profit stop_loss stop_type);
@@ -1003,35 +1007,45 @@ sub _build_pricing_comment {
     my $self     = shift;
     my $contract = $self->contract;
 
-    # This way the order of the fields is well-defined.
-    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
-        [theo    => $contract->theo_price],
-        [trade   => $self->price],
-        [iv      => $contract->pricing_vol],
-        [win     => $contract->payout],
-        [div     => $contract->q_rate],
-        [int     => $contract->r_rate],
-        [delta   => $contract->delta],
-        [gamma   => $contract->gamma],
-        [vega    => $contract->vega],
-        [theta   => $contract->theta],
-        [vanna   => $contract->vanna],
-        [volga   => $contract->volga],
-        [bs_prob => $contract->bs_probability->amount],
-        [spot    => $contract->current_spot]);
+    my @comment_fields;
+    if ($contract->category_code ne 'spreads') {
+        # This way the order of the fields is well-defined.
+        @comment_fields = map { defined $_->[1] ? @$_ : (); } (
+            [theo    => $contract->theo_price],
+            [trade   => $self->price],
+            [iv      => $contract->pricing_vol],
+            [win     => $contract->payout],
+            [div     => $contract->q_rate],
+            [int     => $contract->r_rate],
+            [delta   => $contract->delta],
+            [gamma   => $contract->gamma],
+            [vega    => $contract->vega],
+            [theta   => $contract->theta],
+            [vanna   => $contract->vanna],
+            [volga   => $contract->volga],
+            [bs_prob => $contract->bs_probability->amount],
+            [spot    => $contract->current_spot]);
 
-    my $news_factor = $contract->ask_probability->peek('news_factor');
-    if ($news_factor) {
-        push @comment_fields, news_fct => $news_factor->amount;
-        my $news_impact = $news_factor->peek('news_impact');
-        push @comment_fields, news_impact => $news_impact->amount if $news_impact;
-    }
+        my $news_factor = $contract->ask_probability->peek('news_factor');
+        if ($news_factor) {
+            push @comment_fields, news_fct => $news_factor->amount;
+            my $news_impact = $news_factor->peek('news_impact');
+            push @comment_fields, news_impact => $news_impact->amount if $news_impact;
+        }
 
-    if (@{$contract->corporate_actions}) {
-        push @comment_fields,
-            corporate_action => 1,
-            actions          => join '|',
-            map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
+        if (@{$contract->corporate_actions}) {
+            push @comment_fields,
+                corporate_action => 1,
+                actions          => join '|',
+                map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
+        }
+    } else {
+        @comment_fields = map {defined $_->[1] ? @$_ : ()} (
+            [amount_per_point => $contract->amount_per_point],
+            [stop_profit      => $contract->stop_profit],
+            [stop_loss        => $contract->stop_loss],
+            [spread           => $contract->spread],
+        );
     }
 
     return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
