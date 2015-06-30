@@ -3,6 +3,7 @@ package BOM::Product::Contract::Spreadd;
 use Moose;
 extends 'BOM::Product::Contract::Spread';
 
+use BOM::Product::Contract::Strike::Spread;
 # Static methods
 
 sub id              { return 260; }
@@ -20,7 +21,8 @@ has barrier => (
 
 sub _build_barrier {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->entry_tick->quote - $self->spread / 2);
+    my $supplied_barrier = $self->underlying->pipsized_value($self->entry_tick->quote - $self->spread / 2);
+    return BOM::Product::Contract::Strike::Spread->new(supplied_barrier => $supplied_barrier);
 }
 
 has [qw(stop_loss_price stop_profit_price)] => (
@@ -30,12 +32,12 @@ has [qw(stop_loss_price stop_profit_price)] => (
 
 sub _build_stop_loss_price {
     my $self = shift;
-    return $self->barrier + $self->stop_loss;
+    return $self->barrier->as_absolute + $self->stop_loss;
 }
 
 sub _build_stop_profit_price {
     my $self = shift;
-    return $self->barrier - $self->stop_profit;
+    return $self->barrier->as_absolute - $self->stop_profit;
 }
 
 has is_expired => (
@@ -74,7 +76,7 @@ sub _recalculate_current_value {
     my $current_tick = $self->underlying->spot_tick;
     if ($current_tick) {
         my $current_buy_price = $current_tick->quote + $self->spread / 2;
-        my $current_value     = ($self->barrier - $current_buy_price) * $self->amount_per_point;
+        my $current_value     = ($self->barrier->as_absolute - $current_buy_price) * $self->amount_per_point;
         $self->value($current_value);
     }
 
