@@ -54,7 +54,7 @@ has date_pricing => (
     default => sub { Date::Utility->new },
 );
 
-has date_expiry => (
+has [qw(date_expiry date_settlement)] => (
     is  => 'ro',
     isa => 'Maybe[bom_date_object]',
 );
@@ -112,7 +112,7 @@ sub _build_market {
 }
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
-has [qw(spread spread_divisor)] => (
+has [qw(spread spread_divisor sell_channel current_tick current_spot translated_display_name)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -127,10 +127,16 @@ sub _build_spread_divisor {
     return $self->underlying->spread_divisor;
 }
 
-has [qw(current_tick current_spot translated_display_name)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _build_sell_channel {
+    my $self = shift;
+
+    my $lang   = request()->language;
+    my $type   = $self->code . '-' . $self->date_start->epoch;
+    my $symbol = uc $self->underlying->symbol;
+    $symbol =~ s/_/-/g;
+    my $channel = join '_', ('P', $type, $symbol, $bet->amount_per_point, $bet->stop_loss, $bet->stop_profit, 'c', $bet->currency, $lang)
+    return $channel;
+}
 
 sub _build_current_tick {
     my $self = shift;
