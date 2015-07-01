@@ -278,8 +278,8 @@ sub barrier_display_info {
     my ($self, $tick) = @_;
 
     my $underlying = $self->underlying;
-    my $spot = defined $tick ? $tick->quote : undef;
-    my $barrier = $self->barrier->as_absolute;
+    my $spot       = defined $tick ? $tick->quote : undef;
+    my $barrier    = $self->barrier->as_absolute;
 
     my %barriers = (
         barrier => {
@@ -287,8 +287,7 @@ sub barrier_display_info {
             dir  => ($spot > $barrier) ? '-' : ($spot < $barrier) ? '+' : '',
             diff => $underlying->pipsized_value(int($spot - $barrier)),
             desc => 'point_from_entry_level',
-        }
-    );
+        });
 
     return (barriers => \%barriers);
 }

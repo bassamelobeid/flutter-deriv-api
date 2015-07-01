@@ -84,7 +84,7 @@ sub _recalculate_current_value {
 
 # sell level
 has level => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1
 );
 
