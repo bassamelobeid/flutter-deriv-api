@@ -158,7 +158,7 @@ sub _build_ask_price {
 sub _build_bid_price {
     my $self = shift;
 
-    $self->_recalculate_current_value($self->level->quote);
+    $self->_recalculate_current_value($self->level);
     # we need to take into account the stop loss premium paid.
     my $bid = $self->ask_price + $self->value;
 
@@ -266,12 +266,6 @@ sub current_value {
     my $self = shift;
     $self->_recalculate_current_value($self->current_spot);
     return $self->value;
-}
-
-sub payout {
-    my $self = shift;
-    $self->_recalculate_current_value();
-    return max(0, $self->value + $self->ask_price);
 }
 
 sub barrier_display_info {
