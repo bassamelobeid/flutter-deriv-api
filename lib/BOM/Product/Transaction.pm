@@ -177,7 +177,7 @@ sub stats_start {
         if ($self->contract->category_code ne 'spreads') {
             push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
         } else {
-            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->stop_type);
+            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->build_parameters->{stop_type});
         }
     } elsif ($what eq 'sell') {
         push @{$tags->{tags}}, "sell_type:manual";
@@ -430,7 +430,7 @@ sub prepare_bet_data_for_buy {
     }
 
     if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
-        $bet_params->{$_} = $contract->$_ for qw(amount_per_point spread stop_profit stop_loss stop_type);
+        $bet_params->{$_} = $contract->$_ for qw(amount_per_point spread stop_profit stop_loss);
     } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
         # only store barrier in the database if it is defined.
         # asian contracts have barriers at/after expiry.

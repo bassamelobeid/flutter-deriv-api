@@ -108,6 +108,12 @@ sub produce_contract {
     if ($contract_class->category_code eq 'spreads') {
         $input_params{date_start}       = Date::Utility->new if not $input_params{date_start};
         $input_params{build_parameters} = {%input_params};
+        if (defined $input_params{stop_type} and $input_params{stop_type} eq 'dollar_amount') {
+            my $app = $input_params{amount_per_point};
+            # convert to point.
+            $input_params{stop_loss} /= $app;
+            $input_params{stop_profit} /= $app;
+        }
         $contract_obj                   = $contract_class->new(\%input_params);
     } else {
         delete $input_params{expiry_daily};
@@ -280,8 +286,9 @@ sub simple_contract_info {
         epoch => 1,
     });
     my $contract_analogue = produce_contract($params);
+    my $is_spread_bet = $contract_analogue->category_code eq 'spreads' ? 1 : 0;
 
-    return ($contract_analogue->longcode, $contract_analogue->sell_channel, $contract_analogue->tick_expiry);
+    return ($contract_analogue->longcode, $contract_analogue->sell_channel, $contract_analogue->tick_expiry, $is_spread_bet);
 }
 
 =head2 make_similar_contract

@@ -65,30 +65,10 @@ has value => (
     init_arg => undef,
 );
 
-# point or dollar amount
-has stop_type => (
-    is       => 'ro',
-    required => 1,
-);
-
 has is_atm_bet => (
     is      => 'ro',
     default => 0,
 );
-
-sub BUILD {
-    my $self = shift;
-
-    # possible initialization error
-    if ($self->stop_type eq 'dollar_amount') {
-        my $app = $self->amount_per_point;
-        # convert to point.
-        $self->stop_loss($self->stop_loss / $app);
-        $self->stop_profit($self->stop_profit / $app);
-    }
-
-    return;
-}
 
 # this is not actually needed. But we use pricing engine name
 # to determine so many things. Bad design!
@@ -305,6 +285,12 @@ sub current_value {
     return $self->value;
 }
 
+sub payout {
+    my $self = shift;
+    $self->_recalculate_current_value;
+    return max(0, $self->value + $self->ask_price);
+}
+
 sub _get_highlow {
     my $self = shift;
 
@@ -363,12 +349,6 @@ sub _validate_underlying {
             };
     }
     return @err;
-}
-
-sub payout {
-    my $self = shift;
-    $self->_recalculate_current_value;
-    return max(0, $self->value + $self->ask_price);
 }
 
 no Moose;
