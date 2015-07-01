@@ -35,8 +35,8 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
-   - source /tmp/travis-scripts/devbox_path.sh
-   - export
+    - source /tmp/travis-scripts/devbox_path.sh
+    - export
     # - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     # - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
     # - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
