@@ -35,7 +35,7 @@ ALTER TABLE ONLY bet.financial_market_bet
     RENAME CONSTRAINT basic_validation TO basic_validation_old;
 
 ALTER TABLE ONLY bet.financial_market_bet
-    ADD CONSTRAINT basic_validation CHECK (purchase_time < '2014-05-09 00:00:00'::timestamp without time zone OR (NOT is_sold OR 0::numeric <= sell_price AND sell_price <= payout_price AND round(sell_price, 2) = sell_price AND purchase_time < sell_time) AND 0::numeric < buy_price AND (bet_class = ‘spread_bet’ OR 0::numeric < payout_price) AND round(buy_price, 2) = buy_price AND round(payout_price, 2) = payout_price AND purchase_time <= start_time AND ((bet_class = ‘spread_bet’ AND NOT is_sold) OR (start_time <= expiry_time AND purchase_time <= settlement_time))) NOT VALID;
+    ADD CONSTRAINT basic_validation CHECK (purchase_time < '2014-05-09 00:00:00'::timestamp without time zone OR (NOT is_sold OR 0::numeric <= sell_price AND sell_price <= payout_price AND round(sell_price, 2) = sell_price AND purchase_time < sell_time) AND 0::numeric < buy_price AND (bet_class = 'spread_bet' OR 0::numeric < payout_price) AND round(buy_price, 2) = buy_price AND round(payout_price, 2) = payout_price AND purchase_time <= start_time AND ((bet_class = 'spread_bet' AND NOT is_sold) OR (start_time <= expiry_time AND purchase_time <= settlement_time))) NOT VALID;
 
 ALTER TABLE ONLY bet.financial_market_bet
    DROP CONSTRAINT IF EXISTS basic_validation_old RESTRICT;
