@@ -268,11 +268,11 @@ sub current_value {
     return $self->value;
 }
 
-#sub payout {
-#    my $self = shift;
-#    $self->_recalculate_current_value();
-#    return max(0, $self->value + $self->ask_price);
-#}
+sub payout {
+    my $self = shift;
+    $self->_recalculate_current_value();
+    return max(0, $self->value + $self->ask_price);
+}
 
 sub barrier_display_info {
     my ($self, $tick) = @_;
