@@ -70,17 +70,27 @@ sub _build_is_expired {
 }
 
 sub _recalculate_current_value {
-    my $self = shift;
+    my ($self, $quote) = @_;
 
     return if $self->is_expired;
-    my $current_tick = $self->underlying->spot_tick;
-    if ($current_tick) {
-        my $current_buy_price = $current_tick->quote + $self->spread / 2;
+    if ($quote) {
+        my $current_buy_price = $quote + $self->spread / 2;
         my $current_value     = ($self->barrier->as_absolute - $current_buy_price) * $self->amount_per_point;
         $self->value($current_value);
     }
 
     return;
+}
+
+# sell level
+has level => (
+    is => 'ro',
+    lazy_build => 1
+);
+
+sub _build_level {
+    my $self = shift;
+    return $self->current_tick->quote - $self->spread / 2;
 }
 
 no Moose;

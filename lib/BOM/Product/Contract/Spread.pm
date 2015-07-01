@@ -158,28 +158,11 @@ sub _build_ask_price {
 sub _build_bid_price {
     my $self = shift;
 
-    $self->_recalculate_current_value;
+    $self->_recalculate_current_value($self->level->quote);
     # we need to take into account the stop loss premium paid.
     my $bid = $self->ask_price + $self->value;
 
     return roundnear(0.01, $bid);
-}
-
-# On every spread contract, we will have both buy and sell quote.
-# We call them 'buy_level' and 'sell_level' to avoid confusion with 'quote' in tick.
-has [qw(buy_level sell_level)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_buy_level {
-    my $self = shift;
-    return $self->current_tick->quote + $self->spread / 2;
-}
-
-sub _build_sell_level {
-    my $self = shift;
-    return $self->current_tick->quote - $self->spread / 2;
 }
 
 has [qw(is_valid_to_buy is_valid_to_sell)] => (
@@ -281,15 +264,15 @@ sub _build_staking_limits {
 
 sub current_value {
     my $self = shift;
-    $self->_recalculate_current_value;
+    $self->_recalculate_current_value($self->current_spot);
     return $self->value;
 }
 
-sub payout {
-    my $self = shift;
-    $self->_recalculate_current_value;
-    return max(0, $self->value + $self->ask_price);
-}
+#sub payout {
+#    my $self = shift;
+#    $self->_recalculate_current_value();
+#    return max(0, $self->value + $self->ask_price);
+#}
 
 sub barrier_display_info {
     my ($self, $tick) = @_;
