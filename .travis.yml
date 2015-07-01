@@ -20,7 +20,7 @@ before_install:
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
-    
+
     - /tmp/travis-scripts/couchdb.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
@@ -30,7 +30,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
-    
+
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
 
@@ -40,6 +40,7 @@ install:
     - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
     - sudo mkdir /etc/rmg
     - sudo chmod 0777 /etc/rmg
+    - sudo ln -s $PWD /home/git/regentmarkets/bom
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/setup_clientdb.sh
