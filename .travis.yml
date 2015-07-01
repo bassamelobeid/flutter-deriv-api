@@ -33,8 +33,6 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
-    - sudo mkdir /etc/rmg
-    - sudo chmod 0777 /etc/rmg
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
