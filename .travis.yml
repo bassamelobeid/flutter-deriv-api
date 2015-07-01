@@ -2,8 +2,6 @@ language: perl
 perl:
     - "5.14.2"
 env:
-    # this list should be kept roughly ordered descending by test runtime
-    # so, long running tests are started first.
     - TEST_SUITE=unit_test_product_contract
     - TEST_SUITE=unit_test_product_all
     - TEST_SUITE=syntax_lib
@@ -16,42 +14,32 @@ addons:
 cache: apt
 before_install:
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/fixHostName.sh
     - dpkg -l | grep postgres
     - pg_lsclusters
-    - sudo /usr/sbin/service postgresql stop
-    - printenv
-    - sudo ifconfig lo:1 172.28.128.3
-    - sudo apt-get update
-    - sudo apt-get install -y postgresql-9.3 postgresql-plperl-9.3 postgresql-contrib-9.3
+    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
-    ## fix hostname
-    - /tmp/travis-scripts/fixHostName.sh
-    ### prereqs
-    - /tmp/travis-scripts/couchdb.sh
-    - /tmp/travis-scripts/clone.sh regentmarkets/cpan
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-utility
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-web
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-app
-    - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
-    - sudo sed -i 's/.*fsync = .*/fsync = off/g'  /etc/postgresql/9.*/main/postgresql.conf
-    - sudo service postgresql restart
-    - cat  /etc/postgresql/9.*/main/postgresql.conf |grep fsync
-    - /tmp/travis-scripts/redis.sh
-install:
-    - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
-    - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
-    - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
-    - sudo ln -s $PWD /home/git/regentmarkets/bom
-    - sudo mkdir /etc/rmg
-    - sudo chmod 0777 /etc/rmg
-    - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
-    - sudo cp -R $PWD/config/environments/development/*.yml /etc/rmg/
-    - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
 
-    # Setting up databases
+    - /tmp/travis-scripts/couchdb.sh
+
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
+    - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
+
+    - /tmp/travis-scripts/postgres_restart.sh
+    - /tmp/travis-scripts/redis.sh
+
+install:
+    - source /tmp/travis-scripts/devbox_path.sh
+    - sudo ln -s $PWD /home/git/regentmarkets/bom
+    - /tmp/travis-scripts/devbox.sh *.yml
+
+    - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_clientdb.sh
     - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_authdb.sh
