@@ -2,8 +2,6 @@ language: perl
 perl:
     - "5.14.2"
 env:
-    # this list should be kept roughly ordered descending by test runtime
-    # so, long running tests are started first.
     - TEST_SUITE=unit_test_database_datamapper
     - TEST_SUITE=unit_test_database_model
     - TEST_SUITE=unit_test_database_all
@@ -13,133 +11,40 @@ addons:
     postgresql: "9.3"
 cache: apt
 before_install:
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - dpkg -l | grep postgres
     - pg_lsclusters
-    - sudo /usr/sbin/service postgresql stop
-    - printenv
-    - sudo ifconfig lo:1 172.28.128.3
-    - sudo apt-get update
-    - sudo apt-get install -y postgresql-9.3 postgresql-plperl-9.3 postgresql-contrib-9.3
+    - /tmp/travis-scripts/fixHostName.sh
+    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     - sudo cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
-    ## fix hostname
-    - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
-    - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
-    - sudo service hostname restart
-    ### prereqs
-    ## init couchdb (with our version 1.2.0)
-    # - sudo apt-get install -y python-couchdb
-    - sudo apt-get -y remove couchdb
-    - sudo rm -fvr /var/log/couchdb
-    - wget https://launchpad.net/~nilya/+archive/ubuntu/couchdb-1.2/+files/couchdb_1.2.0-0ubuntu4%7Eprecise_all.deb && sudo dpkg -i --force-confnew couchdb_1.2.0-0ubuntu4~precise_all.deb
-    # - sudo service couchdb stop
-    - wget --no-verbose -O /tmp/couchdb_init.tar.gz 'https://www.dropbox.com/s/0b37p2x7m3ridb1/couchdb_init.tar.gz?dl=1'
-    - mkdir tmp
-    - sudo tar --gzip -xf /tmp/couchdb_init.tar.gz -C tmp
-    - sudo mv tmp/var/lib/couchdb/1.2.0/*.couch /var/lib/couchdb/
-    - sudo service couchdb start
-    # bom
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
-    - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bom /home/git/regentmarkets/
-    # bom-utility
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-utility.git /tmp/bom-utility
-    - pushd /tmp/bom-utility && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bom-utility /home/git/regentmarkets/
-    # bom-platform
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-platform.git /tmp/bom-platform
-    - pushd /tmp/bom-platform && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bom-platform /home/git/regentmarkets/
-    # carton/cpan
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/cpan.git /tmp/cpan
-    - pushd /tmp/cpan && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - pushd /tmp/cpan && ( sudo sh build.sh ) && popd
-    - sudo mv /tmp/cpan /home/git/regentmarkets/
-    # binary-static
-    - git clone https://github.com/binary-com/binary-static.git /tmp/binary-static
-    - pushd /tmp/binary-static && ( git checkout gh-pages || true ) && popd
-    - sudo mv /tmp/binary-static /home/git/binary-com/
-    - sudo sed -i 's/.*fsync = .*/fsync = off/g'  /etc/postgresql/9.*/main/postgresql.conf
-    - sudo service postgresql restart
-    - cat  /etc/postgresql/9.*/main/postgresql.conf |grep fsync
-    - sudo wget --no-verbose -O /etc/redis/redis_appsettings.conf 'https://www.dropbox.com/s/7k1yujxwb1d1q54/redis_appsettings.conf?dl=1'
-    - sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
-    # bom-web
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-web.git /tmp/bom-web
-    - pushd /tmp/bom-web && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bom-web /home/git/regentmarkets/
-    # bom-app
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom-app.git /tmp/bom-app
-    - pushd /tmp/bom-app && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo mv /tmp/bom-app /home/git/regentmarkets/
+
+    - /tmp/travis-scripts/couchdb.sh
+    
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
+    - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
+
+    - /tmp/travis-scripts/postgres_restart.sh
+    - /tmp/travis-scripts/redis.sh
+
 
 install:
-    - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
-    - export PERL_CARTON_CPANFILE=/home/git/regentmarkets/cpan/cpanfile
-    - export PERL5LIB=/home/git/regentmarkets/cpan/local/lib/perl5:$HOME/build/regentmarkets/bom/t:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom/lib:/home/travis/perl5:/home/git/regentmarkets/bom-web/lib:/home/git/regentmarkets/bom-app/lib
-    - sudo mkdir /etc/rmg
-    - sudo chmod 0777 /etc/rmg
-    - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
-    - sudo cp -R /home/git/regentmarkets/bom/config/environments/development/*.yml /etc/rmg/
-    - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
+    - source /tmp/travis-scripts/devbox_path.sh
+    - /tmp/travis-scripts/devbox.sh
 
-    # Setting up databases
-    # -- client db
-    - sudo pg_dropcluster 9.1 main --stop
-    - sudo pg_dropcluster 9.2 main --stop
-    - sudo pg_dropcluster 9.3 main --stop
-    - sudo pg_dropcluster 9.4 main --stop
-    - sudo rm -rf /etc/postgresql/9.*
-    - sudo rm -rf /var/lib/postgresql/9.*
-    - sudo pg_createcluster 9.3 main -p 5432 --locale 'en_US.UTF-8'
-    - echo -n "listen_addresses='*'" > /tmp/tmp_postgresql_line.conf
-    - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/main/postgresql.conf"
-    - sudo cp /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/main/
-    - sudo pg_ctlcluster 9.3 main start
-    - sudo -u postgres createdb -p 5432 regentmarkets
-    - sudo -u postgres psql -f /home/git/regentmarkets/bom-postgres/config/sql/rmgdb/roles.sql
-    - sudo -u postgres psql -c "ALTER ROLE read WITH password 'letmein'"
-    - sudo -u postgres psql -c "ALTER ROLE write WITH password 'letmein'"
-    - sudo -u postgres psql -c "ALTER ROLE master_write WITH password 'letmein'"
-    - sudo -u postgres psql -c "ALTER ROLE postgres WITH password 'letmein'"
-    - sudo -u postgres -E printenv
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=rmg'
-    - sudo -u postgres psql regentmarkets -c "INSERT INTO betonmarkets.broker_code VALUES ('CR'), ('VRTC'), ('MX'),('MLT');"
-    # -- feed
-    - sudo pg_createcluster 9.3 feed -p 5433 --locale 'en_US.UTF-8'
-    - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/feed/postgresql.conf"
-    - sudo cp /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/feed/
-    - sudo pg_ctlcluster 9.3 feed start
-    - sudo -u postgres createdb -p 5433 feed
-    - sudo -u postgres psql -p 5433 -f /home/git/regentmarkets/bom-postgres/config/sql/rmgdb/roles.sql
-    - sudo -u postgres psql -p 5433 -c "ALTER ROLE read WITH password 'letmein'"
-    - sudo -u postgres psql -p 5433 -c "ALTER ROLE write WITH password 'letmein'"
-    - sudo -u postgres psql -p 5433 -c "ALTER ROLE master_write WITH password 'letmein'"
-    - sudo -u postgres psql -p 5433 -c "ALTER ROLE postgres WITH password 'letmein'"
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5433" --username=postgres --database=feed --dbset=feed'
-    # -- authdb
-    - sudo pg_createcluster 9.3 authdb -p 5435 --locale 'en_US.UTF-8'
-    - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/authdb/postgresql.conf"
-    - sudo cp /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/authdb/
-    - sudo pg_ctlcluster 9.3 authdb start
-    - sudo -u postgres createdb -p 5435 auth
-    - sudo -u postgres psql -p 5435 -f /home/git/regentmarkets/bom-postgres/config/sql/rmgdb/roles.sql
-    - sudo -u postgres psql -p 5435 -c "ALTER ROLE read WITH password 'letmein'"
-    - sudo -u postgres psql -p 5435 -c "ALTER ROLE write WITH password 'letmein'"
-    - sudo -u postgres psql -p 5435 -c "ALTER ROLE master_write WITH password 'letmein'"
-    - sudo -u postgres psql -p 5435 -c "ALTER ROLE postgres WITH password 'letmein'"
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5435" --username=postgres --database=auth --dbset=auth'
-    # -- users db
-    - sudo pg_createcluster 9.3 users -p 5436 --locale 'en_US.UTF-8'
-    - sudo /bin/su -c "cat /tmp/tmp_postgresql_line.conf >> /etc/postgresql/9.3/users/postgresql.conf"
-    - sudo cp /home/git/regentmarkets/bom/t/config/pg_hba.conf /etc/postgresql/9.3/users/
-    - sudo pg_ctlcluster 9.3 users start
-    - sudo -u postgres psql -p 5436 -f /home/git/regentmarkets/bom-postgres/config/sql/userdb/initialize_db.sql
-    - sudo -u postgres psql -p 5436 -c "ALTER ROLE read WITH password 'letmein'"
-    - sudo -u postgres psql -p 5436 -c "ALTER ROLE write WITH password 'letmein'"
-    - sudo -u postgres psql -p 5436 -c "ALTER ROLE postgres WITH password 'letmein'"
-    - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/travis/build/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5436" --username=postgres --dbset=users'
+    - /tmp/travis-scripts/remove_postgresdb_config.sh
+    - /tmp/travis-scripts/setup_clientdb.sh
+    - /tmp/travis-scripts/setup_feeddb.sh
+    - /tmp/travis-scripts/setup_authdb.sh
+    - /tmp/travis-scripts/setup_usersdb.sh
+    
     - export SHELL=/bin/bash
 
     - sudo mkdir -p /var/log/fixedodds
