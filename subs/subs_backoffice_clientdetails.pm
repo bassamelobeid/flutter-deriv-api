@@ -506,26 +506,4 @@ sub client_statement_for_backoffice {
     };
 }
 
-sub get_client_login_history_arrayref {
-    my $client_loginid = shift;
-
-    my $login_history_result = BOM::Database::DAO::Client::get_client_login_history($client_loginid);
-
-    if (scalar @{$login_history_result} > 0) {
-        my @login_history;
-
-        foreach my $login_history (@{$login_history_result}) {
-            my $login_detail = {
-                login_date        => Date::Utility->new($login_history->{login_date}),
-                login_status      => ($login_history->{'login_successful'} ? 'Successful login' : 'Failed login'),
-                login_environment => $login_history->{'login_environment'},
-            };
-            push @login_history, $login_detail;
-        }
-        return \@login_history;
-    }
-
-    return;
-}
-
 1;
