@@ -62,7 +62,17 @@ sub _collect_vol_ages {
         broker       => 'VRT',
         contract_category => 'ANY',
     );
-    my @offer_underlyings = (@offered_forex, @offered_others);
+    my @smart_fx = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+             market    => 'forex',
+             submarket => 'smart_fx'
+    );
+
+   my @smart_indices = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+             market    => 'indices',
+             submarket => 'smart_index'
+    );
+
+    my @offer_underlyings = (@offered_forex, @offered_others, @smart_fx, @smart_indices);
     push @offer_underlyings, BOM::Market::UnderlyingDB->instance->get_symbols_for(market => 'stocks', submarket => ['france','belgium','amsterdam']);
 
     my @symbols = grep { !$skip_list{$_} } (@offer_underlyings, @quanto_currencies);
@@ -75,11 +85,19 @@ sub _collect_vol_ages {
         });
         my $vol_age = (time - $surface_in_used->recorded_date->epoch)/3600;
         my $market = $underlying->market->name;
-        if (($market eq 'forex'or $market eq 'commodities') and $underlying->quanto_only){
-            $market = 'forex_quanto';
+        if ($market eq 'forex'or $market eq 'commodities'){
+            if ($underlying->quanto_only){
+               $market = 'forex_quanto';
+            }elsif ($underlying->submarket->name eq 'smart_fx'){
+               $market = 'smart_fx';
+            }
         }
         if($market eq 'stocks' ) {
             $market='euronext';
+        }
+
+        if ($market eq 'indices' and $underlying->submarket->name eq 'smart_index'){
+            $market = 'smart_index';
         }
         stats_gauge($market.'_vol_age',$vol_age,{tags=>['tag:'.$symbol]} );
     }
@@ -130,6 +148,19 @@ sub _collect_rates_ages {
 
         stats_gauge('interest_rate_age',$currency_rate_age,{tags=>['tag:'.$currency_symbol_to_update]}) ;
     }
+
+    my @smart_fx = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+             market    => 'forex',
+             submarket => 'smart_fx'
+    );
+    foreach my $smart_fx (@smart_fx) {
+        my $smart_fx_in_used = BOM::MarketData::InterestRate->new(symbol => $smart_fx);
+        my $smart_fx_age = (time - $smart_fx_in_used->recorded_date->epoch)/3600;
+
+
+        stats_gauge('smart_fx_interest_rate_age',$smart_fx_age,{tags=>['tag:'.$smart_fx]}) ;
+    }
+
     return;
 }
 
