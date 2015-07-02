@@ -607,9 +607,9 @@ SET search_path = betonmarkets, pg_catalog;
 -- Data for Name: client_authentication_document; Type: TABLE DATA; Schema: betonmarkets; Owner: postgres
 --
 
-INSERT INTO client_authentication_document VALUES (1838, 'passport', 'txt', '/home/git/bom/t/data/db/clientIDscans/CR/CR0009.passport.1233801953.txt', 'CR0009', 'ID_DOCUMENT', NULL);
-INSERT INTO client_authentication_document VALUES (1878, 'address', 'txt', '/home/git/bom/t/data/db/clientIDscans/CR/CR0009.address.1233817301.txt', 'CR0009', 'ID_DOCUMENT', NULL);
-INSERT INTO client_authentication_document VALUES (1858, 'certified_passport', 'png', '/home/git/bom/t/data/db/clientIDscans/CR/CR0009.certified_passport.png', 'CR0009', 'ID_DOCUMENT', NULL);
+INSERT INTO client_authentication_document VALUES (1838, 'passport', 'txt', '/home/git/regentmarkets/bom/t/data/db/clientIDscans/CR/CR0009.passport.1233801953.txt', 'CR0009', 'ID_DOCUMENT', NULL);
+INSERT INTO client_authentication_document VALUES (1878, 'address', 'txt', '/home/git/regentmarkets/bom/t/data/db/clientIDscans/CR/CR0009.address.1233817301.txt', 'CR0009', 'ID_DOCUMENT', NULL);
+INSERT INTO client_authentication_document VALUES (1858, 'certified_passport', 'png', '/home/git/regentmarkets/bom/t/data/db/clientIDscans/CR/CR0009.certified_passport.png', 'CR0009', 'ID_DOCUMENT', NULL);
 
 
 --
