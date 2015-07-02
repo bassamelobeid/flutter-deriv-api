@@ -15,6 +15,13 @@ use BOM::Market::Types;
 
 with 'MooseX::Role::Validatable';
 
+# STATIC
+# added for transaction validation
+sub pricing_engine_name {return ''};
+sub tick_expiry {return 0};
+# added for CustomClientLimits
+sub is_atm_bet {return 0};
+
 has build_parameters => (
     is       => 'ro',
     isa      => 'HashRef',
@@ -38,6 +45,7 @@ has underlying => (
     isa      => 'bom_underlying_object',
     coerce   => 1,
     required => 1,
+    handles => ['market', 'submarket'],
 );
 
 has date_start => (
@@ -54,7 +62,7 @@ has date_pricing => (
     default => sub { Date::Utility->new },
 );
 
-has [qw(date_expiry date_settlement)] => (
+has [qw(date_expiry)] => (
     is  => 'ro',
     isa => 'Maybe[bom_date_object]',
 );
@@ -64,32 +72,6 @@ has value => (
     is       => 'rw',
     init_arg => undef,
 );
-
-has is_atm_bet => (
-    is      => 'ro',
-    default => 0,
-);
-
-# this is not actually needed. But we use pricing engine name
-# to determine so many things. Bad design!
-has pricing_engine_name => (
-    is      => 'ro',
-    default => 'BOM::Product::Pricing::Engine::Spread',
-);
-
-has tick_expiry => (
-    is      => 'ro',
-    default => 0,
-);
-
-has market => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_market {
-    return shift->underlying->market;
-}
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
 has [qw(spread spread_divisor sell_channel current_tick current_spot translated_display_name)] => (
