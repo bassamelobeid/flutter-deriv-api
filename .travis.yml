@@ -24,6 +24,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bdd
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
