@@ -68,5 +68,4 @@ sub get_loginids_for_clients_with_expired_documents_arrayref {
     return \@login_ids;
 }
 
-
 1;
