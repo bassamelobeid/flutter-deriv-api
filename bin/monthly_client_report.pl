@@ -96,8 +96,9 @@ sub go {
 HERE
 
     my $dbh = BOM::Database::ClientDB->new({
-                    broker_code => $broker,
-                                    })->db->dbh;
+        broker_code => $broker,
+        operation   => 'backoffice_replica',
+    })->db->dbh;
 
     my $sth = $dbh->prepare($sql);
     my @binds = (
