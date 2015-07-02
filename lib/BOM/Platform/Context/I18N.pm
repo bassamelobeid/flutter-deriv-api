@@ -64,7 +64,6 @@ sub configs_for {
 
     $config->{_auto}     = 1;
     $config->{_decode}   = 1;
-#    $config->{_encoding} = 'utf-8';
 
     return $config;
 }
