@@ -70,6 +70,20 @@ if ($broker ne 'FOG') {
     print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
     print "<input type=submit value='LIST CLIENT WITHDRAWAL LIMITS'>";
     print "</form>";
+
+    # EXPORT CLIENT'S TRADE DETAILS
+    Bar("To export client's trade details");
+    print
+        "This function will let you export client's trade details into a csv.<P>";
+    print "<hr/><FORM ACTION=\"" . request()->url_for('backoffice/f_clients_csv_output.cgi') . "\" METHOD=\"POST\">";
+    print "LoginID : <input name=loginid type=text size=10 value=''>";
+    print "From : <input name=startdate type=text size=10 value='" . Date::Utility->today()->minus_time_interval('30d')->date . "'/>";
+    print "To : <input name=enddate type=text size=10 value='" . Date::Utility->today()->date . "'/>";
+    print "<INPUT type=hidden name=\"broker\" value=\"$broker\">";
+    print "<INPUT type=\"submit\" value=\"EXPORT_CSV\">";
+    print "</FORM>";
+
+
 }
 
 code_exit_BO();
