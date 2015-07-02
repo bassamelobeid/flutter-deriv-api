@@ -575,6 +575,10 @@ sub prepare_bet_data_for_sell {
 
     if ($bet_class eq 'spread_bet') {
         $bet_params->{expiry_time} = $bet_params->{settlement_time} = scalar $contract->date_pricing->db_timestamp;
+        # payout always equal to sell price for spreads
+        # pnl calculation involves buy price and sell price.
+        # The sell price here includes the premium paid to enter the contract.
+        $bet_params->{payout_price} = $bet_params->{sell_price};
     }
 
     my $quants_bet_variables;
