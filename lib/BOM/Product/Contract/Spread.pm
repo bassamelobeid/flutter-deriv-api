@@ -203,12 +203,6 @@ sub _build_shortcode {
     return join '_', @element;
 }
 
-sub _payout_limit {
-    my ($self) = @_;
-
-    return $self->offering_specifics->{payout_limit};    # Even if not valid, make it 100k.
-}
-
 has 'staking_limits' => (
     is         => 'ro',
     isa        => 'HashRef',
