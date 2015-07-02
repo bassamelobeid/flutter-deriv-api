@@ -1,8 +1,6 @@
 language: perl
 perl:
     - "5.14.2"
-env:
-    - PERL5LIB=/home/git/regentmarkets/bom-postgres/lib:/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi:$HOME/build/regentmarkets/bom/t:/tmp/bom-utility/lib:/tmp/bom/lib:/tmp/bom-postgres/lib:$HOME/build/regentmarkets/bom-webapi/lib:/home/travis/perl5
 addons:
     postgresql: "9.3"
 services:
@@ -26,6 +24,7 @@ before_install:
 
 install:
     - /tmp/travis-scripts/devbox.sh
+    - /tmp/travis-scripts/devbox_path.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_clientdb.sh
