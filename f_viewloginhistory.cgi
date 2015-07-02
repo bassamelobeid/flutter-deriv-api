@@ -33,10 +33,10 @@ foreach my $loginID (@loginIDarray) {
 
         foreach my $login_history (@{$login_history_result}) {
             my $login_date        = $login_history->login_date;
-            my $login_status      = $login_history->login_status ? 'Login Successful' : 'Login Failed';
+            my $login_status      = $login_history->login_successful ? 'ok' : 'failed';
             my $login_environment = $login_history->login_environment;
 
-            print $login_date. ' ' . $login_status . ' ' . $login_environment;
+            print "$login_date $login_status $login_environment\n";
         }
         print '</pre>';
     }
