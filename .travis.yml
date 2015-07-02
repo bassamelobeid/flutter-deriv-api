@@ -18,14 +18,11 @@ before_install:
     - sudo mkdir -p /home/git
     - sudo rm -f /tmp/unittest_*
 
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    # bom
-    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/bom.git /tmp/bom
-    - pushd /tmp/bom && ( git checkout $TRAVIS_BRANCH || true ) && popd
-    - sudo cp -r /tmp/bom /home/git/regentmarkets/
+    - /tmp/travis-scripts/clone.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone.sh regentmarkets/bom-utility
+    - /tmp/travis-scripts/clone.sh regentmarkets/bom
+    - /tmp/travis-scripts/clone.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone.sh regentmarkets/bom-postgres
 
 install:
     - /tmp/travis-scripts/devbox.sh
