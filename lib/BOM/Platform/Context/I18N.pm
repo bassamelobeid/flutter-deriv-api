@@ -62,8 +62,8 @@ sub configs_for {
         $config->{$language} = [Gettext => "$po_file_path"];
     }
 
-    $config->{_auto}     = 1;
-    $config->{_decode}   = 1;
+    $config->{_auto}   = 1;
+    $config->{_decode} = 1;
 
     return $config;
 }
