@@ -90,7 +90,7 @@ has level => (
 
 sub _build_level {
     my $self = shift;
-    return $self->current_tick->quote + $self->spread / 2;
+    return $self->underlying->pipsized_value($self->current_tick->quote + $self->spread / 2);
 }
 
 no Moose;
