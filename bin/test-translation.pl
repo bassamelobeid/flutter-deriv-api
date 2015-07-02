@@ -268,6 +268,7 @@ $mock->mock(configs_for => sub {
         my $po = get_po $lang, 'header_only';
         $config->{uc $po->{lang}} = [Gettext => $po->{file}];
     }
+    $config->{_encoding} = 'utf-8';
 
     #use Data::Dumper; print Data::Dumper->new([$config])->Useqq(1)->Sortkeys(1)->Dump;
 
