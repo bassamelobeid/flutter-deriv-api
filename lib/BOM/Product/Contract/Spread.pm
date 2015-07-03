@@ -92,12 +92,22 @@ sub _build_spread_divisor {
 
 sub _build_current_tick {
     my $self = shift;
-    return $self->underlying->spot_tick;
+
+    my $current_tick = $self->underlying->spot_tick;
+    unless ($current_tick) {
+        $current_tick = $self->_pip_size_tick;
+        $self->add_errors({
+            message           => 'Current tick is undefined for [' . $self->underlying->symbol . ']',
+            severity          => 99,
+            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+            });
+    }
+
+    return $current_tick;
 }
 
 sub _build_current_spot {
-    my $self = shift;
-    return $self->current_tick ? $self->underlying->pipsized_value($self->current_tick->quote) : undef;
+    return shift->current_tick->quote;
 }
 
 sub _build_translated_display_name {
@@ -117,11 +127,7 @@ sub _build_entry_tick {
 
     my $entry_tick = $self->underlying->next_tick_after($self->date_start->epoch);
     unless ($entry_tick) {
-        $entry_tick = $self->current_tick // BOM::Market::Data::Tick->new({
-            quote  => $self->underlying->pip_size,
-            epoch  => 1,                             # Intentionally very old for recognizability.
-            symbol => $self->underlying->symbol,
-        });
+        $entry_tick = $self->current_tick // $self->_pip_size_tick;
         $self->add_errors({
             message           => 'Entry tick is undefined for [' . $self->underlying->symbol . ']',
             severity          => 99,
@@ -278,6 +284,21 @@ sub _get_highlow {
             })}{'high', 'low'};
 
     return ($high, $low);
+}
+
+has _pip_size_tick => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__pip_size_tick {
+    my $self = shift;
+
+    return BOM::Market::Data::Tick->new({
+        quote  => $self->underlying->pip_size,
+        epoch  => 1,                             # Intentionally very old for recognizability.
+        symbol => $self->underlying->symbol,
+    });
 }
 
 # VALIDATIONS #
