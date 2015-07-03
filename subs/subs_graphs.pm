@@ -12,7 +12,7 @@ use BOM::Market::Data::DatabaseAPI;
 use BOM::Market::Underlying;
 use BOM::View::Charting;
 
-use String::UFT8::MD5;
+use String::UTF8::MD5;
 
 my ($firstplot, $ip);
 
