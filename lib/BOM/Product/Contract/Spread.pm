@@ -17,10 +17,10 @@ with 'MooseX::Role::Validatable';
 
 # STATIC
 # added for transaction validation
-sub pricing_engine_name {return ''};
-sub tick_expiry {return 0};
+sub pricing_engine_name { return '' }
+sub tick_expiry         { return 0 }
 # added for CustomClientLimits
-sub is_atm_bet {return 0};
+sub is_atm_bet { return 0 }
 
 has build_parameters => (
     is       => 'ro',
@@ -45,7 +45,7 @@ has underlying => (
     isa      => 'bom_underlying_object',
     coerce   => 1,
     required => 1,
-    handles => ['market', 'submarket'],
+    handles  => ['market', 'submarket'],
 );
 
 has date_start => (
@@ -166,11 +166,7 @@ sub _build_longcode {
 sub _build_shortcode {
     my $self = shift;
 
-    my @element = (
-        $self->code, $self->underlying->symbol,
-        $self->amount_per_point, $self->date_start->epoch,
-        $self->stop_loss, $self->stop_profit
-    );
+    my @element = ($self->code, $self->underlying->symbol, $self->amount_per_point, $self->date_start->epoch, $self->stop_loss, $self->stop_profit);
     return join '_', @element;
 }
 
