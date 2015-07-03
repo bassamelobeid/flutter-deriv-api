@@ -49,7 +49,7 @@ subtest 'spread up' => sub {
         $params->{date_pricing} = $now->epoch + 1;
         my $c = produce_contract($params);
         cmp_ok $c->ask_price, '==', 20.00, 'correct ask price';
-        cmp_ok $c->barrier,   '==', 102,   'barrier with correct pipsize';
+        cmp_ok $c->barrier->as_absolute,   '==', 102,   'barrier with correct pipsize';
         ok !$c->is_expired, 'not expired';
         $params->{date_pricing} = $now->epoch + 2;
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -58,7 +58,7 @@ subtest 'spread up' => sub {
             quote      => 104
         });
         $c = produce_contract($params);
-        cmp_ok $c->barrier, '==', 102, 'barrier with correct pipsize';
+        cmp_ok $c->barrier->as_absolute, '==', 102, 'barrier with correct pipsize';
         ok $c->current_value, 'current value is defined';
         ok !$c->is_expired, 'position not expired';
         cmp_ok $c->current_value, '==', 2, 'current value is positive 6';
