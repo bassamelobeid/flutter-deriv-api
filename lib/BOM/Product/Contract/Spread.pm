@@ -184,7 +184,7 @@ has [qw(longcode shortcode)] => (
 );
 
 sub _build_longcode {
-    my $self = shift;
+    my $self        = shift;
     my $description = 'You will win (lose) [_1] [_2] for every point that the [_3] rises (falls) from the entry spot.';
     return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name));
 }
