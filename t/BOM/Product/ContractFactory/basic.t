@@ -155,7 +155,7 @@ subtest 'make_similar_contract' => sub {
 };
 
 subtest 'simple_contract_info' => sub {
-    plan tests => 6;
+    plan tests => 4;
 
     my $contract_params = {
         bet_type   => 'DOUBLEUP',
@@ -166,10 +166,9 @@ subtest 'simple_contract_info' => sub {
         barrier    => 108.26,
     };
 
-    my ($desc, $channel, $ticky) = simple_contract_info($contract_params);
+    my ($desc, $ticky) = simple_contract_info($contract_params);
 
     like $desc, qr#^USD <strong>1.00</strong>#, 'our params got us what seems like it might be a description';
-    like $channel, qr#^P_CALL-#, 'our params got us what seems like it might be a sell channel';
     ok(!$ticky, "our params do not create a tick expiry contract.");
 
     $contract_params = {
@@ -181,10 +180,9 @@ subtest 'simple_contract_info' => sub {
         barrier    => 108.26,
     };
 
-    ($desc, $channel, $ticky) = simple_contract_info($contract_params);
+    ($desc, $ticky) = simple_contract_info($contract_params);
 
     like $desc, qr#^USD <strong>1.00</strong>#, 'our params got us what seems like it might be a description';
-    like $channel, qr#^P_PUT-#, 'our params got us what seems like it might be a sell channel';
     ok($ticky, "our params create a tick expiry contract.");
 };
 

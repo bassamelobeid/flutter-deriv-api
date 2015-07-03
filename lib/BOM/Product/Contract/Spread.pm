@@ -74,7 +74,7 @@ has value => (
 );
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
-has [qw(spread spread_divisor sell_channel current_tick current_spot translated_display_name)] => (
+has [qw(spread spread_divisor current_tick current_spot translated_display_name)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -87,17 +87,6 @@ sub _build_spread {
 sub _build_spread_divisor {
     my $self = shift;
     return $self->underlying->spread_divisor;
-}
-
-sub _build_sell_channel {
-    my $self = shift;
-
-    my $lang   = request()->language;
-    my $type   = $self->code . '-' . $self->date_start->epoch;
-    my $symbol = uc $self->underlying->symbol;
-    $symbol =~ s/_/-/g;
-    my $channel = join '_', ('P', $type, $symbol, $self->amount_per_point, $self->stop_loss, $self->stop_profit, 'c', $self->currency, $lang);
-    return $channel;
 }
 
 sub _build_current_tick {

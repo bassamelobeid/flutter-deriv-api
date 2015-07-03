@@ -288,7 +288,7 @@ sub simple_contract_info {
     my $contract_analogue = produce_contract($params);
     my $is_spread_bet = $contract_analogue->category_code eq 'spreads' ? 1 : 0;
 
-    return ($contract_analogue->longcode, $contract_analogue->sell_channel, $contract_analogue->tick_expiry, $is_spread_bet);
+    return ($contract_analogue->longcode, $contract_analogue->tick_expiry, $is_spread_bet);
 }
 
 =head2 make_similar_contract

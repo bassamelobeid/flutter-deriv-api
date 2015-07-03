@@ -467,29 +467,6 @@ has opposite_bet => (
     lazy_build => 1
 );
 
-has sell_channel => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1
-);
-
-###
-# End of Attribute section
-###
-
-sub _build_sell_channel {
-    my $self   = shift;
-    my $lang   = request()->language;
-    my $type   = $self->code . '-' . $self->date_start->epoch;
-    my $ending = ($self->tick_expiry) ? $self->tick_count .'t' : $self->date_expiry->epoch;
-    my $symbol = uc $self->underlying->symbol;
-    $symbol =~ s/_/-/g;
-    my @bits     = split /_/, $self->shortcode;
-    my @barriers = $self->code =~ /ASIAN/ ? () : ($bits[-2],$bits[-1]);
-    my $channel  = join '_', ('P', $type, $symbol, $ending, @barriers, 'c', $self->currency, $lang);
-    return $channel;
-}
-
 sub _build_date_settlement {
     my $self       = shift;
     my $end_date   = $self->date_expiry;
