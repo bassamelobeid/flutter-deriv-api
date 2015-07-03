@@ -401,16 +401,18 @@ sub cache_daily_turnover {
         }
 
         # keep previous month latest cache for 60 days
-        my $cache_query = Cache::RedisDB->get($cache_prefix, $latest_prev->db_timestamp);
-        Cache::RedisDB->set($cache_prefix, $latest_prev->db_timestamp, $cache_query, 86400 * 60);
+        if ($latest_prev) {
+            my $cache_query = Cache::RedisDB->get($cache_prefix, $latest_prev->db_timestamp);
+            Cache::RedisDB->set($cache_prefix, $latest_prev->db_timestamp, $cache_query, 86400 * 60);
 
-        # delete all other cache for previous month
-        foreach my $time (@prev_month) {
-            if ($time->db_timestamp ne $latest_prev->db_timestamp) {
-                Cache::RedisDB->del($cache_prefix, $time->db_timestamp);
+            # delete all other cache for previous month
+            foreach my $time (@prev_month) {
+                if ($time->db_timestamp ne $latest_prev->db_timestamp) {
+                    Cache::RedisDB->del($cache_prefix, $time->db_timestamp);
+                }
             }
+            $self->logger->info('Keep long cache for prev month: ' . $latest_prev->db_timestamp);
         }
-        $self->logger->info('Keep long cache for prev month: ' . $latest_prev->db_timestamp);
     }
     return;
 }
