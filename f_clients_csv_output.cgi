@@ -7,6 +7,7 @@ use f_brokerincludeall;
 use subs::subs_client_trades_details;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
+use Path::Tiny;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -21,7 +22,14 @@ my $enddate   = $cgi->param('enddate');
 my $csvfile  = "${loginid}_${startdate}_${enddate}";
 
 eval{
-   my @csv        = ();
+
+   PrintContentType_excel("$csvfile.csv");
+   my $csv  = Text::CSV->new({
+           binary        => 1,
+           always_quote  => 1,
+           quote_char    => "'",
+           eol           => "\n"
+  });
 
    my ($headers, @rows) = get_trades_details({
            broker      => $broker,
@@ -30,19 +38,18 @@ eval{
            enddate     => $enddate,
    });
 
-
    die "no data found\n" unless @rows;
 
    my @headers = sort keys %$headers;
-   push(@csv, join(',', @headers));
+   $csv->combine(@header);
+   print $csv->string;
 
    foreach my $row (@rows) {
        my @row = map { $row->{$_} // '' } @headers;
-       push(@csv, join(',', @row));
+      $csv->combine(@row);
+      print $csv->string;
    }
 
-  PrintContentType_excel("$csvfile.csv");
-   print for @csv;
 
 };
 
