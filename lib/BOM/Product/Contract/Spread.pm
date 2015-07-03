@@ -10,6 +10,7 @@ use Scalar::Util qw(looks_like_number);
 use BOM::Product::Offerings qw( get_contract_specifics );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Context qw(localize request);
+use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Market::Types;
 
@@ -113,7 +114,22 @@ has entry_tick => (
 
 sub _build_entry_tick {
     my $self = shift;
-    return $self->underlying->next_tick_after($self->date_start) // $self->current_tick;
+
+    my $entry_tick = $self->underlying->next_tick_after($self->date_start->epoch);
+    unless ($entry_tick) {
+        $entry_tick = $self->current_tick // BOM::Market::Data::Tick->new({
+            quote  => $self->underlying->pip_size,
+            epoch  => 1,                             # Intentionally very old for recognizability.
+            symbol => $self->underlying->symbol,
+        });
+        $self->add_errors({
+            message           => 'Entry tick is undefined for [' . $self->underlying->symbol . ']',
+            severity          => 99,
+            message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
+        });
+    }
+
+    return $entry_tick;
 }
 
 has [qw(ask_price bid_price)] => (
