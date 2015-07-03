@@ -13,7 +13,7 @@ our $VERSION = '1.0';
 
 =head1 NAME
 
-BOM::Utility::Utils
+BOM::Backoffice::GDGraph
 
 =head1 VERSION
 
@@ -21,9 +21,9 @@ BOM::Utility::Utils
 
 =head1 SYNOPSYS
 
-    use BOM::Utility::Utils
+    use BOM::Backoffice::GDGraph
 
-    my $encoded_text = BOM::Utility::Utils::encode_text("Hello world!");
+    my $encoded_text = BOM::Backoffice::GDGraph::encode_text("Hello world!");
 
 =head1 DESCRIPTION
 

@@ -5,12 +5,11 @@ use strict;
 use f_brokerincludeall;
 use BOM::Market::UnderlyingDB;
 use BOM::Backoffice::GNUPlot;
-use BOM::Utility::Utils;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use subs::subs_graphs;
 
-BOM::Platform::Sysinit::init();
+use String::UTF8::MD5;
 
 PrintContentType();
 BrokerPresentation("Plot Graph");
@@ -45,7 +44,7 @@ my $hashcat;
 foreach my $hashkey (keys %{request()->params}) {
     $hashcat .= "$hashkey=" . request()->param($hashkey);
 }
-$hashcat = BOM::Utility::Utils::md5($hashcat);
+$hashcat = String::UTF8::MD5::md5($hashcat);
 $hashcat .= int(rand 100);
 my $fileextention       = "gif";
 my $graph_outputfile    = BOM::Platform::Runtime->instance->app_config->system->directory->tmp_gif . "/$hashcat.$fileextention";
