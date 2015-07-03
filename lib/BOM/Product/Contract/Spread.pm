@@ -180,7 +180,7 @@ sub _build_shortcode {
     my @element = (
         $self->code, $self->underlying->symbol,
         $self->amount_per_point, $self->date_start->epoch,
-        $self->stop_loss, $self->stop_profit, $self->spread
+        $self->stop_loss, $self->stop_profit
     );
     return join '_', @element;
 }

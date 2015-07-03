@@ -141,16 +141,15 @@ sub shortcode_to_parameters {
         };
     }
 
-    if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+)_(\d+)_(\d+)/) {
+    if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+)_(\d+)/) {
         return {
             shortcode        => $shortcode,
             bet_type         => $1,
-            underlying       => $2,
+            underlying       => BOM::Market::Underlying->new($2),
             amount_per_point => $3,
             date_start       => $4,
             stop_loss        => $5,
             stop_profit      => $6,
-            spread           => $7,
             currency         => $currency,
         };
     }
