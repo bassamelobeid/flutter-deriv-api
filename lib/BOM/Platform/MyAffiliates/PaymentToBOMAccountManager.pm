@@ -15,16 +15,18 @@ use warnings;
 use Moose;
 use Carp;
 use IO::File;
+use Try::Tiny;
 use Data::Dumper qw( Dumper );
 use Text::CSV;
 use Text::Trim;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
+use List::MoreUtils qw(any);
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
 use BOM::Platform::MyAffiliates;
-use Try::Tiny;
+use BOM::Platform::Context qw(request);
 
 =head1 ATTRIBUTES
 
@@ -70,6 +72,7 @@ sub _split_transactions_by_destination_dealing_server {
     my @BOM_account_transactions = @_;
     my $transactions_for_server  = {};
 
+    my @allow_broker = map { $_->code } @{request()->website->broker_codes};
     foreach my $transaction (@BOM_account_transactions) {
         my $BOM_account = _get_BOM_loginid_from_transaction($transaction);
 
@@ -79,7 +82,9 @@ sub _split_transactions_by_destination_dealing_server {
         my $server = 'LOGIN_EXTRACTION_ERRORS';
         if ($BOM_account =~ /^([A-Z]+)\d+$/) {
             my $broker = $1;
-            $server = BOM::Platform::Runtime->instance->broker_codes->dealing_server_for($broker)->canonical_name;
+            if (any { $broker eq $_ } @allow_broker) {
+                $server = BOM::Platform::Runtime->instance->broker_codes->dealing_server_for($broker)->canonical_name;
+            }
         }
 
         if (not ref $transactions_for_server->{$server}) {
