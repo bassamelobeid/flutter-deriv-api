@@ -7,7 +7,7 @@ use f_brokerincludeall;
 use subs::subs_client_trades_details;
 use BOM::Platform::Plack qw( PrintContentType PrintContentType_excel);
 use BOM::Platform::Sysinit ();
-use Path::Tiny;
+use Text::CSV;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
