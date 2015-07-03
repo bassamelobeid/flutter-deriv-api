@@ -19,7 +19,7 @@ sub documentation {
 sub daemon_run {
     my $self = shift;
 
-    $self->notice('Restarting.');
+    $self->warn('Restarting.');
     while (1) {
         # Outer `while` to live through possible redis disconnects/restarts
         while (my $info = dequeue_expired_contract(1)) {    # Blocking for next available.
@@ -48,7 +48,7 @@ sub daemon_run {
 
 sub handle_shutdown {
     my $self = shift;
-    $self->notice('Shutting down.');
+    $self->warn('Shutting down.');
     return 0;
 }
 
