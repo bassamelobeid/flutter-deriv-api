@@ -2,6 +2,7 @@ package BOM::Product::Contract::Spreadu;
 
 use Moose;
 extends 'BOM::Product::Contract::Spread';
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::Product::Contract::Strike::Spread;
 

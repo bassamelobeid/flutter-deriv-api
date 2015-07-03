@@ -2,6 +2,7 @@ package BOM::Product::Contract::Spreadd;
 
 use Moose;
 extends 'BOM::Product::Contract::Spread';
+use Format::Util::Numbers qw(roundnear);
 
 use BOM::Product::Contract::Strike::Spread;
 # Static methods
@@ -37,7 +38,7 @@ sub _build_stop_loss_level {
 
 sub _build_stop_profit_level {
     my $self = shift;
-    return $self->underying->pipsized_value($self->barrier->as_absolute - $self->stop_profit);
+    return $self->underlying->pipsized_value($self->barrier->as_absolute - $self->stop_profit);
 }
 
 has is_expired => (
@@ -60,7 +61,7 @@ sub _build_is_expired {
             $self->_recalculate_value($self->stop_loss_level);
         } elsif ($low <= $self->stop_profit_level) {
             $is_expired = 1;
-            $self->_calculate_value($self->stop_profit_level);
+            $self->_recalculate_value($self->stop_profit_level);
         }
     }
 

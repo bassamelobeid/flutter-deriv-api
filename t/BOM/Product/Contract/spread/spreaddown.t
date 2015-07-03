@@ -26,7 +26,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 subtest 'spread up' => sub {
     my $params = {
-        bet_type         => 'SPREADU',
+        bet_type         => 'SPREADD',
         currency         => 'USD',
         underlying       => 'R_100',
         date_start       => $now,
@@ -43,13 +43,13 @@ subtest 'spread up' => sub {
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $now->epoch + 1,
-        quote      => 101
+        quote      => 102
     });
     lives_ok {
         $params->{date_pricing} = $now->epoch + 1;
         my $c = produce_contract($params);
         cmp_ok $c->ask_price, '==', 20.00, 'correct ask price';
-        cmp_ok $c->barrier->as_absolute, '==', 102, 'barrier with correct pipsize';
+        cmp_ok $c->barrier->as_absolute, '==', 101, 'barrier with correct pipsize';
         ok !$c->is_expired, 'not expired';
         $params->{date_pricing} = $now->epoch + 2;
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -58,10 +58,11 @@ subtest 'spread up' => sub {
             quote      => 104
         });
         $c = produce_contract($params);
-        cmp_ok $c->barrier->as_absolute, '==', 102, 'barrier with correct pipsize';
+        cmp_ok $c->barrier->as_absolute, '==', 101, 'barrier with correct pipsize';
         ok $c->current_value, 'current value is defined';
         ok !$c->is_expired, 'position not expired';
-        cmp_ok $c->current_value, '==', 4, 'current value is positive 4';
+        cmp_ok $c->current_value, '==', -6, 'current value is negative 6';
+        cmp_ok $c->bid_price, '==', 12, 'bid_price is 12';
     }
     'general checks';
 
@@ -71,9 +72,10 @@ subtest 'spread up' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 3,
-            quote      => 92
+            quote      => 111
         });
         ok $c->is_expired;
+        cmp_ok $c->stop_loss_level, '==', 111;
         cmp_ok $c->value, '==', -20, 'value is -20';
     }
     'hit stop loss';
@@ -89,10 +91,11 @@ subtest 'spread up' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 5,
-            quote      => 119
+            quote      => 67
         });
         my $c = produce_contract($params);
         ok $c->is_expired;
+        cmp_ok $c->stop_profit_level, '==', 67;
         cmp_ok $c->value, '==', 50, 'value is 50';
     }
     'hit stop profit';
