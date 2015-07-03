@@ -12,7 +12,6 @@ sub category_code   { return 'spreads'; }
 sub display_name    { return 'spread up'; }
 sub sentiment       { return 'up'; }
 sub other_side_code { return 'SPREADD'; }
-sub stream_level    { return 'buy_level'; }
 
 # The price of which the client bought at.
 has barrier => (
@@ -86,6 +85,15 @@ sub _build_bid_price {
     }
 
     return roundnear(0.01, $bid);
+}
+
+has stream_level => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_stream_level {
+    return shift->buy_level;
 }
 
 sub _recalculate_value {
