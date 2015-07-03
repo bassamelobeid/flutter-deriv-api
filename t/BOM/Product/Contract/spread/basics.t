@@ -3,9 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
+use Test::MockModule;
 
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -23,17 +24,17 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now
     });
 
-subtest 'entry tick' => sub {
-    my $params = {
-        bet_type         => 'SPREADU',
-        underlying       => 'R_100',
-        date_start       => $now,
-        amount_per_point => 1,
-        stop_loss        => 10,
-        stop_profit      => 10,
-        currency         => 'USD',
-    };
+my $params = {
+    bet_type         => 'SPREADU',
+    underlying       => 'R_100',
+    date_start       => $now,
+    amount_per_point => 1,
+    stop_loss        => 10,
+    stop_profit      => 10,
+    currency         => 'USD',
+};
 
+subtest 'entry tick' => sub {
     lives_ok {
         my $c = produce_contract({%$params, current_tick => undef});
         isa_ok $c, 'BOM::Product::Contract::Spreadu';
@@ -59,4 +60,12 @@ subtest 'entry tick' => sub {
         ok(!($c->all_errors)[0], 'no error');
     }
     'spreadup';
+};
+
+subtest 'current tick' => sub {
+    my $u = Test::MockModule->new('BOM::Market::Underlying');
+    $u->mock('get_combined_realtime_tick', sub { undef });
+    my $c = produce_contract($params);
+    is $c->current_tick->quote, 0.01, 'current tick is pip size value if current tick is undefined';
+    ok(($c->all_errors)[0], 'error');
 };
