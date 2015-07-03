@@ -10,7 +10,7 @@ use BOM::Platform::Sysinit ();
 use Text::CSV;
 BOM::Platform::Sysinit::init();
 
-PrintContentType();
+#PrintContentType();
 
 my $cgi = CGI->new;
 
