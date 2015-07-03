@@ -16,7 +16,7 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Clients Locked in Transaction');
 
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 Bar('Clients Locked');
 

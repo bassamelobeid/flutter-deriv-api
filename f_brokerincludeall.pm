@@ -10,7 +10,7 @@ use subs::subs_backoffice_forms;
 use subs::subs_backoffice_save;
 
 use Date::Utility;
-use BOM::Platform::Auth0;
+use BOM::Backoffice::Auth0;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
 use BOM::Market::Underlying;

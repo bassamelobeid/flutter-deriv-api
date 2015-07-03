@@ -14,7 +14,7 @@ PrintContentType();
 my $login = request()->param('login');
 
 BrokerPresentation('CLIENT LIMITS FOR ' . $login);
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker = request()->broker->code;
 

@@ -18,7 +18,7 @@ use Try::Tiny;
 
 BOM::Platform::Sysinit::init();
 
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $cgi = CGI->new();
 

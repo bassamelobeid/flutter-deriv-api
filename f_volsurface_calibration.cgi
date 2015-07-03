@@ -21,7 +21,7 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation('CALIBRATION MODEL COMPARISON');
 
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $cgi = CGI->new();
 my @underlyings =

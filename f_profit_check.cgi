@@ -16,7 +16,7 @@ my $loginID = uc(request()->param('loginID'));
 
 PrintContentType();
 BrokerPresentation($loginID . ' Profit Analysis', '', '');
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
     print "Error : wrong loginID ($loginID) could not get client instance";

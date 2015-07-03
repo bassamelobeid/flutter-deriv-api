@@ -56,8 +56,8 @@ if (    not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master
 }
 
 my $broker = request()->broker->code;
-my $staff  = BOM::Platform::Auth0::can_access(['Quants']);
-my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::can_access(['Quants']);
+my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 $text =~ s/\r\n/\n/g;
 $text =~ s/\n\r/\n/g;

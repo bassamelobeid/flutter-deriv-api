@@ -10,7 +10,7 @@ use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 PrintContentType();
 
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 # Upload holiday files
 my $cgi                                   = new CGI;

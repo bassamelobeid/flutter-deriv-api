@@ -10,7 +10,7 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 print qq~
 <head>

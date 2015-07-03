@@ -59,8 +59,8 @@ my $client = eval { BOM::Platform::Client->new({loginid => $loginid}) } || do {
 };
 
 my $broker = $client->broker;
-my $staff  = BOM::Platform::Auth0::can_access(['CS']);
-my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
+my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 # sync authentication status to Doughflow
 if ($input{whattodo} eq 'sync_to_DF') {
@@ -223,7 +223,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
     }
 
     # client promo_code related fields
-    if (BOM::Platform::Auth0::has_authorisation(['Marketing'])) {
+    if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
 
         if (my $promo_code = uc $input{promo_code}) {
 

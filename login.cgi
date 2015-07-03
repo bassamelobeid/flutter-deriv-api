@@ -9,7 +9,7 @@ use f_brokerincludeall;
 use CGI;
 use Auth::DuoWeb;
 use BOM::Platform::Runtime;
-use BOM::Platform::Auth0;
+use BOM::Backoffice::Auth0;
 use BOM::Platform::Plack qw( http_redirect PrintContentType );
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw(request);
@@ -32,7 +32,7 @@ if (request()->param('sig_response')) {
     $try_to_login = ($email eq request()->param('email'));
 }
 
-if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('access_token'))) {
+if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
     my $mycookie = session_cookie({
         loginid => BOM::Platform::Context::request()->broker->code,
         token   => request()->param('access_token'),
@@ -48,11 +48,11 @@ if ($try_to_login and my $staff = BOM::Platform::Auth0::login(request()->param('
         email   => "",
         expires => 1,
     });
-    BOM::Platform::Auth0::loggout();
+    BOM::Backoffice::Auth0::loggout();
     PrintContentType({'cookies' => $mycookie});
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';
     code_exit_BO();
-} elsif (not BOM::Platform::Auth0::from_cookie()) {
+} elsif (not BOM::Backoffice::Auth0::from_cookie()) {
     PrintContentType();
     BOM::StaffPages->instance->login();
     code_exit_BO();

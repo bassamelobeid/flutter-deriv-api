@@ -10,7 +10,7 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Client self exclusion report');
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker = request()->param('broker');
 

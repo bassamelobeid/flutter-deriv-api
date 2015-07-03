@@ -10,8 +10,8 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation('BACKOFFICE ACCOUNTS');
 my $broker           = request()->broker->code;
-my $staff            = BOM::Platform::Auth0::can_access(['Payments']);
-my $clerk            = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $staff            = BOM::Backoffice::Auth0::can_access(['Payments']);
+my $clerk            = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $currency_options = get_currency_options();
 
 if (length($broker) < 2) {

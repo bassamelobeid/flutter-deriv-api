@@ -1,4 +1,4 @@
-package BOM::Platform::Auth0;
+package BOM::Backoffice::Auth0;
 use warnings;
 use strict;
 use Mojo::UserAgent;
@@ -30,7 +30,7 @@ sub user_by_access_token {
 sub login {
     my $access_token = shift;
 
-    my $user = BOM::Platform::Auth0::user_by_access_token($access_token);
+    my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
         Cache::RedisDB->set("BINARYBOLOGIN", $user->{nickname}, JSON->new->utf8->encode($user), 24 * 3600);
@@ -59,7 +59,7 @@ sub loggout {
 sub can_access {
     my $groups = shift;
 
-    if (BOM::Platform::Auth0::has_authorisation($groups)) {
+    if (BOM::Backoffice::Auth0::has_authorisation($groups)) {
         return 1;
     }
     print "login again";

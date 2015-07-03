@@ -6,14 +6,14 @@ use strict 'vars';
 use f_brokerincludeall;
 use Auth::DuoWeb;
 use BOM::System::Config;
-use BOM::Platform::Auth0;
+use BOM::Backoffice::Auth0;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 PrintContentType();
 
 my $access_token = request()->param('token');
-my $staff        = BOM::Platform::Auth0::user_by_access_token($access_token);
+my $staff        = BOM::Backoffice::Auth0::user_by_access_token($access_token);
 
 if (not $staff) {
     print "Login failed";

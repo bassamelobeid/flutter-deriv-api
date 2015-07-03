@@ -33,7 +33,7 @@ if (request()->param('page') eq 'global') {
     };
 
     if ($authorisations->{$group_to_display}) {
-        BOM::Platform::Auth0::can_access([$authorisations->{$group_to_display}]);
+        BOM::Backoffice::Auth0::can_access([$authorisations->{$group_to_display}]);
         push @{$settings_list}, @{BOM::DynamicSettings::get_settings_by_group($group_to_display)};
     } else {
         print "Access restricted.";

@@ -45,9 +45,9 @@ my $ajax_only    = delete $params{ajax_only};
 my $DCcode       = delete $params{DCcode};
 my $range        = delete $params{range};
 
-BOM::Platform::Auth0::can_access(['Payments']);
+BOM::Backoffice::Auth0::can_access(['Payments']);
 my $token = BOM::Platform::Context::request()->bo_cookie->token;
-my $staff = BOM::Platform::Auth0::from_cookie();
+my $staff = BOM::Backoffice::Auth0::from_cookie();
 my $clerk = $staff->{nickname};
 
 my $client = eval { BOM::Platform::Client->new({loginid => $loginID}) } || do {

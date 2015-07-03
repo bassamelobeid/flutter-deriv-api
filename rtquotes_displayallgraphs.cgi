@@ -13,7 +13,7 @@ use String::UTF8::MD5;
 
 PrintContentType();
 BrokerPresentation("Plot Graph");
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $market = request()->param('market');
 

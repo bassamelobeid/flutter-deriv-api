@@ -21,7 +21,7 @@ my $loginID = uc(request()->param('loginID'));
 
 PrintContentType();
 BrokerPresentation($loginID . ' Contracts Analysis', '', '');
-my $staff = BOM::Platform::Auth0::can_access(['CS']);
+my $staff = BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^(\D+)(\d+)$/) {
     print "Error : wrong loginID ($loginID) could not get client instance";
@@ -42,7 +42,7 @@ if (request()->param('update_limitlist')) {
         contract_kind => request()->param('contract_kind'),
         payout_limit  => request()->param('payout_limit'),
         comment       => request()->param('limitlist_comment'),
-        staff         => BOM::Platform::Auth0::from_cookie()->{nickname},
+        staff         => BOM::Backoffice::Auth0::from_cookie()->{nickname},
     });
 }
 

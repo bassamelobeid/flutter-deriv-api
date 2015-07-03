@@ -23,8 +23,8 @@ if (request()->param('action') ne 'DOWNLOAD CSV') {
 }
 
 my $broker = request()->broker->code;
-my $staff  = BOM::Platform::Auth0::can_access(['CS']);
-my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
+my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 my $home_link = request()->url_for('backoffice/f_viewclientsubset.cgi');
 
