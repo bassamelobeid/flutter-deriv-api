@@ -481,13 +481,12 @@ sub _build_sell_channel {
     my $self   = shift;
     my $lang   = request()->language;
     my $type   = $self->code . '-' . $self->date_start->epoch;
-    my $ending = $self->date_expiry->epoch;
+    my $ending = ($self->tick_expiry) ? $self->tick_count .'t' : $self->date_expiry->epoch;
     my $symbol = uc $self->underlying->symbol;
     $symbol =~ s/_/-/g;
     my @bits     = split /_/, $self->shortcode;
-    my $barrier  = $bits[-2];
-    my $barrier2 = $bits[-1];
-    my $channel  = join '_', ('P', $type, $symbol, $ending, $barrier, $barrier2, 'c', $self->currency, $lang);
+    my @barriers = $self->code =~ /ASIAN/ ? () : ($bits[-2],$bits[-1]);
+    my $channel  = join '_', ('P', $type, $symbol, $ending, @barriers, 'c', $self->currency, $lang);
     return $channel;
 }
 
