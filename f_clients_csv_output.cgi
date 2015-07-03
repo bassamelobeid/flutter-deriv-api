@@ -10,10 +10,7 @@ use BOM::Platform::Sysinit ();
 use Text::CSV;
 BOM::Platform::Sysinit::init();
 
-#PrintContentType();
-
 my $cgi = CGI->new;
-
 
 my $broker    = $cgi->param('broker');
 my $loginid   = $cgi->param('loginid');
@@ -23,7 +20,6 @@ my $csvfile  = "${loginid}_${startdate}_${enddate}";
 
 eval{
 
-   PrintContentType_excel("$csvfile.csv");
    my $csv  = Text::CSV->new({
            binary        => 1,
            always_quote  => 1,
@@ -42,6 +38,7 @@ eval{
 
    my @headers = sort keys %$headers;
    $csv->combine(@headers);
+   PrintContentType_excel("$csvfile.csv");
    print $csv->string;
 
    foreach my $row (@rows) {
@@ -50,12 +47,10 @@ eval{
       print $csv->string;
    }
 
-
 };
 
 if (my $err = $@) {
             PrintContentType();
-            BrokerPresentation("Client Trades CSV for $csvfile");
             print qq[<div class="ui-widget ui-widget-content ui-state-error">Error: $err</div>];
             code_exit_BO();
 }
