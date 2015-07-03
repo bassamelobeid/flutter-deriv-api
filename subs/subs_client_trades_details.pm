@@ -74,7 +74,7 @@ sub _build_report {
          currency                => $currency,
          financial_market_bet_id => $tn->financial_market_bet_id,
          bet_type                => $fmb->bet_type,
-         theo_price              => $fmb->theo_price,
+         theo_price              => $orig->theo_price,
          buy_price               => $fmb->buy_price,
          payout_price            => $fmb->payout_price,
          sell_price              => $fmb->sell_price,
