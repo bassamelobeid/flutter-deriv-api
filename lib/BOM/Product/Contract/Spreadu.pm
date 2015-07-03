@@ -25,17 +25,17 @@ sub _build_barrier {
     return BOM::Product::Contract::Strike::Spread->new(supplied_barrier => $supplied_barrier);
 }
 
-has [qw(stop_loss_price stop_profit_price)] => (
+has [qw(stop_loss_level stop_profit_level)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_stop_loss_price {
+sub _build_stop_loss_level {
     my $self = shift;
     return $self->underlying->pipsized_value($self->barrier->as_absolute - $self->stop_loss);
 }
 
-sub _build_stop_profit_price {
+sub _build_stop_profit_level {
     my $self = shift;
     return $self->underlying->pipsized_value($self->barrier->as_absolute + $self->stop_profit);
 }
@@ -55,12 +55,12 @@ sub _build_is_expired {
 
     my $is_expired = 0;
     if ($high and $low) {
-        if ($low <= $self->stop_loss_price) {
+        if ($low <= $self->stop_loss_level) {
             $is_expired = 1;
-            $self->_recalculate_value($self->stop_loss_price);
-        } elsif ($high >= $self->stop_profit_price) {
+            $self->_recalculate_value($self->stop_loss_level);
+        } elsif ($high >= $self->stop_profit_level) {
             $is_expired = 1;
-            $self->_recalculate_value($self->stop_profit_price);
+            $self->_recalculate_value($self->stop_profit_level);
         }
     }
 

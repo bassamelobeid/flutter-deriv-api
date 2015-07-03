@@ -5,7 +5,7 @@ use Moose;
 use Date::Utility;
 use BOM::Platform::Runtime;
 
-use List::Util qw(min max);
+use List::Util qw(min);
 use Scalar::Util qw(looks_like_number);
 use BOM::Product::Offerings qw( get_contract_specifics );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
@@ -185,14 +185,12 @@ has [qw(longcode shortcode)] => (
 
 sub _build_longcode {
     my $self = shift;
-
     my $description = 'You will win (lose) [_1] [_2] for every point that the [_3] rises (falls) from the entry spot.';
     return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name));
 }
 
 sub _build_shortcode {
     my $self = shift;
-
     my @element = ($self->code, $self->underlying->symbol, $self->amount_per_point, $self->date_start->epoch, $self->stop_loss, $self->stop_profit);
     return join '_', @element;
 }
