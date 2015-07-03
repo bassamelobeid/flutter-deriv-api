@@ -12,6 +12,7 @@ sub category_code   { return 'spreads'; }
 sub display_name    { return 'spread down'; }
 sub sentiment       { return 'down'; }
 sub other_side_code { return 'SPREADU'; }
+sub stream_level    { return 'sell_level'; }
 
 # The price of which the client bought at.
 has barrier => (
@@ -57,40 +58,45 @@ sub _build_is_expired {
     if ($high and $low) {
         if ($high >= $self->stop_loss_price) {
             $is_expired = 1;
-            my $loss = $self->stop_loss * $self->amount_per_point;
-            $self->value(-$loss);
+            $self->_recalculate_value($self->stop_loss_price);
         } elsif ($low <= $self->stop_profit_price) {
             $is_expired = 1;
-            my $profit = $self->stop_profit * $self->amount_per_point;
-            $self->value($profit);
+            $self->_calculate_value($self->stop_profit_price);
         }
     }
 
     return $is_expired;
 }
 
-sub _recalculate_current_value {
-    my ($self, $quote) = @_;
+has bid_price => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
-    return if $self->is_expired;
-    if ($quote) {
-        my $current_buy_price = $quote + $self->spread / 2;
-        my $current_value     = ($self->barrier->as_absolute - $current_buy_price) * $self->amount_per_point;
-        $self->value($current_value);
+sub _build_bid_price {
+    my $self = shift;
+
+    my $bid;
+    # we need to take into account the stop loss premium paid.
+    if ($self->is_expired) {
+        $bid = $self->ask_price + $self->value;
+    } else {
+        $self->_recalculate_value($self->buy_level);
+        $bid = $self->ask_price + $self->value;
+    }
+
+    return roundnear(0.01, $bid);
+}
+
+sub _recalculate_value {
+    my ($self, $level) = @_;
+
+    if ($level) {
+        my $value = ($self->barrier->as_absolute - $level) * $self->amount_per_point;
+        $self->value($value);
     }
 
     return;
-}
-
-# sell level
-has level => (
-    is         => 'ro',
-    lazy_build => 1
-);
-
-sub _build_level {
-    my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote - $self->spread / 2);
 }
 
 no Moose;

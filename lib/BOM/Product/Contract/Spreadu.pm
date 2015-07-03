@@ -12,6 +12,7 @@ sub category_code   { return 'spreads'; }
 sub display_name    { return 'spread up'; }
 sub sentiment       { return 'up'; }
 sub other_side_code { return 'SPREADD'; }
+sub stream_level    { return 'buy_level'; }
 
 # The price of which the client bought at.
 has barrier => (
@@ -57,40 +58,45 @@ sub _build_is_expired {
     if ($high and $low) {
         if ($low <= $self->stop_loss_price) {
             $is_expired = 1;
-            my $loss = $self->stop_loss * $self->amount_per_point;
-            $self->value(-$loss);
+            $self->_recalculate_value($self->stop_loss_price);
         } elsif ($high >= $self->stop_profit_price) {
             $is_expired = 1;
-            my $profit = $self->stop_profit * $self->amount_per_point;
-            $self->value($profit);
+            $self->_recalculate_value($self->stop_profit_price);
         }
     }
 
     return $is_expired;
 }
 
-sub _recalculate_current_value {
-    my ($self, $quote) = @_;
-
-    return if $self->is_expired;
-    if ($quote) {
-        my $current_sell_price = $quote - $self->spread / 2;
-        my $current_value      = ($current_sell_price - $self->barrier->as_absolute) * $self->amount_per_point;
-        $self->value($current_value);
-    }
-
-    return;
-}
-
-# buy level
-has level => (
+has bid_price => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_level {
+sub _build_bid_price {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote + $self->spread / 2);
+
+    my $bid;
+    # we need to take into account the stop loss premium paid.
+    if ($self->is_expired) {
+        $bid = $self->ask_price + $self->value;
+    } else {
+        $self->_recalculate_value($self->sell_level);
+        $bid = $self->ask_price + $self->value;
+    }
+
+    return roundnear(0.01, $bid);
+}
+
+sub _recalculate_value {
+    my ($self, $level) = @_;
+
+    if ($level) {
+        my $value = ($level - $self->barrier->as_absolute) * $self->amount_per_point;
+        $self->value($value);
+    }
+
+    return;
 }
 
 no Moose;

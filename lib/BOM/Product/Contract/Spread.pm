@@ -132,7 +132,7 @@ sub _build_entry_tick {
     return $entry_tick;
 }
 
-has [qw(ask_price bid_price)] => (
+has ask_price => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -142,14 +142,19 @@ sub _build_ask_price {
     return roundnear(0.01, $self->stop_loss * $self->amount_per_point);
 }
 
-sub _build_bid_price {
+has [qw(buy_level sell_level)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_buy_level {
     my $self = shift;
+    return $self->underlying->pipsized_value($self->current_tick->quote + $self->spread / 2);
+}
 
-    $self->_recalculate_current_value($self->level);
-    # we need to take into account the stop loss premium paid.
-    my $bid = $self->ask_price + $self->value;
-
-    return roundnear(0.01, $bid);
+sub _build_sell_level {
+    my $self = shift;
+    return $self->underlying->pipsized_value($self->current_tick->quote - $self->spread / 2);
 }
 
 has [qw(is_valid_to_buy is_valid_to_sell)] => (
@@ -241,7 +246,7 @@ sub _build_staking_limits {
 
 sub current_value {
     my $self = shift;
-    $self->_recalculate_current_value($self->current_spot);
+    $self->_recalculate_value($self->current_spot);
     return $self->value;
 }
 
