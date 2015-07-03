@@ -11,42 +11,29 @@ services:
 cache: apt
 before_install:
     - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
-    - sudo /usr/sbin/service postgresql stop
+    - /tmp/travis-scripts/fixHostName.sh
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
-    - sudo ifconfig lo:1 172.28.128.3
-    - sudo apt-get update
-    - sudo apt-get install -y postgresql-9.3 postgresql-plperl-9.3 postgresql-contrib-9.3
+    - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
-    ## fix hostname
-    - sudo /bin/su -c "echo -n 'deal01' > /etc/hostname"
-    - sudo /bin/su -c "echo '127.0.1.1 deal01.devbin.io deal01' >> /etc/hosts"
-    - sudo service hostname restart
-    ### prereqs
-    - sudo apt-get -y remove couchdb
-    - sudo rm -fvr /var/log/couchdb
-    - wget https://launchpad.net/~nilya/+archive/ubuntu/couchdb-1.2/+files/couchdb_1.2.0-0ubuntu4%7Eprecise_all.deb && sudo dpkg -i --force-confnew couchdb_1.2.0-0ubuntu4~precise_all.deb
-    - wget --no-verbose -O /tmp/couchdb_init.tar.gz 'https://www.dropbox.com/s/0b37p2x7m3ridb1/couchdb_init.tar.gz?dl=1'
-    - mkdir tmp
-    - sudo tar --gzip -xf /tmp/couchdb_init.tar.gz -C tmp
-    - sudo mv tmp/var/lib/couchdb/1.2.0/*.couch /var/lib/couchdb/
-    - sudo service couchdb start
-    - /tmp/travis-scripts/clone.sh regentmarkets/cpan
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-utility
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone.sh regentmarkets/bom-postgres
+
+    - /tmp/travis-scripts/couchdb.sh
+
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
-    - sudo wget --no-verbose -O /etc/redis/redis_appsettings.conf 'https://www.dropbox.com/s/7k1yujxwb1d1q54/redis_appsettings.conf?dl=1'
-    - sudo /usr/bin/redis-server /etc/redis/redis_appsettings.conf
+
+    - /tmp/travis-scripts/redis.sh
+
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-backoffice
-    - sudo cp -R /home/git/regentmarkets/bom/config/environments/development/ /etc/rmg
-    - sudo /bin/su -c "echo -n 'development' > /etc/rmg/environment"
-    - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
+    - /tmp/travis-scripts/devbox.sh
 
-    # Setting up databases
-    - /tmp/travis-scripts/backoffice_clientdb.sh
+    - /tmp/travis-scripts/remove_postgresdb_config.sh
+    - /tmp/travis-scripts/setup_clientdb.sh
     - 'BOM_CONSOLE_LOGGING=INFO sudo -u postgres -E perl -I/home/git/regentmarkets/cpan/local/lib/perl5 -I/home/git/regentmarkets/cpan/local/lib/perl5/x86_64-linux-gnu-thread-multi -I/home/git/regentmarkets/bom-utility/lib -I/home/git/regentmarkets/bom-platform/lib -I/home/git/regentmarkets/bom-postgres/lib /home/git/regentmarkets/bom-postgres/bin/dbmigration.pl --yes --hostname="localhost" --port="5432" --username=postgres --database=regentmarkets --dbset=collector'
     - /tmp/travis-scripts/setup_feeddb.sh
     - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom/t/config/log4perl.conf

@@ -4,6 +4,7 @@ use strict 'vars';
 
 use BOM::Platform::Plack qw( PrintContentType );
 use f_brokerincludeall;
+use BOM::Platform::Client;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -19,7 +20,11 @@ foreach my $loginID (@loginIDarray) {
     if ($loginID =~ /^\D+\d+$/) {
         Bar("$loginID Login History");
 
-        my $login_history_result = get_client_login_history_arrayref($loginID);
+        my $client = BOM::Platform::Client->new({ loginid => $loginID });
+        my $login_history_result = $client->find_login_history(
+            sort_by => 'login_date desc',
+            limit   => 100
+        );
 
         print '<pre>';
         if (not $login_history_result) {
@@ -27,11 +32,11 @@ foreach my $loginID (@loginIDarray) {
         }
 
         foreach my $login_history (@{$login_history_result}) {
-            my $login_date        = $login_history->{'login_date'}->datetime_ddmmmyy_hhmmss_TZ;
-            my $login_status      = $login_history->{'login_status'};
-            my $login_environment = $login_history->{'login_environment'};
+            my $login_date        = $login_history->login_date;
+            my $login_status      = $login_history->login_successful ? 'ok' : 'failed';
+            my $login_environment = $login_history->login_environment;
 
-            print $login_date. ' ' . $login_status . ' ' . $login_environment;
+            print "$login_date $login_status $login_environment\n";
         }
         print '</pre>';
     }
