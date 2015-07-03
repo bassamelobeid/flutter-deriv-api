@@ -100,7 +100,7 @@ sub _build_current_tick {
             message           => 'Current tick is undefined for [' . $self->underlying->symbol . ']',
             severity          => 99,
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
-            });
+        });
     }
 
     return $current_tick;
@@ -287,7 +287,7 @@ sub _get_highlow {
 }
 
 has _pip_size_tick => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 

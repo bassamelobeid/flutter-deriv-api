@@ -38,7 +38,7 @@ subtest 'entry tick' => sub {
         my $c = produce_contract({%$params, current_tick => undef});
         isa_ok $c, 'BOM::Product::Contract::Spreadu';
         is $c->entry_tick->quote, 0.01, 'entry tick is pip size value if current tick and next tick is undefiend';
-        ok (($c->all_errors)[0], 'error');
+        ok(($c->all_errors)[0], 'error');
         my $curr_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch,
@@ -47,7 +47,7 @@ subtest 'entry tick' => sub {
         $c = produce_contract({%$params, current_tick => $curr_tick});
         isa_ok $c, 'BOM::Product::Contract::Spreadu';
         is $c->entry_tick->quote, 100, 'current tick if next tick is undefined';
-        ok (($c->all_errors)[0], 'error');
+        ok(($c->all_errors)[0], 'error');
 
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
@@ -56,7 +56,7 @@ subtest 'entry tick' => sub {
         });
         $c = produce_contract($params);
         is $c->entry_tick->quote, 104, 'entry tick if it is defined';
-        ok (!($c->all_errors)[0], 'no error');
+        ok(!($c->all_errors)[0], 'no error');
     }
     'spreadup';
 };
