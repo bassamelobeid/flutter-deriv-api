@@ -15,7 +15,7 @@ sub get_trades_details {
     my $broker = $args->{broker};
     my $loginid = $args->{loginid};
     my $start_date = Date::Utility->new($args->{startdate});
-    my $end_date = Date::Utility->new($args->{enddate})->plus_time_interval('1d')->date_yyyymmdd;;
+    my $end_date = Date::Utility->new($args->{enddate})->plus_time_interval('1d');
     my $db = BOM::Database::ClientDB->new({
              broker_code => $broker,
         })->db;
