@@ -41,7 +41,7 @@ eval{
    die "no data found\n" unless @rows;
 
    my @headers = sort keys %$headers;
-   $csv->combine(@header);
+   $csv->combine(@headers);
    print $csv->string;
 
    foreach my $row (@rows) {
