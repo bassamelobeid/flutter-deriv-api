@@ -68,13 +68,13 @@ sub _build_report {
     my $fmb              = $tn->financial_market_bet;
     my $real_fmb = BOM::Database::Model::FinancialMarketBet::Factory->get(financial_market_bet_record => $fmb);
     my $orig = produce_contract($real_fmb, $currency);
-
+    my $orig_2 = make_similar_contract($orig, {priced_at => 'start'});
     return {
          purchase_time           => $fmb->purchase_time,
          currency                => $currency,
          financial_market_bet_id => $tn->financial_market_bet_id,
          bet_type                => $fmb->bet_type,
-         theo_price              => $orig->theo_price,
+         theo_price              => $orig_2->theo_price,
          buy_price               => $fmb->buy_price,
          payout_price            => $fmb->payout_price,
          sell_price              => $fmb->sell_price,

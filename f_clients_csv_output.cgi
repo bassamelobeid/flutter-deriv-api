@@ -26,8 +26,6 @@ eval{
    PrintContentType_excel("$csvfile.csv");
    my $csv  = Text::CSV->new({
            binary        => 1,
-           always_quote  => 1,
-           quote_char    => "'",
            eol           => "\n"
   });
 
