@@ -174,10 +174,10 @@ sub stats_start {
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
     if ($what eq 'buy') {
-        if ($self->contract->category_code ne 'spreads') {
-            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
-        } else {
+        if ($self->contract->is_spread) {
             push @{$tags->{tags}}, "stop_type:" . lc($self->contract->build_parameters->{stop_type});
+        } else {
+            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
         }
     } elsif ($what eq 'sell') {
         push @{$tags->{tags}}, "sell_type:manual";
@@ -415,7 +415,9 @@ sub prepare_bet_data_for_buy {
         start_time        => scalar $contract->date_start->db_timestamp,
     };
 
-    if ($contract->category_code ne 'spreads') {
+    if ($contract->is_spread) {
+        $bet_params->{payout_price} = 0;    # it is always zero at start!
+    } else {
         $bet_params->{payout_price}    = scalar $self->payout;
         $bet_params->{expiry_time}     = scalar $contract->date_expiry->db_timestamp;
         $bet_params->{settlement_time} = scalar $contract->date_settlement->db_timestamp;
@@ -425,8 +427,6 @@ sub prepare_bet_data_for_buy {
             $bet_params->{tick_expiry} = 1;
             $bet_params->{tick_count}  = scalar $contract->tick_count;
         }
-    } else {
-        $bet_params->{payout_price} = 0;    # it is always zero at start!
     }
 
     if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
@@ -573,7 +573,7 @@ sub prepare_bet_data_for_sell {
         : (),
     };
 
-    if ($bet_class eq 'spread_bet') {
+    if ($contract->is_spread) {
         $bet_params->{expiry_time} = $bet_params->{settlement_time} = scalar $contract->date_pricing->db_timestamp;
         # payout always equal to sell price for spreads
         # pnl calculation involves buy price and sell price.
@@ -1015,7 +1015,14 @@ sub _build_pricing_comment {
     my $contract = $self->contract;
 
     my @comment_fields;
-    if ($contract->category_code ne 'spreads') {
+    if ($contract->is_spread) {
+        @comment_fields = map { defined $_->[1] ? @$_ : () } (
+            [amount_per_point => $contract->amount_per_point],
+            [stop_profit      => $contract->stop_profit],
+            [stop_loss        => $contract->stop_loss],
+            [spread           => $contract->spread],
+        );
+    } else {
         # This way the order of the fields is well-defined.
         @comment_fields = map { defined $_->[1] ? @$_ : (); } (
             [theo    => $contract->theo_price],
@@ -1046,13 +1053,6 @@ sub _build_pricing_comment {
                 actions          => join '|',
                 map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
         }
-    } else {
-        @comment_fields = map { defined $_->[1] ? @$_ : () } (
-            [amount_per_point => $contract->amount_per_point],
-            [stop_profit      => $contract->stop_profit],
-            [stop_loss        => $contract->stop_loss],
-            [spread           => $contract->spread],
-        );
     }
 
     return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
@@ -1062,7 +1062,7 @@ sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
     # spreads price doesn't jump
-    return if $self->contract->category_code eq 'spreads';
+    return if $self->contract->is_spread;
 
     my $stats_name        = 'transaction.buy.';
     my $stats_name_broker = 'transaction.' . lc($self->client->broker) . '.buy.';
@@ -1166,7 +1166,7 @@ sub _is_valid_to_sell {
     my $contract = $self->contract;
 
     # we shouldn't we recreating contract for spreads.
-    if ($contract->date_pricing->is_after($contract->date_start) and $contract->category_code ne 'spreads') {
+    if ($contract->date_pricing->is_after($contract->date_start) and not $contract->is_spread) {
         # It's started, get one prepared for sale.
         $contract = make_similar_contract($contract, {for_sale => 1});
         $self->contract($contract);
@@ -1285,7 +1285,7 @@ sub _validate_payout_limit {
 
     my $client   = $self->client;
     my $contract = $self->contract;
-    my $payout   = $contract->category_code eq 'spreads' ? $contract->amount_per_point * $contract->stop_profit : $self->payout;
+    my $payout   = $contract->is_spread ? $contract->amount_per_point * $contract->stop_profit : $self->payout;
 
     my $custom_limit = BOM::Platform::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
 

@@ -22,6 +22,7 @@ sub pricing_engine_name { return '' }
 sub tick_expiry         { return 0 }
 # added for CustomClientLimits
 sub is_atm_bet { return 0 }
+sub is_spread  { return 1 }
 
 has build_parameters => (
     is       => 'ro',

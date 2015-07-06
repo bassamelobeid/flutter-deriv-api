@@ -286,9 +286,8 @@ sub simple_contract_info {
         epoch => 1,
     });
     my $contract_analogue = produce_contract($params);
-    my $is_spread_bet = $contract_analogue->category_code eq 'spreads' ? 1 : 0;
 
-    return ($contract_analogue->longcode, $contract_analogue->tick_expiry, $is_spread_bet);
+    return ($contract_analogue->longcode, $contract_analogue->tick_expiry, $contract_analogue->is_spread);
 }
 
 =head2 make_similar_contract
@@ -312,7 +311,7 @@ sub make_similar_contract {
     my %build_parameters = %{$orig_contract->build_parameters};
 
     if ($changes->{as_new}) {
-        if ($orig_contract->category_code ne 'spreads') {
+        if (!$orig_contract->is_spread) {
             if ($orig_contract->two_barriers) {
                 $build_parameters{high_barrier} = $orig_contract->high_barrier->supplied_barrier if $orig_contract->high_barrier;
                 $build_parameters{low_barrier}  = $orig_contract->low_barrier->supplied_barrier  if $orig_contract->low_barrier;

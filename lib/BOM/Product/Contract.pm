@@ -35,6 +35,8 @@ require BOM::Product::Pricing::Greeks::BlackScholes;
 
 with 'MooseX::Role::Validatable';
 
+sub is_spread { return 0 }
+
 has average_tick_count => (
     is      => 'rw',
     default => undef,
