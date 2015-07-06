@@ -1958,7 +1958,7 @@ subtest 'max_7day_losses validation', sub {
 };
 
 subtest 'sell_expired_contracts', sub {
-    plan tests => 36;
+    plan tests => 37;
     lives_ok {
         my $cl = create_client;
 
@@ -1991,12 +1991,13 @@ subtest 'sell_expired_contracts', sub {
             purchase_date => $now->epoch - 101,
         });
 
-        my @expired_txnids;
+        my (@expired_txnids, @expired_fmbids);
         # buy 5 expired contracts
         for (1 .. 5) {
             my $error = $txn->buy(skip_validation => 1);
             is $error, undef, 'no error: bought 1 expired contract for 100';
             push @expired_txnids, $txn->transaction_id;
+            push @expired_fmbids, $txn->contract_id;
         }
 
         # now buy a couple of not-yet-expired contracts
@@ -2022,7 +2023,7 @@ subtest 'sell_expired_contracts', sub {
         });
 
         my @txnids;
-        # buy 5 expired contracts
+        # buy 5 unexpired contracts
         for (1 .. 5) {
             my $error = $txn->buy(skip_validation => 1);
             is $error, undef, 'no error: bought 1 contract for 100';
@@ -2032,17 +2033,32 @@ subtest 'sell_expired_contracts', sub {
         $acc_usd->load;
         is $acc_usd->balance + 0, 0, 'USD balance is down to 0';
 
+        # First sell some particular ones by id.
         my $res = BOM::Product::Transaction::sell_expired_contracts + {
+            client       => $cl,
+            source       => 29,
+            contract_ids => [@expired_fmbids[0 .. 1]],
+        };
+
+        is_deeply $res,
+            +{
+            number_of_sold_bets => 2,
+            skip_contract       => 0,
+            total_credited      => 200,
+            },
+            'sold the two requested contracts';
+
+        $res = BOM::Product::Transaction::sell_expired_contracts + {
             client => $cl,
             source => 29
         };
 
         is_deeply $res, +{
-            number_of_sold_bets => 5,
+            number_of_sold_bets => 3,
             skip_contract       => 5,     # this means the contract was looked at but skipped due to invalid to sell
-            total_credited      => 500,
+            total_credited      => 300,
             },
-            'sold 5 out of 10 bets';
+            'sold 3 out of 8 remaining bets';
 
         $acc_usd->load;
         is $acc_usd->balance + 0, 500, 'USD balance 500';
