@@ -36,7 +36,7 @@ sub create_vr_acc {
         return {
             err_type => 'duplicate_acc',
             err      => 1,
-        }
+        };
     }
 
     my ($client, $register_err);
@@ -65,7 +65,8 @@ sub create_vr_acc {
             source                        => $source,
             latest_environment            => $env
         });
-    } catch {
+    }
+    catch {
         $register_err = $_;
     };
     return {
@@ -112,9 +113,9 @@ sub create_vr_acc {
     } if ($login->{error});
 
     return {
-        client  => $client,
-        user    => $user,
-        token   => $login->{token},
+        client => $client,
+        user   => $user,
+        token  => $login->{token},
     };
 }
 
@@ -126,22 +127,23 @@ sub real_acc_checks {
         return {
             err_type => 'new_acc_suspend',
             err      => localize('Sorry, new account opening is suspended for the time being.'),
-        }
+        };
     }
     if (my $error = BOM::Platform::Client::check_jurisdiction($country)) {
         return {
             err_type => 'restricted_country',
             err      => $error,
-        }
+        };
     }
 
     my ($user, $from_client);
-    if ( not $user = BOM::Platform::User->new({email => $email})
-        or not $from_client = BOM::Platform::Client->new({loginid => $from_loginid}) ) {
+    if (   not $user = BOM::Platform::User->new({email => $email})
+        or not $from_client = BOM::Platform::Client->new({loginid => $from_loginid}))
+    {
         return {
             err_type => 'invalid_user',
             err      => localize("Sorry, an error occurred. Please contact customer support if this problem persists."),
-        }
+        };
     }
     if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
         return {
@@ -190,13 +192,12 @@ sub register_real_acc {
     my $client_loginid = $client->loginid;
     my $client_name = join(' ', $client->salutation, $client->first_name, $client->last_name);
     if (is_sanctioned($client->first_name, $client->last_name)) {
-        $client->add_note('UNTERR',
-            "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
+        $client->add_note('UNTERR', "UN Sanctions: $client_loginid suspected ($client_name)\n" . "Check possible match in UN sanctions list.");
     }
 
     my $emailmsg = "$client_loginid - Name and Address\n\n\n\t\t $client_name \n\t\t";
-    my @address = map { $client->$_ } qw(address_1, address_2, city, state, postcode);
-    $emailmsg .= join("\n\t\t", @address, Locale::Country::code2country($residence));
+    my @address = map { $client->$_ } qw(address_1 address_2 city state postcode);
+    $emailmsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
     $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$emailmsg\n");
 
     my $warning;
@@ -213,11 +214,11 @@ sub register_real_acc {
             $desk_api->upload($details);
         }
         catch {
-            $warning = "Unable to add loginid $client_loginid (".$client->email.") to desk.com API: $_";
+            $warning = "Unable to add loginid $client_loginid (" . $client->email . ") to desk.com API: $_";
         };
     }
     stats_inc("business.new_account.real");
-    stats_inc("business.new_account.real.".$client->broker);
+    stats_inc("business.new_account.real." . $client->broker);
 
     my $login = $client->login();
     return {
@@ -226,9 +227,9 @@ sub register_real_acc {
     } if ($login->{error});
 
     my $real_acc = {
-        client  => $client,
-        user    => $user,
-        token   => $login->{token},
+        client => $client,
+        user   => $user,
+        token  => $login->{token},
     };
     $real_acc->{warning} = $warning if ($warning);
     return $real_acc;
@@ -236,13 +237,13 @@ sub register_real_acc {
 
 sub register_financial_acc {
     my $args = shift;
-    my $acc = register_real_acc({
+    my $acc  = register_real_acc({
         user    => $args->{user},
         details => $args->{details},
     });
     return $acc if ($acc->{err});
 
-    my $client = $acc->{client};
+    my $client               = $acc->{client};
     my $financial_evaluation = $args->{financial_evaluation};
 
     $client->financial_assessment({
@@ -257,7 +258,8 @@ sub register_financial_acc {
             from    => request()->website->config->get('customer_support.email'),
             to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
             subject => $client->loginid . ' considered as professional trader',
-            message => ["$client->loginid scored " . $financial_evaluation->{total_score} . " and is therefore considered a professional trader."],
+            message =>
+                ["$client->loginid scored " . $financial_evaluation->{total_score} . " and is therefore considered a professional trader."],
         });
     }
     return $acc;
