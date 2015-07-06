@@ -47,4 +47,6 @@ INSERT INTO bet.bet_dictionary (bet_type,path_dependent,table_name) VALUES ('SPR
 
 INSERT INTO bet.bet_dictionary (bet_type,path_dependent,table_name) VALUES ('SPREADD', false, 'spread_bet');
 
+GRANT SELECT, UPDATE, INSERT ON bet.spread_bet to read, write;
+
 COMMIT;
