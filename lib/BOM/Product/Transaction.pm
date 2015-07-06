@@ -77,7 +77,7 @@ has payout => (
 
 sub _build_payout {
     my $self = shift;
-    return $self->contract->payout;
+    return $self->contract->is_spread ? $self->contract->amount_per_point * $self->contract->stop_profit : $self->contract->payout;
 }
 
 has amount_type => (
