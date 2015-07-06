@@ -320,7 +320,7 @@ sub _build_intraday_bounceback {
         $duration_in_secs**$coef_B *
         (1 / (1 + exp($coef_C * $self->intraday_trend->amount * $coef_D)) - 0.5);
 
-    if ($self->bet->category->code eq 'callput') {
+    if ($self->bet->category->code eq 'callput' and not $self->more_than_short_term_cutoff) {
         $bounceback_base = ($self->bet->code eq 'CALL') ? $bounceback_base : $bounceback_base * -1;
     }
     my $bb_cv = Math::Util::CalculatedValue::Validatable->new({
