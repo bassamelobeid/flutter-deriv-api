@@ -11,6 +11,7 @@ use subs::subs_graphs;
 
 use String::UTF8::MD5;
 
+BOM::Platform::Sysinit::init;
 PrintContentType();
 BrokerPresentation("Plot Graph");
 BOM::Backoffice::Auth0::can_access(['Quants']);
