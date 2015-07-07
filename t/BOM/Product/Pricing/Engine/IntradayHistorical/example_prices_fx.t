@@ -210,10 +210,10 @@ $bet_params = {
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example PUT bet';
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                             0.5415,  'Ask probability is correct.');
+is(roundnear(1e-4, $ask->amount),                             0.5312,  'Ask probability is correct.');
 is(roundnear(1e-2, $bet->average_tick_count),                 7.48,    'Correct number of average ticks.');
 is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0131,  'model_markup is correct.');
-is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), 0.0052,  'intraday_bounceback is correct.');
+is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), -0.0052, 'intraday_bounceback is correct.');
 is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     -0.0019, 'vega_correction is correct.');
 is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
 

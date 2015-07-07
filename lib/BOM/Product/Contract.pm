@@ -1257,7 +1257,7 @@ sub _build_pricing_vol {
         });
     } elsif (my ($which) = $pen =~ /Intraday::(Forex|Index)/) {
         my $volsurface = $self->empirical_volsurface;
-        my $vol_args = {
+        my $vol_args   = {
             fill_cache            => !$self->backtest,
             current_epoch         => $self->date_pricing->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
