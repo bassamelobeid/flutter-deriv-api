@@ -301,7 +301,7 @@ has more_than_short_term_cutoff => (
 sub _build_more_than_short_term_cutoff {
     my $self = shift;
 
-    return ($self->bet->get_time_to_expiry->minutes > 15) ? 1 : 0;
+    return ($self->bet->get_time_to_expiry->minutes >= 15) ? 1 : 0;
 }
 
 sub _build_intraday_bounceback {
