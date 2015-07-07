@@ -45,7 +45,10 @@ my $status;
 my $user;
 
 lives_ok {
-    $user = BOM::Platform::User->create(email => $email, password=>$hash_pwd);
+    $user = BOM::Platform::User->create(
+        email    => $email,
+        password => $hash_pwd
+    );
     $user->save;
 
     $user->add_loginid({loginid => $vr_1});
@@ -163,7 +166,7 @@ subtest 'default loginid & cookie' => sub {
 
 subtest 'user / email from loginid' => sub {
     my $user_2 = BOM::Platform::User->new({
-        email         => $vr_1,
+        email => $vr_1,
     });
 
     is $user_2->email, $email, 'user from loginid';
@@ -179,7 +182,7 @@ subtest 'User Login' => sub {
     subtest 'support login with loginid, for backward compatible' => sub {
         subtest 'with VR acc' => sub {
             my $user = BOM::Platform::User->new({
-                email         => $vr_1,
+                email => $vr_1,
             });
             is $user->email, $email, 'email OK';
             cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
@@ -190,7 +193,7 @@ subtest 'User Login' => sub {
 
         subtest 'with CR acc' => sub {
             my $user = BOM::Platform::User->new({
-                email         => $vr_1,
+                email => $vr_1,
             });
             is $user->email, $email, 'email OK';
             cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
