@@ -539,13 +539,10 @@ sub _country_specific_currency {
 }
 
 sub is_from_office {
-    my $self = shift;
-    my $ip   = $self->client_ip;
-    my @office_ips = (
-        '175.136.239.229',
-        '211.24.127.133',
-    );
-    return 1 if grep {$_ eq $ip} @office_ips;
+    my $self       = shift;
+    my $ip         = $self->client_ip;
+    my @office_ips = ('175.136.239.229', '211.24.127.133',);
+    return 1 if grep { $_ eq $ip } @office_ips;
 
     return;
 }
