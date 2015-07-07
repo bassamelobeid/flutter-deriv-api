@@ -28,7 +28,8 @@ my $start       = Date::Utility->new(request()->param('start'))->db_timestamp;
 my $end         = Date::Utility->new(request()->param('end'))->db_timestamp;
 
 my $txn_mapper = BOM::Database::DataMapper::Transaction->new({
-    'broker_code' => $broker,
+    broker_code => $broker,
+    operation   => 'backoffice_replica',
 });
 
 my $bets = $txn_mapper->get_bet_transactions_for_broker({
@@ -51,15 +52,16 @@ foreach my $transaction_id (sort { $a cmp $b } keys %{$bets}) {
     my $amount           = ($action_type eq 'sell') ? $bet->{'amount'} : -1 * $bet->{'amount'};
     my $residence        = $bet->{residence};
     my $symbol           = $bet->{underlying_symbol};
+    my $short_code       = $bet->{short_code};
 
     my $is_random = ($symbol =~ /^RD/ or $symbol =~ /^R_/) ? 1 : 0;
     my $long_code = '';
     try {
-        ($long_code) = simple_contract_info($bet->{'short_code'}, $currency_code);
+        ($long_code) = simple_contract_info($short_code, $currency_code);
         $long_code =~ s/,/ /g;
     }
     catch {
-        get_logger->warn($_);
+        get_logger->warn("shortcode[$short_code]. curr[$currency_code], $_");
     };
 
     print "$transaction_time,$id,$bet_id,$client_loginid,$residence,$quantity,$currency_code,$amount,$long_code,$is_random";
