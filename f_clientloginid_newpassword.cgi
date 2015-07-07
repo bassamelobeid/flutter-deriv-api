@@ -10,7 +10,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
-use BOM::View::EmailToken;
+use BOM::Platform::EmailToken;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -42,7 +42,7 @@ my $link = request()->url_for(
     {
         action      => 'recover',
         email       => url_encode($email),
-        reset_token => BOM::View::EmailToken->new(email => $email)->token,
+        reset_token => BOM::Platform::EmailToken->new(email => $email)->token,
         login       => $client->loginid
     });
 
