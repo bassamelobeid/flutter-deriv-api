@@ -259,7 +259,7 @@ sub register_financial_acc {
             to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
             subject => $client->loginid . ' considered as professional trader',
             message =>
-                ["$client->loginid scored " . $financial_evaluation->{total_score} . " and is therefore considered a professional trader."],
+                [$client->loginid . ' scored ' . $financial_evaluation->{total_score} . ' and is therefore considered a professional trader.'],
         });
     }
     return $acc;
