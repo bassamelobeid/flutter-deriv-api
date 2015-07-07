@@ -13,11 +13,11 @@ BOM::Backoffice::Auth0::can_access(['CS']);
 my ($loginid, $email_list);
 
 if ($email_list = request()->param('email')) {
-    BrokerPresentation("$email_list USER LOGIN HISTORY");
+    BrokerPresentation("USER LOGIN HISTORY");
 
-    my @emails = split(/\s/, lc($email_list));
+    my @emails = split(/\s+/, lc($email_list));
     foreach my $email (@emails) {
-        Bar("$loginID Login History");
+        Bar("$email Login History");
 
         print '<pre>';
         my $user = BOM::Platform::User->new({ email => $email });
