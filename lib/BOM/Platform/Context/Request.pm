@@ -233,18 +233,6 @@ sub ui_settings_value {
     return '';
 }
 
-sub is_logged_into_bo {
-    my $self = shift;
-
-    my $cookie = $self->bo_cookie;
-    if ($cookie and $cookie->clerk) {
-        if (BOM::Platform::Auth0::from_cookie($cookie) or BOM::Platform::Auth0::login($cookie->token)) {
-            return 1;
-        }
-    }
-    return;
-}
-
 sub _build_params {
     my $self = shift;
 
