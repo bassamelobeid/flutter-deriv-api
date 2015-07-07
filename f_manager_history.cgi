@@ -15,7 +15,7 @@ my $loginID = uc(request()->param('loginID'));
 
 PrintContentType();
 BrokerPresentation($loginID . ' HISTORY', '', '');
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker = request()->broker->code;
 

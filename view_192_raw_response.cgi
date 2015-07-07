@@ -14,7 +14,7 @@ BOM::Platform::Sysinit::init();
 
 $YAML::XS::QuoteNumericStrings = 0;
 
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $loginID       = request()->param('loginID');
 my $search_option = request()->param('search_option');

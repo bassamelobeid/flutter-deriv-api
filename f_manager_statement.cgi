@@ -28,7 +28,7 @@ if ($outputtype eq 'csv') {
 }
 
 my $broker = request()->broker->code;
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 if ($loginID !~ /^$broker/) {
     print "Error : wrong loginID $loginID";

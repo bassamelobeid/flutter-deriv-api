@@ -12,7 +12,7 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Clients who are authenticated but have expired identity documents.');
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker = request()->param('broker');
 

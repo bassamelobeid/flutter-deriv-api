@@ -13,10 +13,10 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation("CLIENT LOGINID ADMIN");
-my $staff   = BOM::Platform::Auth0::can_access(['CS']);
+my $staff   = BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker  = request()->broker->code;
 my $tmp_dir = BOM::Platform::Runtime->instance->app_config->system->directory->tmp;
-my $clerk   = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $clerk   = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 
 if ($broker eq 'FOG') {
     $broker = request()->broker->code;
@@ -203,7 +203,7 @@ print '<hr><b>To view all disabled accounts and their a/c details</b><br />'
     . "<input type=\"hidden\" name=\"show\" value=\"disabled\">"
     . '<br /><input type="checkbox" value="1" checked name="onlylarge"> Only those with more than $5 equity';
 
-if (BOM::Platform::Auth0::has_authorisation(['Payments'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
     print '<br />Password if you want to debit cash balances of accounts with over
 			<input size="6" name="recoverdays" value="180"> days inactivity:
 			<input size="5" type="password" name="recoverfromfraudpassword">';

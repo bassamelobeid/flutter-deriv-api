@@ -10,7 +10,7 @@ use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
 
 my $broker = request()->broker->code;
-BOM::Platform::Auth0::can_access();
+BOM::Backoffice::Auth0::can_access();
 
 # category: id_scan (Default), 192_result
 my $category = request()->param('category');

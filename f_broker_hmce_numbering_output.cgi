@@ -21,7 +21,7 @@ if (request()->param('output') ne 'CSV') {
 PrintContentType_excel(request()->param('action_type') . '_bets_for_' . request()->param('start') . ".csv");
 
 my $broker = request()->broker->code;
-BOM::Platform::Auth0::can_access(['Accounts']);
+BOM::Backoffice::Auth0::can_access(['Accounts']);
 
 my $action_type = request()->param('action_type');
 my $start       = Date::Utility->new(request()->param('start'))->db_timestamp;

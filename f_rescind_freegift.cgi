@@ -10,8 +10,8 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('RESCIND FREE GIFTS');
-BOM::Platform::Auth0::can_access(['Payments']);
-my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+BOM::Backoffice::Auth0::can_access(['Payments']);
+my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $broker = request()->broker->code;
 
 my $inactivedays = request()->param('inactivedays');

@@ -12,7 +12,7 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Bulk-add Exposures.');
 
-BOM::Platform::Auth0::can_access(['Marketing']);
+BOM::Backoffice::Auth0::can_access(['Marketing']);
 
 # Promotional codes
 Bar('Promotional codes');

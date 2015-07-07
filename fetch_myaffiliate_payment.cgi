@@ -19,7 +19,7 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation('Myaffiliate Payment');
 
-BOM::Platform::Auth0::can_access(['Marketing']);
+BOM::Backoffice::Auth0::can_access(['Marketing']);
 
 Bar('Myaffiliate Payment Info');
 

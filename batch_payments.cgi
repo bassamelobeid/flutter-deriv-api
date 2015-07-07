@@ -25,7 +25,7 @@ BrokerPresentation('Batch Credit/Debit to Clients Accounts');
 
 my $cgi               = new CGI;
 my $broker            = request()->broker->code;
-my $clerk             = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $clerk             = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $confirm           = $cgi->param('confirm');
 my $preview           = $cgi->param('preview');
 my $payments_csv_fh   = $cgi->upload('payments_csv');

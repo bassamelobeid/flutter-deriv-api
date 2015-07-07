@@ -29,8 +29,8 @@ PrintContentType();
 BrokerPresentation("Client's Email Details");
 Bar("View / Edit Client's Email");
 
-my $staff  = BOM::Platform::Auth0::can_access(['CS']);
-my $clerk  = BOM::Platform::Auth0::from_cookie()->{nickname};
+my $staff  = BOM::Backoffice::Auth0::can_access(['CS']);
+my $clerk  = BOM::Backoffice::Auth0::from_cookie()->{nickname};
 my $now    = Date::Utility->new;
 
 my %input = %{request()->params};

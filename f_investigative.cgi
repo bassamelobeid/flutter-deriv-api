@@ -11,7 +11,7 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('INVESTIGATIVE TOOLS');
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 my $broker = request()->broker->code;
 
 if (request()->param('whattodo') eq 'unsanctions') {

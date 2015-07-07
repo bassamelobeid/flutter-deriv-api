@@ -19,7 +19,7 @@ BOM::Platform::Sysinit::init();
 PrintContentType();
 BrokerPresentation('REALTIME QUOTES');
 my $broker = request()->broker->code;
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 push @all_markets, 'futures';    # this is added to check for futures feed

@@ -18,7 +18,7 @@ if (    BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_liv
     code_exit_BO();
 }
 
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker       = request()->param('broker');
 my $partialfname = request()->param('partialfname');

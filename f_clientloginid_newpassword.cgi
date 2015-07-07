@@ -18,7 +18,7 @@ PrintContentType();
 my $loginID = request()->param('show');
 BrokerPresentation('ISSUE NEW PASSWORD TO ' . $loginID);
 
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 # Issue new password to client
 if (not $loginID) {

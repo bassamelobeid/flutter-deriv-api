@@ -11,7 +11,7 @@ use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $currency_symbol = request()->param('symbol');
 my $existing_interest_rate = BOM::MarketData::InterestRate->new({symbol => $currency_symbol})->rates;

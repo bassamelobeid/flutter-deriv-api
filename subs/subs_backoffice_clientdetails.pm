@@ -85,7 +85,7 @@ sub print_client_details {
     }
 
     # MARKETING SECTION
-    my $promo_code_access = BOM::Platform::Auth0::has_authorisation(['Marketing']);
+    my $promo_code_access = BOM::Backoffice::Auth0::has_authorisation(['Marketing']);
 
     my $self_exclusion_enabled = $client->self_exclusion ? 'yes' : '';
 

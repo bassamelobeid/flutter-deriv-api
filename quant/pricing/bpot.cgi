@@ -24,7 +24,7 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 BrokerPresentation('Bet Price Over Time');
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 Bar("Bet Parameters");
 my $bet =

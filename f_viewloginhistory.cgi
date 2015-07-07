@@ -12,7 +12,7 @@ PrintContentType();
 
 my $loginid = request()->param('loginID');
 BrokerPresentation("$loginid CLIENT LOGIN HISTORY");
-BOM::Platform::Auth0::can_access(['CS']);
+BOM::Backoffice::Auth0::can_access(['CS']);
 
 my @loginIDarray = split(/\s/, uc($loginid));
 

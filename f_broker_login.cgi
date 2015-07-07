@@ -9,14 +9,14 @@ use BOM::Market::Registry;
 use f_brokerincludeall;
 use BOM::Platform::Runtime;
 use Format::Util::Strings qw( set_selected_item );
-use BOM::Platform::Auth0;
+use BOM::Backoffice::Auth0;
 use BOM::StaffPages;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
-if (not BOM::Platform::Auth0::from_cookie()) {
+if (not BOM::Backoffice::Auth0::from_cookie()) {
     PrintContentType();
     BOM::StaffPages->instance->login();
     code_exit_BO();
@@ -50,7 +50,7 @@ if (request()->param('only')) {
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 
 # TRANSaction REPORTS
-if (BOM::Platform::Auth0::has_authorisation(['CS'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
     print qq~
 	<table class="GreenDarkCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
@@ -71,7 +71,7 @@ if (BOM::Platform::Auth0::has_authorisation(['CS'])) {
 }
 
 # ACCOUNTING REPORTS
-if (BOM::Platform::Auth0::has_authorisation(['Accounts'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Accounts'])) {
     print qq~
 	<table class="GreenDark2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
@@ -92,7 +92,7 @@ if (BOM::Platform::Auth0::has_authorisation(['Accounts'])) {
 }
 
 # MANUAL INPUT OF DEPOSITS & WITHDRAWALS
-if (BOM::Platform::Auth0::has_authorisation(['Payments'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Payments'])) {
     print qq~
 		<table class="GreyCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 			<tbody>
@@ -113,7 +113,7 @@ if (BOM::Platform::Auth0::has_authorisation(['Payments'])) {
 }
 
 # CLIENT DETAILS RECORDS
-if (BOM::Platform::Auth0::has_authorisation(['CS'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['CS'])) {
     print qq~
 	<table class="Grey2Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
@@ -159,7 +159,7 @@ print qq~
 </table>~;
 
 # MARKETING
-if (BOM::Platform::Auth0::has_authorisation(['Marketing'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Marketing'])) {
     print qq~
 	<table class="RedCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
@@ -179,7 +179,7 @@ if (BOM::Platform::Auth0::has_authorisation(['Marketing'])) {
 	</table>~;
 }
 
-if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     print qq~
 	<table class="Grey3Candy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
@@ -228,7 +228,7 @@ if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
 }
 
 # REALTIME QUOTES
-if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['Quants'])) {
     print qq~
 	<table class="BlueLightCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>
@@ -249,7 +249,7 @@ if (BOM::Platform::Auth0::has_authorisation(['Quants'])) {
 }
 
 # WEBSITE CUSTOMIZATION
-if (BOM::Platform::Auth0::has_authorisation(['IT'])) {
+if (BOM::Backoffice::Auth0::has_authorisation(['IT'])) {
     print qq~
 	<table class="BlueCandy" rules="all" frame="void" border="1" cellpadding="1" cellspacing="2" width="94%">
 		<tbody>

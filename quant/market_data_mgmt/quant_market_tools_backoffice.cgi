@@ -23,7 +23,7 @@ use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Context;
 use BOM::MarketData::CorrelationMatrix;
 my $broker = request()->broker->code;
-BOM::Platform::Auth0::can_access(['Quants']);
+BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
