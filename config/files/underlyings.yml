@@ -423,7 +423,6 @@ ESBBVA:
   contracts: none
   commission_level: 3
   display_name: BBVA (Banco Bilbao)
-  esig_symbol: BBVA-MAC
   exchange_name: BM
   feed_license: daily
   instrument_type: individualstock
@@ -441,7 +440,6 @@ ESIBE:
   contracts: none
   commission_level: 3
   display_name: Iberdrola SA
-  esig_symbol: IBE-MAC
   exchange_name: BM
   feed_license: daily
   instrument_type: individualstock
@@ -459,7 +457,6 @@ ESITX:
   contracts: none
   commission_level: 3
   display_name: Inditex SA
-  esig_symbol: ITX-MAC
   exchange_name: BM
   feed_license: daily
   instrument_type: individualstock
@@ -477,7 +474,6 @@ ESSAN:
   contracts: none
   commission_level: 3
   display_name: Banco Santander SA
-  esig_symbol: SAN-MAC
   exchange_name: BM
   feed_license: daily
   instrument_type: individualstock
@@ -495,7 +491,6 @@ ESTEF:
   contracts: none
   commission_level: 3
   display_name: Telefonica SA
-  esig_symbol: TEF-MAC
   exchange_name: BM
   feed_license: daily
   instrument_type: individualstock
@@ -955,7 +950,6 @@ FTAW01:
   asset: FTAW01
   commission_level: 3
   display_name: World Index
-  esig_symbol: $AW01-FTSE
   exchange_name: FS
   feed_license: chartonly
   instrument_type: sectorindex
@@ -973,7 +967,6 @@ FTSE:
   contracts: full_equities
   commission_level: 1
   display_name: UK Index
-  esig_symbol: $UKX-FTSE
   exchange_name: LSE
   feed_license: chartonly
   instrument_type: stockindex
@@ -991,7 +984,6 @@ FTSEMIB:
   contracts: none
   commission_level: 1
   display_name: Italian Index
-  esig_symbol: $FTSEMIB-MIL
   exchange_name: BI
   feed_license: chartonly
   instrument_type: stockindex
@@ -1072,23 +1064,6 @@ FUTGBSESENSEX30:
   sd_symbol: NA
   submarket: asia_oceania_future
   symbol: FUTGBSESENSEX30
-FUTGDJI:
-  asset: FUTGDJI
-  commission_level: 3
-  display_name: DJI Generic Future
-  esig_symbol: YM 1!
-  exchange_name: CME
-  feed_license: chartonly
-  instrument_type: future
-  market: futures
-  market_convention:
-    delta_premium_adjusted: 0
-    delta_style: spot_delta
-  pip_size: 0.0001
-  quoted_currency: USD
-  sd_symbol: NA
-  submarket: americas_future
-  symbol: FUTGDJI
 FUTGFCHI:
   asset: FUTGFCHI
   commission_level: 3
@@ -1144,7 +1119,6 @@ FUTGGDAXI:
   asset: FUTGGDAXI
   commission_level: 3
   display_name: GDAXI Generic Future
-  esig_symbol: AX 1!-EUX
   exchange_name: EUREX
   feed_license: chartonly
   instrument_type: future
@@ -1178,7 +1152,6 @@ FUTGIBEX35:
   asset: FUTGIBEX35
   commission_level: 3
   display_name: IBEX35 Generic Future
-  esig_symbol: IBX 1!-MRV
   exchange_name: MEFF
   feed_license: chartonly
   instrument_type: future
@@ -1195,7 +1168,6 @@ FUTGIBOV:
   asset: FUTGIBOV
   commission_level: 3
   display_name: IBOV Generic Future
-  esig_symbol: IND 1!-BMF
   exchange_name: BMF
   feed_license: chartonly
   instrument_type: future
@@ -1212,7 +1184,6 @@ FUTGKOSPI2:
   asset: FUTGKOSPI2
   commission_level: 3
   display_name: KOSPI2 Generic Future
-  esig_symbol: K21 1!-KSP
   exchange_name: KRX
   feed_license: chartonly
   instrument_type: future
@@ -1228,6 +1199,7 @@ FUTGKOSPI2:
 FUTGMDJI:
   asset: FUTGMDJI
   commission_level: 3
+  esig_symbol: YM 1!
   display_name: Emini DJI Generic Future
   exchange_name: CME
   feed_license: chartonly
@@ -1309,7 +1281,6 @@ FUTGN225:
   asset: FUTGN225
   commission_level: 3
   display_name: N225 Generic Future
-  esig_symbol: NI225 1!-OSM
   exchange_name: OSE
   feed_license: chartonly
   instrument_type: future
@@ -1394,7 +1365,6 @@ FUTGRTSI:
   asset: FUTGRTSI
   commission_level: 3
   display_name: RTSI Generic Future
-  esig_symbol: RI 1!-MOF
   exchange_name: MOF
   feed_license: chartonly
   instrument_type: future
@@ -1425,7 +1395,6 @@ FUTGSPC:
   asset: FUTGSPC
   commission_level: 3
   display_name: Emini SPC Generic Future
-  esig_symbol: SP 1!
   exchange_name: CME
   feed_license: chartonly
   instrument_type: future
@@ -1442,7 +1411,6 @@ FUTGSSMI:
   asset: FUTGSSMI
   commission_level: 3
   display_name: SSMI Generic Future
-  esig_symbol: SM 1!-EUX
   exchange_name: EUREX_SWISS
   feed_license: chartonly
   instrument_type: future
@@ -1476,7 +1444,6 @@ FUTGSX5E:
   asset: FUTGSX5E
   commission_level: 3
   display_name: STOXX 50 Generic Future
-  esig_symbol: ET 1!-EUX
   exchange_name: EUREX
   feed_license: chartonly
   instrument_type: future
@@ -1564,7 +1531,6 @@ IBOV:
   contracts: forward_and_daily
   commission_level: 3
   display_name: Brazilian Index
-  esig_symbol: $IBOV-BSP
   exchange_name: BOVESPA
   feed_license: delayed
   instrument_type: stockindex
@@ -1691,7 +1657,6 @@ ITAGS:
   contracts: none
   commission_level: 3
   display_name: Assicurazioni Generali SpA
-  esig_symbol: G-MIL
   exchange_name: BI
   feed_license: daily
   instrument_type: individualstock
@@ -1709,7 +1674,6 @@ ITENEL:
   contracts: none
   commission_level: 3
   display_name: ENEL
-  esig_symbol: ENEL-MIL
   exchange_name: BI
   feed_license: daily
   instrument_type: individualstock
@@ -1727,7 +1691,6 @@ ITENI:
   contracts: none
   commission_level: 3
   display_name: ENI SpA
-  esig_symbol: ENI-MIL
   exchange_name: BI
   feed_license: daily
   instrument_type: individualstock
@@ -1745,7 +1708,6 @@ ITFIAT:
   contracts: none
   commission_level: 3
   display_name: Fiat
-  esig_symbol: F-MIL
   exchange_name: BI
   feed_license: daily
   instrument_type: individualstock
@@ -1763,7 +1725,6 @@ ITISP:
   contracts: none
   commission_level: 3
   display_name: Intesa Sanpaolo
-  esig_symbol: ISP-MIL
   exchange_name: BI
   feed_license: daily
   instrument_type: individualstock
@@ -1815,7 +1776,6 @@ JPHM:
   contracts: none
   commission_level: 3
   display_name: Honda Motor Co. Ltd
-  esig_symbol: 7267-TSE
   exchange_name: TSE_S
   feed_license: daily
   instrument_type: individualstock
@@ -1834,7 +1794,6 @@ JPHT:
   contracts: none
   commission_level: 3
   display_name: Hitachi Ltd
-  esig_symbol: 6501-TSE
   exchange_name: TSE_S
   feed_license: daily
   instrument_type: individualstock
@@ -1853,7 +1812,6 @@ JPSB:
   contracts: none
   commission_level: 3
   display_name: SoftBank Co.
-  esig_symbol: 9984-TSE
   exchange_name: TSE_S
   feed_license: daily
   instrument_type: individualstock
@@ -1872,7 +1830,6 @@ JPTE:
   contracts: none
   commission_level: 3
   display_name: Tokyo Electric Power Co. Inc
-  esig_symbol: 9501-TSE
   exchange_name: TSE_S
   feed_license: daily
   instrument_type: individualstock
@@ -1891,7 +1848,6 @@ JPTM:
   contracts: none
   commission_level: 3
   display_name: Toyota Motor
-  esig_symbol: 7203-TSE
   exchange_name: TSE_S
   feed_license: daily
   instrument_type: individualstock
@@ -1927,7 +1883,6 @@ KRHY:
   contracts: none
   commission_level: 3
   display_name: Hyundai Motor Co.
-  esig_symbol: 005380-KOR
   exchange_name: KRX
   feed_license: daily
   instrument_type: individualstock
@@ -1946,7 +1901,6 @@ KRPOSCO:
   contracts: none
   commission_level: 3
   display_name: POSCO
-  esig_symbol: 005490-KOR
   exchange_name: KRX
   feed_license: daily
   instrument_type: individualstock
@@ -1965,7 +1919,6 @@ KRSFG:
   contracts: none
   commission_level: 3
   display_name: Shinhan Financial
-  esig_symbol: 055550-KOR
   exchange_name: KRX
   feed_license: daily
   instrument_type: individualstock
@@ -1984,7 +1937,6 @@ KRSKH:
   contracts: none
   commission_level: 3
   display_name: SK Hynix Inc.
-  esig_symbol: 000660-KOR
   exchange_name: KRX
   feed_license: daily
   instrument_type: individualstock
@@ -2003,7 +1955,6 @@ KRSS:
   contracts: none
   commission_level: 3
   display_name: Samsung Electronics
-  esig_symbol: 005930-KOR
   exchange_name: KRX
   feed_license: daily
   instrument_type: individualstock
@@ -3763,7 +3714,6 @@ UKAAL:
   contracts: none
   commission_level: 3
   display_name: Anglo American plc
-  esig_symbol: AAL-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3781,7 +3731,6 @@ UKAZN:
   contracts: forward_and_daily
   commission_level: 3
   display_name: AstraZeneca plc
-  esig_symbol: AZN-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3799,7 +3748,6 @@ UKBARC:
   contracts: none
   commission_level: 3
   display_name: Barclays plc
-  esig_symbol: BARC-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3817,7 +3765,6 @@ UKBATS:
   contracts: forward_and_daily
   commission_level: 3
   display_name: British American Tobacco
-  esig_symbol: BATS-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3835,7 +3782,6 @@ UKBG:
   contracts: none
   commission_level: 3
   display_name: BG Group plc
-  esig_symbol: BG.-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3853,7 +3799,6 @@ UKBP:
   contracts: forward_and_daily
   commission_level: 3
   display_name: BP plc
-  esig_symbol: BP.-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3871,7 +3816,6 @@ UKDGE:
   contracts: none
   commission_level: 3
   display_name: Diageo plc
-  esig_symbol: DGE-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3889,7 +3833,6 @@ UKGLEN:
   contracts: none
   commission_level: 3
   display_name: Glencore Xstrat
-  esig_symbol: GLEN-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3907,7 +3850,6 @@ UKGSK:
   contracts: none
   commission_level: 3
   display_name: GlaxoSmithKline plc
-  esig_symbol: GSK-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3925,7 +3867,6 @@ UKHSBA:
   contracts: forward_and_daily
   commission_level: 3
   display_name: HSBC Holdings plc
-  esig_symbol: HSBA-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3943,7 +3884,6 @@ UKIAG:
   contracts: none
   commission_level: 3
   display_name: ICAG (British Airways)
-  esig_symbol: IAG-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3961,7 +3901,6 @@ UKLLOY:
   contracts: none
   commission_level: 3
   display_name: Lloyds Banking Group plc
-  esig_symbol: LLOY-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3979,7 +3918,6 @@ UKRB:
   contracts: none
   commission_level: 3
   display_name: Reckitt Benckiser Group plc
-  esig_symbol: RB.-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -3997,7 +3935,6 @@ UKRDSA:
   contracts: none
   commission_level: 3
   display_name: Royal Dutch Shell plc
-  esig_symbol: RDSA-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -4015,7 +3952,6 @@ UKRIO:
   contracts: none
   commission_level: 3
   display_name: Rio Tinto plc
-  esig_symbol: RIO-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -4033,7 +3969,6 @@ UKSAB:
   contracts: none
   commission_level: 3
   display_name: SABMiller plc
-  esig_symbol: SAB-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -4051,7 +3986,6 @@ UKSTAN:
   contracts: none
   commission_level: 3
   display_name: Standard Chartered plc
-  esig_symbol: STAN-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -4069,7 +4003,6 @@ UKTSCO:
   contracts: forward_and_daily
   commission_level: 3
   display_name: Tesco plc
-  esig_symbol: TSCO-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -4087,7 +4020,6 @@ UKULVR:
   contracts: none
   commission_level: 3
   display_name: Unilever plc
-  esig_symbol: ULVR-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -4105,7 +4037,6 @@ UKVOD:
   contracts: none
   commission_level: 3
   display_name: Vodafone
-  esig_symbol: VOD-LON
   exchange_name: LSE
   feed_license: delayed
   instrument_type: individualstock
@@ -4123,7 +4054,6 @@ USAAPL:
   contracts: none
   commission_level: 3
   display_name: Apple Inc.
-  esig_symbol: AAPL
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4141,7 +4071,6 @@ USATNT:
   contracts: none
   commission_level: 3
   display_name: AT&T
-  esig_symbol: T
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4159,7 +4088,6 @@ USCVX:
   contracts: none
   commission_level: 3
   display_name: Chevron Co.
-  esig_symbol: CVX
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4177,7 +4105,6 @@ USGE:
   contracts: none
   commission_level: 3
   display_name: General Electric Company
-  esig_symbol: GE
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4195,7 +4122,6 @@ USGOOG:
   contracts: none
   commission_level: 3
   display_name: Google Inc.
-  esig_symbol: GOOG
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4213,7 +4139,6 @@ USIBM:
   contracts: none
   commission_level: 3
   display_name: IBM
-  esig_symbol: IBM
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4231,7 +4156,6 @@ USINTC:
   contracts: none
   commission_level: 3
   display_name: Intel
-  esig_symbol: INTC
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4249,7 +4173,6 @@ USJNJ:
   contracts: none
   commission_level: 3
   display_name: Johnson & Johnson
-  esig_symbol: JNJ
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4267,7 +4190,6 @@ USJPM:
   contracts: none
   commission_level: 3
   display_name: JP Morgan Chase & Co.
-  esig_symbol: JPM
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4285,7 +4207,6 @@ USKO:
   contracts: none
   commission_level: 3
   display_name: The Coca-Cola Company
-  esig_symbol: KO
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4303,7 +4224,6 @@ USMRK:
   contracts: none
   commission_level: 3
   display_name: Merck & Co. Inc.
-  esig_symbol: MRK
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4321,7 +4241,6 @@ USMSFT:
   contracts: none
   commission_level: 3
   display_name: Microsoft
-  esig_symbol: MSFT
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4339,7 +4258,6 @@ USORCL:
   contracts: none
   commission_level: 3
   display_name: Oracle
-  esig_symbol: ORCL
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4357,7 +4275,6 @@ USPFE:
   contracts: none
   commission_level: 3
   display_name: Pfizer Inc.
-  esig_symbol: PFE
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4375,7 +4292,6 @@ USPG:
   contracts: none
   commission_level: 3
   display_name: Procter & Gamble Co.
-  esig_symbol: PG
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4393,7 +4309,6 @@ USPM:
   contracts: none
   commission_level: 3
   display_name: Philip Morris International
-  esig_symbol: PM
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4411,7 +4326,6 @@ USQCOM:
   contracts: none
   commission_level: 3
   display_name: QUALCOMM
-  esig_symbol: QCOM
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4429,7 +4343,6 @@ USQQQQ:
   contracts: none
   commission_level: 3
   display_name: PowerShares QQQ
-  esig_symbol: QQQ
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4447,7 +4360,6 @@ USWFC:
   contracts: none
   commission_level: 3
   display_name: Wells Fargo & Company
-  esig_symbol: WFC
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4465,7 +4377,6 @@ USWMT:
   contracts: none
   commission_level: 3
   display_name: Wal-Mart Stores Inc.
-  esig_symbol: WMT
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
@@ -4483,7 +4394,6 @@ USXOM:
   contracts: none
   commission_level: 3
   display_name: ExxonMobil
-  esig_symbol: XOM
   exchange_name: NASDAQ
   feed_license: delayed
   instrument_type: individualstock
