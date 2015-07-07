@@ -12,7 +12,6 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
-use BOM::Platform::Auth0;
 use BOM::Platform::SessionCookie;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Untaint;
