@@ -1,0 +1,33 @@
+---
+definitions:
+  - code:
+      - MX
+    server: beta
+    landing_company: iom
+    transaction_db_cluster: beta
+  - code:
+      - MF
+    server: beta
+    landing_company: maltainvest
+    transaction_db_cluster: beta
+  - code:
+      - MLT
+    server: beta
+    landing_company: malta
+    transaction_db_cluster: beta
+  - code:
+      - CR
+    server: beta
+    landing_company: costarica
+    transaction_db_cluster: beta
+  - code:
+      - VRTC
+    server: beta
+    landing_company: fog
+    is_virtual: 1
+    transaction_db_cluster: vrclientdb
+  - code:
+      - FOG
+    server: beta
+    landing_company: fog
+    transaction_db_cluster: fogclientdb
