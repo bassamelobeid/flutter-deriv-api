@@ -551,7 +551,7 @@ sub _country_specific_currency {
     return;
 }
 
-sub is_office_staff {
+sub is_from_office {
     my $self = shift;
     my $ip   = $self->client_ip;
     my @office_ips = (
