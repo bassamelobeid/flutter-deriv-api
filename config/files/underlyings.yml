@@ -763,7 +763,7 @@ FPLG:
   asset: FPLG
   commission_level: 3
   display_name: Lafarge
-  esig_symbol: LG-EEB
+  esig_symbol: LGT-EEB
   exchange_name: EURONEXT
   feed_license: realtime
   instrument_type: individualstock
