@@ -114,7 +114,6 @@ sub current_value {
     return $self->value;
 }
 
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

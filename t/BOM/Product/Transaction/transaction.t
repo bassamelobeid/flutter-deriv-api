@@ -323,21 +323,21 @@ subtest 'buy a spread bet' => sub {
     my $acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
     local $ENV{REQUEST_STARTTIME} = time;
     my $c = produce_contract({
-        underlying => 'R_100',
-        bet_type => 'SPREADU',
-        currency => 'USD',
+        underlying       => 'R_100',
+        bet_type         => 'SPREADU',
+        currency         => 'USD',
         amount_per_point => 2,
-        stop_loss => 10,
-        stop_profit => 20,
-        current_tick => $tick_r100,
-        stop_type => 'point',
-        });
+        stop_loss        => 10,
+        stop_profit      => 20,
+        current_tick     => $tick_r100,
+        stop_type        => 'point',
+    });
     my $txn = BOM::Product::Transaction->new({
-        client => $new_client,
+        client   => $new_client,
         contract => $c,
-        price => 20.00,
-        source => 21,
-        });
+        price    => 20.00,
+        source   => 21,
+    });
     ok !$txn->buy, 'buy spread bet without error';
 
     subtest 'transaction report', sub {
@@ -345,8 +345,8 @@ subtest 'buy a spread bet' => sub {
         note $txn->report;
         my $report = $txn->report;
         like $report, qr/\ATransaction Report:$/m,                                                    'header';
-        like $report, qr/^\s*Client: \Q${\$new_client}\E$/m,                                                  'client';
-        like $report, qr/^\s*Contract: \Q${\$c->code}\E$/m,                                    'contract';
+        like $report, qr/^\s*Client: \Q${\$new_client}\E$/m,                                          'client';
+        like $report, qr/^\s*Contract: \Q${\$c->code}\E$/m,                                           'contract';
         like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
         like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
         like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
@@ -385,21 +385,21 @@ subtest 'buy a spread bet' => sub {
         cmp_ok $fmb->{id}, '>', 0, 'id';
         is $fmb->{account_id}, $acc_usd->id, 'account_id';
         is $fmb->{bet_class}, 'spread_bet', 'bet_class';
-        is $fmb->{bet_type},  'SPREADU',             'bet_type';
+        is $fmb->{bet_type},  'SPREADU',    'bet_type';
         is $fmb->{buy_price} + 0, 20, 'buy_price';
-        is $fmb->{expiry_time}, undef, 'undefined expiry_time';
+        is $fmb->{expiry_time},  undef, 'undefined expiry_time';
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
         is !$fmb->{is_expired}, !0, 'is_expired';
         is !$fmb->{is_sold},    !0, 'is_sold';
         is $fmb->{payout_price} + 0, 0, 'payout_price';
         cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-        like $fmb->{remark},   qr/amount_per_point/, 'remark';
-        is $fmb->{sell_price}, undef,                     'sell_price';
-        is $fmb->{sell_time},  undef,                     'sell_time';
-        is $fmb->{settlement_time}, undef, 'undefined settlement_time';
-        like $fmb->{short_code}, qr/SPREADU/, 'short_code';
+        like $fmb->{remark},        qr/amount_per_point/, 'remark';
+        is $fmb->{sell_price},      undef,                'sell_price';
+        is $fmb->{sell_time},       undef,                'sell_time';
+        is $fmb->{settlement_time}, undef,                'undefined settlement_time';
+        like $fmb->{short_code},    qr/SPREADU/,          'short_code';
         cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
-        is $fmb->{tick_count},        undef,  'tick_count';
+        is $fmb->{tick_count},        undef,   'tick_count';
         is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
     };
 
@@ -408,7 +408,7 @@ subtest 'buy a spread bet' => sub {
         plan tests => 4;
         is $chld->{amount_per_point}, 2, 'amount_per_point is 2';
         is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
-        is $chld->{stop_loss},       10, 'stop_loss is 10';
+        is $chld->{stop_loss},   10, 'stop_loss is 10';
         is $chld->{stop_profit}, 20, 'stop_profit is 20';
     };
 
