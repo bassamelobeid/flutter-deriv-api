@@ -89,12 +89,11 @@ sub script_run {
 use Data::Dumper;
 
 
-    Runner::Merlin->new(suite=>"merlin")->run_dataset;
-#    foreach my $test (@{$self->test_suite}) {
-#        my $test_class = $self->test_suite_mapper->{$test};
-#        my $report = $test_class->new(suite => $self->getOption('suite'))->run_dataset;
-#        $self->analyse_report($report, $test);
-#    }
+    foreach my $test (@{$self->test_suite}) {
+        my $test_class = $self->test_suite_mapper->{$test};
+        my $report = $test_class->new(suite => $self->getOption('suite'))->run_dataset;
+        $self->analyse_report($report, $test);
+    }
 }
 
 sub analyse_report {

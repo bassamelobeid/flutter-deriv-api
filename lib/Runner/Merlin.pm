@@ -100,7 +100,7 @@ sub _calculate_results {
         next if _skip($record);
 
         my $bet      = produce_contract($bet_args);
-        my $bet_type = $bet->bet_type->code;
+        my $bet_type = $bet->code;
 
         my $base_or_num   = ($record->{numeraire} eq $record->{currency}) ? 'NUM' : 'BASE';
         my $merlin_mid    = ($record->{merlin_ask} + $record->{merlin_bid}) / 2;
