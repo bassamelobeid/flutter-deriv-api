@@ -1,8 +1,8 @@
-package BOM::Product::Benchmark::ContractGenerator;
+package ContractGenerator;
 
 =head1 NAME
 
-BOM::Product::Benchmark::ContractGenerator
+ContractGenerator
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ This class will accept a set of parameters from HTML form (by default) or code a
 
 This module is supposed to QA our prices in bloomberg using OVRA, OSA or MARS tools.
 
-my $table = BOM::Product::Benchmark::ContractGenerator->new();
+my $table = ContractGenerator->new();
 print $table->csv_table;
 
 Because there is a limit in bloomberg for bets per upload, this module can create a json of current data and offset in the loop for already processed records.
@@ -30,7 +30,7 @@ use YAML::CacheLoader qw(LoadFile);
 use BOM::MarketData::VolSurface::Validator;
 use Text::CSV;
 use BOM::Utility::Log4perl qw( get_logger );
-use BOM::Product::Benchmark::ContractGenerator::Bloomberg;
+use ContractGenerator::Bloomberg;
 use BOM::Test::Data::Utility::SetupDatasetTestFixture;
 use CGI;
 use Try::Tiny;
@@ -338,7 +338,7 @@ sub option_list {
     my $self = shift;
     my @contract;
     my $count          = 1;
-    my $contract_class = 'BOM::Product::Benchmark::ContractGenerator::Bloomberg';
+    my $contract_class = 'ContractGenerator::Bloomberg';
     my $max_rows       = $contract_class->max_number_of_uploadable_rows();
     my $content        = $contract_class->get_csv_header_no_price() . "\n";
     open(my $fh, ">", "/tmp/output.txt")    ## no critic
@@ -423,11 +423,11 @@ sub price_list {
         @lines = <$fh>;
     }
 
-    my $headers      = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_field_headers(\@lines);
-    my $pricing_date = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_pricing_date(\@lines);
+    my $headers      = ContractGenerator::Bloomberg::exported_field_headers(\@lines);
+    my $pricing_date = ContractGenerator::Bloomberg::exported_pricing_date(\@lines);
 
-    my $cleaned_lines  = BOM::Product::Benchmark::ContractGenerator::Bloomberg::clean_the_content(\@lines);
-    my $contract_class = 'BOM::Product::Benchmark::ContractGenerator::Bloomberg';
+    my $cleaned_lines  = ContractGenerator::Bloomberg::clean_the_content(\@lines);
+    my $contract_class = 'ContractGenerator::Bloomberg';
     my $csv_header     = $contract_class->get_csv_header() . "\n";
 
     my $content;
@@ -440,35 +440,35 @@ sub price_list {
         }
         chomp($line);
         my @fields          = $csv->fields();
-        my $expiry_date_bom = BOM::Product::Benchmark::ContractGenerator::Bloomberg::export_date_expiry(\@fields, $headers);
-        my $r_rate          = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_r_rate(\@fields, $headers);
-        my $q_rate          = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_q_rate(\@fields, $headers);
+        my $expiry_date_bom = ContractGenerator::Bloomberg::export_date_expiry(\@fields, $headers);
+        my $r_rate          = ContractGenerator::Bloomberg::exported_r_rate(\@fields, $headers);
+        my $q_rate          = ContractGenerator::Bloomberg::exported_q_rate(\@fields, $headers);
 
         if ($mini eq 'mini') {
             next
-                if not BOM::Product::Benchmark::ContractGenerator::Bloomberg::get_mini(\@fields, $headers);
+                if not ContractGenerator::Bloomberg::get_mini(\@fields, $headers);
         }
 
         if ($expiry_date_bom->epoch <= $pricing_date->epoch) {
             next;
         }
 
-        my $underlying_symbol = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_underlying_symbol(\@fields, $headers);
+        my $underlying_symbol = ContractGenerator::Bloomberg::exported_underlying_symbol(\@fields, $headers);
         my $contract_args = {
-            id                           => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_external_id(\@fields,         $headers),
-            bet_type                     => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_bet_type(\@fields,            $headers),
-            payout_currency              => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_payout_currency(\@fields,     $headers),
+            id                           => ContractGenerator::Bloomberg::exported_external_id(\@fields,         $headers),
+            bet_type                     => ContractGenerator::Bloomberg::exported_bet_type(\@fields,            $headers),
+            payout_currency              => ContractGenerator::Bloomberg::exported_payout_currency(\@fields,     $headers),
             underlying_symbol            => $underlying_symbol,
-            barrier1                     => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_barrier1(\@fields,            $headers),
-            cut_off_time                 => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_cut_off_time(\@fields,        $headers),
+            barrier1                     => ContractGenerator::Bloomberg::exported_barrier1(\@fields,            $headers),
+            cut_off_time                 => ContractGenerator::Bloomberg::exported_cut_off_time(\@fields,        $headers),
             price_type                   => 'theo',
             portfolio                    => 'Reprice',
-            spot                         => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_spot(\@fields,                $headers),
+            spot                         => ContractGenerator::Bloomberg::exported_spot(\@fields,                $headers),
             date_start                   => $pricing_date,
             expiry_date_bom              => $expiry_date_bom,
             date_pricing                 => $pricing_date,
-            barrier2                     => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_barrier2(\@fields,            $headers),
-            bloomberg_exported_price_mid => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_bloomberg_price_mid(\@fields, $headers),
+            barrier2                     => ContractGenerator::Bloomberg::exported_barrier2(\@fields,            $headers),
+            bloomberg_exported_price_mid => ContractGenerator::Bloomberg::exported_bloomberg_price_mid(\@fields, $headers),
             r                            => $r_rate / 100,
             q                            => $q_rate / 100,
             payout_amount                => $self->payout_amount,

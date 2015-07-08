@@ -1,4 +1,4 @@
-package Benchmark::Runner::Superderivatives_EQ;
+package Runner::Superderivatives_EQ;
 
 use Moose;
 
@@ -7,7 +7,7 @@ use List::Util qw(max sum min);
 use File::Slurp;
 
 use BOM::Product::ContractFactory qw( produce_contract );
-use Benchmark::CSVParser::Superderivatives_EQ;
+use CSVParser::Superderivatives_EQ;
 
 has suite => (
     is      => 'ro',
@@ -48,7 +48,7 @@ sub run_dataset {
     my ($all_results, $quanto_all_results);
     for my $symbol (@files) {
         my $file    = "$path/SD_$symbol.csv";
-        my $records = Benchmark::CSVParser::Superderivatives_EQ->new(
+        my $records = CSVParser::Superderivatives_EQ->new(
             file  => $file,
             suite => $self->suite,
         )->records;

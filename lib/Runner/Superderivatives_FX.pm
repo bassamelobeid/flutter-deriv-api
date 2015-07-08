@@ -1,4 +1,4 @@
-package Benchmark::Runner::Superderivatives_FX;
+package Runner::Superderivatives_FX;
 
 use Moose;
 
@@ -9,7 +9,7 @@ use List::Util qw(sum max);
 use Text::CSV;
 use Carp;
 
-use Benchmark::CSVParser::Superderivatives_FX;
+use CSVParser::Superderivatives_FX;
 use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 
@@ -62,7 +62,7 @@ sub run_dataset {
         my $file_loc = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/superderivatives';
         my $file     = $file_loc . '/' . $file . '.csv';
 
-        my $records = Benchmark::CSVParser::Superderivatives_FX->new(
+        my $records = CSVParser::Superderivatives_FX->new(
             file  => $file,
             suite => $self->suite,
         )->records;

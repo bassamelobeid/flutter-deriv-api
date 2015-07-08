@@ -1,4 +1,4 @@
-package Benchmark::Runner::Merlin;
+package Runner::Merlin;
 
 use Moose;
 use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
@@ -6,7 +6,7 @@ use Date::Utility;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
-use Benchmark::CSVParser::Merlin;
+use CSVParser::Merlin;
 
 use List::Util qw(max sum);
 use File::Slurp qw(append_file write_file);
@@ -75,7 +75,7 @@ sub run_dataset {
     my @pre_filters = ($bet_range[0] .. $bet_range[1]);
     my $merlin_csv  = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/merlin/COMPLETE.csv';
 
-    my $parser = Benchmark::CSVParser::Merlin->new(
+    my $parser = CSVParser::Merlin->new(
         merlin_csv  => $merlin_csv,
         pre_filters => \@pre_filters,
         suite       => $self->suite,

@@ -1,4 +1,4 @@
-package Benchmark::CSVParser::Merlin;
+package CSVParser::Merlin;
 
 =head1 NAME
 

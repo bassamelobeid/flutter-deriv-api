@@ -1,8 +1,8 @@
-package BOM::Product::Benchmark::ContractGenerator::Bloomberg;
+package ContractGenerator::Bloomberg;
 
 =head1 NAME
 
-BOM::Product::Benchmark::ContractGenerator::Bloomberg
+ContractGenerator::Bloomberg
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ This class represents a bloomberg contract that we use in pricing QA.
 
 This module is supposed to QA our prices in bloomberg using OVRA, OSA or MARS tools.
 
-my $table = BOM::Product::Benchmark::ContractGenerator::Bloomberg->new();
+my $table = ContractGenerator::Bloomberg->new();
 print $table->line;
 
 NOTE: For expiry_date if it was a non trading day the next trading day will be automatically used.

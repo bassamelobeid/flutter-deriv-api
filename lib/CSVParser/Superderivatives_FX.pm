@@ -1,4 +1,4 @@
-package Benchmark::CSVParser::Superderivatives_FX;
+package CSVParser::Superderivatives_FX;
 
 use Moose;
 

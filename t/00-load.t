@@ -10,4 +10,4 @@ BEGIN {
     use_ok( 'Quant::Benchmark' ) || print "Bail out!\n";
 }
 
-diag( "Testing Quant::Benchmark $Quant::Benchmark::VERSION, Perl $], $^X" );
+diag( "Testing Quant::Benchmark $Quant::VERSION, Perl $], $^X" );
