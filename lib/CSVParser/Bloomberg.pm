@@ -33,6 +33,8 @@ use BOM::Market::Underlying;
 use BOM::Utility::Log4perl qw( get_logger );
 use Try::Tiny;
 
+use YAML::CacheLoader qw(LoadFile);
+
 sub max_number_of_uploadable_rows {
     return 2000000;
 }
@@ -820,6 +822,40 @@ sub export_date_expiry {
     return Date::Utility->new(Date::Parse::str2time($expiry_date . $cut_time));
 }
 
+has 'config' => (
+    is         => 'rw',
+    isa        => 'HashRef',
+    lazy_build => 1,
+);
+
+sub _build_config {
+    my $self       = shift;
+    my $config_loc = "/home/git/regentmarkets/bom-quant-benchmark/t/config.yml";
+    die unless $config_loc;
+    my $config = LoadFile($config_loc);
+    return $config;
+}
+
+
+sub get_volsurface {
+    my ($self, $underlying_symbol) = @_;
+
+    my $data          = $self->config->{volsurface}->{$underlying_symbol};
+    my $surface_data  = $data->{surface_data};
+    my $recorded_date = $data->{recorded_date};
+    my $cutoff        = $data->{cutoff};
+    my $surface       = BOM::MarketData::VolSurface::Delta->new(
+        underlying      => BOM::Market::Underlying->new($underlying_symbol),
+        recorded_date   => Date::Utility->new($recorded_date),
+        surface         => $surface_data,
+        print_precision => undef,
+        cutoff          => $cutoff,
+        deltas          => [25, 50, 75],
+    );
+
+    return $surface;
+}
+
 # This sub will read the uploaded csv and price the bets and output a new csv for more inspections.
 sub price_list {
     my ($self, $line_ref, $mini) = @_;
@@ -893,12 +929,7 @@ sub price_list {
             $content .= $contract->get_csv_line(\@fields, $headers) . "\n";
         }
         catch {
-            # running as script from console
-            if ($line_ref) {
-                print "not able to process line[$line] $@";
-            } else {
-                get_logger->warn("not able to process line[$line] $@");
-            }
+            print "not able to process line[$line] $_\n";
         };
     }
     return ($csv_header, $content);
