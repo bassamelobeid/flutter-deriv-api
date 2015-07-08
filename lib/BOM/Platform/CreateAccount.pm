@@ -21,7 +21,7 @@ use BOM::Platform::MyAffiliates::TrackingHandler;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::EmailToken;
 
-sub create_vr_acc {
+sub create_virtual_acc {
     my $args = shift;
     my ($email, $password, $source, $env, $aff_token) = @{$args}{'email', 'password', 'source', 'env', 'aff_token'};
     $password = BOM::System::Password::hashpw($password);
