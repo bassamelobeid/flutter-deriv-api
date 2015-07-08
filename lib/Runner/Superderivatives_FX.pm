@@ -59,7 +59,7 @@ sub run_dataset {
     my $num_results;
 
     foreach my $file (@files) {
-        my $file_loc = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/superderivatives';
+        my $file_loc = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
         my $file     = $file_loc . '/' . $file . '.csv';
 
         my $records = CSVParser::Superderivatives_FX->new(

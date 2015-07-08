@@ -73,7 +73,7 @@ sub run_dataset {
 
     my @bet_range   = sort { $a <=> $b } split '-', $self->run_only;
     my @pre_filters = ($bet_range[0] .. $bet_range[1]);
-    my $merlin_csv  = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/merlin/COMPLETE.csv';
+    my $merlin_csv  = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/merlin/COMPLETE.csv';
 
     my $parser = CSVParser::Merlin->new(
         merlin_csv  => $merlin_csv,

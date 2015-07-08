@@ -31,7 +31,6 @@ sub documentation {
 
 sub _benchmark_testing_setup {
     BOM::Platform::Runtime->instance->app_config->quants->features->enable_parameterized_surface(0);
-    BOM::Platform::Runtime->instance->app_config->quants->features->use_discrete_dividend([]);
     BOM::Platform::Runtime->instance->app_config->quants->market_data->economic_announcements_source('forexfactory');
 
     return 1;
@@ -87,18 +86,21 @@ sub script_run {
     my $self = shift;
 
     ok _benchmark_testing_setup, 'setup benchmark testing environment';
+use Data::Dumper;
 
-    foreach my $test (@{$self->test_suite}) {
-        my $test_class = $self->test_suite_mapper->{$test};
-        my $report = $test_class->new(suite => $self->getOption('suite'))->run_dataset;
-        $self->analyse_report($report, $test);
-    }
+
+    Runner::Merlin->new(suite=>"merlin")->run_dataset;
+#    foreach my $test (@{$self->test_suite}) {
+#        my $test_class = $self->test_suite_mapper->{$test};
+#        my $report = $test_class->new(suite => $self->getOption('suite'))->run_dataset;
+#        $self->analyse_report($report, $test);
+#    }
 }
 
 sub analyse_report {
     my ($self, $report, $test) = @_;
 
-    my $benchmark = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/benchmark.yml');
+    my $benchmark = LoadFile('/home/git/regentmarkets/bom/t/benchmark.yml');
     if ($test eq 'intraday_historical') {
         my $test_benchmark = $benchmark->{intraday};
         foreach my $bet_type (keys %$report) {

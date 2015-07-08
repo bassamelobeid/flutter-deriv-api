@@ -42,7 +42,7 @@ sub run_dataset {
     my $self = shift;
 
     write_file($self->report_file->{all}, $self->csv_title . "\n");
-    my $path  = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/superderivatives';
+    my $path  = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
     my @files = @{$self->files};
     my @all_mid_diff;
     my ($all_results, $quanto_all_results);

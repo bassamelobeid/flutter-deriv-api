@@ -26,7 +26,7 @@ has _report_file => (
 sub run_dataset {
     my $self = shift;
 
-    my $nto_csv = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/nto/NextTopOption.csv';
+    my $nto_csv = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/nto/NextTopOption.csv';
     my $parser  = CSVParser::NTO->new(
         nto_csv => $nto_csv,
     );
