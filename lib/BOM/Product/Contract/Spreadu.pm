@@ -108,6 +108,13 @@ sub _recalculate_value {
     return;
 }
 
+sub current_value {
+    my $self = shift;
+    $self->_recalculate_value($self->sell_level);
+    return $self->value;
+}
+
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

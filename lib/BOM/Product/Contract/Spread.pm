@@ -250,12 +250,6 @@ sub _build_staking_limits {
     };
 }
 
-sub current_value {
-    my $self = shift;
-    $self->_recalculate_value($self->current_spot);
-    return $self->value;
-}
-
 sub barrier_display_info {
     my ($self, $tick) = @_;
 
