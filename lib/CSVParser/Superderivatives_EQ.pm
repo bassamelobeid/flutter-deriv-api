@@ -1,4 +1,4 @@
-package Benchmark::CSVParser::Superderivatives_EQ;
+package CSVParser::Superderivatives_EQ;
 
 use Moose;
 use IO::File;

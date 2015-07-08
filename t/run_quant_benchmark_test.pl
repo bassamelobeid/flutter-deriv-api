@@ -14,14 +14,14 @@ use JSON qw(decode_json);
 use File::Spec;
 
 use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
-use BOM::Test::Data::Utility::UnitTestRedis
+use BOM::Test::Data::Utility::UnitTestRedis;
 
-    use Benchmark::Runner::IntradayFX;
-use Benchmark::Runner::Merlin;
-use Benchmark::Runner::Superderivatives_EQ;
-use Benchmark::Runner::Superderivatives_FX;
-use Benchmark::Runner::Bloomberg;
-use Benchmark::Runner::NTO;
+use Runner::IntradayFX;
+use Runner::Merlin;
+use Runner::Superderivatives_EQ;
+use Runner::Superderivatives_FX;
+use Runner::Bloomberg;
+use Runner::NTO;
 use BOM::Platform::Runtime;
 use Date::Utility;
 
@@ -58,12 +58,12 @@ has test_suite_mapper => (
     isa     => 'HashRef',
     default => sub {
         {
-            merlin              => 'Benchmark::Runner::Merlin',
-            sdfx                => 'Benchmark::Runner::Superderivatives_FX',
-            sdeq                => 'Benchmark::Runner::Superderivatives_EQ',
-            ovra                => 'Benchmark::Runner::Bloomberg',
-            intraday_historical => 'Benchmark::Runner::IntradayFX',
-            nto                 => 'Benchmark::Runner::NTO',
+            merlin              => 'Runner::Merlin',
+            sdfx                => 'Runner::Superderivatives_FX',
+            sdeq                => 'Runner::Superderivatives_EQ',
+            ovra                => 'Runner::Bloomberg',
+            intraday_historical => 'Runner::IntradayFX',
+            nto                 => 'Runner::NTO',
         };
     },
 );

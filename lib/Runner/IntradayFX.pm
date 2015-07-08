@@ -1,4 +1,4 @@
-package Benchmark::Runner::IntradayFX;
+package Runner::IntradayFX;
 
 use Moose;
 

@@ -1,4 +1,4 @@
-package Benchmark::CSVParser::NTO;
+package CSVParser::NTO;
 
 =head1 NAME
 
