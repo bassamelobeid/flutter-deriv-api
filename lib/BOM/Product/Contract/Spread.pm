@@ -126,8 +126,9 @@ has entry_tick => (
 sub _build_entry_tick {
     my $self = shift;
 
-    my $entry_tick = $self->underlying->next_tick_after($self->date_start->epoch);
-    unless ($entry_tick) {
+    my $entry_tick =
+        $self->date_pricing->is_after($self->date_start) ? $self->underlying->next_tick_after($self->date_start->epoch) : $self->current_tick;
+    if (not $entry_tick and $self->date_pricing->is_after($self->date_start)) {
         $entry_tick = $self->current_tick // $self->_pip_size_tick;
         $self->add_errors({
             message           => 'Entry tick is undefined for [' . $self->underlying->symbol . ']',
