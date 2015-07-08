@@ -1,8 +1,8 @@
-package ContractGenerator::Bloomberg;
+package CSVParser::Bloomberg;
 
 =head1 NAME
 
-ContractGenerator::Bloomberg
+CSVParser::Bloomberg
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ This class represents a bloomberg contract that we use in pricing QA.
 
 This module is supposed to QA our prices in bloomberg using OVRA, OSA or MARS tools.
 
-my $table = ContractGenerator::Bloomberg->new();
+my $table = CSVParser::Bloomberg->new();
 print $table->line;
 
 NOTE: For expiry_date if it was a non trading day the next trading day will be automatically used.
@@ -889,7 +889,7 @@ sub price_list {
                 spot       => $contract_args->{spot}});
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {
-            $contract = $contract_class->new($contract_args);
+            $contract = CSVParser::Bloomberg->new($contract_args);
             $content .= $contract->get_csv_line(\@fields, $headers) . "\n";
         }
         catch {

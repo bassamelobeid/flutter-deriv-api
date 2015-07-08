@@ -3,11 +3,10 @@ package Runner::Bloomberg;
 use Moose;
 
 use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
-use ContractGenerator;
 use File::Slurp;
 use List::Util qw(sum max);
 use BOM::Platform::Runtime;
-
+use CSVParser::Bloomberg;
 has suite => (
     is      => 'ro',
     isa     => 'Str',
@@ -44,7 +43,7 @@ sub run_dataset {
 
     BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source("market");
     foreach my $file (@files) {
-        my $generator     = ContractGenerator->new({output_format => 'Bloomberg'});
+        my $generator     = CSVParser::Bloomberg->new({output_format => 'Bloomberg'});
         my @lines         = read_file($file_loc . "/$file.csv");
         my @result_output = $generator->price_list([@lines], $self->suite);
         $csv_header = $result_output[0];
