@@ -26,12 +26,9 @@ Process:
 =cut
 
 use Moose;
-use namespace::autoclean;
 use YAML::CacheLoader qw(LoadFile);
 use BOM::MarketData::VolSurface::Validator;
-use Template;
 use Text::CSV;
-use MIME::Base64;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Product::Benchmark::ContractGenerator::Bloomberg;
 use BOM::Test::Data::Utility::SetupDatasetTestFixture;
@@ -193,7 +190,7 @@ has 'config' => (
 
 sub _build_config {
     my $self       = shift;
-    my $config_loc = "/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/config.yml";
+    my $config_loc = "/home/git/regentmarkets/bom-quant-benchmark/t/config.yml";
     die unless $config_loc;
     my $config = LoadFile($config_loc);
     return $config;

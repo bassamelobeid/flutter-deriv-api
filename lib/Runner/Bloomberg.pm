@@ -35,7 +35,7 @@ has report_file => (
 sub run_dataset {
     my $self = shift;
 
-    my $file_loc = '/home/git/regentmarkets/bom/t/BOM/Product/Benchmark/csv/bloomberg';
+    my $file_loc = '/home/git/regentmarkets/bom-quant-benchmarkt/t/csv/bloomberg';
     my @files    = @{$self->files};
 
     my $result_all;
