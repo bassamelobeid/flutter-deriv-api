@@ -87,6 +87,8 @@ sub script_run {
 
     ok _benchmark_testing_setup, 'setup benchmark testing environment';
 
+    use Data::Dumper;
+    print Dumper $self->test_suite;
     eval {
         foreach my $test (@{$self->test_suite}) {
             my $test_class = $self->test_suite_mapper->{$test};
