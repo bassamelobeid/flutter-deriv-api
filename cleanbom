@@ -73,6 +73,7 @@ fetch_repo master     /home/git/regentmarkets/bom-web;               echo
 fetch_repo master     /home/git/regentmarkets/bom-backoffice;        echo
 fetch_repo master     /home/git/regentmarkets/bom-webapi;            echo
 fetch_repo master     /home/git/regentmarkets/bom-paymentapi;        echo
+fetch_repo master     /home/git/regentmarkets/bom-streamer;          echo
 fetch_repo master     /home/git/regentmarkets/cpan;                  echo
 fetch_repo master     /home/git/regentmarkets/chef;                  echo
 fetch_repo master     /home/git/regentmarkets/devbox;                echo
