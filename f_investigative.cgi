@@ -27,16 +27,21 @@ if (request()->param('whattodo') eq 'unsanctions') {
 
 Bar("ANTI FRAUD TOOLS");
 
-print "<P><LI><B>CLIENT LOGIN HISTORY</B> - A database is maintained of all client login attempts.";
+print "<P><LI><B>USER LOGIN HISTORY</B> - Login history per user (email) login";
 print "<FORM ACTION=\"" . request()->url_for('backoffice/f_viewloginhistory.cgi') . "\" METHOD=POST>";
-print "<INPUT type=hidden name=broker value=$broker>";
-print "To interrogate this database, input the loginID (or list of loginIDs) :<TEXTAREA name=loginID rows=2 cols=10></TEXTAREA>";
+print "Email, or list of emails (space separated) :<TEXTAREA name='email' rows=2 cols=40></TEXTAREA>";
+print "<INPUT type=submit value='View User Login History'>";
+print "</FORM>";
+
+print "<hr>";
+print "<P><LI><B>CLIENT LOGIN HISTORY [Deprecated Soon!]</B> - Please use the above tool, as we no longer save login history per loginid.";
+print "<FORM ACTION=\"" . request()->url_for('backoffice/f_viewloginhistory.cgi') . "\" METHOD=POST>";
+print "To interrogate this database, input the loginID (or list of loginIDs) :<TEXTAREA name=loginID rows=2 cols=20></TEXTAREA>";
 print "<INPUT type=submit value='View Client Login History'>";
 print "</FORM>";
 
 print "<P><LI><b>Query UN Sanctions list</b><FORM ACTION=\"" . request()->url_for('backoffice/f_investigative.cgi') . "\" METHOD=POST>";
 print "<INPUT type=hidden name=whattodo value=unsanctions>";
-print "<INPUT type=hidden name=broker value=$broker>";
 print "First name:<INPUT type=text size=15 maxlength=35 name=fname value='Usama'>";
 print " Last name:<INPUT type=text size=15 maxlength=35 name=lname value='bin Laden'>";
 print "<input type=submit value='Query UN Sanctions Database'>";
