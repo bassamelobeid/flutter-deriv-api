@@ -26,12 +26,15 @@ use Date::Parse;
 use Template;
 use Text::CSV;
 use YAML::CacheLoader qw(LoadFile);
-
+use CGI;
 use BOM::Product::ContractFactory qw( produce_contract );
-
+use BOM::Test::Data::Utility::SetupDatasetTestFixture;
 use Date::Utility;
 use BOM::MarketData::Fetcher::VolSurface;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
+use BOM::Market::Underlying;
+use BOM::Utility::Log4perl qw( get_logger );
+use Try::Tiny;
 
 sub max_number_of_uploadable_rows {
     return 2000000;
@@ -819,6 +822,92 @@ sub export_date_expiry {
     $cut_time =~ s/GMT\s(\d+\:\d+)/ $1 GMT/;
     return Date::Utility->new(Date::Parse::str2time($expiry_date . $cut_time));
 }
+
+# This sub will read the uploaded csv and price the bets and output a new csv for more inspections.
+sub price_list {
+    my ($self, $line_ref, $mini) = @_;
+
+    my @lines;
+    if ($line_ref) {
+        @lines = @{$line_ref};
+    } else {
+        my $q  = CGI->new;
+        my $fh = $q->upload('file');
+        @lines = <$fh>;
+    }
+
+    my $headers      = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_field_headers(\@lines);
+    my $pricing_date = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_pricing_date(\@lines);
+
+    my $cleaned_lines  = BOM::Product::Benchmark::ContractGenerator::Bloomberg::clean_the_content(\@lines);
+    my $contract_class = 'BOM::Product::Benchmark::ContractGenerator::Bloomberg';
+    my $csv_header     = $contract_class->get_csv_header() . "\n";
+
+    my $content;
+    for (my $i = 1; $i < scalar @{$cleaned_lines}; $i++) {
+        my $contract;
+        my $line = $cleaned_lines->[$i];
+        my $csv = Text::CSV->new({binary => 1});
+        if (not $csv->parse($line)) {
+            die('Unable to parse line ' . $line);
+        }
+        chomp($line);
+        my @fields          = $csv->fields();
+        my $expiry_date_bom = BOM::Product::Benchmark::ContractGenerator::Bloomberg::export_date_expiry(\@fields, $headers);
+        my $r_rate          = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_r_rate(\@fields, $headers);
+        my $q_rate          = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_q_rate(\@fields, $headers);
+
+        if ($mini eq 'mini') {
+            next
+                if not BOM::Product::Benchmark::ContractGenerator::Bloomberg::get_mini(\@fields, $headers);
+        }
+
+        if ($expiry_date_bom->epoch <= $pricing_date->epoch) {
+            next;
+        }
+
+        my $underlying_symbol = BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_underlying_symbol(\@fields, $headers);
+        my $contract_args = {
+            id                           => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_external_id(\@fields,         $headers),
+            bet_type                     => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_bet_type(\@fields,            $headers),
+            payout_currency              => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_payout_currency(\@fields,     $headers),
+            underlying_symbol            => $underlying_symbol,
+            barrier1                     => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_barrier1(\@fields,            $headers),
+            cut_off_time                 => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_cut_off_time(\@fields,        $headers),
+            price_type                   => 'theo',
+            portfolio                    => 'Reprice',
+            spot                         => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_spot(\@fields,                $headers),
+            date_start                   => $pricing_date,
+            expiry_date_bom              => $expiry_date_bom,
+            date_pricing                 => $pricing_date,
+            barrier2                     => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_barrier2(\@fields,            $headers),
+            bloomberg_exported_price_mid => BOM::Product::Benchmark::ContractGenerator::Bloomberg::exported_bloomberg_price_mid(\@fields, $headers),
+            r                            => $r_rate / 100,
+            q                            => $q_rate / 100,
+            payout_amount                => $self->payout_amount,
+        };
+
+        my $fixture = BOM::Test::Data::Utility::SetupDatasetTestFixture->new;
+        $fixture->setup_test_fixture({
+                underlying => BOM::Market::Underlying->new($underlying_symbol),
+                spot       => $contract_args->{spot}});
+        $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
+        try {
+            $contract = $contract_class->new($contract_args);
+            $content .= $contract->get_csv_line(\@fields, $headers) . "\n";
+        }
+        catch {
+            # running as script from console
+            if ($line_ref) {
+                print "not able to process line[$line] $@";
+            } else {
+                get_logger->warn("not able to process line[$line] $@");
+            }
+        };
+    }
+    return ($csv_header, $content);
+}
+
 
 __PACKAGE__->meta->make_immutable;
 1;
