@@ -21,10 +21,11 @@ use Moose;
 use Crypt::CBC;
 use BOM::Utility::Log4perl qw(get_logger);
 use URL::Encode qw( url_encode url_decode );
+use BOM::System::Config;
 
 sub _cipher {
     state $crypt = Crypt::CBC->new({
-        key    => "Zn2122BSBSUNGCxcs3sa3DaSa8AJsa65k",
+        key    => BOM::System::Config::aes_keys->{email_verification_token}->{1},
         cipher => "Blowfish"
     });
     return $crypt;
