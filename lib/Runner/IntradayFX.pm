@@ -41,6 +41,7 @@ sub run_dataset {
             currency => 'USD',
             backtest => 1,
         };
+        print "[$symbol]\n";
         $param->{underlying} = BOM::Market::Underlying->new({
             symbol   => $symbol,
             for_date => $start_date,
@@ -85,7 +86,7 @@ sub run_dataset {
                 $param->{pip_move} = $pip_move;
                 foreach my $bet_type (@bet_types) {
                     next if not $param->{barrier};
-                    next if ($param->{barrier} eq 'S0P' and $bet_type->is_path_dependent);
+                    next if ($param->{barrier} eq 'S0P' and $bet_type =~ /TOUCH/);
                     $param->{bet_type} = $bet_type;
 
                     my $reconsidered = produce_contract($param);
