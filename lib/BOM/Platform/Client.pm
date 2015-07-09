@@ -11,6 +11,7 @@ use Cache::RedisDB;
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::User;
 use BOM::Database::DataMapper::Account;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
