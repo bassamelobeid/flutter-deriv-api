@@ -699,10 +699,10 @@ sub _build_opposite_bet {
     # Don't set the shortcode, as it will change between these.
     delete $build_parameters{'shortcode'};
     # Save a round trip.. copy the volsurfaces
-    $build_parameters{volsurface} = $self->volsurface;
-    $build_parameters{fordom}     = $self->fordom;
-    $build_parameters{forqqq}     = $self->forqqq;
-    $build_parameters{domqqq}     = $self->domqqq;
+    foreach my $vol_param (qw(volsurface empirical_volsurface fordom forqqq domqqq)) {
+        my $predicate = 'has_' . $vol_param;
+        $build_parameters{$vol_param} = $self->$vol_param if ($self->$predicate);
+    }
 
     # We should be looking to move forward in time to a bet starting now.
     if (not $self->pricing_new and $self->entry_tick) {
