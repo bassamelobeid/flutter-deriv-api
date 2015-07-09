@@ -12,6 +12,8 @@ use Data::Validate::Sanctions qw(is_sanctioned);
 use JSON qw(encode_json);
 
 use BOM::Utility::Desk;
+use BOM::Utility::Log4perl qw( get_logger );
+use BOM::System::Config;
 use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
@@ -200,21 +202,23 @@ sub register_real_acc {
     $emailmsg .= join("\n\t\t", @address, Locale::Country::code2country($client->residence));
     $client->add_note("New Sign-Up Client [$client_loginid] - Name And Address Details", "$emailmsg\n");
 
-    my $warning;
     if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
         try {
             my $desk_api = BOM::Utility::Desk->new({
-                username => BOM::Platform::Runtime->instance->app_config->system->desk_com->account_username,
-                password => BOM::Platform::Runtime->instance->app_config->system->desk_com->account_password,
-                desk_url => BOM::Platform::Runtime->instance->app_config->system->desk_com->desk_url . 'customers',
+                desk_url     => BOM::System::Config::third_party->{desk}->{api_uri},
+                api_key      => BOM::System::Config::third_party->{desk}->{api_key},
+                secret_key   => BOM::System::Config::third_party->{desk}->{api_key_secret},
+                token        => BOM::System::Config::third_party->{desk}->{access_token},
+                token_secret => BOM::System::Config::third_party->{desk}->{access_token_secret},
             });
 
             $details->{loginid}  = $client_loginid;
             $details->{language} = request()->language;
             $desk_api->upload($details);
+            get_logger()->info("Created desk.com account for loginid $client_loginid");
         }
         catch {
-            $warning = "Unable to add loginid $client_loginid (" . $client->email . ") to desk.com API: $_";
+            get_logger->warn("Unable to add loginid $client_loginid (".$client->email.") to desk.com API: $_");
         };
     }
     stats_inc("business.new_account.real");
@@ -226,13 +230,11 @@ sub register_real_acc {
         err      => $login->{error},
     } if ($login->{error});
 
-    my $real_acc = {
+    return {
         client => $client,
         user   => $user,
         token  => $login->{token},
     };
-    $real_acc->{warning} = $warning if ($warning);
-    return $real_acc;
 }
 
 sub register_financial_acc {
