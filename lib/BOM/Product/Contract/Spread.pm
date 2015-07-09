@@ -288,7 +288,7 @@ sub _get_highlow {
         for (1, -1) {
             my $h = $high + $_ * $half_spread;
             my $l = $low + $_ * $half_spread;
-            push @highlows, [$h,$l];
+            push @highlows, [$h, $l];
         }
     }
 
