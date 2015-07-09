@@ -21,7 +21,14 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Time::Duration::Concise::Localize;
 
 sub run_dataset {
-    my @symbols    = BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx;
+    my @symbols    = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market            => [qw(forex commodities)],
+        contract_category => 'callput',
+        expiry_type       => 'intraday',
+        start_type        => 'spot',
+        submarket         => [qw(major_pairs minor_pairs metals)],
+    );
+
     my @durations  = sort { $a->seconds <=> $b->seconds } map { Time::Duration::Concise::Localize->new(interval => $_) } qw(15m 5h);
     my @bet_types  = qw(ONETOUCH NOTOUCH CALL PUT);
     my $start_date = Date::Utility->new('30-Mar-13 09h45GMT');
