@@ -53,7 +53,7 @@ subtest 'get_by_broker_code' => sub {
 
 cmp_deeply [sort map { $_->name } $website_list->all],
     [
-    'BackOffice', 'Binary',     'Binaryqa01', 'Binaryqa02', 'Binaryqa03', 'Binaryqa04', 'Binaryqa05', 'Binaryqa06',
+    'BackOffice', 'Binary', 'Binary-beta', 'Binaryqa01', 'Binaryqa02', 'Binaryqa03', 'Binaryqa04', 'Binaryqa05', 'Binaryqa06',
     'Binaryqa07', 'Binaryqa08', 'Binaryqa09', 'Binaryqa10', 'Binaryqa11', 'Binaryqa12', 'Devbin'
     ],
     "A list of all known websites";
