@@ -11,7 +11,7 @@ use Math::Business::BlackScholes::Binaries;
 use VolSurface::Utils qw(get_2vol_butterfly);
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::SetupDatasetTestFixture;
+use SetupDatasetTestFixture;
 use Date::Utility;
 use BOM::MarketData::VolSurface;
 
@@ -57,7 +57,7 @@ sub _build_records {
     my $spot              = _get_spot(\@lines);
     my $payout            = 100;
 
-    my $fixture = BOM::Test::Data::Utility::SetupDatasetTestFixture->new();
+    my $fixture = SetupDatasetTestFixture->new();
     $fixture->setup_test_fixture({
         underlying => $underlying,
         rates      => $rate,

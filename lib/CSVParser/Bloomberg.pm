@@ -25,7 +25,7 @@ use Date::Parse;
 use Text::CSV;
 use CGI;
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Test::Data::Utility::SetupDatasetTestFixture;
+use SetupDatasetTestFixture;
 use Date::Utility;
 use BOM::MarketData::Fetcher::VolSurface;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
@@ -919,7 +919,7 @@ sub price_list {
             payout_amount                => $self->payout_amount,
         };
 
-        my $fixture = BOM::Test::Data::Utility::SetupDatasetTestFixture->new;
+        my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
                 underlying => BOM::Market::Underlying->new($underlying_symbol),
                 spot       => $contract_args->{spot}});

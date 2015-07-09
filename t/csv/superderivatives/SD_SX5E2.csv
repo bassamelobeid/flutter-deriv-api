@@ -104,10 +104,10 @@ Date,Days, Rate (%pa),Discount Factor,,,,,,,,,,,,,,,,,,,
 END RATES,,,,,,,,,,,,,,,,,,,,,,
 QUANTO CORRELATIONS USD EUR,,,,,,,,,,,,,,,,,,,,,,
 Months,Days,Correlation,,,,,,,,,,,,,,,,,,,,
-90,-0.139
-180,-0.119
-270,-0.102
-360,-0.09
+3M,-0.139
+6M,-0.119
+9M,-0.102
+1Y,-0.09
 END QUANTO CORRELATIONS USD EUR,,,,,,,,,,,,,,,,,,,,,,
 FX Vol EUR USD,,,,,,,,,,,,,,,,,,,,,,
 1D,6.75,,,,,,,,,,,,,,,,,,,,,

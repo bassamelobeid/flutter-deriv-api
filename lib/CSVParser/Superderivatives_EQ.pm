@@ -8,7 +8,7 @@ use Math::Function::Interpolator;
 use BOM::MarketData::CorrelationMatrix;
 use BOM::Market::Underlying;
 use BOM::MarketData::VolSurface::Moneyness;
-use BOM::Test::Data::Utility::SetupDatasetTestFixture;
+use SetupDatasetTestFixture;
 use Date::Utility;
 use Scalar::Util qw(looks_like_number);
 
@@ -53,7 +53,7 @@ sub _build_records {
         },
     );
 
-    my $fixture = BOM::Test::Data::Utility::SetupDatasetTestFixture->new();
+    my $fixture = SetupDatasetTestFixture->new();
 
     if ($data->{quanto_volsurface}) {
         $self->_setup_quanto_volsurface($data->{quanto_volsurface}, $date_start);
