@@ -121,13 +121,13 @@ sub run_dataset {
                             date       => $reconsidered->date_start->date_ddmmmyy,
                             hour       => $reconsidered->date_start->hour,
                             bet_type   => $reconsidered->bet_type->code,
-                            duration   => $reconsidered->calendar_minutes->amount,
+                            duration   => $reconsidered->remainig_time->minutes,
                             trend      => int(
                                 roundnear(
                                     1,
                                     $ask->peek_amount('intraday_trend') /
                                         $ask->peek_amount('period_opening_value') * 100000 /
-                                        sqrt($reconsidered->calendar_minutes->amount)
+                                        sqrt($reconsidered->remaining_time->minutes)
                                 ) / 5
                             ),
                             vol                 => roundnear(1, $reconsidered->pricing_args->{iv} * 100),
