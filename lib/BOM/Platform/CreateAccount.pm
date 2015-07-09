@@ -218,7 +218,7 @@ sub register_real_acc {
             get_logger()->info("Created desk.com account for loginid $client_loginid");
         }
         catch {
-            get_logger->warn("Unable to add loginid $client_loginid (".$client->email.") to desk.com API: $_");
+            get_logger->warn("Unable to add loginid $client_loginid (" . $client->email . ") to desk.com API: $_");
         };
     }
     stats_inc("business.new_account.real");
