@@ -1440,7 +1440,7 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
-            } elsif ($client->is_virtual and ($now->epoch >= $contract->date_settlement->epoch + 3600)) {
+            } elsif ($client->is_virtual and ($contract->is_spread or ($now->epoch >= $contract->date_settlement->epoch + 3600))) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
                 push @bets_to_sell, $bet;

@@ -49,19 +49,21 @@ has is_expired => (
 sub _build_is_expired {
     my $self = shift;
 
-    my ($high, $low) = $self->_get_highlow({
-        from => $self->entry_tick->epoch,
-        to   => $self->date_pricing->epoch,
-    });
+    my $highlows = $self->_get_highlow();
 
     my $is_expired = 0;
-    if ($high and $low) {
-        if ($low <= $self->stop_loss_level) {
-            $is_expired = 1;
-            $self->_recalculate_value($self->stop_loss_level);
-        } elsif ($high >= $self->stop_profit_level) {
-            $is_expired = 1;
-            $self->_recalculate_value($self->stop_profit_level);
+    foreach my $hl (@$highlows) {
+        my ($high, $low) = ($hl->[0], $hl->[1]);
+        if ($high and $low) {
+            if ($low <= $self->stop_loss_level) {
+                $is_expired = 1;
+                $self->_recalculate_value($self->stop_loss_level);
+                last;
+            } elsif ($high >= $self->stop_profit_level) {
+                $is_expired = 1;
+                $self->_recalculate_value($self->stop_profit_level);
+                last;
+            }
         }
     }
 

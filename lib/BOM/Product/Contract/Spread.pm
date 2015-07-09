@@ -73,6 +73,7 @@ has [qw(date_expiry)] => (
 has value => (
     is       => 'rw',
     init_arg => undef,
+    default  => 0,
 );
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
@@ -271,13 +272,27 @@ sub barrier_display_info {
 sub _get_highlow {
     my $self = shift;
 
+    # If entry tick epoch is after date pricing epoch, something is screwy
+    # use date_start + 1 second
+    my $start = $self->entry_tick->epoch > $self->date_pricing->epoch ? $self->date_start->epoch + 1 : $self->entry_tick->epoch;
     my ($high, $low) = @{
         $self->underlying->get_high_low_for_period({
-                start => $self->entry_tick->epoch,
+                start => $start,
                 end   => $self->date_pricing->epoch,
             })}{'high', 'low'};
 
-    return ($high, $low);
+    # need to convert this to buy/sell
+    my @highlows;
+    if ($high and $low) {
+        my $half_spread = $self->spread / 2;
+        for (1, -1) {
+            my $h = $high + $_ * $half_spread;
+            my $l = $low + $_ * $half_spread;
+            push @highlows, [$h,$l];
+        }
+    }
+
+    return \@highlows;
 }
 
 has _pip_size_tick => (
