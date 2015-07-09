@@ -35,7 +35,6 @@ sub is_compatible {
     my $underlying = $bet->underlying;
     my $symbol     = $underlying->system_symbol;
     my $submarket  = $underlying->submarket->name;
-    my $bet_secs   = $bet->calendar_minutes->amount * 60;
     my $cat        = $bet->category->code;
 
     my $error_cond;
@@ -44,11 +43,12 @@ sub is_compatible {
     } elsif ($bet->expiry_daily) {
         $error_cond = 'Daily expiry bet';
     } else {
-        my $duration_error = 'Unsupported duration [' . $bet_secs . 's]';
+        my $duration       = $bet->remaining_time;
+        my $duration_error = 'Unsupported duration [' . $duration->as_concise_string . ']';
         $error_cond = $duration_error;
         my $loc = $bet->offering_specifics->{historical};
         if (defined $loc->{min} && defined $loc->{max}) {
-            $error_cond = undef if ($bet_secs <= $loc->{max}->seconds && $bet_secs >= $loc->{min}->seconds);
+            $error_cond = undef if ($duration->seconds <= $loc->{max}->seconds && $duration->seconds >= $loc->{min}->seconds);
         }
     }
 
