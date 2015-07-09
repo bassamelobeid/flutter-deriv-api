@@ -88,13 +88,6 @@ has [qw(_delta_formula _vega_formula)] => (
     lazy_build => 1,
 );
 
-# This is always empty.
-has _cached_economic_events_info => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub { [] },
-);
-
 sub is_compatible {
     my $bet = shift;
 
@@ -325,16 +318,6 @@ sub _build_economic_events_markup {
 
     $markup->include_adjustment('info', $self->economic_events_volatility_risk_markup);
     $markup->include_adjustment('info', $self->economic_events_spot_risk_markup);
-
-    foreach my $event (@{$self->_cached_economic_events_info}) {
-        my $info = Math::Util::CalculatedValue::Validatable->new({
-            name        => $event->event_name . ' for ' . $event->symbol . ' at ' . $event->release_date->datetime,
-            description => 'economic events affecting this bet',
-            set_by      => __PACKAGE__,
-            base_amount => $event->impact,
-        });
-        $markup->include_adjustment('info', $info);
-    }
 
     return $markup;
 }
