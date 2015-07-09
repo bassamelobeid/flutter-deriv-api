@@ -27,6 +27,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Underlying;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::SubMarket::Registry;
+use BOM::System::Config;
 use Date::Utility;
 use Path::Tiny;
 
