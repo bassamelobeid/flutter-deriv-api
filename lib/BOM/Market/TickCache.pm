@@ -20,6 +20,7 @@ use Carp;
 
 use Cache::RedisDB;
 use Date::Utility;
+use ExpiryQueue qw( update_queue_for_tick );
 use List::Util qw(min);
 use Time::Duration::Concise;
 use Scalar::Util qw(blessed);
@@ -62,6 +63,8 @@ sub add {
         # Assume it is a hashref from feed client
         $tick = BOM::Market::Data::Tick->new($tick);
     }
+
+    update_queue_for_tick($tick);
 
     return $self->_redis->zadd($self->_make_key($tick->symbol), $tick->epoch, $enc->encode($tick));
 }
