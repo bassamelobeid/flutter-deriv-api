@@ -28,9 +28,8 @@ my @rejected = grep { /_promo$/ && $input{$_} eq 'R' } keys %input;
 s/_promo$// for (@approved, @rejected);
 
 my $tac_url = request()->url_for(
-    'c_template.cgi',
+    '/terms-and-conditions',
     {
-        filecode     => 'legal',
         selected_tab => 'promo-tac-tab'
     });
 
