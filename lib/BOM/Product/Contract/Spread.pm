@@ -119,6 +119,10 @@ sub _build_translated_display_name {
     return localize($self->display_name);
 }
 
+has exit_level => (
+    is => 'rw',
+);
+
 has entry_tick => (
     is         => 'ro',
     lazy_build => 1,
@@ -166,7 +170,7 @@ sub _build_sell_level {
     return $self->underlying->pipsized_value($self->current_tick->quote - $self->spread / 2);
 }
 
-has [qw(is_valid_to_buy is_valid_to_sell)] => (
+has [qw(is_valid_to_buy is_valid_to_sell may_settle_automatically)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -179,6 +183,11 @@ sub _build_is_valid_to_buy {
 sub _build_is_valid_to_sell {
     my $self = shift;
     return $self->confirm_validity;
+}
+
+sub _build_may_settle_automatically {
+    my $self = shift;
+    return $self->is_valid_to_sell;
 }
 
 has [qw(longcode shortcode)] => (

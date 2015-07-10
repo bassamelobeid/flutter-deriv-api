@@ -57,10 +57,12 @@ sub _build_is_expired {
         if ($high and $low) {
             if ($low <= $self->stop_loss_level) {
                 $is_expired = 1;
+                $self->exit_level($self->stop_loss_level);
                 $self->_recalculate_value($self->stop_loss_level);
                 last;
             } elsif ($high >= $self->stop_profit_level) {
                 $is_expired = 1;
+                $self->exit_level($self->stop_profit_level);
                 $self->_recalculate_value($self->stop_profit_level);
                 last;
             }
@@ -83,6 +85,7 @@ sub _build_bid_price {
     if ($self->is_expired) {
         $bid = $self->ask_price + $self->value;
     } else {
+        $self->exit_level($self->sell_level);
         $self->_recalculate_value($self->sell_level);
         $bid = $self->ask_price + $self->value;
     }
