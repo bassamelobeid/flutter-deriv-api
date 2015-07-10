@@ -45,7 +45,6 @@ sub _calculate_results {
 
     foreach my $record (@{$parser->records}) {
         my $bet_args = _get_bet_args($record);
-
         my $mock = Test::MockModule->new('BOM::Market::Underlying');
         $mock->mock('interest_rate_for', sub { return 0 });
         $mock->mock('dividend_rate_for', sub { return 0 });
@@ -53,7 +52,7 @@ sub _calculate_results {
         my $bom_return        = 100 * roundnear(1 / 10000, ($bet->payout - $bet->ask_price) / $bet->ask_price) . "%";
         my $bom_client_profit = $record->{nto_win} ? $record->{payout} - $bet->ask_price : -1 * $bet->ask_price;
         my $profit_diff       = $bom_client_profit - $record->{nto_client_profit};
-        my $bet_type          = $bet->bet_type->code;
+        my $bet_type          = $bet->code;
 
         my @output_array = (
             $record->{bet_num},                  $record->{currency},          $record->{underlying}, $bet_type,
@@ -102,6 +101,8 @@ sub _get_bet_args {
 
     return {
         underlying   => $underlying,
+        barrier      => 'S0P',
+        current_spot =>$record->{spot},
         bet_type     => $record->{bet_type},
         date_start   => $record->{date_start},
         date_expiry  => $record->{date_expiry},

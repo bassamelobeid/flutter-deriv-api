@@ -118,8 +118,8 @@ sub analyse_report {
     } elsif ($test eq 'nto') {
         my $test_benchmark   = $benchmark->{nto};
         my %change_benchmark = (
-            FLASHU => 0.57,
-            FLASHD => 0.63
+            CALL => 0.57,
+            PUT => 0.63
         );
         foreach my $bet_type (keys %$report) {
             my $expected       = $test_benchmark->{$bet_type}->{sum};
