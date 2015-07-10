@@ -121,10 +121,11 @@ sub _naked_vol {
     }
 
     my $uc_vol = sqrt($variance) || $self->long_term_vol;    # set vol to long term vol if variance goes to zero.
+    my $ticks_domain_secs = (defined $first_time and defined $last_time) ? $last_time - $first_time : 0;
 
     # Per 15-seconds, for legacy reasons.
-    my $average_tick_count = ($real_periods > 1) ? (15 * $real_periods / ($last_time - $first_time)) : 0;
-    my $err = ($real_periods + 1 < int($lookback_interval->minutes) * 0.8) ? 1 : undef;
+    my $average_tick_count = ($ticks_domain_secs) ? (15 * $real_periods / $ticks_domain_secs) : 0;
+    my $err = ($ticks_domain_secs < $lookback_interval->seconds * 0.8) ? 1 : undef;
 
     my $ref = {
         naked_vol          => $uc_vol,
