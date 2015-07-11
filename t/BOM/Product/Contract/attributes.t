@@ -116,9 +116,9 @@ subtest 'Numbers and stuff.' => sub {
 
     ok(not($bet->pricing_new), 'Pricing in the past, so we expect pricing_new to be false.');
 
-    my $calendar_minutes = $bet->calendar_minutes;
-    isa_ok($calendar_minutes, 'Math::Util::CalculatedValue::Validatable', 'calculated_minutes is a CalcVal.');
-    cmp_ok($calendar_minutes->amount, '==', 0, 'calculated_minutes value.');    # zero as bet has expired.
+    my $remaining_time = $bet->remaining_time;
+    isa_ok($remaining_time, 'Time::Duration::Concise', 'remaining_time');
+    cmp_ok($remaining_time->seconds, '==', 0, ' of 0 on expired.');
 
     my $max_ted = $bet->max_tick_expiry_duration;
     isa_ok($max_ted, 'Time::Duration::Concise', 'max_tick_expiry_duration');

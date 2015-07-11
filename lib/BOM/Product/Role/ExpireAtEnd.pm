@@ -116,9 +116,9 @@ sub _build_exit_tick {
                     severity => 100,
                     alert    => 1,
                     message  => 'Tick expiry duration ['
-                        . $actual_duration->normalized_code
+                        . $actual_duration->as_concise_string
                         . '] exceeds permitted maximum ['
-                        . $self->max_tick_expiry_duration->normalized_code . '] on '
+                        . $self->max_tick_expiry_duration->as_concise_string . '] on '
                         . $underlying->symbol,
                     message_to_client => localize("Missing market data for contract period."),
                 });

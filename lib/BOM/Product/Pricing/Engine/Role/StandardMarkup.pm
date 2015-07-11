@@ -744,7 +744,7 @@ sub _build_trend_markup {
 
     my $amount_to_add = 0;
     if (    $bet->is_forward_starting
-        and (my $bet_minutes = $bet->calendar_minutes->amount) <= $max_minutes
+        and (my $bet_minutes = $bet->remaining_time->minutes) <= $max_minutes
         and (my $trend_data  = $self->_trend_data->{$bet->underlying->symbol}))
     {
         my $date_start          = $bet->date_start;

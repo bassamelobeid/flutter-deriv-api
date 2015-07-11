@@ -967,6 +967,7 @@ FTSE:
   contracts: full_equities
   commission_level: 1
   display_name: UK Index
+  esig_symbol: $UKX-FTSE
   exchange_name: LSE
   feed_license: chartonly
   instrument_type: stockindex

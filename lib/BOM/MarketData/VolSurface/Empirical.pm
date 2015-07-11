@@ -235,8 +235,6 @@ sub _get_economic_event_seasonality_areas {
             $primary_sum_index = min($primary_sum_index, $secs_to_expiry);
             $sum_future_triangle[$primary_sum_index] = max($primary_sum, $sum_future_triangle[$primary_sum_index] // 1);
         }
-
-        push @{$self->_cached_economic_events_info}, $event;
     }
 
     @sum_past_triangle   = @sum_past_triangle[-$step_count .. -1];        # Align with volatility slice.
@@ -353,12 +351,6 @@ sub _get_coefficients {
 has _naked_vol_cache => (
     is      => 'ro',
     default => sub { {} },
-);
-
-has _cached_economic_events_info => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub { [] },
 );
 
 has long_term_prediction => (
