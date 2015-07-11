@@ -13,6 +13,7 @@ sub category_code   { return 'spreads'; }
 sub display_name    { return 'spread up'; }
 sub sentiment       { return 'up'; }
 sub other_side_code { return 'SPREADD'; }
+sub action          { return 'buy'; }
 
 # The price of which the client bought at.
 has barrier => (
