@@ -283,30 +283,20 @@ sub barrier_display_info {
     return (barriers => \%barriers);
 }
 
-sub _get_highlow {
+sub breaching_tick {
     my $self = shift;
 
-    # If entry tick epoch is after date pricing epoch, something is screwy
-    # use date_start + 1 second
     my $start = $self->entry_tick->epoch > $self->date_pricing->epoch ? $self->date_start->epoch + 1 : $self->entry_tick->epoch;
-    my ($high, $low) = @{
-        $self->underlying->get_high_low_for_period({
-                start => $start,
-                end   => $self->date_pricing->epoch,
-            })}{'high', 'low'};
+    # we use the original high/low here because the feed DB stores mid instead of buy/sell.
+    my ($higher_barrier, $lower_barrier) = $self->_highlow_args;
+    my $tick = $self->underlying->breaching_tick({
+        start  => $start,
+        end    => $self->date_pricing->epoch,
+        higher => $higer_barrier,
+        lower  => $lower_barrier
+    });
 
-    # need to convert this to buy/sell
-    my @highlows;
-    if ($high and $low) {
-        my $half_spread = $self->spread / 2;
-        for (1, -1) {
-            my $h = $high + $_ * $half_spread;
-            my $l = $low + $_ * $half_spread;
-            push @highlows, [$h, $l];
-        }
-    }
-
-    return \@highlows;
+    return $tick;
 }
 
 has _pip_size_tick => (

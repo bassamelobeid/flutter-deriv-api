@@ -50,24 +50,13 @@ has is_expired => (
 sub _build_is_expired {
     my $self = shift;
 
-    my $highlows = $self->_get_highlow();
-
     my $is_expired = 0;
-    foreach my $hl (@$highlows) {
-        my ($high, $low) = ($hl->[0], $hl->[1]);
-        if ($high and $low) {
-            if ($low <= $self->stop_loss_level) {
-                $is_expired = 1;
-                $self->exit_level($self->stop_loss_level);
-                $self->_recalculate_value($self->stop_loss_level);
-                last;
-            } elsif ($high >= $self->stop_profit_level) {
-                $is_expired = 1;
-                $self->exit_level($self->stop_profit_level);
-                $self->_recalculate_value($self->stop_profit_level);
-                last;
-            }
-        }
+    my $tick       = $self->breaching_tick();
+    if ($tick) {
+        my $hit_quote = $self->underlying->pipsized_value($tick->quote + $self->spread / 2);
+        $is_expired = 1;
+        $self->exit_level($hit_quote);
+        $self->_recalculate_value($hit_quote);
     }
 
     return $is_expired;
@@ -118,6 +107,17 @@ sub current_value {
     my $self = shift;
     $self->_recalculate_value($self->sell_level);
     return $self->value;
+}
+
+has _highlow_args => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__highlow_args {
+    my $self  = shift;
+    my $entry = $self->entry_tick->quote;
+    return ($entry + $self->stop_profit, $entry - $self->stop_loss);
 }
 
 no Moose;
