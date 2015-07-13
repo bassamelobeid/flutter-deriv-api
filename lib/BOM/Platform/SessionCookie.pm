@@ -92,6 +92,20 @@ sub value {
     return $self->_crypt->encrypt_payload(data => $self->as_hash);
 }
 
+=head2 $self->end_session
+
+Removes the token from the db and the cookie.
+
+=cut
+
+sub end_session {
+    my ($self) = @_;
+    my $token = delete $self->{token};
+    return BOM::Platform::Authorization->revoke_token(token => $token) 
+        if $token;
+    return;
+} 
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
