@@ -101,10 +101,10 @@ Removes the token from the db and the cookie.
 sub end_session {
     my ($self) = @_;
     my $token = delete $self->{token};
-    return BOM::Platform::Authorization->revoke_token(token => $token) 
+    return BOM::Platform::Authorization->revoke_token(token => $token)
         if $token;
     return;
-} 
+}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
