@@ -1,4 +1,5 @@
 package BOM::Product::Contract::Spread;
+use Time::HiRes qw(sleep);
 
 use Moose;
 
