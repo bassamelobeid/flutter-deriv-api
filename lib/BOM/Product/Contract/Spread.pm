@@ -288,7 +288,7 @@ sub breaching_tick {
 
     my $start = $self->entry_tick->epoch > $self->date_pricing->epoch ? $self->date_start->epoch + 1 : $self->entry_tick->epoch;
     # we use the original high/low here because the feed DB stores mid instead of buy/sell.
-    my ($higher_barrier, $lower_barrier) = $self->_highlow_args;
+    my ($higher_barrier, $lower_barrier) = @{$self->_highlow_args};
     my $tick = $self->underlying->breaching_tick((
         start  => $start,
         end    => $self->date_pricing->epoch,
