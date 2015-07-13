@@ -318,28 +318,17 @@ sub tick_at {
     my $args = shift;
     my $tick_at;
 
-    return unless ($args->{end_time});
-
-    my $consistent_to;
-
-    # Used to be explicit check for `1` now just truthy
-    if (not $args->{allow_inconsistent}) {
-        # Make these checks before the query, in case we need them.
-        # Worst case: we get an updated tick while we run and miss
-        # Best case: updated tick is on our second and we're fine, anyway
-        my $last_agg  = $self->last_aggregation_time;
-        my $last_tick = $self->last_tick_time;
-
-        $consistent_to = ($last_agg->is_after($last_tick)) ? $last_agg : $last_tick;
-    }
-
-    if (my $uncertain_tick = $self->tick_at_or_before($args)) {
-        if (not $consistent_to) {
+    my $uncertain_tick = $self->tick_at_or_before($args);
+    if ($uncertain_tick and $args->{end_time}) {
+        if (exists $args->{allow_inconsistent}
+            and $args->{allow_inconsistent} == 1)
+        {
             $tick_at = $uncertain_tick;
         } else {
             my $end_time = Date::Utility->new($args->{end_time});
             if (   $end_time->epoch == $uncertain_tick->epoch
-                or $end_time->is_before($consistent_to))
+                or $end_time->epoch < $self->last_aggregation_time->epoch
+                or $end_time->epoch < $self->last_tick_time->epoch)
             {
                 $tick_at = $uncertain_tick;
             }
@@ -432,7 +421,7 @@ Accepts following arguments:
 
 =item B<start_time>
 
-Computy OHLC starting from the specified time. Note, that if I<start_time> is
+Compute OHLC starting from the specified time. Note, that if I<start_time> is
 not at the beginning of the unit used by the source table (minutes, hour, or
 days depending on I<aggregation_period>) it will be aligned to the start of the
 next unit. But timestamp of the returned OHLC may be pointing to earlier moment
@@ -740,8 +729,6 @@ sub _query_ticks {
     my $self      = shift;
     my $statement = shift;
 
-    my $symbol = $self->underlying;
-
     my @ticks;
     if ($statement->execute()) {
         my ($epoch, $quote, $runbet_quote, $bid, $ask);
@@ -753,11 +740,10 @@ sub _query_ticks {
 
         while ($statement->fetch()) {
             my $tick_compiled = BOM::Market::Data::Tick->new({
-                symbol => $symbol,
-                epoch  => $epoch,
-                quote  => $quote,
-                bid    => $bid,
-                ask    => $ask,
+                epoch => $epoch,
+                quote => $quote,
+                bid   => $bid,
+                ask   => $ask,
             });
             $tick_compiled->invert_values if ($self->invert_values);
             push @ticks, $tick_compiled;
@@ -786,11 +772,10 @@ sub _query_single_tick {
         # anything truish before assuming we got good data back.
         if ($statement->fetch() and $epoch) {
             $tick_compiled = BOM::Market::Data::Tick->new({
-                symbol => $self->underlying,
-                epoch  => $epoch,
-                quote  => $quote,
-                bid    => $bid,
-                ask    => $ask,
+                epoch => $epoch,
+                quote => $quote,
+                bid   => $bid,
+                ask   => $ask,
             });
         }
     }
