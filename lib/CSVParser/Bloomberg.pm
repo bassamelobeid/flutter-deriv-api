@@ -111,9 +111,11 @@ has 'payout_currency' => (
 );
 
 has 'payout_amount' => (
-    is  => 'rw',
-    isa => 'Num',
+    is         => 'rw',
+    isa        => 'Num',
+    default    => 100,
 );
+
 
 has 'underlying_symbol' => (
     is  => 'rw',
@@ -124,16 +126,6 @@ has 'underlying' => (
     is         => 'rw',
     isa        => 'BOM::Market::Underlying',
     lazy_build => 1,
-);
-
-has 'barrier1_delta' => (
-    is  => 'rw',
-    isa => 'Num',
-);
-
-has 'barrier2_delta' => (
-    is  => 'rw',
-    isa => 'Num',
 );
 
 has 'cut_off_time' => (
@@ -154,18 +146,22 @@ has 'price' => (
 );
 
 #higher barrier or the main barrier
-has 'barrier1' => (
+has 'high_barrier' => (
     is         => 'rw',
     isa        => 'Num',
-    lazy_build => 1,
 );
 
 #lower barrier in two barrier bets
-has 'barrier2' => (
+has 'low_barrier' => (
     is         => 'rw',
     isa        => 'Maybe[Num]',
-    lazy_build => 1,
 );
+
+has 'barrier' => (
+    is         => 'rw',
+    isa        => 'Maybe[Num]',
+);
+
 
 has 'spot' => (
     is         => 'rw',
@@ -219,11 +215,29 @@ has 'bloomberg_exported_error_mid' => (
     default => 0,
 );
 
+sub _get_value {
+    my $self           = shift;
+    my $attribute_name = shift;
+    my $default_value  = shift;
+
+    my $q = CGI->new;
+    if ($q->param($attribute_name)) {
+        if (wantarray()) {
+            return [$q->param($attribute_name)];
+        } else {
+            return $q->param($attribute_name);
+        }
+    }
+
+    return $default_value;
+}
+
+
 #UI = Up and In, DI = Down and In, DO = Down and out, UO = Up and out
 sub _build_barrier_type {
     my $self = shift;
     if ($self->bet_type eq 'ONETOUCH' or $self->bet_type eq 'NOTOUCH') {
-        if ($self->barrier1 > $self->spot) {
+        if ($self->high_barrier > $self->spot) {
             return 'UO';
         } else {
             return 'DO';
@@ -231,37 +245,6 @@ sub _build_barrier_type {
     } else {
         return '';
     }
-}
-
-sub _build_barrier1 {
-    my $self = shift;
-    return get_strike_for_spot_delta({
-        delta            => $self->barrier1_delta,
-        option_type      => 'VANILLA_CALL',
-        atm_vol          => $self->sigma,
-        t                => $self->time_in_year,
-        r_rate           => $self->r,
-        q_rate           => $self->q,
-        spot             => $self->spot,
-        premium_adjusted => $self->premium_adjusted
-    });
-}
-
-sub _build_barrier2 {
-    my $self = shift;
-
-    return if (!grep { $self->bet_type ne $_ } qw(RANGE UPORDOWN));
-
-    return get_strike_for_spot_delta({
-        delta            => $self->barrier2_delta,
-        option_type      => 'VANILLA_CALL',
-        atm_vol          => $self->sigma,
-        t                => $self->time_in_year,
-        r_rate           => $self->r,
-        q_rate           => $self->q,
-        spot             => $self->spot,
-        premium_adjusted => $self->premium_adjusted
-    });
 }
 
 has 'volsurface' => (
@@ -276,8 +259,6 @@ sub _build_bet {
     my $bet_args = {
         underlying   => $self->underlying,
         current_spot => $self->spot,
-        barrier      => $self->barrier1,
-        barrier2     => $self->barrier2,
         bet_type     => $self->bet_type,
         date_start   => $self->date_start,
         date_expiry  => $self->expiry_date_bom,
@@ -287,8 +268,15 @@ sub _build_bet {
         q_rate       => $self->q,
         r_rate       => $self->r,
     };
+    if ($self->_get_bet_type_bloomberg eq 'DNT' or $self->_get_bet_type_bloomberg eq 'DOT') {
+        $bet_args->{high_barrier} = $self->high_barrier;
+        $bet_args->{low_barrier}  = $self->low_barrier;
+    }else{
+        $bet_args->{barrier} = $self->high_barrier;
+    }
 
     $bet_args->{volsurface} = $self->volsurface if defined $self->volsurface;
+    $DB::single=1;
     my $bet = produce_contract($bet_args);
 
     return $bet;
@@ -368,7 +356,7 @@ sub _build_sigma {
 
     return $vol_surface->get_volatility({
         days  => $self->maturity_days,
-        delta => '50D',
+        delta => '50',
     });
 }
 
@@ -419,26 +407,26 @@ sub _get_strike_bloomberg {
     my $self = shift;
 
     if ($self->_get_bet_type_bloomberg eq 'Digital') {
-        return sprintf("%.5f", $self->barrier1);
+        return sprintf("%.5f", $self->barrier);
     }
 
 }
 
-sub _get_barrier1_bloomberg {
+sub _get_high_barrier_bloomberg {
     my $self = shift;
 
     if ($self->_get_bet_type_bloomberg ne 'Digital') {
-        return sprintf("%.5f", $self->barrier1);
+        return sprintf("%.5f", $self->high_barrier);
     }
     return '';
 }
 
-sub _get_barrier2_bloomberg {
+sub _get_low_barrier_bloomberg {
     my $self = shift;
     if (   $self->_get_bet_type_bloomberg eq 'DNT'
         or $self->_get_bet_type_bloomberg eq 'DOT')
     {
-        return sprintf("%.5f", $self->barrier2);
+        return sprintf("%.5f", $self->low_barrier);
     }
     return '';
 }
@@ -527,10 +515,10 @@ sub get_csv_line {
     $line .=
           $self->payout_currency . ','
         . $self->payout_amount . ',' . "" . ',' . "" . ','
-        . $self->_get_barrier1_bloomberg . ','
+        . $self->_get_high_barrier_bloomberg . ','
         . $self->_build_barrier_type . ',';
     $line .=
-          $self->_get_barrier2_bloomberg . ','
+          $self->_get_low_barrier_bloomberg . ','
         . (-1 * $self->price) . ','
         . $self->payout_currency
         . ',Cash '
@@ -569,45 +557,6 @@ sub get_csv_line {
     $line .= ',' . $self->bloomberg_exported_price_mid / 100;
     $line .= ',' . abs(sprintf("%.4f", $self->bet->theo_probability->amount) - $self->bloomberg_exported_price_mid / 100);
     return $line;
-}
-
-sub get_csv_line_no_price {
-    my $self = shift;
-    my $line = $self->id . ',';
-    $line .=
-          $self->portfolio . ','
-        . $self->_get_trade_date_bloomberg . ','
-        . $self->_get_premium_date_bloomberg . ',' . "Buy" . ','
-        . $self->_get_bet_type_bloomberg . ',';
-    $line .=
-          "" . ','
-        . $self->_get_underlying_bloomberg . ','
-        . $self->_get_Ccy_P_C . ','
-        . $self->_get_expiry_date_bloomberg . ','
-        . $self->_get_delivery_date_bloomberg . ','
-        . $self->_get_strike_bloomberg . ',';
-    $line .=
-          $self->payout_currency . ','
-        . $self->payout_amount . ',' . "" . ',' . "" . ','
-        . $self->_get_barrier1_bloomberg . ','
-        . $self->_build_barrier_type . ',';
-    $line .=
-        $self->_get_barrier2_bloomberg . ',' . (-1 * $self->price) . ',' . $self->payout_currency . ',Cash ' . $self->payout_currency . ',' . "Gmt";
-    $line .= ',' . $self->cut_off_time;
-    $line .= ',' . $self->barrier1_delta;
-    $line .= ',' . $self->barrier2_delta;
-    $line .= ',' . $self->_get_notes;
-    $line .= ',' . $self->spot;
-    return $line;
-}
-
-sub get_csv_header_no_price {
-    return
-          "External ID#,Portfolio,Trade Date: MM/DD/YYYY,Premium Date: MM/DD/YYYY,B/S,Type,On Shore,Currency Pair,"
-        . "Ccy+P/C,Expiration Date: MM/DD/YYYY,Delivery Date: MM/DD/YYYY,Strike,Notional Currency,Notional Amount,"
-        . "Strike 2,Notional Amount 2,Barrier,Barrier Type,Barrier 2,Premium Amount,Premium Currency,Settlement Type,"
-        . "ZoneId,Cut Time,delta_1,delta_2,notes,spot";
-
 }
 
 sub get_csv_header {
@@ -731,7 +680,7 @@ sub exported_underlying_symbol {
     return 'frx' . $line->[$fields->{'Ccy Pair'}];
 }
 
-sub exported_barrier1 {
+sub exported_high_barrier {
     my $line   = shift;
     my $fields = shift;
 
@@ -743,7 +692,7 @@ sub exported_barrier1 {
     }
 }
 
-sub exported_barrier2 {
+sub exported_low_barrier {
     my $line   = shift;
     my $fields = shift;
     if (   $line->[$fields->{'Style'}] eq 'Double NT'
@@ -904,21 +853,25 @@ sub price_list {
             bet_type                     => exported_bet_type(\@fields, $headers),
             payout_currency              => exported_payout_currency(\@fields, $headers),
             underlying_symbol            => $underlying_symbol,
-            barrier1                     => exported_barrier1(\@fields, $headers),
             cut_off_time                 => exported_cut_off_time(\@fields, $headers),
             price_type                   => 'theo',
             portfolio                    => 'Reprice',
-            spot                         => exported_spot(\@fields, $headers),
+            current_spot                 => exported_spot(\@fields, $headers),
             date_start                   => $pricing_date,
             expiry_date_bom              => $expiry_date_bom,
             date_pricing                 => $pricing_date,
-            barrier2                     => exported_barrier2(\@fields, $headers),
             bloomberg_exported_price_mid => exported_bloomberg_price_mid(\@fields, $headers),
             r                            => $r_rate / 100,
             q                            => $q_rate / 100,
-            payout_amount                => $self->payout_amount,
+            payout_amount                => 100,
         };
-
+        $DB::single=1;
+        if ($contract_args->{bet_type} eq 'RANGE'  or $contract_args->{bet_type} eq 'UPORDOWN') {
+            $contract_args->{high_barrier} = exported_high_barrier(\@fields, $headers);
+            $contract_args->{low_barrier}  = exported_low_barrier(\@fields, $headers);
+        }else{
+            $contract_args->{barrier} = exported_high_barrier(\@fields, $headers);
+        }
         my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
                 underlying => BOM::Market::Underlying->new($underlying_symbol),
