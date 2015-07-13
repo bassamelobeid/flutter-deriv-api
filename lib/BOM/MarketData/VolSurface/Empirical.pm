@@ -10,8 +10,7 @@ use POSIX qw(ceil);
 use Time::Duration::Concise::Localize;
 
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Market::TickCache;
-use BOM::Market::Underlying;
+use BOM::Market::AggTicks;
 use BOM::Market::Types;
 
 sub get_volatility {
@@ -75,8 +74,6 @@ sub get_seasonalized_volatility_with_news {
     };
 }
 
-my $annual_seconds = 60 * 60 * 24 * 252;
-
 sub _naked_vol {
     my ($self, $args) = @_;
 
@@ -95,7 +92,7 @@ sub _naked_vol {
     my $fill_cache = $args->{fill_cache} // 1;
 
     my $real_periods = 0;
-    my $at           = BOM::Market::TickCache->new;
+    my $at           = BOM::Market::AggTicks->new;
     my $ticks        = $at->retrieve({
         underlying   => $underlying,
         interval     => $lookback_interval,
@@ -103,29 +100,25 @@ sub _naked_vol {
         fill_cache   => $fill_cache,
     });
 
-    my ($observed_seconds, $sum_squaredinput, $variance) = (0) x 3;
-    my ($first_time, $last_time);
+    my ($total_ticks, $sum_squaredinput, $variance) = (0) x 3;
     my $length      = scalar @$ticks;
-    my $returns_sep = 30;               # Compute on 30 tick intervals;
+    my $returns_sep = $at->returns_to_agg_ratio;
     if ($length > $returns_sep) {
-        $last_time  = $ticks->[-1]->epoch;
-        $first_time = $ticks->[$returns_sep]->epoch;
         # Can compute vol.
         for (my $i = $returns_sep; $i < $length; $i++) {
             $real_periods++;
-            my ($now, $then) = ($ticks->[$i], $ticks->[$i - $returns_sep]);
-            $sum_squaredinput += (log($now->quote / $then->quote)**2);
-            $observed_seconds += ($now->epoch - $then->epoch);
+            my $return = log($ticks->[$i]{value} / $ticks->[$i - $returns_sep]{value});
+            $sum_squaredinput += ($return**2);
+            $total_ticks += $ticks->[$i]{full_count};
         }
-        $variance = $sum_squaredinput * ($annual_seconds / $observed_seconds);
+        $variance = $at->annualization / ($length - $returns_sep) * $sum_squaredinput;
     }
 
     my $uc_vol = sqrt($variance) || $self->long_term_vol;    # set vol to long term vol if variance goes to zero.
-    my $ticks_domain_secs = (defined $first_time and defined $last_time) ? $last_time - $first_time : 0;
 
-    # Per 15-seconds, for legacy reasons.
-    my $average_tick_count = ($ticks_domain_secs) ? (15 * $real_periods / $ticks_domain_secs) : 0;
-    my $err = ($ticks_domain_secs < $lookback_interval->seconds * 0.8) ? 1 : undef;
+    my $average_tick_count = ($real_periods > 0) ? $total_ticks / $real_periods : 0;
+    my $err;
+    $err = 1 if ($real_periods + 1 < int($lookback_interval->minutes) * 0.8);
 
     my $ref = {
         naked_vol          => $uc_vol,

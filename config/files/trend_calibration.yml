@@ -1,5 +1,4 @@
-# Spot seasonality calibration, data doesn't change much often. 
-# Affects forward start contracts, adds an extra trend adjustment to those--
+---
 frxAUDCAD:
   00:00:
     '10': 0.578

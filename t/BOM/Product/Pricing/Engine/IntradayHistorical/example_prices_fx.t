@@ -1,14 +1,14 @@
 use strict;
 use warnings;
 
-use Test::Most 0.22 (tests => 53);
-use Test::FailWarnings;
+use Test::Most 0.22 (tests => 60);
+use Test::NoWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Runtime qw(:normal);
-use BOM::Market::TickCache;
+use BOM::Market::AggTicks;
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
-BOM::Market::TickCache->new->flush;
+BOM::Market::AggTicks->new->flush;
 
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');
@@ -189,11 +189,12 @@ is($bet->volsurface->recorded_date->datetime_iso8601, '2012-11-08T00:00:00Z',   
 is($bet->volsurface->cutoff->code,                    'UTC 23:59',                                      'Cutoff is correct for 8-Nov');
 is($bet->pricing_engine_name,                         'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 my $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                             0.495,  'Ask probability is correct.');
-is(roundnear(1e-2, $bet->average_tick_count),                 7.48,   'Correct number of average ticks.');
-is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0131, 'model_markup is correct.');
-is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), 0.0052, 'intraday_bounceback is correct.');
-is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     0.0019, 'vega_correction is correct.');
+is(roundnear(1e-4, $ask->amount),                          0.5416, 'Ask probability is correct.');
+is(roundnear(1e-2, $bet->average_tick_count),              7.52,   'Correct number of average ticks.');
+is(roundnear(1e-4, $ask->peek_amount('model_markup')),     0.0131, 'model_markup is correct.');
+is(roundnear(1e-4, $ask->peek_amount('delta_correction')), 0.0538, 'delta_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('vega_correction')),  0.0018, 'vega_correction is correct.');
+is($ask->peek_amount('intraday_mu'),           0,     'No drift ever.');
 is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
 
 $bet_params = {
@@ -210,11 +211,12 @@ $bet_params = {
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example PUT bet';
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                             0.5312,  'Ask probability is correct.');
-is(roundnear(1e-2, $bet->average_tick_count),                 7.48,    'Correct number of average ticks.');
-is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0131,  'model_markup is correct.');
-is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), -0.0052, 'intraday_bounceback is correct.');
-is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     -0.0019, 'vega_correction is correct.');
+is(roundnear(1e-4, $ask->amount),                          0.533,   'Ask probability is correct.');
+is(roundnear(1e-2, $bet->average_tick_count),              7.52,    'Correct number of average ticks.');
+is(roundnear(1e-4, $ask->peek_amount('model_markup')),     0.0131,  'model_markup is correct.');
+is(roundnear(1e-4, $ask->peek_amount('delta_correction')), -0.0054, 'delta_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('vega_correction')),  -0.0018, 'vega_correction is correct.');
+is($ask->peek_amount('intraday_mu'),           0,     'No drift ever.');
 is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
 
 SKIP: {
@@ -235,9 +237,10 @@ SKIP: {
     is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
     $ask = $bet->ask_probability;
     is(roundnear(1e-4, $ask->amount),                      1,      'Ask probability is correct.');
-    is(roundnear(1e-2, $bet->average_tick_count),          7.48,   'Correct number of average ticks.');
+    is(roundnear(1e-2, $bet->average_tick_count),          7.52,   'Correct number of average ticks.');
     is(roundnear(1e-4, $ask->peek_amount('model_markup')), 0.0131, 'model_markup is correct.');
 # Cannot check adjustments on composed bets.
+    is($ask->peek_amount('intraday_mu'),           0,     'No drift ever.');
     is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
 
     $bet_params = {
@@ -256,9 +259,10 @@ SKIP: {
     is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
     $ask = $bet->ask_probability;
     is(roundnear(1e-4, $ask->amount),                      0.0381, 'Ask probability is correct.');
-    is(roundnear(1e-2, $bet->average_tick_count),          7.48,   'Correct number of average ticks.');
+    is(roundnear(1e-2, $bet->average_tick_count),          7.52,   'Correct number of average ticks.');
     is(roundnear(1e-4, $ask->peek_amount('model_markup')), 0.0131, 'model_markup is correct.');
 # Cannot check adjustments on composed bets.
+    is($ask->peek_amount('intraday_mu'),           0,     'No drift ever.');
     is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
 }
 
@@ -276,11 +280,12 @@ $bet_params = {
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example ONETOUCH bet';
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                             1,      'Ask probability is correct.');
-is(roundnear(1e-2, $bet->average_tick_count),                 6.18,   'Correct number of average ticks.');
-is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0303, 'model_markup is correct.');
-is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), 0.0094, 'intraday_bounceback is correct.');
-is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     0.0035, 'vega_correction is correct.');
+is(roundnear(1e-4, $ask->amount),                          1,      'Ask probability is correct.');
+is(roundnear(1e-2, $bet->average_tick_count),              6.29,   'Correct number of average ticks.');
+is(roundnear(1e-4, $ask->peek_amount('model_markup')),     0.0303, 'model_markup is correct.');
+is(roundnear(1e-4, $ask->peek_amount('delta_correction')), 0.0778, 'delta_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('vega_correction')),  0.0034, 'vega_correction is correct.');
+is($ask->peek_amount('intraday_mu'),           0, 'No drift ever.');
 is($ask->peek_amount('path_dependent_markup'), 2, 'Includes path dependent markup.');
 
 $bet_params = {
@@ -297,11 +302,12 @@ $bet_params = {
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example NOTOUCH bet';
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                             0.0515,  'Ask probability is correct.');
-is(roundnear(1e-2, $bet->average_tick_count),                 6.18,    'Correct number of average ticks.');
-is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0303,  'model_markup is correct.');
-is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), -0.0094, 'intraday_bounceback is correct.');
-is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     -0.0035, 'vega_correction is correct.');
+is(roundnear(1e-4, $ask->amount),                          0.0589,  'Ask probability is correct.');
+is(roundnear(1e-2, $bet->average_tick_count),              6.29,    'Correct number of average ticks.');
+is(roundnear(1e-4, $ask->peek_amount('model_markup')),     0.0303,  'model_markup is correct.');
+is(roundnear(1e-4, $ask->peek_amount('delta_correction')), 0,       'delta_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('vega_correction')),  -0.0034, 'vega_correction is correct.');
+is($ask->peek_amount('intraday_mu'),           0, 'No drift ever.');
 is($ask->peek_amount('path_dependent_markup'), 2, 'Includes path dependent markup.');
 
 $bet_params = {
@@ -318,25 +324,26 @@ $bet_params = {
 lives_ok { $bet = produce_contract($bet_params); } 'The CALL a minute later.';
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                             0.4789, 'Ask probability is correct.');
-is(roundnear(1e-2, $bet->average_tick_count),                 7.58,   'Correct number of average ticks.');
-is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0131, 'model_markup is correct.');
-is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), 0.0047, 'intraday_bounceback is correct.');
-is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     0.003,  'vega_correction is correct.');
+is(roundnear(1e-4, $ask->amount),                          0.5234, 'Ask probability is correct.');
+is(roundnear(1e-2, $bet->average_tick_count),              7.52,   'Correct number of average ticks.');
+is(roundnear(1e-4, $ask->peek_amount('model_markup')),     0.013,  'model_markup is correct.');
+is(roundnear(1e-4, $ask->peek_amount('delta_correction')), 0.0527, 'delta_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('vega_correction')),  0.0029, 'vega_correction is correct.');
+is($ask->peek_amount('intraday_mu'),           0,     'No drift ever.');
 is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
-is(roundnear(1e-4, $bet->pricing_args->{iv}), 0.1095, 'Expected intraday vol amount');
+is(roundnear(1e-4, $bet->pricing_args->{iv}), 0.1161, 'Expected intaday vol amount');
 
 my $forced_iv = 1.2180;    # Make it 10x higher and see what happens.
 $bet_params->{pricing_vol} = $forced_iv;
 lives_ok { $bet = produce_contract($bet_params); } 'The CALL a minute later with a forced vol';
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount), 0.5084, 'Ask probability is correct.');
+is(roundnear(1e-4, $ask->amount), 0.5263, 'Ask probability is correct.');
 is($bet->average_tick_count, undef, 'Average tick count is undefined since we never computed vol');
-is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.013,  'model_markup is correct.');
-is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), 0.0004, 'intraday_bounceback is correct.');
-is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     0.0000, 'vega_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('model_markup')),     0.0263, 'model_markup is correct.');
+is(roundnear(1e-4, $ask->peek_amount('delta_correction')), 0.0051, 'delta_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('vega_correction')),  0.0000, 'vega_correction is correct.');
+is($ask->peek_amount('intraday_mu'),           0,     'No drift ever.');
 is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
 is(roundnear(1e-4, $bet->pricing_args->{iv}), 1.2180, 'Used our forced vol amount');
-
 1;

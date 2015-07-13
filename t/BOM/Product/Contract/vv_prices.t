@@ -3,8 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More tests => 12;
-use Test::FailWarnings;
+use Test::More tests => 9;
+use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -88,7 +88,6 @@ my $params = {
 };
 
 my $c = produce_contract($params);
-like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.1496, 'correct bs probability for FX contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0381, 'correct market supplement';
 
@@ -98,7 +97,6 @@ $c = produce_contract({
     high_barrier => 101,
     low_barrier  => 99,
 });
-like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.1106, 'correct bs probability for FX contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0299, 'correct market supplement';
 
@@ -137,7 +135,6 @@ $c = produce_contract({
     underlying => 'AEX',
     currency   => 'EUR',
 });
-like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.5992, 'correct bs probability for indices contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0251, 'correct market supplement';
 
@@ -149,6 +146,5 @@ $c = produce_contract({
     underlying   => 'AEX',
     currency     => 'EUR',
 });
-like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.263, 'correct bs probability for indices contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0173, 'correct market supplement';
