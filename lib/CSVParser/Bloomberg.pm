@@ -49,13 +49,11 @@ has 'bet' => (
 has 'r' => (
     is         => 'rw',
     isa        => 'Maybe[Num]',
-    lazy_build => 1,
 );
 
 has 'q' => (
     is         => 'rw',
     isa        => 'Maybe[Num]',
-    lazy_build => 1,
 );
 
 #BOM bet type.
@@ -64,25 +62,19 @@ has 'bet_type' => (
     isa => 'Str',
 );
 
-#To price the bets in the past. It is hasn't been sent the value will be set to now.
 has 'date_pricing' => (
     is         => 'rw',
     isa        => 'Date::Utility',
-    lazy_build => 1,
 );
 
-#For expiry_date if it was a non trading day the next trading day will be automatically used.
 has 'date_start' => (
     is         => 'rw',
     isa        => 'Date::Utility',
-    lazy_build => 1,
 );
 
-#For expiry_date if it was a non trading day the next trading day will be automatically used.
 has 'expiry_date_bom' => (
     is         => 'rw',
     isa        => 'Date::Utility',
-    lazy_build => 1,
 );
 
 has 'id' => (
@@ -90,14 +82,6 @@ has 'id' => (
     isa => 'Str',
 );
 
-#Maturity of contract in days.
-#If not set it will be set using the start_date and expiry_date the same way that bet object does it
-has 'maturity_days' => (
-    is         => 'rw',
-    isa        => 'Str',
-    lazy_build => 1,
-
-);
 
 #This is the portfolio name in bloomberg
 has 'portfolio' => (
@@ -169,11 +153,10 @@ has 'spot' => (
     lazy_build => 1,
 );
 
-has 'vol_at_strike' => (
-    is         => 'rw',
-    isa        => 'Num',
-    lazy_build => 1,
-);
+sub _build_spot {
+    my $self = shift;
+    return $self->underlying->spot;
+}
 
 has 'barrier_type' => (
     is         => 'rw',
@@ -181,17 +164,6 @@ has 'barrier_type' => (
     lazy_build => 1,
 );
 
-has 'time_in_year' => (
-    is         => 'rw',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-has 'sigma' => (
-    is         => 'rw',
-    isa        => 'Num',
-    lazy_build => 1,
-);
 
 has 'premium_adjusted' => (
     is         => 'rw',
@@ -237,7 +209,7 @@ sub _get_value {
 sub _build_barrier_type {
     my $self = shift;
     if ($self->bet_type eq 'ONETOUCH' or $self->bet_type eq 'NOTOUCH') {
-        if ($self->high_barrier > $self->spot) {
+        if ($self->barrier > $self->spot) {
             return 'UO';
         } else {
             return 'DO';
@@ -272,34 +244,15 @@ sub _build_bet {
         $bet_args->{high_barrier} = $self->high_barrier;
         $bet_args->{low_barrier}  = $self->low_barrier;
     }else{
-        $bet_args->{barrier} = $self->high_barrier;
+        $bet_args->{barrier} = $self->barrier;
     }
 
     $bet_args->{volsurface} = $self->volsurface if defined $self->volsurface;
-    $DB::single=1;
     my $bet = produce_contract($bet_args);
 
     return $bet;
 }
 
-sub _build_date_pricing {
-    my $self = shift;
-    return Date::Utility->new();
-}
-
-sub _build_date_start {
-    my $self = shift;
-    return Date::Utility->new();
-}
-
-sub _build_expiry_date_bom {
-    my $self = shift;
-    my $expiry_date = Date::Utility->new($self->date_start->epoch + ($self->maturity_days * 86400));
-    if (!$self->underlying->exchange->trades_on($expiry_date)) {
-        $expiry_date = $self->underlying->exchange->trade_date_after($expiry_date);
-    }
-    return $expiry_date;
-}
 
 sub _build_premium_adjusted {
     my $self = shift;
@@ -324,62 +277,7 @@ sub _build_price {
     return sprintf("%.2f", $price);
 }
 
-sub _build_q {
-    my $self = shift;
-    return $self->underlying->dividend_rate_for($self->time_in_year);
-}
 
-sub _build_r {
-    my $self = shift;
-
-    return $self->underlying->interest_rate_for($self->time_in_year);
-}
-
-sub _build_spot {
-    my $self = shift;
-    return $self->underlying->spot;
-}
-
-sub _build_vol_at_strike {
-    my $self = shift;
-    return $self->bet->vol_at_strike;
-}
-
-sub _build_sigma {
-    my $self        = shift;
-    my $dm          = BOM::MarketData::Fetcher::VolSurface->new;
-    my $vol_surface = $dm->fetch_surface({
-        underlying => $self->underlying,
-        cutoff     => 'UTC ' . $self->cut_off_time,
-        for_date   => $self->date_start,
-    });
-
-    return $vol_surface->get_volatility({
-        days  => $self->maturity_days,
-        delta => '50',
-    });
-}
-
-sub _build_maturity_days {
-    my $self = shift;
-    my $bet  = produce_contract({
-        underlying   => 'frxAUDJPY',
-        barrier      => 1,
-        bet_type     => 'PUT',
-        date_start   => $self->date_start,
-        date_expiry  => $self->expiry_date_bom,
-        date_pricing => $self->date_start,
-        payout       => 100,
-        currency     => 'JPY',
-    });
-
-    return $bet->timeinyears->amount * 365;
-}
-
-sub _build_time_in_year {
-    my $self = shift;
-    return $self->maturity_days / 365;
-}
 
 sub _build_underlying {
     my $self = shift;
@@ -415,7 +313,7 @@ sub _get_strike_bloomberg {
 sub _get_high_barrier_bloomberg {
     my $self = shift;
 
-    if ($self->_get_bet_type_bloomberg ne 'Digital') {
+    if ($self->high_barrier) {
         return sprintf("%.5f", $self->high_barrier);
     }
     return '';
@@ -537,7 +435,7 @@ sub get_csv_line {
 
     $line .=
           $base_numeraire . ','
-        . $self->spot . ','
+        . $self->bet->pricing_args->{spot} . ','
         . $self->bet->pricing_args->{iv} . ','
         . ($fields->[$header->{'Volatility'}] / 100) . ','
         . abs($self->bet->pricing_args->{iv} - $fields->[$header->{'Volatility'}] / 100) . ','
@@ -865,7 +763,6 @@ sub price_list {
             q                            => $q_rate / 100,
             payout_amount                => 100,
         };
-        $DB::single=1;
         if ($contract_args->{bet_type} eq 'RANGE'  or $contract_args->{bet_type} eq 'UPORDOWN') {
             $contract_args->{high_barrier} = exported_high_barrier(\@fields, $headers);
             $contract_args->{low_barrier}  = exported_low_barrier(\@fields, $headers);
