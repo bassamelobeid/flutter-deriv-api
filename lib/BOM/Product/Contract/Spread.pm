@@ -292,7 +292,7 @@ sub breaching_tick {
     my $tick = $self->underlying->breaching_tick({
         start  => $start,
         end    => $self->date_pricing->epoch,
-        higher => $higer_barrier,
+        higher => $higher_barrier,
         lower  => $lower_barrier
     });
 
