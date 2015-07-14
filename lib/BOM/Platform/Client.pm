@@ -154,10 +154,6 @@ sub check_jurisdiction {
         return;
     }
 
-    if (request()->is_logged_into_bo()) {
-        return;
-    }
-
     if (not $country_name_or_code or $country_name_or_code =~ /Select\sCountry/i) {
         return localize('Please specify your country.');
     }
