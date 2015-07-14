@@ -266,24 +266,6 @@ sub _build_staking_limits {
     };
 }
 
-sub barrier_display_info {
-    my ($self, $tick) = @_;
-
-    my $underlying = $self->underlying;
-    my $spot       = defined $tick ? $tick->quote : undef;
-    my $barrier    = $self->barrier->as_absolute;
-
-    my %barriers = (
-        barrier => {
-            amnt => $barrier,
-            dir  => ($spot > $barrier) ? '-' : ($spot < $barrier) ? '+' : '',
-            diff => $underlying->pipsized_value(int($spot - $barrier)),
-            desc => 'point_from_entry_level',
-        });
-
-    return (barriers => \%barriers);
-}
-
 sub breaching_tick {
     my $self = shift;
 
