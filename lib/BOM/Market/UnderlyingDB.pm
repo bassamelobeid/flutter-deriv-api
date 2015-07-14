@@ -93,6 +93,19 @@ sub symbols_for_intraday_index {
     return @symbols;
 }
 
+=head2 markets
+
+Return list of all markets
+
+=cut
+
+sub markets {
+    my $self = shift;
+    my @markets =
+        map { $_->name } BOM::Market::Registry->instance->display_markets;
+    return \@markets;
+}
+
 sub get_markets_for {
     my ($self, %args) = @_;
 
