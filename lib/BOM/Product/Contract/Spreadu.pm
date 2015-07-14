@@ -123,7 +123,7 @@ has _highlow_args => (
 sub _build__highlow_args {
     my $self  = shift;
     my $half_spread = $self->spread / 2;
-    return [$self->stop_profit_level - $half_spread, $stop_loss_level + $half_spread];
+    return [$self->stop_profit_level - $half_spread, $self->stop_loss_level + $half_spread];
 }
 
 no Moose;
