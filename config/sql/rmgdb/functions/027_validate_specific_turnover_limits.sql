@@ -21,7 +21,12 @@ DECLARE
     v_arr              TEXT[];
     v_sql              TEXT;
     v_r                RECORD;
+    v_potential_losses NUMERIC;
 BEGIN
+    IF (p_limits -> 'max_losses') IS NOT NULL THEN
+        v_potential_losses:=bet.calculate_potential_losses(p_account.client_loginid);
+    END IF;
+
     IF (p_limits -> 'specific_turnover_limits') IS NOT NULL OR
        (p_limits -> 'max_turnover') IS NOT NULL OR
        (p_limits -> 'max_losses') IS NOT NULL THEN
@@ -113,7 +118,7 @@ BEGIN
                ) p(t);
 
         IF (p_limits -> 'max_losses') IS NOT NULL THEN
-            v_arr := array_prepend($$CASE WHEN coalesce(sum((b.buy_price - b.sell_price) * exch.rate), 0) > $$ || quote_literal(p_limits ->> 'max_losses') || $$ THEN '_-l' END$$, v_arr);
+            v_arr := array_prepend($$CASE WHEN $3+$4+coalesce(sum((b.buy_price - b.sell_price) * exch.rate), 0) > $$ || quote_literal(p_limits ->> 'max_losses') || $$ THEN '_-l' END$$, v_arr);
         END IF;
 
         IF (p_limits -> 'max_turnover') IS NOT NULL THEN
@@ -128,9 +133,9 @@ BEGIN
                     WHERE a.client_loginid=$1
                       AND b.purchase_time::DATE=$2::DATE
                  $$;
-        -- RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price * p_rate;
-        EXECUTE v_sql INTO v_arr USING p_account.client_loginid, p_purchase_time, p_buy_price * p_rate;
-        -- RAISE NOTICE '  ==> %, upper: %', v_arr, array_upper(v_arr, 1);
+        RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price * p_rate, v_potential_losses;
+        EXECUTE v_sql INTO v_arr USING p_account.client_loginid, p_purchase_time, p_buy_price * p_rate, v_potential_losses;
+        RAISE NOTICE '  ==> %, upper: %', v_arr, array_upper(v_arr, 1);
 
         IF array_upper(v_arr, 1)>0 THEN
             IF v_arr[1] = '_-t' THEN
