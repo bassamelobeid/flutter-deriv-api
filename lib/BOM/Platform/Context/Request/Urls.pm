@@ -4,6 +4,7 @@ use Moose::Role;
 use Mojo::URL;
 use YAML::XS;
 use BOM::Platform::Runtime;
+use BOM::Platform::Context;
 
 sub domain {
     my $self   = shift;

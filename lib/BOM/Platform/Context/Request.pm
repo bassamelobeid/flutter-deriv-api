@@ -12,7 +12,6 @@ use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
-use BOM::Platform::Auth0;
 use BOM::Platform::SessionCookie;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Utility::Untaint;
@@ -232,18 +231,6 @@ sub ui_settings_value {
     }
 
     return '';
-}
-
-sub is_logged_into_bo {
-    my $self = shift;
-
-    my $cookie = $self->bo_cookie;
-    if ($cookie and $cookie->clerk) {
-        if (BOM::Platform::Auth0::from_cookie($cookie) or BOM::Platform::Auth0::login($cookie->token)) {
-            return 1;
-        }
-    }
-    return;
 }
 
 sub _build_params {
@@ -551,18 +538,11 @@ sub _country_specific_currency {
     return;
 }
 
-sub is_office_staff {
-    my $self = shift;
-    my $ip   = $self->client_ip;
-
-    if (' 202.168.70.194 202.168.70.162 202.168.70.108 175.136.239.229 175.143.100.53 211.24.127.133 ' =~ / $ip /) {
-        return 1;
-    }
-    if (' 195.158.110.241 80.85.104.38 ' =~ / $ip /)    #80.71.99.19 80.71.96.27
-    {
-        return 1;
-    }
-    if ($ip =~ /^99\.99\.99\./) { return 1; }
+sub is_from_office {
+    my $self       = shift;
+    my $ip         = $self->client_ip;
+    my @office_ips = ('175.136.239.229', '211.24.127.133',);
+    return 1 if grep { $_ eq $ip } @office_ips;
 
     return;
 }
