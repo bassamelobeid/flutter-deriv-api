@@ -54,7 +54,8 @@ sub _build_is_expired {
     my $tick       = $self->breaching_tick();
     if ($tick) {
         my $half_spread = $self->spread / 2;
-        my ($high_hit, $low_hit) = ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
+        my ($high_hit, $low_hit) =
+            ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
         my $stop_level;
         if ($high_hit >= $self->stop_profit_level) {
             $stop_level = $self->stop_profit_level;
@@ -122,7 +123,7 @@ has _highlow_args => (
 );
 
 sub _build__highlow_args {
-    my $self  = shift;
+    my $self        = shift;
     my $half_spread = $self->spread / 2;
     return [$self->stop_profit_level - $half_spread, $self->stop_loss_level + $half_spread];
 }
