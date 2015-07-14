@@ -88,9 +88,9 @@ subtest 'client_account_statistics' => sub {
 
     subtest 'single deposit' => sub {
         $client_CR->payment_free_gift(
-            currency    => 'USD',
-            amount      => 100,
-            remark      => 'free gift',
+            currency => 'USD',
+            amount   => 100,
+            remark   => 'free gift',
         );
 
         cmp_deeply(
@@ -106,9 +106,9 @@ subtest 'client_account_statistics' => sub {
     subtest 'multiple deposit' => sub {
 
         $client_CR->payment_free_gift(
-            currency    => 'USD',
-            amount      => 200,
-            remark      => 'free gift',
+            currency => 'USD',
+            amount   => 200,
+            remark   => 'free gift',
         );
 
         cmp_deeply(
@@ -124,9 +124,9 @@ subtest 'client_account_statistics' => sub {
     subtest 'widrawal' => sub {
 
         $client_CR->payment_free_gift(
-            currency    => 'USD',
-            amount      => -200,
-            remark      => 'free gift',
+            currency => 'USD',
+            amount   => -200,
+            remark   => 'free gift',
         );
 
         cmp_deeply(
