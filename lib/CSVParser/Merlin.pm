@@ -150,8 +150,12 @@ sub _build_records {
        if ($line->{Strike}){
            $record{barrier} = $line->{Strike};
         }elsif ($line->{UpperBarrier}){
-           $record{high_barrier} = $line->{UpperBarrier};
-           $record{low_barrier} = $line->{LowerBarrier};
+           if ($line->{LowerBarrier}){
+            $record{high_barrier} = $line->{UpperBarrier};
+            $record{low_barrier} = $line->{LowerBarrier};
+           }else{
+             $record{barrier} = $line->{UpperBarrier};
+           }
         }else{
             $record{barrier} = 'S0P';
         }
@@ -160,7 +164,7 @@ sub _build_records {
 
         $record{underlying} = BOM::Market::Underlying->new({
             symbol        => 'frx' . $line->{Underlying},
-            closed_weight => 0.05
+            closed_weight => 0.05,
         });
 
         my @smile_data   = map { $line->{$_ . ':T Days ATM 25RR 10RR 25BF 10BF'} } (1 .. 36);
