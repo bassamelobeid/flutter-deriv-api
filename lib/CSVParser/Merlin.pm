@@ -132,9 +132,7 @@ sub _build_records {
             date_start        => Date::Utility->new($line->{Epoch_time_now}),
             volcut            => $line->{VolCut},
             cut               => $line->{Cut},
-            barrier           => ($line->{Strike} || $line->{UpperBarrier} || 'S0P'),
-            barrier2 => ($line->{LowerBarrier} || ''),
-            spot     => $line->{Spot},
+            current_spot     => $line->{Spot},
             q_rate   => $line->{UNDDepo},
             r_rate   => $line->{ACCDepo},
             currency => $line->{PayoutCurrency},
@@ -148,6 +146,15 @@ sub _build_records {
             atm_vol    => $line->{ATMVol},
             date_expiry => _get_formatted_date_expiry($line->{Expiry}, $self->_expiry->{$line->{Cut}}->{bom}),
         );
+
+       if ($line->{Strike}){
+           $record{barrier} = $line->{Strike};
+        }elsif ($line->{UpperBarrier}){
+           $record{high_barrier} = $line->{UpperBarrier};
+           $record{low_barrier} = $line->{LowerBarrier};
+        }else{
+            $record{barrier} = 'S0P';
+        }
 
         next if $record{date_expiry}->days_between($record{date_start}) > 365;
 

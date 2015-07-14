@@ -98,7 +98,6 @@ sub _calculate_results {
         my $bet_args = _get_bet_args($record);
 
         next if _skip($record);
-
         my $bet      = produce_contract($bet_args);
         my $bet_type = $bet->code;
 
@@ -136,14 +135,11 @@ sub _calculate_results {
 sub _get_bet_args {
     my $record = shift;
     my $when   = Date::Utility->new($record->{date_start});
-
-    return {
-        current_spot => $record->{spot},
+    my $args = {
+        current_spot => $record->{current_spot},
         underlying   => $record->{underlying},
         q_rate       => $record->{q_rate},
         r_rate       => $record->{r_rate},
-        barrier      => $record->{barrier},
-        barrier2     => $record->{barrier2},
         bet_type     => $record->{bet_type},
         date_start   => $when,
         date_expiry  => $record->{date_expiry},
@@ -152,13 +148,23 @@ sub _get_bet_args {
         currency     => $record->{currency},
         date_pricing => $record->{date_start},
     };
+
+    if ($record->{barrier}){
+        $args->{barrier} = $record->{barrier};
+    }elsif ($record->{high_barrier}){
+        $args->{high_barrier} = $record->{high_barrier};
+        $args->{low_barrier}  = $record->{low_barrier};
+    }
+
+    return $args;
+
 }
 
 sub _skip {
     my $record = shift;
 
     my $bet_duration = $record->{date_expiry}->epoch - $record->{date_start}->epoch;
-    return (not $record->{spot} or $bet_duration > 365 * 86400) ? 1 : 0;
+    return (not $record->{current_spot} or $bet_duration > 365 * 86400) ? 1 : 0;
 }
 
 sub _generates_and_saves_analysis_report {
