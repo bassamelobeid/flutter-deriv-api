@@ -122,8 +122,8 @@ has _highlow_args => (
 
 sub _build__highlow_args {
     my $self  = shift;
-    my $entry = $self->entry_tick->quote;
-    return [$entry + $self->stop_loss, $entry - $self->stop_profit];
+    my $half_spread = $self->spread / 2;
+    return [$self->stop_loss_level - $half_spread, $self->stop_profit_level + $half_spread];
 }
 
 no Moose;
