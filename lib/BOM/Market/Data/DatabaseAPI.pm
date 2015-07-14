@@ -318,17 +318,28 @@ sub tick_at {
     my $args = shift;
     my $tick_at;
 
-    my $uncertain_tick = $self->tick_at_or_before($args);
-    if ($uncertain_tick and $args->{end_time}) {
-        if (exists $args->{allow_inconsistent}
-            and $args->{allow_inconsistent} == 1)
-        {
+    return unless ($args->{end_time});
+
+    my $consistent_to;
+
+    # Used to be explicit check for `1` now just truthy
+    if (not $args->{allow_inconsistent}) {
+        # Make these checks before the query, in case we need them.
+        # Worst case: we get an updated tick while we run and miss
+        # Best case: updated tick is on our second and we're fine, anyway
+        my $last_agg  = $self->last_aggregation_time;
+        my $last_tick = $self->last_tick_time;
+
+        $consistent_to = ($last_agg->is_after($last_tick)) ? $last_agg : $last_tick;
+    }
+
+    if (my $uncertain_tick = $self->tick_at_or_before($args)) {
+        if (not $consistent_to) {
             $tick_at = $uncertain_tick;
         } else {
             my $end_time = Date::Utility->new($args->{end_time});
             if (   $end_time->epoch == $uncertain_tick->epoch
-                or $end_time->epoch < $self->last_aggregation_time->epoch
-                or $end_time->epoch < $self->last_tick_time->epoch)
+                or $end_time->is_before($consistent_to))
             {
                 $tick_at = $uncertain_tick;
             }
