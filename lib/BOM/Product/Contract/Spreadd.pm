@@ -53,11 +53,12 @@ sub _build_is_expired {
     my $is_expired = 0;
     my $tick       = $self->breaching_tick();
     if ($tick) {
-        my $hit_quote = $self->underlying->pipsized_value($tick->quote - $self->spread / 2);
+        my $half_spread = $self->spread / 2;
+        my ($high_hit, $low_hit) = ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
         my $stop_level;
-        if ($hit_quote <= $self->stop_profit_level) {
+        if ($low_hit <= $self->stop_profit_level) {
             $stop_level = $self->stop_profit_level;
-        } elsif ($hit_quote >= $self->stop_loss_level) {
+        } elsif ($high_hit >= $self->stop_loss_level) {
             $stop_level = $self->stop_loss_level;
         }
         $is_expired = 1;
