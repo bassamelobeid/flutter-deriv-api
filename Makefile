@@ -28,7 +28,7 @@ unit_test_database_model:
 	@$(PROVE) -r t/BOM/Database/Model/
 
 unit_test_database_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Database/* | grep -v -e /Model -e /Datamapper)
+	@$(PROVE) -r $$(ls -1d t/BOM/Database/* | grep -v -e /Model -e /DataMapper)
 
 tidy:
 	find . -name '*.p?.bak' -delete
