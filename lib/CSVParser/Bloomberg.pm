@@ -432,7 +432,6 @@ sub get_csv_line {
         $base_numeraire = 'numeraire';
         $bb_tv          = $fields->[$header->{'Theo. Value Ccy2'}] / 100;
     }
-
     $line .=
           $base_numeraire . ','
         . $self->bet->pricing_args->{spot} . ','
@@ -772,7 +771,7 @@ sub price_list {
         my $fixture = SetupDatasetTestFixture->new;
         $fixture->setup_test_fixture({
                 underlying => BOM::Market::Underlying->new($underlying_symbol),
-                spot       => $contract_args->{spot}});
+                spot       => $contract_args->{current_spot}});
         $contract_args->{volsurface} = $self->get_volsurface($underlying_symbol);
         try {
             $contract = CSVParser::Bloomberg->new($contract_args);
