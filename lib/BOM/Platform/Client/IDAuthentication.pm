@@ -93,7 +93,7 @@ sub _do_proveid {
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->save;
 
-        if (defined $prove_id_result->{matches}) {
+        if (scalar @{$prove_id_result->{matches}}) {
             $self->_notify('EXPERIAN PROVE ID KYC PASSED BUT CLIENT FLAGGED!', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
         } elsif ($prove_id_result->{fully_authenticated}) {
             $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
