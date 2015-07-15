@@ -103,7 +103,7 @@ sub markets {
     my $self = shift;
     my @markets =
         map { $_->name } BOM::Market::Registry->instance->display_markets;
-    return \@markets;
+    return @markets;
 }
 
 sub get_markets_for {
