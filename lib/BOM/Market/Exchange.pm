@@ -1255,8 +1255,8 @@ sub trading_period {
     my ($self, $when) = @_;
 
     return [] if not $self->trades_on($when);
-    my $open = $self->opening_on($when);
-    my $close = $self->closing_on($when);
+    my $open   = $self->opening_on($when);
+    my $close  = $self->closing_on($when);
     my $breaks = $self->trading_breaks($when);
 
     my @times = ($open);
@@ -1266,8 +1266,8 @@ sub trading_period {
     push @times, $close;
 
     my @periods;
-    for (my $i=0; $i<$#times; $i+=2) {
-        push @periods, [$times[$i], $times[$i+1]];
+    for (my $i = 0; $i < $#times; $i += 2) {
+        push @periods, [$times[$i], $times[$i + 1]];
     }
 
     return \@periods;

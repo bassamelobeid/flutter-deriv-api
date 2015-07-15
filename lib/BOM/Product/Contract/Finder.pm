@@ -44,8 +44,11 @@ sub available_contracts_for_symbol {
                 $date = $exchange->trade_date_after($date) unless $exchange->trades_on($date);
                 push @trade_dates, $date;
             }
-            $o->{forward_starting_options} =
-                [map { {$_->epoch => $exchange->trading_period($_)} } @trade_dates];
+            $o->{forward_starting_options} = [
+                map {
+                    { $_->epoch => $exchange->trading_period($_) }
+                } @trade_dates
+            ];
         }
 
         $o->{barriers} =
