@@ -23,7 +23,12 @@ sub BUILD {
     # stop_loss, stop_profit, amount_per_point has to be positive.
     if ($self->stop_loss <= 0 or $self->stop_profit <= 0 or $self->amount_per_point <= 0) {
         $self->add_errors({
-            message           => 'Negative entry on stop_loss[' . $self->stop_loss .'] or stop_profit['.$self->stop_profit.'] or amount_per_point['. $self->amount_per_point.']',
+            message => 'Negative entry on stop_loss['
+                . $self->stop_loss
+                . '] or stop_profit['
+                . $self->stop_profit
+                . '] or amount_per_point['
+                . $self->amount_per_point . ']',
             severity          => 99,
             message_to_client => localize('Stop Loss, Stop Profit and Amount Per Point must be greater than zero.'),
         });
