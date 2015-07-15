@@ -19,7 +19,7 @@ critique:
 
 test: $(TESTS)
 
-test_all: test unit_test_myaffiliates_extended
+test_all: test
 
 unit_test_database_datamapper:
 	@$(PROVE) -r t/BOM/Database/DataMapper/
