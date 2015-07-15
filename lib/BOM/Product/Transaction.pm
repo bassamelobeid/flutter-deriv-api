@@ -549,7 +549,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
     $self->transaction_id($txn->{id});
     $self->contract_id($fmb->{id});
 
-#    enqueue_new_transaction($self);    # For soft realtime expiration notification.
+    enqueue_new_transaction($self);    # For soft realtime expiration notification.
 
     return;
 }
