@@ -1267,7 +1267,11 @@ sub trading_period {
 
     my @periods;
     for (my $i = 0; $i < $#times; $i += 2) {
-        push @periods, [$times[$i], $times[$i + 1]];
+        push @periods,
+            {
+            open  => $times[$i]->epoch,
+            close => $times[$i + 1]->epoch
+            };
     }
 
     return \@periods;
