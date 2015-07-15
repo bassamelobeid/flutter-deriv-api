@@ -189,9 +189,9 @@ subtest 'Intraday::Forex' => sub {
 
     my $engine = BOM::Product::Pricing::Engine::Intraday::Forex->new(bet => $short_term);
 
-    isa_ok($engine->delta_correction, 'Math::Util::CalculatedValue::Validatable', 'delta_correction');
-    isa_ok($engine->vega_correction,  'Math::Util::CalculatedValue::Validatable', 'vega_correction');
-    isa_ok($engine->probability,      'Math::Util::CalculatedValue::Validatable', 'probability');
+    isa_ok($engine->intraday_delta_correction, 'Math::Util::CalculatedValue::Validatable', 'intraday_delta_correction');
+    isa_ok($engine->intraday_vega_correction,  'Math::Util::CalculatedValue::Validatable', 'intraday_vega_correction');
+    isa_ok($engine->probability,               'Math::Util::CalculatedValue::Validatable', 'probability');
 
 };
 
