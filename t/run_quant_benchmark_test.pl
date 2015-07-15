@@ -24,6 +24,7 @@ use Runner::Bloomberg;
 use Runner::NTO;
 use BOM::Platform::Runtime;
 use Date::Utility;
+use Format::Util::Numbers qw(roundnear);
 
 sub documentation {
     return 'This script runs quant\'s pricing-related datasets';
@@ -133,15 +134,15 @@ sub analyse_report {
             foreach my $bet_type (keys %{$report->{$base_or_num}}) {
                 subtest "$test benchmark" => sub {
                     cmp_ok(
-                        $report->{$base_or_num}->{$bet_type}->{avg},
+                        roundnear(0.0001,$report->{$base_or_num}->{$bet_type}->{avg}),
                         '<=',
-                        $test_benchmark->{$base_or_num}->{$bet_type}->{avg},
+                        roundnear(0.0001,$test_benchmark->{$base_or_num}->{$bet_type}->{avg}),
                         "Avg mid diff of bet_type[$bet_type] base_or_num[$base_or_num] is within benchmark"
                     );
                     cmp_ok(
-                        $report->{$base_or_num}->{$bet_type}->{max},
+                        roundnear(0.0001,$report->{$base_or_num}->{$bet_type}->{max}),
                         '<=',
-                        $test_benchmark->{$base_or_num}->{$bet_type}->{max},
+                        roundnear(0.0001,$test_benchmark->{$base_or_num}->{$bet_type}->{max}),
                         "Max mid diff of bet_type[$bet_type] base_or_num[$base_or_num] is within benchmark"
                     );
                 };
