@@ -298,7 +298,20 @@ sub _build__pip_size_tick {
 }
 
 # VALIDATIONS #
-sub _validate_entry_tick {
+sub _validate_stop_profit {
+    my $self = shift;
+
+    if ($self->stop_loss * 5 < $self->stop_profit) {
+        push @err,
+            {
+            message           => 'Stop profit ['.$self->stop_profit.'] is too high compared to stop loss ['.$self->stop_loss.']',
+            severity          => 88,
+            message_to_client => localize('Stop profit cannot be higher than 5 times the stop loss.'),
+            };
+    }
+}
+
+sub _validate_quote {
     my $self = shift;
 
     my @err;
