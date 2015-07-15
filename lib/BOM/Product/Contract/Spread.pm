@@ -78,7 +78,7 @@ has value => (
 );
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
-has [qw(spread spread_divisor current_tick current_spot translated_display_name)] => (
+has [qw(spread spread_divisor half_spread current_tick current_spot translated_display_name)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -91,6 +91,10 @@ sub _build_spread {
 sub _build_spread_divisor {
     my $self = shift;
     return $self->underlying->spread_divisor;
+}
+
+sub _build_half_spread {
+    return shift->spread / 2;
 }
 
 sub _build_current_tick {
@@ -120,9 +124,7 @@ sub _build_translated_display_name {
     return localize($self->display_name);
 }
 
-has exit_level => (
-    is => 'rw',
-);
+has exit_level => ( is => 'rw' );
 
 has entry_tick => (
     is         => 'ro',
@@ -168,12 +170,12 @@ has [qw(buy_level sell_level)] => (
 
 sub _build_buy_level {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote + $self->spread / 2);
+    return $self->underlying->pipsized_value($self->current_tick->quote + $self->half_spread);
 }
 
 sub _build_sell_level {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote - $self->spread / 2);
+    return $self->underlying->pipsized_value($self->current_tick->quote - $self->half_spread);
 }
 
 has [qw(is_valid_to_buy is_valid_to_sell may_settle_automatically)] => (

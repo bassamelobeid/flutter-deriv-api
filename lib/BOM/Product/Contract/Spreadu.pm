@@ -23,7 +23,7 @@ has barrier => (
 
 sub _build_barrier {
     my $self             = shift;
-    my $supplied_barrier = $self->underlying->pipsized_value($self->entry_tick->quote + $self->spread / 2);
+    my $supplied_barrier = $self->underlying->pipsized_value($self->entry_tick->quote + $self->half_spread);
     return BOM::Product::Contract::Strike::Spread->new(supplied_barrier => $supplied_barrier);
 }
 
@@ -53,7 +53,7 @@ sub _build_is_expired {
     my $is_expired = 0;
     my $tick       = $self->breaching_tick();
     if ($tick) {
-        my $half_spread = $self->spread / 2;
+        my $half_spread = $self->half_spread;
         my ($high_hit, $low_hit) =
             ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
         my $stop_level;
@@ -124,7 +124,7 @@ has _highlow_args => (
 
 sub _build__highlow_args {
     my $self        = shift;
-    my $half_spread = $self->spread / 2;
+    my $half_spread = $self->half_spread;
     return [$self->stop_profit_level - $half_spread, $self->stop_loss_level + $half_spread];
 }
 
