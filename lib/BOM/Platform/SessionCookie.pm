@@ -1,5 +1,4 @@
 package BOM::Platform::SessionCookie;
-
 use Data::Random::String;
 use BOM::System::Chronicle;
 use JSON;
@@ -28,10 +27,8 @@ sub validate_session {
     return not $scope or grep { $_ eq $scope } @{$self->{scopes}}
 }
 
-
 sub end_session {
     my $self = shift;
     BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::'.$self->{token});
 }
-
 1;
