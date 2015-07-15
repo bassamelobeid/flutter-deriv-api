@@ -10,7 +10,6 @@ PROVE=p () { $M; echo '$P' "$$@"; BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom
 
 default:
 	@echo "You must specify target. The following targets available:"
-	@echo "  i18n         - extract translatable strings from the code"
 	@echo "  test         - Run lib tests"
 	@echo "  tidy         - Run perltidy"
 
