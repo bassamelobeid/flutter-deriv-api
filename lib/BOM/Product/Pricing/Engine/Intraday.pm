@@ -16,7 +16,7 @@ with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
 use Math::Function::Interpolator;
 
-use BOM::Market::TickCache;
+use BOM::Market::AggTicks;
 use List::Util qw(max);
 use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
@@ -57,13 +57,13 @@ sub is_compatible {
 
 =head2 tick_source
 
-The source of the ticks used for this pricing.  BOM::Market::TickCache
+The source of the ticks used for this pricing.  BOM::Market::AggTicks
 
 =cut
 
 has tick_source => (
     is      => 'ro',
-    default => sub { BOM::Market::TickCache->new },
+    default => sub { BOM::Market::AggTicks->new },
 );
 
 has [qw(period_opening_value period_closing_value long_term_vol)] => (

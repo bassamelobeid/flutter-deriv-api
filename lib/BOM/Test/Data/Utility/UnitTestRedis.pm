@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Market::Underlying;
-use BOM::Market::TickCache;
+use BOM::Market::AggTicks;
 use Path::Tiny;
 use Net::EmptyPort qw( check_port );
 use Time::HiRes qw( usleep );
@@ -255,12 +255,11 @@ sub update_combined_realtime {
     my $res = $args{underlying}->set_combined_realtime($tick);
 
     if (scalar grep { $args{underlying}->symbol eq $_ } (BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx)) {
-        BOM::Market::TickCache->new->add(
-            BOM::Market::Data::Tick->new({
-                    symbol => $args{underlying}->symbol,
-                    epoch  => $tick->{epoch},
-                    quote  => $tick->{quote},
-                }));
+        BOM::Market::AggTicks->new->add({
+            symbol => $args{underlying}->symbol,
+            epoch  => $tick->{epoch},
+            quote  => $tick->{quote},
+        });
     }
     return 1;
 }

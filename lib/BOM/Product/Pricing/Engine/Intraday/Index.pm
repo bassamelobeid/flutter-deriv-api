@@ -142,7 +142,7 @@ sub _build_ticks_for_trend {
                 fill_cache   => !$bet->backtest,
             })};
 
-    my ($iov, $icv) = (@unchunked_ticks) ? ($unchunked_ticks[0]->quote, $unchunked_ticks[-1]->quote) : ($bet->current_spot, $bet->current_spot);
+    my ($iov, $icv) = (@unchunked_ticks) ? ($unchunked_ticks[0]->{quote}, $unchunked_ticks[-1]->{quote}) : ($bet->current_spot, $bet->current_spot);
     my $iot = Math::Util::CalculatedValue::Validatable->new({
         name        => 'period_opening_value',
         description => 'First tick in intraday aggregated ticks',

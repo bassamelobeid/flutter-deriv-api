@@ -4,7 +4,7 @@ use 5.010;
 use Moose;
 extends 'BOM::Product::Pricing::Engine';
 
-use BOM::Market::TickCache;
+use BOM::Market::AggTicks;
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(sum);
 use YAML::XS qw(Load);
@@ -38,7 +38,7 @@ has _latest_ticks => (
 
 has tick_source => (
     is      => 'ro',
-    default => sub { BOM::Market::TickCache->new; },
+    default => sub { BOM::Market::AggTicks->new; },
 );
 
 sub _build__latest_ticks {

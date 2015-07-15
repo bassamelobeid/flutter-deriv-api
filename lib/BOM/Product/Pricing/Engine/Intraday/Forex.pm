@@ -264,7 +264,7 @@ sub _build_intraday_trend {
     my $duration_in_secs = $bet->timeindays->amount * 86400;
 
     my @ticks    = @{$self->ticks_for_trend};
-    my $average  = (@ticks) ? sum(map { $_->quote } @ticks) / @ticks : $bet->pricing_args->{spot};
+    my $average  = (@ticks) ? sum(map { $_->{quote} } @ticks) / @ticks : $bet->pricing_args->{spot};
     my $avg_spot = Math::Util::CalculatedValue::Validatable->new({
         name        => 'average_spot',
         description => 'mean of spot over 2 * duration of the contract',
