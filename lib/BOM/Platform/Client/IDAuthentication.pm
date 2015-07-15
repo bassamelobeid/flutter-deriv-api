@@ -89,18 +89,18 @@ sub _do_proveid {
 
     my $prove_id_result = $self->_fetch_proveid || {};
 
-    if ($prove_id_result->{fully_authenticated}) {
-        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
-        $client->set_authentication('ID_192')->status('pass');
-        $client->save;
-
-        $self->_notify('EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC on first deposit and is fully authenticated.');
-    } elsif ($prove_id_result->{age_verified}) {
+    if ($prove_id_result->{age_verified}) {
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->save;
 
         if (defined $prove_id_result->{matches}) {
             $self->_notify('EXPERIAN PROVE ID KYC PASSED BUT CLIENT FLAGGED!', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
+        } elsif ($prove_id_result->{fully_authenticated}) {
+            $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+            $client->set_authentication('ID_192')->status('pass');
+            $client->save;
+
+            $self->_notify('EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC on first deposit and is fully authenticated.');
         } else {
             $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
         }
