@@ -128,6 +128,16 @@ sub _build__highlow_args {
     return [$self->stop_loss_level - $half_spread, $self->stop_profit_level + $half_spread];
 }
 
+has longcode => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_longcode {
+    my $self        = shift;
+    my $description = 'You will win (lose) [_1] [_2] for every point that the [_3] falls (rises) from the entry spot.';
+    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name));
+}
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

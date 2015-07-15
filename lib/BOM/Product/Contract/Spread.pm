@@ -124,7 +124,7 @@ sub _build_translated_display_name {
     return localize($self->display_name);
 }
 
-has exit_level => ( is => 'rw' );
+has exit_level => (is => 'rw');
 
 has entry_tick => (
     is         => 'ro',
@@ -198,16 +198,10 @@ sub _build_may_settle_automatically {
     return $self->is_valid_to_sell;
 }
 
-has [qw(longcode shortcode)] => (
+has shortcode => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-sub _build_longcode {
-    my $self        = shift;
-    my $description = 'You will win (lose) [_1] [_2] for every point that the [_3] rises (falls) from the entry spot.';
-    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name));
-}
 
 sub _build_shortcode {
     my $self = shift;
