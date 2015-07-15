@@ -120,7 +120,7 @@ sub _default_barrier {
         supplied_barrier => $approximate_barrier,
     );
 
-    return $duration > 86400 ? $strike->as_absolute : $strike->as_relative;
+    return $duration > 86400 ? $strike->as_absolute : $strike->as_difference;
 }
 
 1;
