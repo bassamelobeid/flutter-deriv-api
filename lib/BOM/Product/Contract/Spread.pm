@@ -52,7 +52,6 @@ has currency => (
 
 has [qw(stop_loss stop_profit amount_per_point)] => (
     is       => 'rw',
-    isa      => 'PositiveNum',
     required => 1,
 );
 
