@@ -165,7 +165,8 @@ subtest 'proveid' => sub {
         my $v = IDAuthentication->new(client => $c);
         Test::MockObject::Extends->new($v);
 
-        $v->mock(-_fetch_proveid, sub { return {fully_authenticated => 1} });
+        $v->mock(-_fetch_proveid, sub { return {fully_authenticated => 1,
+                                                age_verified => 1} });
         $v->run_authentication;
         my @notif = @{$v->notified};
         is @notif, 1, 'sent one notification';
