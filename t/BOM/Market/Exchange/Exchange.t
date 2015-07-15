@@ -794,6 +794,20 @@ subtest 'get exchange settlement time' => sub {
     'test regular settlement time ';
 };
 
+subtest 'trading period' => sub {
+    my $ex = BOM::Market::Exchange->new('HKSE');
+    my $trading_date = Date::Utility->new('15-Jul-2015');
+    lives_ok {
+        my $p = $ex->trading_period($trading_date);
+        is scalar @$p, 2, 'two periods';
+    } 'trading period for HKSE';
+    $ex = BOM::Market::Exchange->new('FOREX');
+    lives_ok {
+        my $p = $ex->trading_period($trading_date);
+        is scalar @$p, 1, 'one period';
+    } 'trading period for HKSE';
+};
+
 done_testing;
 
 1;

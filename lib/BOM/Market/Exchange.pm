@@ -1251,6 +1251,28 @@ sub _normalize_on_symbol_and_args {
     return join ',', ($self->symbol, @other_args);
 }
 
+sub trading_period {
+    my ($self, $when) = @_;
+
+    return [] if not $self->trades_on($when);
+    my $open = $self->opening_on($when);
+    my $close = $self->closing_on($when);
+    my $breaks = $self->trading_breaks($when);
+
+    my @times = ($open);
+    if (defined $breaks) {
+        push @times, @{$_} for @{$breaks};
+    }
+    push @times, $close;
+
+    my @periods;
+    for (my $i=0; $i<$#times; $i+=2) {
+        push @periods, [$times[$i], $times[$i+1]];
+    }
+
+    return \@periods;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable(
     constructor_name    => '_new',
