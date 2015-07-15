@@ -23,7 +23,7 @@ has files => (
     is      => 'ro',
     isa     => 'ArrayRef',
     default => sub {
-        [qw(20111117_EURUSD 20111121_USDJPY 20111201_GBPJPY 20111201_USDSEK 20111202_USDCHF 20111203_GBPAUD 20111203_GBPPLN)];
+         [qw(20111117_EURUSD 20111121_USDJPY 20111201_GBPJPY 20111201_USDSEK 20111203_GBPPLN 20111202_USDCHF 20111203_GBPAUD) ];
     },
 );
 
@@ -61,7 +61,6 @@ sub run_dataset {
     foreach my $file (@files) {
         my $file_loc = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
         my $file     = $file_loc . '/' . $file . '.csv';
-
         my $records = CSVParser::Superderivatives_FX->new(
             file  => $file,
             suite => $self->suite,
@@ -124,15 +123,11 @@ sub get_bet_results {
         next if $date_expiry->epoch - $date_start->epoch > 365 * 86400;
         next if $date_expiry->is_a_weekend or $date_start->is_a_weekend;
 
-        my $barrier  = $record->{barrier};
-        my $barrier2 = $record->{barrier2};
         my $currency = ($base_or_num eq 'base') ? $record->{base_currency} : $record->{numeraire_currency};
         my $bet_type = $record->{bet_type};
 
-        my $bet = produce_contract({
+        my $bet_args ={
             underlying   => $underlying,
-            barrier      => $barrier,
-            barrier2     => $barrier2,
             bet_type     => $bet_type,
             date_start   => $date_start,
             date_expiry  => $date_expiry,
@@ -141,12 +136,18 @@ sub get_bet_results {
             currency     => $currency,
             date_pricing => $date_start,
             current_spot => $spot,
-        });
-
+        };
+        if ($record->{barrier2}){
+           $bet_args->{high_barrier} = $record->{barrier};
+           $bet_args->{low_barrier} = $record->{barrier2};
+        }else{
+            $bet_args->{barrier} = $record->{barrier};
+        }
+        my $bet = produce_contract($bet_args);
         my $bom_mid = $bet->theo_probability->amount;
         my $bom_bs  = $bet->bs_probability->amount;
         my $sd_mid  = $record->{sd_mid};
-
+        my @barriers      = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute,'NA');
         next if $sd_mid < 0.05 or $sd_mid > 0.95;
 
         my $sd_bid = $record->{sd_bid};
@@ -157,14 +158,20 @@ sub get_bet_results {
         my $arbitrage_check = ($bet->bid_probability->amount > $sd_ask or $bet->ask_probability->amount < $sd_bid) ? 1 : 0;
 
         $csv->combine(
-            $record->{ID}, $underlying->symbol, $bet_type,                 $spot,              $barrier,
-            $barrier2,     $days_between,       $date_start->date_ddmmmyy, $date_expiry->date, $bet->pricing_args->{iv},
+            $record->{ID}, $underlying->symbol, $bet_type,                 $spot,              @barriers,     $days_between,       $date_start->date_ddmmmyy, $date_expiry->date, $bet->pricing_args->{iv},
             $sd_mid,       $bom_mid,            $mid_diff,                 $arbitrage_check
         );
         my $result = $csv->string;
+        if ($base_or_num eq 'base'){
+           append_file($self->report_file->{all_base}, "$result\n");
+           push @{$analysis_results->{$bet_type}}, $mid_diff;
+        }else{
+        
+            append_file($self->report_file->{all_num}, "$result\n");
+            push @{$analysis_results->{$bet_type}}, $mid_diff;
 
-        append_file($self->report_file->{all_base}, "$result\n");
-        push @{$analysis_results->{$bet_type}}, $mid_diff;
+        
+        }
     }
 
     return $analysis_results;
