@@ -211,7 +211,7 @@ sub _build_may_settle_automatically {
     return $self->is_valid_to_sell;
 }
 
-has shortcode => (
+has [qw(shortcode longcode)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -220,6 +220,12 @@ sub _build_shortcode {
     my $self = shift;
     my @element = ($self->code, $self->underlying->symbol, $self->amount_per_point, $self->date_start->epoch, $self->stop_loss, $self->stop_profit);
     return join '_', @element;
+}
+
+sub _build_longcode {
+    my $self        = shift;
+    my $description = $self->longcode_description;
+    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name));
 }
 
 has 'staking_limits' => (
