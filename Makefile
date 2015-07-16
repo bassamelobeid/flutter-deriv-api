@@ -23,22 +23,22 @@ critique:
 test: $(TESTS)
 
 merlin_benchmark:
-	prove -r t/run_quant_benchmark_test.pl --which=merlin
+	@$(PROVE) -r t/run_quant_benchmark_test.pl --which=merlin
 
 SDFX_benchmark:
-	prove -r t/run_quant_benchmark_test.pl --which=sdfx
+	@$(PROVE) -r t/run_quant_benchmark_test.pl --which=sdfx
 
 SDEQ_benchmark:
-	prove -r t/run_quant_benchmark_test.pl --which=sdeq
+	@$(PROVE) -r t/run_quant_benchmark_test.pl --which=sdeq
 
 IH_benchmark:
-	prove -r t/run_quant_benchmark_test.pl --which=intraday_historical
+	@$(PROVE) -r t/run_quant_benchmark_test.pl --which=intraday_historical
 
 NTO_benchmark:
-	prove -r t/run_quant_benchmark_test.pl --which=nto
+	@$(PROVE) -r t/run_quant_benchmark_test.pl --which=nto
 
 OVRA_benchmark:
-	prove -r t/run_quant_benchmark_test.pl --which=ovra
+	@$(PROVE) -r t/run_quant_benchmark_test.pl --which=ovra
 
 
 tidy:
