@@ -224,8 +224,8 @@ has [qw(shortcode longcode)] => (
 );
 
 sub _build_shortcode {
-    my $self    = shift;
-    my @element = map {uc $_} (
+    my $self = shift;
+    my @element = map { uc $_ } (
         $self->code, $self->underlying->symbol,
         $self->amount_per_point, $self->date_start->epoch,
         $self->stop_loss, $self->stop_profit, $self->stop_type
