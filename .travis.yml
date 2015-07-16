@@ -25,6 +25,9 @@ before_install:
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
 
