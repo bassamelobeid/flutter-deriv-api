@@ -152,7 +152,6 @@ sub analyse_report {
 }
 no Moose;
 __PACKAGE__->meta->make_immutable;
-
+done_testing;
 package main;
-
 exit DatasetRunner->new()->run();
