@@ -225,7 +225,7 @@ has [qw(shortcode longcode)] => (
 
 sub _build_shortcode {
     my $self    = shift;
-    my @element = (
+    my @element = map {uc $_} (
         $self->code, $self->underlying->symbol,
         $self->amount_per_point, $self->date_start->epoch,
         $self->stop_loss, $self->stop_profit, $self->stop_type
@@ -239,10 +239,10 @@ sub _build_longcode {
     my @other       = ($self->stop_loss, $self->stop_profit);
     if ($self->stop_type eq 'dollar') {
         push @other, $self->currency;
-        $description .= 'with stop loss of [_6] [_4] and limit of [_6] [_5].';
+        $description .= ' with stop loss of [_6] [_4] and limit of [_6] [_5].';
     } else {
         push @other, 'points';
-        $description .= 'with stop loss of [_4] [_6] and limit of [_5] [_6].';
+        $description .= ' with stop loss of [_4] [_6] and limit of [_5] [_6].';
     }
 
     return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));

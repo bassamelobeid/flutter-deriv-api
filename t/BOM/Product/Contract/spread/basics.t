@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 5;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockModule;
@@ -32,6 +32,7 @@ my $params = {
     stop_loss        => 10,
     stop_profit      => 10,
     currency         => 'USD',
+    stop_type        => 'point',
 };
 
 subtest 'entry tick' => sub {
@@ -68,4 +69,28 @@ subtest 'current tick' => sub {
     my $c = produce_contract($params);
     is $c->current_tick->quote, 0.01, 'current tick is pip size value if current tick is undefined';
     ok(($c->all_errors)[0], 'error');
+};
+
+subtest 'input validity' => sub {
+    my $c = produce_contract({%$params});
+    ok !($c->all_errors)[0], 'no error';
+    foreach my $attr (qw(amount_per_point stop_loss stop_profit)) {
+        $c = produce_contract({%$params, $attr => -1});
+        ok (($c->all_errors)[0], "error if $attr is negative");
+        like (($c->all_errors)[0]->message_to_client, qr/must be greater than zero/, 'correct message');
+        $c = produce_contract({%$params, $attr => 0});
+        ok (($c->all_errors)[0], "error if $attr is zero");
+        like (($c->all_errors)[0]->message_to_client, qr/must be greater than zero/, 'correct message');
+    }
+};
+
+subtest 'stop type' => sub {
+    my $c = produce_contract({%$params, stop_type => 'point', amount_per_point => 2, stop_loss => 10});
+    is $c->ask_price, 20.00, 'ask is 20.00';
+    like ($c->longcode, qr/with stop loss of 10 points and limit of 10 points/, 'correct longcode for stop_type: point');
+    is $c->shortcode, 'SPREADU_R_100_2_'.$now->epoch.'_10_10_POINT';
+    $c = produce_contract({%$params, stop_type => 'dollar', amount_per_point => 2, stop_loss => 10});
+    is $c->ask_price, 10.00, 'ask is 10.00';
+    like ($c->longcode, qr/with stop loss of USD 10 and limit of USD 10/, 'correct longcode for stop_type: dollar');
+    is $c->shortcode, 'SPREADU_R_100_2_'.$now->epoch.'_10_10_DOLLAR';
 };
