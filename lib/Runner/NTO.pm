@@ -48,6 +48,7 @@ sub _calculate_results {
         my $mock = Test::MockModule->new('BOM::Market::Underlying');
         $mock->mock('interest_rate_for', sub { return 0 });
         $mock->mock('dividend_rate_for', sub { return 0 });
+        $DB::single=1;
         my $bet               = produce_contract($bet_args);
         my $bom_return        = 100 * roundnear(1 / 10000, ($bet->payout - $bet->ask_price) / $bet->ask_price) . "%";
         my $bom_client_profit = $record->{nto_win} ? $record->{payout} - $bet->ask_price : -1 * $bet->ask_price;
