@@ -27,11 +27,8 @@ before_install:
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
-    - sudo ln -s $PWD /home/git/regentmarkets/bom
+    - sudo ln -s $PWD /home/git/regentmarkets/bom-quant-benchmark
     - /tmp/travis-scripts/devbox.sh *.yml
-
-    - /tmp/travis-scripts/remove_postgresdb_config.sh
-    - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_logs.sh
 
 script:
