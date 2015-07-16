@@ -230,7 +230,16 @@ sub _build_shortcode {
 sub _build_longcode {
     my $self        = shift;
     my $description = $self->longcode_description;
-    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name));
+    my @other = ($self->stop_loss, $self->stop_profit);
+    if ($self->stop_type eq 'dollar') {
+        push @other, $self->currency;
+        $description .= 'with stop loss of [_6] [_4] and limit of [_6] [_5].';
+    } else {
+        push @other, 'points';
+        $description .= 'with stop loss of [_4] [_6] and limit of [_5] [_6].';
+    }
+
+    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));
 }
 
 has 'staking_limits' => (

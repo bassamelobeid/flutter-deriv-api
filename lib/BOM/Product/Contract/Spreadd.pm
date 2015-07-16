@@ -132,8 +132,9 @@ sub _build__highlow_args {
 
 has longcode_description => (
     is      => 'ro',
-    default => 'You will win (lose) [_1] [_2] for every point that the [_3] falls (rises) from the entry spot.',
+    default => 'You will win (lose) [_1] [_2] for every point that the [_3] falls (rises) from the entry spot,',
 );
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
