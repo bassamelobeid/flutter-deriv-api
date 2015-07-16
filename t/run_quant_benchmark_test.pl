@@ -117,7 +117,6 @@ sub analyse_report {
             cmp_ok($abs_diff, ">=", 0.01, 'intraday benchmark test for bet_type[' . $bet_type . ']');
         }
     } elsif ($test eq 'nto') {
-        $DB::single=1;
         my $test_benchmark   = $benchmark->{nto};
         my %change_benchmark = (
             CALL => 0.57,
