@@ -52,26 +52,26 @@ mini:
                 avg: 0.0256
                 max: 0.089
             ONETOUCH:
-                avg: 0.020
-                max: 0.094
+                avg: 0.0218
+                max: 0.1217
             NOTOUCH:
-                avg: 0.0241
-                max: 0.1624
+                avg: 0.0253
+                max: 0.1768
             CALL:
-                avg: 0.0067
-                max: 0.0297
+                avg: 0.0093
+                max: 0.0361
             PUT:
-                avg: 0.0091
+                avg: 0.0093
                 max: 0.0453
             RANGE:
                 avg: 0.0246
                 max: 0.1355
         NUM:
             ONETOUCH:
-                avg: 0.0199
-                max: 0.0940
+                avg: 0.0217
+                max: 0.1213
             CALL:
-                avg: 0.0067
+                avg: 0.0090
                 max: 0.0327
             PUT:
                 avg: 0.0090
@@ -100,36 +100,36 @@ mini:
     ovra:
         BASE:
             NT:
-                avg: 0.0080
+                avg: 0.0087
                 max: 0.1702
             Digital:
-                avg: 0.0050
-                max: 0.0385
+                avg: 0.0059
+                max: 0.0471
             OT:
-                avg: 0.0071
-                max: 0.058
+                avg: 0.0156
+                max: 0.0923
             DNT:
-                avg: 0.0067
+                avg: 0.0068
                 max: 0.36
             DOT:
-                avg: 0.0067
-                max: 0.1417
+                avg: 0.0150
+                max: 0.1751
         NUM:
             NT:
-                avg: 0.0070
+                avg: 0.0078
                 max: 0.1415
             Digital:
-                avg: 0.0050
-                max: 0.0382
+                avg: 0.0058
+                max: 0.0475
             OT:
-                avg: 0.0071
-                max: 0.0573
+                avg: 0.0156
+                max: 0.0930
             DNT:
-                avg: 0.00531
+                avg: 0.006
                 max: 0.233
             DOT:
-                avg: 0.0067
-                max: 0.1417
+                avg: 0.0150
+                max: 0.1752
 full:
     sdfx:
         BASE:
