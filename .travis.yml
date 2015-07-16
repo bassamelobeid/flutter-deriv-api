@@ -26,10 +26,6 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
-    - source /tmp/travis-scripts/devbox_path.sh
-    - sudo ln -s $PWD /home/git/regentmarkets/bom-quant-benchmark
-    - /tmp/travis-scripts/devbox.sh *.yml
-    - /tmp/travis-scripts/setup_logs.sh
-
+    - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
 script:
     - make $TEST_SUITE
