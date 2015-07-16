@@ -133,9 +133,9 @@ BEGIN
                     WHERE a.client_loginid=$1
                       AND b.purchase_time::DATE=$2::DATE
                  $$;
-        RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price * p_rate, v_potential_losses;
+        -- RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price * p_rate, v_potential_losses;
         EXECUTE v_sql INTO v_arr USING p_account.client_loginid, p_purchase_time, p_buy_price * p_rate, v_potential_losses;
-        RAISE NOTICE '  ==> %, upper: %', v_arr, array_upper(v_arr, 1);
+        -- RAISE NOTICE '  ==> %, upper: %', v_arr, array_upper(v_arr, 1);
 
         IF array_upper(v_arr, 1)>0 THEN
             IF v_arr[1] = '_-t' THEN
