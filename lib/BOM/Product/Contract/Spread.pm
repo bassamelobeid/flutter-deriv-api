@@ -33,6 +33,8 @@ sub BUILD {
             message_to_client => localize('Stop Loss, Stop Profit and Amount Per Point must be greater than zero.'),
         });
     }
+
+    return;
 }
 
 # STATIC
