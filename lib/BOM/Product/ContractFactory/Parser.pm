@@ -141,7 +141,7 @@ sub shortcode_to_parameters {
         };
     }
 
-    if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+.?\d*)_(\d+.?\d*)_(dollar|point)/) {
+    if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+.?\d*)_(\d+.?\d*)_(DOLLAR|POINT)/) {
         return {
             shortcode        => $shortcode,
             bet_type         => $1,
