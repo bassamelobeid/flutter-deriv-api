@@ -58,8 +58,10 @@ sub _make_new_flyby {
 
         # TODO: Remove all these sorts.  They are only important for transition testing
         UL:
-        foreach my $ul (map { BOM::Market::Underlying->new($_->{symbol}) } sort
-            { $a->{symbol} cmp $b->{symbol} } values %{Finance::Asset->instance->all_parameters}) {
+        foreach my $ul (
+            map  { BOM::Market::Underlying->new($_->{symbol}) }
+            sort { $a->{symbol} cmp $b->{symbol} } values %{Finance::Asset->instance->all_parameters})
+        {
             next UL unless $ul->market->display_order and not $ul->quanto_only and not $suspended_underlyings{$ul->symbol};
             my %record = (
                 market            => $ul->market->name,
