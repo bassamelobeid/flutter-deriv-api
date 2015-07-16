@@ -3,11 +3,10 @@ perl:
     - "5.14.2"
 env:
     - TEST_SUITE=merlin_benchmark
-#    - TEST_SUITE=SDFX_benchmark
-#    - TEST_SUITE=SDEQ_benchmark
-#    - TEST_SUITE=IH_benchmark
-#    - TEST_SUITE=NTO_benchmark
-#    - TEST_SUITE=OVRA_benchmark
+    - TEST_SUITE=SDFX_benchmark
+    - TEST_SUITE=SDEQ_benchmark
+    - TEST_SUITE=IH_benchmark
+    - TEST_SUITE=OVRA_benchmark
 services:
     - redis-server
 addons:
@@ -42,4 +41,4 @@ install:
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
     - sudo ln -s /home/travis/build/regentmarkets/bom-quant-benchmark /home/git/regentmarkets/bom-quant-benchmark
 script:
-    - perl -Ilib t/run_quant_benchmark_test.pl --which=merlin
+    - make $TEST_SUITE
