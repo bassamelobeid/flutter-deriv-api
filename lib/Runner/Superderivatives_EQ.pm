@@ -18,7 +18,7 @@ has suite => (
 has files => (
     is      => 'ro',
     isa     => 'ArrayRef',
-    default => sub { [qw(SX5E2 DJI FCHI SPC N225 SSECOMP FTSE)] },
+    default => sub { [qw(DJI FCHI SPC N225 SSECOMP FTSE)] },
 );
 
 has report_file => (
