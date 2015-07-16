@@ -1,0 +1,41 @@
+language: perl
+perl:
+    - "5.14.2"
+env:
+    - TEST_SUITE=merlin_benchmark
+    - TEST_SUITE=SDFX_benchmark
+    - TEST_SUITE=SDEQ_benchmark
+    - TEST_SUITE=IH_benchmark
+    - TEST_SUITE=NTO_benchmark
+    - TEST_SUITE=OVRA_benchmark
+services:
+    - redis-server
+addons:
+    postgresql: "9.3"
+cache: apt
+before_install:
+    - git clone https://7ec86f4afd8212dddfbe24034bb7d769611ca416@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/fixHostName.sh
+    - dpkg -l | grep postgres
+    - pg_lsclusters
+    - /tmp/travis-scripts/postgres.sh
+    - sudo mkdir -p /home/git/regentmarkets
+
+    - /tmp/travis-scripts/couchdb.sh
+    - /tmp/travis-scripts/postgres_restart.sh
+    - /tmp/travis-scripts/redis.sh
+
+install:
+    - source /tmp/travis-scripts/devbox_path.sh
+    - sudo ln -s $PWD /home/git/regentmarkets/bom
+    - /tmp/travis-scripts/devbox.sh *.yml
+
+    - /tmp/travis-scripts/remove_postgresdb_config.sh
+    - /tmp/travis-scripts/setup_clientdb.sh
+    - /tmp/travis-scripts/setup_feeddb.sh
+    - /tmp/travis-scripts/setup_authdb.sh
+    - /tmp/travis-scripts/setup_usersdb.sh
+    - /tmp/travis-scripts/setup_logs.sh
+
+script:
+    - make $TEST_SUITE

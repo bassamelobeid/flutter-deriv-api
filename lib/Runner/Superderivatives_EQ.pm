@@ -5,7 +5,7 @@ use Moose;
 use lib ("/home/git/regentmarkets/bom/t/BOM/Product");
 use List::Util qw(max sum min);
 use File::Slurp;
-
+use Text::CSV;
 use BOM::Product::ContractFactory qw( produce_contract );
 use CSVParser::Superderivatives_EQ;
 
@@ -110,16 +110,14 @@ sub _save_analysis {
 
 sub price_superderivatives_bets_locally {
     my ($self, $records) = @_;
-
+    my $csv = Text::CSV->new();
     my $breakdown = {};
     my $quanto    = {};
     my $i         = 0;
     foreach my $record (@$records) {
-        my $bet = produce_contract({
+        my $bet_args = {
             current_spot => $record->{spot},
             underlying   => $record->{underlying},
-            barrier      => $record->{barrier},
-            barrier2     => $record->{barrier2},
             bet_type     => $record->{bet_type},
             date_start   => $record->{date_start}->epoch + $record->{start_offset},
             date_expiry  => $record->{date_expiry}->epoch + $record->{expiry_offset},
@@ -127,21 +125,25 @@ sub price_superderivatives_bets_locally {
             payout       => $record->{payout},
             currency     => $record->{currency},
             date_pricing => $record->{date_start}->epoch + 9 * 3600,
-        });
+        };
+
+       if ($record->{barrier2}){
+           $bet_args->{low_barrier}  = $record->{barrier2};
+           $bet_args->{high_barrier} = $record->{barrier};
+       }else{
+           $bet_args->{barrier} = $record->{barrier};
+       }
+
+        my $bet = produce_contract($bet_args);
+
         my $bom_mid  = $bet->theo_probability->amount;
         my $sd_mid   = $record->{sd_mid};
         my $mid_diff = abs($sd_mid - $bom_mid);
+        my @barriers   = $bet->two_barriers ? ($bet->high_barrier->as_absolute, $bet->low_barrier->as_absolute) : ($bet->barrier->as_absolute,'NA');
 
-        my $result =
-              "$record->{ID},"
-            . $record->{underlying}->symbol
-            . ",$record->{bet_type},"
-            . $record->{date_start}->epoch . ","
-            . $record->{date_expiry}->epoch
-            . ",$record->{spot},$record->{barrier},$record->{barrier2},"
-            . $bet->pricing_args->{iv}
-            . ",$sd_mid,$bom_mid,$mid_diff";
+        $csv->combine($record->{ID}, $record->{underlying}->symbol,$record->{bet_type},$record->{date_start}->epoch,$record->{date_expiry}->epoch,$record->{spot},@barriers,$bet->pricing_args->{iv},$sd_mid,$bom_mid,$mid_diff);
 
+        my $result = $csv->string;
         append_file($self->report_file->{all}, $result . "\n");
         if ($bet->priced_with eq 'quanto') {
             push @{$quanto->{$record->{bet_type}}}, $mid_diff,;
