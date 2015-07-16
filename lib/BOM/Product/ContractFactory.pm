@@ -108,12 +108,6 @@ sub produce_contract {
     if ($contract_class->category_code eq 'spreads') {
         $input_params{date_start} = Date::Utility->new if not $input_params{date_start};
         $input_params{build_parameters} = {%input_params};
-        if (defined $input_params{stop_type} and $input_params{stop_type} eq 'dollar_amount') {
-            my $app = $input_params{amount_per_point};
-            # convert to point.
-            $input_params{stop_loss}   /= $app;
-            $input_params{stop_profit} /= $app;
-        }
         $contract_obj = $contract_class->new(\%input_params);
     } else {
         delete $input_params{expiry_daily};

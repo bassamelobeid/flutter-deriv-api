@@ -20,7 +20,7 @@ with 'MooseX::Role::Validatable';
 sub BUILD {
     my $self = shift;
 
-    # stop_loss, stop_profit, amount_per_point has to be positive.
+    # stop_loss, stop_profit, amount_per_point has to be greater than zero.
     if ($self->stop_loss <= 0 or $self->stop_profit <= 0 or $self->amount_per_point <= 0) {
         $self->add_errors({
             message => 'Negative entry on stop_loss['
@@ -55,7 +55,7 @@ has currency => (
     required => 1,
 );
 
-has [qw(stop_loss stop_profit amount_per_point)] => (
+has [qw(stop_type stop_loss stop_profit amount_per_point)] => (
     is       => 'rw',
     required => 1,
 );
@@ -177,7 +177,8 @@ has ask_price => (
 
 sub _build_ask_price {
     my $self = shift;
-    return roundnear(0.01, $self->stop_loss * $self->amount_per_point);
+    my $ask = $self->stop_type eq 'dollar' ? $self->stop_loss : $self->stop_loss * $self->amount_per_point;
+    return roundnear(0.01, $ask);
 }
 
 has [qw(buy_level sell_level)] => (
@@ -222,7 +223,7 @@ has [qw(shortcode longcode)] => (
 
 sub _build_shortcode {
     my $self = shift;
-    my @element = ($self->code, $self->underlying->symbol, $self->amount_per_point, $self->date_start->epoch, $self->stop_loss, $self->stop_profit);
+    my @element = ($self->code, $self->underlying->symbol, $self->amount_per_point, $self->date_start->epoch, $self->stop_loss, $self->stop_profit, $self->stop_type);
     return join '_', @element;
 }
 

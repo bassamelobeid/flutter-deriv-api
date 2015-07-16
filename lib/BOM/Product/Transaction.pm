@@ -176,7 +176,7 @@ sub stats_start {
 
     if ($what eq 'buy') {
         if ($self->contract->is_spread) {
-            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->build_parameters->{stop_type});
+            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->stop_type);
         } else {
             push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
         }
@@ -1024,6 +1024,7 @@ sub _build_pricing_comment {
             [stop_profit      => $contract->stop_profit],
             [stop_loss        => $contract->stop_loss],
             [spread           => $contract->spread],
+            [stop_type        => $contract->stop_type],
         );
     } else {
         # This way the order of the fields is well-defined.

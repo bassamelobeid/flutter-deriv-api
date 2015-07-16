@@ -34,12 +34,14 @@ has [qw(stop_loss_level stop_profit_level)] => (
 
 sub _build_stop_loss_level {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->barrier->as_absolute - $self->stop_loss);
+    my $stop_loss_point = $self->stop_type eq 'dollar' ? $self->stop_loss / $self->amount_per_point : $self->stop_loss;
+    return $self->underlying->pipsized_value($self->barrier->as_absolute - $stop_loss_point);
 }
 
 sub _build_stop_profit_level {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->barrier->as_absolute + $self->stop_profit);
+    my $stop_profit_point = $self->stop_type eq 'dollar' ? $self->stop_profit / $self->amount_per_point : $self->stop_profit;
+    return $self->underlying->pipsized_value($self->barrier->as_absolute + $stop_profit_point);
 }
 
 has is_expired => (
