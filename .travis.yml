@@ -21,11 +21,13 @@ before_install:
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets
 
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/couchdb.sh
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
 
 install:
+    - source /tmp/travis-scripts/devbox_path.sh
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
 script:
     - make $TEST_SUITE
