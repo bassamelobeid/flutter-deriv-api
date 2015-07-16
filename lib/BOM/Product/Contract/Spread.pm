@@ -222,15 +222,19 @@ has [qw(shortcode longcode)] => (
 );
 
 sub _build_shortcode {
-    my $self = shift;
-    my @element = ($self->code, $self->underlying->symbol, $self->amount_per_point, $self->date_start->epoch, $self->stop_loss, $self->stop_profit, $self->stop_type);
+    my $self    = shift;
+    my @element = (
+        $self->code, $self->underlying->symbol,
+        $self->amount_per_point, $self->date_start->epoch,
+        $self->stop_loss, $self->stop_profit, $self->stop_type
+    );
     return join '_', @element;
 }
 
 sub _build_longcode {
     my $self        = shift;
     my $description = $self->longcode_description;
-    my @other = ($self->stop_loss, $self->stop_profit);
+    my @other       = ($self->stop_loss, $self->stop_profit);
     if ($self->stop_type eq 'dollar') {
         push @other, $self->currency;
         $description .= 'with stop loss of [_6] [_4] and limit of [_6] [_5].';
