@@ -63,7 +63,6 @@ has test_suite_mapper => (
             sdeq                => 'Runner::Superderivatives_EQ',
             ovra                => 'Runner::Bloomberg',
             intraday_historical => 'Runner::IntradayFX',
-            nto                 => 'Runner::NTO',
         };
     },
 );
@@ -78,7 +77,7 @@ sub _build_test_suite {
     my $self = shift;
 
     my $which = $self->getOption('which');
-    my @what_to_run = ($which eq 'all') ? ('merlin', 'sdfx', 'sdeq', 'ovra', 'intraday_historical', 'nto') : split ',', $which;
+    my @what_to_run = ($which eq 'all') ? ('merlin', 'sdfx', 'sdeq', 'ovra', 'intraday_historical',) : split ',', $which;
 
     return \@what_to_run;
 }
@@ -115,18 +114,6 @@ sub analyse_report {
             my $abs_diff     = abs($abs_got - $abs_expected) / $abs_expected;
             cmp_ok($abs_diff, "<=", 0.1,  'intraday benchmark test for bet_type[' . $bet_type . ']');
             cmp_ok($abs_diff, ">=", 0.01, 'intraday benchmark test for bet_type[' . $bet_type . ']');
-        }
-    } elsif ($test eq 'nto') {
-        my $test_benchmark   = $benchmark->{nto};
-        my %change_benchmark = (
-            CALL => 0.57,
-            PUT => 0.63
-        );
-        foreach my $bet_type (keys %$report) {
-            my $expected       = $test_benchmark->{$bet_type}->{sum};
-            my $got            = $report->{$bet_type}->{sum};
-            my $percent_change = $got / $expected;
-            cmp_ok($percent_change, ">=", $change_benchmark{$bet_type}, 'nto benchmark test for bet_type[' . $bet_type . ']');
         }
     } else {
         my $test_benchmark = $benchmark->{$self->getOption('suite')}->{$test};

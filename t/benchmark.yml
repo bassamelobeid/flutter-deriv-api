@@ -5,13 +5,6 @@ intraday:
     NOTOUCH: -4000
     CALL: -3000
     PUT: -1650
-nto:
-    CALL:
-        avg: -339.20
-        sum: -226927.99
-    PUT:
-        avg: -355.57
-        sum: -291217.60
 mini:
     merlin:
         NUM:
