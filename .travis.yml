@@ -28,6 +28,7 @@ before_install:
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
+    - sudo ln -s $PWD /home/git/regentmarkets/bom
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
 script:
     - make $TEST_SUITE
