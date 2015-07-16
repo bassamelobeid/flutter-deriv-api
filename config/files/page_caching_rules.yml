@@ -1,7 +1,7 @@
 "/contact":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"trade.cgi":
+"/trade.cgi":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user/statement":
