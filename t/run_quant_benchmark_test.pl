@@ -8,7 +8,7 @@ with 'BOM::Utility::Logging';
 use File::Slurp;
 use TAP::Harness;
 use YAML::XS qw(LoadFile);
-use Test::More qw(no_plan)
+use Test::More qw(no_plan);
 use Test::MockModule;
 use JSON qw(decode_json);
 use File::Spec;
