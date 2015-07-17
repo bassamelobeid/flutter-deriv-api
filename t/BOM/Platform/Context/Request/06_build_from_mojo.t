@@ -49,7 +49,7 @@ subtest 'param builds' => sub {
         );
 
         my $request =
-            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->value})});
+            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token})});
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
 
         $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});
