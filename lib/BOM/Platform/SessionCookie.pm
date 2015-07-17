@@ -68,7 +68,7 @@ my $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_';
 
 sub new {
     my ($package) = shift @_;
-    my $self = ref $_[0] ? $_[0] : {@_}; ## no critic
+    my $self = ref $_[0] ? $_[0] : {@_};    ## no critic
     if ($self->{token}) {
         $self = JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSIN::' . $self->{token})) || {};
     } else {
