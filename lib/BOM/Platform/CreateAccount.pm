@@ -27,6 +27,7 @@ sub create_virtual_acc {
     my $args = shift;
     my ($email, $password, $source, $env, $aff_token) = @{$args}{'email', 'password', 'source', 'env', 'aff_token'};
     $password = BOM::System::Password::hashpw($password);
+    $email    = lc $email;
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {
