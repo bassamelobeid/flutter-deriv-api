@@ -58,7 +58,7 @@ table#client_edit td{
     </tr>
     <tr>
         <td class="label">&nbsp;</td>
-        <td>: <input type="text" name="referral_from" value="" /></td>
+        <td>: <input type="text" name="myaffiliates_token" value="" /></td>
     </tr>
     <tr>
         <td class="label">Affiliate Token</td>

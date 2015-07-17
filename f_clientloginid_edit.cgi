@@ -386,6 +386,10 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
                 }
             }
         }
+        if ($key eq 'myaffiliates_token'){
+            # $client->myaffiliates_token_registered(1);
+            $client->myaffiliates_token($input{$key}) if $input{$key};
+        }
     }
 
     if (not $client->save) {
