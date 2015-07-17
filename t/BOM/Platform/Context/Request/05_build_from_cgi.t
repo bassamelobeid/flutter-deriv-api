@@ -161,7 +161,7 @@ subtest 'param builds' => sub {
 
         my $request = BOM::Platform::Context::Request::from_cgi({
             cookies => {},
-            cgi     => mock_cgi_for({login => $lc->value}),
+            cgi     => mock_cgi_for({login => $lc->token}),
         });
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
         is $request->session_cookie->email, $email, "Valid email";
