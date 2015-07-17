@@ -3,6 +3,9 @@ use Data::Random::String;
 use BOM::System::Chronicle;
 use JSON;
 
+use strict;
+use warnings;
+
 sub new {
     my ($package, $self) = shift;
     if ($self->{token}) {
@@ -31,4 +34,10 @@ sub end_session {
     my $self = shift;
     BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::'.$self->{token});
 }
+
+# accessors for very frequently used attributes
+sub loginid { $_[0]->{loginid} } ## no critic
+sub email { $_[0]->{email} } ## no critic
+
+
 1;
