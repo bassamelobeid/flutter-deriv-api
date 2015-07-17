@@ -20,7 +20,7 @@ sub new {
 
 sub session_data {
     my ($class, $token) = @_;
-    BOM::System::Chronicle->_redis_read->get($token);
+    return BOM::System::Chronicle->_redis_read->get($token);
 }
 
 sub validate_session {
@@ -30,7 +30,7 @@ sub validate_session {
     return not $scope or grep { $_ eq $scope } @{$self->{scopes}}
 }
 
-sub end_session {
+sub end_session { ## no critic
     my $self = shift;
     BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::'.$self->{token});
 }
