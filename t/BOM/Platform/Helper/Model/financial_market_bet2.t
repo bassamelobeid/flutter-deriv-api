@@ -315,12 +315,19 @@ lives_ok {
 }
 'bought and sold one more AUD bet with slightly increased max_turnover';
 
+# at this point we have 2 open contracts: USD 20 and AUD 20. Since our AUDUSD rate
+# is 2 this amounts to USD 60. Also, we have one lost contract for AUD 20 which is
+# USD 40. As for the max_losses test, we need to sum up all open bets as losses
+# plus the currently realized losses plus the current contract which is
+#
+#  40 (realized) + 60 (open) + 10000 (current) = 10100
+
 dies_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
         +{
         buy_price => 10000,
         limits    => {
-            max_losses    => 39.99,
+            max_losses    => 10099.99,
             max_open_bets => 3,
         },
         };
@@ -338,7 +345,7 @@ lives_ok {
         +{
         buy_price => 10000,
         limits    => {
-            max_losses    => 40,
+            max_losses    => 10100,
             max_open_bets => 3,
         },
         };
@@ -849,11 +856,13 @@ SKIP: {
         #       We have a turnover of USD 40 and AUD 40 = USD 80
         #       which amounts to a net turnover of USD 120.
         #       And since all those bets are losses we have a net loss of USD 120.
+        #       Also, there are no open bets. So, the loss limit is
+        #           120 + 20 (current contract)
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
                     max_turnover             => 140 - 0.01,
-                    max_losses               => 120 - 0.01,
+                    max_losses               => 140 - 0.01,
                     specific_turnover_limits => [{    # fails
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
@@ -911,7 +920,7 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
                     max_turnover             => 140,
-                    max_losses               => 120 - 0.01,
+                    max_losses               => 140 - 0.01,
                     specific_turnover_limits => [{    # fails
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
@@ -969,7 +978,7 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
                     max_turnover             => 140,
-                    max_losses               => 120,
+                    max_losses               => 140,
                     specific_turnover_limits => [{    # fails
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
@@ -1027,7 +1036,7 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
                     max_turnover             => 140,
-                    max_losses               => 120,
+                    max_losses               => 140,
                     specific_turnover_limits => [{    # passes
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
@@ -1140,13 +1149,16 @@ SKIP: {
         # Here we have 6 bought and sold bets, 3 USD and 3 AUD. Two of them, 1 USD + 1 AUD,
         # where bought before the time interval considered by the 7day limits. In total, we
         # have a worth of USD 120 turnover and losses within the 7day interval.
+        # There are no open bets. So, the loss limit is:
+        #
+        #     120 (realized loss) + 20 (current contract)
 
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
                     max_7day_turnover => 140 - 0.01,
-                    max_7day_losses   => 120 - 0.01,
+                    max_7day_losses   => 140 - 0.01,
                 },
                 };
         }
@@ -1162,7 +1174,7 @@ SKIP: {
                 +{
                 limits => {
                     max_7day_turnover => 140,
-                    max_7day_losses   => 120 - 0.01,
+                    max_7day_losses   => 140 - 0.01,
                 },
                 };
         }
@@ -1178,12 +1190,60 @@ SKIP: {
                 +{
                 limits => {
                     max_7day_turnover => 140,
-                    max_7day_losses   => 120,
+                    max_7day_losses   => 140,
                 },
                 };
             is $balance_after + 0, 10000 - 80, 'correct balance_after';
         }
         '7day turnover validation passed with slightly higher limits';
+
+
+        # now we have one open bet for USD 20. So, we should raise the limits
+        # accordingly to buy the next
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_7day_turnover => 160 - 0.01,
+                    max_7day_losses   => 160 - 0.01,
+                },
+                };
+        }
+        '7day turnover validation failed (with open bet)';
+        is_deeply $@,
+            [
+            BI013 => 'ERROR:  maximum self-exclusion 7 day turnover limit exceeded',
+            ],
+            'maximum self-exclusion 7 day turnover limit exceeded (with open bet)';
+
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_7day_turnover => 160,
+                    max_7day_losses   => 160 - 0.01,
+                },
+                };
+        }
+        '7day turnover validation failed (with open bet)';
+        is_deeply $@,
+            [
+            BI014 => 'ERROR:  maximum self-exclusion 7 day limit on losses exceeded',
+            ],
+            'maximum self-exclusion 7 day limit on losses exceeded (with open bet)';
+
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
+                +{
+                limits => {
+                    max_7day_turnover => 160,
+                    max_7day_losses   => 160,
+                },
+                };
+            is $balance_after + 0, 10000 - 100, 'correct balance_after';
+        }
+        '7day turnover validation passed with slightly higher limits (with open bet)';
     };
 }
 
