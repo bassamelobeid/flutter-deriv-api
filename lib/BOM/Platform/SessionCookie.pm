@@ -13,8 +13,8 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 =cut
 
 package BOM::Platform::SessionCookie;
-use Data::Random::String;
 use BOM::System::Chronicle;
+use BOM::Utility::Random;
 use JSON;
 
 use strict;
@@ -62,12 +62,15 @@ Creates a new session and stores it in redis.
 
 =cut
 
+# characters for token
+my $string='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_';
+
 sub new {
     my ($package, $self) = shift;
     if ($self->{token}) {
         $self = JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSIN::' . $self->{token})) || {};
     } else {
-        $self->{token} = Data::Random::String->create_random_string(length => '128');
+        $self->{token} = BOM::Utility::Random->string_from($string, 128);
         BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token}, JSON::to_json($self));
     }
     BOM::System::Chronicle->_redis_write->ttl('LOGIN_SESSIN::' . $self->{token}, 3600 * 24);
