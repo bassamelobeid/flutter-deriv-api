@@ -1,3 +1,4 @@
+
 =head1 NAME
 
 BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
@@ -48,7 +49,7 @@ hashref).
 # accessors for very frequently used attributes
 sub loginid { $_[0]->{loginid} }    ## no critic
 sub email   { $_[0]->{email} }      ## no critic
-sub token { $_[0]->{token} }      ## no critic
+sub token   { $_[0]->{token} }      ## no critic
 
 =head1 CONSTRUCTOR
 
@@ -63,7 +64,7 @@ Creates a new session and stores it in redis.
 =cut
 
 # characters for token
-my $string='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_';
+my $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_';
 
 sub new {
     my ($package, $self) = shift;
@@ -103,6 +104,5 @@ sub end_session {    ## no critic
     my $self = shift;
     BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token});
 }
-
 
 1;
