@@ -67,7 +67,8 @@ Creates a new session and stores it in redis.
 my $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_';
 
 sub new {
-    my ($package, $self) = shift;
+    my ($package, $self) = @_;
+    my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
         $self = JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSIN::' . $self->{token})) || {};
     } else {
