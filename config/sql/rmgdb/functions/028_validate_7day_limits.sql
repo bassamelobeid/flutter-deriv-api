@@ -14,8 +14,13 @@ CREATE OR REPLACE FUNCTION bet.validate_7day_limits(p_account           transact
                                                     p_limits            JSON)
 RETURNS VOID AS $def$
 DECLARE
-    v_r RECORD;
+    v_r                RECORD;
+    v_potential_losses NUMERIC;
 BEGIN
+    IF (p_limits -> 'max_7day_losses') IS NOT NULL THEN
+        v_potential_losses:=bet.calculate_potential_losses(p_account.client_loginid);
+    END IF;
+
     IF (p_limits -> 'max_7day_turnover') IS NOT NULL OR
        (p_limits -> 'max_7day_losses') IS NOT NULL THEN
         SELECT INTO v_r
@@ -34,7 +39,7 @@ BEGIN
                 ERRCODE='BI013';
         END IF;
 
-        IF v_r.loss > (p_limits ->> 'max_7day_losses')::NUMERIC THEN
+        IF v_r.loss + v_potential_losses + p_buy_price * p_rate > (p_limits ->> 'max_7day_losses')::NUMERIC THEN
             RAISE EXCEPTION USING
                 MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI014'),
                 ERRCODE='BI014';
