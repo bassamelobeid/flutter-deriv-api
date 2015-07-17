@@ -57,7 +57,7 @@ sub get_default_plan {
 sub is_subordinate_affiliate {
     my ($self, $affiliate_id) = @_;
 
-    my $user = $self->get_user($affiliate_id) or croak $self->errstr;
+    my $user = $self->get_user($affiliate_id) or die $self->errstr;
 
     my $affiliate_variables = $user->{USER_VARIABLES}->{VARIABLE};
     $affiliate_variables = [$affiliate_variables] unless ref($affiliate_variables) eq 'ARRAY';
@@ -129,14 +129,14 @@ sub _find_affiliate_by_variable {
     my $user = $self->get_users(
         VARIABLE_NAME  => $variable_name,
         VARIABLE_VALUE => $value
-    ) or croak $self->errstr;
+    ) or die $self->errstr;
     return unless $user->{USER};    # no matches
 
     # many matches
-    croak 'Search returned more than one user' if ref($user->{USER}) eq "ARRAY";
+    die 'Search returned more than one user' if ref($user->{USER}) eq "ARRAY";
 
     my $affiliate_id = $user->{USER}->{ID} || '';
-    croak "ID is not a number? [id:$affiliate_id] while searching for variable [$variable_name => $value]" unless looks_like_number($affiliate_id);
+    die "ID is not a number? [id:$affiliate_id] while searching for variable [$variable_name => $value]" unless looks_like_number($affiliate_id);
 
     return $affiliate_id;
 }
@@ -149,16 +149,16 @@ sub get_token {
     my $plan = $args_ref->{plan} || $self->get_default_plan($affiliate_id) || '';
     my $setup_id = $plan ? $self->_get_setup_id($plan) : '';
     if (not $setup_id) {
-        croak "Unable to get Setup ID for affiliate[$affiliate_id], plan[$plan]";
+        die "Unable to get Setup ID for affiliate[$affiliate_id], plan[$plan]";
     }
 
     my $token_info = $self->encode_token(
         USER_ID  => $affiliate_id,
         SETUP_ID => $setup_id,
         ($args_ref->{media_id}) ? (MEDIA_ID => $args_ref->{media_id}) : (),
-    ) or croak $self->errstr;
+    ) or die $self->errstr;
 
-    my $token = $token_info->{TOKEN} or croak "Could not extract token from response.";
+    my $token = $token_info->{TOKEN} or die "Could not extract token from response.";
     return $token;
 }
 

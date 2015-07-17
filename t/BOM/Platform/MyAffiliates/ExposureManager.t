@@ -1,4 +1,4 @@
-use Test::More $ENV{SKIP_MYAFFILIATES} ? (skip_all => 'SKIP_MYAFFILIATES set') : ('no_plan');
+use Test::More skip_all => 'this functionality deprecated';
 use Test::NoWarnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);

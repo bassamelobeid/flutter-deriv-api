@@ -1,5 +1,5 @@
 use Test::MockTime qw( restore_time set_fixed_time );
-use Test::More $ENV{SKIP_MYAFFILIATES} ? (skip_all => 'SKIP_MYAFFILIATES set') : ('no_plan');
+use Test::More skip_all => 'this functionality deprecated';
 use Test::MockModule;
 use Sub::Override;
 use Test::Exception;
