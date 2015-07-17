@@ -476,9 +476,9 @@ sub _build_session_cookie {
     my $session_cookie;
     # if the user logged in.
     if (my $cookie = $self->cookie($cookie_name)) {
-        $session_cookie = BOM::Platform::SessionCookie->from_value($cookie);
+        $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie});
     } elsif (my $as_param = $self->param('login')) {
-        $session_cookie = BOM::Platform::SessionCookie->from_value($as_param);
+        $session_cookie = BOM::Platform::SessionCookie->from_value({token => $as_param});
     }
 
     if (    $session_cookie
