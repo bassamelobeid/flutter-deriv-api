@@ -478,7 +478,7 @@ sub _build_session_cookie {
     if (my $cookie = $self->cookie($cookie_name)) {
         $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie});
     } elsif (my $as_param = $self->param('login')) {
-        $session_cookie = BOM::Platform::SessionCookie->from_value({token => $as_param});
+        $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param});
     }
 
     if (    $session_cookie
@@ -498,9 +498,9 @@ sub _build_bo_cookie {
     my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
     # if the user logged in.
     if (my $cookie = $self->cookie($cookie_name)) {
-        return BOM::Platform::SessionCookie->from_value($cookie);
+        return BOM::Platform::SessionCookie->new({token => $cookie});
     } elsif (my $as_param = $self->param('staff')) {
-        return BOM::Platform::SessionCookie->from_value($as_param);
+        return BOM::Platform::SessionCookie->new({token => $as_param});
     }
 
     return;
