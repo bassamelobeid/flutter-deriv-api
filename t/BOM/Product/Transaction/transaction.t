@@ -1761,7 +1761,7 @@ subtest 'max_losses validation', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
-                get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (2 * 5.20 - .01); 2 * 5.20 - .01 });
+                get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             my $t = BOM::Product::Transaction->new({
                 client      => $cl,
@@ -1803,7 +1803,7 @@ subtest 'max_losses validation', sub {
 
             is $error->get_type, 'DailyLossLimitExceeded', 'error is DailyLossLimitExceeded';
 
-            like $error->{-message_to_client}, qr/daily limit on losses of USD10\.39/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/daily limit on losses of USD15\.59/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1822,7 +1822,7 @@ subtest 'max_losses validation', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
-                get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (2 * 5.20); 2 * 5.20 });
+                get_limit_for_daily_losses => sub { note "mocked Client->get_limit_for_daily_losses returning " . (3 * 5.20); 3 * 5.20 });
 
             $txn->buy;
         };
@@ -1886,7 +1886,7 @@ subtest 'max_7day_losses validation', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(
-                get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (2 * 5.20 - .01); 2 * 5.20 - .01 });
+                get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             my $t = BOM::Product::Transaction->new({
                 client      => $cl,
@@ -1928,7 +1928,7 @@ subtest 'max_7day_losses validation', sub {
 
             is $error->get_type, '7DayLossLimitExceeded', 'error is 7DayLossLimitExceeded';
 
-            like $error->{-message_to_client}, qr/7-day limit on losses of USD10\.39/, 'message_to_client contains limit';
+            like $error->{-message_to_client}, qr/7-day limit on losses of USD15\.59/, 'message_to_client contains limit';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1946,7 +1946,7 @@ subtest 'max_7day_losses validation', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (2 * 5.20); 2 * 5.20 }
+            $mock_client->mock(get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20); 3 * 5.20 }
             );
 
             $txn->buy;
