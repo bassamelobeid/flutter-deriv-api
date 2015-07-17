@@ -74,7 +74,7 @@ sub new {
         $self->{token} = BOM::Utility::Random->string_from($string, 128);
         BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token}, JSON::to_json($self));
     }
-    BOM::System::Chronicle->_redis_write->ttl('LOGIN_SESSIN::' . $self->{token}, 3600 * 24);
+    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSIN::' . $self->{token}, 3600 * 24);
     return bless $self, $package;
 }
 
