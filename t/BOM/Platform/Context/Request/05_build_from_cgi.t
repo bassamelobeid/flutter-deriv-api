@@ -158,6 +158,8 @@ subtest 'param builds' => sub {
             token   => 'freefood',
             email   => $email,
         );
+        use Data::Dumper;
+        diag(Dumper($lc));
 
         my $request = BOM::Platform::Context::Request::from_cgi({
             cookies => {},
