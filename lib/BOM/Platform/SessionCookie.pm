@@ -70,7 +70,7 @@ sub new {    ## no critic RequireArgUnpack
     my ($package) = shift @_;
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        $self = JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSIN::' . $self->{token})) || {};
+        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSIN::' . $self->{token})) } || {};
     } else {
         $self->{token} = BOM::Utility::Random->string_from($string, 128);
         BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token}, JSON::to_json($self));
