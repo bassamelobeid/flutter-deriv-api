@@ -27,7 +27,7 @@ use BOM::Platform::Helper::Doughflow qw( get_sportsbook );
 use BOM::Database::Model::HandoffToken;
 use BOM::Database::ClientDB;
 use BOM::System::Config;
-use BOM::View::CGIForm;
+use BOM::Web::Form;
 
 BOM::Platform::Sysinit::init();
 
@@ -216,7 +216,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field appears to be empty.</p></p>";
             code_exit_BO();
         }
-        if (!grep(/^$input{'mrms'}$/, BOM::View::CGIForm::GetSalutations())) {
+        if (!grep(/^$input{'mrms'}$/, BOM::Web::Form::GetSalutations())) {
             print "<p style=\"color:red; font-weight:bold;\">ERROR ! MRMS field is invalid.</p></p>";
             code_exit_BO();
         }
