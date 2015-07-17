@@ -4,7 +4,7 @@
 use List::Util qw( first );
 use Test::Exception;
 use Test::MockObject::Extends;
-use Test::More $ENV{SKIP_MYAFFILIATES} ? (skip_all => 'SKIP_MYAFFILIATES set') : (tests => 4);
+use Test::More skip_all => 'this functionality deprecated';
 use Test::NoWarnings;
 
 use DateTime;
