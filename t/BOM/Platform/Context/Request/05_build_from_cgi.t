@@ -155,10 +155,10 @@ subtest 'param builds' => sub {
     subtest 'session_cookie' => sub {
         my $lc = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
         use Data::Dumper;
+        use Carp::Always;
         diag(Dumper($lc));
 
         my $request = BOM::Platform::Context::Request::from_cgi({
@@ -176,7 +176,6 @@ subtest 'param builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'CR100000000000000000001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -188,7 +187,6 @@ subtest 'param builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'MESA1',
-            token   => 'freefood',
             email   => $email,
         );
 
