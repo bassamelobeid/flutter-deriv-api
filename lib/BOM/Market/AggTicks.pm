@@ -20,6 +20,7 @@ use Carp;
 
 use Cache::RedisDB;
 use Date::Utility;
+use ExpiryQueue qw( update_queue_for_tick );
 use List::Util qw( min );
 use Time::Duration::Concise;
 use Scalar::Util qw( blessed );
@@ -162,6 +163,8 @@ sub add {
 
     my $key = $self->_make_key($tick->{symbol}, 0);
     my $redis = $self->_redis;
+
+    update_queue_for_tick($tick);
 
     return $redis->zadd($key, $tick->{epoch}, $encoder->encode($tick));
 }
