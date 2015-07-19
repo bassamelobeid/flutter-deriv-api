@@ -75,8 +75,6 @@ sub get_seasonalized_volatility_with_news {
     };
 }
 
-my $annual_seconds = 60 * 60 * 24 * 252;
-
 sub _naked_vol {
     my ($self, $args) = @_;
 
@@ -102,30 +100,26 @@ sub _naked_vol {
         ending_epoch => $current_epoch,
         fill_cache   => $fill_cache,
     });
-
-    my ($observed_seconds, $sum_squaredinput, $variance) = (0) x 3;
-    my ($first_time, $last_time);
+    my ($tick_count, $variance, $sum_squaredinput) = (0, 0, 0);
     my $length      = scalar @$ticks;
     my $returns_sep = 30;               # Compute on 30 tick intervals;
+
     if ($length > $returns_sep) {
-        $last_time  = $ticks->[-1]->{epoch};
-        $first_time = $ticks->[$returns_sep]->{epoch};
         # Can compute vol.
         for (my $i = $returns_sep; $i < $length; $i++) {
             $real_periods++;
             my ($now, $then) = ($ticks->[$i], $ticks->[$i - $returns_sep]);
             $sum_squaredinput += (log($now->{quote} / $then->{quote})**2);
-            $observed_seconds += ($now->{epoch} - $then->{epoch});
+            $tick_count += $now->{count};
         }
-        $variance = $sum_squaredinput * ($annual_seconds / $observed_seconds);
+        $variance = $sum_squaredinput * ($at->annualization / $real_periods);
     }
 
     my $uc_vol = sqrt($variance) || $self->long_term_vol;    # set vol to long term vol if variance goes to zero.
-    my $ticks_domain_secs = (defined $first_time and defined $last_time) ? $last_time - $first_time : 0;
 
     # Per 15-seconds, for legacy reasons.
-    my $average_tick_count = ($ticks_domain_secs) ? (15 * $real_periods / $ticks_domain_secs) : 0;
-    my $err = ($ticks_domain_secs < $lookback_interval->seconds * 0.8) ? 1 : undef;
+    my $average_tick_count = ($tick_count) ? ($tick_count / $real_periods) : 0;
+    my $err = ($tick_count < $lookback_interval->minutes * 0.8) ? 1 : undef;
 
     my $ref = {
         naked_vol          => $uc_vol,

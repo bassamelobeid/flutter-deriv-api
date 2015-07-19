@@ -161,12 +161,15 @@ sub add {
 
     $tick = $tick->as_hash if blessed($tick);
 
-    my $key = $self->_make_key($tick->{symbol}, 0);
+    my %to_store = %$tick;
+
+    my $key = $self->_make_key($to_store{symbol}, 0);
     my $redis = $self->_redis;
 
-    update_queue_for_tick($tick);
+    update_queue_for_tick(\%to_store);
+    $to_store{count} = 1;    # These are all single ticks;
 
-    return $redis->zadd($key, $tick->{epoch}, $encoder->encode($tick));
+    return $redis->zadd($key, $tick->{epoch}, $encoder->encode(\%to_store));    # These are all single ticks.
 }
 
 =head2 retrieve
@@ -233,18 +236,28 @@ sub aggregate_for {
 
     if (my @ticks = map { $decoder->decode($_) } @{$redis->zrangebyscore($unagg_key, 0, $last_agg)}) {
         my $first_tick = $ticks[0];
-        my $next_agg = $first_tick->{epoch} - ($first_tick->{epoch} % $ai->seconds) + $ai->seconds;
+        my $next_agg   = $first_tick->{epoch} - ($first_tick->{epoch} % $ai->seconds) + $ai->seconds;
+        my $tick_count = 0;
 
         foreach my $tick (@ticks) {
-            $prev_tick = $tick if ($tick->{epoch} == $next_agg);    # Kinda gross, simplifies the below.
+
+            if ($tick->{epoch} == $next_agg) {    # Kinda gross, simplifies the below.
+                $prev_tick = $tick;
+                $tick_count++;                    # Since we are using this tick as previous, it counts
+            }
 
             if ($tick->{epoch} >= $next_agg) {
                 $total_added++;
                 $first_added //= $next_agg;
                 $last_added = $next_agg;
+                $prev_tick->{count} = $tick_count;
                 $redis->zadd($agg_key, $next_agg, $encoder->encode($prev_tick));
                 $next_agg += $ai->seconds;
+                $tick_count = 0;
+            } else {
+                $tick_count++;                    # We didn't do anything with this one. but note its existence.
             }
+
             $prev_tick = $tick;
         }
 
