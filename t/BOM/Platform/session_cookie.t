@@ -40,7 +40,7 @@ throws_ok {
 }
 qr/Attribute \(email\) is required at constructor/, 'email parameter is mandatory';
 
-my $value = $session_cookie->value;
+my $value = $session_cookie->token;
 my $hash = $crypt->decrypt_payload(value => $value);
 eq_or_diff $hash,
     {
