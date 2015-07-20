@@ -97,7 +97,7 @@ subtest 'param builds' => sub {
 
             $request =
                 BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token })});
-            is $request->broker_code, 'MX', "Valid borker";
+            is $request->broker_code, 'MX', "Valid broker";
         };
 
         subtest 'broker inputs' => sub {

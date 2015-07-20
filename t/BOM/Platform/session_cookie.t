@@ -27,8 +27,8 @@ throws_ok {
 qr/email /, 'email parameter is mandatory';
 
 my $value = $session_cookie->token;
-ok !BOM::Platform::SessionCookie->new("${value}a"), "Couldn't create instance from invalid value";
-$session_cookie = BOM::Platform::SessionCookie->token($value);
+ok !BOM::Platform::SessionCookie->new(token => "${value}a"), "Couldn't create instance from invalid value";
+$session_cookie = BOM::Platform::SessionCookie->token(token => $value);
 ok $session_cookie,     "Created login cookie from value";
 isa_ok $session_cookie, 'BOM::Platform::SessionCookie';
 
@@ -38,9 +38,9 @@ my $ref = {
     clerk   => "nobody",
     expires => time - 60,
 };
-ok !BOM::Platform::SessionCookie->new($value), "Couldn't build from expired cookie";
+ok !BOM::Platform::SessionCookie->new(token => $value), "Couldn't build from expired cookie";
 $ref->{expires} = time + 1000;
-$session_cookie = BOM::Platform::SessionCookie->new($value);
+$session_cookie = BOM::Platform::SessionCookie->new(token => $value);
 ok $session_cookie, "Created login cookie from value";
 cmp_deeply(
     $session_cookie,
