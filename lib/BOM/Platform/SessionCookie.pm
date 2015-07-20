@@ -65,7 +65,7 @@ Creates a new session and stores it in redis.
 =cut
 
 # characters for token
-my $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890-_';
+my $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
 
 my @required = qw(loginid email);
 
