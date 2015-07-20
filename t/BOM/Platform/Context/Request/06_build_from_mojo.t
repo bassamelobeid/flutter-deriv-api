@@ -130,25 +130,6 @@ subtest 'cookie builds' => sub {
             BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => ''})});
         ok !$request->session_cookie, "not a valid cookie";
 
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'CR100000000000000000001',
-            email   => $email,
-        );
-
-        $request =
-            BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->token })});
-        ok !$request->session_cookie, "not a valid loginid";
-
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'MESA1',
-            email   => $email,
-        );
-
-        $request =
-            BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->token })});
-        throws_ok { $request->session_cookie } qr/Unknown broker code or loginid \[MESA\]/, "not a valid broker";
     };
 
     subtest 'loginid' => sub {
