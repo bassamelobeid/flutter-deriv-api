@@ -10,7 +10,6 @@ PROVE=p () { $M; echo '$P' "$$@"; BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom
 
 default:
 	@echo "You must specify target. The following targets available:"
-	@echo "  i18n         - extract translatable strings from the code"
 	@echo "  test         - Run lib tests"
 	@echo "  tidy         - Run perltidy"
 
@@ -19,7 +18,7 @@ critique:
 
 test: $(TESTS)
 
-test_all: test unit_test_myaffiliates_extended
+test_all: test
 
 unit_test_database_datamapper:
 	@$(PROVE) -r t/BOM/Database/DataMapper/
@@ -28,7 +27,7 @@ unit_test_database_model:
 	@$(PROVE) -r t/BOM/Database/Model/
 
 unit_test_database_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Database/* | grep -v -e /Model -e /Datamapper)
+	@$(PROVE) -r $$(ls -1d t/BOM/Database/* | grep -v -e /Model -e /DataMapper)
 
 tidy:
 	find . -name '*.p?.bak' -delete
