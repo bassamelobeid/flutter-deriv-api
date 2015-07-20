@@ -18,6 +18,7 @@ use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
+use BOM::Platform::Client::Login;
 use BOM::Platform::User;
 use BOM::Platform::MyAffiliates::TrackingHandler;
 use BOM::Platform::Email qw(send_email);
@@ -27,6 +28,7 @@ sub create_virtual_acc {
     my $args = shift;
     my ($email, $password, $source, $env, $aff_token) = @{$args}{'email', 'password', 'source', 'env', 'aff_token'};
     $password = BOM::System::Password::hashpw($password);
+    $email    = lc $email;
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {
@@ -37,7 +39,7 @@ sub create_virtual_acc {
     if (BOM::Platform::User->new({email => $email})) {
         return {
             err_type => 'duplicate_acc',
-            err      => 1,
+            err      => localize('Email already used by another account'),
         };
     }
 
@@ -150,7 +152,7 @@ sub real_acc_checks {
     if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
         return {
             err_type => 'duplicate_acc',
-            err      => '1'
+            err      => localize('Email already used by another account'),
         };
     }
     return {
