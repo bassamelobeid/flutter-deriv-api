@@ -247,6 +247,7 @@ sub _build_ticks_for_trend {
         interval     => $remaining_interval,
         ending_epoch => $bet->date_pricing->epoch,
         fill_cache   => !$bet->backtest,
+        aggregated   => $self->more_than_short_term_cutoff,
     });
 
 }
