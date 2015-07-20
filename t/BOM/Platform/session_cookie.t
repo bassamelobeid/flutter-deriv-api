@@ -32,20 +32,13 @@ $session_cookie = BOM::Platform::SessionCookie->new(token => $value);
 ok $session_cookie->token,     "Created login cookie from value" or diag $value;
 isa_ok $session_cookie, 'BOM::Platform::SessionCookie';
 
-my $ref = {
-    loginid => "VRTC666",
-    email   => 'abc@binary.com',
-    clerk   => "nobody",
-    expires => time - 60,
-};
-ok !BOM::Platform::SessionCookie->new(token => $value)->token, "Couldn't build from expired cookie";
 $ref->{expires} = time + 1000;
 $session_cookie = BOM::Platform::SessionCookie->new(token => $value);
 ok $session_cookie, "Created login cookie from value";
 cmp_deeply(
     $session_cookie,
     methods(
-        loginid => $ref->{loginid},
+        loginid => $loginid,
         token   => $session_cookie->token,
         email   => $ref->{email},
         clerk   => $ref->{clerk},
