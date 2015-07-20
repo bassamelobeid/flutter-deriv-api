@@ -37,12 +37,26 @@ has transactiontype => (
     required => 1,
 );
 
+has _environment => (
+    is         => 'ro',
+    isa        => 'Str',
+    lazy_build => 1,
+);
+
+sub _build__environment {
+    my $env = 'others';
+    if (BOM::Platform::Runtime->instance->app_config->system->on_production) {
+        $env = 'production';
+    }
+    return $env;
+}
+
 sub client_control_code {
     my $self  = shift;
     my $email = shift;
 
     return BOM::Utility::Crypt->new(keyname => 'password_counter')
-        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email);
+        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email . '_##_' . $self->_environment);
 }
 
 sub payment_control_code {
@@ -52,8 +66,13 @@ sub payment_control_code {
     my $amount   = shift;
 
     return BOM::Utility::Crypt->new(keyname => 'password_counter')
-        ->encrypt_payload(
-        data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $loginid . '_##_' . $currency . '_##_' . $amount);
+        ->encrypt_payload(data => time . '_##_'
+            . $self->staff . '_##_'
+            . $self->transactiontype . '_##_'
+            . $loginid . '_##_'
+            . $currency . '_##_'
+            . $amount . '_##_'
+            . $self->_environment);
 }
 
 sub batch_payment_control_code {
@@ -61,7 +80,7 @@ sub batch_payment_control_code {
     my $lines = shift;
 
     return BOM::Utility::Crypt->new(keyname => 'password_counter')
-        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $lines);
+        ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $lines . '_##_' . $self->_environment);
 }
 
 sub validate_client_control_code {
@@ -76,6 +95,8 @@ sub validate_client_control_code {
     $error_status = $self->_validate_client_code_is_valid($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_expiry($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_fellow_staff($code);
     return $error_status if $error_status;
@@ -102,6 +123,8 @@ sub validate_payment_control_code {
     $error_status = $self->_validate_payment_code_is_valid($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_code_expiry($code);
+    return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_fellow_staff($code);
     return $error_status if $error_status;
@@ -134,6 +157,8 @@ sub validate_batch_payment_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_code_expiry($code);
     return $error_status if $error_status;
+    $error_status = $self->_validate_environment($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_fellow_staff($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
@@ -164,7 +189,7 @@ sub _validate_client_code_is_valid {
     my $code = shift;
 
     my @arry = split("_##_", $code);
-    if (scalar @arry != 4) {
+    if (scalar @arry != 5) {
         return Error::Base->cuss(
             -type => 'InvalidClientCode',
             -mesg => 'Dual control code is not valid',
@@ -178,7 +203,7 @@ sub _validate_payment_code_is_valid {
     my $code = shift;
 
     my @arry = split("_##_", $code);
-    if (scalar @arry != 6) {
+    if (scalar @arry != 7) {
         return Error::Base->cuss(
             -type => 'InvalidPaymentCode',
             -mesg => 'Dual control code is not valid',
@@ -192,7 +217,7 @@ sub _validate_batch_payment_code_is_valid {
     my $code = shift;
 
     my @arry = split("_##_", $code);
-    if (scalar @arry != 4) {
+    if (scalar @arry != 5) {
         return Error::Base->cuss(
             -type => 'InvalidBatchPaymentCode',
             -mesg => 'Dual control code is not valid',
@@ -365,6 +390,20 @@ sub _validate_filelinescount {
         return Error::Base->cuss(
             -type => 'DifferentFile',
             -mesg => 'File provided does not match with the file provided during code generation',
+        );
+    }
+    return;
+}
+
+sub _validate_environment {
+    my $self = shift;
+    my $code = shift;
+
+    my @arry = split("_##_", $code);
+    if ($self->_environment ne $arry[-1]) {
+        return Error::Base->cuss(
+            -type => 'DifferentEnvironment',
+            -mesg => 'Code provided has different environment. Please use the code generated on same environment.',
         );
     }
     return;
