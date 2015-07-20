@@ -8,9 +8,9 @@ use overload (
     neg  => sub { return exists $_[0]->{error} },      ## no critic
 );
 
-sub new { 
-    my ($package, $self) = @_; 
-    bless $self, $package; 
+sub new {
+    my ($package, $self) = @_;
+    bless $self, $package;
 }
 
 1;
