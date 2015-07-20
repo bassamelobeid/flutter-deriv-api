@@ -181,10 +181,19 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 sub retrieve {
     my ($self, $args) = @_;
 
+    my @res = $self->_retrieve_raw($args);
+
+    return [map { $decoder->decode($_) } @res];
+}
+
+sub _retrieve_raw {
+    ($self, $args) = @_;
+
     my $which      = $args->{underlying};
     my $ti         = $args->{interval} || $self->agg_retention_interval;
     my $end        = $args->{ending_epoch} || time;
     my $fill_cache = $args->{fill_cache} // 1;
+    my $aggregated = $args->{aggregated} // 1;
 
     my $agg_seconds = $self->agg_interval->seconds;
     my $redis       = $self->_redis;
@@ -195,21 +204,24 @@ sub retrieve {
         @res = reverse @{$redis->execute('ZREVRANGEBYSCORE', $self->_make_key($which, 0), $end, 0, 'LIMIT', 0, $tc)};
     } else {
         my ($interval_to_check, $key);
-        if ($ti->seconds <= $self->unagg_retention_interval->seconds) {
-            $interval_to_check = 'unagg_retention_interval';
-            $key = $self->_make_key($which, 0);
-        } else {
+        if ($aggregated) {
             $interval_to_check = 'agg_retention_interval';
             $key = $self->_make_key($which, 1);
+        } else {
+            $interval_to_check = 'unagg_retention_interval';
+            $key = $self->_make_key($which, 0);
         }
 
         my $start = $end - $ti->seconds;
         $self->fill_from_historical_feed($args) if ($fill_cache and $start < time - $self->$interval_to_check->seconds);
 
         @res = @{$redis->zrangebyscore($key, $start, $end)};
+        # We get the last tick for aggregated tick request.
+        # Else, we will have missing information.
+        push @res, $self->_retrieve_raw({%args, tick_count => 1}) if $aggregated;
     }
 
-    return [map { $decoder->decode($_) } @res];
+    return \@res;
 }
 
 =head2 aggregate_for
