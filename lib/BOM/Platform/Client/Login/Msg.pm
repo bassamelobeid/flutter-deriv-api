@@ -10,7 +10,7 @@ use overload (
 
 sub new {
     my ($package, $self) = @_;
-    bless $self, $package;
+    return bless $self, $package;
 }
 
 1;
