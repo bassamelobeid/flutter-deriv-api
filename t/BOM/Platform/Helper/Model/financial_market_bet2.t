@@ -177,6 +177,8 @@ sub buy_one_bet {
             limits => $limits,
             db     => db,
         });
+    use Data::Dumper;
+    diag "FMB: " . Dumper($fmb);
     my ($bet, $txn) = $fmb->buy_bet;
     # note explain [$bet, $txn];
     return ($txn->{id}, $bet->{id}, $txn->{balance_after});
