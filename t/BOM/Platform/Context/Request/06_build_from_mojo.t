@@ -79,6 +79,7 @@ subtest 'param builds' => sub {
                 email   => $email,
             );
             diag ('got token ' . $lc->token);
+            diag ('Trying to retrieve from token, got: ' . Dumper(BOM::Platform::SessionCookie->new(token => $lc->token)));
 
             my $request =
                 BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
@@ -86,7 +87,7 @@ subtest 'param builds' => sub {
             is $request->broker_code, 'MX', "Valid broker" or diag(Dumper($request));
 
             $request =
-                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token })});
+                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token }, {})});
             is $request->broker_code, 'MX', "Valid broker";
         };
 
