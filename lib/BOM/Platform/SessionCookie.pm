@@ -48,9 +48,9 @@ hashref).
 =cut
 
 # accessors for very frequently used attributes
-sub loginid { $_[0]->{loginid} }    ## no critic
-sub email   { $_[0]->{email} }      ## no critic
-sub token   { $_[0]->{token} }      ## no critic
+sub loginid { $_[0]->{loginid} if ref $_[0] }    ## no critic
+sub email   { $_[0]->{email} if ref $_[0] }      ## no critic
+sub token   { $_[0]->{token} if ref $_[0] }      ## no critic
 
 =head1 CONSTRUCTOR
 

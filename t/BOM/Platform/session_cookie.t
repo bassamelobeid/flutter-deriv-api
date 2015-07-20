@@ -27,9 +27,9 @@ throws_ok {
 qr/email /, 'email parameter is mandatory';
 
 my $value = $session_cookie->token;
-ok !BOM::Platform::SessionCookie->new(token => "${value}a"), "Couldn't create instance from invalid value";
-$session_cookie = BOM::Platform::SessionCookie->token(token => $value);
-ok $session_cookie,     "Created login cookie from value";
+ok !BOM::Platform::SessionCookie->new(token => "${value}a")->token, "Couldn't create instance from invalid value";
+$session_cookie = BOM::Platform::SessionCookie->new(token => $value);
+ok $session_cookie->token,     "Created login cookie from value";
 isa_ok $session_cookie, 'BOM::Platform::SessionCookie';
 
 my $ref = {
