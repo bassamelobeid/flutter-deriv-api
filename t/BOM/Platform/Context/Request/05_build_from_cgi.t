@@ -157,9 +157,6 @@ subtest 'param builds' => sub {
             loginid => 'CR1001',
             email   => $email,
         );
-        use Data::Dumper;
-        use Carp::Always;
-        diag(Dumper($lc));
 
         my $request = BOM::Platform::Context::Request::from_cgi({
             cookies => {},
@@ -174,27 +171,6 @@ subtest 'param builds' => sub {
         });
         ok !$request->session_cookie, "not a valid cookie";
 
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'CR100000000000000000001',
-            email   => $email,
-        );
-
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for({login => $lc->token}),
-        });
-        ok !$request->session_cookie, "not a valid loginid";
-
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'MESA1',
-            email   => $email,
-        );
-
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cookies => {},
-            cgi     => mock_cgi_for({login => $lc->token}),
-        });
-        throws_ok { $request->session_cookie } qr/Unknown broker code or loginid \[MESA\]/, "not a valid broker";
     };
 
     subtest 'loginid and email' => sub {
