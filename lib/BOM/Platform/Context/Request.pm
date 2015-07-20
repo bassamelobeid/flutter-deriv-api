@@ -477,9 +477,11 @@ sub _build_session_cookie {
     # if the user logged in.
     if (my $cookie = $self->cookie($cookie_name)) {
         use Data::Dumper;
-        Test::More::diag(Dumper($cookie));
+        Test::More::diag('Cookie: ' . Dumper($cookie));
         $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie});
     } elsif (my $as_param = $self->param('login')) {
+        use Data::Dumper;
+        Test::More::diag('Param: ' . Dumper($cookie));
         $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param});
     }
     return $session_cookie;
