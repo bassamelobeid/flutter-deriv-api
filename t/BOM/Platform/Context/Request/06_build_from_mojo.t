@@ -82,6 +82,7 @@ subtest 'param builds' => sub {
 
             my $request =
                 BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
+            diag Dumper($request->session_cookie);
             is $request->broker_code, 'MX', "Valid broker" or diag(Dumper($request));
 
             $request =
