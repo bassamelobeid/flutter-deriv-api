@@ -255,6 +255,7 @@ sub mock_request_for {
     foreach my $name (keys %$cookies) {
         my $cookie = Mojo::Cookie::Request->new();
         $cookie->name($name);
+        $cookie->value($cookies->{$name});
         $request_cookies->{$name} = $cookie;
     }
 

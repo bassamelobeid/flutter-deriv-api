@@ -202,6 +202,7 @@ sub cookie {
     if ($self->mojo_request) {
         my $cookie = $self->mojo_request->cookie($name);
         if ($cookie) {
+            Test::More::diag("cookie named $name: " . $cookie->value)
             return URL::Encode::url_decode($cookie->value);
         }
     }
