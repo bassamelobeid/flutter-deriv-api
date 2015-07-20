@@ -177,8 +177,6 @@ sub buy_one_bet {
             limits => $limits,
             db     => db,
         });
-    use Data::Dumper;
-    diag "FMB: " . Dumper($fmb);
     my ($bet, $txn) = $fmb->buy_bet;
     # note explain [$bet, $txn];
     return ($txn->{id}, $bet->{id}, $txn->{balance_after});
@@ -353,7 +351,7 @@ lives_ok {
         };
     is $balance_after + 0, 15000 - 10020, 'correct balance_after';
 }
-'bought one more USD bet with slightly increased max_open_bets';
+'bought one more USD bet with slightly increased max_open_bets' or diag Dumper($@);
 
 dies_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
