@@ -21,9 +21,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use Format::Util::Numbers qw(roundnear);
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
-my $atmod      = Test::MockModule->new('BOM::Platform::Authorization::Token');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
-$atmod->mock('validate', sub { 1 });
 
 initialize_realtime_ticks_db;
 
