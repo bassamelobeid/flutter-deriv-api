@@ -219,7 +219,6 @@ subtest 'param builds' => sub {
                 my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
                 my $lc          = BOM::Platform::SessionCookie->new(
                     loginid => 'MX1001',
-                    token   => 'freefood',
                     email   => $email,
                 );
 
@@ -227,7 +226,7 @@ subtest 'param builds' => sub {
                     cookies => {},
                     cgi     => mock_cgi_for({login => $lc->token}),
                 });
-                is $request->broker_code, 'MX', "Valid borker";
+                is $request->broker_code, 'MX', "Valid broker";
             };
 
             subtest 'broker inputs' => sub {
