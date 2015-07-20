@@ -17,6 +17,7 @@ package BOM::Platform::SessionCookie;
 use BOM::System::Chronicle;
 use BOM::Utility::Random;
 use JSON;
+use Carp;
 
 use strict;
 use warnings;
