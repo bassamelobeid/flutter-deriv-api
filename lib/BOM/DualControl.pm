@@ -98,8 +98,8 @@ sub validate_client_control_code {
     return $error_status if $error_status;
     $error_status = $self->_validate_environment($code);
     return $error_status if $error_status;
-#    $error_status = $self->_validate_fellow_staff($code);
-#    return $error_status if $error_status;
+    $error_status = $self->_validate_fellow_staff($code);
+    return $error_status if $error_status;
     $error_status = $self->_validate_transaction_type($code);
     return $error_status if $error_status;
     $error_status = $self->_validate_client_email($code, $email);
