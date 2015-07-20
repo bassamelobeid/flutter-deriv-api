@@ -202,7 +202,6 @@ sub cookie {
     if ($self->mojo_request) {
         my $cookie = $self->mojo_request->cookie($name);
         if ($cookie) {
-            Test::More::diag("cookie named $name: " . $cookie->value);
             return URL::Encode::url_decode($cookie->value);
         }
     }
@@ -471,20 +470,14 @@ sub _build_email {
 
 sub _build_session_cookie {
     my $self = shift;
-    Test::More::diag('Building session cookie');
-    Test::More::diag('Cookie: ' . Dumper($self->cookie('login')) . ' Param: ' . Dumper($self->param('login')));
 
     my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
 
     my $session_cookie;
     # if the user logged in.
     if (my $cookie = $self->cookie($cookie_name)) {
-        use Data::Dumper;
-        Test::More::diag('Cookie: ' . Dumper($cookie));
         $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie});
     } elsif (my $as_param = $self->param('login')) {
-        use Data::Dumper;
-        Test::More::diag('Param: ' . Dumper($as_param));
         $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param});
     }
     return $session_cookie;
