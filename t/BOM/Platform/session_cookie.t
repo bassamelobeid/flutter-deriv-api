@@ -40,7 +40,6 @@ my $ref = {
 };
 ok !BOM::Platform::SessionCookie->new($value), "Couldn't build from expired cookie";
 $ref->{expires} = time + 1000;
-$value = $crypt->encrypt_payload(data => $ref);
 $session_cookie = BOM::Platform::SessionCookie->new($value);
 ok $session_cookie, "Created login cookie from value";
 cmp_deeply(
