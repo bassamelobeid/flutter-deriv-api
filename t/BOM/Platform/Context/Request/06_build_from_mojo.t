@@ -78,6 +78,7 @@ subtest 'param builds' => sub {
                 loginid => 'MX1001',
                 email   => $email,
             );
+            diag ('got token ' . $lc->token);
 
             my $request =
                 BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
