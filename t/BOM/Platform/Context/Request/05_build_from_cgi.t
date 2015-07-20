@@ -201,7 +201,6 @@ subtest 'param builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -291,7 +290,6 @@ subtest 'cookie_builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -310,7 +308,6 @@ subtest 'cookie_builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'CR100000000000000000001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -322,7 +319,6 @@ subtest 'cookie_builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'MESA1',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -337,7 +333,6 @@ subtest 'cookie_builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -353,7 +348,6 @@ subtest 'cookie_builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -369,7 +363,6 @@ subtest 'cookie_builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             clerk   => 'arun',
             email   => $email,
         );
@@ -379,7 +372,6 @@ subtest 'cookie_builds' => sub {
             cgi     => mock_cgi_for(),
         });
         is $request->bo_cookie->loginid, 'CR1001', "Valid Client";
-        is $request->bo_cookie->clerk,   'arun',   "Valid Staff";
         is $request->bo_cookie->email, $email, "Valid Email";
 
         $request = BOM::Platform::Context::Request::from_cgi({
@@ -395,13 +387,11 @@ subtest 'cookie preferred' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $lc2 = BOM::Platform::SessionCookie->new(
             loginid => 'CR1002',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -418,14 +408,12 @@ subtest 'cookie preferred' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login_bo;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             clerk   => 'arun',
             email   => $email,
         );
 
         my $lc2 = BOM::Platform::SessionCookie->new(
             loginid => 'CR1002',
-            token   => 'freefood',
             clerk   => 'arun',
             email   => $email,
         );
