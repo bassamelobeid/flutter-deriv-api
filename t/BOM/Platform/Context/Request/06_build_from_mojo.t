@@ -8,6 +8,7 @@ use JSON qw(decode_json);
 use Mojo::URL;
 use Mojo::Cookie::Request;
 use URL::Encode;
+use Data::Dumper;
 
 use BOM::Platform::Context::Request;
 
@@ -53,7 +54,7 @@ subtest 'param builds' => sub {
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
 
         $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});
-        ok not defined $request->session_cookie, "not a valid cookie";
+        ok((not defined $request->session_cookie), "not a valid cookie");
 
 
     };
@@ -80,7 +81,7 @@ subtest 'param builds' => sub {
 
             my $request =
                 BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
-            is $request->broker_code, 'MX', "Valid broker";
+            is $request->broker_code, 'MX', "Valid broker" or diag(Dumper($request));
 
             $request =
                 BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token })});
