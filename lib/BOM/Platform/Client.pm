@@ -891,7 +891,7 @@ sub login {
         $error = localize('This account is unavailable. For any questions please contact Customer Support.');
     } else {
         # critic incorrectly flags the below line
-        return BOM::Platform::Client::Login::Msg->new({%args, success => 1}); ## no critic
+        return BOM::Platform::Client::Login::Msg->new({%args, success => 1});    ## no critic
     }
 
     return BOM::Platform::Client::Login::Msg->new({error => $error});
