@@ -18,6 +18,7 @@ use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
+use BOM::Platform::Client::Login;
 use BOM::Platform::User;
 use BOM::Platform::MyAffiliates::TrackingHandler;
 use BOM::Platform::Email qw(send_email);
