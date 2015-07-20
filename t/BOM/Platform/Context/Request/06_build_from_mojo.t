@@ -53,7 +53,8 @@ subtest 'param builds' => sub {
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
 
         $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});
-        not_ok defined $request->session_cookie, "not a valid cookie";
+        ok not defined $request->session_cookie, "not a valid cookie";
+
 
     };
 
