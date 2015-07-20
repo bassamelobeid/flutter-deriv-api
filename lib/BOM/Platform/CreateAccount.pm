@@ -38,7 +38,7 @@ sub create_virtual_acc {
     if (BOM::Platform::User->new({email => $email})) {
         return {
             err_type => 'duplicate_acc',
-            err      => 1,
+            err      => localize('Email already used by another account'),
         };
     }
 
@@ -151,7 +151,7 @@ sub real_acc_checks {
     if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
         return {
             err_type => 'duplicate_acc',
-            err      => '1'
+            err      => localize('Email already used by another account'),
         };
     }
     return {
