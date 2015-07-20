@@ -44,7 +44,6 @@ subtest 'param builds' => sub {
     subtest 'session_cookie' => sub {
         my $lc = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -57,7 +56,6 @@ subtest 'param builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'CR100000000000000000001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -66,7 +64,6 @@ subtest 'param builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'MESA1',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -78,7 +75,6 @@ subtest 'param builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -92,7 +88,6 @@ subtest 'param builds' => sub {
             my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
             my $lc          = BOM::Platform::SessionCookie->new(
                 loginid => 'MX1001',
-                token   => 'freefood',
                 email   => $email,
             );
 
@@ -132,7 +127,6 @@ subtest 'cookie builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -147,7 +141,6 @@ subtest 'cookie builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'CR100000000000000000001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -158,7 +151,6 @@ subtest 'cookie builds' => sub {
 
         $lc = BOM::Platform::SessionCookie->new(
             loginid => 'MESA1',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -172,7 +164,6 @@ subtest 'cookie builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -185,7 +176,6 @@ subtest 'cookie builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
@@ -201,13 +191,11 @@ subtest 'cookie preferred' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $lc2 = BOM::Platform::SessionCookie->new(
             loginid => 'CR1002',
-            token   => 'freefood',
             email   => $email,
         );
 
