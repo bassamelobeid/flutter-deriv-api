@@ -108,7 +108,7 @@ Deletes from redis
 
 sub end_session {    ## no critic
     my $self = shift;
-    BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token});
+    BOM::System::Chronicle->_redis_write->del('LOGIN_SESSIN::' . $self->{token});
 }
 
 1;
