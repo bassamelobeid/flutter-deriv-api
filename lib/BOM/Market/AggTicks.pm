@@ -187,7 +187,7 @@ sub retrieve {
 }
 
 sub _retrieve_raw {
-    ($self, $args) = @_;
+    my ($self, $args) = @_;
 
     my $which      = $args->{underlying};
     my $ti         = $args->{interval} || $self->agg_retention_interval;
@@ -218,7 +218,7 @@ sub _retrieve_raw {
         @res = @{$redis->zrangebyscore($key, $start, $end)};
         # We get the last tick for aggregated tick request.
         # Else, we will have missing information.
-        push @res, $self->_retrieve_raw({%args, tick_count => 1}) if $aggregated;
+        push @res, $self->_retrieve_raw({%$args, tick_count => 1}) if $aggregated;
     }
 
     return \@res;
