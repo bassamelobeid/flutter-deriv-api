@@ -48,7 +48,7 @@ sub _build__latest_ticks {
 
     return $self->tick_source->retrieve({
         underlying   => $bet->underlying,
-        latest       => 20,
+        tick_count   => 20,
         ending_epoch => $bet->date_pricing->epoch
     });
 }
