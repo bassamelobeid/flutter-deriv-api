@@ -890,9 +890,8 @@ sub login {
     } elsif ($client->get_status('disabled')) {
         $error = localize('This account is unavailable. For any questions please contact Customer Support.');
     } else {
-        my $result = {%args, success => 1};
-
-        return BOM::Platform::Client::Login::Msg->new({%args, success => 1});
+        # critic incorrectly flags the below line
+        return BOM::Platform::Client::Login::Msg->new({%args, success => 1}); ## no critic
     }
 
     return BOM::Platform::Client::Login::Msg->new({error => $error});
