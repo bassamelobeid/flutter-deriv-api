@@ -78,7 +78,7 @@ sub new {    ## no critic RequireArgUnpack
     } else {
         my @missing = grep { not exists $self->{$_} } @required;
         croak "Error adding new session, missing: " . join(',', @missing)
-            if scalar @missing;
+            if @missing;
         $self->{token} = BOM::Utility::Random->string_from($string, 128);
         BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token}, JSON::to_json($self));
     }
