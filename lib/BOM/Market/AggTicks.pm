@@ -181,7 +181,7 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 sub retrieve {
     my ($self, $args) = @_;
 
-    my @res = $self->_retrieve_raw($args);
+    my @res = @{$self->_retrieve_raw($args)};
 
     return [map { $decoder->decode($_) } @res];
 }
@@ -218,7 +218,7 @@ sub _retrieve_raw {
         @res = @{$redis->zrangebyscore($key, $start, $end)};
         # We get the last tick for aggregated tick request.
         # Else, we will have missing information.
-        push @res, $self->_retrieve_raw({%$args, tick_count => 1}) if $aggregated;
+        push @res, @{$self->_retrieve_raw({%$args, tick_count => 1})} if $aggregated;
     }
 
     return \@res;
