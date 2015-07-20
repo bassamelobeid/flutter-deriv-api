@@ -46,9 +46,12 @@ subtest 'param builds' => sub {
             loginid => 'CR1001',
             email   => $email,
         );
+        diag 'TESTING TESTING TESTING';
 
         my $request =
             BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token})});
+        use Data::Dumper;
+        diag(Dumper($request->session_cookie));
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
 
         $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});

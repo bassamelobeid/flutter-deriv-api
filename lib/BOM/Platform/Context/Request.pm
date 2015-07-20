@@ -480,16 +480,8 @@ sub _build_session_cookie {
     } elsif (my $as_param = $self->param('login')) {
         $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param});
     }
+    return $session_cookie;
 
-    if (    $session_cookie
-        and BOM::Platform::Runtime->instance->broker_codes->get($session_cookie->loginid)->code
-        and length $session_cookie->loginid <= 12)
-    {
-        return $session_cookie;
-    }
-
-    #not logged in
-    return;
 }
 
 sub _build_bo_cookie {
