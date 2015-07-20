@@ -470,6 +470,7 @@ sub _build_email {
 
 sub _build_session_cookie {
     my $self = shift;
+    Test::More::diag('Building session cookie');
 
     my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
 
