@@ -106,8 +106,10 @@ sub _recalculate_value {
     my ($self, $level) = @_;
 
     if ($level) {
-        my $value = ($level - $self->barrier->as_absolute) * $self->amount_per_point;
+        my $point_diff = roundnear(0.01, $level - $self->barrier->as_absolute);
+        my $value = $point_diff * $self->amount_per_point;
         $self->value($value);
+        $self->point_value($point_diff);
     }
 
     return;
@@ -116,7 +118,10 @@ sub _recalculate_value {
 sub current_value {
     my $self = shift;
     $self->_recalculate_value($self->sell_level);
-    return $self->value;
+    return {
+        dollar => $self->value,
+        point  => $self->point_value,
+    };
 }
 
 has _highlow_args => (
