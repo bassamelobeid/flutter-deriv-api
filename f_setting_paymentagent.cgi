@@ -5,7 +5,7 @@ use strict 'vars';
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Runtime;
 use BOM::Platform::Client::PaymentAgent;
-use BOM::View::CGIForm;
+use BOM::Web::Form;
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -28,7 +28,7 @@ if (not $pa) {
 }
 
 if ($whattodo eq 'show') {
-    my $payment_agent_registration_form = BOM::View::CGIForm::get_payment_agent_registration_form($loginid, $broker, 1);
+    my $payment_agent_registration_form = BOM::Web::Form::get_payment_agent_registration_form($loginid, $broker, 1);
 
     my $input_fields = {
         pa_name            => $pa->payment_agent_name,

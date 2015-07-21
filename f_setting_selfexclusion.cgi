@@ -5,7 +5,7 @@ use strict 'vars';
 use Scalar::Util qw(looks_like_number);
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::View::CGIForm;
+use BOM::Web::Form;
 
 use f_brokerincludeall;
 use BOM::Platform::Sysinit ();
@@ -31,7 +31,7 @@ my $client = BOM::Platform::Client::get_instance({'loginid' => $loginid})
 
 my $broker = $client->broker;
 
-my $self_exclusion_form = BOM::View::CGIForm::get_self_exclusion_form({
+my $self_exclusion_form = BOM::Web::Form::get_self_exclusion_form({
     client           => $client,
     lang             => request()->language,
     from_back_office => 1,
