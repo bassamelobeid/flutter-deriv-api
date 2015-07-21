@@ -19,7 +19,6 @@ use BOM::Platform::Client::IDAuthentication;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::SessionCookie;
-use BOM::Platform::Authorization;
 use BOM::Platform::Client::Utility ();
 use BOM::Platform::Sysinit         ();
 use BOM::Platform::Client::DoughFlowClient;
