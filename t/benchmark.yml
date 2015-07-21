@@ -83,13 +83,6 @@ mini:
             RANGE:
                 avg: 0.0362
                 max: 0.111
-        QUANTO:
-            ONETOUCH:
-                avg: 0.02
-                max: 0.07
-            CALL:
-                avg: 0.006
-                max: 0.05
     ovra:
         BASE:
             NT:
@@ -190,17 +183,17 @@ full:
     sdeq:
         BASE:
             EXPIRYRANGE:
-                avg: 0.0114
-                max: 0.1295
+                avg: 0.0076
+                max: 0.0277
             ONETOUCH:
-                avg: 0.016
-                max: 0.170
+                avg: 0.0183
+                max: 0.1871
             CALL:
-                avg: 0.002
-                max: 0.015
+                avg: 0.0052
+                max: 0.0319
             RANGE:
-                avg: 0.023
-                max: 0.10
+                avg: 0.0329
+                max: 0.0829
     merlin:
         NUM:
             UPORDOWN:
