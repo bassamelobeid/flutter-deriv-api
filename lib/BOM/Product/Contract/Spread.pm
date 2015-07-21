@@ -90,7 +90,7 @@ has [qw(date_expiry)] => (
 );
 
 # the value of the position at close
-has value => (
+has [qw(value point_value)] => (
     is       => 'rw',
     init_arg => undef,
     default  => 0,
