@@ -239,10 +239,10 @@ sub _build_longcode {
     my @other       = ($self->stop_loss, $self->stop_profit);
     if ($self->stop_type eq 'dollar') {
         push @other, $self->currency;
-        $description .= ' with stop loss of [_6] [_4] and limit of [_6] [_5].';
+        $description .= ' with stop loss of <strong>[_6] [_4]</strong> and limit of <strong>[_6] [_5]</strong>.';
     } else {
         push @other, 'points';
-        $description .= ' with stop loss of [_4] [_6] and limit of [_5] [_6].';
+        $description .= ' with stop loss of <strong>[_4] [_6]</strong> and limit of <strong>[_5] [_6]</strong>.';
     }
 
     return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));

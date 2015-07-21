@@ -132,7 +132,7 @@ sub _build__highlow_args {
 
 has longcode_description => (
     is      => 'ro',
-    default => 'You will win (lose) [_1] [_2] for every point that the [_3] rises (falls) from the entry spot,',
+    default => 'You will win (lose) <strong>[_1] [_2]</strong> for every point that the [_3] <strong>rises (falls)</strong> from the <strong>entry spot</strong>,',
 );
 
 no Moose;
