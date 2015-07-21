@@ -83,8 +83,8 @@ sub new {    ## no critic RequireArgUnpack
         BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token}, JSON::to_json($self));
     }
     BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSIN::' . $self->{token}, 3600 * 24);
-    $self->{issued_at} = time;
-    $slef->{expires_in} = 3600 * 24;
+    $self->{issued_at}  = time;
+    $self->{expires_in} = 3600 * 24;
     return bless $self, $package;
 }
 
