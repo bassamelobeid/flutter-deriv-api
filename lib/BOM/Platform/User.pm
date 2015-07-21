@@ -73,9 +73,6 @@ sub login {
         BOM::System::AuditLog::log('failed login > 5 times', $self->email);
 
     } elsif (not BOM::System::Password::checkpw($args{password}, $self->password)) {
-       use BOM::Utility::Log4perl qw(get_logger);
-        get_logger->warn('Could not log in, tried to check ' . $args{password}
-                         . ' against ' . $self->password);
 
         my $fail_count = $cfl ? $cfl->fail_count : 0;
         $self->failed_login({
