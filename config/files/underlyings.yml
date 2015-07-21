@@ -3574,7 +3574,7 @@ SYNHSI:
   symbol: SYNHSI
 SYNN225:
   asset: SYNN225
-  contracts: none
+  contracts: special_syn
   commission_level: 3
   display_name: Japanese Smart Index
   exchange_name: SYNTSE
