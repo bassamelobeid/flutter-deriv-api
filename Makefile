@@ -1,7 +1,6 @@
 TESTS=merlin_benchmark \
       SDFX_benchmark \
       SDEQ_benchmark \
-      IH_benchmark \
       OVRA_benchmark \
 
 M=rm -f /tmp/l4p.log && [ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
@@ -29,9 +28,6 @@ SDFX_benchmark:
 
 SDEQ_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq
-
-IH_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=intraday_historical
 
 OVRA_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=ovra

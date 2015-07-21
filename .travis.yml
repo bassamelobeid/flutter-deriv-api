@@ -5,7 +5,6 @@ env:
     - TEST_SUITE=merlin_benchmark
     - TEST_SUITE=SDFX_benchmark
     - TEST_SUITE=SDEQ_benchmark
-    - TEST_SUITE=IH_benchmark
     - TEST_SUITE=OVRA_benchmark
 services:
     - redis-server

@@ -1,10 +1,5 @@
 ---
 
-intraday:
-    ONETOUCH: -1500
-    NOTOUCH: -4000
-    CALL: -3000
-    PUT: -1650
 mini:
     merlin:
         NUM:
