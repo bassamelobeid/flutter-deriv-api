@@ -16,7 +16,6 @@ use File::Spec;
 use lib qw(/home/git/regentmarkets/bom/t/BOM/Product);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-use Runner::IntradayFX;
 use Runner::Merlin;
 use Runner::Superderivatives_EQ;
 use Runner::Superderivatives_FX;
