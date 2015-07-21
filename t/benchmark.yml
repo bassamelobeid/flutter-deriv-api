@@ -72,17 +72,17 @@ mini:
     sdeq:
         BASE:
             EXPIRYRANGE:
-                avg: 0.0150
-                max: 0.1295
+                avg: 0.0082
+                max: 0.0274
             ONETOUCH:
-                avg: 0.021
-                max: 0.19
+                avg: 0.0187
+                max: 0.1871
             CALL:
-                avg: 0.00972
-                max: 0.054
+                avg: 0.0058
+                max: 0.0319
             RANGE:
-                avg: 0.0362
-                max: 0.111
+                avg: 0.0318
+                max: 0.0820
     ovra:
         BASE:
             NT:
