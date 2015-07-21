@@ -100,7 +100,7 @@ the scope is found in $self->{scopes}
 sub validate_session {
     my $self  = shift;
     my $scope = shift;
-    return unless $self->{token};
+    return   unless $self->{token};
     return 1 unless $scope;
     return scalar grep { $_ eq $scope } @{$self->{scopes}};
 }
