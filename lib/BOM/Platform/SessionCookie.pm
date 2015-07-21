@@ -101,7 +101,8 @@ sub validate_session {
     my $self  = shift;
     my $scope = shift;
     return unless $self->{token};
-    return not $scope or grep { $_ eq $scope } @{$self->{scopes}};
+    return 1 unless $scope;
+    return scalar grep { $_ eq $scope } @{$self->{scopes}};
 }
 
 =head2 end_session
