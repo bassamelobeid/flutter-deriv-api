@@ -39,7 +39,7 @@ sub create_virtual_acc {
     if (BOM::Platform::User->new({email => $email})) {
         return {
             err_type => 'duplicate_acc',
-            err      => localize('Email already used by another account'),
+            err      => localize('The provided email address [_1] is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_2]">try our password recovery tool</a> or contact customer service.', $email, url_for('/user/lost_password'))
         };
     }
 
@@ -152,7 +152,7 @@ sub real_acc_checks {
     if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
         return {
             err_type => 'duplicate_acc',
-            err      => localize('Email already used by another account'),
+            err      => localize('The provided email address [_1] is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_2]">try our password recovery tool</a> or contact customer service.', $email, url_for('/user/lost_password'))
         };
     }
     return {
