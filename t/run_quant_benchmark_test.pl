@@ -60,7 +60,6 @@ has test_suite_mapper => (
             sdfx                => 'Runner::Superderivatives_FX',
             sdeq                => 'Runner::Superderivatives_EQ',
             ovra                => 'Runner::Bloomberg',
-            intraday_historical => 'Runner::IntradayFX',
         };
     },
 );
@@ -75,7 +74,7 @@ sub _build_test_suite {
     my $self = shift;
 
     my $which = $self->getOption('which');
-    my @what_to_run = ($which eq 'all') ? ('merlin', 'sdfx', 'sdeq', 'ovra', 'intraday_historical',) : split ',', $which;
+    my @what_to_run = ($which eq 'all') ? ('merlin', 'sdfx', 'sdeq', 'ovra',) : split ',', $which;
 
     return \@what_to_run;
 }
@@ -104,16 +103,6 @@ sub analyse_report {
     my ($self, $report, $test) = @_;
 
     my $benchmark = LoadFile('/home/git/regentmarkets/bom-quant-benchmark/t/benchmark.yml');
-    if ($test eq 'intraday_historical') {
-        my $test_benchmark = $benchmark->{intraday};
-        foreach my $bet_type (keys %$report) {
-            my $abs_expected = abs($test_benchmark->{$bet_type});
-            my $abs_got      = abs($report->{$bet_type});
-            my $abs_diff     = abs($abs_got - $abs_expected) / $abs_expected;
-            cmp_ok($abs_diff, "<=", 0.1,  'intraday benchmark test for bet_type[' . $bet_type . ']');
-            cmp_ok($abs_diff, ">=", 0.01, 'intraday benchmark test for bet_type[' . $bet_type . ']');
-        }
-    } else {
         my $test_benchmark = $benchmark->{$self->getOption('suite')}->{$test};
         foreach my $base_or_num (keys %$report) {
             foreach my $bet_type (keys %{$report->{$base_or_num}}) {
@@ -133,7 +122,6 @@ sub analyse_report {
                 };
             }
         }
-    }
 }
 no Moose;
 __PACKAGE__->meta->make_immutable;

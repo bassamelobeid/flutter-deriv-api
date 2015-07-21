@@ -62,22 +62,6 @@ sub _build_records {
 
     my $fixture = SetupDatasetTestFixture->new();
 
-    if ($data->{quanto_volsurface}) {
-        $self->_setup_quanto_volsurface($data->{quanto_volsurface}, $date_start);
-        $self->_setup_quanto_rate({
-                symbol => $currency,
-                rates  => $data->{interest_rates}->{$currency}
-            },
-            $date_start
-        );
-        $self->_setup_correlations({
-            data                => $data->{correlations},
-            underlying          => $underlying,
-            correlated_currency => $currency,
-            date                => $date_start
-        });
-    }
-
     $fixture->setup_test_fixture({
         underlying => $underlying,
         rates      => $rates,
