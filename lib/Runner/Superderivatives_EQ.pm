@@ -123,6 +123,7 @@ sub price_superderivatives_bets_locally {
         my $result = $csv->string;
         append_file($self->report_file->{all}, $result . "\n");
         push @{$breakdown->{$record->{bet_type}}}, $mid_diff;
+        print "[$i] records\n" if not $i % 100;
         $i++;
     }
 
