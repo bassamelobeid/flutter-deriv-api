@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::MockTime qw( set_fixed_time restore_time );
-use Test::Most (tests => 37);
+use Test::Most (tests => 20);
 use Test::NoWarnings;
 use Test::MockModule;
 
