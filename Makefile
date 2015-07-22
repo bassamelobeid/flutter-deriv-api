@@ -23,13 +23,25 @@ test: $(TESTS)
 merlin_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=merlin
 
-SDFX_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx
+SDFX_benchmark_DJI:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=DJI
 
-SDEQ_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq
+SDEQ_benchmark_FCHI:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FCHI
 
-OVRA_benchmark:
+SDEQ_benchmark_SPC:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SPC
+
+SDEQ_benchmark_N225:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=N225
+
+SDEQ_benchmark_SSECOMP:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SSECOMP
+
+SDEQ_benchmark_FTSE:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FTSE
+
+OVRA_benchmark_:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=ovra
 
 

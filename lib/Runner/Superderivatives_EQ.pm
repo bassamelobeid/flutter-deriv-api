@@ -40,22 +40,21 @@ has 'csv_title' => (
 
 sub run_dataset {
     my $self = shift;
+    my $symbol = shift;
 
     write_file($self->report_file->{all}, $self->csv_title . "\n");
     my $path  = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
     my @files = @{$self->files};
     my @all_mid_diff;
     my $all_results;
-    for my $symbol (@files) {
-        my $file    = "$path/SD_$symbol.csv";
-        my $records = CSVParser::Superderivatives_EQ->new(
-            file  => $file,
-            suite => $self->suite,
-        )->records;
-        my ($calculated_results) = $self->price_superderivatives_bets_locally($records);
-        foreach my $bettype (keys %$calculated_results) {
-            push @{$all_results->{$bettype}}, @{$calculated_results->{$bettype}};
-        }
+    my $file    = "$path/SD_$symbol.csv";
+    my $records = CSVParser::Superderivatives_EQ->new(
+        file  => $file,
+        suite => $self->suite,
+    )->records;
+    my ($calculated_results) = $self->price_superderivatives_bets_locally($records);
+    foreach my $bettype (keys %$calculated_results) {
+        push @{$all_results->{$bettype}}, @{$calculated_results->{$bettype}};
     }
 
     my $benchmark_report;
