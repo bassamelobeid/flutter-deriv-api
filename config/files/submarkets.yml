@@ -3,7 +3,6 @@ random_index:
     display_name: "Indices"
     display_order: 1
     market: random
-    base_spread: 2
     contracts:
       spreads:
         intraday:

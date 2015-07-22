@@ -233,11 +233,6 @@ sub _build_eod_blackout_expiry {
     return $self->market->eod_blackout_expiry;
 }
 
-has base_spread => (
-    is      => 'ro',
-    default => 0,
-);
-
 has spread_divisor => (
     is      => 'ro',
     default => 1,

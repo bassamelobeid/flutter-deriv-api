@@ -501,11 +501,6 @@ has 'official_ohlc' => (
     isa => 'Bool',
 );
 
-has base_spread => (
-    is      => 'ro',
-    default => 0,
-);
-
 has spread_divisor => (
     is      => 'ro',
     default => 1,

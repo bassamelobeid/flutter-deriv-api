@@ -6,7 +6,9 @@ use Moose;
 use Date::Utility;
 use BOM::Platform::Runtime;
 
-use List::Util qw(min);
+use POSIX qw(floor);
+use Math::Round qw(round);
+use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
 use BOM::Product::Offerings qw( get_contract_specifics );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
@@ -97,19 +99,38 @@ has [qw(value point_value)] => (
 );
 
 # spread_divisor - needed to reproduce the digit corresponding to one point
-has [qw(spread spread_divisor half_spread current_tick current_spot translated_display_name)] => (
+has [qw(spread spread_divisor spread_multiplier half_spread current_tick current_spot translated_display_name)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
 sub _build_spread {
     my $self = shift;
-    return $self->underlying->base_spread;
+
+    my $vs = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $self->underlying});
+    # since it is only random
+    my $vol = $vs->get_volatility();
+    my $spread = $self->current_spot * sqrt($vol**2 * 2 / (365*86400)) * $self->spread_multiplier;
+
+    my $round_spread = sub {
+        my $num = shift;
+        my $y = floor(log($num)/log(10));
+        my $x = $num / (10**$y);
+        my $rounded = max(2,round($x/2)*2);
+        return $rounded * 10**$y;
+    };
+
+    return &$round_spread($spread);
 }
 
 sub _build_spread_divisor {
     my $self = shift;
     return $self->underlying->spread_divisor;
+}
+
+sub _build_spread_multiplier {
+    my $self = shift;
+    return BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->spread_multiplier;
 }
 
 sub _build_half_spread {
