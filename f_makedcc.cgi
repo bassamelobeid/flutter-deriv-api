@@ -66,10 +66,10 @@ if ($input->{'dcctype'} eq 'file_content') {
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->batch_payment_control_code(scalar @lines);
 
-    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 300);
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     $message =
-        "The dual control code created by $clerk for " . $input->{'purpose'} . " is: $code This code is valid for 5 minutes (from $current_timestamp) only.";
+        "The dual control code created by $clerk for " . $input->{'purpose'} . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
     print $message;
 
@@ -92,7 +92,7 @@ if ($input->{'dcctype'} eq 'file_content') {
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->payment_control_code($input->{'clientloginid'}, $input->{'currency'}, $input->{'amount'});
 
-    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 300);
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
 
     $message =
           "The dual control code created by $clerk for an amount of "
@@ -102,7 +102,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientloginid'}
-        . " is: $code This code is valid for 5 minutes (from $current_timestamp) only.";
+        . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
     BOM::System::AuditLog::log($message, '', $clerk);
 
