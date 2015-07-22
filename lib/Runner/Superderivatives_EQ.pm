@@ -35,27 +35,29 @@ has 'csv_title' => (
 
 sub run_dataset {
     my $self = shift;
-    my $symbol = shift;
+    my $file = shift;
+
+    my @files = $file ? ($file) : ('DJI', 'FCHI', 'SPC', 'N225', 'SSECOMP', 'FTSE');
 
     write_file($self->report_file->{all}, $self->csv_title . "\n");
     my $path  = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
-    my @all_mid_diff;
     my $all_results;
-    my $file    = "$path/SD_$symbol.csv";
-    my $records = CSVParser::Superderivatives_EQ->new(
-        file  => $file,
-        suite => $self->suite,
-    )->records;
-    my ($calculated_results) = $self->price_superderivatives_bets_locally($records);
-    foreach my $bettype (keys %$calculated_results) {
-        push @{$all_results->{$bettype}}, @{$calculated_results->{$bettype}};
+    for my $symbol (@files){
+        my $file_path    = "$path/SD_$symbol.csv";
+        my $records = CSVParser::Superderivatives_EQ->new(
+            file  => $file_path,
+            suite => $self->suite,
+        )->records;
+        my ($calculated_results) = $self->price_superderivatives_bets_locally($records);
+        foreach my $bettype (keys %$calculated_results) {
+            push @{$all_results->{$bettype}}, @{$calculated_results->{$bettype}};
+        }
     }
-
     my $benchmark_report;
     my $analysis_report = $self->_calculate_and_saves_analysis_report($all_results);
 
-    $benchmark_report->{$symbol} = $analysis_report;
-
+    my $key = (scalar @files == 1) ? $file : 'BASE';
+    $benchmark_report->{$key} = $analysis_report;
     return $benchmark_report;
 }
 
