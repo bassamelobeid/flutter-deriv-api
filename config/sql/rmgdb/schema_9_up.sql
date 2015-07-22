@@ -40,6 +40,14 @@ ALTER TABLE ONLY bet.financial_market_bet
 ALTER TABLE ONLY bet.financial_market_bet
    DROP CONSTRAINT IF EXISTS basic_validation_old RESTRICT;
 
+ALTER TABLE ONLY bet.financial_market_bet
+   RENAME CONSTRAINT pk_check_bet_params_payout_price to pk_check_bet_params_payout_price_old;
+
+ALTER TABLE ONLY bet.financial_market_bet
+   ADD CONSTRAINT pk_check_bet_params_payout_price CHECK ((((bet_class)::text = 'legacy_bet'::text) OR (bet_class = 'spread_bet' OR payout_price IS NOT NULL)));
+
+ALTER TABLE ONLY bet.financial_market_bet
+   DROP CONSTRAINT IF EXISTS pk_check_bet_params_payout_price_old RESTRICT;
 
 CREATE TRIGGER prevent_action BEFORE DELETE ON bet.spread_bet FOR EACH STATEMENT EXECUTE PROCEDURE public.prevent_action();
 
