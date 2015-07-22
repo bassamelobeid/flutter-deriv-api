@@ -98,7 +98,7 @@ mini:
                 max: 0.0820
         FTSE:
             EXPIRYRANGE:
-                avg: 0.0070
+                avg: 0.0062
                 max: 0.0253
     ovra:
         BASE:
