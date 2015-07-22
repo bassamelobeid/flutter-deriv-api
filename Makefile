@@ -41,7 +41,7 @@ SDEQ_benchmark_SSECOMP:
 SDEQ_benchmark_FTSE:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FTSE
 
-OVRA_benchmark_:
+OVRA_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=ovra
 
 
