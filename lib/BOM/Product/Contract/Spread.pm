@@ -110,13 +110,13 @@ sub _build_spread {
     my $vs = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $self->underlying});
     # since it is only random
     my $vol = $vs->get_volatility();
-    my $spread = $self->current_spot * sqrt($vol**2 * 2 / (365*86400)) * $self->spread_multiplier;
+    my $spread = $self->current_spot * sqrt($vol**2 * 2 / (365 * 86400)) * $self->spread_multiplier;
 
     my $round_spread = sub {
-        my $num = shift;
-        my $y = floor(log($num)/log(10));
-        my $x = $num / (10**$y);
-        my $rounded = max(2,round($x/2)*2);
+        my $num     = shift;
+        my $y       = floor(log($num) / log(10));
+        my $x       = $num / (10**$y);
+        my $rounded = max(2, round($x / 2) * 2);
         return $rounded * 10**$y;
     };
 
