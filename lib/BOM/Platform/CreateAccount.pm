@@ -26,7 +26,7 @@ use BOM::Platform::EmailToken;
 
 sub create_virtual_acc {
     my $args = shift;
-    my ($email, $password, $source, $env, $aff_token) = @{$args}{'email', 'password', 'source', 'env', 'aff_token'};
+    my ($email, $password, $residence, $source, $env, $aff_token) = @{$args}{'email', 'password', 'residence', 'source', 'env', 'aff_token'};
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
 
@@ -58,7 +58,7 @@ sub create_virtual_acc {
             myaffiliates_token            => $aff_token,
             date_of_birth                 => undef,
             citizen                       => '',
-            residence                     => '',
+            residence                     => $residence,
             email                         => $email,
             address_line_1                => '',
             address_line_2                => '',
