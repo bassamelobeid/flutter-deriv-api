@@ -15,11 +15,6 @@ has suite => (
     default => 'mini',
 );
 
-has files => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub { [qw(DJI FCHI SPC N225 SSECOMP FTSE)] },
-);
 
 has report_file => (
     is      => 'ro',
@@ -44,7 +39,6 @@ sub run_dataset {
 
     write_file($self->report_file->{all}, $self->csv_title . "\n");
     my $path  = '/home/git/regentmarkets/bom-quant-benchmark/t/csv/superderivatives';
-    my @files = @{$self->files};
     my @all_mid_diff;
     my $all_results;
     my $file    = "$path/SD_$symbol.csv";
@@ -122,7 +116,6 @@ sub price_superderivatives_bets_locally {
         my $result = $csv->string;
         append_file($self->report_file->{all}, $result . "\n");
         push @{$breakdown->{$record->{bet_type}}}, $mid_diff;
-        print "[$i] records\n" if not $i % 100;
         $i++;
     }
 

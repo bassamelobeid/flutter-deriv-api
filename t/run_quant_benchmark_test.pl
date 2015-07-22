@@ -117,13 +117,13 @@ sub analyse_report {
                         roundnear(0.0001,$report->{$base_or_num}->{$bet_type}->{avg}),
                         '<=',
                         roundnear(0.0001,$test_benchmark->{$base_or_num}->{$bet_type}->{avg}),
-                        "Avg mid diff of bet_type[$bet_type] base_or_num[$base_or_num] is within benchmark"
+                        "Avg mid diff of bet_type[$bet_type] for [$base_or_num] is within benchmark"
                     );
                     cmp_ok(
                         roundnear(0.0001,$report->{$base_or_num}->{$bet_type}->{max}),
                         '<=',
                         roundnear(0.0001,$test_benchmark->{$base_or_num}->{$bet_type}->{max}),
-                        "Max mid diff of bet_type[$bet_type] base_or_num[$base_or_num] is within benchmark"
+                        "Max mid diff of bet_type[$bet_type] for [$base_or_num] is within benchmark"
                     );
                 };
             }

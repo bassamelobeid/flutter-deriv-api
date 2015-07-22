@@ -1,5 +1,4 @@
 ---
-
 mini:
     merlin:
         NUM:
@@ -80,57 +79,30 @@ mini:
                 avg: 0.0050
                 max: 0.0204
         SPC:
-            EXPIRYRANGE:
-                avg: 0.0082
-                max: 0.0274
             ONETOUCH:
-                avg: 0.021
-                max: 0.1871
+                avg: 0.0229
+                max: 0.0840
             CALL:
-                avg: 0.0058
+                avg: 0.0085
                 max: 0.0319
-            RANGE:
-                avg: 0.0318
-                max: 0.0820
         N225:
-            EXPIRYRANGE:
-                avg: 0.0082
-                max: 0.0274
             ONETOUCH:
-                avg: 0.021
-                max: 0.1871
+                avg: 0.0111
+                max: 0.0683
             CALL:
-                avg: 0.0058
-                max: 0.0319
-            RANGE:
-                avg: 0.0318
-                max: 0.0820
+                avg: 0.0038
+                max: 0.0181
         SSECOMP:
-            EXPIRYRANGE:
-                avg: 0.0082
-                max: 0.0274
-            ONETOUCH:
-                avg: 0.021
-                max: 0.1871
-            CALL:
-                avg: 0.0058
-                max: 0.0319
             RANGE:
                 avg: 0.0318
                 max: 0.0820
         FTSE:
             EXPIRYRANGE:
-                avg: 0.0082
+                avg: 0.0076
                 max: 0.0274
             ONETOUCH:
-                avg: 0.021
-                max: 0.1871
-            CALL:
-                avg: 0.0058
-                max: 0.0319
-            RANGE:
-                avg: 0.0318
-                max: 0.0820
+                avg: 0.0181
+                max: 0.0594
     ovra:
         BASE:
             NT:
