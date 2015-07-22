@@ -32,7 +32,7 @@ SDFX_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx
 
 SDEQ_benchmark_DJI:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=DJI
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=DJI
 
 SDEQ_benchmark_FCHI:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FCHI
