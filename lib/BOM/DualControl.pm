@@ -20,7 +20,7 @@ use 5.010;
 use Moose;
 use DateTime;
 use Error::Base;
-use File::ReadBackwards;
+use Cache::RedisDB;
 
 use BOM::Utility::Crypt;
 use BOM::Platform::Runtime;
@@ -272,16 +272,13 @@ sub _validate_payment_code_already_used {
     my $self = shift;
     my $code = shift;
 
-    my $count    = 0;
-    my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fmanagerconfodeposit.log");
-    while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
-        my @matches = $l =~ /DCcode=([^\s]+)/g;
-        if (grep { $code eq $_ } @matches) {
-            return Error::Base->cuss(
-                -type => 'CodeAlreadyUsed',
-                -mesg => 'This control code has already been used today',
-            );
-        }
+    if (Cache::RedisDB->get('DUAL_CONTROL_CODE', $code)) {
+        Cache::RedisDB->del('DUAL_CONTROL_CODE', $code);
+    } else {
+        return Error::Base->cuss(
+            -type => 'CodeAlreadyUsed',
+            -mesg => 'This control code has already been used or already expired',
+        );
     }
     return;
 }
@@ -290,16 +287,13 @@ sub _validate_client_code_already_used {
     my $self = shift;
     my $code = shift;
 
-    my $count    = 0;
-    my $log_file = File::ReadBackwards->new("/var/log/fixedodds/fclientdetailsupdate.log");
-    while ((defined(my $l = $log_file->readline)) and ($count++ < 200)) {
-        my @matches = $l =~ /DCcode=([^\s]+)/g;
-        if (grep { $code eq $_ } @matches) {
-            return Error::Base->cuss(
-                -type => 'CodeAlreadyUsed',
-                -mesg => 'This control code has already been used today',
-            );
-        }
+    if (Cache::RedisDB->get('DUAL_CONTROL_CODE', $code)) {
+        Cache::RedisDB->del('DUAL_CONTROL_CODE', $code);
+    } else {
+        return Error::Base->cuss(
+            -type => 'CodeAlreadyUsed',
+            -mesg => 'This control code has already been used or already expired',
+        );
     }
     return;
 }
