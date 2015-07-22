@@ -109,7 +109,7 @@ sub analyse_report {
     my ($self, $report, $test) = @_;
 
     my $benchmark = LoadFile('/home/git/regentmarkets/bom-quant-benchmark/t/benchmark.yml');
-        my $test_benchmark = $benchmark->{$self->getOption('suite')}->{$test}->{$self->getOption('file')};
+        my $test_benchmark = $benchmark->{$self->getOption('suite')};
         foreach my $base_or_num (keys %$report) {
             foreach my $bet_type (keys %{$report->{$base_or_num}}) {
                 subtest "$test benchmark" => sub {
