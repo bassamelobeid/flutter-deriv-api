@@ -60,7 +60,7 @@ sub run_dataset {
     my $benchmark_report;
     my $analysis_report = $self->_calculate_and_saves_analysis_report($all_results);
 
-    $benchmark_report->{BASE} = $analysis_report;
+    $benchmark_report->{$symbol} = $analysis_report;
 
     return $benchmark_report;
 }

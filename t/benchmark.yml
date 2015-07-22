@@ -65,12 +65,65 @@ mini:
                 avg: 0.0090
                 max: 0.0465
     sdeq:
-        BASE:
+        DJI:
+            ONETOUCH:
+                avg: 0.021
+                max: 0.1871
+            CALL:
+                avg: 0.0059
+                max: 0.0245
+        FCHI:
+            ONETOUCH:
+                avg: 0.0194
+                max: 0.1143
+            CALL:
+                avg: 0.0050
+                max: 0.0204
+        SPC:
             EXPIRYRANGE:
                 avg: 0.0082
                 max: 0.0274
             ONETOUCH:
-                avg: 0.0187
+                avg: 0.021
+                max: 0.1871
+            CALL:
+                avg: 0.0058
+                max: 0.0319
+            RANGE:
+                avg: 0.0318
+                max: 0.0820
+        N225:
+            EXPIRYRANGE:
+                avg: 0.0082
+                max: 0.0274
+            ONETOUCH:
+                avg: 0.021
+                max: 0.1871
+            CALL:
+                avg: 0.0058
+                max: 0.0319
+            RANGE:
+                avg: 0.0318
+                max: 0.0820
+        SSECOMP:
+            EXPIRYRANGE:
+                avg: 0.0082
+                max: 0.0274
+            ONETOUCH:
+                avg: 0.021
+                max: 0.1871
+            CALL:
+                avg: 0.0058
+                max: 0.0319
+            RANGE:
+                avg: 0.0318
+                max: 0.0820
+        FTSE:
+            EXPIRYRANGE:
+                avg: 0.0082
+                max: 0.0274
+            ONETOUCH:
+                avg: 0.021
                 max: 0.1871
             CALL:
                 avg: 0.0058
