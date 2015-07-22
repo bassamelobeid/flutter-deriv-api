@@ -48,7 +48,6 @@ sub run_dataset {
     my $all_results;
     for my $symbol (@files) {
         my $file    = "$path/SD_$symbol.csv";
-        print "Processing $file\n";
         my $records = CSVParser::Superderivatives_EQ->new(
             file  => $file,
             suite => $self->suite,

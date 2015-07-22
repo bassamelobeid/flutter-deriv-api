@@ -32,12 +32,12 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
-
 install:
     - source /tmp/travis-scripts/devbox_path.sh
     - /tmp/travis-scripts/devbox.sh *.yml
     - /tmp/travis-scripts/setup_feeddb.sh
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
     - sudo ln -s /home/travis/build/regentmarkets/bom-quant-benchmark /home/git/regentmarkets/bom-quant-benchmark
+    - travis_wait mvn install
 script:
-    - make $TEST_SUITE
+    - travis_wait make $TEST_SUITE
