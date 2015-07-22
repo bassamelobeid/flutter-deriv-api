@@ -360,35 +360,7 @@ $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     'client_loginid' => $new_loginid,
     'currency_code'  => 'USD',
 });
-cmp_ok($bet_mapper->get_turnover_of_client({'tick_expiry' => 1}), '==', '174.33', 'get_turnover_of_client on tick_trade');
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'    => ['DIGITMATCH', 'DIGITDIFF'],
-            'tick_expiry' => 1
-        }
-    ),
-    '==', '20.3',
-    'get_turnover_of_client on digit contract'
-);
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'    => ['ASIANU', 'ASIAND'],
-            'tick_expiry' => 1
-        }
-    ),
-    '==', '51.46',
-    'get_turnover_of_client on asian contract'
-);
 my @indices_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => 'indices');
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type' => ['CALL', 'PUT'],
-            'symbols'  => \@indices_symbols
-        }
-    ),
-    '==', '53.14',
-    'get_turnover_of_client on intraday spot index contract'
-);
 my @smart_index = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market    => 'indices',
     submarket => 'smart_index'
@@ -397,8 +369,6 @@ my @smart_fx = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market    => 'forex',
     submarket => 'smart_fx'
 );
-cmp_ok($bet_mapper->get_turnover_of_client({'symbols' => [@smart_index, @smart_fx]}),
-    '==', '51.88', 'get_turnover_of_client on smarties index contract');
 
 # test with acc that does not exist
 lives_ok {
