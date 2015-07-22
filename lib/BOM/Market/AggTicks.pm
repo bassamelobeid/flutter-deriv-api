@@ -29,6 +29,7 @@ use Sereal::Decoder;
 
 my $encoder = Sereal::Encoder->new({
     protocol_version => 2,
+    canonical        => 1,
 });
 my $decoder = Sereal::Decoder->new;
 
@@ -243,31 +244,28 @@ sub aggregate_for {
     my ($total_added, $first_added, $last_added) = (0, 0, 0);
     my $redis = $self->_redis;
     my ($unagg_key, $agg_key) = map { $self->_make_key($ul, $_) } (0 .. 1);
-    my $prev_tick;
     my $count = 0;
 
     if (my @ticks = map { $decoder->decode($_) } @{$redis->zrangebyscore($unagg_key, 0, $last_agg)}) {
         my $first_tick = $ticks[0];
-        my $next_agg   = $first_tick->{epoch} - ($first_tick->{epoch} % $ai->seconds) + $ai->seconds;
+        my $prev_tick  = $first_tick;
+        my $prev_agg   = $first_tick->{epoch} - ($first_tick->{epoch} % $ai->seconds);
+        my $next_agg   = $prev_agg + $ai->seconds;
         my $tick_count = 0;
 
         foreach my $tick (@ticks) {
-
-            if ($tick->{epoch} == $next_agg) {    # Kinda gross, simplifies the below.
-                $prev_tick = $tick;
-                $tick_count++;                    # Since we are using this tick as previous, it counts
-            }
+            $prev_tick = $tick if ($tick->{epoch} == $next_agg);    # Falls on the line, use it for this one.
+            $tick_count++ if ($tick->{epoch} > $prev_agg && $tick->{epoch} <= $next_agg);    # Count it if it falls
 
             if ($tick->{epoch} >= $next_agg) {
                 $total_added++;
                 $first_added //= $next_agg;
-                $last_added = $next_agg;
+                $last_added         = $next_agg;
                 $prev_tick->{count} = $tick_count;
+                $prev_tick->{epoch} = $next_agg;                                             # Slightly distorted to ensure different keys for Redis.
                 $redis->zadd($agg_key, $next_agg, $encoder->encode($prev_tick));
                 $next_agg += $ai->seconds;
                 $tick_count = 0;
-            } else {
-                $tick_count++;                    # We didn't do anything with this one. but note its existence.
             }
 
             $prev_tick = $tick;
