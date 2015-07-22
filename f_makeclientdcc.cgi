@@ -19,7 +19,7 @@ my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 Bar("Make client dual control code");
 
 my $now   = Date::Utility->new;
-my $today = $now->datetime_ddmmmyy_hhmmss;
+my $current_timestamp = $now->datetime_ddmmmyy_hhmmss;
 my $input = request()->params;
 
 $input->{'reminder'} = defang($input->{'reminder'});
@@ -56,7 +56,7 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientemail'}
-        . " is: $code This code is valid for 5 minutes (from $today) only.";
+        . " is: $code This code is valid for 5 minutes (from $current_timestamp) only.";
 
     BOM::System::AuditLog::log($message, '', $clerk);
 

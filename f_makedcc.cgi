@@ -21,7 +21,7 @@ my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 Bar("Make dual control code");
 
 my $now   = Date::Utility->new;
-my $today = $now->datetime_ddmmmyy_hhmmss;
+my $current_timestamp = $now->datetime_ddmmmyy_hhmmss;
 my $input = request()->params;
 
 my ($client, $message);
@@ -69,7 +69,7 @@ if ($input->{'dcctype'} eq 'file_content') {
     Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 300);
 
     $message =
-        "The dual control code created by $clerk for " . $input->{'purpose'} . " is: $code This code is valid for 5 minutes (from $today) only.";
+        "The dual control code created by $clerk for " . $input->{'purpose'} . " is: $code This code is valid for 5 minutes (from $current_timestamp) only.";
 
     print $message;
 
@@ -102,7 +102,7 @@ if ($input->{'dcctype'} eq 'file_content') {
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientloginid'}
-        . " is: $code This code is valid for 5 minutes (from $today) only.";
+        . " is: $code This code is valid for 5 minutes (from $current_timestamp) only.";
 
     BOM::System::AuditLog::log($message, '', $clerk);
 
