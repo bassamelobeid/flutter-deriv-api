@@ -4,7 +4,7 @@ perl:
 env:
     - TEST_SUITE=merlin_benchmark
     - TEST_SUITE=SDFX_benchmark
-    - TEST_SUITE=SDFX_benchmark_DJI
+    - TEST_SUITE=SDEQ_benchmark_DJI
     - TEST_SUITE=SDEQ_benchmark_FCHI
     - TEST_SUITE=SDEQ_benchmark_SPC
     - TEST_SUITE=SDEQ_benchmark_N225

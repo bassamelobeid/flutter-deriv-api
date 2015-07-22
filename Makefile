@@ -1,6 +1,11 @@
 TESTS=merlin_benchmark \
       SDFX_benchmark \
-      SDEQ_benchmark \
+      SDEQ_benchmark_DJI \
+      SDEQ_benchmark_FCHI \
+      SDEQ_benchmark_SPC \
+      SDEQ_benchmark_N225 \
+      SDEQ_benchmark_SSECOMP \
+      SDEQ_benchmark_FTSE \
       OVRA_benchmark \
 
 M=rm -f /tmp/l4p.log && [ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
@@ -23,7 +28,10 @@ test: $(TESTS)
 merlin_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=merlin
 
-SDFX_benchmark_DJI:
+SDFX_benchmark:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx
+
+SDEQ_benchmark_DJI:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx --file=DJI
 
 SDEQ_benchmark_FCHI:
