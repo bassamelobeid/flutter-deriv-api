@@ -183,6 +183,7 @@ sub get_settings_by_group {
                 quants.commission.adjustment.minimum
                 quants.commission.adjustment.maximum
                 quants.commission.adjustment.bom_created_bet
+                quants.commission.adjustment.spread_multiplier
                 quants.commission.adjustment.global_scaling
                 quants.commission.adjustment.news_factor
                 quants.commission.adjustment.forward_start_factor
