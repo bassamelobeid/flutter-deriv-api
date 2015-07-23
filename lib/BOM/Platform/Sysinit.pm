@@ -105,7 +105,6 @@ sub log_bo_access {
         }
         $l //= '(no parameters)';
         my $staffname = request()->bo_cookie;
-        $staffname = $staffname ? $staffname->clerk : 'unauthenticated';
         my $s = $0;
         $s =~ s/^\/home\/website\/www//;
         if ((-s "/var/log/fixedodds/staff-$staffname.log" or 0) > 750000) {
