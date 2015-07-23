@@ -74,7 +74,7 @@ sub new {    ## no critic RequireArgUnpack
     my ($package) = shift;
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSIN::' . $self->{token})) } || {};
+        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
     } else {
         my @missing = grep { not exists $self->{$_} } @required;
