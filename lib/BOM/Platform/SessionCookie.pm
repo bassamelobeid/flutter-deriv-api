@@ -81,9 +81,9 @@ sub new {    ## no critic RequireArgUnpack
         croak "Error adding new session, missing: " . join(',', @missing)
             if @missing;
         $self->{token} = BOM::Utility::Random->string_from($string, 128);
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSIN::' . $self->{token}, JSON::to_json($self));
+        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
     }
-    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSIN::' . $self->{token}, 3600 * 24);
+    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSION::' . $self->{token}, 3600 * 24);
     $self->{issued_at}  = time;
     $self->{expires_in} = 3600 * 24;
     return bless $self, $package;
@@ -114,7 +114,7 @@ Deletes from redis
 
 sub end_session {    ## no critic
     my $self = shift;
-    BOM::System::Chronicle->_redis_write->del('LOGIN_SESSIN::' . $self->{token});
+    BOM::System::Chronicle->_redis_write->del('LOGIN_SESSION::' . $self->{token});
 }
 
 1;
