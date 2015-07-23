@@ -3,8 +3,10 @@ package main;
 use strict 'vars';
 
 use Format::Util::Strings qw( defang );
-use f_brokerincludeall;
 use Path::Tiny;
+use Cache::RedisDB;
+
+use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::System::AuditLog;
@@ -19,7 +21,7 @@ my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 Bar("Make dual control code");
 
 my $now   = Date::Utility->new;
-my $today = $now->date_ddmmmyy;
+my $current_timestamp = $now->datetime_ddmmmyy_hhmmss;
 my $input = request()->params;
 
 my ($client, $message);
@@ -64,9 +66,10 @@ if ($input->{'dcctype'} eq 'file_content') {
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->batch_payment_control_code(scalar @lines);
 
-    $message =  "The dual control code created by $clerk for "
-        . $input->{'purpose'}
-        . " is: $code This code is valid for today ($today) only.";
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    $message =
+        "The dual control code created by $clerk for " . $input->{'purpose'} . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
     print $message;
 
@@ -89,14 +92,17 @@ if ($input->{'dcctype'} eq 'file_content') {
             staff           => $clerk,
             transactiontype => $input->{'transtype'}})->payment_control_code($input->{'clientloginid'}, $input->{'currency'}, $input->{'amount'});
 
-    $message= "The dual control code created by $clerk for an amount of "
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    $message =
+          "The dual control code created by $clerk for an amount of "
         . $input->{'currency'}
         . $input->{'amount'}
         . " (for a "
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientloginid'}
-        . " is: $code This code is valid for today ($today) only.";
+        . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
     BOM::System::AuditLog::log($message, '', $clerk);
 

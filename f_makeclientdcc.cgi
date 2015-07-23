@@ -19,7 +19,6 @@ my $clerk = BOM::Platform::Context::request()->bo_cookie->clerk;
 Bar("Make client dual control code");
 
 my $now   = Date::Utility->new;
-my $today = $now->date_ddmmmyy;
 my $input = request()->params;
 
 $input->{'reminder'} = defang($input->{'reminder'});
@@ -46,19 +45,29 @@ if (not $client) {
 
 if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
     my $code = BOM::DualControl->new({
-        staff           => $clerk,
-        transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'});
+            staff           => $clerk,
+            transactiontype => $input->{'transtype'}})->client_control_code($input->{'clientemail'});
+    my $current_timestamp = $now->datetime_ddmmmyy_hhmmss;
 
-    my $message = "The dual control code created by $clerk  (for a "
+    Cache::RedisDB->set("DUAL_CONTROL_CODE", $code, $code, 3600);
+
+    my $message =
+          "The dual control code created by $clerk  (for a "
         . $input->{'transtype'}
         . ") for "
         . $input->{'clientemail'}
-        . " is: $code This code is valid for today ($today) only.";
+        . " is: $code This code is valid for 1 hour (from $current_timestamp) only.";
 
     BOM::System::AuditLog::log($message, '', $clerk);
 
     print $message;
-    print "<p>Note: " . $input->{'clientloginid'} . " is " . $client->salutation . ' ' . $client->first_name . ' ' . $client->last_name . ' current email is ' . $client->email;
+    print "<p>Note: "
+        . $input->{'clientloginid'} . " is "
+        . $client->salutation . ' '
+        . $client->first_name . ' '
+        . $client->last_name
+        . ' current email is '
+        . $client->email;
 
     # Logging
     Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")
