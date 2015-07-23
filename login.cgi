@@ -75,7 +75,7 @@ sub session_cookie {
 
     my $login = CGI::cookie(
         -name    => $cookiename,
-        -value   => $cookie->value,
+        -value   => $cookie->token,
         -expires => $expiry,
         -secure  => 1,
         -domain  => request()->cookie_domain,
