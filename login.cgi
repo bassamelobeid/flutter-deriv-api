@@ -34,10 +34,10 @@ if (request()->param('sig_response')) {
 
 if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
     my $mycookie = session_cookie({
-        loginid => BOM::Platform::Context::request()->broker->code,
-        token   => request()->param('access_token'),
-        clerk   => $staff->{nickname},
-        email   => request()->param('email'),
+        loginid    => BOM::Platform::Context::request()->broker->code,
+        auth_token => request()->param('access_token'),
+        clerk      => $staff->{nickname},
+        email      => request()->param('email'),
     });
     PrintContentType({'cookies' => $mycookie});
 } elsif (request()->param('whattodo') eq 'logout') {
