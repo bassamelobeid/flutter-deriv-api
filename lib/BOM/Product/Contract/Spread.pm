@@ -49,8 +49,8 @@ has [qw(supplied_stop_loss supplied_stop_profit stop_type amount_per_point)] => 
 
 # stop_loss & stop_profit are only in point
 has [qw(stop_profit stop_loss)] => (
-    is          => 'ro',
-    lazy_build  => 1,
+    is         => 'ro',
+    lazy_build => 1,
 );
 
 sub _build_stop_profit {
@@ -58,7 +58,7 @@ sub _build_stop_profit {
     return $self->stop_type eq 'dollar' ? $self->supplied_stop_profit / $self->amount_per_point : $self->supplied_stop_profit;
 }
 
-sub _build_stop_profit {
+sub _build_stop_loss {
     my $self = shift;
     return $self->stop_type eq 'dollar' ? $self->supplied_stop_loss / $self->amount_per_point : $self->supplied_stop_loss;
 }
@@ -352,21 +352,6 @@ sub _build__pip_size_tick {
 }
 
 # VALIDATIONS #
-sub _validate_stop_profit {
-    my $self = shift;
-
-    my @err;
-    if ($self->stop_loss * 5 < $self->stop_profit) {
-        push @err,
-            {
-            message           => 'Stop profit [' . $self->stop_profit . '] is too high compared to stop loss [' . $self->stop_loss . ']',
-            severity          => 88,
-            message_to_client => localize('Stop profit cannot be higher than 5 times the stop loss.'),
-            };
-    }
-    return @err;
-}
-
 sub _validate_quote {
     my $self = shift;
 
@@ -419,19 +404,21 @@ sub _validate_amount_per_point {
 
     my @err;
     if ($self->amount_per_point <= 0) {
-        push @err, {
-            message => 'Negative entry on amount_per_point[' . $self->amount_per_point . ']',
+        push @err,
+            {
+            message           => 'Negative entry on amount_per_point[' . $self->amount_per_point . ']',
             severity          => 99,
             message_to_client => localize('Amount Per Point must be greater than zero.'),
-        };
+            };
     }
 
     if ($self->amount_per_point > 100) {
-        push @err, {
-            message => 'Amount per point ['. $self->amount_per_point .'] greater than limit[100]',
+        push @err,
+            {
+            message           => 'Amount per point [' . $self->amount_per_point . '] greater than limit[100]',
             severity          => 99,
             message_to_client => localize('Amount Per Point must be between 1 and 100.'),
-        };
+            };
     }
 
     return @err;
@@ -443,11 +430,12 @@ sub _validate_stop_loss {
     my @err;
     my $minimum = $self->spread + 1;
     if ($self->stop_loss < $minimum) {
-        push @err, {
-            message => 'Stop Loss is less than minumum['. $minimum .']',
+        push @err,
+            {
+            message           => 'Stop Loss is less than minumum[' . $minimum . ']',
             severity          => 99,
-            message_to_client => localize('Stop Loss must be at least '. $minimum .'.'),
-        };
+            message_to_client => localize('Stop Loss must be at least ' . $minimum . '.'),
+            };
     }
 
     return @err;
@@ -461,19 +449,21 @@ sub _validate_stop_profit {
     my $maximum = min($self->stop_loss * $app * 5, 1000);
 
     if ($self->stop_profit * $app > $maximum) {
-        push @err, {
-            message => 'Stop Profit is greater than maximum['. $maximum .']',
+        push @err,
+            {
+            message           => 'Stop Profit is greater than maximum[' . $maximum . ']',
             severity          => 99,
-            message_to_client => localize('Stop Profit must be less than '. $maximum .'.'),
-        };
+            message_to_client => localize('Stop Profit must be less than ' . $maximum . '.'),
+            };
     }
 
     if ($self->stop_profit <= 0) {
-        push @err, {
-            message => 'Negative entry on stop_profit[' . $self->stop_profit . ']',
+        push @err,
+            {
+            message           => 'Negative entry on stop_profit[' . $self->stop_profit . ']',
             severity          => 99,
             message_to_client => localize('Stop Profit must be greater than zero.'),
-        };
+            };
     }
 
     return @err;
