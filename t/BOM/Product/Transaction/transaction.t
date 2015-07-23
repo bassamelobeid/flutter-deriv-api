@@ -389,7 +389,7 @@ subtest 'buy a spread bet' => sub {
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
         is !$fmb->{is_expired}, !0, 'is_expired';
         is !$fmb->{is_sold},    !0, 'is_sold';
-        is $fmb->{payout_price} + 0, 0, 'payout_price';
+        is $fmb->{payout_price}, undef, 'payout_price';
         cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
         like $fmb->{remark},        qr/amount_per_point/, 'remark';
         is $fmb->{sell_price},      undef,                'sell_price';
