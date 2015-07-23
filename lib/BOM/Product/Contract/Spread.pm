@@ -20,26 +20,6 @@ use BOM::Market::Types;
 
 with 'MooseX::Role::Validatable';
 
-sub BUILD {
-    my $self = shift;
-
-    # stop_loss, stop_profit, amount_per_point has to be greater than zero.
-    if ($self->stop_loss <= 0 or $self->stop_profit <= 0 or $self->amount_per_point <= 0) {
-        $self->add_errors({
-            message => 'Negative entry on stop_loss['
-                . $self->stop_loss
-                . '] or stop_profit['
-                . $self->stop_profit
-                . '] or amount_per_point['
-                . $self->amount_per_point . ']',
-            severity          => 99,
-            message_to_client => localize('Stop Loss, Stop Profit and Amount Per Point must be greater than zero.'),
-        });
-    }
-
-    return;
-}
-
 # STATIC
 # added for transaction validation
 sub pricing_engine_name { return '' }
@@ -60,10 +40,28 @@ has currency => (
     required => 1,
 );
 
-has [qw(stop_type stop_loss stop_profit amount_per_point)] => (
-    is       => 'rw',
+# supplied_stop_loss & supplied_stop_profit can be in points or dollar amount
+# we need the untouch input for longcode.
+has [qw(supplied_stop_loss supplied_stop_profit stop_type amount_per_point)] => (
+    is       => 'ro',
     required => 1,
 );
+
+# stop_loss & stop_profit are only in point
+has [qw(stop_profit stop_loss)] => (
+    is          => 'ro',
+    lazy_build  => 1,
+);
+
+sub _build_stop_profit {
+    my $self = shift;
+    return $self->stop_type eq 'dollar' ? $self->supplied_stop_profit / $self->amount_per_point : $self->supplied_stop_profit;
+}
+
+sub _build_stop_profit {
+    my $self = shift;
+    return $self->stop_type eq 'dollar' ? $self->supplied_stop_loss / $self->amount_per_point : $self->supplied_stop_loss;
+}
 
 has underlying => (
     is       => 'ro',
@@ -201,8 +199,7 @@ has ask_price => (
 
 sub _build_ask_price {
     my $self = shift;
-    my $ask = $self->stop_type eq 'dollar' ? $self->stop_loss : $self->stop_loss * $self->amount_per_point;
-    return roundnear(0.01, $ask);
+    return roundnear(0.01, $self->stop_loss * $self->amount_per_point);
 }
 
 has [qw(buy_level sell_level)] => (
@@ -258,7 +255,7 @@ sub _build_shortcode {
 sub _build_longcode {
     my $self        = shift;
     my $description = $self->longcode_description;
-    my @other       = ($self->stop_loss, $self->stop_profit);
+    my @other       = ($self->supplied_stop_loss, $self->supplied_stop_profit);
     if ($self->stop_type eq 'dollar') {
         push @other, $self->currency;
         $description .= ' with stop loss of <strong>[_6] [_4]</strong> and limit of <strong>[_6] [_5]</strong>.';
@@ -414,6 +411,71 @@ sub _validate_underlying {
                 ),
             };
     }
+    return @err;
+}
+
+sub _validate_amount_per_point {
+    my $self = shift;
+
+    my @err;
+    if ($self->amount_per_point <= 0) {
+        push @err, {
+            message => 'Negative entry on amount_per_point[' . $self->amount_per_point . ']',
+            severity          => 99,
+            message_to_client => localize('Amount Per Point must be greater than zero.'),
+        };
+    }
+
+    if ($self->amount_per_point > 100) {
+        push @err, {
+            message => 'Amount per point ['. $self->amount_per_point .'] greater than limit[100]',
+            severity          => 99,
+            message_to_client => localize('Amount Per Point must be between 1 and 100.'),
+        };
+    }
+
+    return @err;
+}
+
+sub _validate_stop_loss {
+    my $self = shift;
+
+    my @err;
+    my $minimum = $self->spread + 1;
+    if ($self->stop_loss < $minimum) {
+        push @err, {
+            message => 'Stop Loss is less than minumum['. $minimum .']',
+            severity          => 99,
+            message_to_client => localize('Stop Loss must be at least '. $minimum .'.'),
+        };
+    }
+
+    return @err;
+}
+
+sub _validate_stop_profit {
+    my $self = shift;
+
+    my @err;
+    my $app = $self->amount_per_point;
+    my $maximum = min($self->stop_loss * $app * 5, 1000);
+
+    if ($self->stop_profit * $app > $maximum) {
+        push @err, {
+            message => 'Stop Profit is greater than maximum['. $maximum .']',
+            severity          => 99,
+            message_to_client => localize('Stop Profit must be less than '. $maximum .'.'),
+        };
+    }
+
+    if ($self->stop_profit <= 0) {
+        push @err, {
+            message => 'Negative entry on stop_profit[' . $self->stop_profit . ']',
+            severity          => 99,
+            message_to_client => localize('Stop Profit must be greater than zero.'),
+        };
+    }
+
     return @err;
 }
 
