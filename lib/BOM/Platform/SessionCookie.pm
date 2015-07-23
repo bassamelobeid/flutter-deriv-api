@@ -51,6 +51,7 @@ hashref).
 sub loginid { $_[0]->{loginid} if ref $_[0] }    ## no critic
 sub email   { $_[0]->{email}   if ref $_[0] }    ## no critic
 sub token   { $_[0]->{token}   if ref $_[0] }    ## no critic
+sub clerk   { $_[0]->{clerk}   if ref $_[0] }    ## no critic
 
 =head1 CONSTRUCTOR
 
