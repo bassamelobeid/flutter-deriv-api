@@ -24,6 +24,13 @@ has records => (
     lazy_build => 1,
 );
 
+has suite => (
+    is       => 'rw',
+    isa      => 'Str',
+    required => 1,
+);
+
+
 sub _build_records {
     my $self = shift;
     my $data = $self->read_the_lines_and_parse_the_categories($self->file);
@@ -55,22 +62,6 @@ sub _build_records {
 
     my $fixture = SetupDatasetTestFixture->new();
 
-    if ($data->{quanto_volsurface}) {
-        $self->_setup_quanto_volsurface($data->{quanto_volsurface}, $date_start);
-        $self->_setup_quanto_rate({
-                symbol => $currency,
-                rates  => $data->{interest_rates}->{$currency}
-            },
-            $date_start
-        );
-        $self->_setup_correlations({
-            data                => $data->{correlations},
-            underlying          => $underlying,
-            correlated_currency => $currency,
-            date                => $date_start
-        });
-    }
-
     $fixture->setup_test_fixture({
         underlying => $underlying,
         rates      => $rates,
@@ -80,6 +71,9 @@ sub _build_records {
 
     my @all_records;
     foreach my $record (@{$data->{records}}) {
+        if ($self->suite eq 'mini' and not $record->{mini}) {
+            next;
+        }
         my $date_expiry  = Date::Utility->new($record->{expiry});
         my $days_between = $date_expiry->days_between($date_start);
 

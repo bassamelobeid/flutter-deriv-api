@@ -1,7 +1,11 @@
 TESTS=merlin_benchmark \
       SDFX_benchmark \
-      SDEQ_benchmark \
-      IH_benchmark \
+      SDEQ_benchmark_DJI \
+      SDEQ_benchmark_FCHI \
+      SDEQ_benchmark_SPC \
+      SDEQ_benchmark_N225 \
+      SDEQ_benchmark_SSECOMP \
+      SDEQ_benchmark_FTSE \
       OVRA_benchmark \
 
 M=rm -f /tmp/l4p.log && [ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
@@ -27,11 +31,23 @@ merlin_benchmark:
 SDFX_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=sdfx
 
-SDEQ_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq
+SDEQ_benchmark_DJI:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=DJI
 
-IH_benchmark:
-	perl -Ilib t/run_quant_benchmark_test.pl --which=intraday_historical
+SDEQ_benchmark_FCHI:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FCHI
+
+SDEQ_benchmark_SPC:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SPC
+
+SDEQ_benchmark_N225:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=N225
+
+SDEQ_benchmark_SSECOMP:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=SSECOMP
+
+SDEQ_benchmark_FTSE:
+	perl -Ilib t/run_quant_benchmark_test.pl --which=sdeq --file=FTSE
 
 OVRA_benchmark:
 	perl -Ilib t/run_quant_benchmark_test.pl --which=ovra
