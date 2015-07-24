@@ -275,6 +275,14 @@ sub calculate_limits {
         }
     }
 
+    if ($contract->is_spread) {
+        push @{$self->limits->{specific_turnover_limits}},
+            +{
+            name        => 'spreads_daily_limit',
+            limit       => $ql->spreads_daily_limit,
+            };
+    }
+
     if ($contract->category_code eq 'digits') {
         push @{$self->limits->{specific_turnover_limits}},
             +{

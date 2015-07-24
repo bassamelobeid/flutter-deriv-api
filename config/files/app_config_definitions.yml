@@ -476,6 +476,11 @@ quants:
           isa: Num
           default: 200000
           global: 1
+        spreads_daily_limit:
+          description: "Daily profit limit for spreads per client"
+          isa: Num
+          default: 1000
+          global: 1
         asian_turnover_limit:
           description: "Daily turnover limit for asian per client"
           isa: Num
