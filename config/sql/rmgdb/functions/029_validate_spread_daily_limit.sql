@@ -6,9 +6,8 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION test(client_id           VARCHAR,
-                                currency            VARCHAR,
-                                p_limits            NUMERIC)
+CREATE OR REPLACE FUNCTION bet.validate_spread_daily_limit(p_account transaction.account,
+                                                           p_limits            JSON)
 
 RETURNS BOOLEAN AS $def$
 DECLARE
@@ -27,8 +26,8 @@ BEGIN
                     a.id = b.account_id
                     JOIN bet.spread_bet sb ON
                     b.id = sb.financial_market_bet_id
-                    WHERE a.currency_code='USD'
-                        AND a.client_loginid='VRTC380000';
+                    WHERE a.currency_code=p_account.currency_code
+                        AND a.client_loginid=p_account.client_loginid;
 
     SELECT INTO
         potential_profit SUM(amount_per_point * stop_profit)
