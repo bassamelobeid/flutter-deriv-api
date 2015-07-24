@@ -447,6 +447,15 @@ sub _validate_stop_loss {
             };
     }
 
+    if ($self->current_spot - $self->stop_loss < 0) {
+        push @err,
+            {
+            message           => 'Stop Loss is greater than stop[' . $self->stop_loss . ']',
+            severity          => 99,
+            message_to_client => localize('Stop Loss must not be greater than spot price.'),
+            };
+    }
+
     return @err;
 }
 
