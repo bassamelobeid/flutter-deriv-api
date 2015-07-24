@@ -72,7 +72,7 @@ sub has_authorisation {
     my $cookie = BOM::Platform::Context::request()->bo_cookie;
     my $cache = Cache::RedisDB->get("BINARYBOLOGIN", $cookie->clerk);
     my $user;
-    if ($cookie and $cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $cookie->token) {
+    if ($cookie and $cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $cookie->{auth_token}) {
         Cache::RedisDB->redis->execute('expire', "BINARYBOLOGIN::" . $cookie->clerk => 24 * 3600);
         if (not $groups or not BOM::Platform::Runtime->instance->app_config->system->on_production) {
             return 1;

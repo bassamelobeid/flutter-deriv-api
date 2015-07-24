@@ -34,20 +34,14 @@ if (request()->param('sig_response')) {
 
 if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param('access_token'))) {
     my $mycookie = session_cookie({
-        loginid => BOM::Platform::Context::request()->broker->code,
-        token   => request()->param('access_token'),
-        clerk   => $staff->{nickname},
-        email   => request()->param('email'),
+        loginid    => BOM::Platform::Context::request()->broker->code,
+        auth_token => request()->param('access_token'),
+        clerk      => $staff->{nickname},
+        email      => request()->param('email'),
     });
     PrintContentType({'cookies' => $mycookie});
 } elsif (request()->param('whattodo') eq 'logout') {
-    my $mycookie = session_cookie({
-        loginid => "",
-        token   => "",
-        clerk   => "",
-        email   => "",
-        expires => 1,
-    });
+     BOM::Platform::Context::request()->bo_cookie->end_session;
     BOM::Backoffice::Auth0::loggout();
     PrintContentType({'cookies' => $mycookie});
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';
@@ -75,7 +69,7 @@ sub session_cookie {
 
     my $login = CGI::cookie(
         -name    => $cookiename,
-        -value   => $cookie->value,
+        -value   => $cookie->token,
         -expires => $expiry,
         -secure  => 1,
         -domain  => request()->cookie_domain,
