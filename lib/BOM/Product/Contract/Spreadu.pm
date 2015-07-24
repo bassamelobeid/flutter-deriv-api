@@ -136,7 +136,7 @@ sub _build__highlow_args {
 has longcode_description => (
     is => 'ro',
     default =>
-        'Payout of [_1] <strong>[_2]</strong> per point <strong>rise</strong> of [_3] from <strong>entry spot</strong> plus half the spread, less half the spread at expiry, ',
+        'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, ',
 );
 
 no Moose;
