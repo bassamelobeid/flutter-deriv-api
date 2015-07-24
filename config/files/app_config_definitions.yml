@@ -476,7 +476,7 @@ quants:
           isa: Num
           default: 200000
           global: 1
-        spreads_daily_limit:
+        spreads_daily_profit_limit:
           description: "Daily profit limit for spreads per client"
           isa: Num
           default: 1000

@@ -278,8 +278,8 @@ sub calculate_limits {
     if ($contract->is_spread) {
         push @{$self->limits->{specific_turnover_limits}},
             +{
-            name        => 'spreads_daily_limit',
-            limit       => $ql->spreads_daily_limit,
+            name        => 'spreads_daily_profit_limit',
+            limit       => $ql->spreads_daily_profit_limit,
             };
     }
 
