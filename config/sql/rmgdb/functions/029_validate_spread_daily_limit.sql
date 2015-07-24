@@ -2,48 +2,40 @@ BEGIN;
 
 SELECT r.*
   FROM (
-    VALUES ('BI017', 'daily trading limit exceeded')
+    VALUES ('BI015', 'daily profit limit on spread bets exceeded')
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_spreads_daily_profit_limit(p_account transaction.account,
-                                                           p_limits            JSON)
-
+CREATE OR REPLACE FUNCTION bet.validate_spreads_daily_profit_limit(p_account           transaction.account,
+                                                                   p_rate              NUMERIC,
+                                                                   p_purchase_time     TIMESTAMP,
+                                                                   p_chld              JSON,
+                                                                   p_limits            JSON)
 RETURNS BOOLEAN AS $def$
 DECLARE
-    realized_profit  NUMERIC;
-    potential_profit NUMERIC;
+    v_profit  NUMERIC;
 BEGIN
-    CREATE TEMP VIEW spread_bets AS
-        SELECT  b.id as fmb_id,
-                b.buy_price as buy_price,
-                b.sell_price as sell_price,
-                sb.amount_per_point as amount_per_point,
-                sb.stop_profit as stop_profit,
-                b.is_sold as is_sold FROM
-                    (SELECT * FROM bet.financial_market_bet WHERE bet_class='spread_bet' AND purchase_time > now()::date) b
-                    JOIN transaction.account a ON
-                    a.id = b.account_id
-                    JOIN bet.spread_bet sb ON
-                    b.id = sb.financial_market_bet_id
-                    WHERE a.currency_code=p_account.currency_code
-                        AND a.client_loginid=p_account.client_loginid;
+    IF (p_limits -> 'spread_bet_profit_limit') IS NOT NULL THEN
+        SELECT INTO v_profit
+               sum(CASE WHEN b.is_sold
+                        THEN b.sell_price - b.buy_price
+                        ELSE sb.amount_per_point * sb.stop_profit
+                   END * e.rate)           AS profit
+          FROM bet.financial_market_bet b
+          JOIN bet.spread_bet sb ON (b.id=sb.financial_market_bet_id)
+          JOIN transaction.account a ON a.id = b.account_id
+         CROSS JOIN data_collection.exchangeToUSD_rate(a.currency_code, p_purchase_time) e
+         WHERE a.client_loginid=p_account.client_loginid
+           AND b.purchase_time::DATE=p_purchase_time::DATE
+           AND b.bet_class='spread_bet'
 
-    SELECT INTO
-        potential_profit SUM(amount_per_point * stop_profit)
-        FROM spread_bets
-            WHERE is_sold IS FALSE;
-
-    SELECT INTO
-        realized_profit SUM(sell_price - buy_price)
-        FROM spread_bets
-            WHERE is_sold IS TRUE;
-
-    IF realized_profit IS NOT NULL OR potential_profit IS NOT NULL THEN
-        IF potential_profit + realized_profit > p_limits THEN
+        IF v_profit +
+           (p_chld ->> 'amount_per_point')::NUMERIC * 
+           (p_chld ->> 'stop_profit')::NUMERIC *
+           p_rate > (p_limits ->> 'spread_bet_profit_limit')::NUMERIC THEN
             RAISE EXCEPTION USING
-                MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI017'),
-                ERRCODE='BI017';
+                MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI015'),
+                ERRCODE='BI015';
         END IF;
     END IF;
 
