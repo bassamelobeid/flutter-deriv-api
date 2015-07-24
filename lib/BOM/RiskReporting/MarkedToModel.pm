@@ -320,7 +320,7 @@ sub sell_expired_contracts {
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';
         # I dislike building URLs this way, but I don't seem to have much choice.
-        my @msg = ($subject, '', 'Review and settle at https://backoffice.binary.com/d/backoffice/quant/settle_contracts.cgi', '', $sep);
+        my @msg = ($subject, '', 'Review and settle at https://collector01.binary.com/d/backoffice/quant/settle_contracts.cgi', '', $sep);
 
         foreach my $failure (@error_lines) {
             # We could have done this above, but whatever.

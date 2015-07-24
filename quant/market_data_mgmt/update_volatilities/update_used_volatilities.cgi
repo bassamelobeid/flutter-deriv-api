@@ -105,7 +105,9 @@ foreach my $market (@markets) {
     # when we are updating surface, fetch New York 10 for FX
     my $args = {
         underlying => $underlying,
-        $underlying->market->name eq 'forex' ? (cutoff => 'New York 10:00') : (),
+        $underlying->market->name eq 'forex'
+       ||$underlying->market->name eq 'commodities'
+       ? (cutoff => 'New York 10:00') : (),
     };
     my $volsurface = $dm->fetch_surface($args);
     my $existing_surface = eval { $volsurface->surface };
