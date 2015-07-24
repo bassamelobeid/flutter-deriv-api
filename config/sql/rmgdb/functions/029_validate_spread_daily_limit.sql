@@ -27,7 +27,7 @@ BEGIN
          CROSS JOIN data_collection.exchangeToUSD_rate(a.currency_code, p_purchase_time) e
          WHERE a.client_loginid=p_account.client_loginid
            AND b.purchase_time::DATE=p_purchase_time::DATE
-           AND b.bet_class='spread_bet'
+           AND b.bet_class='spread_bet';
 
         IF v_profit +
            (p_chld ->> 'amount_per_point')::NUMERIC * 

@@ -137,6 +137,6 @@ BEGIN
 
     RETURN NEXT;
 END
-$def$ LANGUAGE plpgsql VOLATILE SECURITY definer SET log_min_messages = LOG;
+$def$ LANGUAGE plpgsql VOLATILE SECURITY definer;-- SET log_min_messages = LOG;
 
 COMMIT;
