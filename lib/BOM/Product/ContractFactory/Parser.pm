@@ -150,7 +150,7 @@ sub shortcode_to_parameters {
             date_start       => $4,
             stop_loss        => $5,
             stop_profit      => $6,
-            stop_type        => $7,
+            stop_type        => lc $7,
             currency         => $currency,
         };
     }

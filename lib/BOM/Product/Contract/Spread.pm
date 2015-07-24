@@ -40,7 +40,7 @@ has currency => (
     required => 1,
 );
 
-# supplied_stop_loss & supplied_stop_profit can be in POINT or DOLLAR amount
+# supplied_stop_loss & supplied_stop_profit can be in point or dollar amount
 # we need the untouch input for longcode.
 has [qw(supplied_stop_loss supplied_stop_profit stop_type amount_per_point)] => (
     is       => 'ro',
@@ -55,12 +55,12 @@ has [qw(stop_profit stop_loss)] => (
 
 sub _build_stop_profit {
     my $self = shift;
-    return $self->stop_type eq 'DOLLAR' ? $self->supplied_stop_profit / $self->amount_per_point : $self->supplied_stop_profit;
+    return $self->stop_type eq 'dollar' ? $self->supplied_stop_profit / $self->amount_per_point : $self->supplied_stop_profit;
 }
 
 sub _build_stop_loss {
     my $self = shift;
-    return $self->stop_type eq 'DOLLAR' ? $self->supplied_stop_loss / $self->amount_per_point : $self->supplied_stop_loss;
+    return $self->stop_type eq 'dollar' ? $self->supplied_stop_loss / $self->amount_per_point : $self->supplied_stop_loss;
 }
 
 has underlying => (
@@ -256,7 +256,7 @@ sub _build_longcode {
     my $self        = shift;
     my $description = $self->longcode_description;
     my @other       = ($self->supplied_stop_loss, $self->supplied_stop_profit);
-    if ($self->stop_type eq 'DOLLAR') {
+    if ($self->stop_type eq 'dollar') {
         push @other, $self->currency;
         $description .= ' with stop loss of <strong>[_6] [_4]</strong> and stop profit of <strong>[_6] [_5]</strong>.';
     } else {
@@ -428,7 +428,8 @@ sub _validate_stop_loss {
     my $self = shift;
 
     my @err;
-    my $minimum = $self->spread + 1;
+    my $minimum_point = $self->spread + 1;
+    my $minimum = $self->stop_type eq 'dollar' ? $minimum_point * $self->amount_per_point : $minimum_point;
     if ($self->stop_loss < $minimum) {
         push @err,
             {
