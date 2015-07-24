@@ -134,9 +134,8 @@ sub _build__highlow_args {
 }
 
 has longcode_description => (
-    is => 'ro',
-    default =>
-        'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, ',
+    is      => 'ro',
+    default => 'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, ',
 );
 
 no Moose;
