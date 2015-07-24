@@ -1,124 +1,120 @@
-package BOM::Platform::SessionCookie;
 
 =head1 NAME
 
-BOM::Platform::SessionCookie
+BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
-=head1 DESCRIPTION
+=head1 SYNOPSIS
 
-This class will provide Session Cookie's Name & Value.
+ my $cookie = BOM::Platform::SessionCookie(token => $token, email => $email);
+ my $loginid = $cookie->loginid;
+ if ($cookie->validate_session('trade')){
+    # we can trade
+ };
+
+=cut
+
+package BOM::Platform::SessionCookie;
+use BOM::System::Chronicle;
+use BOM::Utility::Random;
+use JSON;
+use Carp;
+
+use strict;
+use warnings;
+
+=head1 DATA STRUCTURE AND ACCESSORS
+
+The resulting cookie is a simple hashref, stored in Redis for a period of time
+and retrieved with a token.
+
+Very commonly used and stable (over api version) attributes have accesssors.
+
+Also scopes is a reserved word used for authorization.  Other keys an be passed
+in and will be part of the hashref returned (can be accessed as values in a 
+hashref).
+
+=head2 ACCESSORS (READ ONLY)
+
+=over 
+
+=item loginid
+
+=item email
+
+=item token
+
+=back
+
+=cut
+
+# accessors for very frequently used attributes
+sub loginid { $_[0]->{loginid} if ref $_[0] }    ## no critic
+sub email   { $_[0]->{email}   if ref $_[0] }    ## no critic
+sub token   { $_[0]->{token}   if ref $_[0] }    ## no critic
+sub clerk   { $_[0]->{clerk}   if ref $_[0] }    ## no critic
+
+=head1 CONSTRUCTOR
+
+=head2 new({token => $token})
+
+Retrieves a session state structure from redis.
+
+=head2 new({key1 => $value1, ..., scopes => [@scopes])
+
+Creates a new session and stores it in redis.
+
+=cut
+
+# characters for token
+my $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+
+my @required = qw(loginid email);
+
+sub new {    ## no critic RequireArgUnpack
+    my ($package) = shift;
+    my $self = ref $_[0] ? $_[0] : {@_};
+    if ($self->{token}) {
+        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::' . $self->{token})) } || {};
+        return bless {}, $package unless $self->{token};
+    } else {
+        my @missing = grep { not exists $self->{$_} } @required;
+        croak "Error adding new session, missing: " . join(',', @missing)
+            if @missing;
+        $self->{token} = BOM::Utility::Random->string_from($string, 128);
+        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
+    }
+    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSION::' . $self->{token}, 3600 * 24);
+    $self->{issued_at}  = time;
+    $self->{expires_in} = 3600 * 24;
+    return bless $self, $package;
+}
 
 =head1 METHODS
 
-=head2 $class->new(loginid => $login, token => $token, [clerk => $clerk])
+=head2 validate_session($scope);
 
-Create new object with the given attributes' values
-
-=cut
-
-use 5.010;
-use Moose;
-use BOM::Platform::Runtime;
-use BOM::Utility::Crypt;
-use BOM::Utility::Log4perl qw(get_logger);
-
-sub _crypt {
-    state $crypt = BOM::Utility::Crypt->new(keyname => 'cookie');
-    return $crypt;
-}
-
-=head2 $class->from_value($cookie_value)
-
-Build instance from the encrypted cookie value. If verification/decryption fails, method will return false.
+Returns true if the session is valid and either there is no scope requested or
+the scope is found in $self->{scopes}
 
 =cut
-
-sub from_value {
-    my ($class, $value) = @_;
-    my $ref = $class->_crypt->decrypt_payload(value => $value);
-    return if not $ref or ($ref->{expires} and $ref->{expires} < time) or not $ref->{token} or not $ref->{email};
-    return $class->new($ref);
-}
 
 sub validate_session {
+    my $self  = shift;
+    my $scope = shift;
+    return   unless $self->{token};
+    return 1 unless $scope;
+    return scalar grep { $_ eq $scope } @{$self->{scopes}};
+}
+
+=head2 end_session
+
+Deletes from redis
+
+=cut
+
+sub end_session {    ## no critic
     my $self = shift;
-    require BOM::Platform::Authorization;    # breaks a cyclic compilation chain (db->request->session->authdb)
-    my $token = BOM::Platform::Authorization::Token->validate(token => $self->token);
-    return 1 if $token;
-    get_logger->info("Token not validated.  Reason: " . BOM::Platform::Authorization::Token->last_err);
-    return;
+    BOM::System::Chronicle->_redis_write->del('LOGIN_SESSION::' . $self->{token});
 }
-
-=head2 loginid, token, email, clerk
-
-Return appropriate client attribute.  Tokens are essentially open auth tokens.
-
-=cut
-
-has [qw( loginid token email )] => (
-    is       => 'ro',
-    required => 1,
-);
-
-#Deprecated.
-has clerk => (is => 'ro');
-
-has expires => (is => 'rw');
-
-=head2 $self->as_hash
-
-Return attributes as a hash reference
-
-=cut
-
-sub as_hash {
-    my $self = shift;
-    my $res  = {};
-    for (qw(email loginid token clerk expires)) {
-        $res->{$_} = $self->$_ if $self->$_;
-    }
-
-    return $res;
-}
-
-=head2 $self->value
-
-Return attributes as a serialized encrypted/signed value suitable for assigning to login cookie
-
-=cut
-
-sub value {
-    my $self = shift;
-    return $self->_crypt->encrypt_payload(data => $self->as_hash);
-}
-
-=head2 $self->end_session
-
-Removes the token from the db and the cookie.
-
-=cut
-
-sub end_session {
-    my ($self) = @_;
-    my $token = delete $self->{token};
-    return BOM::Platform::Authorization->revoke_token(token => $token)
-        if $token;
-    return;
-}
-
-no Moose;
-__PACKAGE__->meta->make_immutable;
-
-=head1 AUTHOR
-
-shuwn yuan, C<< <shuwnyuan at regentmarkets.com> >>
-
-RMG Company
-
-=head1 COPYRIGHT
-
-(c) 2012 RMG Technology (Malaysia) Sdn Bhd
-
-=cut
 
 1;

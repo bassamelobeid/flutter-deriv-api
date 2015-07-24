@@ -9,7 +9,6 @@ use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::System::Password;
 use BOM::Platform::Client;
-use BOM::Platform::Client::Login;
 use Digest::SHA;
 
 my %credentials = (
