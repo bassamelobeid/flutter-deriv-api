@@ -8,6 +8,7 @@ use JSON qw(decode_json);
 use Mojo::URL;
 use Mojo::Cookie::Request;
 use URL::Encode;
+use Data::Dumper;
 
 use BOM::Platform::Context::Request;
 
@@ -44,46 +45,29 @@ subtest 'param builds' => sub {
     subtest 'session_cookie' => sub {
         my $lc = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $request =
-            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->value})});
+            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token})});
+
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
 
         $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});
-        ok !$request->session_cookie, "not a valid cookie";
+        ok((not defined $request->session_cookie), "not a valid cookie");
 
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'CR100000000000000000001',
-            token   => 'freefood',
-            email   => $email,
-        );
 
-        $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->value})});
-        ok !$request->session_cookie, "not a valid loginid";
-
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'MESA1',
-            token   => 'freefood',
-            email   => $email,
-        );
-
-        $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->value})});
-        throws_ok { $request->session_cookie } qr/Unknown broker code or loginid \[MESA\]/, "not a valid broker";
     };
 
     subtest 'loginid' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $request =
-            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->value})});
+            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token })});
         is $request->loginid, 'CR1001', "Valid Client and loginid";
     };
 
@@ -92,17 +76,16 @@ subtest 'param builds' => sub {
             my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
             my $lc          = BOM::Platform::SessionCookie->new(
                 loginid => 'MX1001',
-                token   => 'freefood',
                 email   => $email,
             );
 
             my $request =
-                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->value})});
-            is $request->broker_code, 'MX', "Valid broker";
+                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
+            is $request->broker_code, 'MX', "Valid broker" or diag(Dumper($request));
 
             $request =
-                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->value})});
-            is $request->broker_code, 'MX', "Valid borker";
+                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token }, {})});
+            is $request->broker_code, 'MX', "Valid broker";
         };
 
         subtest 'broker inputs' => sub {
@@ -132,52 +115,29 @@ subtest 'cookie builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $request =
             BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->value})});
+            {mojo_request => mock_request_for("https://www.binary.com/", {}, { login => $lc->token })});
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
 
         $request =
             BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => ''})});
         ok !$request->session_cookie, "not a valid cookie";
 
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'CR100000000000000000001',
-            token   => 'freefood',
-            email   => $email,
-        );
-
-        $request =
-            BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->value})});
-        ok !$request->session_cookie, "not a valid loginid";
-
-        $lc = BOM::Platform::SessionCookie->new(
-            loginid => 'MESA1',
-            token   => 'freefood',
-            email   => $email,
-        );
-
-        $request =
-            BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->value})});
-        throws_ok { $request->session_cookie } qr/Unknown broker code or loginid \[MESA\]/, "not a valid broker";
     };
 
     subtest 'loginid' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $request =
-            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->value})});
+            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
         is $request->loginid, 'CR1001', "Valid Client and loginid";
     };
 
@@ -185,13 +145,12 @@ subtest 'cookie builds' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $request =
             BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->value})});
+            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->token })});
         is $request->broker_code, 'CR', "Valid login id and broker";
     };
 };
@@ -201,18 +160,16 @@ subtest 'cookie preferred' => sub {
         my $cookie_name = BOM::Platform::Runtime->instance->app_config->cgi->cookie_name->login;
         my $lc          = BOM::Platform::SessionCookie->new(
             loginid => 'CR1001',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $lc2 = BOM::Platform::SessionCookie->new(
             loginid => 'CR1002',
-            token   => 'freefood',
             email   => $email,
         );
 
         my $request = BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {login => $lc2->value}, {$cookie_name => $lc->value})});
+            {mojo_request => mock_request_for("https://www.binary.com/", {login => $lc2->token }, {$cookie_name => $lc->token })});
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
     };
 };
@@ -276,7 +233,7 @@ sub mock_request_for {
     foreach my $name (keys %$cookies) {
         my $cookie = Mojo::Cookie::Request->new();
         $cookie->name($name);
-        $cookie->value(URL::Encode::url_encode($cookies->{$name}));
+        $cookie->value($cookies->{$name});
         $request_cookies->{$name} = $cookie;
     }
 
