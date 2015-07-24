@@ -43,7 +43,6 @@ if ($try_to_login and my $staff = BOM::Backoffice::Auth0::login(request()->param
 } elsif (request()->param('whattodo') eq 'logout') {
      BOM::Platform::Context::request()->bo_cookie->end_session;
     BOM::Backoffice::Auth0::loggout();
-    PrintContentType({'cookies' => $mycookie});
     print '<script>window.location = "' . request()->url_for('backoffice/login.cgi') . '"</script>';
     code_exit_BO();
 } elsif (not BOM::Backoffice::Auth0::from_cookie()) {
