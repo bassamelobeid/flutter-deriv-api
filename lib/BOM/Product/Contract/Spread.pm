@@ -429,8 +429,8 @@ sub _validate_stop_loss {
 
     my @err;
     my $minimum_point = $self->spread + 1;
-    my $minimum = $self->stop_type eq 'dollar' ? $minimum_point * $self->amount_per_point : $minimum_point;
-    if ($self->stop_loss < $minimum) {
+    if ($self->stop_loss < $minimum_point) {
+        my $minimum = $self->stop_type eq 'dollar' ? $minimum_point * $self->amount_per_point : $minimum_point;
         push @err,
             {
             message           => 'Stop Loss is less than minumum[' . $minimum . ']',
