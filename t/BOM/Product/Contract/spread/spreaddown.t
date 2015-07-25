@@ -26,6 +26,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 subtest 'spread up' => sub {
     my $params = {
+        spread           => 2,
         bet_type         => 'SPREADD',
         currency         => 'USD',
         underlying       => 'R_100',
@@ -61,7 +62,8 @@ subtest 'spread up' => sub {
         cmp_ok $c->barrier->as_absolute, '==', 101, 'barrier with correct pipsize';
         ok $c->current_value, 'current value is defined';
         ok !$c->is_expired, 'position not expired';
-        cmp_ok $c->current_value, '==', -8, 'current value is negative 6';
+        cmp_ok $c->current_value->{dollar}, '==', -8, 'current value is -8';
+        cmp_ok $c->current_value->{point}, '==', -4, 'current value in point is -4';
         cmp_ok $c->bid_price,     '==', 12, 'bid_price is 12';
     }
     'general checks';

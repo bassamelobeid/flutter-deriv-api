@@ -247,7 +247,8 @@ sub _build_shortcode {
     my @element = map { uc $_ } (
         $self->code, $self->underlying->symbol,
         $self->amount_per_point, $self->date_start->epoch,
-        $self->supplied_stop_loss, $self->supplied_stop_profit, $self->stop_type
+        $self->supplied_stop_loss, $self->supplied_stop_profit,
+        $self->stop_type
     );
     return join '_', @element;
 }

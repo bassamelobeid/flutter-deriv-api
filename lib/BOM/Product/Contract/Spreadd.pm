@@ -39,7 +39,7 @@ sub _build_stop_loss_level {
 
 sub _build_stop_profit_level {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->barrier->as_absolute - $self->stop_loss);
+    return $self->underlying->pipsized_value($self->barrier->as_absolute - $self->stop_profit);
 }
 
 has is_expired => (
