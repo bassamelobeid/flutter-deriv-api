@@ -247,7 +247,7 @@ sub _build_shortcode {
     my @element = map { uc $_ } (
         $self->code, $self->underlying->symbol,
         $self->amount_per_point, $self->date_start->epoch,
-        $self->stop_loss, $self->stop_profit, $self->stop_type
+        $self->supplied_stop_loss, $self->supplied_stop_profit, $self->stop_type
     );
     return join '_', @element;
 }
@@ -417,7 +417,7 @@ sub _validate_amount_per_point {
             {
             message           => 'Amount per point [' . $self->amount_per_point . '] greater than limit[100]',
             severity          => 99,
-            message_to_client => localize('Amount Per Point must be between [_1] 1 and [_1] 100.',$self->currency),
+            message_to_client => localize('Amount Per Point must be between [_1] 1 and [_1] 100.', $self->currency),
             };
     }
 
@@ -435,7 +435,7 @@ sub _validate_stop_loss {
             $minimum = $minimum_point * $self->amount_per_point;
             $message_to_client = localize('Stop Loss must be at least [_1] ' . $minimum . '.', $self->currency);
         } else {
-            $minimum = $minimum_point;
+            $minimum           = $minimum_point;
             $message_to_client = localize('Stop Loss must be at least ' . $minimum . ' points.');
         }
 
@@ -463,18 +463,18 @@ sub _validate_stop_profit {
     my $self = shift;
 
     my @err;
-    my $app = $self->amount_per_point;
-    my $max_allowed_profit_per_contract = 1000; # not sure where this should belong in yaml
+    my $app                             = $self->amount_per_point;
+    my $max_allowed_profit_per_contract = 1000;                      # not sure where this should belong in yaml
     my $maximum_point = min($self->stop_loss * 5, $max_allowed_profit_per_contract / $app);
 
     if ($self->stop_profit > $maximum_point) {
         my ($maximum, $message_to_client);
         if ($self->stop_type eq 'dollar') {
             $maximum = $maximum_point * $app;
-            $message_to_client = localize('Stop Profit must be less than [_1] ' . $maximum . '.', $self->currency);
+            $message_to_client = localize('Stop Profit must not be greater than [_1] ' . $maximum . '.', $self->currency);
         } else {
-            $maximum = $maximum_point;
-            $message_to_client = localize('Stop Profit must be less than ' . $maximum . ' points.');
+            $maximum           = $maximum_point;
+            $message_to_client = localize('Stop Profit must not be greater than ' . $maximum . ' points.');
         }
         push @err,
             {
