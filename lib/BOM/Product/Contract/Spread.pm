@@ -10,8 +10,6 @@ use POSIX qw(floor);
 use Math::Round qw(round);
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
-use BOM::Product::Offerings qw( get_contract_specifics );
-use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
@@ -266,59 +264,6 @@ sub _build_longcode {
     }
 
     return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));
-}
-
-has 'staking_limits' => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-sub _build_staking_limits {
-    my $self = shift;
-
-    my $underlying     = $self->underlying;
-    my $contract_specs = get_contract_specifics({
-        underlying_symbol => $underlying->symbol,
-        contract_category => $self->category_code,
-        expiry_type       => 'intraday',                                                                  # hardcoded
-        start_type        => 'spot',                                                                      #hardcoded
-        barrier_category  => $BOM::Product::Offerings::BARRIER_CATEGORIES->{$self->category_code}->[0],
-    });
-
-    my @possible_payout_maxes = ($contract_specs->{payout_limit});
-
-    push @possible_payout_maxes, BOM::Platform::Runtime->instance->app_config->quants->bet_limits->maximum_payout;
-    push @possible_payout_maxes, BOM::Platform::Runtime->instance->app_config->quants->bet_limits->maximum_payout_on_new_markets
-        if ($underlying->is_newly_added);
-
-    my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
-    my $stake_max = $payout_max;
-
-    my $payout_min = 1;
-    my $stake_min  = $payout_min / 2;
-
-    # err is included here to allow the web front-end access to the same message generated in the back-end.
-    return {
-        stake => {
-            min => $stake_min,
-            max => $stake_max,
-            err => localize(
-                'Stake must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
-                to_monetary_number_format($stake_min, 1),
-                to_monetary_number_format($stake_max, 1)
-            ),
-        },
-        payout => {
-            min => $payout_min,
-            max => $payout_max,
-            err => localize(
-                'Payout must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
-                to_monetary_number_format($payout_min, 1),
-                to_monetary_number_format($payout_max, 1)
-            ),
-        },
-    };
 }
 
 sub breaching_tick {

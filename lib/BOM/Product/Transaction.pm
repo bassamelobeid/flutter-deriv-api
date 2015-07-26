@@ -1258,6 +1258,10 @@ sub _validate_iom_withdrawal_limit {
 sub _validate_stake_limit {
     my $self = shift;
 
+    # spread stake validation is within its module.
+    # spread bet won't be offered to maltainvest.
+    return if $self->contract->is_spread;
+
     my $client          = $self->client;
     my $contract        = $self->contract;
     my $landing_company = $client->landing_company;
