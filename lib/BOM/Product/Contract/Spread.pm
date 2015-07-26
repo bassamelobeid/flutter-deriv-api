@@ -11,6 +11,7 @@ use Math::Round qw(round);
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
 use BOM::Platform::Context qw(localize request);
+use Format::Util::Numbers qw(roundnear);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
