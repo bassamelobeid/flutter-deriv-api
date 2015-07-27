@@ -91,13 +91,19 @@ sub _build_bid_price {
     return roundnear(0.01, $bid);
 }
 
-has stream_level => (
+has [qw(buy_level sell_level)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
-sub _build_stream_level {
-    return shift->buy_level;
+sub _build_buy_level {
+    my $self = shift;
+    return $self->underlying->pipsized_value($self->current_tick->quote + $self->half_spread);
+}
+
+sub _build_sell_level {
+    my $self = shift;
+    return $self->underlying->pipsized_value($self->current_tick->quote - $self->half_spread);
 }
 
 sub _recalculate_value {
