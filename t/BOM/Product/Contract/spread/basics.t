@@ -76,10 +76,10 @@ subtest 'validate amount per point' => sub {
         my $c = produce_contract({%$params, amount_per_point => 0});
         my @e;
         ok @e = $c->_validate_amount_per_point, 'has error';
-        like($e[0]{message}, qr/Negative entry on amount_per_point/, 'throw message when amount per point is zero');
+        like($e[0]{message_to_client}, qr/at least USD 1/, 'throw message when amount per point is zero');
         $c = produce_contract({%$params, amount_per_point => -1});
         ok @e = $c->_validate_amount_per_point, 'has error';
-        like($e[0]{message}, qr/Negative entry on amount_per_point/, 'throw message when amount per point is zero');
+        like($e[0]{message_to_client}, qr/at least USD 1/, 'throw message when amount per point is zero');
         $c = produce_contract({%$params, amount_per_point => 1});
         ok !$c->_validate_amount_per_point, 'no error';
         $c = produce_contract({%$params, amount_per_point => 100});

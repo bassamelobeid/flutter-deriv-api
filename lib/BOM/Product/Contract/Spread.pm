@@ -350,12 +350,12 @@ sub _validate_amount_per_point {
     my $self = shift;
 
     my @err;
-    if ($self->amount_per_point <= 0) {
+    if ($self->amount_per_point < 1) {
         push @err,
             {
-            message           => 'Negative entry on amount_per_point[' . $self->amount_per_point . ']',
+            message           => 'amount_per_point[' . $self->amount_per_point . '] is less than 1',
             severity          => 99,
-            message_to_client => localize('Amount Per Point must be greater than zero.'),
+            message_to_client => localize('Amount Per Point must be at least [_1] 1.', $self->currency),
             };
     }
 
