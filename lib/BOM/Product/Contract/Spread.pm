@@ -298,6 +298,36 @@ sub _build__pip_size_tick {
     });
 }
 
+has bid_price => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_bid_price {
+    my $self = shift;
+
+    my $bid;
+    # we need to take into account the stop loss premium paid.
+    if ($self->is_expired) {
+        $bid = $self->ask_price + $self->value;
+    } else {
+        $self->exit_level($self->sell_level);
+        $self->_recalculate_value($self->sell_level);
+        $bid = $self->ask_price + $self->value;
+    }
+
+    return roundnear(0.01, $bid);
+}
+
+sub current_value {
+    my $self = shift;
+    $self->_recalculate_value($self->sell_level);
+    return {
+        dollar => $self->value,
+        point  => $self->point_value,
+    };
+}
+
 # VALIDATIONS #
 sub _validate_quote {
     my $self = shift;
