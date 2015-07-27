@@ -968,6 +968,15 @@ my %known_errors = (
             -message_to_client => $error_message,
         );
     },
+    BI015 => sub {
+        my $self = shift;
+
+        return Error::Base->cuss(
+            -type              => 'SpreadDailyProfitLimitExceeded',
+            -mesg              => 'Exceeds profit limit on spread',
+            -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
+        );
+    },
 );
 
 sub _recover {

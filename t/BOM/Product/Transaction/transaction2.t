@@ -25,6 +25,8 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'FOREX'});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'RANDOM'});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_flat', {symbol => 'R_100', recorded_date => $now});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
@@ -38,6 +40,12 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date   => Date::Utility->new,
     });
 
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol => 'R_100',
+        date   => Date::Utility->new,
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
@@ -1153,6 +1161,119 @@ subtest 'euro_pairs_turnover_limit', sub {
     'survived';
 };
 
+subtest 'spreads', sub {
+    plan tests => 13;
+    lives_ok {
+        my $cl = create_client;
+
+        top_up $cl, 'USD', 5000;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract = produce_contract({
+            underlying   => 'R_100',
+            bet_type     => 'SPREADU',
+            currency     => 'USD',
+            amount_per_point => 2,
+            stop_loss => 10,
+            stop_profit => 10,
+            stop_type => 'point',
+            spread => 2,
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $cl,
+            contract    => $contract,
+            price       => 20.00,
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            (my $fname = $class) =~ s!::!/!g;
+            $INC{$fname . '.pm'} = 1;
+            my $mock_limits = Test::MockModule->new($class);
+            $mock_limits->mock(spreads_daily_profit_limit =>
+                    sub { note "mocked app_config->quants->client_limits->spreads_daily_profit_limit returning 59.00"; 59.00 });
+
+            is $txn->buy, undef, 'bought 1st contract';
+            is $txn->buy, undef, 'bought 2nd contract';
+
+            # create a new transaction object to get pristine (undef) contract_id and the like
+            $contract = produce_contract({
+                underlying   => 'R_100',
+                bet_type     => 'SPREADU',
+                currency     => 'USD',
+                amount_per_point => 2,
+                stop_loss => 10,
+                stop_profit => 10,
+                stop_type => 'point',
+                spread => 2,
+            });
+            $txn = BOM::Product::Transaction->new({
+                client      => $cl,
+                contract    => $contract,
+            });
+
+            $txn->buy;
+        };
+
+        SKIP: {
+            skip 'no error', 6
+                unless isa_ok $error, 'Error::Base';
+
+            is $error->get_type, 'SpreadDailyProfitLimitExceeded', 'error is SpreadDailyProfitLimitExceeded';
+
+            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
+            is $error->{-mesg},              'Exceeds profit limit on spread',           'mesg';
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+        # now matching exactly the limit -- should succeed
+        $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+
+            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+            (my $fname = $class) =~ s!::!/!g;
+            $INC{$fname . '.pm'} = 1;
+            my $mock_limits = Test::MockModule->new($class);
+            $mock_limits->mock(spreads_daily_profit_limit =>
+                    sub { note "mocked app_config->quants->client_limits->spreads_daily_profit_limit returning 60.00"; 60.00 });
+
+            # create a new transaction object to get pristine (undef) contract_id and the like
+            $txn = BOM::Product::Transaction->new({
+                client      => $cl,
+                contract    => $contract,
+                price   => 20,
+            });
+
+            $txn->buy;
+        };
+        is $error, undef, 'exactly matching the limit ==> successful buy';
+    }
+    'survived';
+};
 # see further transaction.t:  many more tests
 #             transaction2.t: special turnover limits
 
