@@ -19,16 +19,22 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
 sub available_contracts_for_symbol {
-    my $symbol = shift || die 'no symbol';
+    my $args = shift;
+    my $symbol                 = $args->{symbol} || die 'no symbol';
+    my $predefined_contract    = $args->{predefined} || '';
 
-    my $now        = Date::Utility->new;
-    my $underlying = BOM::Market::Underlying->new($symbol);
-    my $exchange   = $underlying->exchange;
-    my $open       = $exchange->opening_on($now)->epoch;
-    my $close      = $exchange->closing_on($now)->epoch;
+    my $now               = Date::Utility->new;
+    my $underlying        = BOM::Market::Underlying->new($symbol);
+    my $exchange          = $underlying->exchange;
+    my $open              = $exchange->opening_on($now)->epoch;
+    my $close             = $exchange->closing_on($now)->epoch;
 
     my $flyby = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings = $flyby->query({underlying_symbol => $symbol});
+    my @offerings =$flyby->query({underlying_symbol => $symbol});
+
+    if ($predefined_contract){
+       @offerings = _predefined_trading_period({offering => \@offerings, exchange =>$exchange});
+    }
 
     for my $o (@offerings) {
 
@@ -62,18 +68,23 @@ sub available_contracts_for_symbol {
 
         if ($o->{barriers}) {
 
-            my %args = (
-                underlying => $underlying,
-                duration   => $o->{min_contract_duration});
+           if($predefined_contract){
+              $o->{barriers} = _predefined_barriers_on_trading_period({symbol => $underlying, trading_period => $o->{trading_period}});
+           }else{
+              my %args = (
+                   underlying => $underlying,
+                   duration   => $o->{min_contract_duration});
 
-            if ($o->{barriers} == 1) {
-                $o->{barrier} = _default_barrier({%args, barrier_type => 'high'});
-            }
+              if ($o->{barriers} == 1) {
+                 $o->{barrier} = _default_barrier({%args, barrier_type => 'high'});
+               }
 
-            if ($o->{barriers} == 2) {
-                $o->{high_barrier} = _default_barrier({%args, barrier_type => 'high'});
-                $o->{low_barrier}  = _default_barrier({%args, barrier_type => 'low'});
-            }
+               if ($o->{barriers} == 2) {
+                  $o->{high_barrier} = _default_barrier({%args, barrier_type => 'high'});
+                  $o->{low_barrier}  = _default_barrier({%args, barrier_type => 'low'});
+               }
+
+           }
         }
     }
 
@@ -122,5 +133,59 @@ sub _default_barrier {
 
     return $duration > 86400 ? $strike->as_absolute : $strike->as_relative;
 }
+=head2 _predefined_trading_period
 
+e set the predefined trading perios as for now based on Japan requirement:
+1) Start at 00:00GMT and expire with duration of 2,4,6,8,12,16,20 hours
+2) Start at closest even hour and expire with duration of 2 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT.
+3) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
+
+=cut
+sub _predefined_trading_period{
+    my $args = shift ;
+    my @offerings = @{$args->{offering}};
+    my $exchange = $args->{exchange};
+
+    my @offerings_2 = grep { $_->{expiry_type} ne 'tick' and $_->{start_type} ne 'forward'} @offerings ;
+    my @trading_periods;
+    my $now_hour = Date::Utility->new->hour;
+    my @hours  = (2,4,6,8,12,16,20);
+    my @days = (1,2,3,7,30,60,180,365);
+    my $today = Date::Utility->today;
+    my $start_of_day= $today->datetime_yyyymmdd_hhmmss;
+
+    foreach  my $hour (@hours){
+       if ($now_hour >= $hour){
+           next ;
+       }
+       my $date_expiry = $today->plus_time_interval($hour.'h')->datetime_yyyymmdd_hhmmss;
+       push @trading_periods, {date_start => $start_of_day , date_expiry => $date_expiry};
+    }
+
+    my $closer_hour = $now_hour % 2 == 0 ? $now_hour : $now_hour -1 ;
+    my $date_start_1 = $today->plus_time_interval($closer_hour.'h')->datetime_yyyymmdd_hhmmss;
+    my $date_expiry_1 = $today->plus_time_interval($closer_hour + 2 .'h')->datetime_yyyymmdd_hhmmss;
+    push @trading_periods, {date_start => $date_start_1 , date_expiry => $date_expiry_1};
+
+    foreach  my $day (@days){
+       my $date_expiry = $today->plus_time_interval($day.'d');
+       if ($exchange->has_holiday_on($date_expiry)){
+           $date_expiry = $exchange->trade_date_after($date_expiry);
+       }
+       $date_expiry = $date_expiry->truncate_to_day->plus_time_interval('23h59m59s')->datetime_yyyymmdd_hhmmss;
+       push @trading_periods, {date_start => $start_of_day , date_expiry => $date_expiry };
+    }
+
+    my @new_offerings;
+
+    foreach my $o (@offerings_2){
+        foreach my $trading_period (@trading_periods){
+             push @new_offerings, {%{$o}, trading_period => $trading_period};
+        }
+    }
+
+    return @new_offerings;
+
+
+}
 1;
