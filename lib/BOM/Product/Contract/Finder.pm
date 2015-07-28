@@ -69,7 +69,7 @@ sub available_contracts_for_symbol {
         if ($o->{barriers}) {
 
            if($predefined_contract){
-              $o->{barriers} = _predefined_barriers_on_trading_period({symbol => $underlying, trading_period => $o->{trading_period}});
+#              $o->{barriers} = _predefined_barriers_on_trading_period($o);
            }else{
               my %args = (
                    underlying => $underlying,
@@ -171,13 +171,14 @@ sub _predefined_trading_period{
        my $date_expiry = $today->plus_time_interval($day.'d');
        if ($exchange->has_holiday_on($date_expiry)){
            $date_expiry = $exchange->trade_date_after($date_expiry);
+           my $days_between = $date_expiry->days_between($today);
+           if (grep {$days_between == $_} @days) { next;}
        }
        $date_expiry = $date_expiry->truncate_to_day->plus_time_interval('23h59m59s')->datetime_yyyymmdd_hhmmss;
        push @trading_periods, {date_start => $start_of_day , date_expiry => $date_expiry };
     }
 
     my @new_offerings;
-
     foreach my $o (@offerings_2){
         foreach my $trading_period (@trading_periods){
              push @new_offerings, {%{$o}, trading_period => $trading_period};
@@ -185,7 +186,5 @@ sub _predefined_trading_period{
     }
 
     return @new_offerings;
-
-
 }
 1;
