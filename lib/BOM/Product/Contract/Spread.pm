@@ -426,7 +426,7 @@ sub _validate_stop_loss {
     my $self = shift;
 
     my @err;
-    my $minimum_point = 1.5;
+    my $minimum_point = 1.5 * $self->spread;
     if ($self->stop_loss < $minimum_point) {
         my ($minimum, $message_to_client);
         if ($self->stop_type eq 'dollar') {
