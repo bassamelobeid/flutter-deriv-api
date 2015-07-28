@@ -3471,40 +3471,6 @@ SYNAEX:
   sd_symbol: NA
   submarket: smart_index
   symbol: SYNAEX
-SYNBFX:
-  asset: SYNBFX
-  contracts: none
-  commission_level: 3
-  display_name: Belgian Smart Index
-  exchange_name: SYNEURONEXT
-  feed_license: realtime
-  instrument_type: synthetic
-  market: indices
-  market_convention:
-    delta_premium_adjusted: 0
-    delta_style: spot_delta
-  pip_size: 0.01
-  quoted_currency: EUR
-  sd_symbol: NA
-  submarket: smart_index
-  symbol: SYNBFX
-SYNBSESENSEX30:
-  asset: SYNBSESENSEX30
-  contracts: none
-  commission_level: 3
-  display_name: Bombay Smart Index
-  exchange_name: SYNBSE
-  feed_license: realtime
-  instrument_type: synthetic
-  market: indices
-  market_convention:
-    delta_premium_adjusted: 0
-    delta_style: spot_delta
-  pip_size: 0.01
-  quoted_currency: INR
-  sd_symbol: NA
-  submarket: smart_index
-  symbol: SYNBSESENSEX30
 SYNDJI:
   asset: SYNDJI
   contracts: special_syn
@@ -3555,23 +3521,6 @@ SYNGDAXI:
   sd_symbol: NA
   submarket: smart_index
   symbol: SYNGDAXI
-SYNHSI:
-  asset: SYNHSI
-  contracts: none
-  commission_level: 3
-  display_name: Hong Kong Smart Index
-  exchange_name: SYNHKSE
-  feed_license: realtime
-  instrument_type: synthetic
-  market: indices
-  market_convention:
-    delta_premium_adjusted: 0
-    delta_style: spot_delta
-  pip_size: 0.01
-  quoted_currency: HKD
-  sd_symbol: NA
-  submarket: smart_index
-  symbol: SYNHSI
 SYNN225:
   asset: SYNN225
   contracts: special_syn
