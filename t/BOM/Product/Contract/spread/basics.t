@@ -37,7 +37,11 @@ my $params = {
 
 subtest 'entry tick' => sub {
     lives_ok {
-        my $c = produce_contract({%$params, current_tick => undef, spread => 1});
+        my $c = produce_contract({
+            %$params,
+            current_tick => undef,
+            spread       => 1
+        });
         isa_ok $c, 'BOM::Product::Contract::Spreadu';
         is $c->entry_tick->quote, 0.01, 'entry tick is pip size value if current tick and next tick is undefiend';
         ok(($c->all_errors)[0], 'error');
@@ -76,17 +80,29 @@ subtest 'validate amount per point' => sub {
         my $c = produce_contract({%$params, amount_per_point => 0});
         my @e;
         ok !$c->is_valid_to_buy;
-        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be between 1 and 100 USD/, 'throw message when amount per point is zero');
+        like(
+            ($c->all_errors)[0]->message_to_client,
+            qr/Amount Per Point must be between 1 and 100 USD/,
+            'throw message when amount per point is zero'
+        );
         $c = produce_contract({%$params, amount_per_point => -1});
         ok !$c->is_valid_to_buy;
-        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be between 1 and 100 USD/, 'throw message when amount per point is zero');
+        like(
+            ($c->all_errors)[0]->message_to_client,
+            qr/Amount Per Point must be between 1 and 100 USD/,
+            'throw message when amount per point is zero'
+        );
         $c = produce_contract({%$params, amount_per_point => 1});
         ok $c->is_valid_to_buy;
         $c = produce_contract({%$params, amount_per_point => 100});
         ok $c->is_valid_to_buy;
         $c = produce_contract({%$params, amount_per_point => 100.1});
         ok !$c->is_valid_to_buy;
-        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be between 1 and 100 USD/, 'throw message when amount per point is zero');
+        like(
+            ($c->all_errors)[0]->message_to_client,
+            qr/Amount Per Point must be between 1 and 100 USD/,
+            'throw message when amount per point is zero'
+        );
     }
     'validate amount per point';
 };
@@ -98,9 +114,9 @@ subtest 'validate stop loss' => sub {
         my @e;
         $c = produce_contract({
             %$params,
-            spread    => 1,
-            stop_loss => 1.4,
-            stop_type => 'point',
+            spread       => 1,
+            stop_loss    => 1.4,
+            stop_type    => 'point',
             current_spot => 100,
         });
         ok @e = $c->_validate_stop_loss, 'has error';
@@ -118,7 +134,7 @@ subtest 'validate stop loss' => sub {
             spread           => 1,
             stop_loss        => 2,
             stop_type        => 'dollar',
-            current_spot => 100,
+            current_spot     => 100,
         });
         ok @e = $c->_validate_stop_loss, 'has error';
         like($e[0]{message_to_client}, qr/Stop Loss must be between 3 and 200 USD/, 'throws error when stop loss is less than minimum');

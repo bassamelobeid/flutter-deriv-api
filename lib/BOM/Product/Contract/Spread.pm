@@ -30,14 +30,18 @@ sub is_spread  { return 1 }
 sub BUILD {
     my $self = shift;
 
-    my $limits = {min => 1, max => 100};
+    my $limits = {
+        min => 1,
+        max => 100
+    };
     if ($self->amount_per_point < $limits->{min} or $self->amount_per_point > $limits->{max}) {
-        $self->amount_per_point($limits->{min}); # set to minimum
+        $self->amount_per_point($limits->{min});    # set to minimum
         $self->add_errors({
-            message           => 'amount_per_point[' . $self->amount_per_point . "] is not between [$limits->{min}] and [$limits->{max}]",
-            severity          => 99,
-            message_to_client => localize('Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
-            });
+            message  => 'amount_per_point[' . $self->amount_per_point . "] is not between [$limits->{min}] and [$limits->{max}]",
+            severity => 99,
+            message_to_client =>
+                localize('Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
+        });
     }
 
     return;
@@ -402,9 +406,12 @@ sub _validate_stop_loss {
     my $self = shift;
 
     my @err;
-    my $limits = {min => 1.5*$self->spread, max => $self->current_spot};
+    my $limits = {
+        min => 1.5 * $self->spread,
+        max => $self->current_spot
+    };
     if ($self->stop_loss < $limits->{min} or $self->stop_loss > $limits->{max}) {
-        my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min','max'});
+        my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client = localize('Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit);
         push @err,
             {
@@ -421,9 +428,11 @@ sub _validate_stop_profit {
     my $self = shift;
 
     my @err;
-    my $limits = {min => 1, max => min($self->stop_loss*5,1000/$self->amount_per_point)};
+    my $limits = {
+        min => 1,
+        max => min($self->stop_loss * 5, 1000 / $self->amount_per_point)};
     if ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max}) {
-        my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min','max'});
+        my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
         push @err,
             {
@@ -447,7 +456,7 @@ sub _get_min_max_unit {
         $unit = 'points';
     }
 
-    return (roundnear(0.01,$min), roundnear(0.01,$max), $unit);
+    return (roundnear(0.01, $min), roundnear(0.01, $max), $unit);
 }
 no Moose;
 __PACKAGE__->meta->make_immutable;
