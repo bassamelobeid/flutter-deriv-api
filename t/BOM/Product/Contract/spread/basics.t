@@ -37,7 +37,7 @@ my $params = {
 
 subtest 'entry tick' => sub {
     lives_ok {
-        my $c = produce_contract({%$params, current_tick => undef});
+        my $c = produce_contract({%$params, current_tick => undef, spread => 1});
         isa_ok $c, 'BOM::Product::Contract::Spreadu';
         is $c->entry_tick->quote, 0.01, 'entry tick is pip size value if current tick and next tick is undefiend';
         ok(($c->all_errors)[0], 'error');
@@ -75,18 +75,18 @@ subtest 'validate amount per point' => sub {
     lives_ok {
         my $c = produce_contract({%$params, amount_per_point => 0});
         my @e;
-        $c->is_valid_to_buy;
-        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be greater than USD 0/, 'throw message when amount per point is zero');
+        ok !$c->is_valid_to_buy;
+        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be between 1 and 100 USD/, 'throw message when amount per point is zero');
         $c = produce_contract({%$params, amount_per_point => -1});
-        ok @e = $c->_validate_amount_per_point, 'has error';
-        like($e[0]{message_to_client}, qr/at least USD 1/, 'throw message when amount per point is zero');
+        ok !$c->is_valid_to_buy;
+        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be between 1 and 100 USD/, 'throw message when amount per point is zero');
         $c = produce_contract({%$params, amount_per_point => 1});
-        ok !$c->_validate_amount_per_point, 'no error';
+        ok $c->is_valid_to_buy;
         $c = produce_contract({%$params, amount_per_point => 100});
-        ok !$c->_validate_amount_per_point, 'no error when amount per point is 100';
+        ok $c->is_valid_to_buy;
         $c = produce_contract({%$params, amount_per_point => 100.1});
-        ok @e = $c->_validate_amount_per_point, 'has error';
-        like($e[0]{message}, qr/Amount per point .* greater than limit/, 'throw message when amount per point is greater than 100');
+        ok !$c->is_valid_to_buy;
+        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be between 1 and 100 USD/, 'throw message when amount per point is zero');
     }
     'validate amount per point';
 };
@@ -100,10 +100,11 @@ subtest 'validate stop loss' => sub {
             %$params,
             spread    => 1,
             stop_loss => 1.4,
-            stop_type => 'point'
+            stop_type => 'point',
+            current_spot => 100,
         });
         ok @e = $c->_validate_stop_loss, 'has error';
-        like($e[0]{message_to_client}, qr/Stop Loss must be at least 1.5 points/, 'throws error when stop loss is less than minimum');
+        like($e[0]{message_to_client}, qr/Stop Loss must be between 1.5 and 100 points/, 'throws error when stop loss is less than minimum');
         $c = produce_contract({
             %$params,
             spread    => 1,
@@ -116,18 +117,20 @@ subtest 'validate stop loss' => sub {
             amount_per_point => 2,
             spread           => 1,
             stop_loss        => 2,
-            stop_type        => 'dollar'
+            stop_type        => 'dollar',
+            current_spot => 100,
         });
         ok @e = $c->_validate_stop_loss, 'has error';
-        like($e[0]{message_to_client}, qr/Stop Loss must be at least USD 3/, 'throws error when stop loss is less than minimum');
+        like($e[0]{message_to_client}, qr/Stop Loss must be between 3 and 200 USD/, 'throws error when stop loss is less than minimum');
         $c = produce_contract({
             %$params,
             spread       => 1,
             stop_loss    => 200,
-            current_spot => 199
+            current_spot => 199,
+            stop_type    => 'point',
         });
         ok @e = $c->_validate_stop_loss, 'has error';
-        like($e[0]{message_to_client}, qr/Stop Loss must not be greater than spot price/, 'throws error when stop loss is greater than current spot');
+        like($e[0]{message_to_client}, qr/Stop Loss must be between 1.5 and 199 points/, 'throws error when stop loss is greater than current spot');
     }
     'validate stop loss';
 };
@@ -147,7 +150,7 @@ subtest 'validate stop profit' => sub {
             stop_profit => 6
         });
         ok @e = $c->_validate_stop_profit, 'has error';
-        like($e[0]{message_to_client}, qr/Stop Profit must not be greater than 5 points/, 'throws error when stop profit is more than 5x stop loss');
+        like($e[0]{message_to_client}, qr/Stop Profit must be between 1 and 5 points/, 'throws error when stop profit is more than 5x stop loss');
         $c = produce_contract({
             %$params,
             stop_loss   => 1,
@@ -155,13 +158,13 @@ subtest 'validate stop profit' => sub {
             stop_type   => 'dollar'
         });
         ok @e = $c->_validate_stop_profit, 'has error';
-        like($e[0]{message_to_client}, qr/Stop Profit must not be greater than USD 5/, 'throws error when stop profit is more than 5x stop loss');
+        like($e[0]{message_to_client}, qr/Stop Profit must be between 1 and 5 USD/, 'throws error when stop profit is more than 5x stop loss');
         $c = produce_contract({%$params, stop_profit => 0});
         ok @e = $c->_validate_stop_profit, 'has error';
-        like($e[0]{message}, qr/Negative entry on stop_profit/, 'throws error when stop profit is zero');
+        like($e[0]{message_to_client}, qr/Stop Profit must be between 1 and 50 points/, 'throws error when stop profit is zero');
         $c = produce_contract({%$params, stop_profit => -1});
         ok @e = $c->_validate_stop_profit, 'has error';
-        like($e[0]{message}, qr/Negative entry on stop_profit/, 'throws error when stop profit is negative');
+        like($e[0]{message_to_client}, qr/Stop Profit must be between 1 and 50 points/, 'throws error when stop profit is negative');
     }
     'validate stop profit';
 };

@@ -30,14 +30,14 @@ sub is_spread  { return 1 }
 sub BUILD {
     my $self = shift;
 
-    # This will cause division by zero error
-    if ($self->amount_per_point == 0) {
-        $self->amount_per_point(1);    # make it 1;
+    my $limits = {min => 1, max => 100};
+    if ($self->amount_per_point < $limits->{min} or $self->amount_per_point > $limits->{max}) {
+        $self->amount_per_point($limits->{min}); # set to minimum
         $self->add_errors({
-            message           => 'amount per point is zero',
+            message           => 'amount_per_point[' . $self->amount_per_point . "] is not between [$limits->{min}] and [$limits->{max}]",
             severity          => 99,
-            message_to_client => localize('Amount Per Point must be greater than [_1] 0.', $self->currency),
-        });
+            message_to_client => localize('Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
+            });
     }
 
     return;
@@ -173,7 +173,8 @@ sub _build_current_tick {
 }
 
 sub _build_current_spot {
-    return shift->current_tick->quote;
+    my $self = shift;
+    return $self->current_tick ? $self->current_tick->quote : undef;
 }
 
 sub _build_translated_display_name {
@@ -397,60 +398,19 @@ sub _validate_underlying {
     return @err;
 }
 
-sub _validate_amount_per_point {
-    my $self = shift;
-
-    my @err;
-    if ($self->amount_per_point < 1) {
-        push @err,
-            {
-            message           => 'amount_per_point[' . $self->amount_per_point . '] is less than 1',
-            severity          => 99,
-            message_to_client => localize('Amount Per Point must be at least [_1] 1.', $self->currency),
-            };
-    }
-
-    if ($self->amount_per_point > 100) {
-        push @err,
-            {
-            message           => 'Amount per point [' . $self->amount_per_point . '] greater than limit[100]',
-            severity          => 99,
-            message_to_client => localize('Amount Per Point must be between [_1] 1 and [_1] 100.', $self->currency),
-            };
-    }
-
-    return @err;
-}
-
 sub _validate_stop_loss {
     my $self = shift;
 
     my @err;
-    my $minimum_point = 1.5 * $self->spread;
-    if ($self->stop_loss < $minimum_point) {
-        my ($minimum, $message_to_client);
-        if ($self->stop_type eq 'dollar') {
-            $minimum = $minimum_point * $self->amount_per_point;
-            $message_to_client = localize('Stop Loss must be at least [_1] ' . $minimum . '.', $self->currency);
-        } else {
-            $minimum           = $minimum_point;
-            $message_to_client = localize('Stop Loss must be at least ' . $minimum . ' points.');
-        }
-
+    my $limits = {min => 1.5*$self->spread, max => $self->current_spot};
+    if ($self->stop_loss < $limits->{min} or $self->stop_loss > $limits->{max}) {
+        my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min','max'});
+        my $message_to_client = localize('Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit);
         push @err,
             {
-            message           => 'Stop Loss is less than minumum[' . $minimum . ']',
+            message           => "Stop Loss is not between [$limits->{min}] and [$limits->{max}]",
             severity          => 99,
             message_to_client => $message_to_client,
-            };
-    }
-
-    if ($self->current_spot - $self->stop_loss < 0) {
-        push @err,
-            {
-            message           => 'Stop Loss is greater than stop[' . $self->stop_loss . ']',
-            severity          => 99,
-            message_to_client => localize('Stop Loss must not be greater than spot price.'),
             };
     }
 
@@ -461,41 +421,34 @@ sub _validate_stop_profit {
     my $self = shift;
 
     my @err;
-    my $app                             = $self->amount_per_point;
-    my $max_allowed_profit_per_contract = 1000;                      # not sure where this should belong in yaml
-    my $maximum_point = roundnear(0.01, min($self->stop_loss * 5, $max_allowed_profit_per_contract / $app));
-
-    if ($self->stop_profit > $maximum_point) {
-        my ($maximum, $message_to_client);
-        if ($self->stop_type eq 'dollar') {
-            $maximum           = $maximum_point * $app;
-            $message_to_client = localize('Stop Profit must not be greater than [_1] ' . $maximum . '. Stop profit is limited to [_1] [_2].',
-                $self->currency, $max_allowed_profit_per_contract);
-        } else {
-            $maximum           = $maximum_point;
-            $message_to_client = localize('Stop Profit must not be greater than ' . $maximum . ' points. Stop profit is limited to [_1] [_2]',
-                $self->currency, $max_allowed_profit_per_contract);
-        }
+    my $limits = {min => 1, max => min($self->stop_loss*5,1000/$self->amount_per_point)};
+    if ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max}) {
+        my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min','max'});
+        my $message_to_client = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
         push @err,
             {
-            message           => 'Stop Profit is greater than maximum[' . $maximum . ']',
+            message           => "Stop Profit is not between [$limits->{min}] and [$limits->{max}]",
             severity          => 99,
             message_to_client => $message_to_client,
-            };
-    }
-
-    if ($self->stop_profit <= 0) {
-        push @err,
-            {
-            message           => 'Negative entry on stop_profit[' . $self->stop_profit . ']',
-            severity          => 99,
-            message_to_client => localize('Stop Profit must be greater than zero.'),
             };
     }
 
     return @err;
 }
 
+sub _get_min_max_unit {
+    my ($self, $min, $max) = @_;
+    my $unit;
+    if ($self->stop_type eq 'dollar') {
+        $unit = $self->currency;
+        $min *= $self->amount_per_point;
+        $max *= $self->amount_per_point;
+    } else {
+        $unit = 'points';
+    }
+
+    return (roundnear(0.01,$min), roundnear(0.01,$max), $unit);
+}
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
