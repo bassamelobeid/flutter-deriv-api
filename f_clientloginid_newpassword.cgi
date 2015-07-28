@@ -41,9 +41,7 @@ my $link = request()->url_for(
     '/user/reset_password',
     {
         action      => 'recover',
-        email       => url_encode($email),
-        reset_token => BOM::Platform::EmailToken->new(email => $email)->token,
-        login       => $client->loginid
+        reset_token => BOM::Platform::EmailToken::get_token($email),
     });
 
 my $lost_pass_email;
