@@ -75,8 +75,8 @@ subtest 'validate amount per point' => sub {
     lives_ok {
         my $c = produce_contract({%$params, amount_per_point => 0});
         my @e;
-        ok @e = $c->_validate_amount_per_point, 'has error';
-        like($e[0]{message_to_client}, qr/at least USD 1/, 'throw message when amount per point is zero');
+        $c->is_valid_to_buy;
+        like(($c->all_errors)[0]->message_to_client, qr/Amount Per Point must be greater than USD 0/, 'throw message when amount per point is zero');
         $c = produce_contract({%$params, amount_per_point => -1});
         ok @e = $c->_validate_amount_per_point, 'has error';
         like($e[0]{message_to_client}, qr/at least USD 1/, 'throw message when amount per point is zero');
@@ -99,15 +99,15 @@ subtest 'validate stop loss' => sub {
         $c = produce_contract({
             %$params,
             spread    => 1,
-            stop_loss => 1.9,
+            stop_loss => 1.4,
             stop_type => 'point'
         });
         ok @e = $c->_validate_stop_loss, 'has error';
-        like($e[0]{message_to_client}, qr/Stop Loss must be at least 2 points/, 'throws error when stop loss is less than minimum');
+        like($e[0]{message_to_client}, qr/Stop Loss must be at least 1.5 points/, 'throws error when stop loss is less than minimum');
         $c = produce_contract({
             %$params,
             spread    => 1,
-            stop_loss => 2,
+            stop_loss => 1.5,
             stop_type => 'point'
         });
         ok !$c->_validate_stop_loss, 'no error';
@@ -119,7 +119,7 @@ subtest 'validate stop loss' => sub {
             stop_type        => 'dollar'
         });
         ok @e = $c->_validate_stop_loss, 'has error';
-        like($e[0]{message_to_client}, qr/Stop Loss must be at least USD 4/, 'throws error when stop loss is less than minimum');
+        like($e[0]{message_to_client}, qr/Stop Loss must be at least USD 3/, 'throws error when stop loss is less than minimum');
         $c = produce_contract({
             %$params,
             spread       => 1,
