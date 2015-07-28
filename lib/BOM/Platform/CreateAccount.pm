@@ -97,8 +97,7 @@ sub create_virtual_acc {
     my $link = request()->url_for(
         '/user/verify_email',
         {
-            email        => url_escape($email),
-            verify_token => BOM::Platform::EmailToken->new(email => $email)->token,
+            verify_token => BOM::Platform::EmailToken::get_token($email),
         });
     my $email_content;
     BOM::Platform::Context::template->process('email/resend_verification.html.tt', {link => $link}, \$email_content)
