@@ -31,32 +31,20 @@ sub _cipher {
     return $crypt;
 }
 
-has email => (
-    is       => 'ro',
-    isa      => 'Str',
-    required => 1,
-);
+sub get_token {
+    my $email = shift;
 
-has token => (
-    is      => 'ro',
-    isa     => 'Str',
-    lazy    => 1,
-    builder => '_build_token'
-);
-
-sub _build_token {
-    my $self     = shift;
-    my $hcstring = $self->email . '_##_' . time;
-    return url_encode($self->_cipher->encrypt($hcstring));
+    my $hcstring = $email . '_##_' . time;
+    return url_encode(_cipher()->encrypt($hcstring));
 }
 
 sub validate_token {
-    my $self  = shift;
     my $token = shift;
+    my $email = shift;
 
-    my @arry = split("_##_", $self->_cipher->decrypt(url_decode($token)));
-    if (scalar @arry > 1 and $self->email eq $arry[0]) {
-        if (time - $arry[1] < 7200) {    # check if token time is less than 2 hour of current time
+    my @arry = split("_##_", _cipher()->decrypt(url_decode($token)));
+    if (scalar @arry > 1 and $email eq $arry[0]) {
+        if (time - $arry[1] < 3600) {    # check if token time is less than 1 hour of current time
             return 1;
         }
     }
