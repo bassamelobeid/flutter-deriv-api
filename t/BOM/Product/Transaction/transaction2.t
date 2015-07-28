@@ -26,7 +26,12 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'FOREX'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'RANDOM'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_flat', {symbol => 'R_100', recorded_date => $now});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol        => 'R_100',
+        recorded_date => $now
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
@@ -1175,20 +1180,20 @@ subtest 'spreads', sub {
 
         local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
         my $contract = produce_contract({
-            underlying   => 'R_100',
-            bet_type     => 'SPREADU',
-            currency     => 'USD',
+            underlying       => 'R_100',
+            bet_type         => 'SPREADU',
+            currency         => 'USD',
             amount_per_point => 2,
-            stop_loss => 10,
-            stop_profit => 10,
-            stop_type => 'point',
-            spread => 2,
+            stop_loss        => 10,
+            stop_profit      => 10,
+            stop_type        => 'point',
+            spread           => 2,
         });
 
         my $txn = BOM::Product::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 20.00,
+            client   => $cl,
+            contract => $contract,
+            price    => 20.00,
         });
 
         my $error = do {
@@ -1213,18 +1218,18 @@ subtest 'spreads', sub {
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $contract = produce_contract({
-                underlying   => 'R_100',
-                bet_type     => 'SPREADU',
-                currency     => 'USD',
+                underlying       => 'R_100',
+                bet_type         => 'SPREADU',
+                currency         => 'USD',
                 amount_per_point => 2,
-                stop_loss => 10,
-                stop_profit => 10,
-                stop_type => 'point',
-                spread => 2,
+                stop_loss        => 10,
+                stop_profit      => 10,
+                stop_type        => 'point',
+                spread           => 2,
             });
             $txn = BOM::Product::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
+                client   => $cl,
+                contract => $contract,
             });
 
             $txn->buy;
@@ -1237,7 +1242,7 @@ subtest 'spreads', sub {
             is $error->get_type, 'SpreadDailyProfitLimitExceeded', 'error is SpreadDailyProfitLimitExceeded';
 
             is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds profit limit on spread',           'mesg';
+            is $error->{-mesg}, 'Exceeds profit limit on spread', 'mesg';
 
             is $txn->contract_id,    undef, 'txn->contract_id';
             is $txn->transaction_id, undef, 'txn->transaction_id';
@@ -1263,9 +1268,9 @@ subtest 'spreads', sub {
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                price   => 20,
+                client   => $cl,
+                contract => $contract,
+                price    => 20,
             });
 
             $txn->buy;

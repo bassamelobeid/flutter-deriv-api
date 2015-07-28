@@ -62,9 +62,9 @@ subtest 'spread up' => sub {
         cmp_ok $c->barrier->as_absolute, '==', 102, 'barrier with correct pipsize';
         ok $c->current_value, 'current value is defined';
         ok !$c->is_expired, 'position not expired';
-        cmp_ok $c->current_value->{dollar}, '==', 2,  'current value is 2';
-        cmp_ok $c->current_value->{point}, '==', 1,  'current value in point +1';
-        cmp_ok $c->bid_price,     '==', 22, 'bid_price is 22';
+        cmp_ok $c->current_value->{dollar}, '==', 2, 'current value is 2';
+        cmp_ok $c->current_value->{point},  '==', 1, 'current value in point +1';
+        cmp_ok $c->bid_price, '==', 22, 'bid_price is 22';
     }
     'general checks';
 

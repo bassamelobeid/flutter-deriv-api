@@ -442,16 +442,18 @@ sub _validate_stop_profit {
     my @err;
     my $app                             = $self->amount_per_point;
     my $max_allowed_profit_per_contract = 1000;                      # not sure where this should belong in yaml
-    my $maximum_point = min($self->stop_loss * 5, $max_allowed_profit_per_contract / $app);
+    my $maximum_point = roundnear(0.01, min($self->stop_loss * 5, $max_allowed_profit_per_contract / $app));
 
     if ($self->stop_profit > $maximum_point) {
         my ($maximum, $message_to_client);
         if ($self->stop_type eq 'dollar') {
-            $maximum = $maximum_point * $app;
-            $message_to_client = localize('Stop Profit must not be greater than [_1] ' . $maximum . '.', $self->currency);
+            $maximum           = $maximum_point * $app;
+            $message_to_client = localize('Stop Profit must not be greater than [_1] ' . $maximum . '. Stop profit is limited to [_1] [_2].',
+                $self->currency, $max_allowed_profit_per_contract);
         } else {
             $maximum           = $maximum_point;
-            $message_to_client = localize('Stop Profit must not be greater than ' . $maximum . ' points.');
+            $message_to_client = localize('Stop Profit must not be greater than ' . $maximum . ' points. Stop profit is limited to [_1] [_2]',
+                $self->currency, $max_allowed_profit_per_contract);
         }
         push @err,
             {
