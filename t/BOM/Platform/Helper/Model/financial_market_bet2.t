@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 31;
+use Test::More tests => 32;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
@@ -165,6 +165,55 @@ sub buy_one_bet {
         bet_type          => 'FLASHU',
         short_code        => ('FLASHU_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
         relative_barrier  => 'S0P',
+        %$args,
+    };
+
+    my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
+            bet_data     => $bet_data,
+            account_data => {
+                client_loginid => $acc->client_loginid,
+                currency_code  => $acc->currency_code
+            },
+            limits => $limits,
+            db     => db,
+        });
+    my ($bet, $txn) = $fmb->buy_bet;
+    # note explain [$bet, $txn];
+    return ($txn->{id}, $bet->{id}, $txn->{balance_after});
+}
+
+sub buy_one_spread_bet {
+    my ($acc, $args) = @_;
+
+    my $buy_price    = delete $args->{buy_price}    // 20;
+    my $limits       = delete $args->{limits};
+    my $duration     = delete $args->{duration}     // '15s';
+    my $app          = delete $args->{amount_per_point} // 2;
+    my $stop_type    = delete $args->{stop_type} // 'point';
+    my $stop_loss    = delete $args->{stop_loss} // 10;
+    my $stop_profit  = delete $args->{stop_profit} // 10;
+    my $spread       = delete $args->{spread} // 2;
+    my $spread_divisor = delete $args->{spread_divisor} // 1;
+
+    my $now      = Date::Utility->new;
+    my $bet_data = +{
+        underlying_symbol => 'R_100',
+        payout_price      => undef,
+        buy_price         => $buy_price,
+        remark            => 'Test Remark',
+        purchase_time     => $now->db_timestamp,
+        start_time        => $now->db_timestamp,
+        expiry_time       => undef,
+        is_expired        => 0,
+        is_sold           => 0,
+        bet_class         => 'spread_bet',
+        bet_type          => 'SPREADU',
+        short_code        => ('SPREADU_R_100_' . $app . '_' . $now->epoch . '_' . $stop_loss . '_' . $stop_profit . '_' . $stop_type),
+        amount_per_point  => $app,
+        stop_type         => $stop_type,
+        stop_profit       => $stop_profit,
+        stop_loss         => $stop_loss,
+        spread_divisor    => $spread_divisor,
         %$args,
     };
 
@@ -1064,6 +1113,64 @@ SKIP: {
             is $balance_after + 0, 10000 - 60, 'correct balance_after';
         }
         'specific turnover validation succeeded';
+    };
+
+    subtest 'spread limits', sub {
+        lives_ok {
+            $cl = create_client;
+
+            top_up $cl, 'USD', 10000;
+            top_up $cl, 'AUD', 10000;
+
+            isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+            isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
+
+            my $bal;
+            is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
+            is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
+        }
+        'setup new client';
+        my @bets_to_sell;
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd;
+            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_aud;
+            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            push @bets_to_sell, [$acc_aud, $fmbid];
+        } 'buy spread bets';
+
+        # I bought 2 spread contracts with a potential profit of 20 on each. We should not be able to buy a third contract
+        # if we have spread_bet_profit_limit set to 60
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 60}};
+        } 'dies if crosses spread profit limit';
+        is_deeply $@,
+            [
+            BI015 => 'ERROR:  daily profit limit on spread bets exceeded',
+            ],
+            'daily profit limit on spread bets exceeded';
+        dies_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_aud, +{limits => {spread_bet_profit_limit => 60}};
+        } 'dies if crosses spread profit limit';
+        is_deeply $@,
+            [
+            BI015 => 'ERROR:  daily profit limit on spread bets exceeded',
+            ],
+            'daily profit limit on spread bets exceeded';
+        lives_ok {
+                my ($acc, $fmbid) = @{shift @bets_to_sell};
+                my $txnid = sell_one_bet $acc,
+                    +{
+                    id         => $fmbid,
+                    sell_price => 0,
+                    sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
+                    };
+        }
+        'and sell one bet at zero in aud';
+        lives_ok {
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd;
+            is $balance_after + 0, 10000 - 40, 'correct balance_after';
+        } 'can buy if open contract is closed.';
     };
 
     subtest '7day limits', sub {
