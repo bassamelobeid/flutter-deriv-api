@@ -32,11 +32,11 @@ sub BUILD {
 
     # This will cause division by zero error
     if ($self->amount_per_point == 0) {
-        $self->amount_per_point(1); # make it 1;
+        $self->amount_per_point(1);    # make it 1;
         $self->add_errors({
             message           => 'amount per point is zero',
             severity          => 99,
-            message_to_client => localize('Amount Per Point must be greater than [_1] 0.',$self->currency),
+            message_to_client => localize('Amount Per Point must be greater than [_1] 0.', $self->currency),
         });
     }
 
@@ -63,7 +63,7 @@ has [qw(supplied_stop_loss supplied_stop_profit stop_type)] => (
 );
 
 has amount_per_point => (
-    is => 'rw',
+    is       => 'rw',
     required => 1,
 );
 
