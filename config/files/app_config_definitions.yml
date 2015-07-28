@@ -119,6 +119,7 @@ legal:
         - Singapore
         - France
         - Italy
+        - Ireland
 payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
