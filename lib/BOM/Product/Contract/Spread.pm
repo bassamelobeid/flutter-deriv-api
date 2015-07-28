@@ -27,6 +27,22 @@ sub tick_expiry         { return 0 }
 sub is_atm_bet { return 0 }
 sub is_spread  { return 1 }
 
+sub BUILD {
+    my $self = shift;
+
+    # This will cause division by zero error
+    if ($self->amount_per_point == 0) {
+        $self->amount_per_point(1); # make it 1;
+        $self->add_errors({
+            message           => 'amount per point is zero',
+            severity          => 99,
+            message_to_client => localize('Amount Per Point must be greater than [_1] 0.',$self->currency),
+        });
+    }
+
+    return;
+}
+
 has build_parameters => (
     is       => 'ro',
     isa      => 'HashRef',
@@ -41,8 +57,13 @@ has currency => (
 
 # supplied_stop_loss & supplied_stop_profit can be in point or dollar amount
 # we need the untouch input for longcode.
-has [qw(supplied_stop_loss supplied_stop_profit stop_type amount_per_point)] => (
+has [qw(supplied_stop_loss supplied_stop_profit stop_type)] => (
     is       => 'ro',
+    required => 1,
+);
+
+has amount_per_point => (
+    is => 'rw',
     required => 1,
 );
 
