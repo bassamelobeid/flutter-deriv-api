@@ -13,6 +13,7 @@ __PACKAGE__->meta->setup(
         amount_per_point        => { type => 'numeric' },
         stop_profit             => { type => 'numeric' },
         stop_loss               => { type => 'numeric' },
+        stop_type               => { type => 'varchar' },
         spread                  => { type => 'numeric' },
         spread_divisor          => { type => 'numeric' },
     ],
