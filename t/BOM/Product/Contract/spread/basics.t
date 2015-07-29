@@ -77,7 +77,7 @@ subtest 'current tick' => sub {
 
 subtest 'validate amount per point' => sub {
     lives_ok {
-        my $c = produce_contract({%$params, amount_per_point => 0});
+        my $c = produce_contract({%$params, amount_per_point => 0, date_pricing => $now});
         my @e;
         ok !$c->is_valid_to_buy;
         like(
@@ -85,18 +85,18 @@ subtest 'validate amount per point' => sub {
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );
-        $c = produce_contract({%$params, amount_per_point => -1});
+        $c = produce_contract({%$params, amount_per_point => -1, date_pricing => $now});
         ok !$c->is_valid_to_buy;
         like(
             ($c->all_errors)[0]->message_to_client,
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );
-        $c = produce_contract({%$params, amount_per_point => 1});
+        $c = produce_contract({%$params, amount_per_point => 1, date_pricing => $now});
         ok $c->is_valid_to_buy;
-        $c = produce_contract({%$params, amount_per_point => 100});
+        $c = produce_contract({%$params, amount_per_point => 100, date_pricing => $now});
         ok $c->is_valid_to_buy;
-        $c = produce_contract({%$params, amount_per_point => 100.1});
+        $c = produce_contract({%$params, amount_per_point => 100.1, date_pricing => $now});
         ok !$c->is_valid_to_buy;
         like(
             ($c->all_errors)[0]->message_to_client,
