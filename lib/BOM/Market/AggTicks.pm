@@ -170,7 +170,7 @@ sub add {
     update_queue_for_tick(\%to_store);
     $to_store{count} = 1;    # These are all single ticks;
 
-    return $redis->zadd($key, $tick->{epoch}, $encoder->encode(\%to_store));    # These are all single ticks.
+    return $self->_update($key, $tick->{epoch}, $encoder->encode(\%to_store));    # These are all single ticks.
 }
 
 =head2 retrieve
@@ -180,14 +180,6 @@ Return the aggregated tick data for an underlying over the last BOM:TimeInterval
 =cut
 
 sub retrieve {
-    my ($self, $args) = @_;
-
-    my @res = @{$self->_retrieve_raw($args)};
-
-    return [map { $decoder->decode($_) } @res];
-}
-
-sub _retrieve_raw {
     my ($self, $args) = @_;
 
     my $which      = $args->{underlying};
@@ -202,7 +194,7 @@ sub _retrieve_raw {
 
     if (my $tc = $args->{tick_count}) {
         $self->fill_from_historical_feed($args) if ($fill_cache and $end < time - $self->unagg_retention_interval->seconds);
-        @res = reverse @{$redis->execute('ZREVRANGEBYSCORE', $self->_make_key($which, 0), $end, 0, 'LIMIT', 0, $tc)};
+        @res = map { $decoder->decode($_) } reverse @{$redis->execute('ZREVRANGEBYSCORE', $self->_make_key($which, 0), $end, 0, 'LIMIT', 0, $tc)};
     } else {
         my ($interval_to_check, $key);
         if ($aggregated) {
@@ -216,10 +208,13 @@ sub _retrieve_raw {
         my $start = $end - $ti->seconds;
         $self->fill_from_historical_feed($args) if ($fill_cache and $start < time - $self->$interval_to_check->seconds);
 
-        @res = @{$redis->zrangebyscore($key, $start, $end)};
+        @res = map { $decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
         # We get the last tick for aggregated tick request.
         # Else, we will have missing information.
-        push @res, @{$self->_retrieve_raw({%$args, tick_count => 1})} if $aggregated;
+        if ($aggregated) {
+            my @latest = @{$self->retrieve({%$args, tick_count => 1})};
+            push @res, $latest[0] if (@latest and @res and $latest[0]->{epoch} > $res[-1]->{epoch});
+        }
     }
 
     return \@res;
@@ -249,23 +244,37 @@ sub aggregate_for {
     if (my @ticks = map { $decoder->decode($_) } @{$redis->zrangebyscore($unagg_key, 0, $last_agg)}) {
         my $first_tick = $ticks[0];
         my $prev_tick  = $first_tick;
-        my $prev_agg   = $first_tick->{epoch} - ($first_tick->{epoch} % $ai->seconds);
+        my $offset = $first_tick->{epoch} % $ai->seconds;
+        my $prev_agg   = $first_tick->{epoch} - $offset;
+        shift @ticks unless $offset; # Caught tail end of previous period.
         my $next_agg   = $prev_agg + $ai->seconds;
         my $tick_count = 0;
 
         foreach my $tick (@ticks) {
-            $prev_tick = $tick if ($tick->{epoch} == $next_agg);    # Falls on the line, use it for this one.
-            $tick_count++ if ($tick->{epoch} > $prev_agg && $tick->{epoch} <= $next_agg);    # Count it if it falls
-
-            if ($tick->{epoch} >= $next_agg) {
-                $total_added++;
+            if ($tick->{epoch} == $next_agg) {
                 $first_added //= $next_agg;
-                $last_added         = $next_agg;
-                $prev_tick->{count} = $tick_count;
-                $prev_tick->{epoch} = $next_agg;                                             # Slightly distorted to ensure different keys for Redis.
-                $redis->zadd($agg_key, $next_agg, $encoder->encode($prev_tick));
-                $next_agg += $ai->seconds;
+                $last_added = $next_agg;
+                $tick->{count} = $tick_count + 1;
+                $tick->{agg_epoch} = $next_agg;
+                $total_added++;
+                $self->_update($agg_key, $next_agg, $encoder->encode($tick));
                 $tick_count = 0;
+                $next_agg += $ai->seconds;
+            } elsif ($tick->{epoch} > $next_agg) {
+                while ($tick->{epoch} > $next_agg) {
+                    $first_added //= $next_agg;
+                    $last_added             = $next_agg;
+                    $prev_tick->{count}     = $tick_count;
+                    $prev_tick->{agg_epoch} = $next_agg;
+                    $total_added++;
+                    $self->_update($agg_key, $next_agg, $encoder->encode($prev_tick));
+                    $next_agg += $ai->seconds;
+                    $tick_count = 0;
+                    unshift @ticks, $tick if ($tick->{epoch} == $next_agg); # Let the above code handle this.
+                }
+            } else {
+                # Skipped.
+                $tick_count++;
             }
 
             $prev_tick = $tick;
@@ -277,6 +286,14 @@ sub aggregate_for {
     }
 
     return ($total_added, Date::Utility->new($first_added), Date::Utility->new($last_added));
+}
+
+sub _update {
+    my ($self, $key, $score, $value) = @_;
+
+    my $redis = $self->_redis;
+    $redis->zremrangebyscore($key, $score, $score);
+    return $redis->zadd($key, $score, $value);
 }
 
 =head2 fill_from_historical_feed
@@ -302,16 +319,13 @@ sub fill_from_historical_feed {
     $start = $start - $start % $agg_interval;
     my $first_agg = $start - $agg_interval;
 
+    my $ticks = $args->{ticks} // $underlying->ticks_in_between_start_end({
+        start_time => $first_agg,
+        end_time   => $end,
+    });
+
     # First add all the found ticks.
-    my $count;
-    foreach my $tick (
-        @{
-            $underlying->ticks_in_between_start_end({
-                    start_time => $first_agg,
-                    end_time   => $end,
-                })})
-    {
-        $count++;
+    foreach my $tick (@$ticks) {
         $self->add($tick);
     }
 
