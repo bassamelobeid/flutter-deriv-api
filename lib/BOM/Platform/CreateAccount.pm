@@ -128,7 +128,7 @@ sub create_virtual_acc {
 
 sub real_acc_checks {
     my $args = shift;
-    my ($email, $from_loginid, $broker, $country) = @{$args}{'email', 'from_loginid', 'broker', 'country'};
+    my ($email, $from_loginid, $broker, $country, $residence) = @{$args}{'email', 'from_loginid', 'broker', 'country', 'residence'};
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {
@@ -162,6 +162,13 @@ sub real_acc_checks {
             ),
         };
     }
+    if ($residence and $from_client->residence and $from_client->residence ne $residence) {
+        return {
+            err_type => 'wrong residence',
+            err      => localize("Wrong country of residence"),
+        };
+    }
+
     return {
         user        => $user,
         from_client => $from_client,
