@@ -28,7 +28,7 @@ sub available_contracts_for_symbol {
     my $exchange     = $underlying->exchange;
     my $open         = $exchange->opening_on($now)->epoch;
     my $close        = $exchange->closing_on($now)->epoch;
-    my $current_spot = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+    my $current_tick = $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
     my $flyby        = BOM::Product::Offerings::get_offerings_flyby;
     my @offerings    = $flyby->query({underlying_symbol => $symbol});
 
@@ -77,10 +77,10 @@ sub available_contracts_for_symbol {
             });
 
             if ($o->{barriers} == 1) {
-                my @barriers = sort { abs($current_spot->quote - $a) <=> abs($current_spot->quote - $b) } @{$o->{available_barriers}};
+                my @barriers = sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$o->{available_barriers}};
                 $o->{barrier} = $barriers[0];
             } elsif ($o->{barriers} == 2) {
-                my @barriers2 = sort { abs($current_spot->quote - $a->[0]) <=> abs($current_spot->quote - $b->[0]) } @{$o->{available_barriers}};
+                my @barriers2 = sort { abs($current_tick->quote - $a->[0]) <=> abs($current_tick->quote - $b->[0]) } @{$o->{available_barriers}};
                 $o->{high_barrier} = $barriers2[0][0];
                 $o->{low_barrier}  = $barriers2[0][1];
             }
@@ -100,7 +100,7 @@ sub available_contracts_for_symbol {
                         duration      => $min_duration,
                         barrier_type  => 'high',
                         barrier_delta => 0.2,
-                        barrier_spot  => $current_spot,
+                        barrier_tick  => $current_tick,
                         atm_vol       => $atm_vol
                     });
                 }
@@ -111,7 +111,7 @@ sub available_contracts_for_symbol {
                         duration      => $min_duration,
                         barrier_type  => 'high',
                         barrier_delta => 0.2,
-                        barrier_spot  => $current_spot,
+                        barrier_tick  => $current_tick,
                         atm_vol       => $atm_vol
                     });
                     $o->{low_barrier} = _get_barrier({
@@ -119,7 +119,7 @@ sub available_contracts_for_symbol {
                         duration      => $min_duration,
                         barrier_type  => 'low',
                         barrier_delta => 0.2,
-                        barrier_spot  => $current_spot,
+                        barrier_tick  => $current_tick,
                         atm_vol       => $atm_vol
                     });
                 }
@@ -138,8 +138,8 @@ sub available_contracts_for_symbol {
 sub _get_barrier {
     my $args = shift;
 
-    my ($underlying, $duration, $barrier_type, $barrier_delta, $barrier_spot, $absolute_barrier, $atm_vol) =
-        @{$args}{'underlying', 'duration', 'barrier_type', 'barrier_delta', 'barrier_spot', 'absolute_barrier', 'atm_vol'};
+    my ($underlying, $duration, $barrier_type, $barrier_delta, $barrier_tick, $absolute_barrier, $atm_vol) =
+        @{$args}{'underlying', 'duration', 'barrier_type', 'barrier_delta', 'barrier_tick', 'absolute_barrier', 'atm_vol'};
 
     my $option_type = 'VANILLA_CALL';
     $option_type = 'VANILLA_PUT' if $barrier_type eq 'low';
@@ -151,12 +151,12 @@ sub _get_barrier {
         t                => $duration / (86400 * 365),
         r_rate           => 0,
         q_rate           => 0,
-        spot             => $barrier_spot->quote,
+        spot             => $barrier_tick->quote,
         premium_adjusted => 0,
     });
     my $strike = BOM::Product::Contract::Strike->new(
         underlying       => $underlying,
-        basis_tick       => $barrier_spot,
+        basis_tick       => $barrier_tick,
         supplied_barrier => $approximate_barrier,
     );
 
@@ -250,7 +250,7 @@ sub _predefined_barriers_on_trading_period {
     my $trading_period    = $contract->{trading_period};
     my $date_start        = Date::Utility->new($trading_period->{date_start});
     my $date_expiry       = Date::Utility->new($trading_period->{date_expiry});
-    my $barrier_spot      = $underlying->tick_at($date_start->epoch, {allow_inconsistent => 1});
+    my $barrier_tick      = $underlying->tick_at($date_start->epoch, {allow_inconsistent => 1});
     my $duration          = $date_expiry->epoch - $date_start->epoch;
     my @delta             = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
     my $number_of_barrier = $contract->{barriers};
@@ -262,7 +262,7 @@ sub _predefined_barriers_on_trading_period {
             duration         => $duration,
             barrier_type     => 'high',
             barrier_delta    => $delta,
-            barrier_spot     => $barrier_spot,
+            barrier_tick     => $barrier_tick,
             absolute_barrier => 1,
             atm_vol          => 0.1
         });
@@ -276,7 +276,7 @@ sub _predefined_barriers_on_trading_period {
                 duration         => $duration,
                 barrier_type     => 'low',
                 barrier_delta    => $delta,
-                barrier_spot     => $barrier_spot,
+                barrier_tick     => $barrier_tick,
                 absolute_barrier => 1,
                 atm_vol          => 0.1
             });
