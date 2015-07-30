@@ -40,7 +40,6 @@ sub available_contracts_for_symbol {
     }
 
     for my $o (@offerings) {
-
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 
@@ -69,6 +68,7 @@ sub available_contracts_for_symbol {
             )
             : die "don't know about contract category $cc";
 
+        # get the closest from spot barrier from the predefined set
         if ($predefined_contract) {
             $o->{barriers} = $bc eq 'euro_atm' ? 1 : $o->{barriers};
             $o->{available_barriers} = _predefined_barriers_on_trading_period({
@@ -82,20 +82,18 @@ sub available_contracts_for_symbol {
             } elsif ($o->{barriers} == 2) {
                 my @barriers2 = sort { abs($current_spot->quote - $a->[0]) <=> abs($current_spot->quote - $b->[0]) } @{$o->{available_barriers}};
                 $o->{high_barrier} = $barriers2[0][0];
-                $o->{low_barrier} = $barriers2[0][1];
+                $o->{low_barrier}  = $barriers2[0][1];
             }
         } else {
 
-            my $min_duration = Time::Duration::Concise->new(interval => $o->{min_contract_duration})->seconds;
-            my $tid          = $min_duration / 86400;
-            my $tiy          = $tid / 365;
-            my $volsurface   = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-            my $atm_vol      = $volsurface->get_volatility({
-                delta => 50,
-                days  => $tid
-            });
-
             if ($o->{barriers}) {
+                my $min_duration = Time::Duration::Concise->new(interval => $o->{min_contract_duration})->seconds;
+                my $volsurface   = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+                my $atm_vol      = $volsurface->get_volatility({
+                    delta => 50,
+                    days  => $min_duration / 86400,
+                });
+
                 if ($o->{barriers} == 1) {
                     $o->{barrier} = _get_barrier({
                         underlying    => $underlying,
@@ -249,10 +247,10 @@ sub _predefined_barriers_on_trading_period {
     my $args = shift;
     my ($underlying, $contract) = @{$args}{'underlying', 'contract'};
 
-    my $trading_period = $contract->{trading_period};
-    my $date_start     = Date::Utility->new($trading_period->{date_start});
-    my $date_expiry    = Date::Utility->new($trading_period->{date_expiry});
-    my $barrier_spot   = $underlying->tick_at($date_start->epoch, {allow_inconsistent => 1});
+    my $trading_period    = $contract->{trading_period};
+    my $date_start        = Date::Utility->new($trading_period->{date_start});
+    my $date_expiry       = Date::Utility->new($trading_period->{date_expiry});
+    my $barrier_spot      = $underlying->tick_at($date_start->epoch, {allow_inconsistent => 1});
     my $duration          = $date_expiry->epoch - $date_start->epoch;
     my @delta             = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
     my $number_of_barrier = $contract->{barriers};
