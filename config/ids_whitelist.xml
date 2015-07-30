@@ -109,7 +109,7 @@
         </param>
         <!-- lost password token -->
         <param>
-            <key>reset_token</key>
+            <key>verify_token</key>
         </param>
         <!-- backoffice/f_clientloginid_edit.cgi -->
         <param>
