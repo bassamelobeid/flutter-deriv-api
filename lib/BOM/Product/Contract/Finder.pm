@@ -88,8 +88,8 @@ sub available_contracts_for_symbol {
 
             if ($o->{barriers}) {
                 my $min_duration = Time::Duration::Concise->new(interval => $o->{min_contract_duration})->seconds;
-                my $volsurface   = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-                my $atm_vol      = $volsurface->get_volatility({
+                my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+                my $atm_vol = $volsurface->get_volatility({
                     delta => 50,
                     days  => $min_duration / 86400,
                 });
