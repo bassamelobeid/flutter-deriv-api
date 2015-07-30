@@ -5,6 +5,7 @@ package BOM::Product::Contract::Finder;
 use strict;
 use warnings;
 
+use Cache::RedisDB;
 use Date::Utility;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
@@ -34,8 +35,8 @@ sub available_contracts_for_symbol {
 
     if ($predefined_contract) {
         @offerings = _predefined_trading_period({
-            offering => \@offerings,
-            exchange => $exchange
+            offerings => \@offerings,
+            exchange  => $exchange
         });
     }
 
@@ -162,66 +163,69 @@ sub _get_barrier {
 
 =head2 _predefined_trading_period
 
-e set the predefined trading perios as for now based on Japan requirement:
+We set the predefined trading periods based on Japan requirement:
 1) Start at 00:00GMT and expire with duration of 2,4,6,8,12,16,20 hours
 2) Start at closest even hour and expire with duration of 2 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT.
 3) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
 
 =cut
 
+my $cache_keyspace = 'PREDEFINED_TRADING_PERIOD';
+
 sub _predefined_trading_period {
-    my $args        = shift;
-    my @offerings   = @{$args->{offering}};
-    my $exchange    = $args->{exchange};
-    my @offerings_2 = grep { $_->{expiry_type} ne 'tick' and $_->{start_type} ne 'forward' } @offerings;
-    my @trading_periods;
-    my $now_hour     = Date::Utility->new->hour;
-    my @hours        = (2, 4, 6, 8, 12, 16, 20);
-    my @days         = (1, 2, 3, 7, 30, 60, 180, 365);
-    my $today        = Date::Utility->today;
-    my $start_of_day = $today->datetime_yyyymmdd_hhmmss;
+    my $args      = shift;
+    my @offerings = @{$args->{offerings}};
+    my $exchange  = $args->{exchange};
 
-    foreach my $hour (@hours) {
-        if ($now_hour >= $hour) {
-            next;
+    my $period_length = Time::Duration::Concise->new({interval => '2h'});    # Two hour intraday rolling periods.
+    my $now           = Date::Utility->new;
+    my $in_period     = $now->hour - ($now->hour % $period_length->hours);
+
+    my $trading_key = join('==', $exchange->symbol, $now->date, $in_period);
+    my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
+
+    if (not $trading_periods) {
+        my $today        = $now->truncate_to_day;                            # Start of the day object.
+        my $start_of_day = $today->datetime;                                 # As a string.
+
+        # Starting at midnight, running through these times.
+        my @hourly_durations = qw(2h 4h 6h 8h 12h 16h 20h);
+
+        $trading_periods = [
+            map { +{date_start => $start_of_day, date_expiry => $_->datetime} }
+            grep { $now->is_before($_) } map { $today->plus_time_interval($_) } @hourly_durations
+        ];
+
+        # Starting at midnight, running through these dates.
+        my @daily_durations = qw(1d 2d 3d 7d 30d 60d 180d 365d);
+        my %added;
+
+        foreach my $date (map { $today->plus_time_interval($_) } @daily_durations) {
+            $date = $exchange->trade_date_after($date) unless ($exchange->trades_on($date));
+            my $actual_day_string = $date->days_between($today) . 'd';
+            next if ($added{$actual_day_string});    # We already saw this date in a previous iteration.
+            $added{$actual_day_string} = 1;
+            push @$trading_periods,
+                +{
+                date_start  => $start_of_day,
+                date_expiry => $exchange->closing_on($date)->datetime,
+                };
         }
-        my $date_expiry = $today->plus_time_interval($hour . 'h')->datetime_yyyymmdd_hhmmss;
-        push @trading_periods,
-            {
-            date_start  => $start_of_day,
-            date_expiry => $date_expiry
+        # Starting in the most recent even hour, running for.our period
+        my $period_start = $today->plus_time_interval($in_period . 'h');
+        push @$trading_periods,
+            +{
+            date_start  => $period_start->datetime,
+            date_expiry => $period_start->plus_time_interval($period_length)->datetime,
             };
-    }
 
-    my $closer_hour   = $now_hour % 2 == 0 ? $now_hour : $now_hour - 1;
-    my $date_start_1  = $today->plus_time_interval($closer_hour . 'h')->datetime_yyyymmdd_hhmmss;
-    my $date_expiry_1 = $today->plus_time_interval($closer_hour + 2 . 'h')->datetime_yyyymmdd_hhmmss;
-    push @trading_periods,
-        {
-        date_start  => $date_start_1,
-        date_expiry => $date_expiry_1
-        };
-
-    foreach my $day (@days) {
-        my $date_expiry = $today->plus_time_interval($day . 'd');
-        if (not $exchange->trades_on($date_expiry)) {
-            $date_expiry = $exchange->trade_date_after($date_expiry);
-            my $days_between = $date_expiry->days_between($today);
-            if (grep { $days_between == $_ } @days) {
-                next;
-            }
-        }
-        $date_expiry = $exchange->closing_on($date_expiry)->datetime_yyyymmdd_hhmmss;
-        push @trading_periods,
-            {
-            date_start  => $start_of_day,
-            date_expiry => $date_expiry
-            };
+        # We will hold it for the duration of the period which is a little too long, but no big deal.
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
     }
 
     my @new_offerings;
-    foreach my $o (@offerings_2) {
-        foreach my $trading_period (@trading_periods) {
+    foreach my $o (grep { $_->{start_type} eq 'spot' and $_->{expiry_type} ne 'tick' } @offerings) {
+        foreach my $trading_period (@$trading_periods) {
             push @new_offerings, {%{$o}, trading_period => $trading_period};
         }
     }
