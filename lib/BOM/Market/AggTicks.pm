@@ -316,8 +316,8 @@ sub fill_from_historical_feed {
     my $unagg_interval = $self->unagg_retention_interval;
 
     my $start = $end - min($fill_interval->seconds, $self->agg_retention_interval->seconds);
-    $start = $start - $start % $agg_interval;
-    my $first_agg = $start - $agg_interval;
+    $start = $start - $start % $agg_interval->seconds;
+    my $first_agg = $start - $agg_interval->seconds;
 
     my $ticks = $args->{ticks} // $underlying->ticks_in_between_start_end({
         start_time => $first_agg,
