@@ -41,11 +41,13 @@ sub get_token {
 sub validate_token {
     my $token = shift;
     my $email = shift;
-    my @arry  = split("_##_", _cipher()->decrypt(url_decode($token))) if $token and $email;
-
-    if (scalar @arry > 1 and lc $email eq $arry[0]) {
-        if (time - $arry[1] < 3600) {    # check if token time is less than 1 hour of current time
-            return 1;
+    my @arry;
+    if ($token and $email) {
+        @arry = split("_##_", _cipher()->decrypt(url_decode($token)));
+        if (scalar @arry > 1 and lc $email eq $arry[0]) {
+            if (time - $arry[1] < 3600) {    # check if token time is less than 1 hour of current time
+                return 1;
+            }
         }
     }
     return;
