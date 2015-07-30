@@ -25,7 +25,7 @@ use BOM::Platform::EmailToken;
 
 sub create_virtual_acc {
     my $args = shift;
-    my ($email, $password, $source, $env, $aff_token) = @{$args}{'email', 'password', 'source', 'env', 'aff_token'};
+    my ($email, $password, $residence, $source, $env, $aff_token) = @{$args}{'email', 'password', 'residence', 'source', 'env', 'aff_token'};
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
 
@@ -57,7 +57,7 @@ sub create_virtual_acc {
             myaffiliates_token            => $aff_token,
             date_of_birth                 => undef,
             citizen                       => '',
-            residence                     => '',
+            residence                     => $residence,
             email                         => $email,
             address_line_1                => '',
             address_line_2                => '',
@@ -127,7 +127,7 @@ sub create_virtual_acc {
 
 sub real_acc_checks {
     my $args = shift;
-    my ($email, $from_loginid, $broker, $country) = @{$args}{'email', 'from_loginid', 'broker', 'country'};
+    my ($email, $from_loginid, $broker, $country, $residence) = @{$args}{'email', 'from_loginid', 'broker', 'country', 'residence'};
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {
@@ -161,6 +161,13 @@ sub real_acc_checks {
             ),
         };
     }
+    if ($residence and $from_client->residence and $from_client->residence ne $residence) {
+        return {
+            err_type => 'wrong residence',
+            err      => localize("Wrong country of residence"),
+        };
+    }
+
     return {
         user        => $user,
         from_client => $from_client,
