@@ -34,16 +34,16 @@ sub _cipher {
 sub get_token {
     my $email = shift;
 
-    my $hcstring = $email . '_##_' . time;
+    my $hcstring = lc $email . '_##_' . time;
     return url_encode(_cipher()->encrypt($hcstring));
 }
 
 sub validate_token {
     my $token = shift;
     my $email = shift;
+    my @arry  = split("_##_", _cipher()->decrypt(url_decode($token))) if $token and $email;
 
-    my @arry = split("_##_", _cipher()->decrypt(url_decode($token)));
-    if (scalar @arry > 1 and $email eq $arry[0]) {
+    if (scalar @arry > 1 and lc $email eq $arry[0]) {
         if (time - $arry[1] < 3600) {    # check if token time is less than 1 hour of current time
             return 1;
         }
