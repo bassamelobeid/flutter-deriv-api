@@ -211,7 +211,7 @@ sub _predefined_trading_period {
 
     foreach my $day (@days) {
         my $date_expiry = $today->plus_time_interval($day . 'd');
-        if ($exchange->has_holiday_on($date_expiry)) {
+        if (not $exchange->trades_on($date_expiry)) {
             $date_expiry = $exchange->trade_date_after($date_expiry);
             my $days_between = $date_expiry->days_between($today);
             if (grep { $days_between == $_ } @days) {
