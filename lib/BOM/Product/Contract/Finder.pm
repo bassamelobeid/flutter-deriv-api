@@ -24,14 +24,15 @@ sub available_contracts_for_symbol {
     my $symbol              = $args->{symbol} || die 'no symbol';
     my $predefined_contract = $args->{predefined} || '';
 
-    my $now          = Date::Utility->new;
     my $underlying   = BOM::Market::Underlying->new($symbol);
-    my $exchange     = $underlying->exchange;
-    my $open         = $exchange->opening_on($now)->epoch;
-    my $close        = $exchange->closing_on($now)->epoch;
-    my $current_tick = $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
-    my $flyby        = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings    = $flyby->query({underlying_symbol => $symbol});
+    my $now          = Date::Utility->new;
+    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
+
+    my $exchange  = $underlying->exchange;
+    my $open      = $exchange->opening_on($now)->epoch;
+    my $close     = $exchange->closing_on($now)->epoch;
+    my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
+    my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     if ($predefined_contract) {
         @offerings = _predefined_trading_period({
@@ -71,20 +72,12 @@ sub available_contracts_for_symbol {
 
         # get the closest from spot barrier from the predefined set
         if ($predefined_contract) {
-            $o->{barriers} = $bc eq 'euro_atm' ? 1 : $o->{barriers};
-            $o->{available_barriers} = _predefined_barriers_on_trading_period({
-                underlying => $underlying,
-                contract   => $o
+            _set_predefined_barriers({
+                underlying   => $underlying,
+                current_tick => $current_tick,
+                contract     => $o,
             });
 
-            if ($o->{barriers} == 1) {
-                my @barriers = sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$o->{available_barriers}};
-                $o->{barrier} = $barriers[0];
-            } elsif ($o->{barriers} == 2) {
-                my @barriers2 = sort { abs($current_tick->quote - $a->[0]) <=> abs($current_tick->quote - $b->[0]) } @{$o->{available_barriers}};
-                $o->{high_barrier} = $barriers2[0][0];
-                $o->{low_barrier}  = $barriers2[0][1];
-            }
         } else {
 
             if ($o->{barriers}) {
@@ -170,7 +163,8 @@ We set the predefined trading periods based on Japan requirement:
 
 =cut
 
-my $cache_keyspace = 'PREDEFINED_TRADING_PERIOD';
+my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
+my $cache_sep      = '==';
 
 sub _predefined_trading_period {
     my $args      = shift;
@@ -181,7 +175,7 @@ sub _predefined_trading_period {
     my $now           = Date::Utility->new;
     my $in_period     = $now->hour - ($now->hour % $period_length->hours);
 
-    my $trading_key = join('==', $exchange->symbol, $now->date, $in_period);
+    my $trading_key = join($cache_sep, $exchange->symbol, $now->date, $in_period);
     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
 
     if (not $trading_periods) {
@@ -233,54 +227,60 @@ sub _predefined_trading_period {
     return @new_offerings;
 }
 
-=head2 _predefined_barriers_on_trading_period
+=head2 _set_predefined_barriers
 
 To set the predefined barriers on each trading period.
 We will take strike from 20, 30 .... 80 delta.
 
 =cut
 
-sub _predefined_barriers_on_trading_period {
+sub _set_predefined_barriers {
     my $args = shift;
-    my ($underlying, $contract) = @{$args}{'underlying', 'contract'};
+    my ($underlying, $contract, $current_tick) = @{$args}{'underlying', 'contract', 'current_tick'};
 
-    my $trading_period    = $contract->{trading_period};
-    my $date_start        = Date::Utility->new($trading_period->{date_start});
-    my $date_expiry       = Date::Utility->new($trading_period->{date_expiry});
-    my $barrier_tick      = $underlying->tick_at($date_start->epoch, {allow_inconsistent => 1});
-    my $duration          = $date_expiry->epoch - $date_start->epoch;
-    my @delta             = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
-    my $number_of_barrier = $contract->{barriers};
-    my @available_barriers;
+    my $trading_period = $contract->{trading_period};
+    my $date_start     = Date::Utility->new($trading_period->{date_start});
+    my $date_expiry    = Date::Utility->new($trading_period->{date_expiry});
 
-    foreach my $delta (@delta) {
-        my $barrier = _get_barrier({
-            underlying       => $underlying,
-            duration         => $duration,
-            direction        => 'high',
-            barrier_delta    => $delta,
-            barrier_tick     => $barrier_tick,
-            absolute_barrier => 1,
-            atm_vol          => 0.1
-        });
-        my $barrier_2;
+    my $barrier_key = join($cache_sep, $underlying->symbol, $date_start->date, $date_expiry->date);
+    my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
+    if (not $available_barriers) {
+        if (my $barrier_tick = $underlying->tick_at($date_start->epoch)) {
+            my $duration = $date_expiry->epoch - $date_start->epoch;
+            my @delta = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
 
-        if ($number_of_barrier == 1) {
-            push @available_barriers, $barrier;
+            foreach my $delta (@delta) {
+                push @$available_barriers, [
+                    map {
+                        _get_barrier({
+                                underlying       => $underlying,
+                                duration         => $duration,
+                                direction        => $_,
+                                barrier_delta    => $delta,
+                                barrier_tick     => $barrier_tick,
+                                absolute_barrier => 1,
+                                atm_vol          => 0.1
+                            })
+                    } (qw(high low))];
+            }
+            # Expires at the end of the available period.
+            Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
+
         } else {
-            $barrier_2 = _get_barrier({
-                underlying       => $underlying,
-                duration         => $duration,
-                direction        => 'low',
-                barrier_delta    => $delta,
-                barrier_tick     => $barrier_tick,
-                absolute_barrier => 1,
-                atm_vol          => 0.1
-            });
-            push @available_barriers, [$barrier, $barrier_2];
+            # I would prefer to fail and remove from consideration, but I can't.
+            $available_barriers = [[$current_tick->quote, $current_tick->quote]];
         }
     }
+    $contract->{barriers} = 1 if ($contract->{barrier_category} eq 'euro_atm');
+    if ($contract->{barriers} == 1) {
+        $contract->{available_barriers} = [map { $_->[0] } @$available_barriers];
+        $contract->{barrier} = (sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$contract->{available_barriers}})[0];
+    } elsif ($contract->{barriers} == 2) {
+        $contract->{available_barriers} = $available_barriers;
+        ($contract->{high_barrier}, $contract->{low_barrier}) =
+            @{(sort { abs($current_tick->quote - $a->[0]) <=> abs($current_tick->quote - $b->[0]) } @{$contract->{available_barriers}})[0]};
+    }
 
-    return \@available_barriers;
+    return;
 }
 1;
