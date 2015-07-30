@@ -98,7 +98,7 @@ sub available_contracts_for_symbol {
                     $o->{barrier} = _get_barrier({
                         underlying    => $underlying,
                         duration      => $min_duration,
-                        barrier_type  => 'high',
+                        direction     => 'high',
                         barrier_delta => 0.2,
                         barrier_tick  => $current_tick,
                         atm_vol       => $atm_vol
@@ -109,7 +109,7 @@ sub available_contracts_for_symbol {
                     $o->{high_barrier} = _get_barrier({
                         underlying    => $underlying,
                         duration      => $min_duration,
-                        barrier_type  => 'high',
+                        direction     => 'high',
                         barrier_delta => 0.2,
                         barrier_tick  => $current_tick,
                         atm_vol       => $atm_vol
@@ -117,7 +117,7 @@ sub available_contracts_for_symbol {
                     $o->{low_barrier} = _get_barrier({
                         underlying    => $underlying,
                         duration      => $min_duration,
-                        barrier_type  => 'low',
+                        direction     => 'low',
                         barrier_delta => 0.2,
                         barrier_tick  => $current_tick,
                         atm_vol       => $atm_vol
@@ -138,17 +138,14 @@ sub available_contracts_for_symbol {
 sub _get_barrier {
     my $args = shift;
 
-    my ($underlying, $duration, $barrier_type, $barrier_delta, $barrier_tick, $absolute_barrier, $atm_vol) =
-        @{$args}{'underlying', 'duration', 'barrier_type', 'barrier_delta', 'barrier_tick', 'absolute_barrier', 'atm_vol'};
-
-    my $option_type = 'VANILLA_CALL';
-    $option_type = 'VANILLA_PUT' if $barrier_type eq 'low';
+    my ($underlying, $duration, $direction, $barrier_delta, $barrier_tick, $absolute_barrier, $atm_vol) =
+        @{$args}{'underlying', 'duration', 'direction', 'barrier_delta', 'barrier_tick', 'absolute_barrier', 'atm_vol'};
 
     my $approximate_barrier = get_strike_for_spot_delta({
-        delta            => $barrier_delta,
-        option_type      => $option_type,
-        atm_vol          => $atm_vol,
-        t                => $duration / (86400 * 365),
+        option_type => ($direction eq 'low') ? 'VANILLA_CALL' : 'VANILLA_PUT',
+        delta       => $barrier_delta,
+        atm_vol     => $atm_vol,
+        t => $duration / (86400 * 365),
         r_rate           => 0,
         q_rate           => 0,
         spot             => $barrier_tick->quote,
@@ -160,11 +157,7 @@ sub _get_barrier {
         supplied_barrier => $approximate_barrier,
     );
 
-    if ($absolute_barrier) {
-        return $strike->as_absolute;
-    } else {
-        return $duration > 86400 ? $strike->as_absolute : $strike->as_relative;
-    }
+    return ($absolute_barrier or $duration > 86400) ? $strike->as_absolute : $strike->as_relative;
 }
 
 =head2 _predefined_trading_period
@@ -260,7 +253,7 @@ sub _predefined_barriers_on_trading_period {
         my $barrier = _get_barrier({
             underlying       => $underlying,
             duration         => $duration,
-            barrier_type     => 'high',
+            direction        => 'high',
             barrier_delta    => $delta,
             barrier_tick     => $barrier_tick,
             absolute_barrier => 1,
@@ -274,7 +267,7 @@ sub _predefined_barriers_on_trading_period {
             $barrier_2 = _get_barrier({
                 underlying       => $underlying,
                 duration         => $duration,
-                barrier_type     => 'low',
+                direction        => 'low',
                 barrier_delta    => $delta,
                 barrier_tick     => $barrier_tick,
                 absolute_barrier => 1,
