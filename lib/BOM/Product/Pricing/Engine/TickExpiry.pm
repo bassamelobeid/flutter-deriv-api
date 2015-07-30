@@ -108,10 +108,10 @@ sub _build_vol_proxy {
 
     my @latest = @{$self->_latest_ticks};
     my $proxy;
-    if (@latest and @latest == 20 and abs($self->bet->date_start->epoch - $latest[0]->epoch) < 300) {
+    if (@latest and @latest == 20 and abs($self->bet->date_start->epoch - $latest[0]->{epoch}) < 300) {
         my $sum = 0;
         for (1 .. 19) {
-            $sum += log($latest[$_]->quote / $latest[$_ - 1]->quote)**2;
+            $sum += log($latest[$_]->{quote} / $latest[$_ - 1]->{quote})**2;
         }
         $proxy = sqrt($sum / 19);
     }
