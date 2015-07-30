@@ -70,18 +70,19 @@ sub available_contracts_for_symbol {
             : die "don't know about contract category $cc";
 
         if ($predefined_contract) {
+            $o->{barriers} = $bc eq 'euro_atm' ? 1 : $o->{barriers};
             $o->{available_barriers} = _predefined_barriers_on_trading_period({
                 underlying => $underlying,
                 contract   => $o
             });
 
-            if ($o->{barriers} == 1 or $bc eq 'euro_atm') {
+            if ($o->{barriers} == 1) {
                 my @barriers = sort { abs($current_spot->quote - $a) <=> abs($current_spot->quote - $b) } @{$o->{available_barriers}};
                 $o->{barrier} = $barriers[0];
             } elsif ($o->{barriers} == 2) {
                 my @barriers2 = sort { abs($current_spot->quote - $a->[0]) <=> abs($current_spot->quote - $b->[0]) } @{$o->{available_barriers}};
                 $o->{high_barrier} = $barriers2[0][0];
-                $o->{high_barrier} = $barriers2[0][1];
+                $o->{low_barrier} = $barriers2[0][1];
             }
         } else {
 
@@ -252,10 +253,9 @@ sub _predefined_barriers_on_trading_period {
     my $date_start     = Date::Utility->new($trading_period->{date_start});
     my $date_expiry    = Date::Utility->new($trading_period->{date_expiry});
     my $barrier_spot   = $underlying->tick_at($date_start->epoch, {allow_inconsistent => 1});
-    #my $duration = Time::Duration::Concise::Localize->new(interval => $date_expiry->epoch - $date_start->epoch)->seconds;
     my $duration          = $date_expiry->epoch - $date_start->epoch;
     my @delta             = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
-    my $number_of_barrier = $contract->{barrier_category} eq 'euro_atm' ? 1 : $contract->{barriers};
+    my $number_of_barrier = $contract->{barriers};
     my @available_barriers;
 
     foreach my $delta (@delta) {
