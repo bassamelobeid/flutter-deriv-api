@@ -64,7 +64,7 @@ sub financial_market_bet_to_parameters {
         $bet_parameters->{is_forward_starting} = 1;
     }
     $bet_parameters->{date_start}  = $contract_start_time;
-    $bet_parameters->{date_expiry} = $fmb->expiry_time;
+    $bet_parameters->{date_expiry} = $fmb->expiry_time if $fmb->expiry_time;
 
     if ($fmb->tick_count) {
         $bet_parameters->{tick_expiry} = 1;
@@ -93,6 +93,8 @@ sub financial_market_bet_to_parameters {
               $fmb->relative_barrier
             ? $fmb->relative_barrier
             : $fmb->absolute_barrier;
+    } elsif ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
+        $bet_parameters->{$_} = $fmb->$_ for qw(amount_per_point stop_type stop_loss stop_profit spread);
     }
 
     return $bet_parameters;
