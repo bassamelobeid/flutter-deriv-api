@@ -186,7 +186,7 @@ sub _predefined_trading_period {
         my @hourly_durations = qw(2h 4h 6h 8h 12h 16h 20h);
 
         $trading_periods = [
-            map { +{date_start => $start_of_day, date_expiry => $_->datetime} }
+            map { +{date_start => $start_of_day, date_expiry => $_->datetime, duration => $_} }
             grep { $now->is_before($_) } map { $today->plus_time_interval($_) } @hourly_durations
         ];
 
@@ -203,6 +203,7 @@ sub _predefined_trading_period {
                 +{
                 date_start  => $start_of_day,
                 date_expiry => $exchange->closing_on($date)->datetime,
+                duration    => $actual_day_string,
                 };
         }
         # Starting in the most recent even hour, running for.our period
@@ -211,6 +212,7 @@ sub _predefined_trading_period {
             +{
             date_start  => $period_start->datetime,
             date_expiry => $period_start->plus_time_interval($period_length)->datetime,
+            duration    => $in_period . 'h',
             };
 
         # We will hold it for the duration of the period which is a little too long, but no big deal.
@@ -245,7 +247,7 @@ sub _set_predefined_barriers {
     my $barrier_key = join($cache_sep, $underlying->symbol, $date_start->date, $date_expiry->date);
     my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
     if (not $available_barriers) {
-        my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick->quote;
+        my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
         my $duration     = $date_expiry->epoch - $date_start->epoch;
         my @delta        = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
 
