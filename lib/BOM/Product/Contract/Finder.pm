@@ -245,31 +245,26 @@ sub _set_predefined_barriers {
     my $barrier_key = join($cache_sep, $underlying->symbol, $date_start->date, $date_expiry->date);
     my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
     if (not $available_barriers) {
-        if (my $barrier_tick = $underlying->tick_at($date_start->epoch)) {
-            my $duration = $date_expiry->epoch - $date_start->epoch;
-            my @delta = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
+        my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick->quote;
+        my $duration     = $date_expiry->epoch - $date_start->epoch;
+        my @delta        = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
 
-            foreach my $delta (@delta) {
-                push @$available_barriers, [
-                    map {
-                        _get_barrier({
-                                underlying       => $underlying,
-                                duration         => $duration,
-                                direction        => $_,
-                                barrier_delta    => $delta,
-                                barrier_tick     => $barrier_tick,
-                                absolute_barrier => 1,
-                                atm_vol          => 0.1
-                            })
-                    } (qw(high low))];
-            }
-            # Expires at the end of the available period.
-            Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
-
-        } else {
-            # I would prefer to fail and remove from consideration, but I can't.
-            $available_barriers = [[$current_tick->quote, $current_tick->quote]];
+        foreach my $delta (@delta) {
+            push @$available_barriers, [
+                map {
+                    _get_barrier({
+                            underlying       => $underlying,
+                            duration         => $duration,
+                            direction        => $_,
+                            barrier_delta    => $delta,
+                            barrier_tick     => $barrier_tick,
+                            absolute_barrier => 1,
+                            atm_vol          => 0.1
+                        })
+                } (qw(high low))];
         }
+        # Expires at the end of the available period.
+        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
     }
     $contract->{barriers} = 1 if ($contract->{barrier_category} eq 'euro_atm');
     if ($contract->{barriers} == 1) {
