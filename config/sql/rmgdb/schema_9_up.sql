@@ -5,7 +5,7 @@ CREATE TABLE bet.spread_bet (
     amount_per_point numeric,
     stop_profit numeric,
     stop_loss numeric,
-    stop_type VARCHAR,
+    stop_type text,
     spread numeric,
     spread_divisor numeric,
     CONSTRAINT basic_validation CHECK ((amount_per_point > (0)::numeric) AND (stop_profit > (0)::numeric) AND (stop_loss > (0)::numeric))
