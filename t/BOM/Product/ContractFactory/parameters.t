@@ -64,11 +64,11 @@ subtest 'financial_market_bet_to_parameters' => sub {
 
     my $spread_bet_fmb = BOM::Test::Data::Utility::UnitTestDatabase::create_fmb({type => 'fmb_spread_bet'});
     my $spread_params = financial_market_bet_to_parameters($spread_bet_fmb, 'USD');
-    is $spread_params->{stop_type}, 'point', 'stop type';
-    is $spread_params->{stop_loss}, 10, 'stop_loss is 10';
-    is $spread_params->{stop_profit}, 10, 'stop_profit is 10';
-    is $spread_params->{amount_per_point}, 1, 'amount_per_point 1';
-    is $spread_params->{spread}, 1, 'spread is 1';
+    is $spread_params->{stop_type},        'point', 'stop type';
+    is $spread_params->{stop_loss},        10,      'stop_loss is 10';
+    is $spread_params->{stop_profit},      10,      'stop_profit is 10';
+    is $spread_params->{amount_per_point}, 1,       'amount_per_point 1';
+    is $spread_params->{spread},           1,       'spread is 1';
 };
 
 subtest 'shortcode_to_parameters' => sub {

@@ -63,7 +63,7 @@ sub financial_market_bet_to_parameters {
     if ($contract_start_time->epoch - $purchase_time->epoch > 5) {
         $bet_parameters->{is_forward_starting} = 1;
     }
-    $bet_parameters->{date_start}  = $contract_start_time;
+    $bet_parameters->{date_start} = $contract_start_time;
     $bet_parameters->{date_expiry} = $fmb->expiry_time if $fmb->expiry_time;
 
     if ($fmb->tick_count) {
