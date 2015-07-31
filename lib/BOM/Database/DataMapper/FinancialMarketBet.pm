@@ -396,6 +396,9 @@ sub _fmb_rose_to_fmb_model {
     } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET) {
         $param->{'legacy_bet_record'} = $rose_object->legacy_bet;
         $model_class = 'BOM::Database::Model::FinancialMarketBet::LegacyBet';
+    } elsif ($rose_object->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
+        $param->{'spread_bet_record'} = $rose_object->spread_bet;
+        $model_class = 'BOM::Database::Model::FinancialMarketBet::SpreadBet';
     } else {
         Carp::croak('UNSUPPORTED rose_object class [' . $rose_object->bet_class . ']');
     }
