@@ -185,8 +185,8 @@ sub _predefined_trading_period {
         # Starting at midnight, running through these times.
         my @hourly_durations = qw(2h 4h 6h 8h 12h 16h 20h);
 
-        $trading_periods = [
-            map { +{date_start => $start_of_day, date_expiry => $_->datetime, duration => $_} }
+        trading_periods = [
+            map { +{date_start => $start_of_day, date_expiry => $_->datetime, duration => ($_->hour - $today->hour) . 'h'} }
             grep { $now->is_before($_) } map { $today->plus_time_interval($_) } @hourly_durations
         ];
 
