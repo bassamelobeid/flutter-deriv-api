@@ -6,6 +6,7 @@ use warnings;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
+use List::Util qw(first);
 use Mojo::Util qw(url_escape);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Data::Validate::Sanctions qw(is_sanctioned);
@@ -177,12 +178,25 @@ sub real_acc_checks {
 
 sub financial_acc_checks {
     my $args = shift;
-    if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($args->{from_loginid})->short ne 'malta') {
-        return {
-            error_type => 'no_financial',
-            err        => localize('Financial account opening unavailable'),
-        };
+
+    my $from_client = BOM::Platform::Client->new({loginid => $args->{from_loginid}});
+    my $residence = ($from_client->residence) ? Locale::Country::code2country($from_client->residence) : '';
+
+    my $ok;
+    if ($from_client->is_virtual and $residence and
+        first { uc($residence) eq $_ } @{BOM::Platform::Runtime->instance->broker_codes->get('MF')->landing_company->counterparty_for} and
+        first { $residence eq $_ } @{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries}
+    ) {
+        $ok = 1;
+    } elsif (!$from_client->is_virtual and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($from_client->loginid)->short eq 'malta') {
+        $ok = 1;
     }
+
+    return {
+        error_type => 'no_financial',
+        err        => localize('Financial account opening unavailable'),
+    } if (!$ok);
+
     return real_acc_checks($args);
 }
 
