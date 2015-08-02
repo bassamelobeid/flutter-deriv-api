@@ -83,8 +83,8 @@ subtest 'spread up' => sub {
         is $c->breaching_tick->quote, 110, 'breaching tick is 110';
         is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
         cmp_ok $c->stop_loss_level, '==', 111.00, 'stop loss level is 111.00';
-        cmp_ok $c->exit_level, '==', 111.00, 'exit level is 111.00';
-        cmp_ok $c->value, '==', -20, 'value is -20';
+        cmp_ok $c->exit_level,      '==', 111.00, 'exit level is 111.00';
+        cmp_ok $c->value,           '==', -20,    'value is -20';
 
         $params->{date_pricing} = $now->epoch + 4;
         $c = produce_contract($params);
@@ -100,8 +100,8 @@ subtest 'spread up' => sub {
         is $c->breaching_tick->quote, 110, 'breaching tick is 110';
         is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
         cmp_ok $c->stop_loss_level, '==', 111.00, 'stop loss level is 111.00';
-        cmp_ok $c->exit_level, '==', 111.00, 'exit level is 111.00';
-        cmp_ok $c->value, '==', -20, 'value is -20';
+        cmp_ok $c->exit_level,      '==', 111.00, 'exit level is 111.00';
+        cmp_ok $c->value,           '==', -20,    'value is -20';
     }
     'hit stop loss';
 
@@ -125,7 +125,7 @@ subtest 'spread up' => sub {
         ok $c->is_expired;
         is $c->breaching_tick->quote, 68, 'breaching tick is 68';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
-        cmp_ok $c->value, '==', 50, 'value is 50';
+        cmp_ok $c->value,      '==', 50, 'value is 50';
         cmp_ok $c->exit_level, '==', 67, 'exit level 67';
 
         $params->{date_pricing} = $now->epoch + 7;
@@ -142,7 +142,7 @@ subtest 'spread up' => sub {
         # always the first hit tick
         is $c->breaching_tick->quote, 68, 'breaching tick is 68';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
-        cmp_ok $c->value, '==', 50, 'value is 50';
+        cmp_ok $c->value,      '==', 50, 'value is 50';
         cmp_ok $c->exit_level, '==', 67, 'exit level 67';
 
     }

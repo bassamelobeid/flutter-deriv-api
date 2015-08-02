@@ -80,10 +80,10 @@ subtest 'spread up' => sub {
         });
         cmp_ok $c->stop_loss_level, '==', 92.00, 'stop loss level is 92';
         is $c->breaching_tick->quote, 93, 'breaching tick is 93';
-        is $c->breaching_tick->epoch, $now->epoch+3, 'correct breaching tick epoch';
+        is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
         ok $c->is_expired;
         cmp_ok $c->exit_level, '==', 92.00, 'exit level is 93.00';
-        cmp_ok $c->value, '==', -20, 'value is -20';
+        cmp_ok $c->value,      '==', -20,   'value is -20';
         $params->{date_pricing} = $now->epoch + 4;
 
         $c = produce_contract($params);
@@ -95,10 +95,10 @@ subtest 'spread up' => sub {
         cmp_ok $c->stop_loss_level, '==', 92.00, 'stop loss level is 92';
         is $c->breaching_tick->quote, 93, 'breaching tick is 93';
         # always the first hit tick
-        is $c->breaching_tick->epoch, $now->epoch+3, 'correct breaching tick epoch';
+        is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
         ok $c->is_expired;
         cmp_ok $c->exit_level, '==', 92.00, 'exit level is 93.00';
-        cmp_ok $c->value, '==', -20, 'value is -20';
+        cmp_ok $c->value,      '==', -20,   'value is -20';
     }
     'hit stop loss';
 
@@ -124,7 +124,7 @@ subtest 'spread up' => sub {
         is $c->breaching_tick->quote, 117, 'breaching tick is 117';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct breaching tick epoch';
         cmp_ok $c->exit_level, '==', 118.00, 'exit level is 118.00';
-        cmp_ok $c->value, '==', 50, 'value is 50';
+        cmp_ok $c->value,      '==', 50,     'value is 50';
 
         $params->{date_pricing} = $now->epoch + 7;
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -142,7 +142,7 @@ subtest 'spread up' => sub {
         is $c->breaching_tick->quote, 117, 'breaching tick is 117';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct breaching tick epoch';
         cmp_ok $c->exit_level, '==', 118.00, 'exit level is 118.00';
-        cmp_ok $c->value, '==', 50, 'value is 50';
+        cmp_ok $c->value,      '==', 50,     'value is 50';
     }
     'hit stop profit';
 };
