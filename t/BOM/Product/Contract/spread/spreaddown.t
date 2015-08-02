@@ -62,6 +62,7 @@ subtest 'spread up' => sub {
         cmp_ok $c->barrier->as_absolute, '==', 101, 'barrier with correct pipsize';
         ok $c->current_value, 'current value is defined';
         ok !$c->is_expired, 'position not expired';
+        cmp_ok $c->sell_level, '==', 105, 'sell level is 105';
         cmp_ok $c->current_value->{dollar}, '==', -8, 'current value is -8';
         cmp_ok $c->current_value->{point},  '==', -4, 'current value in point is -4';
         cmp_ok $c->bid_price, '==', 12, 'bid_price is 12';
@@ -71,34 +72,79 @@ subtest 'spread up' => sub {
     lives_ok {
         $params->{date_pricing} = $now->epoch + 3;
         my $c = produce_contract($params);
+        is $c->entry_tick->quote, 102, 'entry tick is 102';
+        cmp_ok $c->barrier->as_absolute, '==', 101.00, 'barrier is 101.00';
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 3,
+            quote      => 110
+        });
+        ok $c->is_expired;
+        is $c->breaching_tick->quote, 110, 'breaching tick is 110';
+        is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
+        cmp_ok $c->stop_loss_level, '==', 111.00, 'stop loss level is 111.00';
+        cmp_ok $c->exit_level, '==', 111.00, 'exit level is 111.00';
+        cmp_ok $c->value, '==', -20, 'value is -20';
+
+        $params->{date_pricing} = $now->epoch + 4;
+        $c = produce_contract($params);
+        is $c->entry_tick->quote, 102, 'entry tick is 102';
+        cmp_ok $c->barrier->as_absolute, '==', 101.00, 'barrier is 101.00';
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 4,
             quote      => 111
         });
         ok $c->is_expired;
-        cmp_ok $c->stop_loss_level, '==', 111;
+        # always the first hit tick
+        is $c->breaching_tick->quote, 110, 'breaching tick is 110';
+        is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
+        cmp_ok $c->stop_loss_level, '==', 111.00, 'stop loss level is 111.00';
+        cmp_ok $c->exit_level, '==', 111.00, 'exit level is 111.00';
         cmp_ok $c->value, '==', -20, 'value is -20';
     }
     'hit stop loss';
 
     lives_ok {
-        $params->{date_start}   = $now->epoch + 3;
-        $params->{date_pricing} = $now->epoch + 5;
+        $params->{date_start}   = $now->epoch + 4;
+        $params->{date_pricing} = $now->epoch + 6;
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
-            epoch      => $now->epoch + 4,
+            epoch      => $now->epoch + 5,
             quote      => 93
         });
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
-            epoch      => $now->epoch + 5,
-            quote      => 67
+            epoch      => $now->epoch + 6,
+            quote      => 68
         });
         my $c = produce_contract($params);
+        is $c->entry_tick->quote, 93, 'entry tick is 93';
+        cmp_ok $c->barrier->as_absolute, '==', 92.00, 'barrier is 92.00';
+        cmp_ok $c->stop_profit_level, '==', 67.00, 'stop profit level 67.00';
         ok $c->is_expired;
-        cmp_ok $c->stop_profit_level, '==', 67;
+        is $c->breaching_tick->quote, 68, 'breaching tick is 68';
+        is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
         cmp_ok $c->value, '==', 50, 'value is 50';
+        cmp_ok $c->exit_level, '==', 67, 'exit level 67';
+
+        $params->{date_pricing} = $now->epoch + 7;
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => 'R_100',
+            epoch      => $now->epoch + 7,
+            quote      => 67
+        });
+        $c = produce_contract($params);
+        is $c->entry_tick->quote, 93, 'entry tick is 93';
+        cmp_ok $c->barrier->as_absolute, '==', 92.00, 'barrier is 92.00';
+        cmp_ok $c->stop_profit_level, '==', 67.00, 'stop profit level 67.00';
+        ok $c->is_expired;
+        # always the first hit tick
+        is $c->breaching_tick->quote, 68, 'breaching tick is 68';
+        is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
+        cmp_ok $c->value, '==', 50, 'value is 50';
+        cmp_ok $c->exit_level, '==', 67, 'exit level 67';
+
     }
     'hit stop profit';
 };
