@@ -25,7 +25,13 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'FOREX'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'RANDOM'});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange',
+    {
+        symbol           => 'RANDOM',
+        holidays         => {},
+        open_on_weekends => 1
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
