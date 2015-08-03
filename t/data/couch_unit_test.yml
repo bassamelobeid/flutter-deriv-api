@@ -192,6 +192,7 @@ fmb_higher_lower_sold_won:
     transaction_time: '2010-12-02 12:00:00'
     start_time: '2010-12-02 12:00:00'
     expiry_time: '2010-12-02 12:04:00'
+    settlement_time: '2010-12-02 16:04:00'
     is_expired: 0
     is_sold: 0
     bet_class: higher_lower_bet
