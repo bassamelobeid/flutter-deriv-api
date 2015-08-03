@@ -57,7 +57,8 @@ ALTER TABLE ONLY bet.financial_market_bet
     ADD CONSTRAINT basic_validation
         CHECK (
            (
-            purchase_time < '2014-05-09 00:00:00'::timestamp without time zone
+            purchase_time < '2014-05-09 00:00:00'::TIMESTAMP
+            OR bet_class='run_bet'
             OR (NOT is_sold
                 OR 0 <= sell_price
                    AND (bet_class = 'spread_bet' OR sell_price <= payout_price)
@@ -118,7 +119,8 @@ UPDATE pg_constraint
              FROM bet.financial_market_bet
             WHERE NOT (
            (
-            purchase_time < '2014-05-09 00:00:00'::timestamp without time zone
+            purchase_time < '2014-05-09 00:00:00'::TIMESTAMP
+            OR bet_class='run_bet'
             OR (NOT is_sold
                 OR 0 <= sell_price
                    AND (bet_class = 'spread_bet' OR sell_price <= payout_price)
