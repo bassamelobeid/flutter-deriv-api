@@ -45,8 +45,7 @@ ALTER TABLE ONLY bet.financial_market_bet
             AND round(buy_price, 2) = buy_price
             AND round(payout_price, 2) = payout_price
             AND purchase_time <= start_time
-            AND ((bet_class = 'spread_bet' AND NOT is_sold)
-                OR (start_time <= expiry_time AND purchase_time <= settlement_time))
+            AND (bet_class = 'spread_bet' OR (start_time <= expiry_time AND purchase_time <= settlement_time))
         ) NOT VALID;
 
 ALTER TABLE ONLY bet.financial_market_bet
