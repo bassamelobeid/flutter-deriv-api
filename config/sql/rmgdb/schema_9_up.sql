@@ -19,14 +19,27 @@ ALTER TABLE ONLY bet.bet_dictionary
 
 ALTER TABLE ONLY bet.bet_dictionary
     ADD CONSTRAINT bet_dictionary_table_name_check
-        CHECK (((table_name)::text = ANY ((ARRAY['touch_bet'::character varying, 'range_bet'::character varying, 'higher_lower_bet'::character varying, 'run_bet'::character varying, 'legacy_bet'::character varying, 'digit_bet'::character varying, 'spread_bet'::character varying])::text[])));
+        CHECK (table_name IN ('touch_bet',
+                              'range_bet',
+                              'higher_lower_bet',
+                              'run_bet',
+                              'legacy_bet',
+                              'digit_bet',
+                              'spread_bet'));
 
 ALTER TABLE ONLY bet.financial_market_bet
     DROP CONSTRAINT IF EXISTS pk_check_bet_class_value RESTRICT;
 
 ALTER TABLE ONLY bet.financial_market_bet
     ADD CONSTRAINT pk_check_bet_class_value
-        CHECK (((bet_class)::text = ANY ((ARRAY['higher_lower_bet'::character varying, 'range_bet'::character varying, 'touch_bet'::character varying, 'run_bet'::character varying, 'legacy_bet'::character varying, 'digit_bet'::character varying, 'spread_bet'::character varying])::text[]))) NOT VALID;
+        CHECK (bet_class IN ('higher_lower_bet',
+                             'range_bet',
+                             'touch_bet',
+                             'run_bet',
+                             'legacy_bet',
+                             'digit_bet',
+                             'spread_bet')
+                            ) NOT VALID;
 
 ALTER TABLE ONLY bet.financial_market_bet
     DROP CONSTRAINT IF EXISTS basic_validation RESTRICT;
@@ -52,7 +65,10 @@ ALTER TABLE ONLY bet.financial_market_bet
    DROP CONSTRAINT IF EXISTS pk_check_bet_params_payout_price RESTRICT;
 
 ALTER TABLE ONLY bet.financial_market_bet
-   ADD CONSTRAINT pk_check_bet_params_payout_price CHECK ((((bet_class)::text = 'legacy_bet'::text) OR (bet_class = 'spread_bet' OR payout_price IS NOT NULL)));
+   ADD CONSTRAINT pk_check_bet_params_payout_price
+        CHECK (bet_class IN ('legacy_bet',
+                             'spread_bet')
+                         OR (payout_price IS NOT NULL));
 
 CREATE TRIGGER prevent_action BEFORE DELETE ON bet.spread_bet FOR EACH STATEMENT EXECUTE PROCEDURE public.prevent_action();
 
