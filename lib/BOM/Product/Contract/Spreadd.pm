@@ -111,11 +111,12 @@ sub _build__highlow_args {
 
 sub localizable_description {
     return {
-        dollar => 'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, with stop loss of <strong>[_6] [_4]</strong> and stop profit of <strong>[_6] [_5]</strong>.',
-        point => 'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, with stop loss of <strong>[_4] [_6]</strong> and stop profit of <strong>[_5] [_6]</strong>.',
+        dollar =>
+            'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, with stop loss of <strong>[_6] [_4]</strong> and stop profit of <strong>[_6] [_5]</strong>.',
+        point =>
+            'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, with stop loss of <strong>[_4] [_6]</strong> and stop profit of <strong>[_5] [_6]</strong>.',
     };
 }
-
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
