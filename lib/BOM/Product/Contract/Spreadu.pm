@@ -109,10 +109,12 @@ sub _build__highlow_args {
     return [$self->stop_profit_level - $half_spread, $self->stop_loss_level + $half_spread];
 }
 
-has longcode_description => (
-    is      => 'ro',
-    default => 'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, ',
-);
+sub localizable_description {
+    return {
+        dollar => 'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, with stop loss of <strong>[_6] [_4]</strong> and stop profit of <strong>[_6] [_5]</strong>.',
+        point => 'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, with stop loss of <strong>[_4] [_6]</strong> and stop profit of <strong>[_5] [_6]</strong>.',
+    };
+}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

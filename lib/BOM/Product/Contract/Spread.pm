@@ -280,14 +280,13 @@ sub _build_shortcode {
 
 sub _build_longcode {
     my $self        = shift;
-    my $description = $self->longcode_description;
+    my $description = $self->localizable_description->{$self->stop_type};
     my @other       = ($self->supplied_stop_loss, $self->supplied_stop_profit);
+
     if ($self->stop_type eq 'dollar') {
         push @other, $self->currency;
-        $description .= ' with stop loss of <strong>[_6] [_4]</strong> and stop profit of <strong>[_6] [_5]</strong>.';
     } else {
         push @other, 'points';
-        $description .= ' with stop loss of <strong>[_4] [_6]</strong> and stop profit of <strong>[_5] [_6]</strong>.';
     }
 
     return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));
