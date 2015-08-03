@@ -39,7 +39,7 @@ ALTER TABLE ONLY bet.financial_market_bet
                              'legacy_bet',
                              'digit_bet',
                              'spread_bet')
-                            ) NOT VALID;
+        ) NOT VALID;
 
 ALTER TABLE ONLY bet.financial_market_bet
     DROP CONSTRAINT IF EXISTS basic_validation RESTRICT;
@@ -68,7 +68,8 @@ ALTER TABLE ONLY bet.financial_market_bet
    ADD CONSTRAINT pk_check_bet_params_payout_price
         CHECK (bet_class IN ('legacy_bet',
                              'spread_bet')
-                         OR (payout_price IS NOT NULL));
+                         OR (payout_price IS NOT NULL)
+        ) NOT VALID;
 
 CREATE TRIGGER prevent_action BEFORE DELETE ON bet.spread_bet FOR EACH STATEMENT EXECUTE PROCEDURE public.prevent_action();
 
