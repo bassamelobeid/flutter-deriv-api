@@ -159,6 +159,7 @@ sub buy_one_bet {
         purchase_time     => $now->db_timestamp,
         start_time        => $now->db_timestamp,
         expiry_time       => $now->plus_time_interval($duration)->db_timestamp,
+        settlement_time   => $now->plus_time_interval($duration)->db_timestamp,
         is_expired        => 1,
         is_sold           => 0,
         bet_class         => 'higher_lower_bet',
@@ -199,12 +200,10 @@ sub buy_one_spread_bet {
 
     my $bet_data = +{
         underlying_symbol => 'R_100',
-        payout_price      => undef,
         buy_price         => $buy_price,
         remark            => 'Test Remark',
         purchase_time     => $purchase_time,
         start_time        => $purchase_time,
-        expiry_time       => undef,
         is_expired        => 0,
         is_sold           => 0,
         bet_class         => 'spread_bet',
