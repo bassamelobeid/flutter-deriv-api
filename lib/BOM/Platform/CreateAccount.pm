@@ -95,7 +95,7 @@ sub create_virtual_acc {
     $client->deposit_virtual_funds;
 
     my $link = request()->url_for(
-        '/user/confirm_email',
+        '/user/validate_link',
         {
             verify_token => BOM::Platform::EmailToken::get_token($email),
             step         => 'account'
