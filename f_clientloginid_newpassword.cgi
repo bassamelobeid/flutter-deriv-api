@@ -38,7 +38,7 @@ if (not $email) {
 my $lang = request()->language;
 
 my $link = request()->url_for(
-    '/user/confirm_email',
+    '/user/validate_link',
     {
         verify_token => BOM::Platform::EmailToken::get_token($email),
     });
