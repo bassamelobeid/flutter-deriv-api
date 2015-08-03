@@ -4,23 +4,19 @@ use strict;
 use warnings;
 use Date::Utility;
 use Time::Duration::Concise;
-use VolSurface::Utils qw(get_strike_for_spot_delta);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
-use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
-use BOM::Product::Contract::Strike;
 use BOM::Product::Contract::Finder qw (get_barrier);
 use base qw( Exporter );
 our @EXPORT_OK = qw(predefined_contracts_for_symbol);
-use Time::HiRes qw( usleep ualarm gettimeofday tv_interval nanosleep
-             clock_gettime clock_getres clock_nanosleep clock stat lstat );
+
 sub predefined_contracts_for_symbol {
     my $args                = shift;
     my $symbol              = $args->{symbol} || die 'no symbol';
-    my $t0 = [gettimeofday];
     my $underlying   = BOM::Market::Underlying->new($symbol);
     my $now          = Date::Utility->new;
-    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch);
+    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent =>1});
 
     my $exchange  = $underlying->exchange;
     my $open      = $exchange->opening_on($now)->epoch;
@@ -49,7 +45,6 @@ sub predefined_contracts_for_symbol {
                 contract     => $o,
             });
     }
-  warn "xcvxcvxcvxcvxvcv",  tv_interval ( $t0 );
     return {
         available => \@offerings,
         hit_count => scalar(@offerings),
@@ -80,15 +75,15 @@ sub _predefined_trading_period {
     my $in_period     = $now->hour - ($now->hour % $period_length->hours);
 
     my $trading_key = join($cache_sep, $exchange->symbol, $now->date, $in_period);
-    #my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
-    #if (not $trading_periods) {
+    my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
+    if (not $trading_periods) {
         my $today        = $now->truncate_to_day;                            # Start of the day object.
         my $start_of_day = $today->datetime;                                 # As a string.
 
         # Starting at midnight, running through these times.
         my @hourly_durations = qw(2h 4h 6h 8h 12h 16h 20h);
 
-        my $trading_periods = [
+        $trading_periods = [
             map { +{date_start => $start_of_day, date_expiry => $_->datetime, duration => ($_->hour - $today->hour) . 'h'} }
             grep { $now->is_before($_) } map { $today->plus_time_interval($_) } @hourly_durations];
 
@@ -118,8 +113,8 @@ sub _predefined_trading_period {
             };
 
         # We will hold it for the duration of the period which is a little too long, but no big deal.
-        #    Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
-        # }
+            Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
+         }
 
     my @new_offerings;
     foreach my $o ( @offerings) {
@@ -147,12 +142,11 @@ sub _set_predefined_barriers {
     my $date_expiry    = Date::Utility->new($trading_period->{date_expiry});
 
     my $barrier_key = join($cache_sep, $underlying->symbol, $date_start->date, $date_expiry->date);
-    #my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
-    #if (not $available_barriers) {
+    my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
+    if (not $available_barriers) {
         my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
         my $duration     = $date_expiry->epoch - $date_start->epoch;
         my @delta        = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
-        my $available_barriers;
         foreach my $delta (@delta) {
             push @$available_barriers, [
                 map {
@@ -168,8 +162,8 @@ sub _set_predefined_barriers {
                 } (qw(high low))];
         }
         # Expires at the end of the available period.
-        # Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
-        #}
+         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
+        }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = [map { $_->[0] } @$available_barriers];
         $contract->{barrier} = (sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$contract->{available_barriers}})[0];
