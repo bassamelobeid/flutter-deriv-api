@@ -1,45 +1,37 @@
 ## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
-
-package BOM::Product::Contract::Finder;
-
+package BOM::Product::Contract::Finder::Japan;
 use strict;
 use warnings;
-
-use Cache::RedisDB;
 use Date::Utility;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
-
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
-use Time::HiRes qw (time);
+use BOM::Product::Contract::Finder qw (get_barrier);
 use base qw( Exporter );
-our @EXPORT_OK = qw(available_contracts_for_symbol get_barrier);
+our @EXPORT_OK = qw(predefined_contracts_for_symbol);
+use Time::HiRes qw (time);
 
-sub available_contracts_for_symbol {
+sub predefined_contracts_for_symbol {
     my $args                = shift;
     my $symbol              = $args->{symbol} || die 'no symbol';
-    my $predefined_contract = $args->{predefined} || '';
-print 'start '. time;
+    print "start : ". time;
     my $underlying   = BOM::Market::Underlying->new($symbol);
     my $now          = Date::Utility->new;
-    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
+    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch);
 
     my $exchange  = $underlying->exchange;
     my $open      = $exchange->opening_on($now)->epoch;
     my $close     = $exchange->closing_on($now)->epoch;
     my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings = $flyby->query({underlying_symbol => $symbol});
+    my @offerings = $flyby->query({underlying_symbol => $symbol,start_type => 'spot', expiry_type => ['daily', 'intraday']});
 
-    if ($predefined_contract) {
-        @offerings = _predefined_trading_period({
+    @offerings = _predefined_trading_period({
             offerings => \@offerings,
             exchange  => $exchange
-        });
-    }
+    });
 
     for my $o (@offerings) {
         my $cc = $o->{contract_category};
@@ -48,110 +40,22 @@ print 'start '. time;
         my $cat = BOM::Product::Contract::Category->new($cc);
         $o->{contract_category_display} = $cat->display_name;
 
-        if ($o->{start_type} eq 'forward') {
-            my @trade_dates;
-            for (my $date = $now; @trade_dates < 3; $date = $date->plus_time_interval('1d')) {
-                $date = $exchange->trade_date_after($date) unless $exchange->trades_on($date);
-                push @trade_dates, $date;
-            }
-            $o->{forward_starting_options} =
-                [map { {date => $_->epoch, open => $exchange->opening_on($_)->epoch, close => $exchange->closing_on($_)->epoch} } @trade_dates];
-        }
-
-        $o->{barriers} =
-              $cat->two_barriers    ? 2
-            : $cc eq 'asian'        ? 0
-            : $cc eq 'digits'       ? 1
-            : $cc eq 'touchnotouch' ? 1
-            : $cc eq 'callput'      ? (
-              $bc eq 'euro_atm'     ? 0
-            : $bc eq 'euro_non_atm' ? 1
-            :                         die "don't know about callput / $bc combo"
-            )
-            : die "don't know about contract category $cc";
+        $o->{barriers} = $cat->two_barriers ? 2 : 1;
 
         # get the closest from spot barrier from the predefined set
-        if ($predefined_contract) {
             _set_predefined_barriers({
                 underlying   => $underlying,
                 current_tick => $current_tick,
                 contract     => $o,
             });
-
-        } else {
-
-            if ($o->{barriers}) {
-                my $min_duration = Time::Duration::Concise->new(interval => $o->{min_contract_duration})->seconds;
-                my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-                my $atm_vol = $volsurface->get_volatility({
-                    delta => 50,
-                    days  => $min_duration / 86400,
-                });
-
-                if ($o->{barriers} == 1) {
-                    $o->{barrier} = get_barrier({
-                        underlying    => $underlying,
-                        duration      => $min_duration,
-                        direction     => 'high',
-                        barrier_delta => 0.2,
-                        barrier_tick  => $current_tick,
-                        atm_vol       => $atm_vol
-                    });
-                }
-
-                if ($o->{barriers} == 2) {
-                    $o->{high_barrier} = get_barrier({
-                        underlying    => $underlying,
-                        duration      => $min_duration,
-                        direction     => 'high',
-                        barrier_delta => 0.2,
-                        barrier_tick  => $current_tick,
-                        atm_vol       => $atm_vol
-                    });
-                    $o->{low_barrier} = get_barrier({
-                        underlying    => $underlying,
-                        duration      => $min_duration,
-                        direction     => 'low',
-                        barrier_delta => 0.2,
-                        barrier_tick  => $current_tick,
-                        atm_vol       => $atm_vol
-                    });
-                }
-            }
-        }
     }
-print "\nend" .time;
+  print "end time" . time;
     return {
         available => \@offerings,
         hit_count => scalar(@offerings),
         open      => $open,
         close     => $close,
     };
-}
-
-sub get_barrier {
-    my $args = shift;
-
-    my ($underlying, $duration, $direction, $barrier_delta, $barrier_tick, $absolute_barrier, $atm_vol) =
-        @{$args}{'underlying', 'duration', 'direction', 'barrier_delta', 'barrier_tick', 'absolute_barrier', 'atm_vol'};
-
-    my $approximate_barrier = get_strike_for_spot_delta({
-        option_type => ($direction eq 'low') ? 'VANILLA_CALL' : 'VANILLA_PUT',
-        delta       => $barrier_delta,
-        atm_vol     => $atm_vol,
-        t => $duration / (86400 * 365),
-        r_rate           => 0,
-        q_rate           => 0,
-        spot             => $barrier_tick->quote,
-        premium_adjusted => 0,
-    });
-    my $strike = BOM::Product::Contract::Strike->new(
-        underlying       => $underlying,
-        basis_tick       => $barrier_tick,
-        supplied_barrier => $approximate_barrier,
-    );
-
-    return ($absolute_barrier or $duration > 86400) ? $strike->as_absolute : $strike->as_relative;
 }
 
 =head2 _predefined_trading_period
@@ -176,7 +80,7 @@ sub _predefined_trading_period {
     my $in_period     = $now->hour - ($now->hour % $period_length->hours);
 
     my $trading_key = join($cache_sep, $exchange->symbol, $now->date, $in_period);
-    my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
+     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
         my $today        = $now->truncate_to_day;                            # Start of the day object.
         my $start_of_day = $today->datetime;                                 # As a string.
@@ -214,11 +118,11 @@ sub _predefined_trading_period {
             };
 
         # We will hold it for the duration of the period which is a little too long, but no big deal.
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
-    }
+            Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
+        }
 
     my @new_offerings;
-    foreach my $o (grep { $_->{start_type} eq 'spot' and $_->{expiry_type} ne 'tick' } @offerings) {
+    foreach my $o ( @offerings) {
         foreach my $trading_period (@$trading_periods) {
             push @new_offerings, {%{$o}, trading_period => $trading_period};
         }
@@ -248,7 +152,7 @@ sub _set_predefined_barriers {
         my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
         my $duration     = $date_expiry->epoch - $date_start->epoch;
         my @delta        = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
-
+        my $available_barriers;
         foreach my $delta (@delta) {
             push @$available_barriers, [
                 map {
@@ -265,8 +169,7 @@ sub _set_predefined_barriers {
         }
         # Expires at the end of the available period.
         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
-    }
-    $contract->{barriers} = 1 if ($contract->{barrier_category} eq 'euro_atm');
+        }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = [map { $_->[0] } @$available_barriers];
         $contract->{barrier} = (sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$contract->{available_barriers}})[0];
