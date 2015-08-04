@@ -7,7 +7,7 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
  my $cookie = BOM::Platform::SessionCookie(token => $token, email => $email);
  my $loginid = $cookie->loginid;
- if ($cookie->validate_session('trade')){
+ if ($cookie->validate_session()){
     # we can trade
  };
 
@@ -28,10 +28,6 @@ The resulting cookie is a simple hashref, stored in Redis for a period of time
 and retrieved with a token.
 
 Very commonly used and stable (over api version) attributes have accesssors.
-
-Also scopes is a reserved word used for authorization.  Other keys an be passed
-in and will be part of the hashref returned (can be accessed as values in a 
-hashref).
 
 =head2 ACCESSORS (READ ONLY)
 
@@ -59,7 +55,7 @@ sub clerk   { $_[0]->{clerk}   if ref $_[0] }    ## no critic
 
 Retrieves a session state structure from redis.
 
-=head2 new({key1 => $value1, ..., scopes => [@scopes])
+=head2 new({key1 => $value1, ...,)
 
 Creates a new session and stores it in redis.
 
@@ -91,19 +87,14 @@ sub new {    ## no critic RequireArgUnpack
 
 =head1 METHODS
 
-=head2 validate_session($scope);
-
-Returns true if the session is valid and either there is no scope requested or
-the scope is found in $self->{scopes}
+=head2 validate_session();
 
 =cut
 
 sub validate_session {
-    my $self  = shift;
-    my $scope = shift;
-    return   unless $self->{token};
-    return 1 unless $scope;
-    return scalar grep { $_ eq $scope } @{$self->{scopes}};
+    my $self = shift;
+
+    return unless $self->{token};
 }
 
 =head2 end_session
