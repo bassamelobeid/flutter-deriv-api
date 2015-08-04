@@ -619,7 +619,10 @@ sub _build_economic_events_volatility_risk_markup {
     # since we are parsing in both vols now, we just check for difference in vol to determine if there's a markup
     if ($self->pricing_vol != $self->news_adjusted_pricing_vol) {
         my $tv_without_news = $self->probability->amount;
-        my $tv_with_news = $self->clone({pricing_vol => $self->news_adjusted_pricing_vol})->probability->amount;
+        my $tv_with_news    = $self->clone({
+                pricing_vol    => $self->news_adjusted_pricing_vol,
+                intraday_trend => $self->intraday_trend,
+            })->probability->amount;
         $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
     }
 
