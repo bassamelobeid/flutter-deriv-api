@@ -49,4 +49,4 @@ install:
     - sudo chmod 777 /var/log/httpd -R
 
 script:
-    - make $TEST_SUITE
+    - make $TEST_SUITE; cat /var/log/httpd/log4perl_trace.log
