@@ -162,7 +162,7 @@ sub _build_non_restricted_countries {
         $countries->{$code} = $country;
     }
     return $countries;
-};
+}
 
 sub _build_app_config {
     my $self = shift;
