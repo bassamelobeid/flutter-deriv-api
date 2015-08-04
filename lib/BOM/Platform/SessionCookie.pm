@@ -93,8 +93,10 @@ sub new {    ## no critic RequireArgUnpack
 
 sub validate_session {
     my $self = shift;
-
-    return unless $self->{token};
+    if ($self->{token}) {
+        return 1;
+    }
+    return;
 }
 
 =head2 end_session
