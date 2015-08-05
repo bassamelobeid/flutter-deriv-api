@@ -89,6 +89,8 @@ GRANT SELECT, UPDATE, INSERT ON bet.spread_bet to read, write;
 
 COMMIT;
 
+SET statement_timeout TO 0;
+
 BEGIN;
 
 UPDATE pg_constraint
