@@ -102,7 +102,7 @@ sub _naked_vol {
     });
     my ($tick_count, $variance, $sum_squaredinput) = (0, 0, 0);
     my $length      = scalar @$ticks;
-    my $returns_sep = 30;               # Compute on 30 tick intervals;
+    my $returns_sep = $at->returns_to_agg_ratio;
 
     if ($length > $returns_sep) {
         # Can compute vol.
