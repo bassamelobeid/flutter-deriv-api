@@ -383,7 +383,7 @@ sub _validate_underlying {
             message_to_client => localize(
                 "This market is presently closed. <a href='[_1]'>View Trading Times</a> or try out the <a href='[_2]'>Random Indices</a> which are always open.",
                 request()->url_for('/resources/trading_times', undef, {no_host => 1}),
-                request()->url_for('trade.cgi', {market => "random"}));
+                request()->url_for('trade.cgi', {market => "random"})),
         };
     }
     return @err;
