@@ -280,8 +280,6 @@ sub _build_longcode {
 
     if ($self->stop_type eq 'dollar') {
         push @other, $self->currency;
-    } else {
-        push @other, 'points';
     }
 
     return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));
