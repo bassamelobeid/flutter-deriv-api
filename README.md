@@ -84,6 +84,9 @@ Postgres library
             NULL
         );
   ```
+  
+  See the real-world example above on how to make sure the `CHECK` constraint
+  fails for `NULL`s.
 
 1. Monitor replication lag
 
