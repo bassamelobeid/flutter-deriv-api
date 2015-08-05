@@ -228,11 +228,11 @@ sub _build_tie_factor {
     my $self = shift;
 
     my $ten_minutes_int = Time::Duration::Concise->new(interval => '10m');
-    my $contract_start = $self->effective_start;
-    my $start_period = $contract_start->epoch - $ten_minutes_int->seconds;
-    my $end_period = $contract_start->epoch + $ten_minutes_int->seconds;
+    my $contract_start  = $self->effective_start;
+    my $start_period    = $contract_start->epoch - $ten_minutes_int->seconds;
+    my $end_period      = $contract_start->epoch + $ten_minutes_int->seconds;
     my @economic_events = $self->get_applicable_economic_events($start_period, $end_period);
-    my $factor_base = (@economic_events) ? 0 :0.75;
+    my $factor_base     = (@economic_events) ? 0 : 0.75;
 
     return Math::Util::CalculatedValue::Validatable->new({
         #This is the fraction of tie value that we return to clients.
