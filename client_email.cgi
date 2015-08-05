@@ -106,7 +106,15 @@ if (not $input{update}) {
             },
         ) || die BOM::Platform::Context::template->error();
     } else {
-        print "Same email [$new_email] provided, no update required";
+        print "Same email [$new_email] provided, no update required.";
+    }
+} elsif ($input{update} eq 'verification') {
+    if (not $user->email_verified) {
+        $user->email_verified(1);
+        $user->save;
+        print "Email verified successfully.";
+    } else {
+        print "Email is already verified before, no update required.";
     }
 }
 

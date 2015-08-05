@@ -5,7 +5,7 @@
         List of loginids with this email are:
     </span>
     <ul>
-        [% FOREACH loginid IN user.loginids %]
+        [% FOREACH loginid IN user.loginid %]
             <li> [% loginid %] </li>
         [% END %]
     </ul>
@@ -26,10 +26,10 @@
 
     <hr>Email Verification</br></br>
     [% IF user.email_verified %]
-        Client's email is already verified
+        Email is already verified
     [% ELSE %]
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
-            <b>Client's email has not been verified yet: </b><br/>
+            <b>Email is not verified yet: </b><br/>
             <input type="hidden" name="email" value="[% user.email %]">
             <input type="hidden" name="update" value="verification">
             <input type="submit" value="Mark email as verified">
@@ -41,7 +41,7 @@
         Updated clients' accounts are:
     </span>
     <ul>
-        [% FOREACH loginid IN user.loginids %]
+        [% FOREACH loginid IN user.loginid %]
             <li> [% loginid %] </li>
         [% END %]
     </ul>
