@@ -33,7 +33,10 @@ unit_test_system:
 
 unit_test_bdd:
 	@$M
-	(cd /home/git/regentmarkets/bdd && PERL5OPT="$I -I/home/git/regentmarkets/bdd/lib -MTest::MockTime::HiRes" pherkin -l)
+	(cd /home/git/regentmarkets/bdd && \
+         BOM_LOG4PERLCONFIG=$D/t/config/log4perl.conf \
+         PERL5OPT="$I -I/home/git/regentmarkets/bdd/lib -MTest::MockTime::HiRes" \
+         pherkin -l)
 
 unit_test_myaffiliates_extended:
 	@export EXTENDED_TESTING=1; unset SKIP_MYAFFILIATES; $(PROVE) -r t/BOM/Platform/MyAffiliates/
