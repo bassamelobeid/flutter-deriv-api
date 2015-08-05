@@ -298,9 +298,13 @@ sub payment_account_transfer {
     # special-case:  if either side is a paymentagent, use link table
     # 'payment_agent_transfer' not 'account_transfer'.  Structure is identical.
     if (not $inter_db_transfer and ($fmClient->payment_agent || $toClient->payment_agent)) {
-			$gateway_code = 'payment_agent_transfer';
-			#and validate agent payment
-			$fmClient->validate_agent_payment(toClient => $toClient, currency => $currency, amount => $amount);
+        $gateway_code = 'payment_agent_transfer';
+        #and validate agent payment
+        $fmClient->validate_agent_payment(
+            toClient => $toClient,
+            currency => $currency,
+            amount   => $amount
+        );
     }
 
     my ($fmPayment) = $fmAccount->add_payment({
@@ -649,6 +653,14 @@ sub validate_agent_payment {
 
     my $total_amount = scalar @$total ? $total->[0]->amount || 0 : 0;
 
+    my $pa_total_amount = $payment_agent->default_account->find_payment(
+        query  => $query,
+        select => 'sum(abs(amount)) as amount'
+    );
+    $pa_total_amount = scalar @$pa_total_amount ? $pa_total_amount->[0]->amount || 0 : 0;
+    if ($pa_total_amount + abs($amount) > 100_000) {
+        die "Payment agents can not exceed an aggregate value of 100,000 in a day\n";
+    }
     my $pa_transaction_count = $payment_agent->default_account->payment_count($query) || 0;
     ## Payment agents can have no more than 1000 transactions per day
 
