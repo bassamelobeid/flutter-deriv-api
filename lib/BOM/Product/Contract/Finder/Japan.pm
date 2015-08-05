@@ -12,21 +12,24 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(predefined_contracts_for_symbol);
 
 sub predefined_contracts_for_symbol {
-    my $args                = shift;
-    my $symbol              = $args->{symbol} || die 'no symbol';
+    my $args         = shift;
+    my $symbol       = $args->{symbol} || die 'no symbol';
     my $underlying   = BOM::Market::Underlying->new($symbol);
     my $now          = Date::Utility->new;
-    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent =>1});
+    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
 
     my $exchange  = $underlying->exchange;
     my $open      = $exchange->opening_on($now)->epoch;
     my $close     = $exchange->closing_on($now)->epoch;
     my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
-    my @offerings = $flyby->query({underlying_symbol => $symbol,start_type => 'spot', expiry_type => ['daily', 'intraday']});
+    my @offerings = $flyby->query({
+            underlying_symbol => $symbol,
+            start_type        => 'spot',
+            expiry_type       => ['daily', 'intraday']});
 
     @offerings = _predefined_trading_period({
-            offerings => \@offerings,
-            exchange  => $exchange
+        offerings => \@offerings,
+        exchange  => $exchange
     });
 
     for my $o (@offerings) {
@@ -39,11 +42,11 @@ sub predefined_contracts_for_symbol {
         $o->{barriers} = $cat->two_barriers ? 2 : 1;
 
         # get the closest from spot barrier from the predefined set
-            _set_predefined_barriers({
-                underlying   => $underlying,
-                current_tick => $current_tick,
-                contract     => $o,
-            });
+        _set_predefined_barriers({
+            underlying   => $underlying,
+            current_tick => $current_tick,
+            contract     => $o,
+        });
     }
     return {
         available => \@offerings,
@@ -85,7 +88,8 @@ sub _predefined_trading_period {
 
         $trading_periods = [
             map { +{date_start => $start_of_day, date_expiry => $_->datetime, duration => ($_->hour - $today->hour) . 'h'} }
-            grep { $now->is_before($_) } map { $today->plus_time_interval($_) } @hourly_durations];
+            grep { $now->is_before($_) } map { $today->plus_time_interval($_) } @hourly_durations
+        ];
 
         # Starting at midnight, running through these dates.
         my @daily_durations = qw(1d 2d 3d 7d 30d 60d 180d 365d);
@@ -113,11 +117,11 @@ sub _predefined_trading_period {
             };
 
         # We will hold it for the duration of the period which is a little too long, but no big deal.
-            Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
-         }
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
+    }
 
     my @new_offerings;
-    foreach my $o ( @offerings) {
+    foreach my $o (@offerings) {
         foreach my $trading_period (@$trading_periods) {
             push @new_offerings, {%{$o}, trading_period => $trading_period};
         }
@@ -162,8 +166,8 @@ sub _set_predefined_barriers {
                 } (qw(high low))];
         }
         # Expires at the end of the available period.
-         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
-        }
+        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
+    }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = [map { $_->[0] } @$available_barriers];
         $contract->{barrier} = (sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$contract->{available_barriers}})[0];

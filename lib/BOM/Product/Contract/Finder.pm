@@ -18,8 +18,8 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol get_barrier);
 
 sub available_contracts_for_symbol {
-    my $args                = shift;
-    my $symbol              = $args->{symbol} || die 'no symbol';
+    my $args         = shift;
+    my $symbol       = $args->{symbol} || die 'no symbol';
     my $underlying   = BOM::Market::Underlying->new($symbol);
     my $now          = Date::Utility->new;
     my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
@@ -59,45 +59,44 @@ sub available_contracts_for_symbol {
             )
             : die "don't know about contract category $cc";
 
+        if ($o->{barriers}) {
+            my $min_duration = Time::Duration::Concise->new(interval => $o->{min_contract_duration})->seconds;
+            my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+            my $atm_vol = $volsurface->get_volatility({
+                delta => 50,
+                days  => $min_duration / 86400,
+            });
 
-            if ($o->{barriers}) {
-                my $min_duration = Time::Duration::Concise->new(interval => $o->{min_contract_duration})->seconds;
-                my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-                my $atm_vol = $volsurface->get_volatility({
-                    delta => 50,
-                    days  => $min_duration / 86400,
+            if ($o->{barriers} == 1) {
+                $o->{barrier} = get_barrier({
+                    underlying    => $underlying,
+                    duration      => $min_duration,
+                    direction     => 'high',
+                    barrier_delta => 0.2,
+                    barrier_tick  => $current_tick,
+                    atm_vol       => $atm_vol
                 });
-
-                if ($o->{barriers} == 1) {
-                    $o->{barrier} = get_barrier({
-                        underlying    => $underlying,
-                        duration      => $min_duration,
-                        direction     => 'high',
-                        barrier_delta => 0.2,
-                        barrier_tick  => $current_tick,
-                        atm_vol       => $atm_vol
-                    });
-                }
-
-                if ($o->{barriers} == 2) {
-                    $o->{high_barrier} = get_barrier({
-                        underlying    => $underlying,
-                        duration      => $min_duration,
-                        direction     => 'high',
-                        barrier_delta => 0.2,
-                        barrier_tick  => $current_tick,
-                        atm_vol       => $atm_vol
-                    });
-                    $o->{low_barrier} = get_barrier({
-                        underlying    => $underlying,
-                        duration      => $min_duration,
-                        direction     => 'low',
-                        barrier_delta => 0.2,
-                        barrier_tick  => $current_tick,
-                        atm_vol       => $atm_vol
-                    });
-                }
             }
+
+            if ($o->{barriers} == 2) {
+                $o->{high_barrier} = get_barrier({
+                    underlying    => $underlying,
+                    duration      => $min_duration,
+                    direction     => 'high',
+                    barrier_delta => 0.2,
+                    barrier_tick  => $current_tick,
+                    atm_vol       => $atm_vol
+                });
+                $o->{low_barrier} = get_barrier({
+                    underlying    => $underlying,
+                    duration      => $min_duration,
+                    direction     => 'low',
+                    barrier_delta => 0.2,
+                    barrier_tick  => $current_tick,
+                    atm_vol       => $atm_vol
+                });
+            }
+        }
     }
     return {
         available => \@offerings,
