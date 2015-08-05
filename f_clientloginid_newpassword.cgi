@@ -38,12 +38,9 @@ if (not $email) {
 my $lang = request()->language;
 
 my $link = request()->url_for(
-    '/user/reset_password',
+    '/user/validate_link',
     {
-        action      => 'recover',
-        email       => url_encode($email),
-        reset_token => BOM::Platform::EmailToken->new(email => $email)->token,
-        login       => $client->loginid
+        verify_token => BOM::Platform::EmailToken::get_token($email),
     });
 
 my $lost_pass_email;
