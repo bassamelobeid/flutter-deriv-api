@@ -222,9 +222,20 @@ subtest 'stop type' => sub {
     like(
         $c->longcode,
         qr/with stop loss of <strong>10 points<\/strong> and stop profit of <strong>10 points<\/strong>/,
-        'correct longcode for stop_type: point'
+        'correct longcode for stop_type: point and stop_loss of 10'
     );
-    is $c->shortcode, 'SPREADU_R_100_2_' . $now->epoch . '_10_10_POINT';
+    $c = produce_contract({%$params, stop_type => 'point', amount_per_point => 2, stop_loss => 1, bet_type => 'SPREADU'});
+    like(
+        $c->longcode,
+        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        '[SPREADU] correct longcode for stop_type: point and stop_loss of 1'
+    );
+    $c = produce_contract({%$params, stop_type => 'point', amount_per_point => 2, stop_loss => 1, bet_type => 'SPREADD'});
+    like(
+        $c->longcode,
+        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        '[SPREADD] correct longcode for stop_type: point and stop_loss of 1'
+    );
     $c = produce_contract({
         %$params,
         stop_type        => 'dollar',
