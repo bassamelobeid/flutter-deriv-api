@@ -1683,6 +1683,7 @@ subtest 'max_turnover validation', sub {
                             purchase_time     => Date::Utility::today->minus_time_interval("1s")->db_timestamp,
                             start_time        => Date::Utility::today->minus_time_interval("0s")->db_timestamp,
                             expiry_time       => Date::Utility::today->plus_time_interval("15s")->db_timestamp,
+                            settlement_time   => Date::Utility::today->plus_time_interval("15s")->db_timestamp,
                             is_expired        => 0,
                             is_sold           => 0,
                             bet_class         => 'higher_lower_bet',
