@@ -298,7 +298,9 @@ sub payment_account_transfer {
     # special-case:  if either side is a paymentagent, use link table
     # 'payment_agent_transfer' not 'account_transfer'.  Structure is identical.
     if (not $inter_db_transfer and ($fmClient->payment_agent || $toClient->payment_agent)) {
-        $gateway_code = 'payment_agent_transfer';
+			$gateway_code = 'payment_agent_transfer';
+			#and validate agent payment
+			$fmClient->validate_agent_payment(toClient => $toClient, currency => $currency, amount => $amount);
     }
 
     my ($fmPayment) = $fmAccount->add_payment({
