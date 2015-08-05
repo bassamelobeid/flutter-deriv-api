@@ -61,10 +61,11 @@ Creates a new session and stores it in redis.
 
 =cut
 
-# characters for token
-my $string = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
-
-my @required = qw(loginid email);
+# default token parameters
+my $STRING       = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+my @REQUIRED     = qw(loginid email);
+my $EXPIRES_IN   = 3600 * 24;
+my $TOKEN_LENGTH = 48;
 
 sub new {    ## no critic RequireArgUnpack
     my ($package) = shift;
@@ -73,15 +74,15 @@ sub new {    ## no critic RequireArgUnpack
         $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
     } else {
-        my @missing = grep { not exists $self->{$_} } @required;
+        my @missing = grep { !$self->{$_} } @REQUIRED;
         croak "Error adding new session, missing: " . join(',', @missing)
             if @missing;
-        $self->{token} = BOM::Utility::Random->string_from($string, 128);
+        $self->{token} = BOM::Utility::Random->string_from($STRING, $TOKEN_LENGTH);
         BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
     }
-    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSION::' . $self->{token}, 3600 * 24);
-    $self->{issued_at}  = time;
-    $self->{expires_in} = 3600 * 24;
+    $self->{expires_in} ||= $EXPIRES_IN;
+    $self->{issued_at} = time;
+    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSION::' . $self->{token}, $self->{expires_in});
     return bless $self, $package;
 }
 
