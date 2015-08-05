@@ -107,10 +107,6 @@
         <param>
             <key>altered</key>
         </param>
-        <!-- lost password token -->
-        <param>
-            <key>reset_token</key>
-        </param>
         <!-- backoffice/f_clientloginid_edit.cgi -->
         <param>
             <key>cashier_lock_password</key>
