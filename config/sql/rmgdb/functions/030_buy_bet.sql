@@ -51,7 +51,10 @@ BEGIN
             bet.validate_7day_limits(v_account, v_rate,
                                      b_purchase_time, b_buy_price, p_limits),
             bet.validate_intraday_forex_iv_action(v_account, v_rate, b_purchase_time,
-                                                  b_buy_price, b_payout_price, p_limits);
+                                                  b_buy_price, b_payout_price, p_limits),
+            bet.validate_spreads_daily_profit_limit(v_account, v_rate, b_purchase_time,
+                                                    b_chld, p_limits);
+
     RESET log_min_messages;
 
     INSERT INTO bet.financial_market_bet (
