@@ -10,26 +10,26 @@
         [% END %]
     </ul>
 
-    <hr>Change client's email for all loginids listed above:</br></br>
+    <hr><b>Change client's email for all loginids listed above:</b></br></br>
     <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
-        <b>Dual Control Code: </b>
+        <label for="DCcode">Dual Control Code:</label>
         <input type="text" name="DCcode" placeholder="required">
         <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
         <br><br>
-        <b>New Email: </b>
+        <label for="new_email">New Email:</label>
         <input type="text" name="new_email" placeholder="required">
         <input type="hidden" name="email" value="[% user.email %]">
         <input type="hidden" name="update" value="email">
         <input type="submit" value="Update Email">
-        <br><br><b>(Note: This will update email for all the listed loginids above)</b>
+        <i>(Note: This will update email for all the listed loginids above)</i>
     </form>
 
-    <hr>Email Verification</br></br>
+    <hr><b>Email Verification:</b></br></br>
     [% IF user.email_verified %]
         Email is already verified
     [% ELSE %]
+        Email is not verified yet:<br/>
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
-            <b>Email is not verified yet: </b><br/>
             <input type="hidden" name="email" value="[% user.email %]">
             <input type="hidden" name="update" value="verification">
             <input type="submit" value="Mark email as verified">
