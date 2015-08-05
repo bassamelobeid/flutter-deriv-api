@@ -21,7 +21,6 @@ Represents an economic event in the financial market
 
 use Moose;
 extends 'BOM::MarketData';
-with 'BOM::MarketData::Role::VersionedSymbolData';
 
 use Cache::RedisDB;
 use Date::Utility;
@@ -35,6 +34,8 @@ has _data_location => (
     is      => 'ro',
     default => 'economic_events',
 );
+
+with 'BOM::MarketData::Role::VersionedSymbolData';
 
 around _document_content => sub {
     my $orig = shift;
