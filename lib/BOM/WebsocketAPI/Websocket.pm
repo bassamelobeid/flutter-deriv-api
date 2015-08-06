@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::Websockets;
+package BOM::WebSocketAPI::Websocket;
 
 ## no critic (Subroutines::RequireFinalReturn)
 

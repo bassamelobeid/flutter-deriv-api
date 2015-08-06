@@ -29,7 +29,7 @@ sub startup {
     my $r = $app->routes;
 
     for ($r->under('/websockets')) {
-        $_->to('websockets#ok');
+        $_->to('websocket#ok');
         $_->websocket('/contracts')->to('#contracts');
     }
 
