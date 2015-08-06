@@ -4,7 +4,6 @@ package BOM::Product::Contract::Finder;
 
 use strict;
 use warnings;
-
 use Date::Utility;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
@@ -12,8 +11,7 @@ use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
-use Time::HiRes qw (time);
+use BOM::Product::Offerings;
 use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol get_barrier);
 

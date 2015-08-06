@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Date::Utility;
 use Time::Duration::Concise;
-use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Product::Offerings;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Finder qw (get_barrier);
