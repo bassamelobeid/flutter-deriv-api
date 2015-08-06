@@ -13,7 +13,7 @@ sub startup {
             $app->log->error("EventLoop error: $err");
         });
 
-    $app->moniker('websockets');
+    $app->moniker('websocket');
     $app->plugin('Config');
 
     my $log = $app->log;
