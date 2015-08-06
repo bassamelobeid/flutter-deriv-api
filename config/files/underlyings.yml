@@ -725,7 +725,7 @@ FPGLE:
   sd_symbol: SOGN.EP
   submarket: france
   symbol: FPGLE
-FPGSZ:
+FPENGI:
   asset: FPGSZ
   commission_level: 3
   display_name: GDF Suez
@@ -741,7 +741,7 @@ FPGSZ:
   quoted_currency: EUR
   sd_symbol: GSZ.EP
   submarket: france
-  symbol: FPGSZ
+  symbol: FPENGI
 FPKER:
   asset: FPKER
   commission_level: 3
