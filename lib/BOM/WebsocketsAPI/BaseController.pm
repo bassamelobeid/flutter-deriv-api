@@ -1,4 +1,4 @@
-package BOM::WebsocketsAPI::BaseController;
+package BOM::WebSocketAPI::BaseController;
 
 use Mojo::Base 'Mojolicious::Controller';
 

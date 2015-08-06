@@ -1,16 +1,16 @@
-package BOM::WebsocketsAPI::Websockets;
+package BOM::WebSocketAPI::Websockets;
 
 ## no critic (Subroutines::RequireFinalReturn)
 
-use Mojo::Base 'BOM::WebsocketsAPI::BaseController';
+use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 use Mojo::DOM;
 
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
-use BOM::WebsocketsAPI::Symbols;
-use BOM::WebsocketsAPI::Offerings;
+use BOM::WebSocketAPI::Symbols;
+use BOM::WebSocketAPI::Offerings;
 
 =head1 DESCRIPTION
 
@@ -287,7 +287,7 @@ my $json_receiver = sub {
                 json => {
                     msg_type => 'symbols',
                     echo_req => $p1,
-                    symbols  => BOM::WebsocketsAPI::Symbols->active_symbols($by)}});
+                    symbols  => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
     }
 
     if (my $symbol = $p1->{contracts_for}) {
@@ -301,7 +301,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{offerings}) {
-        my $results = BOM::WebsocketsAPI::Offerings::query($c, $options);
+        my $results = BOM::WebSocketAPI::Offerings::query($c, $options);
         return $c->send({
                 json => {
                     msg_type  => 'offerings',
@@ -350,7 +350,7 @@ my $json_receiver = sub {
                     error    => "symbol $symbol invalid"
                 }});
         if ($p1->{end}) {
-            my $ticks = $c->BOM::WebsocketsAPI::Symbols::_ticks(%$p1, ul => $ul);
+            my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
             my $history = {
                 prices => [map { $_->{price} } @$ticks],
                 times  => [map { $_->{time} } @$ticks],

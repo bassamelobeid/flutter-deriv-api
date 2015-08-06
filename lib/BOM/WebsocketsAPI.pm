@@ -1,4 +1,4 @@
-package BOM::WebsocketsAPI;
+package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
 

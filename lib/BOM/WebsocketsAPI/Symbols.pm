@@ -1,11 +1,11 @@
-package BOM::WebsocketsAPI::Symbols;
+package BOM::WebSocketAPI::Symbols;
 
 use strict;
 use warnings;
 
 ## no critic (Subroutines::RequireFinalReturn)
 
-use Mojo::Base 'BOM::WebsocketsAPI::BaseController';
+use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
