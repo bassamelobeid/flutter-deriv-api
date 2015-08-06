@@ -1,0 +1,8 @@
+{
+    "fault": {
+        "faultstring": "Server Error",
+        "detail": {
+            "errorcode": "A Server Error occurred"
+        }
+    }
+}
