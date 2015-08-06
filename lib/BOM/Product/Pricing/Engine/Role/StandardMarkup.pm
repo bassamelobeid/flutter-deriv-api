@@ -643,7 +643,7 @@ has _influential_currencies => (
     isa     => 'ArrayRef',
     default => sub { ['USD', 'AUD', 'CAD', 'CNY', 'NZD'] });
 
-sub _get_applicable_economic_events {
+sub get_applicable_economic_events {
     my ($self, $start, $end) = @_;
 
     my $bet = $self->bet;
@@ -675,7 +675,7 @@ sub _build_economic_events_spot_risk_markup {
     if ($secs_to_expiry and $secs_to_expiry > 10) {
         my $start           = $bet->effective_start->minus_time_interval('20m');
         my $end             = $bet->effective_start->plus_time_interval($bet->get_time_to_expiry({from => $bet->effective_start})->seconds + 600);
-        my @economic_events = $self->_get_applicable_economic_events($start, $end);
+        my @economic_events = $self->get_applicable_economic_events($start, $end);
 
         my @triangle_sum = (0) x ($self->_volatility_seasonality_step_size + 1);
         foreach my $event (@economic_events) {
