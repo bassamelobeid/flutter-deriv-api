@@ -87,8 +87,24 @@ sub _predefined_trading_period {
         my @hourly_durations = qw(2h 4h 6h 8h 12h 16h 20h);
 
         $trading_periods = [
-            map { +{date_start => { date =>$start_of_day, epoch =>$today->epoch}, date_expiry => {date =>$_->datetime,epoch => $_->epoch},  duration => ($_->hour - $today->hour) . 'h'} }
-            grep { $now->is_before($_) } map { $today->plus_time_interval($_) } @hourly_durations
+            map {
+                +{
+                    date_start => {
+                        date  => $start_of_day,
+                        epoch => $today->epoch
+                    },
+                    date_expiry => {
+                        date  => $_->datetime,
+                        epoch => $_->epoch
+                    },
+                    duration => ($_->hour - $today->hour) . 'h'
+                    }
+                }
+                grep {
+                $now->is_before($_)
+                } map {
+                $today->plus_time_interval($_)
+                } @hourly_durations
         ];
 
         # Starting at midnight, running through these dates.
@@ -103,31 +119,31 @@ sub _predefined_trading_period {
             my $exchange_close_of_day = $exchange->closing_on($date);
             push @$trading_periods,
                 +{
-                date_start  => {
-                    date  =>$start_of_day,
+                date_start => {
+                    date  => $start_of_day,
                     epoch => $today->epoch,
                 },
                 date_expiry => {
                     date  => $exchange_close_of_day->datetime,
                     epoch => $exchange_close_of_day->epoch,
                 },
-                duration    => $actual_day_string,
+                duration => $actual_day_string,
                 };
         }
         # Starting in the most recent even hour, running for.our period
-        my $period_start = $today->plus_time_interval($in_period . 'h');
+        my $period_start      = $today->plus_time_interval($in_period . 'h');
         my $recent_2_hour_end = $period_start->plus_time_interval($period_length);
         push @$trading_periods,
             +{
-            date_start  => {
-                date =>$period_start->datetime,
+            date_start => {
+                date  => $period_start->datetime,
                 epoch => $period_start->epoch,
             },
             date_expiry => {
-                date => $recent_2_hour_end->datetime,
+                date  => $recent_2_hour_end->datetime,
                 epoch => $recent_2_hour_end->epoch,
             },
-            duration    => $in_period . 'h',
+            duration => $in_period . 'h',
             };
 
         # We will hold it for the duration of the period which is a little too long, but no big deal.
