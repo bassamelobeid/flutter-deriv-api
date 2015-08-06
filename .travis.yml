@@ -1,0 +1,41 @@
+language: perl
+perl:
+    - "5.14.2"
+env:
+    - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom-websockets-api/lib:/home/travis/perl5
+addons:
+    postgresql: "9.3"
+services:
+    - redis-server
+    - couchdb
+cache: apt
+before_install:
+    - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+
+    - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
+    - sudo ifconfig lo:1 172.28.128.3
+    - /tmp/travis-scripts/postgres.sh
+    - sudo mkdir -p /home/git/regentmarkets
+    - sudo mkdir -p /home/git/binary-com
+    - sudo rm -f /tmp/unittest_*
+
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
+
+    - /tmp/travis-scripts/redis.sh
+
+install:
+    - /tmp/travis-scripts/devbox.sh
+
+    - /tmp/travis-scripts/remove_postgresdb_config.sh
+    - /tmp/travis-scripts/setup_clientdb.sh
+    - /tmp/travis-scripts/setup_feeddb.sh
+    - /tmp/travis-scripts/setup_usersdb.sh
+
+    - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom/t/config/log4perl.conf
+script:
+    - perl Makefile.PL && make test
