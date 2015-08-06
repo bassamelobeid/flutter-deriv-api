@@ -111,7 +111,7 @@ sub get_barrier {
         @{$args}{'underlying', 'duration', 'direction', 'barrier_delta', 'barrier_tick', 'absolute_barrier', 'atm_vol'};
 
     my $approximate_barrier = get_strike_for_spot_delta({
-        option_type => ($direction eq 'low') ? 'VANILLA_CALL' : 'VANILLA_PUT',
+        option_type => ($direction eq 'low') ? 'VANILLA_PUT' : 'VANILLA_CALL',
         delta       => $barrier_delta,
         atm_vol     => $atm_vol,
         t => $duration / (86400 * 365),
