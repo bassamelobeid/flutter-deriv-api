@@ -2,7 +2,7 @@ package BOM::Product::Contract::Spreadd;
 
 use Moose;
 extends 'BOM::Product::Contract::Spread';
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
 use BOM::Product::Contract::Strike::Spread;
 # Static methods
@@ -90,7 +90,7 @@ sub _recalculate_value {
 
     if ($level) {
         my $point_diff = roundnear(0.01, $self->barrier->as_absolute - $level);
-        my $value = $point_diff * $self->amount_per_point;
+        my $value = to_monetary_number_format($point_diff * $self->amount_per_point);
         $self->value($value);
         $self->point_value($point_diff);
     }
