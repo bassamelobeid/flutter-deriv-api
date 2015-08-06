@@ -725,7 +725,7 @@ FPGLE:
   sd_symbol: SOGN.EP
   submarket: france
   symbol: FPGLE
-FPENGI:
+FPGSZ:
   asset: FPGSZ
   commission_level: 3
   display_name: GDF Suez
