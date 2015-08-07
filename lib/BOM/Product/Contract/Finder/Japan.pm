@@ -69,9 +69,9 @@ my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
 my $cache_sep      = '==';
 
 sub _predefined_trading_period {
-    my $args      = shift;
-    my @offerings = @{$args->{offerings}};
-    my $exchange  = $args->{exchange};
+    my $args          = shift;
+    my @offerings     = @{$args->{offerings}};
+    my $exchange      = $args->{exchange};
     my $period_length = Time::Duration::Concise->new({interval => '2h'});    # Two hour intraday rolling periods.
     my $now           = Date::Utility->new;
     my $in_period     = $now->hour - ($now->hour % $period_length->hours);
@@ -153,11 +153,11 @@ sub _predefined_trading_period {
     foreach my $o (@offerings) {
         my $minimum_contract_duration = Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds;
         foreach my $trading_period (@$trading_periods) {
-            if (Time::Duration::Concise->new({interval => $trading_period->{duration}})->seconds < $minimum_contract_duration){
+            if (Time::Duration::Concise->new({interval => $trading_period->{duration}})->seconds < $minimum_contract_duration) {
                 next;
-            }else{
-            push @new_offerings, {%{$o}, trading_period => $trading_period};
-        }
+            } else {
+                push @new_offerings, {%{$o}, trading_period => $trading_period};
+            }
         }
     }
 
@@ -184,7 +184,7 @@ sub _set_predefined_barriers {
     if (not $available_barriers) {
         my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
         my $duration     = $date_expiry->epoch - $date_start->epoch;
-        my @delta        = (0.35,0.4,0.45,0.5,0.55,0.6,0.65);
+        my @delta        = (0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65);
         foreach my $delta (@delta) {
             push @$available_barriers, [
                 map {
