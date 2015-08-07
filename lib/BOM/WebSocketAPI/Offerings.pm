@@ -138,9 +138,8 @@ sub query {
             };
     }
 
-    my $hit_count = @$contracts;
+    my $results;
 
-    my $results = {hit_count => $hit_count};
     $results->{offerings} = $hierarchy if $send_hierarchy;
     $results->{selectors} = $selectors if $send_selectors;
     $results->{contracts} = $contracts if $send_contracts;
