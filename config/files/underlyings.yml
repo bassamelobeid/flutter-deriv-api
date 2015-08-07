@@ -741,7 +741,7 @@ FPGSZ:
   quoted_currency: EUR
   sd_symbol: GSZ.EP
   submarket: france
-  symbol: FPENGI
+  symbol: FPGSZ
 FPKER:
   asset: FPKER
   commission_level: 3
