@@ -163,7 +163,7 @@ sub _predefined_trading_period {
 =head2 _set_predefined_barriers
 
 To set the predefined barriers on each trading period.
-We will take strike from 20, 30 .... 80 delta.
+We will take strike from 35,40,45 ,50,55,60,65 delta.
 
 =cut
 
@@ -180,7 +180,7 @@ sub _set_predefined_barriers {
     if (not $available_barriers) {
         my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
         my $duration     = $date_expiry->epoch - $date_start->epoch;
-        my @delta        = (0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8);
+        my @delta        = (0.35,0.4,0.45,0.5,0.55,0.6,0.65);
         foreach my $delta (@delta) {
             push @$available_barriers, [
                 map {
