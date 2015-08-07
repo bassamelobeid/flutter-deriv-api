@@ -1,5 +1,8 @@
 package BOM::WebSocketAPI::Offerings;
 
+use strict;
+use warnings;
+
 use BOM::Product::Offerings;
 use BOM::WebSocketAPI::Symbols;
 
