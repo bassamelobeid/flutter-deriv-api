@@ -1,49 +1,32 @@
 <div>
-[% IF list == 1 %]
     <span>
-        Client's Email: <b>[% user.email %]</b></br></br>
-        List of loginids with this email are:
+        [% IF list == 1 %]
+            Client's Email: <b>[% email %]</b></br></br>
+            List of loginids with this email are:
+        [% ELSIF updated == 1 %]
+            Client's email has been changed from <b>[% old_email %] to [% new_email %]</b><br/><br/>
+            Updated clients' accounts are:
+        [% END %]
     </span>
     <ul>
-        [% FOREACH loginid IN user.loginid %]
+        [% FOREACH loginid IN loginids %]
             <li> [% loginid %] </li>
         [% END %]
     </ul>
 
-    <hr><b>Change client's email for all loginids listed above:</b></br></br>
-    <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
-        <label for="DCcode">Dual Control Code:</label>
-        <input type="text" name="DCcode" placeholder="required">
-        <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
-        <br><br>
-        <label for="new_email">New Email:</label>
-        <input type="text" name="new_email" placeholder="required">
-        <input type="hidden" name="email" value="[% user.email %]">
-        <input type="hidden" name="update" value="email">
-        <input type="submit" value="Update Email">
-        <i>(Note: This will update email for all the listed loginids above)</i>
-    </form>
-
-    <hr><b>Email Verification:</b></br></br>
-    [% IF user.email_verified %]
-        Email is already verified
-    [% ELSE %]
-        Email is not verified yet:<br/>
+    [% IF list == 1 %]
+        <hr>Change client's email for all loginids listed above:</br></br>
         <form action="[% request.url_for('backoffice/client_email.cgi') %]" method="post">
-            <input type="hidden" name="email" value="[% user.email %]">
-            <input type="hidden" name="update" value="verification">
-            <input type="submit" value="Mark email as verified">
+            <b>Dual Control Code: </b>
+            <input type="text" name="DCcode" placeholder="required">
+            <input type="hidden" value="UPDATECLIENTDETAILS" name="transtype"/>
+            <br><br>
+            <b>New Email: </b>
+            <input type="text" name="new_email" placeholder="required">
+            <input type="hidden" name="email" value="[% email %]">
+            <input type="hidden" name="email_edit" value="1">
+            <input type="submit" value="Update Email">
+            <br><br><b>(Note: This will update email for all the listed loginids above)</b>
         </form>
     [% END %]
-[% ELSE %]
-    <span>
-        Client's email has been changed from <b>[% old_email %] to [% user.email %]</b><br/><br/>
-        Updated clients' accounts are:
-    </span>
-    <ul>
-        [% FOREACH loginid IN user.loginid %]
-            <li> [% loginid %] </li>
-        [% END %]
-    </ul>
-[% END %]
 </div>
