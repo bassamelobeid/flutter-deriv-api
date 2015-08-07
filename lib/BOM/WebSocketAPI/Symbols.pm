@@ -3,8 +3,6 @@ package BOM::WebSocketAPI::Symbols;
 use strict;
 use warnings;
 
-use Mojo::Base 'BOM::WebSocketAPI::BaseController';
-
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
@@ -71,6 +69,5 @@ sub _ticks {
 
     return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
 }
-
 
 1;

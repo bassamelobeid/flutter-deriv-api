@@ -1,5 +1,8 @@
 package BOM::WebSocketAPI::Offerings;
 
+use strict;
+use warnings;
+
 use BOM::Product::Offerings;
 use BOM::WebSocketAPI::Symbols;
 
@@ -141,7 +144,7 @@ sub query {
     $results->{selectors} = $selectors if $send_selectors;
     $results->{contracts} = $contracts if $send_contracts;
 
-    return $results
+    return $results;
 }
 
 1;
