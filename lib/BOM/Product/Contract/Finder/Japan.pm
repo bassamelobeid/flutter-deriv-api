@@ -184,7 +184,7 @@ sub _set_predefined_barriers {
     if (not $available_barriers) {
         my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
         my $duration     = $date_expiry->epoch - $date_start->epoch;
-        my @delta        = (0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65);
+        my @delta        = (0.35, 0.4, 0.45, 0.52, 0.55, 0.6, 0.65);
         foreach my $delta (@delta) {
             push @$available_barriers, [
                 map {
