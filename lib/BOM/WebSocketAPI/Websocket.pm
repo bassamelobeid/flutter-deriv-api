@@ -10,6 +10,7 @@ use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::WebSocketAPI::Symbols;
+use BOM::WebSocketAPI::Offerings;
 
 =head1 DESCRIPTION
 
@@ -281,6 +282,14 @@ my $json_receiver = sub {
                 }});
     }
 
+    if (my $by = $p1->{active_symbols}) {
+        return $c->send({
+                json => {
+                    msg_type => 'symbols',
+                    echo_req => $p1,
+                    symbols  => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
+    }
+
     if (my $symbol = $p1->{contracts_for}) {
         my $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol);
         return $c->send({
@@ -292,7 +301,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{offerings}) {
-        my $results = BOM::WebSocketAPI::Offerings::query($options);
+        my $results = BOM::WebSocketAPI::Offerings::query($c, $options);
         return $c->send({
                 json => {
                     msg_type  => 'offerings',
@@ -459,6 +468,8 @@ my $json_receiver = sub {
         $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
         return $c->send({json => $json});
     }
+
+    $log->error("unrecognised");
 };
 
 sub contracts {

@@ -1,17 +1,27 @@
 package BOM::WebSocketAPI::Offerings;
 
-use strict;
-use warnings;
-
 use BOM::Product::Offerings;
 use BOM::WebSocketAPI::Symbols;
 
+=head1 DESCRIPTION
+
+Implements 'offerings/' queries as needed by the BetForm part of the BOM Web API.
+
+=cut
+
+# these are the fields for which we will do 2-way conversion between lower_case and Readable Case
+my @READABLES = qw/market submarket contract_display start_type sentiment expiry_type/;
+
 sub query {
-    my $args = shift;
+    my $c    = shift;
+    my $args = shift || $c->req->params->to_hash;    # get args either via @_ (websockets) or as query params (REST)
+    my $app  = $c->app;
+    my $log  = $app->log;
 
     my $send_hierarchy = delete $args->{hierarchy} // 1;
     my $send_selectors = delete $args->{selectors} // 1;
     my $send_contracts = delete $args->{contracts} // 0;
+    my $also_dumptolog = delete $args->{dumptolog} // 0;
 
     my $flyby    = BOM::Product::Offerings::get_offerings_flyby;
     my @all_keys = $flyby->all_keys;
@@ -35,7 +45,7 @@ sub query {
 
     # turn these Readable Strings into codified_values.
     # contract_display is special.. its codified value retains embedded spaces not underscores.
-    for my $key (qw/market submarket contract_display start_type sentiment expiry_type/) {
+    for my $key (@READABLES) {
         exists $query->{$key} || next;
         for ($query->{$key}) {
             s/^(.)/\L$1/;
@@ -47,6 +57,8 @@ sub query {
 
     # a silly query seems to be the only way of getting everything..
     $query = {market => undef} unless keys %$query;
+
+    $log->debug($c->dumper(query => $query));
 
     my $contracts = [$flyby->query($query)];
 
@@ -70,7 +82,7 @@ sub query {
         }
 
         # turn these codified_values into Readable Strings..
-        for (qw/market submarket contract_display start_type sentiment expiry_type/) {
+        for (@READABLES) {
             exists $row->{$_} || next;
             for ($row->{$_}) {
                 s/^(.)/\U$1/;
@@ -138,13 +150,20 @@ sub query {
             };
     }
 
-    my $results;
+    my $hit_count = @$contracts;
 
+    my $results = {hit_count => $hit_count};
     $results->{offerings} = $hierarchy if $send_hierarchy;
     $results->{selectors} = $selectors if $send_selectors;
     $results->{contracts} = $contracts if $send_contracts;
 
-    return $results;
+    return $results if $c->tx->is_websocket;
+
+    # by default, results are logged
+    return $c->_pass($results) if $also_dumptolog;
+
+    my $logdata = {hit_count => $hit_count};
+    return $c->_pass($results, $logdata);
 }
 
 1;
