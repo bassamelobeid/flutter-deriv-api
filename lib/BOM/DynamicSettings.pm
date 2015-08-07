@@ -183,6 +183,7 @@ sub get_settings_by_group {
                 quants.commission.adjustment.minimum
                 quants.commission.adjustment.maximum
                 quants.commission.adjustment.bom_created_bet
+                quants.commission.adjustment.spread_multiplier
                 quants.commission.adjustment.global_scaling
                 quants.commission.adjustment.news_factor
                 quants.commission.adjustment.forward_start_factor
@@ -220,6 +221,7 @@ sub get_settings_by_group {
                 quants.client_limits.intraday_forex_iv
                 quants.client_limits.tick_expiry_turnover_limit
                 quants.client_limits.asian_turnover_limit
+                quants.client_limits.spreads_daily_profit_limit
                 quants.client_limits.smarties_turnover_limit
                 quants.client_limits.euro_pairs_turnover_limit
                 quants.client_limits.intraday_spot_index_turnover_limit
