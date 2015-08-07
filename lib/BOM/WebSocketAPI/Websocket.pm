@@ -9,7 +9,7 @@ use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
-use BOM::WebAPI::Symbols;
+use BOM::WebSocketAPI::Symbols;
 use BOM::WebAPI::Offerings;
 
 =head1 DESCRIPTION
@@ -282,14 +282,6 @@ my $json_receiver = sub {
                 }});
     }
 
-    if (my $by = $p1->{active_symbols}) {
-        return $c->send({
-                json => {
-                    msg_type => 'symbols',
-                    echo_req => $p1,
-                    symbols  => BOM::WebAPI::Symbols->active_symbols($by)}});
-    }
-
     if (my $symbol = $p1->{contracts_for}) {
         my $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol);
         return $c->send({
@@ -350,7 +342,7 @@ my $json_receiver = sub {
                     error    => "symbol $symbol invalid"
                 }});
         if ($p1->{end}) {
-            my $ticks = $c->BOM::WebAPI::Symbols::_ticks(%$p1, ul => $ul);
+            my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
             my $history = {
                 prices => [map { $_->{price} } @$ticks],
                 times  => [map { $_->{time} } @$ticks],
