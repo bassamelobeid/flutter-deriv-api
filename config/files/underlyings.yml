@@ -729,7 +729,7 @@ FPGSZ:
   asset: FPGSZ
   commission_level: 3
   display_name: GDF Suez
-  esig_symbol: GSZ-EEB
+  esig_symbol: ENGI-EEB
   exchange_name: EURONEXT
   feed_license: realtime
   instrument_type: individualstock
