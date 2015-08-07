@@ -5,6 +5,32 @@ use warnings;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
+use BOM::Market::UnderlyingConfig;
+use BOM::Market::Underlying;
+use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
+use BOM::WebSocketAPI::Symbols;
+
+# these package-level structures let us 'memo-ize' the symbol pools for purposes
+# of full-list results and for hashed lookups by-displayname and by-symbol-code.
+
+my ($_by_display_name, $_by_symbol, $_by_exchange) = ({}, {}, {});
+for (BOM::Market::UnderlyingConfig->symbols) {
+    my $sp = BOM::Market::UnderlyingConfig->get_parameters_for($_) || next;
+    my $ul = BOM::Market::Underlying->new($_);
+    $_by_display_name->{$ul->display_name} = $sp;
+    # If this display-name has slashes, also generate a 'safe' version that can sit in REST expressions
+    if ((my $safe_name = $ul->display_name) =~ s(/)(-)g) {
+        $_by_display_name->{$safe_name} = $sp;
+    }
+    $_by_symbol->{$_} = $sp;
+    push @{$_by_exchange->{$ul->exchange_name}}, $ul->display_name;
+}
+
+sub symbol_search {
+    my $s = shift;
+    return $_by_symbol->{$s} || $_by_display_name->{$s}    # or undef if not found.
+}
+
 sub _ticks {
     my (%args) = @_;
     my $ul    = $args{ul} || die 'no underlying';
