@@ -293,7 +293,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{offerings}) {
-        my $results = BOM::WebAPI::Offerings::query($c, $options);
+        my $results = BOM::WebSocketAPI::Offerings::query($options);
         return $c->send({
                 json => {
                     msg_type  => 'offerings',
@@ -467,7 +467,7 @@ sub contracts {
     my $app = $c->app;
     my $log = $app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
-    $c->inactivity_timeout(3000);
+    $c->inactivity_timeout(600);
     $c->on(json => $json_receiver);
 }
 

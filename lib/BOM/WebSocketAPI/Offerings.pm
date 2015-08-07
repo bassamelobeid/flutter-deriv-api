@@ -1,12 +1,9 @@
 package BOM::WebSocketAPI::Offerings;
 
-use Mojo::Base 'BOM::WebSocketAPI::BaseController';
-
 use BOM::Product::Offerings;
 use BOM::WebSocketAPI::Symbols;
 
 sub query {
-    my $c    = shift;
     my $args = shift;
 
     my $send_hierarchy = delete $args->{hierarchy} // 1;
@@ -70,7 +67,7 @@ sub query {
         }
 
         # turn these codified_values into Readable Strings..
-        for (@READABLES) {
+        for (qw/market submarket contract_display start_type sentiment expiry_type/) {
             exists $row->{$_} || next;
             for ($row->{$_}) {
                 s/^(.)/\U$1/;
