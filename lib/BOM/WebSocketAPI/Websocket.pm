@@ -10,7 +10,6 @@ use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::WebSocketAPI::Symbols;
-use BOM::WebAPI::Offerings;
 
 =head1 DESCRIPTION
 
