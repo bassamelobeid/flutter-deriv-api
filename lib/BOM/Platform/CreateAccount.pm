@@ -129,7 +129,7 @@ sub create_virtual_acc {
 
 sub real_acc_checks {
     my $args = shift;
-    my ($email, $from_loginid, $broker, $country, $residence) = @{$args}{'email', 'from_loginid', 'broker', 'country', 'residence'};
+    my ($from_loginid, $broker, $country, $residence) = @{$args}{'from_loginid', 'broker', 'country', 'residence'};
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {
@@ -145,8 +145,8 @@ sub real_acc_checks {
     }
 
     my ($user, $from_client);
-    if (   not $user = BOM::Platform::User->new({email => $email})
-        or not $from_client = BOM::Platform::Client->new({loginid => $from_loginid}))
+    unless ($from_client = BOM::Platform::Client->new({loginid => $from_loginid})
+            and $user = BOM::Platform::User->new({email => $from_client->email}))
     {
         return {
             err_type => 'invalid_user',
@@ -158,7 +158,7 @@ sub real_acc_checks {
             err_type => 'duplicate_acc',
             err      => localize(
                 'The provided email address [_1] is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_2]">try our password recovery tool</a> or contact customer service.',
-                $email,
+                $from_client->email,
                 request()->url_for('/user/lost_password')
             ),
         };
@@ -178,26 +178,27 @@ sub real_acc_checks {
 
 sub financial_acc_checks {
     my $args = shift;
+    my $check = real_acc_checks($args);
 
-    my $from_client = BOM::Platform::Client->new({loginid => $args->{from_loginid}});
-    my $residence = ($from_client->residence) ? Locale::Country::code2country($from_client->residence) : '';
+    FINANCIAL_CHECK: {
+        my $client = $check->{from_client};
+        last if ($client->landing_company->short eq 'malta');
 
-    my $ok;
-    if ($from_client->is_virtual and $residence and
-        first { uc($residence) eq $_ } @{BOM::Platform::Runtime->instance->broker_codes->get('MF')->landing_company->counterparty_for} and
-        first { $residence eq $_ } @{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries}
-    ) {
-        $ok = 1;
-    } elsif (!$from_client->is_virtual and BOM::Platform::Runtime->instance->broker_codes->landing_company_for($from_client->loginid)->short eq 'malta') {
-        $ok = 1;
+        my @EU_countries = @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for('MF')->counterparty_for};
+        my @EU_random_restricted;
+        foreach my $c (@{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries}) {
+            if (first { uc($c) eq $_ } @EU_countries) {
+                push @EU_random_restricted, Locale::Country::country2code($c);
+            }
+        }
+        last if ($client->is_virtual and first { $client->residence eq $_ } @EU_random_restricted);
+
+        return {
+            error_type => 'no_financial',
+            err        => localize('Financial account opening unavailable'),
+        };
     }
-
-    return {
-        error_type => 'no_financial',
-        err        => localize('Financial account opening unavailable'),
-    } if (!$ok);
-
-    return real_acc_checks($args);
+    return $check;
 }
 
 sub register_real_acc {
