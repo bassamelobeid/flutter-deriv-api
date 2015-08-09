@@ -184,24 +184,26 @@ sub real_acc_checks {
     };
 }
 
+sub EU_random_restricted_countries {
+    my @EU_countries = @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for('MF')->counterparty_for};
+    my @country_codes;
+    foreach my $c (@{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries}) {
+        if (first { uc($c) eq $_ } @EU_countries) {
+            push @country_codes, Locale::Country::country2code($c);
+        }
+    }
+    return @country_codes;
+}
+
 sub financial_acc_checks {
     my $args = shift;
     my $check = real_acc_checks($args);
     return $check if ($check->{err});
 
-    FINANCIAL_CHECK: {
-        my $client = $check->{from_client};
-        last if ($client->landing_company->short eq 'malta');
-
-        my @EU_countries = @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for('MF')->counterparty_for};
-        my @EU_random_restricted;
-        foreach my $c (@{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries}) {
-            if (first { uc($c) eq $_ } @EU_countries) {
-                push @EU_random_restricted, Locale::Country::country2code($c);
-            }
-        }
-        last if ($client->is_virtual and first { $client->residence eq $_ } @EU_random_restricted);
-
+    my $client = $check->{from_client};
+    unless (($client->landing_company->short eq 'malta') or
+        ($client->is_virtual and first { $client->residence eq $_ } EU_random_restricted_countries()))
+    {
         return {
             error_type => 'no_financial',
             err        => localize('Financial account opening unavailable'),
