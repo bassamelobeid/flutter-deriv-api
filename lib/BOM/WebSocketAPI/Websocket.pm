@@ -2,7 +2,6 @@ package BOM::WebSocketAPI::Websocket;
 
 ## no critic (Subroutines::RequireFinalReturn)
 
-use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 use Mojo::DOM;
 
 use BOM::Platform::Client;
