@@ -1,7 +1,6 @@
 package BOM::WebSocketAPI::Websocket;
 
-## no critic (Subroutines::RequireFinalReturn)
-use Mojo::Base 'Mojolicious::Controller';
+use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use Mojo::DOM;
 
@@ -115,6 +114,7 @@ sub send_ask {
                     id => $id,
                     %$latest
                 }}});
+    return;
 }
 
 sub prepare_bid {
@@ -183,6 +183,7 @@ sub send_bid {
                     %$p1,
                     %$latest
                 }}});
+    return;
 }
 
 sub send_tick {
@@ -199,6 +200,7 @@ sub send_tick {
                         quote => $tick->{quote}}}});
         $c->{$id}{epoch} = $tick->{epoch};
     }
+    return;
 }
 
 sub _authorize_error {
@@ -480,6 +482,7 @@ sub contracts {
     $log->debug("opening a websocket for " . $c->tx->remote_address);
     $c->inactivity_timeout(600);
     $c->on(json => $json_receiver);
+    return;
 }
 
 1;

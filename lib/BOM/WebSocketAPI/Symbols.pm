@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::Symbols;
 use strict;
 use warnings;
 
-use Mojo::Base 'Mojolicious::Controller';
+use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
