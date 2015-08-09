@@ -146,7 +146,7 @@ sub real_acc_checks {
 
     my ($user, $from_client);
     unless ($from_client = BOM::Platform::Client->new({loginid => $from_loginid})
-            and $user = BOM::Platform::User->new({email => $from_client->email}))
+        and $user = BOM::Platform::User->new({email => $from_client->email}))
     {
         return {
             err_type => 'invalid_user',
@@ -196,13 +196,13 @@ sub EU_random_restricted_countries {
 }
 
 sub financial_acc_checks {
-    my $args = shift;
+    my $args  = shift;
     my $check = real_acc_checks($args);
     return $check if ($check->{err});
 
     my $client = $check->{from_client};
-    unless (($client->landing_company->short eq 'malta') or
-        ($client->is_virtual and first { $client->residence eq $_ } EU_random_restricted_countries()))
+    unless (($client->landing_company->short eq 'malta')
+        or ($client->is_virtual and first { $client->residence eq $_ } EU_random_restricted_countries()))
     {
         return {
             error_type => 'no_financial',
