@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::Symbols;
 use strict;
 use warnings;
 
-## no critic (Subroutines::RequireFinalReturn)
+use Mojo::Base 'Mojolicious::Controller';
 
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
@@ -100,7 +100,7 @@ returns list of all symbols as list of hashes where each hash has properties for
 =cut
 
 sub list {
-    shift->_pass({symbols => [map { _description($_) } sort keys %$_by_symbol]});
+    return shift->_pass({symbols => [map { _description($_) } sort keys %$_by_symbol]});
 }
 
 =head2 symbol
@@ -112,7 +112,7 @@ returns latest properties for symbol specified by I<symbol> parameter
 sub symbol {
     my $c = shift;
     my $s = $c->stash('sp')->{symbol};
-    $c->_pass(_description($s));
+    return $c->_pass(_description($s));
 }
 
 =head2 price
@@ -135,6 +135,7 @@ sub price {
     } else {
         $c->_fail("realtime quotes are not available for $symbol");
     }
+    return;
 }
 
 =head2 ticks
@@ -152,8 +153,6 @@ sub _ticks {
 
     # we must not return to the client any ticks after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
-    my $when = DateTime->from_epoch(epoch => $licensed_epoch);
-    $c->app->log->debug("licensed_epoch $licensed_epoch, i.e. $when");
 
     unless ($start
         and $start =~ /^[0-9]+$/
@@ -191,11 +190,11 @@ sub ticks {
     my $ul     = BOM::Market::Underlying->new($symbol);
     my $ticks  = $c->_ticks(
         ul    => $ul,
-        start => $c->param('start') || 0,
-        end   => $c->param('end') || 0,
-        count => $c->param('count') || 0,
+        start => $c->param('start') // 0,
+        end   => $c->param('end') // 0,
+        count => $c->param('count') // 0,
     );
-    $c->_pass({ticks => $ticks});
+    return $c->_pass({ticks => $ticks});
 }
 
 my %seconds_granularities = (
@@ -215,16 +214,17 @@ Return OHLC for the given I<symbol>, between I<start> and I<end> epochs with the
 
 =cut
 
-sub candles {
-    my $c           = shift;
-    my $symbol      = $c->stash('sp')->{symbol};
-    my $ul          = BOM::Market::Underlying->new($symbol);
-    my $start       = $c->param('start');
-    my $end         = $c->param('end');
-    my $limit       = $c->param('count');
-    my $granularity = $c->param('granularity') // 'M1';
-    # we must not return to the client any ticks after this epoch
+sub _candles {
+    my ($c, %args) = @_;
+    my $ul          = $args{ul} || die 'no underlying';
+    my $start       = $args{start};
+    my $end         = $args{end};
+    my $count       = $args{count};
+    my $granularity = $args{granularity} || 'M1';
+
+    # we must not return to the client any candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
+
     unless ($start
         and $start =~ /^[0-9]+$/
         and $start > time - 365 * 86400
@@ -239,17 +239,17 @@ sub candles {
     {
         $end = $licensed_epoch;
     }
-    unless ($limit
-        and $limit =~ /^[0-9]+$/
-        and $limit > 0
-        and $limit < 5000)
+    unless ($count
+        and $count =~ /^[0-9]+$/
+        and $count > 0
+        and $count < 5000)
     {
-        $limit = 500;
+        $count = 500;
     }
     my $candles;
     if (my $period = $seconds_granularities{$granularity}) {
         $start = $start - $start % $period;
-        my $end_max = $start + $period * $limit;
+        my $end_max = $start + $period * $count;
         $end = $end_max > $end ? $end : $end_max;
         $candles = $ul->ohlc_between_start_end({
             start_time         => $start,
@@ -257,7 +257,7 @@ sub candles {
             aggregation_period => $period,
         });
     } elsif ($granularity eq 'D') {
-        my $end_max = $start + 86400 * $limit;
+        my $end_max = $start + 86400 * $count;
         $end = $end_max > $end ? $end : $end_max;
         $candles = $ul->feed_api->ohlc_daily_list({
             start_time => $start,
@@ -266,8 +266,22 @@ sub candles {
     } else {
         die "Invalid granularity";
     }
-    my @res = map { {time => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close,} } reverse @$candles;
-    $c->_pass({candles => \@res});
+    return [map { {time => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @$candles];
+}
+
+sub candles {
+    my $c      = shift;
+    my $symbol = $c->stash('sp')->{symbol};
+    my $ul     = BOM::Market::Underlying->new($symbol);
+
+    my $candles = $c->_candles(
+        ul          => $ul,
+        start       => $c->param('start') // 0,
+        end         => $c->param('end') // 0,
+        count       => $c->param('count') // 0,
+        granularity => $c->param('granularity') // '',
+    );
+    return $c->_pass({candles => $candles});
 }
 
 =head2 contracts

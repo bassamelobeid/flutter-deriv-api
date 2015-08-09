@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::Offerings;
 use strict;
 use warnings;
 
+use Mojo::Base 'Mojolicious::Controller';
+
 use BOM::Product::Offerings;
 use BOM::WebSocketAPI::Symbols;
 
