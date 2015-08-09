@@ -163,6 +163,14 @@ sub real_acc_checks {
             ),
         };
     }
+
+    unless ($user->email_verified) {
+        return {
+            err_type => 'email_unverified',
+            err      => localize("Email not verified"),
+        };
+    }
+
     if ($residence and $from_client->residence and $from_client->residence ne $residence) {
         return {
             err_type => 'wrong residence',
