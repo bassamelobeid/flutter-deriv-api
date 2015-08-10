@@ -5,7 +5,7 @@ use Mojo::Base 'Mojolicious';
 sub startup {
     my $app = shift;
 
-    $app->moniker('bom-websockets-api');
+    $app->moniker('bom-websocket-api');
     $app->plugin('BOM::Utility::Mojolicious::Plugin::System', port => 5004);
 
     my $log = $app->log;
