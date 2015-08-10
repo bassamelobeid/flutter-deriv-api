@@ -469,7 +469,7 @@ my $json_receiver = sub {
         $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
         return $c->send({json => $json});
     }
-
+    return;
 };
 
 sub contracts {
@@ -479,6 +479,7 @@ sub contracts {
     $log->debug("opening a websocket for " . $c->tx->remote_address);
     $c->inactivity_timeout(600);
     $c->on(json => $json_receiver);
+    return;
 }
 
 1;

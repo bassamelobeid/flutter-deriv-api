@@ -152,7 +152,6 @@ sub _ticks {
     return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
 }
 
-
 sub ticks {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};
