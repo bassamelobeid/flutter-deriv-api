@@ -1,7 +1,5 @@
 package BOM::WebSocketAPI::Websocket;
 
-## no critic (Subroutines::RequireFinalReturn)
-
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 use Mojo::DOM;
 
@@ -10,6 +8,7 @@ use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::WebSocketAPI::Symbols;
+use BOM::WebSocketAPI::Offerings;
 
 =head1 DESCRIPTION
 
@@ -113,6 +112,7 @@ sub send_ask {
                     id => $id,
                     %$latest
                 }}});
+    return;
 }
 
 sub prepare_bid {
@@ -181,6 +181,7 @@ sub send_bid {
                     %$p1,
                     %$latest
                 }}});
+    return;
 }
 
 sub send_tick {
@@ -197,6 +198,7 @@ sub send_tick {
                         quote => $tick->{quote}}}});
         $c->{$id}{epoch} = $tick->{epoch};
     }
+    return;
 }
 
 sub _authorize_error {
@@ -279,6 +281,14 @@ my $json_receiver = sub {
                     echo_req          => $p1,
                     payout_currencies => $currencies
                 }});
+    }
+
+    if (my $by = $p1->{active_symbols}) {
+        return $c->send({
+                json => {
+                    msg_type => 'symbols',
+                    echo_req => $p1,
+                    symbols  => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
     }
 
     if (my $symbol = $p1->{contracts_for}) {
@@ -459,6 +469,7 @@ my $json_receiver = sub {
         $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
         return $c->send({json => $json});
     }
+
 };
 
 sub contracts {

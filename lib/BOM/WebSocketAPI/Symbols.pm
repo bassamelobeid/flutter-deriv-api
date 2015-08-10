@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::Symbols;
 use strict;
 use warnings;
 
+use Mojo::Base 'BOM::WebSocketAPI::BaseController';
+
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
@@ -22,6 +24,86 @@ for (BOM::Market::UnderlyingConfig->symbols) {
     }
     $_by_symbol->{$_} = $sp;
     push @{$_by_exchange->{$ul->exchange_name}}, $ul->display_name;
+}
+
+# this constructs the symbol record sanitized for consumption by api clients.
+sub _description {
+    my $symbol = shift;
+    my $ul     = BOM::Market::Underlying->new($symbol) || return;
+    my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
+    # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
+    my $exchange_is_open = eval { $ul->exchange } ? $ul->exchange->is_open_at(time) : '';
+    my ($spot, $spot_time, $spot_age) = ('', '', '');
+    if ($spot = eval { $ul->spot }) {
+        $spot_time = $ul->spot_time;
+        $spot_age  = $ul->spot_age;
+    }
+
+    return {
+        symbol                    => $symbol,
+        display_name              => $ul->display_name,
+        pip                       => $ul->pip_size,
+        symbol_type               => $ul->instrument_type,
+        exchange_name             => $ul->exchange_name,
+        exchange_is_open          => $exchange_is_open,
+        quoted_currency_symbol    => $ul->quoted_currency_symbol,
+        intraday_interval_minutes => $iim,
+        is_trading_suspended      => $ul->is_trading_suspended,
+        spot                      => $spot,
+        spot_time                 => $spot_time,
+        spot_age                  => $spot_age,
+    };
+}
+
+sub active_symbols {
+    my ($class, $by) = @_;
+    $by =~ /^(symbol|display_name)$/ or die 'by symbol or display_name only';
+    return {
+        map { $_->{$by} => $_ }
+            grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
+            map { _description($_) }
+            keys %$_by_symbol
+    };
+}
+
+sub exchanges {
+    my $class = shift;
+    return $_by_exchange;
+}
+
+sub ok_symbol {
+    my $c      = shift;
+    my $symbol = $c->stash('symbol') || die 'routing error: symbol';
+    my $sp     = symbol_search($symbol) || return $c->_fail("invalid symbol: $symbol", 404);
+    $c->stash(sp => $sp);
+    return 1;
+}
+
+sub list {
+    return shift->_pass({symbols => [map { _description($_) } sort keys %$_by_symbol]});
+}
+
+sub symbol {
+    my $c = shift;
+    my $s = $c->stash('sp')->{symbol};
+    return $c->_pass(_description($s));
+}
+
+sub price {
+    my $c      = shift;
+    my $symbol = $c->stash('sp')->{symbol};
+    my $ul     = BOM::Market::Underlying->new($symbol);
+    if ($ul->feed_license eq 'realtime') {
+        my $tick = $ul->get_combined_realtime;
+        $c->_pass({
+            symbol => $symbol,
+            time   => $tick->{epoch},
+            price  => $tick->{quote},
+        });
+    } else {
+        $c->_fail("realtime quotes are not available for $symbol");
+    }
+    return;
 }
 
 sub symbol_search {
@@ -68,6 +150,105 @@ sub _ticks {
     });
 
     return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
+}
+
+
+sub ticks {
+    my $c      = shift;
+    my $symbol = $c->stash('sp')->{symbol};
+    my $ul     = BOM::Market::Underlying->new($symbol);
+    my $ticks  = $c->_ticks(
+        ul    => $ul,
+        start => $c->param('start') // 0,
+        end   => $c->param('end') // 0,
+        count => $c->param('count') // 0,
+    );
+    return $c->_pass({ticks => $ticks});
+}
+
+my %seconds_granularities = (
+    M1  => 60,
+    M5  => 300,
+    M10 => 600,
+    M30 => 1800,
+    H1  => 3600,
+    H2  => 7200,
+    H4  => 14400,
+    H8  => 28800,
+);
+
+=head2 candles
+Return OHLC for the given I<symbol>, between I<start> and I<end> epochs with the given I<granularity>.
+=cut
+
+sub _candles {
+    my ($c, %args) = @_;
+    my $ul          = $args{ul} || die 'no underlying';
+    my $start       = $args{start};
+    my $end         = $args{end};
+    my $count       = $args{count};
+    my $granularity = $args{granularity} || 'M1';
+
+    # we must not return to the client any candles after this epoch
+    my $licensed_epoch = $ul->last_licensed_display_epoch;
+
+    unless ($start
+        and $start =~ /^[0-9]+$/
+        and $start > time - 365 * 86400
+        and $start < $licensed_epoch)
+    {
+        $start = $licensed_epoch - 86400;
+    }
+    unless ($end
+        and $end =~ /^[0-9]+$/
+        and $end > $start
+        and $end <= $licensed_epoch)
+    {
+        $end = $licensed_epoch;
+    }
+    unless ($count
+        and $count =~ /^[0-9]+$/
+        and $count > 0
+        and $count < 5000)
+    {
+        $count = 500;
+    }
+    my $candles;
+    if (my $period = $seconds_granularities{$granularity}) {
+        $start = $start - $start % $period;
+        my $end_max = $start + $period * $count;
+        $end = $end_max > $end ? $end : $end_max;
+        $candles = $ul->ohlc_between_start_end({
+            start_time         => $start,
+            end_time           => $end,
+            aggregation_period => $period,
+        });
+    } elsif ($granularity eq 'D') {
+        my $end_max = $start + 86400 * $count;
+        $end = $end_max > $end ? $end : $end_max;
+        $candles = $ul->feed_api->ohlc_daily_list({
+            start_time => $start,
+            end_time   => $end,
+        });
+    } else {
+        die "Invalid granularity";
+    }
+    return [map { {time => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @$candles];
+}
+
+sub candles {
+    my $c      = shift;
+    my $symbol = $c->stash('sp')->{symbol};
+    my $ul     = BOM::Market::Underlying->new($symbol);
+
+    my $candles = $c->_candles(
+        ul          => $ul,
+        start       => $c->param('start') // 0,
+        end         => $c->param('end') // 0,
+        count       => $c->param('count') // 0,
+        granularity => $c->param('granularity') // '',
+    );
+    return $c->_pass({candles => $candles});
 }
 
 1;
