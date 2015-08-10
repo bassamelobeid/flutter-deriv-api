@@ -54,13 +54,6 @@ sub _description {
     };
 }
 
-# a service for friends to look up my pool of names
-sub symbol_search {
-    my $s = shift;
-    return $_by_symbol->{$s} || $_by_display_name->{$s}    # or undef if not found.
-}
-
-# a service for friends to get a hash of active names by symbol or display_name
 sub active_symbols {
     my ($class, $by) = @_;
     $by =~ /^(symbol|display_name)$/ or die 'by symbol or display_name only';
@@ -72,18 +65,10 @@ sub active_symbols {
     };
 }
 
-# a service for friends to look up my pool of exchanges (a hashref of exchange => list of sp structs)
 sub exchanges {
     my $class = shift;
     return $_by_exchange;
 }
-
-=head2 ok_symbol
-
-A bridging action which verifies the matched symbol and loads up its parameters.
-Also converts external 'display_name' symbol format into internal format.
-
-=cut
 
 sub ok_symbol {
     my $c      = shift;
@@ -93,33 +78,15 @@ sub ok_symbol {
     return 1;
 }
 
-=head2 list
-
-returns list of all symbols as list of hashes where each hash has properties for one symbol.
-
-=cut
-
 sub list {
     return shift->_pass({symbols => [map { _description($_) } sort keys %$_by_symbol]});
 }
-
-=head2 symbol
-
-returns latest properties for symbol specified by I<symbol> parameter
-
-=cut
 
 sub symbol {
     my $c = shift;
     my $s = $c->stash('sp')->{symbol};
     return $c->_pass(_description($s));
 }
-
-=head2 price
-
-returns latest price for the I<symbol>
-
-=cut
 
 sub price {
     my $c      = shift;
@@ -138,11 +105,10 @@ sub price {
     return;
 }
 
-=head2 ticks
-
-Return up to I<count> ticks between I<start> and I<end> epochs for I<symbol>
-
-=cut
+sub symbol_search {
+    my $s = shift;
+    return $_by_symbol->{$s} || $_by_display_name->{$s}    # or undef if not found.
+}
 
 sub _ticks {
     my ($c, %args) = @_;
@@ -207,12 +173,6 @@ my %seconds_granularities = (
     H4  => 14400,
     H8  => 28800,
 );
-
-=head2 candles
-
-Return OHLC for the given I<symbol>, between I<start> and I<end> epochs with the given I<granularity>.
-
-=cut
 
 sub _candles {
     my ($c, %args) = @_;
@@ -283,12 +243,6 @@ sub candles {
     );
     return $c->_pass({candles => $candles});
 }
-
-=head2 contracts
-
-returns current contract offerings for the I<symbol>
-
-=cut
 
 sub contracts {
     my $c      = shift;

@@ -472,7 +472,8 @@ my $json_receiver = sub {
         return $c->send({json => $json});
     }
 
-    $log->error("unrecognised");
+    $log->error("unrecognised request");
+    return;
 };
 
 sub contracts {
