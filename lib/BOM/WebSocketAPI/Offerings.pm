@@ -8,13 +8,6 @@ use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 use BOM::Product::Offerings;
 use BOM::WebSocketAPI::Symbols;
 
-=head1 DESCRIPTION
-
-Implements 'offerings/' queries as needed by the BetForm part of the BOM Web API.
-
-=cut
-
-# these are the fields for which we will do 2-way conversion between lower_case and Readable Case
 my @READABLES = qw/market submarket contract_display start_type sentiment expiry_type/;
 
 sub query {

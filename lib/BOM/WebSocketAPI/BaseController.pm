@@ -4,26 +4,6 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use Data::Dumper;
 
-=head1 DESCRIPTION
-
-Base Class for BOM::WebAPI Controllers.
-
-=cut
-
-=head1 METHODS
-
-=head2 _fail
-
-Failure Handler
-
-A comprehensive failure handler: log the problem first then return the bad news in a
-standard error result template.
-
-=cut
-
-# why don't we use .ep templates for these? Because the built-in
-# json format handler does it better.
-
 sub _fail {
     my $c       = shift;
     my $message = shift || 'failed';
@@ -48,16 +28,6 @@ sub _fail {
     );
     return;
 }
-
-=head2 _pass
-
-Success Handler
-
-A general purpose success handler.  Dump the generated json to the log
-(unless asked not to)
-then return the result using built-in json format conversion.
-
-=cut
 
 sub _pass {
     my $c       = shift;
