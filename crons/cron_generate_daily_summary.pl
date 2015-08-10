@@ -144,7 +144,14 @@ foreach my $currency (sort @currencies) {
                     my $bet = $bets_ref->{$bet_id};
                     my $theo;
 
-                    eval { $theo = produce_contract($bet->{short_code}, $currency)->theo_price; };
+                    eval {
+                        $contract = produce_contract($bet->{short_code}, $currency);
+                        if ($contract->is_spread) {
+                            $theo = $contract->bid_price; # current value + buy price of the contract
+                        } else {
+                            $theo = $contract->theo_price;
+                        }
+                    };
                     if ($@) {
                         $logger->warn(
                             "theo price error[$@], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
