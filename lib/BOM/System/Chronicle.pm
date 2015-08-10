@@ -42,8 +42,19 @@ sub _archive {
     my $name     = shift;
     my $value    = shift;
 
-    return _dbh()->prepare(q{INSERT INTO chronicle (id, timestamp, category, name, value) VALUES (DEFAULT,DATE_TRUNC('second', now()),?,?,?)})
-        ->execute($category, $name, $value);
+    return _dbh()->prepare(<<'SQL')->execute($category, $name, $value);
+WITH ups AS (
+    UPDATE chronicle
+       SET value=$3
+     WHERE timestamp=DATE_TRUNC('second', now())
+       AND category=$1
+       AND name=$2
+ RETURNING *
+)
+INSERT INTO chronicle (timestamp, category, name, value)
+SELECT DATE_TRUNC('second', now()), $1, $2, $3
+ WHERE NOT EXISTS (SELECT * FROM ups)
+SQL
 }
 
 sub _redis_write {

@@ -96,10 +96,10 @@ sub create_virtual_acc {
     $client->deposit_virtual_funds;
 
     my $link = request()->url_for(
-        '/user/verify_email',
+        '/user/validate_link',
         {
-            email        => url_escape($email),
-            verify_token => BOM::Platform::EmailToken->new(email => $email)->token,
+            verify_token => BOM::Platform::EmailToken::get_token($email),
+            step         => 'account'
         });
     my $email_content;
     BOM::Platform::Context::template->process('email/resend_verification.html.tt', {link => $link}, \$email_content)
