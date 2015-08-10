@@ -2,16 +2,22 @@ package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
 
+use BOM::System::Config;
+
 sub startup {
     my $app = shift;
 
-    $app->moniker('bom-websocket-api');
-    $app->plugin('BOM::Utility::Mojolicious::Plugin::System', port => 5004);
+    $app->moniker('websocket');
+    $app->plugin('Config');
 
     my $log = $app->log;
 
-    $log->info("WebsocketsAPI: Starting.");
+    my $signature = "Binary.com Websockets API";
+    $app->hook(after_dispatch => sub { shift->res->headers->server($signature) });
+
+    $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
+    $log->info("Log Level        is " . $log->level);
     $log->debug("Server config    is " . $app->dumper($app->config));
 
     my $r = $app->routes;
@@ -25,4 +31,3 @@ sub startup {
 }
 
 1;
-
