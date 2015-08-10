@@ -25,7 +25,8 @@ sub predefined_contracts_for_symbol {
     my @offerings = $flyby->query({
             underlying_symbol => $symbol,
             start_type        => 'spot',
-            expiry_type       => ['daily', 'intraday']});
+            expiry_type       => ['daily', 'intraday'],
+            barrier_category  => ['euro_non_atm', 'american']});
 
     @offerings = _predefined_trading_period({
         offerings => \@offerings,
