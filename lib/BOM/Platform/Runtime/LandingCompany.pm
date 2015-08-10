@@ -137,17 +137,7 @@ A list of contract categories allowed on a particular landing company
 has legal_allowed_contract_categories => (
     is      => 'ro',
     isa     => 'ArrayRef[Str]',
-    default => sub {
-        [
-            qw(asian
-                callput
-                digits
-                endsinout
-                staysinout
-                touchnotouch
-                spreads)
-        ];
-    },
+    default => sub { [] },
 );
 
 =head2 allows_payment_agents
