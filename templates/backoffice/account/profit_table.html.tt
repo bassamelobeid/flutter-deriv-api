@@ -116,7 +116,7 @@
 <div id="statement-table" class="grd-parent grd-grid-12 table-header grd-row-padding">
     [% cumulative_pl = 0;
         FOREACH contract IN sold_contracts.reverse;
-            contract.info = contract_details(contract, currency);
+            contract.info = contract_details(contract, currency, [% request.broker.code %]);
             cumulative_pl = cumulative_pl + sale_price(contract) - contract.buy_price;
             contract.cumulative_pl = cumulative_pl;
     END %]
@@ -141,7 +141,7 @@
 
 [% cumulative_pl = 0;
 FOREACH contract IN open_contracts.reverse;
-    contract.info = contract_details(contract, currency);
+    contract.info = contract_details(contract, currency, [% request.broker.code %]);
     cumulative_pl = cumulative_pl + sale_price(contract) - contract.buy_price;
     contract.cumulative_pl = cumulative_pl;
 END %]

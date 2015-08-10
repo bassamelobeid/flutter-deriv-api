@@ -39,6 +39,7 @@
                 <div class="grd-grid-1">
                         <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => transaction.short_code }) %]">[% transaction.id %]</a>
                 </div>
+                [% request.broker.code %]
                 [% IF transaction.action_type == 'sell' %]
                         <div class="grd-grid-4">
                                 Sell<br />
