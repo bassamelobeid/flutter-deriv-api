@@ -355,7 +355,7 @@ my $json_receiver = sub {
         if ($p1->{end}) {
             my $style = delete $p1->{style} || 'ticks';
             if ($style eq 'ticks') {
-                my $ticks = $c->BOM::WebAPI::Symbols::_ticks(%$p1, ul => $ul);
+                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
                 my $history = {
                     prices => [map { $_->{price} } @$ticks],
                     times  => [map { $_->{time} } @$ticks],
@@ -367,7 +367,7 @@ my $json_receiver = sub {
                             history  => $history
                         }});
             } elsif ($style eq 'candles') {
-                my $candles = $c->BOM::WebAPI::Symbols::_candles(%$p1, ul => $ul);
+                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles(%$p1, ul => $ul);
                 return $c->send({
                         json => {
                             msg_type => 'candles',
