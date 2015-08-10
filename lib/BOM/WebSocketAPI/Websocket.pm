@@ -9,6 +9,7 @@ use BOM::Product::Contract::Finder;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
+use BOM::Product::Contract::Finder::Japan;
 
 =head1 DESCRIPTION
 
@@ -292,7 +293,12 @@ my $json_receiver = sub {
     }
 
     if (my $symbol = $p1->{contracts_for}) {
-        my $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol);
+        my $contracts_for;
+        if ($symbol->{japan_offering}) {
+            $contracts_for = BOM::Product::Contract::Finder::Japan::predefined_contracts_for_symbol($symbol);
+        } else {
+            $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol);
+        }
         return $c->send({
                 json => {
                     msg_type  => 'contracts',
