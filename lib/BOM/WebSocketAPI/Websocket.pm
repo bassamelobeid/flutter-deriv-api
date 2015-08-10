@@ -353,7 +353,7 @@ my $json_receiver = sub {
                     error    => "symbol $symbol invalid"
                 }});
         if ($p1->{end}) {
-            my $style = delete $p1->{style} || 'ticks';
+            my $style = delete($p1->{style}) || ($p1->{granularity}? 'candles': 'ticks');
             if ($style eq 'ticks') {
                 my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
                 my $history = {
