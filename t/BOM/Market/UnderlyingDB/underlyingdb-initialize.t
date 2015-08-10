@@ -15,12 +15,12 @@ lives_ok {
 'Initialized';
 
 isa_ok $udb, 'BOM::Market::UnderlyingDB', "Got instance";
-is scalar($udb->symbols), 354, "DB initialized, all symbols loaded";
+
+is scalar($udb->symbols), 353, "DB initialized, all symbols loaded";
 eq_or_diff [sort grep /^N/, $udb->symbols], [qw(N100 N150 N225 NAASML NAHEIA NAINGA NARDSA NAUNA NDX NIFTY NODNB NOSDRL NOSTL NOTEL NOYAR NZ50)],
     "/^N/ symbols are correct";
 
 my @keys = $udb->symbols;
-
 my @mismatch = grep { $_ ne $udb->get_parameters_for($_)->{symbol} } (@keys);
 is(scalar @mismatch, 0, 'No symbols differ from underlyings.yml keys.');
 foreach my $key (@mismatch) {
