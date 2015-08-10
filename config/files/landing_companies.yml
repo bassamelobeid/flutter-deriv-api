@@ -19,6 +19,13 @@
       - stocks
       - smarties
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
     legal_default_currency: GBP
     counterparty_for:
       - UNITED KINGDOM
@@ -41,6 +48,13 @@
       - GBP
     legal_allowed_markets:
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
     legal_default_currency: EUR
     counterparty_for:
       - AUSTRIA
@@ -91,6 +105,13 @@
       - indices
       - stocks
       - smarties
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
     legal_default_currency: EUR
     counterparty_for:
       - AUSTRIA
@@ -138,6 +159,14 @@
       - stocks
       - smarties
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
+      - spreads
     legal_default_currency: USD
     allows_payment_agents: 1
     payment_agents_residence_disable: jp
@@ -156,6 +185,14 @@
       - stocks
       - smarties
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
+      - spreads
     legal_allowed_currencies:
       - USD
     counterparty_for:
