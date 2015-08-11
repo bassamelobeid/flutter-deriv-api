@@ -125,7 +125,16 @@ subtest 'Sparse ticks' => sub {
                 fill_cache   => 0
             });
             is(scalar @$stuff, 61, 'Then plus another one..');
-            eq_or_diff($stuff->[-1], {count => 1, epoch => 901, quote => 901, symbol => $test_symbol, }, ' which is the latest tick ');
+            eq_or_diff(
+                $stuff->[-1],
+                {
+                    count  => 1,
+                    epoch  => 901,
+                    quote  => 901,
+                    symbol => $test_symbol,
+                },
+                ' which is the latest tick '
+            );
         };
     }
 };

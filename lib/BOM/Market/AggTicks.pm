@@ -244,17 +244,17 @@ sub aggregate_for {
     if (my @ticks = map { $decoder->decode($_) } @{$redis->zrangebyscore($unagg_key, 0, $last_agg)}) {
         my $first_tick = $ticks[0];
         my $prev_tick  = $first_tick;
-        my $offset = $first_tick->{epoch} % $ai->seconds;
+        my $offset     = $first_tick->{epoch} % $ai->seconds;
         my $prev_agg   = $first_tick->{epoch} - $offset;
-        shift @ticks unless $offset; # Caught tail end of previous period.
+        shift @ticks unless $offset;    # Caught tail end of previous period.
         my $next_agg   = $prev_agg + $ai->seconds;
         my $tick_count = 0;
 
         foreach my $tick (@ticks) {
             if ($tick->{epoch} == $next_agg) {
                 $first_added //= $next_agg;
-                $last_added = $next_agg;
-                $tick->{count} = $tick_count + 1;
+                $last_added        = $next_agg;
+                $tick->{count}     = $tick_count + 1;
                 $tick->{agg_epoch} = $next_agg;
                 $total_added++;
                 $self->_update($agg_key, $next_agg, $encoder->encode($tick));
@@ -270,7 +270,7 @@ sub aggregate_for {
                     $self->_update($agg_key, $next_agg, $encoder->encode($prev_tick));
                     $next_agg += $ai->seconds;
                     $tick_count = 0;
-                    unshift @ticks, $tick if ($tick->{epoch} == $next_agg); # Let the above code handle this.
+                    unshift @ticks, $tick if ($tick->{epoch} == $next_agg);    # Let the above code handle this.
                 }
             } else {
                 # Skipped.
