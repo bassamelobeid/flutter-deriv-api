@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More (tests => 47);
+use Test::More (tests => 36);
 use Test::NoWarnings;
 
 use Test::Exception;
@@ -303,96 +303,48 @@ isnt scalar sell({
     undef, 'sell 1 bet';
 cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 0, 'check qty open bet = 0');
 
-# buy bet
-lives_ok {
-    my ($fmb, $txn) = buy {
-        'underlying_symbol' => 'R_25',
-        'payout_price'      => 3,
-        'buy_price'         => 1.55,
-        'remark' =>
-            'vega[0.01290] atmf_fct[1.00000] div[0.00000] recalc[1.55000] int[0.00000] theta[-1.93557] iv[0.25000] emp[0.13000] fwdst_fct[1.00000] win[3.00000] trade[1.55000] dscrt_fct[1.00000] spot[1393.94800] gamma[2.26075] delta[-0.00340] theo[1.49000] base_spread[0.04000] ia_fct[1.00000] news_fct[1.00000]',
-        'purchase_time' => '2011-07-25 14:48:02',
-        'start_time'    => '2011-07-25 14:48:02',
-        'expiry_time'   => '2011-07-25 22:48:02',
-        'bet_class'     => 'digit_bet',
-        'bet_type'      => 'DIGITDIFF',
-        'last_digit'    => 7,
-        'prediction'    => 'differ',
-        'short_code'    => $short_code,
-    };
-    push @fmb_id, $fmb->{id};
-}
-'buy digit diff bet';
-cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 1, 'check qty open bet = 1');
+subtest 'digits' => sub {
+    my %type_prediction = (
+        DIGITDIFF  => 'differ',
+        DIGITMATCH => 'match',
+        DIGITODD   => 'odd',
+        DIGITEVEN  => 'even',
+        DIGITOVER  => 'over',
+        DIGITUNDER => 'under',
+    );
 
-# sell it
-isnt scalar sell({
-        id         => shift(@fmb_id),
-        sell_price => 2.5
+    foreach my $type (sort keys %type_prediction) {
+        subtest $type => sub {
+            lives_ok {
+                my ($fmb, $txn) = buy {
+                    'underlying_symbol' => 'R_25',
+                    'payout_price'      => 3,
+                    'buy_price'         => 1.55,
+                    'remark' =>
+                        'vega[0.01290] atmf_fct[1.00000] div[0.00000] recalc[1.55000] int[0.00000] theta[-1.93557] iv[0.25000] emp[0.13000] fwdst_fct[1.00000] win[3.00000] trade[1.55000] dscrt_fct[1.00000] spot[1393.94800] gamma[2.26075] delta[-0.00340] theo[1.49000] base_spread[0.04000] ia_fct[1.00000] news_fct[1.00000]',
+                    'purchase_time' => '2011-07-25 14:48:02',
+                    'start_time'    => '2011-07-25 14:48:02',
+                    'expiry_time'   => '2011-07-25 22:48:02',
+                    'bet_class'     => 'digit_bet',
+                    'bet_type'      => $type,
+                    'last_digit'    => 7,
+                    'prediction'    => $type_prediction{$type},
+                    'short_code'    => $short_code,
+                };
+                push @fmb_id, $fmb->{id};
+            }
+            'buy';
+            cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 1, 'check qty open bet = 1');
+
+            isnt scalar sell({
+                    id         => shift(@fmb_id),
+                    sell_price => 2.5
+                }
+                ),
+                undef, 'sell';
+            cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 0, 'check qty open bet = 0');
+        };
     }
-    ),
-    undef, 'sell 1 bet';
-cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 0, 'check qty open bet = 0');
-
-lives_ok {
-    my ($fmb, $txn) = buy {
-        'account_id'        => $account->id,
-        'underlying_symbol' => 'R_25',
-        'payout_price'      => 3,
-        'buy_price'         => 1.55,
-        'remark' =>
-            'vega[0.01290] atmf_fct[1.00000] div[0.00000] recalc[1.55000] int[0.00000] theta[-1.93557] iv[0.25000] emp[0.13000] fwdst_fct[1.00000] win[3.00000] trade[1.55000] dscrt_fct[1.00000] spot[1393.94800] gamma[2.26075] delta[-0.00340] theo[1.49000] base_spread[0.04000] ia_fct[1.00000] news_fct[1.00000]',
-        'purchase_time' => '2011-07-25 14:48:02',
-        'start_time'    => '2011-07-25 14:48:02',
-        'expiry_time'   => '2011-07-25 22:48:02',
-        'bet_class'     => 'digit_bet',
-        'bet_type'      => 'DIGITODD',
-        'last_digit'    => 0,
-        'prediction'    => 'odd',
-        'short_code'    => $short_code,
-    };
-    push @fmb_id, $fmb->{id};
-}
-'buy digit odd bet';
-cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 1, 'check qty open bet = 1');
-
-# sell it
-isnt scalar sell({
-        id         => shift(@fmb_id),
-        sell_price => 2.5
-    }
-    ),
-    cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 0, 'check qty open bet = 0');
-
-lives_ok {
-    my ($fmb, $txn) = buy {
-        'account_id'        => $account->id,
-        'underlying_symbol' => 'R_25',
-        'payout_price'      => 3,
-        'buy_price'         => 1.55,
-        'remark' =>
-            'vega[0.01290] atmf_fct[1.00000] div[0.00000] recalc[1.55000] int[0.00000] theta[-1.93557] iv[0.25000] emp[0.13000] fwdst_fct[1.00000] win[3.00000] trade[1.55000] dscrt_fct[1.00000] spot[1393.94800] gamma[2.26075] delta[-0.00340] theo[1.49000] base_spread[0.04000] ia_fct[1.00000] news_fct[1.00000]',
-        'purchase_time' => '2011-07-25 14:48:02',
-        'start_time'    => '2011-07-25 14:48:02',
-        'expiry_time'   => '2011-07-25 22:48:02',
-        'bet_class'     => 'digit_bet',
-        'bet_type'      => 'DIGITUNDER',
-        'last_digit'    => 0,
-        'prediction'    => 'under',
-        'short_code'    => $short_code,
-    };
-    push @fmb_id, $fmb->{id};
-}
-'buy digit under bet';
-cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 1, 'check qty open bet = 1');
-
-# sell it
-isnt scalar sell({
-        id         => shift(@fmb_id),
-        sell_price => 2.5
-    }
-    ),
-    undef, 'sell 1 bet';
-cmp_ok($fmb_mapper->get_number_of_open_bets_with_shortcode_of_account($short_code), '==', 0, 'check qty open bet = 0');
+};
 
 1;
