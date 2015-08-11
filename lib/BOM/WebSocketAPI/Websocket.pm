@@ -426,6 +426,7 @@ my $json_receiver = sub {
                 purchase_time => $fmb->purchase_time->epoch,
                 buy_price     => $fmb->buy_price,
                 start_time    => $fmb->start_time->epoch,
+                longcode      => $DOM->parse($contract->longcode)->all_text,
             };
         }
         $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
