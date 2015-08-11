@@ -35,6 +35,8 @@ require BOM::Product::Pricing::Greeks::BlackScholes;
 
 with 'MooseX::Role::Validatable';
 
+sub is_spread { return 0 }
+
 has average_tick_count => (
     is      => 'rw',
     default => undef,
@@ -466,30 +468,6 @@ has opposite_bet => (
     isa        => 'BOM::Product::Contract',
     lazy_build => 1
 );
-
-has sell_channel => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1
-);
-
-###
-# End of Attribute section
-###
-
-sub _build_sell_channel {
-    my $self   = shift;
-    my $lang   = request()->language;
-    my $type   = $self->code . '-' . $self->date_start->epoch;
-    my $ending = $self->date_expiry->epoch;
-    my $symbol = uc $self->underlying->symbol;
-    $symbol =~ s/_/-/g;
-    my @bits     = split /_/, $self->shortcode;
-    my $barrier  = $bits[-2];
-    my $barrier2 = $bits[-1];
-    my $channel  = join '_', ('P', $type, $symbol, $ending, $barrier, $barrier2, 'c', $self->currency, $lang);
-    return $channel;
-}
 
 sub _build_date_settlement {
     my $self       = shift;

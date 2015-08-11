@@ -232,6 +232,12 @@ sub _build_eod_blackout_expiry {
     my $self = shift;
     return $self->market->eod_blackout_expiry;
 }
+
+has spread_divisor => (
+    is      => 'ro',
+    default => 1,
+);
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

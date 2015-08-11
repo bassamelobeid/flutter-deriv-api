@@ -481,6 +481,7 @@ subtest 'get_sold' => sub {
                 transaction_time => $start_date,
                 start_time       => $start_date,
                 expiry_time      => $end_date,
+                settlement_time  => $end_date,
             });
     }
 

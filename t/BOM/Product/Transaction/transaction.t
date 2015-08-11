@@ -5,7 +5,7 @@ use warnings;
 
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 23;
+use Test::More tests => 24;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use Guard;
@@ -313,6 +313,104 @@ lives_ok {
 'client created and funded';
 
 my ($trx, $fmb, $chld, $qv1, $qv2);
+
+subtest 'buy a spread bet' => sub {
+    # creating a new account so that I won't mess up current tests.
+    my $new_client = create_client;
+    top_up $new_client, 'USD', 5000;
+    my $acc_usd = $new_client->find_account(query => [currency_code => 'USD'])->[0];
+    local $ENV{REQUEST_STARTTIME} = time;
+    my $c = produce_contract({
+        underlying       => 'R_100',
+        bet_type         => 'SPREADU',
+        currency         => 'USD',
+        amount_per_point => 2,
+        stop_loss        => 10,
+        stop_profit      => 20,
+        current_tick     => $tick_r100,
+        stop_type        => 'point',
+    });
+    my $txn = BOM::Product::Transaction->new({
+        client   => $new_client,
+        contract => $c,
+        price    => 20.00,
+        source   => 21,
+    });
+    ok !$txn->buy, 'buy spread bet without error';
+
+    subtest 'transaction report', sub {
+        plan tests => 11;
+        note $txn->report;
+        my $report = $txn->report;
+        like $report, qr/\ATransaction Report:$/m,                                                    'header';
+        like $report, qr/^\s*Client: \Q${\$new_client}\E$/m,                                          'client';
+        like $report, qr/^\s*Contract: \Q${\$c->code}\E$/m,                                           'contract';
+        like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
+        like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
+        like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
+        like $report, qr/^\s*Comment: \Q${\$txn->comment}\E$/m,                                       'comment';
+        like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
+        like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
+        like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
+        like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
+    };
+
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db spread_bet => $txn->transaction_id;
+
+    # note explain $trx;
+
+    subtest 'transaction row', sub {
+        plan tests => 13;
+        cmp_ok $trx->{id}, '>', 0, 'id';
+        is $trx->{account_id}, $acc_usd->id, 'account_id';
+        is $trx->{action_type}, 'buy', 'action_type';
+        is $trx->{amount} + 0, -20, 'amount';
+        is $trx->{balance_after} + 0, 5000 - 20, 'balance_after';
+        is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+        is $trx->{payment_id},    undef,                  'payment_id';
+        is $trx->{quantity},      1,                      'quantity';
+        is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
+        is $trx->{remark},        undef,                  'remark';
+        is $trx->{staff_loginid}, $new_client->loginid, 'staff_loginid';
+        is $trx->{source}, 21, 'source';
+        cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+    };
+
+    # note explain $fmb;
+
+    subtest 'fmb row', sub {
+        plan tests => 19;
+        cmp_ok $fmb->{id}, '>', 0, 'id';
+        is $fmb->{account_id}, $acc_usd->id, 'account_id';
+        is $fmb->{bet_class}, 'spread_bet', 'bet_class';
+        is $fmb->{bet_type},  'SPREADU',    'bet_type';
+        is $fmb->{buy_price} + 0, 20, 'buy_price';
+        is $fmb->{expiry_time},  undef, 'undefined expiry_time';
+        is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
+        is !$fmb->{is_expired}, !0, 'is_expired';
+        is !$fmb->{is_sold},    !0, 'is_sold';
+        is $fmb->{payout_price}, undef, 'payout_price';
+        cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+        like $fmb->{remark},        qr/amount_per_point/, 'remark';
+        is $fmb->{sell_price},      undef,                'sell_price';
+        is $fmb->{sell_time},       undef,                'sell_time';
+        is $fmb->{settlement_time}, undef,                'undefined settlement_time';
+        like $fmb->{short_code},    qr/SPREADU/,          'short_code';
+        cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+        is $fmb->{tick_count},        undef,   'tick_count';
+        is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+    };
+
+    # note explain $chld;
+    subtest 'chld row', sub {
+        plan tests => 4;
+        is $chld->{amount_per_point}, 2, 'amount_per_point is 2';
+        is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+        is $chld->{stop_loss},   10, 'stop_loss is 10';
+        is $chld->{stop_profit}, 20, 'stop_profit is 20';
+    };
+
+};
 
 subtest 'buy a bet', sub {
     plan tests => 11;
@@ -1585,6 +1683,7 @@ subtest 'max_turnover validation', sub {
                             purchase_time     => Date::Utility::today->minus_time_interval("1s")->db_timestamp,
                             start_time        => Date::Utility::today->minus_time_interval("0s")->db_timestamp,
                             expiry_time       => Date::Utility::today->plus_time_interval("15s")->db_timestamp,
+                            settlement_time   => Date::Utility::today->plus_time_interval("15s")->db_timestamp,
                             is_expired        => 0,
                             is_sold           => 0,
                             bet_class         => 'higher_lower_bet',

@@ -192,6 +192,7 @@ fmb_higher_lower_sold_won:
     transaction_time: '2010-12-02 12:00:00'
     start_time: '2010-12-02 12:00:00'
     expiry_time: '2010-12-02 12:04:00'
+    settlement_time: '2010-12-02 16:04:00'
     is_expired: 0
     is_sold: 0
     bet_class: higher_lower_bet
@@ -246,6 +247,31 @@ fmb_range_bet:
     bet_type: RANGE
     absolute_higher_barrier: 9.2406
     absolute_lower_barrier: 9.0406
+    quantity: 1
+
+fmb_spread_bet:
+  class_name: 'BOM::Database::Model::FinancialMarketBet::SpreadBet'
+  data:
+    __MUST_SELL__: 0
+    __SELL_TIME__:
+    __CREDIT_AMOUNT__: 5000
+    account_id: __DUMMY__
+    underlying_symbol: R_100
+    buy_price: 20
+    remark: 'vega[0.85656] atmf_fct[1.00000] div[0.00730] recalc[113.20000] int[0.01050] theta[-26.54257] iv[0.10000] emp[71.83000] fwdst_fct[1.00000] win[200.00000] trade[114.06000] dscrt_fct[1.00000] spot[9.09930] gamma[211.57922] delta[189.96044] theo[99.40000] base_spread[0.13794] ia_fct[1.00000] news_fct[1.00000]'
+    purchase_time: '2011-07-07 06:08:00'
+    transaction_time: '2011-07-07 06:08:00'
+    start_time: '2011-07-07 06:08:48'
+    expiry_daily: 0
+    is_expired: 0
+    is_sold: 0
+    bet_class: spread_bet
+    bet_type: SPREADU
+    amount_per_point: 1
+    stop_type: point
+    stop_profit: 10
+    stop_loss: 10
+    spread: 1
     quantity: 1
 
 fmb_higher_lower_call_buy:
