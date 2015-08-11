@@ -143,7 +143,7 @@ sub _predefined_trading_period {
                 date  => $recent_2_hour_end->datetime,
                 epoch => $recent_2_hour_end->epoch,
             },
-            duration => $in_period . 'h',
+            duration => '2h',
             };
 
         # We will hold it for the duration of the period which is a little too long, but no big deal.
