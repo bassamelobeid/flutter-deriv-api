@@ -212,7 +212,8 @@ sub retrieve {
         # We get the last tick for aggregated tick request.
         # Else, we will have missing information.
         if ($aggregated) {
-            my @latest = @{$self->retrieve({%$args, tick_count => 1})};
+            $args->{tick_count} = 1;
+            my @latest = @{$self->retrieve($args)};
             push @res, $latest[0] if (@latest and @res and $latest[0]->{epoch} > $res[-1]->{epoch});
         }
     }
