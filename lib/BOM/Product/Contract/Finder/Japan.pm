@@ -180,7 +180,7 @@ sub _set_predefined_barriers {
     my $date_start     = Date::Utility->new($trading_period->{date_start}->{epoch});
     my $date_expiry    = Date::Utility->new($trading_period->{date_expiry}->{epoch});
 
-    my $barrier_key = join($cache_sep, $underlying->symbol, $date_start->date, $date_expiry->date);
+    my $barrier_key = join($cache_sep, $underlying->symbol, $date_start->epoch, $date_expiry->epoch);
     my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
     if (not $available_barriers) {
         my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
