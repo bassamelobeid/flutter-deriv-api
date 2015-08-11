@@ -84,7 +84,7 @@ sub _predefined_trading_period {
         my $start_of_day = $today->datetime;                                 # As a string.
 
         # Starting at midnight, running through these times.
-        my @hourly_durations = qw(2h 4h 6h 8h 12h 16h 20h);
+        my @hourly_durations = qw(2h 3h 4h 5h);
 
         $trading_periods = [
             map {
