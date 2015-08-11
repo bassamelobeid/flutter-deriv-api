@@ -129,7 +129,6 @@ my ($fill_count, $first_fill, $last_fill) = $big_at->fill_from_historical_feed({
 });
 
 is($fill_count, 143, 'Able to load in ticks from the past');
-
 my @old_ticks = @{
     $big_at->retrieve({
             underlying   => $real_underlying,
@@ -137,7 +136,7 @@ my @old_ticks = @{
             ending_epoch => $old_epoch,
             fill_cache   => 0,
         })};
-is(scalar @old_ticks, 143, 'Got the 143 expected aggregations for our symbol');
+is(scalar @old_ticks, 144, 'Got the 144 expected aggregations for our symbol');
 is(
     scalar @{
         $at->retrieve({
