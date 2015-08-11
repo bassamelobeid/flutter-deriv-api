@@ -1354,6 +1354,16 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
+    my %legal_allowed_cc =
+        map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_categories};
+    if (not $legal_allowed_cc{$contract->category_code}) {
+        return Error::Base->cuss(
+            -type              => 'NotLegalContractCategory',
+            -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
+            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this contract.'),
+        );
+    }
+
     if ($residence && $market_name eq 'random') {
         foreach my $country_code (map { Locale::Country::country2code($_) }
             @{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries})
