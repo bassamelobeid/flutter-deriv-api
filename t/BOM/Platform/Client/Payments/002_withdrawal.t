@@ -163,7 +163,7 @@ subtest 'EUR3k over 30 days MX limitation.' => sub {
         amount   => $gbp_amount,
         currency => 'GBP'
     );
-    $client->clr_status('unwelcome');    # first-deposit will cause this in non-CR clients!
+    $client->clr_status('cashier_locked');    # first-deposit will cause this in non-CR clients!
     $client->save;
 
     ok $client->default_account->load->balance == $gbp_amount,

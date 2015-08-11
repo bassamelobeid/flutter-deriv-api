@@ -130,7 +130,7 @@ sub _do_checkid {
 sub _request_id_authentication {
     my $self   = shift;
     my $client = $self->client;
-    my $status = $self->_landing_company_country eq 'Malta' ? 'cashier_locked' : 'unwelcome';
+    my $status = 'cashier_locked';
 
     $client->set_status($status, 'system', 'Experian id authentication failed on first deposit');
     $client->save;
