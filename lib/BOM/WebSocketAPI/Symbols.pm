@@ -8,7 +8,6 @@ use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
-use BOM::WebSocketAPI::Symbols;
 
 # these package-level structures let us 'memo-ize' the symbol pools for purposes
 # of full-list results and for hashed lookups by-displayname and by-symbol-code.
