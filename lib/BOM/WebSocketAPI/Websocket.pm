@@ -419,7 +419,7 @@ my $json_receiver = sub {
             $log->info("websocket-based buy " . $trx->report);
             $trx = $trx->transaction_record;
             my $fmb = $trx->financial_market_bet;
-            $json->{receipt} = {
+            $json->{open_receipt} = {
                 trx_id        => $trx->id,
                 fmb_id        => $fmb->id,
                 balance_after => $trx->balance_after,
@@ -429,7 +429,7 @@ my $json_receiver = sub {
                 longcode      => $DOM->parse($contract->longcode)->all_text,
             };
         }
-        $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
+        $json->{msg_type} = $json->{error} ? 'error' : 'open_receipt';
         return $c->send({json => $json});
     }
 
@@ -458,16 +458,16 @@ my $json_receiver = sub {
                 last;
             }
             $log->info("websocket-based sell " . $trx->report);
-            $trx             = $trx->transaction_record;
-            $fmb             = $trx->financial_market_bet;
-            $json->{receipt} = {
+            $trx                   = $trx->transaction_record;
+            $fmb                   = $trx->financial_market_bet;
+            $json->{close_receipt} = {
                 trx_id        => $trx->id,
                 fmb_id        => $fmb->id,
                 balance_after => $trx->balance_after,
                 sold_for      => abs($trx->amount),
             };
         }
-        $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
+        $json->{msg_type} = $json->{error} ? 'error' : 'close_receipt';
         return $c->send({json => $json});
     }
     return;
