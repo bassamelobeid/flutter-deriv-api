@@ -286,13 +286,8 @@ my $json_receiver = sub {
                     symbols  => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
     }
 
-    if (my $symbol = $p1->{contracts_for}) {
-        my $contracts_for;
-        if ($symbol->{japan_offering}) {
-            $contracts_for = BOM::Product::Contract::Finder::Japan::predefined_contracts_for_symbol($symbol);
-        } else {
-            $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol);
-        }
+    if (my $input_param = $p1->{contracts_for}) {
+        my $contracts_for = BOM::WebSocketAPI::Symbols::contracts_for($input_param);
         return $c->send({
                 json => {
                     msg_type  => 'contracts',

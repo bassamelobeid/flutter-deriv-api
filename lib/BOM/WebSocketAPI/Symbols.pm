@@ -7,7 +7,8 @@ use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
-use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
+use BOM::Product::Contract::Finder;
+use BOM::Product::Contract::Finder::Japan;
 
 # these package-level structures let us 'memo-ize' the symbol pools for purposes
 # of full-list results and for hashed lookups by-displayname and by-symbol-code.
@@ -247,6 +248,18 @@ sub candles {
         granularity => $c->param('granularity') // '',
     );
     return $c->_pass({candles => $candles});
+}
+
+sub contracts_for {
+    my $args     = shift;
+    my $symbol   = $args->{symbol};
+    my $offering = $args->{offering} ? $args->{offering} : 'normal';
+
+    if ($offering eq 'japan') {
+        return BOM::Product::Contract::Finder::Japan::predefined_contracts_for_symbol({symbol => $symbol});
+    } elsif ($offering eq 'normal') {
+        return BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol =>$symbol});
+    }
 }
 
 1;
