@@ -258,7 +258,7 @@ sub contracts_for {
     if ($offering eq 'japan') {
         return BOM::Product::Contract::Finder::Japan::predefined_contracts_for_symbol({symbol => $symbol});
     } elsif ($offering eq 'normal') {
-        return BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol =>$symbol});
+        return BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
 }
 
