@@ -9,7 +9,6 @@ use Test::NoWarnings;
 
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
-use Date::Utility;
 use File::Temp;
 use File::Basename qw(dirname);
 use BOM::MarketData::AutoUpdater::Indices;
@@ -78,19 +77,14 @@ subtest 'surface has not change' => sub {
     like $au->report->{TOP40}->{reason}, qr/has not changed since last update/, 'correct error message';
 };
 
-SKIP: {
-    skip 'Success test does not work on the weekends.', 1 if Date::Utility->today->is_a_weekend;
-    subtest 'updated hurray!' => sub {
-        my $tmp = File::Temp->newdir;
-        # get the real deal because we check date
-        `wget -O $tmp/auto_upload.xls 'https://www.dropbox.com/s/67s60tryh057qx1/auto_upload.xls?dl=1' > /dev/null 2>&1`;
-        my $au = BOM::MarketData::AutoUpdater::Indices->new(
-            file              => "$tmp/auto_upload.xls",
-            symbols_to_update => [qw(TOP40)],
-        );
-        $au->run;
-        ok $au->report->{TOP40}->{success}, 'update successful';
-    };
-}
-
-1;
+subtest 'updated hurray!' => sub {
+    my $tmp = File::Temp->newdir;
+    # get the real deal because we check date
+    `wget -O $tmp/auto_upload.xls 'https://www.dropbox.com/s/67s60tryh057qx1/auto_upload.xls?dl=1' > /dev/null 2>&1`;
+    my $au = BOM::MarketData::AutoUpdater::Indices->new(
+        file              => "$tmp/auto_upload.xls",
+        symbols_to_update => [qw(TOP40)],
+    );
+    $au->run;
+    ok $au->report->{TOP40}->{success}, 'update successful';
+};

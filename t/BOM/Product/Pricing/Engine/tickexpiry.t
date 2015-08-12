@@ -3,13 +3,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
-use Test::FailWarnings;
+use Test::More tests => 4;
+use Test::NoWarnings;
 use Test::Exception;
 use Test::MockModule;
 
 use BOM::Product::Pricing::Engine::TickExpiry;
-use BOM::Market::Data::Tick;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
@@ -41,7 +40,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now,
     });
 
-my @ticks = map { BOM::Market::Data::Tick->new({symbol => 'frxGBPUSD', epoch => $now->epoch + $_, quote => 100}) } (1 .. 20);
+my @ticks = map { {epoch => $now->epoch + $_, quote => 100} } (1 .. 20);
 my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::TickExpiry');
 $mocked->mock('_latest_ticks', sub { \@ticks });
 subtest 'tick expiry fx CALL' => sub {
@@ -83,7 +82,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'WLDUSD'});
 
-@ticks = map { BOM::Market::Data::Tick->new({symbol => 'frxGBPUSD', epoch => $now->epoch + $_, quote => 100 + rand(10)}) } (1 .. 20);
+@ticks = map { {epoch => $now->epoch + $_, quote => 100 + rand(10)} } (1 .. 20);
 $mocked->mock('_latest_ticks', sub { \@ticks });
 
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

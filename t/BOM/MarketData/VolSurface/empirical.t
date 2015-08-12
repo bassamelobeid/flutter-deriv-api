@@ -106,7 +106,7 @@ subtest 'seasonalized naked volatility with news' => sub {
                 }
             )->{volatility}
         ),
-        '==', 1.579,
+        '==', 1.611,
         'seasonalized volatility with news matches'
     );
 };

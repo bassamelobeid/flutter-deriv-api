@@ -256,9 +256,11 @@ sub update_combined_realtime {
 
     if (scalar grep { $args{underlying}->symbol eq $_ } (BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx)) {
         BOM::Market::AggTicks->new->add({
-            symbol => $args{underlying}->symbol,
-            epoch  => $tick->{epoch},
-            quote  => $tick->{quote},
+            underlying => $args{underlying},
+            epoch      => $tick->{epoch},
+            value      => $tick->{quote},
+            full_count => 1,
+            aggregated => 0
         });
     }
     return 1;
