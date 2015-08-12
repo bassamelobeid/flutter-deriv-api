@@ -10,12 +10,6 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
 
-=head1 DESCRIPTION
-
-Implements 'websockets/' services as needed by the BetForm part of the BOM Web API.
-
-=cut
-
 my $DOM = Mojo::DOM->new;
 
 sub ok {
@@ -226,7 +220,7 @@ my $json_receiver = sub {
     if (my $token = $p1->{authorize}) {
 
         my $session = BOM::Platform::SessionCookie->new(token => $token);
-        if (!$session || !$session->validate_session('trade')) {
+        if (!$session || !$session->validate_session()) {
             return $c->send({
                     json => {
                         msg_type  => 'authorize',
