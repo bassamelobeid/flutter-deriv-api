@@ -320,25 +320,3 @@ WLDUSD:
   tie_B: 0.109925
   tie_C: 4190.33
   tie_D: -40.1436
-OPIDAXFTSE:
-# This is from SEP to Dec 2014
-  ma_step: 20
-  x_prime_min: -4.3048135075162914
-  x_prime_max: 4.2031445887563441
-  y_min: 1.3697644416625916e-05
-  y_max: 9.1479404422126006e-05
-  A: 0
-  B: 1.76319286e+05
-  C: -1.28538334e+01
-  D: 4.94301739e-03
-OPIDAXSMI:
-# This is from SEP to DEC 2014
-  ma_step: 20
-  x_prime_min: -4.152812787210105
-  x_prime_max: 4.0290074748430111
-  y_min: 3.5077899614949344e-05
-  y_max: 0.00014714642572486022
-  A: 0
-  B: 8.23231422e+02
-  C: 4.47710084e-02
-  D: 7.22839279e-01
