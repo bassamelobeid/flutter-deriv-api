@@ -11,8 +11,6 @@ sub startup {
     my $log = $app->log;
 
     my $signature = "Binary.com Websockets API";
-    $app->hook(after_dispatch => sub { shift->res->headers->server($signature) });
-
     $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);

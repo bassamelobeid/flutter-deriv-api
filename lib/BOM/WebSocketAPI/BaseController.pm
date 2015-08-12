@@ -29,16 +29,6 @@ sub _fail {
     return;
 }
 
-=head2 _pass
-
-Success Handler
-
-A general purpose success handler.  Dump the generated json to the log
-(unless asked not to)
-then return the result using built-in json format conversion.
-
-=cut
-
 sub _pass {
     my $c       = shift;
     my $data    = shift;

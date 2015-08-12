@@ -1,12 +1,14 @@
 package BOM::WebSocketAPI::Websocket;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
+
 use Mojo::DOM;
 
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
+
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
 
@@ -303,7 +305,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{offerings}) {
-        my $results = BOM::WebSocketAPI::Offerings::query($options);
+        my $results = BOM::WebSocketAPI::Offerings::query($c, $options);
         return $c->send({
                 json => {
                     msg_type  => 'offerings',
@@ -355,17 +357,35 @@ my $json_receiver = sub {
                             code    => "InvalidSymbol"
                         }}}});
         if ($p1->{end}) {
-            my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
-            my $history = {
-                prices => [map { $_->{price} } @$ticks],
-                times  => [map { $_->{time} } @$ticks],
-            };
-            return $c->send({
-                    json => {
-                        msg_type => 'history',
-                        echo_req => $p1,
-                        history  => $history
-                    }});
+            my $style = delete($p1->{style}) || ($p1->{granularity} ? 'candles' : 'ticks');
+            if ($style eq 'ticks') {
+                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
+                my $history = {
+                    prices => [map { $_->{price} } @$ticks],
+                    times  => [map { $_->{time} } @$ticks],
+                };
+                return $c->send({
+                        json => {
+                            msg_type => 'history',
+                            echo_req => $p1,
+                            history  => $history
+                        }});
+            } elsif ($style eq 'candles') {
+                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles(%$p1, ul => $ul);
+                return $c->send({
+                        json => {
+                            msg_type => 'candles',
+                            echo_req => $p1,
+                            candles  => $candles
+                        }});
+            } else {
+                return $c->send({
+                        json => {
+                            msg_type => 'error',
+                            echo_req => $p1,
+                            error    => "style $style invalid"
+                        }});
+            }
         }
         if ($ul->feed_license eq 'realtime') {
             my $id;
@@ -485,6 +505,8 @@ my $json_receiver = sub {
         }
         return $c->send({json => $json});
     }
+
+    $log->error("unrecognised request");
     return;
 };
 
