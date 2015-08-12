@@ -2,8 +2,6 @@ package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
 
-use BOM::System::Config;
-
 sub startup {
     my $app = shift;
 
