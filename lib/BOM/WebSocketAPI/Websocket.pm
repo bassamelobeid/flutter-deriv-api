@@ -290,7 +290,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{statement}) {
-        my $client  = $c->stash('client') || return $c->_authorize_error($p1);
+        my $client = $c->stash('client') || return $c->_authorize_error($p1);
         my $results = $c->BOM::WebSocketAPI::Accounts::get_transactions($options);
         return $c->send({
                 json => {
@@ -411,6 +411,7 @@ my $json_receiver = sub {
                         error    => "realtime quotes not available"
                     }});
         }
+        return;
     }
 
     if ($p1->{proposal}) {    # this is a recurring contract-price watch ("price streamer")
@@ -505,7 +506,7 @@ my $json_receiver = sub {
         return $c->send({json => $json});
     }
 
-    $log->error("unrecognised request");
+    $log->debug("unrecognised request: " . $c->dumper($p1));
     return;
 };
 
