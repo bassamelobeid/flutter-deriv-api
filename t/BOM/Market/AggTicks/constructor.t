@@ -17,7 +17,7 @@ my $at = BOM::Market::AggTicks->new;
 is($at->agg_interval->seconds,             15,     'Default aggregation interval is 15 seconds');
 is($at->returns_interval->seconds,         60,     'Default returns interval is 60 seconds');
 is($at->annualization,                     362880, 'Default annualization is 362880');
-is($at->unagg_retention_interval->seconds, 900,    'Default unaggregated retention interval is 15 minutes');
+is($at->unagg_retention_interval->seconds, 1800,   'Default unaggregated retention interval is 30 minutes');
 is($at->agg_retention_interval->seconds,   43200,  'Default aggregated retention interval is 43200 seconds');
 
 note("We demand the ratio of returns_interval and agg_interval is an integer inside our bounds. These ratio bounds are not runtime configurable.");
