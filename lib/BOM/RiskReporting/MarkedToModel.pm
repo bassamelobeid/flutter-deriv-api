@@ -106,7 +106,8 @@ sub generate {
 
                 die 'Missing spot.' if (not $bet->underlying->spot);
 
-                my $value = $self->amount_in_usd($bet->theo_price, $open_fmb->{currency_code});
+                my $current_value = $bet->is_spread ? $bet->bid_price : $bet->theo_price;
+                my $value = $self->amount_in_usd($current_value, $open_fmb->{currency_code});
                 $totals{value} += $value;
 
                 if ($bet->is_expired) {
@@ -118,11 +119,19 @@ sub generate {
                     $open_bets_expired_ref->{$open_fmb_id} = $open_fmb;
                     $open_bets_expired_ref->{$open_fmb_id}->{market_price} = $value;
                 } else {
-                    map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
-                    $dbh->do(
-                        qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
-                        undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
-                    );
+                    # spreaed does not have greeks
+                    if ($bet->is_spread) {
+                        $dbh->do(
+                            qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price)  VALUES(?, ?)},
+                            undef, $open_fmb_id, $value
+                        );
+                    } else {
+                        map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
+                        $dbh->do(
+                            qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price, delta, theta, vega, gamma)  VALUES(?, ?, ?, ?, ?, ?)},
+                            undef, $open_fmb_id, $value, $bet->delta, $bet->theta, $bet->vega, $bet->gamma
+                        );
+                    }
                 }
             }
             catch {
