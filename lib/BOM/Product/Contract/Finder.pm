@@ -1,3 +1,5 @@
+## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
+
 package BOM::Product::Contract::Finder;
 
 use strict;

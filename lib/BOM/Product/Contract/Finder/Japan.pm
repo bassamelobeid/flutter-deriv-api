@@ -1,3 +1,4 @@
+## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
 package BOM::Product::Contract::Finder::Japan;
 use strict;
 use warnings;
