@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use Test::Most;
 use Test::FailWarnings;
 use Test::MockModule;
