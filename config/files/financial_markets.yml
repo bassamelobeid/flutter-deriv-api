@@ -184,7 +184,6 @@ indices:
     providers:
         - 'idata'
         - 'telekurs'
-        - 'tenfore'
         - 'synthetic'
     markups:
         apply_traded_markets_markup: 1
@@ -227,7 +226,6 @@ stocks:
     providers:
         - 'idata'
         - 'telekurs'
-        - 'tenfore'
     intradays_must_be_same_day: 1
     markups:
         apply_traded_markets_markup: 1
@@ -254,7 +252,6 @@ sectors:
     explanation: 'Sectors represent the weighted value of a basket of companies which may operate in different countries and trade on different exchanges, but pursue similar lines of business.'
     license: "daily"
     providers:
-        - 'tenfore'
         - 'telekurs'
     markups:
         apply_traded_markets_markup: 1
