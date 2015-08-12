@@ -289,9 +289,9 @@ my $json_receiver = sub {
     if (my $by = $p1->{active_symbols}) {
         return $c->send({
                 json => {
-                    msg_type => 'symbols',
-                    echo_req => $p1,
-                    symbols  => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
+                    msg_type       => 'active_symbols',
+                    echo_req       => $p1,
+                    active_symbols => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
     }
 
     if (my $symbol = $p1->{contracts_for}) {
