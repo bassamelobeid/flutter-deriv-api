@@ -200,16 +200,13 @@ sub financial_acc_checks {
     my $check = real_acc_checks($args);
     return $check if ($check->{err});
 
-    my $client = $check->{from_client};
-    unless (($client->landing_company->short eq 'malta')
-        or ($client->is_virtual and first { $client->residence eq $_ } EU_random_restricted_countries()))
-    {
-        return {
-            error_type => 'no_financial',
-            err        => localize('Financial account opening unavailable'),
-        };
-    }
-    return $check;
+    return $check if ($client->landing_company->short eq 'malta');
+    return $check if ($client->is_virtual and first { $client->residence eq $_ } EU_random_restricted_countries());
+
+    return {
+        error_type => 'no_financial',
+        err        => localize('Financial account opening unavailable'),
+    };
 }
 
 sub register_real_acc {
