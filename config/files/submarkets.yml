@@ -4,6 +4,12 @@ random_index:
     display_order: 1
     market: random
     contracts:
+      spreads:
+        intraday:
+          spot:
+            spreads:
+              min: 5
+              max: 10
       asian:
         tick:
           spot:

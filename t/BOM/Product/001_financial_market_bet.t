@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::MockTime qw( set_fixed_time restore_time );
-use Test::Most (tests => 37);
+use Test::Most (tests => 20);
 use Test::NoWarnings;
 use Test::MockModule;
 
@@ -21,9 +21,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use Format::Util::Numbers qw(roundnear);
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
-my $atmod      = Test::MockModule->new('BOM::Platform::Authorization::Token');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
-$atmod->mock('validate', sub { 1 });
 
 initialize_realtime_ticks_db;
 
@@ -182,101 +180,6 @@ lives_ok {
 
 }
 'Expect to initialize the object';
-cmp_ok($bet_mapper->get_turnover_of_client({'bet_type' => ['INTRAD', 'CALL']}), '==', 0, 'Check INTRA turnover of CR0005, GBP');
-
-lives_ok {
-    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => 'CR0008',
-        'currency_code'  => 'USD',
-    });
-
-}
-'Expect to initialize the object';
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'         => ['FLASH', 'PUT'],
-            'overall_turnover' => 1
-        }
-    ),
-    '==', 15501,
-    'Check FLASH, PUT turnover of CR0008, USD'
-);
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'         => ['FLASH', 'TOUCH', 'PUT'],
-            'overall_turnover' => 1
-        }
-    ),
-    '==', 30644.1,
-    'Check FLASH, TOUCH, PUT turnover of CR0008, USD'
-);
-
-lives_ok {
-    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => 'CR0010',
-        'currency_code'  => 'EUR',
-    });
-
-}
-'Expect to initialize the object';
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'         => ['INTRAD'],
-            'overall_turnover' => 1
-        }
-    ),
-    '==', 100,
-    'Check INTRA turnover of CR0010, EUR'
-);
-
-lives_ok {
-    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => 'CR0030',
-        'currency_code'  => 'GBP',
-    });
-}
-'Expect to initialize the object';
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'         => ['INTRAD'],
-            'overall_turnover' => 1
-        }
-    ),
-    '==', 136.22,
-    'Check INTRA turnover of CR0030, GBP'
-);
-
-lives_ok {
-    $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
-        'client_loginid' => 'CR0030',
-        'currency_code'  => 'GBP',
-    });
-}
-'Expect to initialize the object';
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'         => ['INTRAD', 'CALL', 'TOUCH', 'FLASH'],
-            'overall_turnover' => 1
-        }
-    ),
-    '==', 564.95,
-    'Check INTRAD, CALL, TOUCH, FLASH turnover of CR0030, GBP'
-);
-
-throws_ok { $bet_mapper->get_turnover_of_client() } qr/must pass in arguments/, 'get_turnover_for_of_account - Died as no bet types specified';
-
-my $account;
-lives_ok {
-    my $client = BOM::Platform::Client->new({loginid => 'CR0021'});
-    $account = $client->default_account;
-
-    $client->payment_free_gift(
-        currency => 'USD',
-        amount   => 1000,
-        remark   => 'free gift',
-    );
-}
-'expecting to create the required account models to buy / sell bet';
 
 lives_ok {
     $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
@@ -455,35 +358,7 @@ $bet_mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
     'client_loginid' => $new_loginid,
     'currency_code'  => 'USD',
 });
-cmp_ok($bet_mapper->get_turnover_of_client({'tick_expiry' => 1}), '==', '174.33', 'get_turnover_of_client on tick_trade');
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'    => ['DIGITMATCH', 'DIGITDIFF'],
-            'tick_expiry' => 1
-        }
-    ),
-    '==', '20.3',
-    'get_turnover_of_client on digit contract'
-);
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type'    => ['ASIANU', 'ASIAND'],
-            'tick_expiry' => 1
-        }
-    ),
-    '==', '51.46',
-    'get_turnover_of_client on asian contract'
-);
 my @indices_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(market => 'indices');
-cmp_ok(
-    $bet_mapper->get_turnover_of_client({
-            'bet_type' => ['CALL', 'PUT'],
-            'symbols'  => \@indices_symbols
-        }
-    ),
-    '==', '53.14',
-    'get_turnover_of_client on intraday spot index contract'
-);
 my @smart_index = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market    => 'indices',
     submarket => 'smart_index'
@@ -492,8 +367,6 @@ my @smart_fx = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market    => 'forex',
     submarket => 'smart_fx'
 );
-cmp_ok($bet_mapper->get_turnover_of_client({'symbols' => [@smart_index, @smart_fx]}),
-    '==', '51.88', 'get_turnover_of_client on smarties index contract');
 
 # test with acc that does not exist
 lives_ok {
@@ -608,6 +481,7 @@ subtest 'get_sold' => sub {
                 transaction_time => $start_date,
                 start_time       => $start_date,
                 expiry_time      => $end_date,
+                settlement_time  => $end_date,
             });
     }
 

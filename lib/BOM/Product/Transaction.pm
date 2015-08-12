@@ -39,8 +39,7 @@ has client => (
 );
 
 has contract => (
-    is  => 'rw',
-    isa => 'BOM::Product::Contract',
+    is => 'rw',
 );
 
 has price => (
@@ -79,7 +78,7 @@ has payout => (
 
 sub _build_payout {
     my $self = shift;
-    return $self->contract->payout;
+    return $self->contract->is_spread ? $self->contract->amount_per_point * $self->contract->stop_profit : $self->contract->payout;
 }
 
 has amount_type => (
@@ -176,7 +175,11 @@ sub stats_start {
     my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
     if ($what eq 'buy') {
-        push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
+        if ($self->contract->is_spread) {
+            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->stop_type);
+        } else {
+            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
+        }
     } elsif ($what eq 'sell') {
         push @{$tags->{tags}}, "sell_type:manual";
     }
@@ -270,6 +273,10 @@ sub calculate_limits {
             # has a balance more than the amount, we do not allow him to trade anymore.
             $self->limits->{max_balance_without_real_deposit} = 25 * from_json($pc->promo_code_config)->{amount};
         }
+    }
+
+    if ($contract->is_spread) {
+        $self->limits->{spread_bet_profit_limit} = $ql->spreads_daily_profit_limit;
     }
 
     if ($contract->category_code eq 'digits') {
@@ -404,27 +411,32 @@ sub prepare_bet_data_for_buy {
         currency          => $currency,
         quantity          => 1,
         short_code        => scalar $contract->shortcode,
-        buy_price         => scalar $self->price,
-        payout_price      => scalar $self->payout,
+        buy_price         => $self->price,
         remark            => $comment,
         underlying_symbol => scalar $contract->underlying->symbol,
         bet_type          => scalar $contract->code,
         bet_class         => $bet_class,
         purchase_time     => scalar $self->purchase_date->db_timestamp,
         start_time        => scalar $contract->date_start->db_timestamp,
-        expiry_time       => scalar $contract->date_expiry->db_timestamp,
-        settlement_time   => scalar $contract->date_settlement->db_timestamp,
-        $contract->expiry_daily ? (expiry_daily => 1) : (),
-        $contract->fixed_expiry ? (fixed_expiry => 1) : (),
-        $contract->tick_expiry
-        ? (
-            tick_expiry => 1,
-            tick_count  => scalar $contract->tick_count,
-            )
-        : (),
     };
 
-    if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
+    if (!$contract->is_spread) {
+        $bet_params->{payout_price}    = scalar $self->payout;
+        $bet_params->{expiry_time}     = scalar $contract->date_expiry->db_timestamp;
+        $bet_params->{settlement_time} = scalar $contract->date_settlement->db_timestamp;
+        $bet_params->{expiry_daily}    = 1 if $contract->expiry_daily;
+        $bet_params->{fixed_expiry}    = 1 if $contract->fixed_expiry;
+        if ($contract->tick_expiry) {
+            $bet_params->{tick_expiry} = 1;
+            $bet_params->{tick_count}  = scalar $contract->tick_count;
+        }
+    }
+
+    if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
+        $bet_params->{$_} = $contract->$_ for qw(amount_per_point spread stop_type spread_divisor);
+        $bet_params->{stop_loss}   = $contract->supplied_stop_loss;
+        $bet_params->{stop_profit} = $contract->supplied_stop_profit;
+    } elsif ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_HIGHER_LOWER_BET) {
         # only store barrier in the database if it is defined.
         # asian contracts have barriers at/after expiry.
         if ($contract->barrier) {
@@ -567,6 +579,14 @@ sub prepare_bet_data_for_sell {
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
     };
+
+    if ($contract->is_spread) {
+        $bet_params->{expiry_time} = $bet_params->{settlement_time} = scalar $contract->date_pricing->db_timestamp;
+        # payout always equal to sell price for spreads
+        # pnl calculation involves buy price and sell price.
+        # The sell price here includes the premium paid to enter the contract.
+        $bet_params->{payout_price} = $bet_params->{sell_price};
+    }
 
     my $quants_bet_variables;
     if (my $comment = $self->comment) {
@@ -950,6 +970,15 @@ my %known_errors = (
             -message_to_client => $error_message,
         );
     },
+    BI015 => sub {
+        my $self = shift;
+
+        return Error::Base->cuss(
+            -type              => 'SpreadDailyProfitLimitExceeded',
+            -mesg              => 'Exceeds profit limit on spread',
+            -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
+        );
+    },
 );
 
 sub _recover {
@@ -1001,35 +1030,45 @@ sub _build_pricing_comment {
     my $self     = shift;
     my $contract = $self->contract;
 
-    # This way the order of the fields is well-defined.
-    my @comment_fields = map { defined $_->[1] ? @$_ : (); } (
-        [theo    => $contract->theo_price],
-        [trade   => $self->price],
-        [iv      => $contract->pricing_vol],
-        [win     => $contract->payout],
-        [div     => $contract->q_rate],
-        [int     => $contract->r_rate],
-        [delta   => $contract->delta],
-        [gamma   => $contract->gamma],
-        [vega    => $contract->vega],
-        [theta   => $contract->theta],
-        [vanna   => $contract->vanna],
-        [volga   => $contract->volga],
-        [bs_prob => $contract->bs_probability->amount],
-        [spot    => $contract->current_spot]);
+    my @comment_fields;
+    if ($contract->is_spread) {
+        @comment_fields = map { defined $_->[1] ? @$_ : () } (
+            [amount_per_point => $contract->amount_per_point],
+            [stop_profit      => $contract->stop_profit],
+            [stop_loss        => $contract->stop_loss],
+            [spread           => $contract->spread],
+        );
+    } else {
+        # This way the order of the fields is well-defined.
+        @comment_fields = map { defined $_->[1] ? @$_ : (); } (
+            [theo    => $contract->theo_price],
+            [trade   => $self->price],
+            [iv      => $contract->pricing_vol],
+            [win     => $contract->payout],
+            [div     => $contract->q_rate],
+            [int     => $contract->r_rate],
+            [delta   => $contract->delta],
+            [gamma   => $contract->gamma],
+            [vega    => $contract->vega],
+            [theta   => $contract->theta],
+            [vanna   => $contract->vanna],
+            [volga   => $contract->volga],
+            [bs_prob => $contract->bs_probability->amount],
+            [spot    => $contract->current_spot]);
 
-    my $news_factor = $contract->ask_probability->peek('news_factor');
-    if ($news_factor) {
-        push @comment_fields, news_fct => $news_factor->amount;
-        my $news_impact = $news_factor->peek('news_impact');
-        push @comment_fields, news_impact => $news_impact->amount if $news_impact;
-    }
+        my $news_factor = $contract->ask_probability->peek('news_factor');
+        if ($news_factor) {
+            push @comment_fields, news_fct => $news_factor->amount;
+            my $news_impact = $news_factor->peek('news_impact');
+            push @comment_fields, news_impact => $news_impact->amount if $news_impact;
+        }
 
-    if (@{$contract->corporate_actions}) {
-        push @comment_fields,
-            corporate_action => 1,
-            actions          => join '|',
-            map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
+        if (@{$contract->corporate_actions}) {
+            push @comment_fields,
+                corporate_action => 1,
+                actions          => join '|',
+                map { $_->{description} . ',' . $_->{modifier} . ',' . $_->{value} } @{$contract->corporate_actions};
+        }
     }
 
     return sprintf join(' ', ('%s[%0.5f]') x (@comment_fields / 2)), @comment_fields;
@@ -1037,6 +1076,9 @@ sub _build_pricing_comment {
 
 sub _validate_trade_pricing_adjustment {
     my $self = shift;
+
+    # spreads price doesn't jump
+    return if $self->contract->is_spread;
 
     my $stats_name        = 'transaction.buy.';
     my $stats_name_broker = 'transaction.' . lc($self->client->broker) . '.buy.';
@@ -1139,8 +1181,8 @@ sub _is_valid_to_sell {
     my $self     = shift;
     my $contract = $self->contract;
 
-    if ($contract->date_pricing->is_after($contract->date_start)) {
-
+    # we shouldn't we recreating contract for spreads.
+    if ($contract->date_pricing->is_after($contract->date_start) and not $contract->is_spread) {
         # It's started, get one prepared for sale.
         $contract = make_similar_contract($contract, {for_sale => 1});
         $self->contract($contract);
@@ -1227,6 +1269,10 @@ sub _validate_iom_withdrawal_limit {
 sub _validate_stake_limit {
     my $self = shift;
 
+    # spread stake validation is within its module.
+    # spread bet won't be offered to maltainvest.
+    return if $self->contract->is_spread;
+
     my $client          = $self->client;
     my $contract        = $self->contract;
     my $landing_company = $client->landing_company;
@@ -1259,7 +1305,7 @@ sub _validate_payout_limit {
 
     my $client   = $self->client;
     my $contract = $self->contract;
-    my $payout   = $self->payout;
+    my $payout   = $contract->is_spread ? $contract->amount_per_point * $contract->stop_profit : $self->payout;
 
     my $custom_limit = BOM::Platform::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
 
@@ -1305,6 +1351,16 @@ sub _validate_jurisdictional_restrictions {
             -type              => 'NotLegalMarket',
             -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
             -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this market.'),
+        );
+    }
+
+    my %legal_allowed_cc =
+        map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_categories};
+    if (not $legal_allowed_cc{$contract->category_code}) {
+        return Error::Base->cuss(
+            -type              => 'NotLegalContractCategory',
+            -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
+            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this contract.'),
         );
     }
 
@@ -1411,7 +1467,7 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
-            } elsif ($client->is_virtual and ($now->epoch >= $contract->date_settlement->epoch + 3600)) {
+            } elsif ($client->is_virtual and ($contract->is_spread or ($now->epoch >= $contract->date_settlement->epoch + 3600))) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
                 push @bets_to_sell, $bet;

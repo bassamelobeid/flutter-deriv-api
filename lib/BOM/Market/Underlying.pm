@@ -1909,6 +1909,16 @@ sub breaching_tick {
     return $self->feed_api->get_first_tick(%args);
 }
 
+has [qw(spread_divisor)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_spread_divisor {
+    my $self = shift;
+    return $self->submarket->spread_divisor || $self->market->spread_divisor;
+}
+
 =head2 use_official_ohlc
 
 Should this underlying use official OHLC

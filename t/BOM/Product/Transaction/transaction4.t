@@ -67,6 +67,50 @@ my $contract   = produce_contract({
     barrier      => 'S0P',
 });
 
+subtest 'validate legal allowed contract categories' => sub {
+    my $cr = BOM::Platform::Client->new({loginid => 'CR2002'});
+
+    my $loginid  = $cr->loginid;
+    my $currency = 'USD';
+    my $account  = $cr->default_account;
+    my $c        = produce_contract({
+        underlying       => 'R_100',
+        bet_type         => 'SPREADU',
+        currency         => $currency,
+        date_start       => $now,
+        amount_per_point => 1,
+        stop_loss        => 10,
+        stop_profit      => 10,
+        stop_type        => 'point',
+        spread           => 2,
+    });
+    my $transaction = BOM::Product::Transaction->new({
+        client   => $cr,
+        contract => $c,
+    });
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for CR';
+
+    my $mlt = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MLT'});
+    $loginid     = $mlt->loginid;
+    $account     = $mlt->default_account;
+    $transaction = BOM::Product::Transaction->new({
+        client   => $mlt,
+        contract => $c,
+    });
+    my $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalContractCategory', 'error for MLT';
+
+    my $mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MX'});
+    $loginid     = $mx->loginid;
+    $account     = $mx->default_account;
+    $transaction = BOM::Product::Transaction->new({
+        client   => $mx,
+        contract => $c,
+    });
+    $error = $transaction->_validate_jurisdictional_restrictions;
+    is $error->{'-type'}, 'NotLegalContractCategory', 'error for MX';
+};
+
 subtest 'Validate Jurisdiction Restriction' => sub {
     plan tests => 27;
     lives_ok { $client->residence('') } 'set residence to null to test jurisdiction validation';

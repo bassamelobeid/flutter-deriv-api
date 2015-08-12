@@ -53,6 +53,7 @@ sub available_contracts_for_symbol {
         $o->{barriers} =
               $cat->two_barriers    ? 2
             : $cc eq 'asian'        ? 0
+            : $cc eq 'spreads'      ? 0
             : $cc eq 'digits'       ? 1
             : $cc eq 'touchnotouch' ? 1
             : $cc eq 'callput'      ? (
