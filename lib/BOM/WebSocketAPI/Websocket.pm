@@ -11,6 +11,7 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
+use BOM::WebSocketAPI::Accounts;
 
 my $DOM = Mojo::DOM->new;
 
@@ -288,6 +289,17 @@ my $json_receiver = sub {
                 }});
     }
 
+    if (my $options = $p1->{statement}) {
+        my $client  = $c->stash('client') || return $c->_authorize_error($p1);
+        my $results = $c->BOM::WebSocketAPI::Accounts::get_transactions($options);
+        return $c->send({
+                json => {
+                    msg_type  => 'statement',
+                    echo_req  => $p1,
+                    statement => $results
+                }});
+    }
+
     if (my $by = $p1->{active_symbols}) {
         return $c->send({
                 json => {
@@ -307,7 +319,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{offerings}) {
-        my $results = BOM::WebSocketAPI::Offerings::query($c, $options);
+        my $results = $c->BOM::WebSocketAPI::Offerings::query($options);
         return $c->send({
                 json => {
                     msg_type  => 'offerings',

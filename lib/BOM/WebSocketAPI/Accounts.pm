@@ -8,7 +8,7 @@ use BOM::Platform::User;
 use BOM::Platform::CreateAccount;
 use BOM::Product::ContractFactory;
 
-sub _get_transactions {
+sub get_transactions {
     my ($c, $args) = @_;
     my $log          = $c->app->log;
     my $acc          = $c->stash('account');
@@ -78,8 +78,9 @@ sub _get_transactions {
             if ($and_description) {
                 $struct->{description} = '';
                 if (my $fmb = $trx->financial_market_bet) {
-                    my $con = BOM::Product::ContractFactory::produce_contract($fmb->short_code, $acc->currency_code);
-                    $struct->{description} = $con->longcode;
+                    if (my $con = eval { BOM::Product::ContractFactory::produce_contract($fmb->short_code, $acc->currency_code) }) {
+                        $struct->{description} = $con->longcode;
+                    }
                 }
             }
             $struct
