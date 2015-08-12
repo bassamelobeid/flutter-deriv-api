@@ -24,7 +24,7 @@ sub _build_pricing_vol {
     return shift->bet->pricing_args->{iv};
 }
 
-has [qw(probability intraday_trend model_markup)] => (
+has [qw(probability intraday_trend model_markup period_opening_value period_closing_value ticks_for_trend)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -124,6 +124,69 @@ sub _build_probability {
     $prob->include_adjustment('add', $adjustment);
 
     return $prob;
+}
+
+sub _build_ticks_for_trend {
+    my $self = shift;
+
+    my $bet        = $self->bet;
+    my $underlying = $bet->underlying;
+    my $at         = $self->tick_source;
+    my $how_long   = $self->_trend_interval;
+
+    my @unchunked_ticks = @{
+        $at->retrieve({
+                underlying   => $underlying,
+                interval     => $how_long,
+                ending_epoch => $bet->date_pricing->epoch,
+                fill_cache   => !$bet->backtest,
+            })};
+
+    my ($iov, $icv) = (@unchunked_ticks) ? ($unchunked_ticks[0]->{quote}, $unchunked_ticks[-1]->{quote}) : ($bet->current_spot, $bet->current_spot);
+    my $iot = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'period_opening_value',
+        description => 'First tick in intraday aggregated ticks',
+        set_by      => __PACKAGE__,
+        base_amount => $iov,
+    });
+
+    my $ict = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'period_closing_value',
+        description => 'Last tick in intraday aggregated ticks',
+        set_by      => __PACKAGE__,
+        base_amount => $icv,
+    });
+
+    return +{
+        first => $iot,
+        last  => $ict
+    };
+}
+
+=head2 period_opening_value
+
+The first tick of our aggregation period, reenvisioned as a Math::Util::CalculatedValue::Validatable
+
+=cut
+
+sub _build_period_opening_value {
+    my $self = shift;
+
+    return $self->ticks_for_trend->{first};
+}
+
+=head2 period_closing_value
+
+The final tick of our aggregation period, reenvisioned as a Math::Util::CalculatedValue::Validatable.
+
+For bets which we are pricing now, it's the latest spot.
+
+=cut
+
+sub _build_period_closing_value {
+    my $self = shift;
+
+    return $self->ticks_for_trend->{last};
 }
 
 =head1 intraday_trend
