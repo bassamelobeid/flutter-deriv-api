@@ -245,11 +245,20 @@ my $json_receiver = sub {
                     msg_type  => 'authorize',
                     echo_req  => $p1,
                     authorize => {
-                        fullname => $client->full_name,
-                        loginid  => $client->loginid,
-                        balance  => ($account ? $account->balance : 0),
-                        currency => ($account ? $account->currency_code : ''),
-                        email    => $email,
+                        email            => $email,
+                        fullname         => $client->full_name,
+                        loginid          => $client->loginid,
+                        first_name       => $client->first_name,
+                        last_name        => $client->last_name,
+                        residence        => $client->residence,
+                        address_line_1   => $client->address_line_1,
+                        address_line_2   => $client->address_line_2,
+                        address_city     => $client->address_city,
+                        address_state    => $client->address_state,
+                        address_postcode => $client->address_postcode,
+                        phone            => $client->phone,
+                        balance          => ($account ? $account->balance : 0),
+                        currency         => ($account ? $account->currency_code : ''),
                     }}});
     }
 
