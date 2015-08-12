@@ -22,16 +22,20 @@ Represents an economic event in the financial market
 use Moose;
 extends 'BOM::MarketData';
 
-use YAML::CacheLoader qw(LoadFile);
 use Cache::RedisDB;
+use Date::Utility;
+use List::Util qw(first);
+use YAML::CacheLoader qw(LoadFile);
+
 use BOM::Market::Types;
 use BOM::MarketData::Fetcher::EconomicEvent;
-use Date::Utility;
 
 has _data_location => (
     is      => 'ro',
     default => 'economic_events',
 );
+
+with 'BOM::MarketData::Role::VersionedSymbolData';
 
 around _document_content => sub {
     my $orig = shift;
@@ -48,8 +52,6 @@ around _document_content => sub {
 
     return $data;
 };
-
-with 'BOM::MarketData::Role::VersionedSymbolData';
 
 has eco_symbol => (
     is  => 'rw',
@@ -151,21 +153,23 @@ sub get_scaling_factor {
     my $event_symbol      = $self->symbol;
     my $underlying_symbol = $underlying->symbol;
 
-    my $coefficients = $self->_coefficients;
-    my %influential = map { $_ => 1 } @{$self->_influential_currencies};
-
     my $scaling_factor;
     if ($risk_type eq 'spot') {
         if ($underlying_symbol =~ /$event_symbol/) {
             $scaling_factor = 0.12;
-        } elsif ($influential{$event_symbol}) {
+        } elsif (
+            first {
+                $event_symbol eq $_
+            }
+            @{$self->_influential_currencies})
+        {
             $scaling_factor = 0.06;
         } else {
             $scaling_factor = 0;
         }
     } elsif ($risk_type eq 'vol') {
         if ($impact == 1 or $impact == 3 or $impact == 5) {
-            $scaling_factor = $coefficients->{$impact}{$event_symbol}{$underlying_symbol};
+            $scaling_factor = $self->_coefficients->{$impact}{$event_symbol}{$underlying_symbol};
         }
     }
 
