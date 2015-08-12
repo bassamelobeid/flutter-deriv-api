@@ -1,5 +1,8 @@
 package BOM::WebSocketAPI::Accounts;
 
+use strict;
+use warnings;
+
 use BOM::Product::ContractFactory;
 
 sub get_transactions {
