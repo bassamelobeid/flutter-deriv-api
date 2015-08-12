@@ -10,6 +10,7 @@ sub startup {
 
     my $log = $app->log;
 
+    my $signature = "Binary.com Websockets API";
     $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
