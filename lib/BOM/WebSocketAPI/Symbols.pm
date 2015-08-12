@@ -111,7 +111,7 @@ sub symbol_search {
 }
 
 sub _ticks {
-    my (%args) = @_;
+    my ($c, %args) = @_;
     my $ul    = $args{ul} || die 'no underlying';
     my $start = $args{start};
     my $end   = $args{end};
@@ -119,7 +119,6 @@ sub _ticks {
 
     # we must not return to the client any ticks after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
-    my $when = DateTime->from_epoch(epoch => $licensed_epoch);
 
     unless ($start
         and $start =~ /^[0-9]+$/
@@ -174,10 +173,6 @@ my %seconds_granularities = (
     H4  => 14400,
     H8  => 28800,
 );
-
-=head2 candles
-Return OHLC for the given I<symbol>, between I<start> and I<end> epochs with the given I<granularity>.
-=cut
 
 sub _candles {
     my ($c, %args) = @_;
@@ -247,6 +242,13 @@ sub candles {
         granularity => $c->param('granularity') // '',
     );
     return $c->_pass({candles => $candles});
+}
+
+sub contracts {
+    my $c      = shift;
+    my $symbol = $c->stash('sp')->{symbol};
+    my $output = available_contracts_for_symbol($symbol);
+    return $c->_pass($output);
 }
 
 1;
