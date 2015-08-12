@@ -158,19 +158,18 @@ Add tick data to the cache.
 =cut
 
 sub add {
-    my ($self, $tick) = @_;
+    my ($self, $tick, $fast_insert) = @_;
 
     $tick = $tick->as_hash if blessed($tick);
 
     my %to_store = %$tick;
 
     my $key = $self->_make_key($to_store{symbol}, 0);
-    my $redis = $self->_redis;
 
     update_queue_for_tick(\%to_store);
     $to_store{count} = 1;    # These are all single ticks;
 
-    return $self->_update($key, $tick->{epoch}, $encoder->encode(\%to_store));    # These are all single ticks.
+    return _update($self->_redis, $key, $tick->{epoch}, $encoder->encode(\%to_store), $fast_insert);    # These are all single ticks.
 }
 
 =head2 retrieve
@@ -232,10 +231,11 @@ Aggregate current unaggregated ticks for the supplied underlying to the epoch su
 sub aggregate_for {
     my ($self, $args) = @_;
 
-    my $ul       = $args->{underlying};
-    my $end      = $args->{ending_epoch} || time;
-    my $ai       = $self->agg_interval;
-    my $last_agg = $end - ($end % $ai->seconds);
+    my $ul          = $args->{underlying};
+    my $end         = $args->{ending_epoch} || time;
+    my $fast_insert = $args->{fast_insert};
+    my $ai          = $self->agg_interval;
+    my $last_agg    = $end - ($end % $ai->seconds);
 
     my ($total_added, $first_added, $last_added) = (0, 0, 0);
     my $redis = $self->_redis;
@@ -253,22 +253,22 @@ sub aggregate_for {
 
         foreach my $tick (@ticks) {
             if ($tick->{epoch} == $next_agg) {
-                $first_added //= $next_agg;
+                $first_added ||= $next_agg;
                 $last_added        = $next_agg;
                 $tick->{count}     = $tick_count + 1;
                 $tick->{agg_epoch} = $next_agg;
                 $total_added++;
-                $self->_update($agg_key, $next_agg, $encoder->encode($tick));
+                _update($redis,$agg_key, $next_agg, $encoder->encode($tick), $fast_insert);
                 $tick_count = 0;
                 $next_agg += $ai->seconds;
             } elsif ($tick->{epoch} > $next_agg) {
                 while ($tick->{epoch} > $next_agg) {
-                    $first_added //= $next_agg;
+                    $first_added ||= $next_agg;
                     $last_added             = $next_agg;
                     $prev_tick->{count}     = $tick_count;
                     $prev_tick->{agg_epoch} = $next_agg;
                     $total_added++;
-                    $self->_update($agg_key, $next_agg, $encoder->encode($prev_tick));
+                    _update($redis, $agg_key, $next_agg, $encoder->encode($prev_tick), $fast_insert);
                     $next_agg += $ai->seconds;
                     $tick_count = 0;
                     unshift @ticks, $tick if ($tick->{epoch} == $next_agg);    # Let the above code handle this.
@@ -290,10 +290,9 @@ sub aggregate_for {
 }
 
 sub _update {
-    my ($self, $key, $score, $value) = @_;
+    my ($redis, $key, $score, $value, $fast_insert) = @_;
 
-    my $redis = $self->_redis;
-    $redis->zremrangebyscore($key, $score, $score);
+    $redis->zremrangebyscore($key, $score, $score) unless ($fast_insert);
     return $redis->zadd($key, $score, $value);
 }
 
@@ -313,6 +312,7 @@ sub fill_from_historical_feed {
     my $underlying     = $args->{underlying};
     my $end            = $args->{ending_epoch} || time;
     my $fill_interval  = $args->{interval} // $self->agg_retention_interval;
+    my $fast_insert    = $args->{fast_insert};
     my $agg_interval   = $self->agg_interval;
     my $unagg_interval = $self->unagg_retention_interval;
 
@@ -327,13 +327,14 @@ sub fill_from_historical_feed {
 
     # First add all the found ticks.
     foreach my $tick (@$ticks) {
-        $self->add($tick);
+        $self->add($tick, $fast_insert);
     }
 
     # Now aggregate to the right point in time.
     return $self->aggregate_for({
         underlying   => $underlying,
-        ending_epoch => $end
+        ending_epoch => $end,
+        fast_insert  => $fast_insert,
     });
 }
 

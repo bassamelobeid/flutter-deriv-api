@@ -25,11 +25,12 @@ subtest 'Dense ticks' => sub {
             my ($count, $first, $last) = $at->fill_from_historical_feed({
                 underlying   => $test_symbol,
                 ticks        => $dense_ticks,
-                ending_epoch => $through
+                ending_epoch => $through,
+                fast_insert  => $run,
             });
 
             is $count, $through / $at->agg_interval->seconds, 'Filled proper aggregation count';
-            is $first->epoch, 0, 'Starting at the 0 epoch';
+            is $first->epoch, 15, 'Starting at the 15 epoch';
             is $last->epoch, $through, 'Ending at our final epoch';
             my $back_aways = $through - 15;
             eq_or_diff(
@@ -84,11 +85,12 @@ subtest 'Sparse ticks' => sub {
             my ($count, $first, $last) = $at->fill_from_historical_feed({
                 underlying   => $test_symbol,
                 ticks        => $sparse_ticks,
-                ending_epoch => $through
+                ending_epoch => $through,
+                fast_insert  => $run,
             });
 
             is $count, $through / $at->agg_interval->seconds, 'Filled proper aggregation count';
-            is $first->epoch, 0, 'Starting at the 0 epoch';
+            is $first->epoch, 15, 'Starting at the 15 epoch';
             is $last->epoch, $through, 'Ending at our final epoch';
             eq_or_diff(
                 $at->retrieve({
