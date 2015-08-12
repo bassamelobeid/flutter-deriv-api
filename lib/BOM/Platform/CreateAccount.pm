@@ -200,6 +200,7 @@ sub financial_acc_checks {
     my $check = real_acc_checks($args);
     return $check if ($check->{err});
 
+    my $client = $check->{from_client};
     return $check if ($client->landing_company->short eq 'malta');
     return $check if ($client->is_virtual and first { $client->residence eq $_ } EU_random_restricted_countries());
 
