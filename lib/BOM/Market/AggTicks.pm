@@ -57,7 +57,7 @@ A Time::Duration::Concise representing the time to hold unaggregated ticks.
 has unagg_retention_interval => (
     is      => 'ro',
     isa     => 'bom_time_interval',
-    default => '30m',
+    default => '15m',
     coerce  => 1,
 );
 
