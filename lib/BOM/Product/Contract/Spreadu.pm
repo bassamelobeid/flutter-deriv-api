@@ -42,32 +42,17 @@ sub _build_stop_profit_level {
     return $self->underlying->pipsized_value($self->barrier->as_absolute + $self->stop_profit);
 }
 
-has is_expired => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _get_hit_level {
+    my ($self, $high_hit, $low_hit) = @_;
 
-sub _build_is_expired {
-    my $self = shift;
-
-    my $is_expired = 0;
-    my $tick       = $self->breaching_tick();
-    if ($tick) {
-        my $half_spread = $self->half_spread;
-        my ($high_hit, $low_hit) =
-            ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
-        my $stop_level;
-        if ($high_hit >= $self->stop_profit_level) {
-            $stop_level = $self->stop_profit_level;
-        } elsif ($low_hit <= $self->stop_loss_level) {
-            $stop_level = $self->stop_loss_level;
-        }
-        $is_expired = 1;
-        $self->exit_level($stop_level);
-        $self->_recalculate_value($stop_level);
+    my $stop_level;
+    if ($high_hit >= $self->stop_profit_level) {
+        $stop_level = $self->stop_profit_level;
+    } elsif ($low_hit <= $self->stop_loss_level) {
+        $stop_level = $self->stop_loss_level;
     }
 
-    return $is_expired;
+    return $stop_level;
 }
 
 has [qw(buy_level sell_level)] => (

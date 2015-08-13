@@ -111,8 +111,16 @@ has date_pricing => (
 
 has [qw(date_expiry)] => (
     is  => 'ro',
-    isa => 'Maybe[bom_date_object]',
+    isa => 'bom_date_object',
+    lazy_build => 1,
 );
+
+sub _build_date_expiry {
+    my $self = shift;
+    # Spread contracts do not have a fixed expiry.
+    # But in our case, we set an expiry of 365d as the maximum holding time for a spread contract.
+    return $self->date_start->plus_time_interval('365d');
+}
 
 # the value of the position at close
 has [qw(value point_value)] => (
@@ -336,6 +344,34 @@ sub _build_bid_price {
 
     return roundnear(0.01, $bid);
 }
+
+has is_expired => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_is_expired {
+    my $self = shift;
+
+    my $is_expired = 0;
+    my $tick       = $self->breaching_tick();
+    if ($self->date_pricing->is_after($self->date_expiry)) {
+        $is_expired = 1;
+        $self->exit_level($self->sell_level);
+        $self->_recalculate_value($self->sell_level);
+    } elsif ($tick) {
+        my $half_spread = $self->half_spread;
+        my ($high_hit, $low_hit) =
+            ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
+        my $stop_level = $self->_get_hit_level($high, $low);
+        $is_expired = 1;
+        $self->exit_level($stop_level);
+        $self->_recalculate_value($stop_level);
+    }
+
+    return $is_expired;
+}
+
 
 sub current_value {
     my $self = shift;
