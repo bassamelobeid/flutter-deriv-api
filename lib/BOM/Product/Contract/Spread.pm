@@ -363,7 +363,7 @@ sub _build_is_expired {
         my $half_spread = $self->half_spread;
         my ($high_hit, $low_hit) =
             ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
-        my $stop_level = $self->_get_hit_level($high, $low);
+        my $stop_level = $self->_get_hit_level($high_hit, $low_hit);
         $is_expired = 1;
         $self->exit_level($stop_level);
         $self->_recalculate_value($stop_level);
