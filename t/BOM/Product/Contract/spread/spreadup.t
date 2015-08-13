@@ -160,6 +160,8 @@ subtest 'past expiry' => sub {
     });
     my $c = produce_contract($params);
     cmp_ok $c->date_pricing->epoch, ">", $c->date_expiry->epoch, "past expiry";
+    cmp_ok $c->date_expiry->epoch, '==', $c->date_start->plus_time_interval('365d')->epoch, 'expiry is 365d after start';
+    cmp_ok $c->date_settlement->epoch, '==', $c->date_start->plus_time_interval('365d')->epoch, 'settlement is 365d after start';
     ok $c->is_expired, 'is expired after contract past expiry time';
     cmp_ok $c->exit_level, '==', 127, 'exit_level at expiry';
 };

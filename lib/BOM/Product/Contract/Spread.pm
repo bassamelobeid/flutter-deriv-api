@@ -117,7 +117,7 @@ has date_pricing => (
     default => sub { Date::Utility->new },
 );
 
-has [qw(date_expiry)] => (
+has [qw(date_expiry date_settlement)] => (
     is         => 'ro',
     isa        => 'bom_date_object',
     lazy_build => 1,
@@ -128,6 +128,10 @@ sub _build_date_expiry {
     # Spread contracts do not have a fixed expiry.
     # But in our case, we set an expiry of 365d as the maximum holding time for a spread contract.
     return $self->date_start->plus_time_interval('365d');
+}
+
+sub _build_date_settlement {
+    return shift->date_expiry;
 }
 
 # the value of the position at close
