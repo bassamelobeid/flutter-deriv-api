@@ -77,7 +77,11 @@ sub get_ask {
     if (!$contract->is_valid_to_buy) {
         if (my $pve = $contract->primary_validation_error) {
             $log->error("primary error: " . $pve->message);
-            return {error => $pve->message_to_client};
+            return {
+                error     => $pve->message_to_client,
+                longcode  => $DOM->parse($contract->longcode)->all_text,
+                ask_price => sprintf('%.2f', $contract->ask_price),
+            };
         }
         $log->error("contract invalid but no error!");
         return {error => "cannot validate contract"};
