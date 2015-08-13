@@ -248,7 +248,7 @@ sub candles {
 sub contracts_for {
     my $args     = shift;
     my $symbol   = $args->{symbol};
-    my $offering = $args->{region} || 'other';
+    my $region = $args->{region} || 'other';
 
     if ($region eq 'japan') {
         return BOM::Product::Contract::Finder::Japan::predefined_contracts_for_symbol({symbol => $symbol});
