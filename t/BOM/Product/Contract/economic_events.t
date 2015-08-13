@@ -59,13 +59,8 @@ my $bet = produce_contract({
     date_pricing => $now->minus_time_interval('10m'),
 });
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
-is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.0198959999973886, 'correct spot risk markup');
-cmp_ok(
-    $bet->pricing_engine->economic_events_volatility_risk_markup->amount,
-    '<',
-    $bet->pricing_engine->economic_events_spot_risk_markup->amount,
-    'vol risk markup is lower than higher range'
-);
+is($bet->pricing_engine->economic_events_spot_risk_markup->amount,       0.0198959999973886, 'correct spot risk markup');
+is($bet->pricing_engine->economic_events_volatility_risk_markup->amount, 0.0053098701861965, 'vol risk markup is lower than higher range');
 is($bet->pricing_engine->economic_events_markup->amount, 0.0198959999973886, 'economic events markup is max of spot or vol risk markup');
 
 done_testing;
