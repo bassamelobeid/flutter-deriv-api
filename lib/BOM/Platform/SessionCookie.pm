@@ -15,6 +15,7 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
 package BOM::Platform::SessionCookie;
 use BOM::System::Chronicle;
+use Bytes::Random::Secure;
 use JSON;
 use Carp;
 
