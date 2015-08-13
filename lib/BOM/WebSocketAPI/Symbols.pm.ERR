@@ -1,8 +1,0 @@
-266:	final indentation level: 1
-
-Final nesting depth of '{'s is 1
-The most recent un-matched '{' is on line 248
-248: sub contracts_for {
-                       ^
-266:	To see 1 non-critical warnings rerun with -w
-266:	To save a full .LOG file rerun with -g
