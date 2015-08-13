@@ -298,9 +298,9 @@ my $json_receiver = sub {
         my $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol);
         return $c->send({
                 json => {
-                    msg_type  => 'contracts',
-                    echo_req  => $p1,
-                    contracts => $contracts_for
+                    msg_type      => 'contracts_for',
+                    echo_req      => $p1,
+                    contracts_for => $contracts_for
                 }});
     }
 
@@ -340,7 +340,7 @@ my $json_receiver = sub {
         return $c->send({
                 json => {
                     msg_type        => 'portfolio_stats',
-                    echo_req        => $p1,
+                    echo_req        => $p0,
                     portfolio_stats => $portfolio_stats
                 }});
     }
