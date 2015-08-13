@@ -10,7 +10,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
-use BOM::Platform::EmailToken;
+use BOM::Platform::SessionCookie;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -40,7 +40,7 @@ my $lang = request()->language;
 my $link = request()->url_for(
     '/user/validate_link',
     {
-        verify_token => BOM::Platform::EmailToken::get_token($email),
+        verify_token => BOM::Platform::SessionCookie->new({email => $email, expires_in => 3600})->token,
     });
 
 my $lost_pass_email;
