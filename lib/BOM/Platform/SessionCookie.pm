@@ -63,7 +63,7 @@ Creates a new session and stores it in redis.
 
 # default token parameters
 my $STRING       = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
-my @REQUIRED     = qw(loginid email);
+my @REQUIRED     = qw(email);
 my $EXPIRES_IN   = 3600 * 24;
 my $TOKEN_LENGTH = 48;
 
