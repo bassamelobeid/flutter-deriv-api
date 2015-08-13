@@ -726,7 +726,8 @@ sub _build_volsurface {
 sub _build_pricing_mu {
     my $self = shift;
 
-    return $self->mu;
+    # This feels hacky because it kind of is.  Hopefully a better solution in the future.
+    return $self->theo_probability->peek_amount('intraday_mu') // $self->mu;
 }
 
 sub _build_longcode {
@@ -1234,10 +1235,10 @@ sub _build_pricing_vol {
             delta => 50
         });
     } elsif (my ($which) = $pen =~ /Intraday::(Forex|Index)/) {
+        # not happy that I have to do it this way.
         my $volsurface = $self->empirical_volsurface;
         my $vol_args   = {
-            fill_cache            => !$self->backtest,
-            current_epoch         => $self->date_pricing->epoch,
+            current_epoch         => $self->effective_start->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
         };
 

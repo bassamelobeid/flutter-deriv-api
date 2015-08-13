@@ -5,7 +5,7 @@ use Moose;
 extends 'BOM::Product::Pricing::Engine';
 with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
 
-use BOM::Market::AggTicks;
+use Cache::RedisDB;
 use Math::Util::CalculatedValue::Validatable;
 use List::Util qw(sum);
 use YAML::XS qw(Load);
@@ -37,21 +37,23 @@ has _latest_ticks => (
     lazy_build => 1,
 );
 
-has tick_source => (
-    is      => 'ro',
-    default => sub { BOM::Market::AggTicks->new; },
-);
-
 sub _build__latest_ticks {
     my $self = shift;
 
     my $bet = $self->bet;
+    my @latest;
+    if ($bet->backtest) {
+        my $ticks = $bet->underlying->ticks_in_between_end_limit({
+            end_time => $bet->date_start->epoch,
+            limit    => 20,
+        });
+        @latest = map { {quote => $_->quote, epoch => $_->epoch} } sort { $a->epoch <=> $b->epoch } @$ticks;
+    } else {
+        my $latest = Cache::RedisDB->redis->lrange("LATEST_TICKS::" . $bet->underlying->symbol, -20, -1);
+        @latest = map { Load($_) } @$latest;
+    }
 
-    return $self->tick_source->retrieve({
-        underlying   => $bet->underlying,
-        tick_count   => 20,
-        ending_epoch => $bet->date_pricing->epoch
-    });
+    return \@latest;
 }
 
 has [qw(model_markup commission_markup risk_markup tie_factor vol_proxy trend_proxy probability trend_adjustment)] => (
@@ -109,10 +111,10 @@ sub _build_vol_proxy {
 
     my @latest = @{$self->_latest_ticks};
     my $proxy;
-    if (@latest and @latest == 20 and abs($self->bet->date_start->epoch - $latest[0]->{epoch}) < 300) {
+    if (@latest and @latest == 20 and abs($self->bet->date_start->epoch - $latest[0]{epoch}) < 300) {
         my $sum = 0;
         for (1 .. 19) {
-            $sum += log($latest[$_]->{quote} / $latest[$_ - 1]->{quote})**2;
+            $sum += log($latest[$_]{quote} / $latest[$_ - 1]{quote})**2;
         }
         $proxy = sqrt($sum / 19);
     }
