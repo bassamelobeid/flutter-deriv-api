@@ -97,8 +97,12 @@ sub create_virtual_acc {
     my $link = request()->url_for(
         '/user/validate_link',
         {
-            verify_token => BOM::Platform::SessionCookie->new({email => $email, expires_in => 3600})->token,
-            step         => 'account'
+            verify_token => BOM::Platform::SessionCookie->new({
+                    email      => $email,
+                    expires_in => 3600
+                }
+                )->token,
+            step => 'account'
         });
     my $email_content;
     BOM::Platform::Context::template->process('email/resend_verification.html.tt', {link => $link}, \$email_content)
