@@ -378,7 +378,7 @@ my $json_receiver = sub {
                             code    => "InvalidSymbol"
                         }}}});
         if ($p1->{end}) {
-            my $style = delete($p1->{style}) || ($p1->{granularity} ? 'candles' : 'ticks');
+            my $style = $p1->{style} || ($p1->{granularity} ? 'candles' : 'ticks');
             if ($style eq 'ticks') {
                 my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
                 my $history = {
@@ -392,7 +392,13 @@ my $json_receiver = sub {
                             history  => $history
                         }});
             } elsif ($style eq 'candles') {
-                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles(%$p1, ul => $ul);
+                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles(%$p1, ul => $ul)
+                    || return $c->send({
+                        json => {
+                            msg_type => 'candles',
+                            echo_req => $p1,
+                            error    => 'invalid candles request'
+                        }});
                 return $c->send({
                         json => {
                             msg_type => 'candles',
