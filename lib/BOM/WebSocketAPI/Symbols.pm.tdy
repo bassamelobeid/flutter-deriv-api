@@ -255,13 +255,12 @@ sub contracts_for {
     } else {
         return BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
-}
 # talking to Frank, this is just to support Rest API which will be expired soon
-sub contracts {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $output = available_contracts_for_symbol($symbol);
-    return $c->_pass($output);
-}
+    sub contracts {
+        my $c      = shift;
+        my $symbol = $c->stash('sp')->{symbol};
+        my $output = available_contracts_for_symbol($symbol);
+        return $c->_pass($output);
+    }
 
-1;
+    1;

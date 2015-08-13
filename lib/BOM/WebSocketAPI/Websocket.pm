@@ -288,8 +288,8 @@ my $json_receiver = sub {
                     symbols  => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
     }
 
-    if (my $input_param = $p1->{contracts_for}) {
-        my $contracts_for = BOM::WebSocketAPI::Symbols::contracts_for($input_param);
+    if (my $options = $p1->{contracts_for}) {
+        my $contracts_for = BOM::WebSocketAPI::Symbols::contracts_for($options);
         return $c->send({
                 json => {
                     msg_type  => 'contracts',
