@@ -47,6 +47,14 @@ sub BUILD {
     return;
 }
 
+has category => (
+    is      => 'ro',
+    isa     => 'bom_contract_category',
+    coerce  => 1,
+    handles => [qw(supported_expiries supported_start_types is_path_dependent allow_forward_starting two_barriers)],
+    default => sub { shift->category_code },
+);
+
 has build_parameters => (
     is       => 'ro',
     isa      => 'HashRef',
