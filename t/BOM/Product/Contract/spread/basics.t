@@ -272,7 +272,7 @@ subtest 'category' => sub {
     });
     ok !$c->supported_expiries, 'no expiry concept';
     is_deeply $c->supported_start_types, ['spot'], 'spot';
-    ok !$c->is_path_dependent, 'non path dependent';
+    ok !$c->is_path_dependent,      'non path dependent';
     ok !$c->allow_forward_starting, 'non forward-starting';
-    ok !$c->two_barriers, 'non two barriers';
+    ok !$c->two_barriers,           'non two barriers';
 };

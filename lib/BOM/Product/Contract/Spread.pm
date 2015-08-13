@@ -118,8 +118,8 @@ has date_pricing => (
 );
 
 has [qw(date_expiry)] => (
-    is  => 'ro',
-    isa => 'bom_date_object',
+    is         => 'ro',
+    isa        => 'bom_date_object',
     lazy_build => 1,
 );
 
@@ -379,7 +379,6 @@ sub _build_is_expired {
 
     return $is_expired;
 }
-
 
 sub current_value {
     my $self = shift;

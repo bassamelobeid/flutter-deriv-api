@@ -150,10 +150,10 @@ subtest 'spread up' => sub {
 };
 
 subtest 'past expiry' => sub {
-    $params->{date_pricing} = $params->{date_start} + 86400 * 365 + 1; # one second after expiry
-    $params->{stop_loss} = 100;
-    $params->{stop_profit} = 100;
-    $params->{spread} = 2;
+    $params->{date_pricing} = $params->{date_start} + 86400 * 365 + 1;    # one second after expiry
+    $params->{stop_loss}    = 100;
+    $params->{stop_profit}  = 100;
+    $params->{spread}       = 2;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $now->epoch + 86400 + 365 + 1,
