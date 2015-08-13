@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -24,18 +24,18 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now
     });
 
+my $params = {
+    spread           => 2,
+    bet_type         => 'SPREADD',
+    currency         => 'USD',
+    underlying       => 'R_100',
+    date_start       => $now,
+    stop_loss        => 10,
+    stop_profit      => 25,
+    amount_per_point => 2,
+    stop_type        => 'point',
+};
 subtest 'spread up' => sub {
-    my $params = {
-        spread           => 2,
-        bet_type         => 'SPREADD',
-        currency         => 'USD',
-        underlying       => 'R_100',
-        date_start       => $now,
-        stop_loss        => 10,
-        stop_profit      => 25,
-        amount_per_point => 2,
-        stop_type        => 'point',
-    };
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $now->epoch,
@@ -147,4 +147,20 @@ subtest 'spread up' => sub {
 
     }
     'hit stop profit';
+};
+
+subtest 'past expiry' => sub {
+    $params->{date_pricing} = $params->{date_start} + 86400 * 365 + 1; # one second after expiry
+    $params->{stop_loss} = 100;
+    $params->{stop_profit} = 100;
+    $params->{spread} = 2;
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 86400 + 365 + 1,
+        quote      => 128
+    });
+    my $c = produce_contract($params);
+    cmp_ok $c->date_pricing->epoch, ">", $c->date_expiry->epoch, "past expiry";
+    ok $c->is_expired, 'is expired after contract past expiry time';
+    cmp_ok $c->exit_level, '==', 129, 'exit_level at expiry';
 };
