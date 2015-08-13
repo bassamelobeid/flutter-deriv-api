@@ -6,6 +6,7 @@ use warnings;
 use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 
@@ -77,6 +78,11 @@ subtest "available contracts for symbol" => sub {
     );
     foreach my $market (keys %input) {
         foreach my $u (@{$input{$market}}) {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                underlying => $u,
+                epoch      => time,
+                quote      => 100
+            });
             my $f = available_contracts_for_symbol($u);
             my %got;
             $got{$_->{contract_category}}++ for (@{$f->{available}});
