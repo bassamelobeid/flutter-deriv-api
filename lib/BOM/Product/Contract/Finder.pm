@@ -45,7 +45,7 @@ sub available_contracts_for_symbol {
                 push @trade_dates, $date;
             }
             $o->{forward_starting_options} = [
-                map { {date => Date::Utility->new(Date::Utility->new($_->{open})->date)->epoch, open => $_->{open}, close => $_->{close}} }
+                map { {date => Date::Utility->new($_->{open})->truncate_to_day->epoch, open => $_->{open}, close => $_->{close}} }
                 map { @{$exchange->trading_period($_)} } @trade_dates
             ];
         }
