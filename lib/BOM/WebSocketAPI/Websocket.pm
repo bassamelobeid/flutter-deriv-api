@@ -198,13 +198,16 @@ sub send_tick {
 }
 
 sub _authorize_error {
-    my ($c, $p1) = @_;
+    my ($c, $p1, $msg_type) = @_;
     $c->send({
             json => {
-                msg_type => 'error',
-                echo_req => $p1,
-                error    => "Must authorize first"
-            }});
+                msg_type  => $msg_type,
+                echo_req  => $p1,
+                $msg_type => {
+                    error => {
+                        message => "Must authorize first",
+                        code    => "AuthorizationRequired"
+                    }}}});
     return;
 }
 
@@ -222,10 +225,14 @@ my $json_receiver = sub {
         if (!$session || !$session->validate_session()) {
             return $c->send({
                     json => {
-                        msg_type => 'error',
-                        echo_req => $p1,
-                        error    => "Token invalid"
-                    }});
+                        msg_type  => 'authorize',
+                        echo_req  => $p1,
+                        authorize => {
+                            error => {
+                                message => "Token invalid",
+                                code    => "InvalidToken"
+                            },
+                        }}});
         }
 
         my $email   = $session->email;
@@ -282,18 +289,18 @@ my $json_receiver = sub {
     if (my $by = $p1->{active_symbols}) {
         return $c->send({
                 json => {
-                    msg_type => 'symbols',
-                    echo_req => $p1,
-                    symbols  => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
+                    msg_type       => 'active_symbols',
+                    echo_req       => $p1,
+                    active_symbols => BOM::WebSocketAPI::Symbols->active_symbols($by)}});
     }
 
     if (my $symbol = $p1->{contracts_for}) {
         my $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol);
         return $c->send({
                 json => {
-                    msg_type  => 'contracts',
-                    echo_req  => $p1,
-                    contracts => $contracts_for
+                    msg_type      => 'contracts_for',
+                    echo_req      => $p1,
+                    contracts_for => $contracts_for
                 }});
     }
 
@@ -308,7 +315,7 @@ my $json_receiver = sub {
     }
 
     if ($p1->{portfolio}) {
-        my $client = $c->stash('client') || return $c->_authorize_error($p1);
+        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
         my $portfolio_stats = BOM::Product::Transaction::sell_expired_contracts({
                 client => $client,
                 source => $source
@@ -333,7 +340,7 @@ my $json_receiver = sub {
         return $c->send({
                 json => {
                     msg_type        => 'portfolio_stats',
-                    echo_req        => $p1,
+                    echo_req        => $p0,
                     portfolio_stats => $portfolio_stats
                 }});
     }
@@ -342,10 +349,13 @@ my $json_receiver = sub {
         my $ul = BOM::Market::Underlying->new($symbol)
             || return $c->send({
                 json => {
-                    msg_type => 'error',
+                    msg_type => 'tick',
                     echo_req => $p1,
-                    error    => "symbol $symbol invalid"
-                }});
+                    tick     => {
+                        error => {
+                            message => "symbol $symbol invalid",
+                            code    => "InvalidSymbol"
+                        }}}});
         if ($p1->{end}) {
             my $style = delete($p1->{style}) || ($p1->{granularity} ? 'candles' : 'ticks');
             if ($style eq 'ticks') {
@@ -385,10 +395,13 @@ my $json_receiver = sub {
         } else {
             return $c->send({
                     json => {
-                        msg_type => 'error',
+                        msg_type => 'tick',
                         echo_req => $p1,
-                        error    => "realtime quotes not available"
-                    }});
+                        tick     => {
+                            error => {
+                                message => "realtime quotes not available",
+                                code    => "NoRealtimeQuotes"
+                            }}}});
         }
     }
 
@@ -405,17 +418,22 @@ my $json_receiver = sub {
 
     if (my $id = $p1->{buy}) {
         Mojo::IOLoop->remove($id);
-        my $client = $c->stash('client') || return $c->_authorize_error($p1);
-        my $json = {echo_req => $p1};
+        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'open_receipt');
+        my $json = {
+            echo_req => $p1,
+            msg_type => 'open_receipt'
+        };
         {
             my $p2 = delete $c->{$id} || do {
-                $json->{error} = "unknown contract proposal";
+                $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
+                $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
                 last;
             };
             my $contract = eval { produce_contract({%$p2}) } || do {
                 my $err = $@;
                 $log->debug("contract creation failure: $err");
-                $json->{error} = "cannot create contract";
+                $json->{open_receipt}->{error}->{message} = "cannot create contract";
+                $json->{open_receipt}->{error}->{code}    = "ContractCreationFailure";
                 last;
             };
             my $trx = BOM::Product::Transaction->new({
@@ -426,33 +444,38 @@ my $json_receiver = sub {
             });
             if (my $err = $trx->buy) {
                 $log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-                $json->{error}  = $err->get_type;
-                $json->{detail} = $err->{-message_to_client};
+                $json->{open_receipt}->{error}->{message} = $err->{-message_to_client};
+                $json->{open_receipt}->{error}->{code}    = $err->get_type;
                 last;
             }
             $log->info("websocket-based buy " . $trx->report);
             $trx = $trx->transaction_record;
             my $fmb = $trx->financial_market_bet;
-            $json->{receipt} = {
+            $json->{open_receipt} = {
                 trx_id        => $trx->id,
                 fmb_id        => $fmb->id,
                 balance_after => $trx->balance_after,
                 purchase_time => $fmb->purchase_time->epoch,
                 buy_price     => $fmb->buy_price,
                 start_time    => $fmb->start_time->epoch,
+                longcode      => $DOM->parse($contract->longcode)->all_text,
             };
         }
-        $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
         return $c->send({json => $json});
     }
 
     if (my $id = $p1->{sell}) {
         Mojo::IOLoop->remove($id);
-        my $client = $c->stash('client') || return $c->_authorize_error($p1);
-        my $json = {echo_req => $p1};
+        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'close_receipt');
+        my $json = {
+            echo_req => $p1,
+            msg_type => 'close_receipt'
+        };
         {
             my $p2 = delete $c->{$id} || do {
-                $json->{error} = "unknown contract sell proposal";
+                $json->{error}                             = "";
+                $json->{close_receipt}->{error}->{message} = "unknown contract sell proposal";
+                $json->{close_receipt}->{error}->{code}    = "InvalidSellContractProposal";
                 last;
             };
             my $fmb      = $p2->{fmb};
@@ -466,21 +489,20 @@ my $json_receiver = sub {
             });
             if (my $err = $trx->sell) {
                 $log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-                $json->{error}  = $err->get_type;
-                $json->{detail} = $err->{-message_to_client};
+                $json->{close_receipt}->{error}->{code}    = $err->get_type;
+                $json->{close_receipt}->{error}->{message} = $err->{-message_to_client};
                 last;
             }
             $log->info("websocket-based sell " . $trx->report);
-            $trx             = $trx->transaction_record;
-            $fmb             = $trx->financial_market_bet;
-            $json->{receipt} = {
+            $trx                   = $trx->transaction_record;
+            $fmb                   = $trx->financial_market_bet;
+            $json->{close_receipt} = {
                 trx_id        => $trx->id,
                 fmb_id        => $fmb->id,
                 balance_after => $trx->balance_after,
                 sold_for      => abs($trx->amount),
             };
         }
-        $json->{msg_type} = $json->{error} ? 'error' : 'receipt';
         return $c->send({json => $json});
     }
 
