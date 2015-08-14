@@ -124,6 +124,11 @@ has 'non_restricted_countries' => (
     lazy_build => 1,
 );
 
+has 'countries_list' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 =head1 METHODS
 
 =head2 instance
@@ -148,6 +153,10 @@ sub instance {
 sub _build_countries {
     my $self = shift;
     return Locale::Country::Extra->new();
+}
+
+sub _build_countries_list {
+    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
 }
 
 sub _build_non_restricted_countries {

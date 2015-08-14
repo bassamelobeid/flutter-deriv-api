@@ -1,4 +1,4 @@
-use Test::Most 0.22 (tests => 5);
+use Test::Most 0.22 (tests => 4);
 use Test::NoWarnings;
 use Test::MockModule;
 use JSON qw(decode_json);
@@ -14,74 +14,10 @@ subtest 'Prepare Website' => sub {
     BAIL_OUT("Cannot Prepare website") unless ($bom);
 };
 
-subtest 'select_broker' => sub {
-    subtest 'Default Broker Matching' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->select_broker();
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'CR', 'CR Broker is the right one';
-    };
-
-    subtest 'Australian Broker Matching' => sub {
-        my $bom = prepare_website();
-        my $broker = $bom->select_broker({country => 'Australia'});
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'CR', 'CR Broker is the right one';
-    };
-
-    subtest 'French Broker Matching' => sub {
-        my $bom = prepare_website();
-        my $broker = $bom->select_broker({country => 'France'});
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'MLT', 'MLT Broker is the right one';
-    };
-
-    subtest 'Default Virtual Broker Matching' => sub {
-        my $bom = prepare_website();
-        my $broker = $bom->select_broker({virtual => 1});
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
-    };
-
-    subtest 'Australian Virtual Broker Matching' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->select_broker({
-            country => 'Australia',
-            virtual => 1
-        });
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
-    };
-
-    subtest 'French Virtual Broker Matching' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->select_broker({
-            country => 'France',
-            virtual => 1
-        });
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
-    };
-};
-
 subtest 'broker_for_new_account' => sub {
-    subtest 'Default new broker code' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_account();
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'CR', 'CR Broker is the right one';
-    };
-
     subtest 'Australian new broker code' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_account('Australia');
+        my $broker = $bom->broker_for_new_account('au');
 
         ok $broker, 'Now there is a broker';
         is $broker->code, 'CR', 'CR Broker is the right one';
@@ -89,7 +25,7 @@ subtest 'broker_for_new_account' => sub {
 
     subtest 'French new broker code' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_account('France');
+        my $broker = $bom->broker_for_new_account('fr');
 
         ok $broker, 'Now there is a broker';
         is $broker->code, 'MLT', 'MLT Broker is the right one';
@@ -104,22 +40,6 @@ subtest 'broker_for_new_virtual' => sub {
         ok $broker, 'Now there is a broker';
         is $broker->code, 'VRTC', 'VRTC Broker is the right one';
     };
-
-    subtest 'Australian virtual broker code' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_virtual('Australia');
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
-    };
-
-    subtest 'French virtual broker code' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_virtual('France');
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
-    };
 };
 
 sub prepare_website {
@@ -129,7 +49,6 @@ sub prepare_website {
         address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
         fax              => '+44 207 6813557',
         country          => 'Isle of Man',
-        counterparty_for => ['*',],
     );
     isa_ok $iom, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -164,7 +83,6 @@ sub prepare_website {
         address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
         fax              => '+44 207 6813557',
         country          => 'Isle of Man',
-        counterparty_for => ['FRANCE',],
     );
 
     isa_ok $malta, 'BOM::Platform::Runtime::LandingCompany';

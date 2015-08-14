@@ -137,7 +137,8 @@ sub real_acc_checks {
             err      => localize('Sorry, new account opening is suspended for the time being.'),
         };
     }
-    if (my $error = BOM::Platform::Client::check_jurisdiction($country)) {
+
+    if (my $error = BOM::Platform::Client::check_jurisdiction(Locale::Country::country2code($country))) {
         return {
             err_type => 'restricted_country',
             err      => $error,
@@ -200,10 +201,10 @@ sub financial_acc_checks {
     my $check = real_acc_checks($args);
     return $check if ($check->{err});
 
-    my $client = $check->{from_client};
-    return $check if ($client->landing_company->short eq 'malta');
-    return $check if ($client->is_virtual and first { $client->residence eq $_ } EU_random_restricted_countries());
-
+    if (my $residence = $check->{from_client}->residence) {
+        my $c_config = BOM::Platform::Runtime->instance->countries_list->{$residence};
+        return $check if (exists $c_config->{financial_company} and $c_config->{financial_company} eq 'maltainvest');
+    }
     return {
         error_type => 'no_financial',
         err        => localize('Financial account opening unavailable'),

@@ -144,10 +144,8 @@ sub save {
     return $r;
 }
 
-#check given country to see if it is a valid country for customer's registration
-#return appropriate error message if it is restricted or nothing if it is permitted
 sub check_jurisdiction {
-    my $country_name_or_code = shift;
+    my $country_code = shift;
 
     if (   BOM::Platform::Runtime->instance->app_config->system->on_development
         or BOM::Platform::Runtime->instance->app_config->system->on_qa)
@@ -155,21 +153,10 @@ sub check_jurisdiction {
         return;
     }
 
-    if (not $country_name_or_code or $country_name_or_code =~ /Select\sCountry/i) {
-        return localize('Please specify your country.');
+    my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
+    if (not $c_config->{gaming_company} and not $c_config->{financial_company}) {
+        return localize('Sorry, our service is not available for residents of [_1].', Locale::Country::code2country($country));
     }
-
-    foreach my $country_code (map { Locale::Country::country2code($_) } @{BOM::Platform::Runtime->instance->app_config->legal->countries_restricted})
-    {
-        my $country = BOM::Platform::Runtime->instance->countries->localized_code2country($country_code, request()->language);
-
-        if ($country_name_or_code =~ /$country/i
-            or ($country_name_or_code eq $country_code))
-        {
-            return localize('Sorry, our service is not available for residents of [_1].', $country);
-        }
-    }
-
     return;
 }
 
@@ -209,12 +196,6 @@ sub _validate_new_account {
     my $error_message = check_jurisdiction($country);
     if (defined $error_message and length $error_message > 0) {
         return ('residence', $error_message);
-    }
-
-    my $town = $args->{'address_city'};
-    $error_message = check_jurisdiction($town);
-    if (defined $error_message and length $error_message > 0) {
-        return ('AddressTown', $error_message);
     }
 
     return (undef, undef);
