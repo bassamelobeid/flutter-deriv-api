@@ -2,11 +2,10 @@
 use Test::Most;
 use Test::Mojo;
 
-my $t = Test::Mojo->new('BOM::WebSocketAPI');
+my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
+my $t   = $svr? Test::Mojo->new: Test::Mojo->new('BOM::WebSocketAPI');
 
-$t->get_ok('/')->status_is(404, 'This is no normal webserver');
-
-$t->websocket_ok('/websockets/contracts');
+$t->websocket_ok("$svr/websockets/contracts");
 
 $t->send_ok('some random stuff not even json', 'sent random stuff not even json, will be ignored');
 $t->send_ok({json=>{this=>'that'}},            'valid json but nonsense message, will be ignored');
