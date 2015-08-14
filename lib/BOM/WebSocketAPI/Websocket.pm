@@ -4,6 +4,8 @@ use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use Mojo::DOM;
 
+use Try::Tiny;
+
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
@@ -70,7 +72,7 @@ sub get_ask {
     my $app = $c->app;
     my $log = $app->log;
     # $log->debug("pricing with p2 " . $c->dumper($p2));
-    my $contract = eval { produce_contract({%$p2}) } || do {
+    my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $log->info("contract creation failure: $err");
         return {error => "cannot create contract"};
@@ -143,7 +145,7 @@ sub get_bid {
     my $log = $app->log;
 
     my @similar_args = ($p2->{contract}, {priced_at => 'now'});
-    my $contract = eval { make_similar_contract(@similar_args) } || do {
+    my $contract = try { make_similar_contract(@similar_args) } || do {
         my $err = $@;
         $log->info("contract for sale creation failure: $err");
         return {error => "cannot create sell contract"};
@@ -272,7 +274,7 @@ my $json_receiver = sub {
 
     if (my $id = $p1->{forget}) {
         Mojo::IOLoop->remove($id);
-        if (my $fmb_id = eval { $c->{$id}->{fmb}->id }) {
+        if (my $fmb_id = try { $c->{$id}->{fmb}->id }) {
             delete $c->{fmb_ids}{$fmb_id};
         }
         delete $c->{$id};
@@ -457,7 +459,7 @@ my $json_receiver = sub {
                 $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
                 last;
             };
-            my $contract = eval { produce_contract({%$p2}) } || do {
+            my $contract = try { produce_contract({%$p2}) } || do {
                 my $err = $@;
                 $log->debug("contract creation failure: $err");
                 $json->{open_receipt}->{error}->{message} = "cannot create contract";
