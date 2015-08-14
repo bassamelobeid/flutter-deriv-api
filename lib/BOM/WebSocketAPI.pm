@@ -20,14 +20,14 @@ sub startup {
     my $r = $app->routes;
 
     for ($r->under('/websockets/v2')) {
-        $_->to('websocket#ok');
-        $_->websocket('/')->to('#entry_point');
+        $_->to('websocket_v1#ok');
+        $_->websocket_v1('/')->to('#entry_point');
     }
 
     # Alias, to be deprecated.
     for ($r->under('/websockets/')) {
-        $_->to('websocket#ok');
-        $_->websocket('/contracts')->to('#entry_point');
+        $_->to('websocket_v1#ok');
+        $_->websocket_v1('/contracts')->to('#entry_point');
     }
 
     return;
