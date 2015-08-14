@@ -1364,18 +1364,13 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'random') {
-        foreach my $country_code (map { Locale::Country::country2code($_) }
-            @{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries})
-        {
-            if ($residence =~ /$country_code/i) {
-                return Error::Base->cuss(
-                    -type => 'RandomRestrictedCountry',
-                    -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
-                    -message_to_client =>
-                        BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
-                );
-            }
+    if ($residence && $market_name eq 'random' && BOM::Platform::Runtime->instance->countries_list->{$residence}->{random_restricted}) {
+            return Error::Base->cuss(
+                -type => 'RandomRestrictedCountry',
+                -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
+                -message_to_client =>
+                    BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
+            );
         }
     }
 

@@ -170,6 +170,7 @@ cz:
 de:
   name: "Germany"
   financial_company: maltainvest
+  random_restricted: 1
 dj:
   name: "Djibouti"
   financial_company: costarica
@@ -205,6 +206,7 @@ er:
 es:
   name: "Spain"
   financial_company: maltainvest
+  random_restricted: 1
 et:
   name: "Ethiopia"
   financial_company: costarica
@@ -227,6 +229,7 @@ fo:
 fr:
   name: "France"
   financial_company: maltainvest
+  random_restricted: 1
 ga:
   name: "Gabon"
   financial_company: costarica
@@ -268,6 +271,7 @@ gq:
 gr:
   name: "Greece"
   financial_company: maltainvest
+  random_restricted: 1
 gs:
   name: "South Georgia and the South Sandwich Islands"
   financial_company: costarica
@@ -308,6 +312,7 @@ id:
 ie:
   name: "Ireland"
   financial_company: maltainvest
+  random_restricted: 1
 il:
   name: "Israel"
   financial_company: costarica
@@ -330,6 +335,7 @@ is:
 it:
   name: "Italy"
   financial_company: maltainvest
+  random_restricted: 1
 je:
   name: "Jersey"
 jm:
@@ -400,6 +406,7 @@ lt:
 lu:
   name: "Luxembourg"
   financial_company: maltainvest
+  random_restricted: 1
 lv:
   name: "Latvia"
   gaming_company: malta
@@ -596,6 +603,7 @@ se:
 sg:
   name: "Singapore"
   financial_company: costarica
+  random_restricted: 1
 sh:
   name: "Saint Helena"
   financial_company: costarica
