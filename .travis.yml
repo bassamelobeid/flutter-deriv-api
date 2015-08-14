@@ -19,6 +19,8 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo rm -f /tmp/unittest_*
 
+    - /tmp/travis-scripts/couchdb.sh
+
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
