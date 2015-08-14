@@ -6,6 +6,7 @@ use Test::MockTime qw( :all );
 use Test::MockObject::Extends;
 use Test::MockModule;
 use JSON qw(decode_json);
+use Time::Local ();
 
 use Readonly;
 Readonly::Scalar my $HKSE_TRADE_DURATION_DAY => ((2 * 3600 + 29 * 60) + (2 * 3600 + 40 * 60));
@@ -799,13 +800,28 @@ subtest 'trading period' => sub {
     my $trading_date = Date::Utility->new('15-Jul-2015');
     lives_ok {
         my $p = $ex->trading_period($trading_date);
-        is scalar @$p, 2, 'two periods';
+        # daily_open       => '1h30m',
+        # trading_breaks   => [['3h59m', '5h00m']],
+        # daily_close      => '7h40m',
+        my $expected = [
+            {open  => Time::Local::timegm(0, 30, 1, 15, 6, 115),
+             close => Time::Local::timegm(0, 59, 3, 15, 6, 115)},
+            {open  => Time::Local::timegm(0, 0, 5, 15, 6, 115),
+             close => Time::Local::timegm(0, 40, 7, 15, 6, 115)},
+        ];
+        is_deeply $p, $expected, 'two periods';
     }
     'trading period for HKSE';
     $ex = BOM::Market::Exchange->new('FOREX');
     lives_ok {
         my $p = $ex->trading_period($trading_date);
-        is scalar @$p, 1, 'one period';
+        # daily_open: 0s
+        # daily_close: 23h59m59s
+        my $expected = [
+            {open  => Time::Local::timegm(0, 0, 0, 15, 6, 115),
+             close => Time::Local::timegm(59, 59, 23, 15, 6, 115)},
+        ];
+        is_deeply $p, $expected, 'one period';
     }
     'trading period for HKSE';
 };
