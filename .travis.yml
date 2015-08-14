@@ -38,4 +38,5 @@ install:
 
     - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom/t/config/log4perl.conf
 script:
+    - env | sort
     - prove -lvr
