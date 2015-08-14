@@ -205,12 +205,7 @@ sub _candles {
             end_time   => $end,
         });
     } elsif (my ($unit, $size) = $granularity =~ /^([HMS])(\d+)$/) {
-        my $period = {
-            H => 3600,
-            M => 60,
-            S => 1
-            }->{$unit} *
-            $size;
+        my $period = do { {H => 3600, M => 60, S => 1}->{$unit} * $size };
         $start = $start - $start % $period;
         my $end_max = $start + $period * $count;
         $end = $end_max > $end ? $end : $end_max;
