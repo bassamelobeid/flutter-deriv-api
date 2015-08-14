@@ -76,8 +76,7 @@ sub get_ask {
             error => {
                 message => "cannot create contract",
                 code    => "ContractCreationFailure"
-            };
-        };
+            }};
     };
     if (!$contract->is_valid_to_buy) {
         if (my $pve = $contract->primary_validation_error) {
@@ -96,8 +95,7 @@ sub get_ask {
             error => {
                 message => "cannot validate contract",
                 code    => "ContractValidationError"
-            };
-        };
+            }};
     }
     return {
         longcode   => $DOM->parse($contract->longcode)->all_text,
@@ -166,8 +164,7 @@ sub get_bid {
             error => {
                 message => "cannot create sell contract",
                 code    => "ContractSellCreateError"
-            };
-        };
+            }};
     };
     if (!$contract->is_valid_to_sell) {
         $log->error("primary error: " . $contract->primary_validation_error->message);
@@ -175,8 +172,7 @@ sub get_bid {
             error => {
                 message => $contract->primary_validation_error->message_to_client,
                 code    => "ContractSellValidationError"
-            };
-        };
+            }};
     }
 
     return {
