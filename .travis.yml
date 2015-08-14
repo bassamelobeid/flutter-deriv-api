@@ -37,4 +37,4 @@ install:
 
     - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom/t/config/log4perl.conf
 script:
-    - prove -lvr t
+    - perl Makefile.PL && make test
