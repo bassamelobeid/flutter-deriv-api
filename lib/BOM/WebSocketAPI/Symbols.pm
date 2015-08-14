@@ -154,12 +154,12 @@ sub ticks {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};
     my $ul     = BOM::Market::Underlying->new($symbol);
-    my $ticks  = $c->_ticks(
+    my $ticks  = $c->_ticks({
         ul    => $ul,
         start => $c->param('start') // 0,
         end   => $c->param('end') // 0,
         count => $c->param('count') // 0,
-    );
+    });
     return $c->_pass({ticks => $ticks});
 }
 
@@ -225,13 +225,13 @@ sub candles {
     my $symbol = $c->stash('sp')->{symbol};
     my $ul     = BOM::Market::Underlying->new($symbol);
 
-    my $candles = $c->_candles(
-        ul          => $ul,
-        start       => $c->param('start') // 0,
-        end         => $c->param('end') // 0,
-        count       => $c->param('count') // 0,
-        granularity => $c->param('granularity') // '',
-    ) || return $c->_fail("invalid candles request");
+    my $candles = $c->_candles({
+            ul          => $ul,
+            start       => $c->param('start') // 0,
+            end         => $c->param('end') // 0,
+            count       => $c->param('count') // 0,
+            granularity => $c->param('granularity') // '',
+        }) || return $c->_fail("invalid candles request");
     return $c->_pass({candles => $candles});
 }
 
