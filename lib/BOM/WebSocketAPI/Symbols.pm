@@ -111,11 +111,11 @@ sub symbol_search {
 }
 
 sub _ticks {
-    my ($c, %args) = @_;
-    my $ul    = $args{ul} || die 'no underlying';
-    my $start = $args{start};
-    my $end   = $args{end};
-    my $count = $args{count};
+    my ($c, $args) = @_;
+    my $ul    = $args->{ul} || die 'no underlying';
+    my $start = $args->{start};
+    my $end   = $args->{end};
+    my $count = $args->{count};
 
     # we must not return to the client any ticks after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
@@ -164,12 +164,12 @@ sub ticks {
 }
 
 sub _candles {
-    my ($c, %args) = @_;
-    my $ul          = $args{ul} || die 'no underlying';
-    my $start       = $args{start};
-    my $end         = $args{end};
-    my $count       = $args{count};
-    my $granularity = uc($args{granularity} || 'M1');
+    my ($c, $args) = @_;
+    my $ul          = $args->{ul} || die 'no underlying';
+    my $start       = $args->{start};
+    my $end         = $args->{end};
+    my $count       = $args->{count};
+    my $granularity = uc($args->{granularity} || 'M1');
 
     # we must not return to the client any candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
