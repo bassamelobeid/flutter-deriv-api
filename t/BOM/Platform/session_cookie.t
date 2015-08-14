@@ -44,4 +44,34 @@ cmp_deeply(
     "Correct values for all attributes",
 );
 
+subtest 'session generation is fork-safe', sub {
+    my $c1 = BOM::Platform::SessionCookie->new(
+        loginid => $loginid,
+        email   => $email,
+    )->token;
+    note "c1 = $c1";
+    my $pid = open my $fh, '-|';
+    defined $pid or die "Cannot fork(): $!";
+    unless ($pid) {             # child process
+        print +BOM::Platform::SessionCookie->new(
+            loginid => $loginid,
+            email   => $email,
+        )->token, "\n";
+        exit 0;
+    }
+    my $c2 = readline $fh;
+    chomp $c2;
+    note "c2 = $c2";
+    my $c3 = BOM::Platform::SessionCookie->new(
+        loginid => $loginid,
+        email   => $email,
+    )->token;
+    note "c3 = $c3";
+
+    is length $_, 48, 'token length' for ($c1, $c2, $c3);
+    isnt $c1, $c2, 'c1 <> c2';
+    isnt $c1, $c3, 'c1 <> c3';
+    isnt $c2, $c3, 'c2 <> c3';
+};
+
 done_testing();

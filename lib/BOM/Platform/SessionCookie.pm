@@ -15,7 +15,7 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 
 package BOM::Platform::SessionCookie;
 use BOM::System::Chronicle;
-use BOM::Utility::Random;
+use Bytes::Random::Secure;
 use JSON;
 use Carp;
 
@@ -77,7 +77,15 @@ sub new {    ## no critic RequireArgUnpack
         my @missing = grep { !$self->{$_} } @REQUIRED;
         croak "Error adding new session, missing: " . join(',', @missing)
             if @missing;
-        $self->{token} = BOM::Utility::Random->string_from($STRING, $TOKEN_LENGTH);
+
+        # NOTE, we need to use the object interface here. Bytes::Random::Secure also offers a function interface
+        # but that uses a RNG which is initialized only once. If we happen to generate a session cookie for
+        # whatever reason before forking children, all children would then generate the same random sequence.
+        # Hence, better to re-seed the RNG for every token.
+        $self->{token} = Bytes::Random::Secure->new(
+            Bits        => 160,
+            NonBlocking => 1,
+        )->string_from($STRING, $TOKEN_LENGTH);
         BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
     }
     $self->{expires_in} ||= $EXPIRES_IN;
