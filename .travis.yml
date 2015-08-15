@@ -48,4 +48,5 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
 
 script:
-    - make $TEST_SUITE
+    # - make $TEST_SUITE
+    - /tmp/travis-scripts/bom_cover.sh
