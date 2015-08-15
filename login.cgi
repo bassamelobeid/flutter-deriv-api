@@ -18,6 +18,11 @@ use BOM::System::Config;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
+if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+)\./ or $1<44) {
+    print "Only newest Chrome browser is supported in backoffice.";
+    code_exit_BO();
+}
+
 my $try_to_login;
 my $passwd = request()->param('pass');
 
