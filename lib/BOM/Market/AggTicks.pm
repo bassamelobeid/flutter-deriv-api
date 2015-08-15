@@ -193,7 +193,7 @@ sub retrieve {
 
     if (my $tc = $args->{tick_count}) {
         $self->fill_from_historical_feed($args) if ($fill_cache and $end < time - $self->unagg_retention_interval->seconds);
-        @res = map { $decoder->decode($_) } reverse @{$redis->execute('ZREVRANGEBYSCORE', $self->_make_key($which, 0), $end, 0, 'LIMIT', 0, $tc)};
+        @res = map { $decoder->decode($_) } reverse @{$redis->zrevrangebyscore($self->_make_key($which, 0), $end, 0, 'LIMIT', 0, $tc)};
     } else {
         my ($interval_to_check, $key);
         if ($aggregated) {
