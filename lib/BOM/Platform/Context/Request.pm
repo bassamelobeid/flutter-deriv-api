@@ -121,7 +121,7 @@ has 'ui_settings' => (
 
 has 'broker_code' => (
     is         => 'ro',
-    isa        => 'bom_broker_code',
+    isa        => 'Maybe[bom_broker_code]',
     lazy_build => 1,
 );
 
@@ -139,7 +139,7 @@ has 'website' => (
 
 has 'broker' => (
     is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Broker',
+    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
     lazy_build => 1,
 );
 
@@ -151,13 +151,13 @@ has cookie_domain => (
 
 has 'real_account_broker' => (
     is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Broker',
+    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
     lazy_build => 1,
 );
 
 has 'virtual_account_broker' => (
     is         => 'ro',
-    isa        => 'BOM::Platform::Runtime::Broker',
+    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
     lazy_build => 1,
 );
 
@@ -367,12 +367,14 @@ sub _build_broker_code {
         return BOM::Platform::Runtime->instance->broker_codes->get($self->loginid)->code;
     }
 
-    return $self->real_account_broker->code;
+    return $self->real_account_broker->code if ($self->real_account_broker);
+    return;
 }
 
 sub _build_broker {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code);
+    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code) if ($self->broker_code);
+    return;
 }
 
 sub _build_virtual_account_broker {

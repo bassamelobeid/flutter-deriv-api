@@ -30,22 +30,32 @@ subtest 'build' => sub {
     };
 
     subtest 'country => Malta' => sub {
-        my $request = BOM::Platform::Context::Request->new(country => 'Malta');
-        is $request->broker_code, 'MLT';
+        my $request = BOM::Platform::Context::Request->new(country_code => 'mt');
+        is $request->broker_code, undef;
         is $request->language,    'EN';
-        is $request->website->name,                'Devbin';
-        is $request->broker->code,                 'MLT';
-        is $request->real_account_broker->code,    'MLT';
+        is $request->website->name, 'Devbin';
+        is $request->broker, undef;
+        is $request->real_account_broker, undef;
         is $request->virtual_account_broker->code, 'VRTC';
     };
 
     subtest 'loginid => CR10001' => sub {
-        my $request = BOM::Platform::Context::Request->new(loginid => 'CR10001');
+        my $request = BOM::Platform::Context::Request->new(loginid => 'CR10001', country_code => 'au');
         is $request->broker_code, 'CR';
         is $request->language,    'EN';
         is $request->website->name,                'Devbin';
         is $request->broker->code,                 'CR';
         is $request->real_account_broker->code,    'CR';
+        is $request->virtual_account_broker->code, 'VRTC';
+    };
+
+    subtest 'loginid => MLT10001' => sub {
+        my $request = BOM::Platform::Context::Request->new(loginid => 'MLT10001', country_code => 'nl');
+        is $request->broker_code, 'MLT';
+        is $request->language,    'EN';
+        is $request->website->name,                'Devbin';
+        is $request->broker->code,                 'MLT';
+        is $request->real_account_broker->code,    'MLT';
         is $request->virtual_account_broker->code, 'VRTC';
     };
 
