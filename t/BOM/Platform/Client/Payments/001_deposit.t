@@ -96,9 +96,9 @@ my $mx_client = BOM::Platform::Client->register_and_return_new_client({
 });
 $mx_client->set_default_account('USD');
 
-ok(!$mx_client->get_status('unwelcome'), 'MX client not unwelcome prior to first-deposit');
+ok(!$mx_client->get_status('cashier_locked'), 'MX client not cashier_locked prior to first-deposit');
 $mx_client->payment_free_gift(%deposit, currency => 'USD');
-ok($mx_client->get_status('unwelcome'), 'MX client now unwelcome after first-deposit');
+ok($mx_client->get_status('cashier_locked'), 'MX client now cashier_locked after first-deposit');
 
 done_testing();
 

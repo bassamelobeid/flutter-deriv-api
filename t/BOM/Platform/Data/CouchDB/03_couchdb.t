@@ -5,7 +5,7 @@ use Test::NoWarnings;
 use Test::MockModule;
 use strict;
 use warnings;
-use BOM::Utility::Random;
+use Bytes::Random::Secure;
 use CouchDB::Client;
 
 use BOM::Platform::Data::CouchDB;
@@ -114,7 +114,7 @@ subtest 'postive' => sub {
 };
 
 subtest 'caching' => sub {
-    my $doc_name = BOM::Utility::Random->string_from("TheCompleatWilliamShakespere", 12);
+    my $doc_name = Bytes::Random::Secure->new(Bits => 160, NonBlocking => 1)->string_from("TheCompleatWilliamShakespere", 12);
     subtest 'setup' => sub {
         my $couch = BOM::Platform::Data::CouchDB->new(
             replica_host => 'localhost',
