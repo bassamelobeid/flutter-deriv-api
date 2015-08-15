@@ -153,8 +153,7 @@ sub check_jurisdiction {
         return;
     }
 
-    my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
-    if (not $c_config->{gaming_company} and not $c_config->{financial_company}) {
+    if (BOM::Platform::Runtime->instance->countries_list->{$country_code}->{restricted}) {
         return localize('Sorry, our service is not available for residents of [_1].', Locale::Country::code2country($country));
     }
     return;
