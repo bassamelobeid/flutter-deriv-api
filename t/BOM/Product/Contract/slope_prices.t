@@ -75,7 +75,6 @@ my $params = {
 };
 
 my $c = produce_contract($params);
-diag Dumper(\$c); use Data::Dumper;
 is $c->bs_probability->amount, 0.500099930268069, 'correct bs probability';
 is roundnear(0.0001, $c->pricing_engine->skew_adjustment->amount), 0.0035, 'correct skew adjustment';
 is roundnear(0.0001, $c->total_markup->amount),    0.0163, 'correct total markup';
