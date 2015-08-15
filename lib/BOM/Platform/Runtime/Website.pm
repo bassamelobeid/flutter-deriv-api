@@ -210,7 +210,7 @@ sub broker_for_new_account {
 }
 
 sub broker_for_new_virtual {
-    my $self      = shift;
+    my $self = shift;
     my $vr_broker = first { $_->is_virtual } @{$self->broker_codes};
     return $vr_broker;
 }
