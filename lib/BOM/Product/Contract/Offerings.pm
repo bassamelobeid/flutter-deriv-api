@@ -147,10 +147,16 @@ my %known_decorations = (
                 my $change_rules = $exchange->regularly_adjusts_trading_hours_on($when);
                 if ($exchange->closes_early_on($when)) {
                     $rule = $change_rules->{daily_close}->{rule};
-                    $message = $self->c->l('Closes early (at [_1])', $exchange->closing_on($when)->time_hhmm);
+                    $message =
+                          $self->c
+                        ? $self->c->l('Closes early (at [_1])', $exchange->closing_on($when)->time_hhmm)
+                        : 'Closes early (at ' . $exchange->closing_on($when)->time_hhmm . ')';
                 } elsif ($exchange->opens_late_on($when)) {
                     $rule = $change_rules->{daily_open}->{rule};
-                    $message = $self->c->l('Opens late (at [_1])', $exchange->opening_on($when)->time_hhmm);
+                    $message =
+                          $self->c
+                        ? $self->c->l('Opens late (at [_1])', $exchange->opening_on($when)->time_hhmm)
+                        : 'Opens late (at ' . $exchange->opening_on($when)->time_hhmm . ')';
                 } elsif ($exchange->has_holiday_on($when)) {
                     $message = $exchange->holidays->{$when->days_since_epoch};
                 }
@@ -164,8 +170,9 @@ my %known_decorations = (
                     if ($where != -1) {
                         $events[$where]->{dates} .= ', ' . $explain unless ($rule && $explain eq $rule && $seen_rules{$rule});
                     } else {
-                        $explain = $self->c->l('today')
-                            if ($when->is_same_as($trading_day) and $trading_day->is_same_as($today));
+                        if ($when->is_same_as($trading_day) and $trading_day->is_same_as($today)) {
+                            $explain = $self->c ? $self->c->l('today') : 'today';
+                        }
                         push @events,
                             {
                             descrip => $message,
