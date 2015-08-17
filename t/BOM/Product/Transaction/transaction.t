@@ -13,6 +13,7 @@ use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
 
+use Date::Utility;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -385,7 +386,7 @@ subtest 'buy a spread bet' => sub {
         is $fmb->{bet_class}, 'spread_bet', 'bet_class';
         is $fmb->{bet_type},  'SPREADU',    'bet_type';
         is $fmb->{buy_price} + 0, 20, 'buy_price';
-        is $fmb->{expiry_time},  undef, 'undefined expiry_time';
+        cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time, 'expiry_time';
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
         is !$fmb->{is_expired}, !0, 'is_expired';
         is !$fmb->{is_sold},    !0, 'is_sold';
@@ -394,7 +395,7 @@ subtest 'buy a spread bet' => sub {
         like $fmb->{remark},        qr/amount_per_point/, 'remark';
         is $fmb->{sell_price},      undef,                'sell_price';
         is $fmb->{sell_time},       undef,                'sell_time';
-        is $fmb->{settlement_time}, undef,                'undefined settlement_time';
+        cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time,                'settlement_time';
         like $fmb->{short_code},    qr/SPREADU/,          'short_code';
         cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
         is $fmb->{tick_count},        undef,   'tick_count';
