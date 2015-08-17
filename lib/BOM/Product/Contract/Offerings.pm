@@ -88,6 +88,8 @@ has c => (
 
 my %known_decorations = (
 
+    name => sub { return $_->translated_display_name },
+
     times => sub {
         my ($parent_obj, $self) = @_;
         my $exchange = $_->exchange;
