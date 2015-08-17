@@ -9,6 +9,7 @@ use Try::Tiny;
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
+use BOM::Product::Contract::Offerings;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 
 use BOM::WebSocketAPI::Symbols;
@@ -334,6 +335,16 @@ my $json_receiver = sub {
                     msg_type  => 'offerings',
                     echo_req  => $p1,
                     offerings => $results
+                }});
+    }
+
+    if (my $options = $p1->{trading_times}) {
+        my $trading_times = $c->BOM::WebSocketAPI::Offerings::trading_times($options);
+        return $c->send({
+                json => {
+                    msg_type      => 'trading_times',
+                    echo_req      => $p1,
+                    trading_times => $trading_times,
                 }});
     }
 

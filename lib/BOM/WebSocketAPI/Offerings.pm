@@ -164,5 +164,41 @@ sub query {
     return $c->_pass($results, $logdata);
 }
 
+sub trading_times {
+    my ($c, $args) = @_;
+
+    my $tree = BOM::Product::Contract::Offerings->new(
+        date => Date::Utility->new($args->{date}),
+        )->decorate_tree(
+        markets     => {name => 'name'},
+        submarkets  => {name => 'name'},
+        underlyings => {
+            name   => 'name',
+            times  => 'times',
+            events => 'events'
+        });
+    my $trading_times = {};
+    for my $mkt (@$tree) {
+        my $market = {};
+        push @{$trading_times->{markets}}, $market;
+        $market->{name} = $mkt->{name};
+        for my $sbm (@{$mkt->{submarkets}}) {
+            my $submarket = {};
+            push @{$market->{submarkets}}, $submarket;
+            $submarket->{name} = $sbm->{name};
+            for my $ul (@{$sbm->{underlyings}}) {
+                push @{$submarket->{symbols}},
+                    {
+                    name       => $ul->{name},
+                    settlement => $ul->{settlement} || '',
+                    events     => $ul->{events},
+                    times      => $ul->{times},
+                    };
+            }
+        }
+    }
+    return $trading_times;
+}
+
 1;
 
