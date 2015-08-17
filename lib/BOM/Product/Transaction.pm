@@ -407,19 +407,19 @@ sub prepare_bet_data_for_buy {
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
     my $bet_params = {
-        loginid             => $loginid,
-        currency            => $currency,
-        quantity            => 1,
-        short_code          => scalar $contract->shortcode,
-        buy_price           => $self->price,
-        remark              => $comment,
-        underlying_symbol   => scalar $contract->underlying->symbol,
-        bet_type            => scalar $contract->code,
-        bet_class           => $bet_class,
-        purchase_time       => scalar $self->purchase_date->db_timestamp,
-        start_time          => scalar $contract->date_start->db_timestamp,
-        expiry_time         => scalar $contract->date_expiry->db_timestamp,
-        settlement_time     => scalar $contract->date_settlement->db_timestamp,
+        loginid           => $loginid,
+        currency          => $currency,
+        quantity          => 1,
+        short_code        => scalar $contract->shortcode,
+        buy_price         => $self->price,
+        remark            => $comment,
+        underlying_symbol => scalar $contract->underlying->symbol,
+        bet_type          => scalar $contract->code,
+        bet_class         => $bet_class,
+        purchase_time     => scalar $self->purchase_date->db_timestamp,
+        start_time        => scalar $contract->date_start->db_timestamp,
+        expiry_time       => scalar $contract->date_expiry->db_timestamp,
+        settlement_time   => scalar $contract->date_settlement->db_timestamp,
     };
 
     if (!$contract->is_spread) {
