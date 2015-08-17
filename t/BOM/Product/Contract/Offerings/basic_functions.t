@@ -67,9 +67,6 @@ subtest 'decorate_tree' => sub {
     ok((none { exists $_->{$decoration_name} } (@$second_level_items)),
         '.. decorations called ' . $decoration_name . ' do not exist on any of the "' . $second_level . '" level items');
 
-    note "offerings tree is ", explain $offerings->tree;
-    note "orinal    tree is ", explain $original_tree;
-
     eq_or_diff($offerings->tree, $original_tree, "Asking for the tree again produces the decorated_tree");
     my $new_offerings = new_ok('BOM::Product::Contract::Offerings');
     isnt($new_offerings->tree, $original_tree, "..but asking the new copy does not have the decorations.");
