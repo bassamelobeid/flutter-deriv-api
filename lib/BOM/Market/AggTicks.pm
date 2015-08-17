@@ -202,7 +202,7 @@ sub retrieve {
         }
 
         my $start = $end - $ti->seconds;
-        $self->fill_from_historical_feed($args) if ($fill_cache and $start < time - $self->$interval_to_check->seconds);
+        $self->fill_from_historical_feed($args) if ($fill_cache and $start < time - ($self->$interval_to_check->seconds + $agg_seconds));
 
         @res = map { $decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
         # We get the last tick for aggregated tick request.
@@ -255,7 +255,7 @@ sub aggregate_for {
                 $tick->{count}     = $tick_count + 1;
                 $tick->{agg_epoch} = $next_agg;
                 $total_added++;
-                _update($redis,$agg_key, $next_agg, $encoder->encode($tick), $fast_insert);
+                _update($redis, $agg_key, $next_agg, $encoder->encode($tick), $fast_insert);
                 $tick_count = 0;
                 $next_agg += $ai->seconds;
             } elsif ($tick->{epoch} > $next_agg) {
