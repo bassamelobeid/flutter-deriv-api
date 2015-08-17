@@ -41,9 +41,9 @@ Required
 =cut
 
 has broker_code => (
-    is       => 'ro',
-    isa      => 'bom_broker_code',
-    required => 1,
+    is      => 'ro',
+    isa     => 'bom_broker_code',
+    default => 'CR',
 );
 
 =head2 tree
@@ -176,7 +176,7 @@ my %known_decorations = (
                     # first_index returns -1 for not found.  Idiots.
                     my $explain = $rule // $when->$date_display_method;
                     if ($where != -1) {
-                        $events[$where]->{dates} .= ', ' . $explain unless ($explain eq $rule and $seen_rules{$rule});
+                        $events[$where]->{dates} .= ', ' . $explain unless ($rule && $explain eq $rule && $seen_rules{$rule});
                     } else {
                         $explain = $self->c->l('today')
                             if ($when->is_same_as($trading_day) and $trading_day->is_same_as($today));
