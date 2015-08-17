@@ -20,7 +20,6 @@ use Carp;
 
 use Cache::RedisDB;
 use Date::Utility;
-use ExpiryQueue qw( update_queue_for_tick );
 use List::Util qw( min );
 use Time::Duration::Concise;
 use Scalar::Util qw( blessed );
@@ -165,8 +164,6 @@ sub add {
     my %to_store = %$tick;
 
     my $key = $self->_make_key($to_store{symbol}, 0);
-
-    update_queue_for_tick(\%to_store);
     $to_store{count} = 1;    # These are all single ticks;
 
     return _update($self->_redis, $key, $tick->{epoch}, $encoder->encode(\%to_store), $fast_insert);    # These are all single ticks.
