@@ -158,7 +158,9 @@ sub _build_non_restricted_countries {
     my $countries;
     for my $country (@good) {
         my $code = country2code($country);
-        $countries->{$code} = $country;
+        if ($code) {
+            $countries->{$code} = $country;
+        }
     }
     return $countries;
 }

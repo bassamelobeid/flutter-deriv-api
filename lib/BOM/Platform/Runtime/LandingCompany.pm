@@ -130,6 +130,16 @@ has legal_allowed_markets => (
     default => sub { [] },
 );
 
+=head2 legal_allowed_contract_categories
+A list of contract categories allowed on a particular landing company
+=cut
+
+has legal_allowed_contract_categories => (
+    is      => 'ro',
+    isa     => 'ArrayRef[Str]',
+    default => sub { [] },
+);
+
 =head2 allows_payment_agents
 
 True if clients allowed to use payment agents
