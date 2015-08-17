@@ -176,7 +176,6 @@ sub _candles {
 
     unless ($start
         and $start =~ /^[0-9]+$/
-        and $start > time - 365 * 86400
         and $start < $licensed_epoch)
     {
         $start = $licensed_epoch - 86400;
