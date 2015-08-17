@@ -149,16 +149,19 @@ subtest 'spread up' => sub {
 };
 
 subtest 'past expiry' => sub {
-    $params->{date_pricing} = $params->{date_start} + 86400 * 365 + 1;    # one second after expiry
     $params->{stop_loss}    = 100;
     $params->{stop_profit}  = 100;
     $params->{spread}       = 2;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
-        epoch      => $now->epoch + 86400 + 365 + 1,
+        epoch      => $now->epoch + 86400 * 365 + 1,
         quote      => 128
     });
+    $params->{date_pricing} = $params->{date_start} + 86400 * 365;    # one second after expiry
     my $c = produce_contract($params);
+    ok !$c->is_expired, 'not expired';
+    $params->{date_pricing} = $params->{date_start} + 86400 * 365 + 1;    # one second after expiry
+    $c = produce_contract($params);
     cmp_ok $c->date_pricing->epoch, ">", $c->date_expiry->epoch, "past expiry";
     cmp_ok $c->date_expiry->epoch, '==', $c->date_start->plus_time_interval('365d')->epoch, 'expiry is 365d after start';
     cmp_ok $c->date_settlement->epoch, '==', $c->date_start->plus_time_interval('365d')->epoch, 'settlement is 365d after start';
