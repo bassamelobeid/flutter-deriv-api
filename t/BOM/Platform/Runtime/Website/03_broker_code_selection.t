@@ -23,12 +23,20 @@ subtest 'broker_for_new_account' => sub {
         is $broker->code, 'CR', 'CR Broker is the right one';
     };
 
+    subtest 'Netherlands new broker code' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_account('nl');
+
+        ok $broker, 'Now there is a broker';
+        is $broker->code, 'MLT', 'MLT Broker is the right one';
+    };
+
     subtest 'French new broker code' => sub {
         my $bom    = prepare_website();
         my $broker = $bom->broker_for_new_account('fr');
 
         ok $broker, 'Now there is a broker';
-        is $broker->code, 'MLT', 'MLT Broker is the right one';
+        is $broker->code, 'MF', 'MF Broker is the right one';
     };
 };
 
@@ -43,19 +51,19 @@ subtest 'broker_for_new_virtual' => sub {
 };
 
 sub prepare_website {
-    my $iom = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'iom',
-        name             => 'Binary (IOM) Ltd',
+    my $costarica = BOM::Platform::Runtime::LandingCompany->new(
+        short            => 'costarica',
+        name             => 'Binary (C.R.) S.A.',
         address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
         fax              => '+44 207 6813557',
-        country          => 'Isle of Man',
+        country          => 'Costa Rica',
     );
-    isa_ok $iom, 'BOM::Platform::Runtime::LandingCompany';
+    isa_ok $costarica, 'BOM::Platform::Runtime::LandingCompany';
 
     my $cr = BOM::Platform::Runtime::Broker->new(
         code                   => 'CR',
         server                 => 'localhost',
-        landing_company        => $iom,
+        landing_company        => $costarica,
         transaction_db_cluster => 'CR',
     );
     isa_ok $cr, 'BOM::Platform::Runtime::Broker';
@@ -63,7 +71,7 @@ sub prepare_website {
     my $ci = BOM::Platform::Runtime::Broker->new(
         code                   => 'CI',
         server                 => 'localhost',
-        landing_company        => $iom,
+        landing_company        => $costarica,
         transaction_db_cluster => 'CI',
     );
     isa_ok $ci, 'BOM::Platform::Runtime::Broker';
@@ -71,11 +79,28 @@ sub prepare_website {
     my $vrtc = BOM::Platform::Runtime::Broker->new(
         code                   => 'VRTC',
         server                 => 'localhost',
-        landing_company        => $iom,
+        landing_company        => $costarica,
         transaction_db_cluster => 'VRTC',
         is_virtual             => 1,
     );
     isa_ok $vrtc, 'BOM::Platform::Runtime::Broker';
+
+    my $maltainvest = BOM::Platform::Runtime::LandingCompany->new(
+        short            => 'maltainvest',
+        name             => 'Binary (Europe) Ltd',
+        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax              => '+44 207 6813557',
+        country          => 'Isle of Man',
+    );
+
+    isa_ok $maltainvest, 'BOM::Platform::Runtime::LandingCompany';
+    my $mf = BOM::Platform::Runtime::Broker->new(
+        code                   => 'MF',
+        server                 => 'localhost',
+        landing_company        => $maltainvest,
+        transaction_db_cluster => 'MLT',
+    );
+    isa_ok $mf, 'BOM::Platform::Runtime::Broker';
 
     my $malta = BOM::Platform::Runtime::LandingCompany->new(
         short            => 'malta',
@@ -97,7 +122,7 @@ sub prepare_website {
     my $bom = BOM::Platform::Runtime::Website->new(
         name         => 'Binary',
         primary_url  => 'www.binary.com',
-        broker_codes => [$cr, $mlt, $vrtc, $ci],
+        broker_codes => [$cr, $mlt, $mf, $vrtc, $ci],
         localhost    => BOM::Platform::Runtime->instance->hosts->localhost,
     );
 

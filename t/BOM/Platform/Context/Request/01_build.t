@@ -113,7 +113,7 @@ subtest 'build' => sub {
 
 subtest 'website selection' => sub {
     subtest 'country => United Kingdom' => sub {
-        my $request = BOM::Platform::Context::Request->new(country => 'United Kingdom');
+        my $request = BOM::Platform::Context::Request->new(country_code => 'gb');
         is $request->broker_code, 'MX';
         is $request->language,    'EN';
         is $request->website->name,                'Devbin';
@@ -123,7 +123,7 @@ subtest 'website selection' => sub {
     };
 
     subtest 'country => India' => sub {
-        my $request = BOM::Platform::Context::Request->new(country => 'India');
+        my $request = BOM::Platform::Context::Request->new(country_code => 'in');
         is $request->broker_code, 'CR';
         is $request->language,    'EN';
         is $request->website->name,                'Devbin';
