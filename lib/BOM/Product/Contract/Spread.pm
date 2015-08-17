@@ -381,12 +381,7 @@ sub _validate_underlying {
             {
             message           => 'Market is closed [' . $self->underlying->symbol . ']',
             severity          => 98,
-            message_to_client => localize(
-                "This market is presently closed. <a href='[_1]'>View Trading Times</a> or try out the <a href='[_2]'>Random Indices</a> which are always open.",
-                request()->url_for('/resources/trading_times', undef, {no_host => 1}),
-                request()->url_for('trade.cgi', {market => "random"})
-            ),
-            };
+            message_to_client => localize("This market is presently closed. Try out the Random Indices which are always open.")};
     }
     return @err;
 }
