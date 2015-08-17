@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::Offerings;
 use strict;
 use warnings;
 
+use Try::Tiny;
+
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use BOM::Product::Offerings;
@@ -167,9 +169,8 @@ sub query {
 sub trading_times {
     my ($c, $args) = @_;
 
-    my $tree = BOM::Product::Contract::Offerings->new(
-        date => Date::Utility->new($args->{date}),
-        )->decorate_tree(
+    my $date = try { Date::Utility->new($args->{date}) } || Date::Utility->new;
+    my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
         underlyings => {
