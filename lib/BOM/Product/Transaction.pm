@@ -418,8 +418,8 @@ sub prepare_bet_data_for_buy {
         bet_class           => $bet_class,
         purchase_time       => scalar $self->purchase_date->db_timestamp,
         start_time          => scalar $contract->date_start->db_timestamp,
-        expiry_time         => scalar $contract->date_expiry->db_timestamp;
-            settlement_time => scalar $contract->date_settlement->db_timestamp;
+        expiry_time         => scalar $contract->date_expiry->db_timestamp,
+        settlement_time     => scalar $contract->date_settlement->db_timestamp,
     };
 
     if (!$contract->is_spread) {
