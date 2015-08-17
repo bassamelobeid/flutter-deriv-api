@@ -905,6 +905,8 @@ sub _build_total_markup {
         : (maximum => BOM::Platform::Runtime->instance->app_config->quants->commission->maximum_total_markup / 100);
     my %min = ($self->pricing_engine_name =~ /TickExpiry/) ? () : (minimum => 0);
 
+    print STDERR "maximum_total_markup: " . BOM::Platform::Runtime->instance->app_config->quants->commission->maximum_total_markup . "\n" if $ENV{TEST_SUITE}; # just a test
+
     my $total_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'total_markup',
         description => 'Our total markup over theoretical value',
