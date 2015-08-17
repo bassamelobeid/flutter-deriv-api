@@ -10,7 +10,7 @@ Help for getting insight into what is offered.
 
 To be deprecated in favor of BOM::Product::Offerings
 
-my $offerings = BOM::Product::Contract::Offerings->new(broker_code => 'CR');
+my $offerings = BOM::Product::Contract::Offerings->new;
 
 =cut
 
@@ -31,20 +31,6 @@ use Cache::RedisDB;
 use BOM::Platform::Context qw(request);
 
 =head1 ATTRIBUTES
-
-=head2 broker_code
-
-The broker code for which these offerings apply.
-
-Required
-
-=cut
-
-has broker_code => (
-    is      => 'ro',
-    isa     => 'bom_broker_code',
-    default => 'CR',
-);
 
 =head2 tree
 
@@ -204,7 +190,7 @@ my %known_decorations = (
 sub _build_tree {
     my $self = shift;
 
-    my @cache_info = ('OFFERINGS', $self->broker_code . '/' . request()->language);
+    my @cache_info = ('OFFERINGS');
 
     if (my $cached = Cache::RedisDB->get(@cache_info)) {
         return $cached;
