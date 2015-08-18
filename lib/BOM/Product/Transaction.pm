@@ -580,10 +580,6 @@ sub prepare_bet_data_for_sell {
         : (),
     };
 
-    if ($contract->is_spread) {
-        $bet_params->{expiry_time} = $bet_params->{settlement_time} = scalar $contract->date_pricing->db_timestamp;
-    }
-
     my $quants_bet_variables;
     if (my $comment = $self->comment) {
         my $quants_bet_params = BOM::Database::Model::DataCollection::QuantsBetVariables->extract_parameters_from_line({line => "COMMENT:$comment"});
