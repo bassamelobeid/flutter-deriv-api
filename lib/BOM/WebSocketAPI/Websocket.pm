@@ -4,13 +4,17 @@ use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use Mojo::DOM;
 
+use Try::Tiny;
+
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
+use BOM::Product::Contract::Offerings;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
+use BOM::WebSocketAPI::Accounts;
 
 my $DOM = Mojo::DOM->new;
 
@@ -69,7 +73,7 @@ sub get_ask {
     my $app = $c->app;
     my $log = $app->log;
     # $log->debug("pricing with p2 " . $c->dumper($p2));
-    my $contract = eval { produce_contract({%$p2}) } || do {
+    my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $log->info("contract creation failure: $err");
         return {
@@ -157,7 +161,7 @@ sub get_bid {
     my $log = $app->log;
 
     my @similar_args = ($p2->{contract}, {priced_at => 'now'});
-    my $contract = eval { make_similar_contract(@similar_args) } || do {
+    my $contract = try { make_similar_contract(@similar_args) } || do {
         my $err = $@;
         $log->info("contract for sale creation failure: $err");
         return {
@@ -275,17 +279,26 @@ my $json_receiver = sub {
                     msg_type  => 'authorize',
                     echo_req  => $p1,
                     authorize => {
-                        fullname => $client->full_name,
-                        loginid  => $client->loginid,
-                        balance  => ($account ? $account->balance : 0),
-                        currency => ($account ? $account->currency_code : ''),
-                        email    => $email,
+                        email            => $email,
+                        fullname         => $client->full_name,
+                        loginid          => $client->loginid,
+                        first_name       => $client->first_name,
+                        last_name        => $client->last_name,
+                        residence        => $client->residence,
+                        address_line_1   => $client->address_line_1,
+                        address_line_2   => $client->address_line_2,
+                        address_city     => $client->address_city,
+                        address_state    => $client->address_state,
+                        address_postcode => $client->address_postcode,
+                        phone            => $client->phone,
+                        balance          => ($account ? $account->balance : 0),
+                        currency         => ($account ? $account->currency_code : ''),
                     }}});
     }
 
     if (my $id = $p1->{forget}) {
         Mojo::IOLoop->remove($id);
-        if (my $fmb_id = eval { $c->{$id}->{fmb}->id }) {
+        if (my $fmb_id = try { $c->{$id}->{fmb}->id }) {
             delete $c->{fmb_ids}{$fmb_id};
         }
         delete $c->{$id};
@@ -309,6 +322,17 @@ my $json_receiver = sub {
                 }});
     }
 
+    if (my $options = $p1->{statement}) {
+        my $client = $c->stash('client') || return $c->_authorize_error($p1);
+        my $results = $c->BOM::WebSocketAPI::Accounts::get_transactions($options);
+        return $c->send({
+                json => {
+                    msg_type  => 'statement',
+                    echo_req  => $p1,
+                    statement => $results
+                }});
+    }
+
     if (my $by = $p1->{active_symbols}) {
         return $c->send({
                 json => {
@@ -328,12 +352,22 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{offerings}) {
-        my $results = BOM::WebSocketAPI::Offerings::query($c, $options);
+        my $results = $c->BOM::WebSocketAPI::Offerings::query($options);
         return $c->send({
                 json => {
                     msg_type  => 'offerings',
                     echo_req  => $p1,
                     offerings => $results
+                }});
+    }
+
+    if (my $options = $p1->{trading_times}) {
+        my $trading_times = $c->BOM::WebSocketAPI::Offerings::trading_times($options);
+        return $c->send({
+                json => {
+                    msg_type      => 'trading_times',
+                    echo_req      => $p1,
+                    trading_times => $trading_times,
                 }});
     }
 
@@ -380,9 +414,9 @@ my $json_receiver = sub {
                             code    => "InvalidSymbol"
                         }}}});
         if ($p1->{end}) {
-            my $style = delete($p1->{style}) || ($p1->{granularity} ? 'candles' : 'ticks');
+            my $style = $p1->{style} || ($p1->{granularity} ? 'candles' : 'ticks');
             if ($style eq 'ticks') {
-                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
+                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks({%$p1, ul => $ul});    ## no critic
                 my $history = {
                     prices => [map { $_->{price} } @$ticks],
                     times  => [map { $_->{time} } @$ticks],
@@ -394,7 +428,16 @@ my $json_receiver = sub {
                             history  => $history
                         }});
             } elsif ($style eq 'candles') {
-                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles(%$p1, ul => $ul);
+                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul})    ## no critic
+                    || return $c->send({
+                        json => {
+                            msg_type => 'candles',
+                            echo_req => $p1,
+                            candles  => {
+                                error => {
+                                    message => 'invalid candles request',
+                                    code    => 'InvalidCandlesRequest'
+                                }}}});
                 return $c->send({
                         json => {
                             msg_type => 'candles',
@@ -429,6 +472,7 @@ my $json_receiver = sub {
                                 code    => "NoRealtimeQuotes"
                             }}}});
         }
+        return;
     }
 
     if ($p1->{proposal}) {    # this is a recurring contract-price watch ("price streamer")
@@ -455,7 +499,7 @@ my $json_receiver = sub {
                 $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
                 last;
             };
-            my $contract = eval { produce_contract({%$p2}) } || do {
+            my $contract = try { produce_contract({%$p2}) } || do {
                 my $err = $@;
                 $log->debug("contract creation failure: $err");
                 $json->{open_receipt}->{error}->{message} = "cannot create contract";
@@ -532,7 +576,7 @@ my $json_receiver = sub {
         return $c->send({json => $json});
     }
 
-    $log->error("unrecognised request");
+    $log->debug("unrecognised request: " . $c->dumper($p1));
     return;
 };
 
