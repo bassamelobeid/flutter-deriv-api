@@ -6,7 +6,6 @@ use warnings;
 use Try::Tiny;
 use Locale::Country;
 use List::MoreUtils qw(any);
-use List::Util qw(first);
 use Mojo::Util qw(url_escape);
 use DataDog::DogStatsd::Helper qw(stats_inc);
 use Data::Validate::Sanctions qw(is_sanctioned);
