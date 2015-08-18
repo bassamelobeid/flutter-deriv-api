@@ -73,19 +73,30 @@ sub get_ask {
     my $contract = eval { produce_contract({%$p2}) } || do {
         my $err = $@;
         $log->info("contract creation failure: $err");
-        return {error => "cannot create contract"};
+        return {
+            error => {
+                message => "cannot create contract",
+                code    => "ContractCreationFailure"
+            }};
     };
     if (!$contract->is_valid_to_buy) {
         if (my $pve = $contract->primary_validation_error) {
             $log->error("primary error: " . $pve->message);
             return {
-                error     => $pve->message_to_client,
+                error => {
+                    message => $pve->message_to_client,
+                    code    => "ContractBuyValidationError"
+                },
                 longcode  => $DOM->parse($contract->longcode)->all_text,
                 ask_price => sprintf('%.2f', $contract->ask_price),
             };
         }
         $log->error("contract invalid but no error!");
-        return {error => "cannot validate contract"};
+        return {
+            error => {
+                message => "cannot validate contract",
+                code    => "ContractValidationError"
+            }};
     }
     return {
         longcode   => $DOM->parse($contract->longcode)->all_text,
@@ -150,11 +161,19 @@ sub get_bid {
     my $contract = eval { make_similar_contract(@similar_args) } || do {
         my $err = $@;
         $log->info("contract for sale creation failure: $err");
-        return {error => "cannot create sell contract"};
+        return {
+            error => {
+                message => "cannot create sell contract",
+                code    => "ContractSellCreateError"
+            }};
     };
     if (!$contract->is_valid_to_sell) {
         $log->error("primary error: " . $contract->primary_validation_error->message);
-        return {error => $contract->primary_validation_error->message_to_client};
+        return {
+            error => {
+                message => $contract->primary_validation_error->message_to_client,
+                code    => "ContractSellValidationError"
+            }};
     }
 
     return {
@@ -386,10 +405,13 @@ my $json_receiver = sub {
             } else {
                 return $c->send({
                         json => {
-                            msg_type => 'error',
+                            msg_type => 'tick',
                             echo_req => $p1,
-                            error    => "style $style invalid"
-                        }});
+                            tick     => {
+                                error => {
+                                    message => "style $style invalid",
+                                    code    => "InvalidStyle"
+                                }}}});
             }
         }
         if ($ul->feed_license eq 'realtime') {
