@@ -3,5 +3,5 @@ AuthType Basic
 <IfModule authn_file_module>
 AuthBasicProvider file
 </IfModule>
-AuthUserFile /home/git/regentmarkets/bom-backoffice/.htpasswd
+AuthUserFile /etc/nginx/backoffice_htpasswd
 require user april14
