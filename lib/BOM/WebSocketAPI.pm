@@ -21,13 +21,13 @@ sub startup {
 
     for ($r->under('/websockets/v2')) {
         $_->to('websocket_v1#ok');
-        $_->websocket_v1('/')->to('#entry_point');
+        $_->websocket('/')->to('#entry_point');
     }
 
     # Alias, to be deprecated.
     for ($r->under('/websockets/')) {
         $_->to('websocket_v1#ok');
-        $_->websocket_v1('/contracts')->to('#entry_point');
+        $_->websocket('/contracts')->to('#entry_point');
     }
 
     return;
