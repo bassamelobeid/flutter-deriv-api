@@ -19,13 +19,14 @@ use BOM::Market::Types;
 
 with 'MooseX::Role::Validatable';
 
-# STATIC
-# added for transaction validation
-sub pricing_engine_name { return '' }
-sub tick_expiry         { return 0 }
-# added for CustomClientLimits
-sub is_atm_bet { return 0 }
-sub is_spread  { return 1 }
+use constant { # added for CustomClientLimits & Transaction
+    is_spread  => 1,
+    is_atm_bet => 0,
+    expiry_daily => 0,
+    fixed_expiry => 0,
+    tick_expiry  => 0,
+    pricing_engine_name => '',
+};
 
 sub BUILD {
     my $self = shift;

@@ -423,13 +423,11 @@ sub prepare_bet_data_for_buy {
         payout_price      => scalar $self->payout,
     };
 
-    if (!$contract->is_spread) {
-        $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
-        $bet_params->{fixed_expiry} = 1 if $contract->fixed_expiry;
-        if ($contract->tick_expiry) {
-            $bet_params->{tick_expiry} = 1;
-            $bet_params->{tick_count}  = scalar $contract->tick_count;
-        }
+    $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
+    $bet_params->{fixed_expiry} = 1 if $contract->fixed_expiry;
+    if ($contract->tick_expiry) {
+        $bet_params->{tick_expiry} = 1;
+        $bet_params->{tick_count}  = scalar $contract->tick_count;
     }
 
     if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
