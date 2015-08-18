@@ -4,8 +4,8 @@ use strict;
 use warnings;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
+use Finance::Asset;
 
-use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 
@@ -13,8 +13,8 @@ use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 # of full-list results and for hashed lookups by-displayname and by-symbol-code.
 
 my ($_by_display_name, $_by_symbol, $_by_exchange) = ({}, {}, {});
-for (BOM::Market::UnderlyingConfig->symbols) {
-    my $sp = BOM::Market::UnderlyingConfig->get_parameters_for($_) || next;
+for (Finance::Asset->instance->symbols) {
+    my $sp = Finance::Asset->instance->get_parameters_for($_) || next;
     my $ul = BOM::Market::Underlying->new($_);
     $_by_display_name->{$ul->display_name} = $sp;
     # If this display-name has slashes, also generate a 'safe' version that can sit in REST expressions
