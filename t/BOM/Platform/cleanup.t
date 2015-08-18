@@ -70,6 +70,8 @@ subtest 'reset redis connections at end of request', sub {
 
     BOM::Platform::Sysinit::init;
 
+    is $ENV{BOM_ACCOUNT}, 'DUMMY', 'BOM_ACCOUNT envvar set';
+
     is 0+@{Test::AppRequest::cleanups || []}, 1, 'got 1 cleanup';
 
     note "rendering Cache::RedisDB connection unusable";
@@ -95,9 +97,22 @@ subtest 'reset redis connections at end of request', sub {
         BOM::System::Chronicle->_redis_read->get('MY::k1');
     } qr/when you have replies to fetch/, 'BOM::System::Chronicle->_redis_read connection is now unusable';
 
+    note 'getting DB connection and open a transaction';
+
+    my $dbh = BOM::Database::ClientDB->new({
+        broker_code => 'CR',
+    })->db->dbh or die "[$0] cannot create connection";
+    $dbh->begin_work;
+    is $dbh->{AutoCommit}, '', 'DB transaction started';
+    $dbh->do('create table xxxxxx (i int)');
+    is_deeply $dbh->selectall_arrayref("select 1 from pg_class where relname='xxxxxx'"),
+        [[1]], 'table xxxxxx exists';
+
     note "running cleanups";
 
     Test::AppRequest::cleanups->[0]->();
+
+    is $ENV{BOM_ACCOUNT}, undef, 'BOM_ACCOUNT envvar reset';
 
     note "checking usability after cleanup";
 
@@ -112,6 +127,11 @@ subtest 'reset redis connections at end of request', sub {
     lives_ok {
         is +BOM::System::Chronicle->_redis_write->get('MY::k1'), 23, 'got expected value';
     } 'BOM::System::Chronicle->_redis_write connection has become usable again';
+
+    note "check that DB transaction is rolled back";
+    is $dbh->{AutoCommit}, 1, 'DB transaction rolled back';
+    is_deeply $dbh->selectall_arrayref("select 1 from pg_class where relname='xxxxxx'"),
+        [], 'table xxxxxx does not exist';
 };
 
 Test::NoWarnings::had_no_warnings;
