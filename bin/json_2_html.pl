@@ -6,20 +6,17 @@ use File::Slurp;
 opendir(my $dh, 'config') || die;
 my @f = ();
 while(my $f = readdir $dh) {
+	next if ($f eq '.' or $f eq '..');
+
 	push @f, "config/$f";
 }
 
-foreach my $f (reverse sort @f) {
-	if (-f $f and $f =~ /\_send.json$/) {
-		print_doc_send(JSON::from_json(File::Slurp::read_file($f)));
+foreach my $f (@f) {
+	print_doc_send(JSON::from_json(File::Slurp::read_file("$f/send.json")));
+	print "<br><br>";
+	print_doc_receive(JSON::from_json(File::Slurp::read_file("$f/receive.json")));    
+	print "<hr>";
 
-	}
-	print "\n\n";
-	if (-f $f and $f =~ /\_receive.json$/) {
-		print_doc_receive(JSON::from_json(File::Slurp::read_file($f)));
-
-	}
-    
 }
 
 sub print_doc_receive {
