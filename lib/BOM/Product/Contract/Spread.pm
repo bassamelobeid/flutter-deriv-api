@@ -393,6 +393,17 @@ sub current_value {
     };
 }
 
+has payout => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_payout {
+    my $self = shift;
+
+    return $self->stop_profit * $self->amount_per_point;
+}
+
 # VALIDATIONS #
 sub _validate_quote {
     my $self = shift;
