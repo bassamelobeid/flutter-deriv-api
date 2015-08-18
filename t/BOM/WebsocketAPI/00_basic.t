@@ -62,7 +62,7 @@ isa_ok($response->{candles}, 'ARRAY', 'candles slot');
 $test_name = 'candles test with bad granularity';
 
 &same_structure_tests('candles', {ticks=>'R_50', end=>'latest', granularity=>'xxH7'});
-$t->json_message_is('/error', 'invalid candles request', 'bad granularity string rejected');
+$t->json_message_is('/candles/error/message', 'invalid candles request', 'bad granularity string rejected');
 
 #____________________________________________________________________
 done_testing();

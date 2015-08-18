@@ -433,8 +433,11 @@ my $json_receiver = sub {
                         json => {
                             msg_type => 'candles',
                             echo_req => $p1,
-                            error    => 'invalid candles request'
-                        }});
+                            candles  => {
+                                error => {
+                                    message => 'invalid candles request',
+                                    code    => 'InvalidCandlesRequest'
+                                }}}});
                 return $c->send({
                         json => {
                             msg_type => 'candles',
