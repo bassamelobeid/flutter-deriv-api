@@ -2,8 +2,6 @@
 package main;
 use strict 'vars';
 
-use Path::Tiny;
-
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
@@ -68,18 +66,6 @@ if ($input->{'transtype'} =~ /^UPDATECLIENT/) {
         . $client->last_name
         . ' current email is '
         . $client->email;
-
-    # Logging
-    Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")
-        ->append($now->datetime
-            . "GMT $clerk MAKES DUAL CONTROL CODE FOR "
-            . $input->{'transtype'}
-            . " email="
-            . $input->{'clientemail'}
-            . " loginid="
-            . $input->{'clientloginid'}
-            . " $ENV{'REMOTE_ADDR'} REMINDER="
-            . $input->{'reminder'});
 } else {
     print "Transaction type is not valid";
 }

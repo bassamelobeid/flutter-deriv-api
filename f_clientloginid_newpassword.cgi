@@ -10,7 +10,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
-use BOM::Platform::EmailToken;
+use BOM::Platform::SessionCookie;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -38,12 +38,9 @@ if (not $email) {
 my $lang = request()->language;
 
 my $link = request()->url_for(
-    '/user/reset_password',
+    '/user/validate_link',
     {
-        action      => 'recover',
-        email       => url_encode($email),
-        reset_token => BOM::Platform::EmailToken->new(email => $email)->token,
-        login       => $client->loginid
+        verify_token => BOM::Platform::SessionCookie->new({email => $email, expires_in => 3600})->token,
     });
 
 my $lost_pass_email;

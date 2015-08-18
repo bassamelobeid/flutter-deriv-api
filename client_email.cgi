@@ -9,7 +9,6 @@ use List::MoreUtils qw( uniq any firstval );
 use f_brokerincludeall;
 use Format::Util::Strings qw( defang );
 use Text::Trim;
-use Path::Tiny;
 use Date::Utility;
 use BOM::Platform::Client;
 use BOM::Platform::User;
@@ -103,7 +102,6 @@ if ($email ne $new_email) {
 
     my $msg = $now->datetime . " " . $input{transtype} .  " updated user $email to $new_email by clerk=$clerk (DCcode=" . $input{DCcode} . ") $ENV{REMOTE_ADDR}";
     BOM::System::AuditLog::log($msg, $new_email, $clerk);
-    Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
 
     BOM::Platform::Context::template->process(
         'backoffice/client_email.html.tt',

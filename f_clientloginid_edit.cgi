@@ -128,7 +128,6 @@ if ($input{whattodo} eq 'sync_to_DF') {
     my $msg = Date::Utility->new->datetime . " sync client authentication status to Doughflow by clerk=$clerk $ENV{REMOTE_ADDR}, " .
             'loginid: '.$df_client->loginid.', Email: '.$df_client->Email.', Name: '.$df_client->CustName.', Profile: '.$df_client->Profile;
     BOM::System::AuditLog::log($msg, $loginid, $clerk);
-    Path::Tiny::path("/var/log/fixedodds/fclientdetailsupdate.log")->append($msg);
 
     BOM::Platform::Context::template->process(
         'backoffice/client_edit_msg.tt',
