@@ -19,12 +19,12 @@ use BOM::Market::Types;
 
 with 'MooseX::Role::Validatable';
 
-use constant { # added for CustomClientLimits & Transaction
-    is_spread  => 1,
-    is_atm_bet => 0,
-    expiry_daily => 0,
-    fixed_expiry => 0,
-    tick_expiry  => 0,
+use constant {    # added for CustomClientLimits & Transaction
+    is_spread           => 1,
+    is_atm_bet          => 0,
+    expiry_daily        => 0,
+    fixed_expiry        => 0,
+    tick_expiry         => 0,
     pricing_engine_name => '',
 };
 

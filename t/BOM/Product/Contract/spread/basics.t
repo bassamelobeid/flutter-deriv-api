@@ -297,9 +297,9 @@ subtest 'payout' => sub {
 subtest 'spread constants' => sub {
     my $c = produce_contract($params);
     ok $c->is_spread, 'is_spread';
-    ok !$c->fixed_expiry, 'not fixed_expiry';
-    ok !$c->tick_expiry, 'not tick_expiry';
-    ok !$c->is_atm_bet, 'not is_atm_bet';
-    ok !$c->expiry_daily, 'not expiry_daily';
+    ok !$c->fixed_expiry,        'not fixed_expiry';
+    ok !$c->tick_expiry,         'not tick_expiry';
+    ok !$c->is_atm_bet,          'not is_atm_bet';
+    ok !$c->expiry_daily,        'not expiry_daily';
     ok !$c->pricing_engine_name, 'pricing engine name is \'\'';
 };
