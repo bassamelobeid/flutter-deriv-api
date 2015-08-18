@@ -223,7 +223,7 @@ my $json_receiver = sub {
     my $source = $c->stash('source');
 
     if (my $token = $p1->{authorize}) {
-
+        my ($client, $account, $email, $loginid) = BOM::WebSocketAPI::Authorize::authorize($c, $token);
         if (not $client) {
             return $c->send({
                     json => {
