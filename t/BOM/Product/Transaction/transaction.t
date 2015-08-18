@@ -386,7 +386,7 @@ subtest 'buy a spread bet' => sub {
         is $fmb->{bet_class}, 'spread_bet', 'bet_class';
         is $fmb->{bet_type},  'SPREADU',    'bet_type';
         is $fmb->{buy_price} + 0, 20, 'buy_price';
-        note "time=".time.', expiry='.Date::Utility->new($fmb->{expiry_time})->epoch;
+        note "time=" . time . ', expiry=' . Date::Utility->new($fmb->{expiry_time})->epoch;
         cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time + 365 * 24 * 3600 - 60, 'expiry_time lower boundary';
         cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '<=', time + 365 * 24 * 3600, 'expiry_time upper boundary';
         is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
@@ -394,13 +394,13 @@ subtest 'buy a spread bet' => sub {
         is !$fmb->{is_sold},    !0, 'is_sold';
         cmp_ok $fmb->{payout_price}, '==', 40, 'payout_price';
         cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
-        like $fmb->{remark},        qr/amount_per_point/, 'remark';
-        is $fmb->{sell_price},      undef,                'sell_price';
-        is $fmb->{sell_time},       undef,                'sell_time';
-        note "time=".time.', settlement='.Date::Utility->new($fmb->{settlement_time})->epoch;
+        like $fmb->{remark},   qr/amount_per_point/, 'remark';
+        is $fmb->{sell_price}, undef,                'sell_price';
+        is $fmb->{sell_time},  undef,                'sell_time';
+        note "time=" . time . ', settlement=' . Date::Utility->new($fmb->{settlement_time})->epoch;
         cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time + 365 * 24 * 3600 - 60, 'settlement_time lower boundary';
         cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '<=', time + 365 * 24 * 3600, 'settlement_time upper boundary';
-        like $fmb->{short_code},    qr/SPREADU/,          'short_code';
+        like $fmb->{short_code}, qr/SPREADU/, 'short_code';
         cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
         is $fmb->{tick_count},        undef,   'tick_count';
         is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
