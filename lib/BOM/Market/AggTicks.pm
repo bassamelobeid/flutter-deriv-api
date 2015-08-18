@@ -192,17 +192,17 @@ sub retrieve {
         $self->fill_from_historical_feed($args) if ($fill_cache and $end < time - $self->unagg_retention_interval->seconds);
         @res = map { $decoder->decode($_) } reverse @{$redis->zrevrangebyscore($self->_make_key($which, 0), $end, 0, 'LIMIT', 0, $tc)};
     } else {
-        my ($interval_to_check, $key);
+        my ($hold_secs, $key);
         if ($aggregated) {
-            $interval_to_check = 'agg_retention_interval';
+            $hold_secs = $self->agg_retention_interval->seconds;
             $key = $self->_make_key($which, 1);
         } else {
-            $interval_to_check = 'unagg_retention_interval';
+            $hold_secs = $self->unagg_retention_interval->seconds;
             $key = $self->_make_key($which, 0);
         }
 
-        my $start = $end - $ti->seconds;
-        $self->fill_from_historical_feed($args) if ($fill_cache and $start < time - ($self->$interval_to_check->seconds + $agg_seconds));
+        my $start = $end - min($ti->seconds, $hold_secs);    # No requests for longer than the retention.
+        $self->fill_from_historical_feed($args) if ($fill_cache and $start < time - ($hold_secs + $agg_seconds));
 
         @res = map { $decoder->decode($_) } @{$redis->zrangebyscore($key, $start, $end)};
         # We get the last tick for aggregated tick request.
