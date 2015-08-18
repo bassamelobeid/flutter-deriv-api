@@ -111,11 +111,11 @@ sub symbol_search {
 }
 
 sub _ticks {
-    my ($c, %args) = @_;
-    my $ul    = $args{ul} || die 'no underlying';
-    my $start = $args{start};
-    my $end   = $args{end};
-    my $count = $args{count};
+    my ($c, $args) = @_;
+    my $ul    = $args->{ul} || die 'no underlying';
+    my $start = $args->{start};
+    my $end   = $args->{end};
+    my $count = $args->{count};
 
     # we must not return to the client any ticks after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
@@ -154,40 +154,28 @@ sub ticks {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};
     my $ul     = BOM::Market::Underlying->new($symbol);
-    my $ticks  = $c->_ticks(
+    my $ticks  = $c->_ticks({
         ul    => $ul,
         start => $c->param('start') // 0,
         end   => $c->param('end') // 0,
         count => $c->param('count') // 0,
-    );
+    });
     return $c->_pass({ticks => $ticks});
 }
 
-my %seconds_granularities = (
-    M1  => 60,
-    M5  => 300,
-    M10 => 600,
-    M30 => 1800,
-    H1  => 3600,
-    H2  => 7200,
-    H4  => 14400,
-    H8  => 28800,
-);
-
 sub _candles {
-    my ($c, %args) = @_;
-    my $ul          = $args{ul} || die 'no underlying';
-    my $start       = $args{start};
-    my $end         = $args{end};
-    my $count       = $args{count};
-    my $granularity = $args{granularity} || 'M1';
+    my ($c, $args) = @_;
+    my $ul          = $args->{ul} || die 'no underlying';
+    my $start       = $args->{start};
+    my $end         = $args->{end};
+    my $count       = $args->{count};
+    my $granularity = uc($args->{granularity} || 'M1');
 
     # we must not return to the client any candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
 
     unless ($start
         and $start =~ /^[0-9]+$/
-        and $start > time - 365 * 86400
         and $start < $licensed_epoch)
     {
         $start = $licensed_epoch - 86400;
@@ -207,7 +195,16 @@ sub _candles {
         $count = 500;
     }
     my $candles;
-    if (my $period = $seconds_granularities{$granularity}) {
+
+    if ($granularity eq 'D') {
+        my $end_max = $start + 86400 * $count;
+        $end = $end_max > $end ? $end : $end_max;
+        $candles = $ul->feed_api->ohlc_daily_list({
+            start_time => $start,
+            end_time   => $end,
+        });
+    } elsif (my ($unit, $size) = $granularity =~ /^([HMS])(\d+)$/) {
+        my $period = do { {H => 3600, M => 60, S => 1}->{$unit} * $size };
         $start = $start - $start % $period;
         my $end_max = $start + $period * $count;
         $end = $end_max > $end ? $end : $end_max;
@@ -216,15 +213,8 @@ sub _candles {
             end_time           => $end,
             aggregation_period => $period,
         });
-    } elsif ($granularity eq 'D') {
-        my $end_max = $start + 86400 * $count;
-        $end = $end_max > $end ? $end : $end_max;
-        $candles = $ul->feed_api->ohlc_daily_list({
-            start_time => $start,
-            end_time   => $end,
-        });
     } else {
-        die "Invalid granularity";
+        return;
     }
     return [map { {time => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @$candles];
 }
@@ -234,13 +224,13 @@ sub candles {
     my $symbol = $c->stash('sp')->{symbol};
     my $ul     = BOM::Market::Underlying->new($symbol);
 
-    my $candles = $c->_candles(
-        ul          => $ul,
-        start       => $c->param('start') // 0,
-        end         => $c->param('end') // 0,
-        count       => $c->param('count') // 0,
-        granularity => $c->param('granularity') // '',
-    );
+    my $candles = $c->_candles({
+            ul          => $ul,
+            start       => $c->param('start') // 0,
+            end         => $c->param('end') // 0,
+            count       => $c->param('count') // 0,
+            granularity => $c->param('granularity') // '',
+        }) || return $c->_fail("invalid candles request");
     return $c->_pass({candles => $candles});
 }
 
