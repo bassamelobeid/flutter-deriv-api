@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 8;
+use Test::More tests => 9;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockModule;
@@ -275,4 +275,21 @@ subtest 'category' => sub {
     ok !$c->is_path_dependent,      'non path dependent';
     ok !$c->allow_forward_starting, 'non forward-starting';
     ok !$c->two_barriers,           'non two barriers';
+};
+
+subtest 'payout' => sub {
+    my $c = produce_contract({
+        %$params,
+        stop_type        => 'point',
+        amount_per_point => 2,
+        stop_profit      => 10,
+    });
+    cmp_ok $c->payout, '==', 20, 'correct payout with stop_type as point';
+    $c = produce_contract({
+        %$params,
+        stop_type        => 'dollar',
+        amount_per_point => 2,
+        stop_profit      => 10,
+    });
+    cmp_ok $c->payout, '==', 10, 'correct payout with stop_type as dollar';
 };
