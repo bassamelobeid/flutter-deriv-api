@@ -6,7 +6,7 @@ sub startup {
     my $app = shift;
 
     $app->moniker('websocket');
-    $app->plugin('Config');
+    #$app->plugin('Config');
 
     my $log = $app->log;
 

@@ -195,15 +195,31 @@ sub _candles {
         $count = 500;
     }
     my $candles;
+    my $size;
 
-    if ($granularity eq 'D') {
+    my $log = $c->app->log;
+    $log->debug("granularity $granularity");
+
+    if (($size) = $granularity =~ /^D(\d+)$/) {
         my $end_max = $start + 86400 * $count;
         $end = $end_max > $end ? $end : $end_max;
-        $candles = $ul->feed_api->ohlc_daily_list({
+
+        $log->debug("underlying $ul, start $start, end $end, size $size");
+
+        use BOM::Feed::Data::AnyEvent;
+        my $feed_api = BOM::Feed::Data::AnyEvent->new(_logger=>$log);
+        my $watcher = $feed_api->get_ohlc(
+            underlying => $ul->symbol,
             start_time => $start,
             end_time   => $end,
-        });
-    } elsif (my ($unit, $size) = $granularity =~ /^([HMS])(\d+)$/) {
+            interval   => "${size}d",
+            on_result  => $args->{sender},
+        );
+        AE::now_update;
+        return $watcher;
+
+
+    } elsif ((my $unit, $size) = $granularity =~ /^([HMS])(\d+)$/) {
         my $period = do { {H => 3600, M => 60, S => 1}->{$unit} * $size };
         $start = $start - $start % $period;
         my $end_max = $start + $period * $count;

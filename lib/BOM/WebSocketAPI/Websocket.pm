@@ -428,7 +428,20 @@ my $json_receiver = sub {
                             history  => $history
                         }});
             } elsif ($style eq 'candles') {
-                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul})    ## no critic
+
+                my $sender = sub { 
+                    open my $file, ">>/tmp/xx";
+                    printf $file "%s\n", scalar(localtime);
+                    close $file;
+                    #$c->send({
+                    #        json => {
+                    #            msg_type => 'candles',
+                    #            echo_req => $p1,
+                    #            candles  => $candles
+                    #        }});
+                };
+
+                my $watcher = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul, sender => $sender})    ## no critic
                     || return $c->send({
                         json => {
                             msg_type => 'candles',
@@ -438,12 +451,10 @@ my $json_receiver = sub {
                                     message => 'invalid candles request',
                                     code    => 'InvalidCandlesRequest'
                                 }}}});
-                return $c->send({
-                        json => {
-                            msg_type => 'candles',
-                            echo_req => $p1,
-                            candles  => $candles
-                        }});
+
+                $log->debug("watcher is back");
+                push @{$c->stash->{watchers}}, $watcher;
+                return;
             } else {
                 return $c->send({
                         json => {
