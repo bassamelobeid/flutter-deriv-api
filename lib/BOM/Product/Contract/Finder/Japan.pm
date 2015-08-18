@@ -69,18 +69,17 @@ my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
 my $cache_sep      = '==';
 
 sub _predefined_trading_period {
-    my $args          = shift;
-    my @offerings     = @{$args->{offerings}};
-    my $exchange      = $args->{exchange};
-    my $period_length = Time::Duration::Concise->new({interval => '2h'});    # Two hour intraday rolling periods.
-    my $now           = Date::Utility->new;
-    my $in_period     = $now->hour - ($now->hour % $period_length->hours);
-
-    my $trading_key = join($cache_sep, $exchange->symbol, $now->date, $in_period);
+    my $args            = shift;
+    my @offerings       = @{$args->{offerings}};
+    my $exchange        = $args->{exchange};
+    my $period_length   = Time::Duration::Concise->new({interval => '2h'});              # Two hour intraday rolling periods.
+    my $now             = Date::Utility->new;
+    my $in_period       = $now->hour - ($now->hour % $period_length->hours);
+    my $trading_key     = join($cache_sep, $exchange->symbol, $now->date, $in_period);
     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
-        my $today        = $now->truncate_to_day;                            # Start of the day object.
-        my $start_of_day = $today->datetime;                                 # As a string.
+        my $today        = $now->truncate_to_day;                                        # Start of the day object.
+        my $start_of_day = $today->datetime;                                             # As a string.
 
         # Starting at midnight, running through these times.
         my @hourly_durations = qw(2h 3h 4h 5h);
@@ -130,21 +129,24 @@ sub _predefined_trading_period {
                 };
         }
         # Starting in the most recent even hour, running for.our period
-        my $period_start      = $today->plus_time_interval($in_period . 'h');
-        my $recent_2_hour_end = $period_start->plus_time_interval($period_length);
-        push @$trading_periods,
+        my $period_start = $today->plus_time_interval($in_period . 'h');
+        push @$trading_periods, map {
             +{
-            date_start => {
-                date  => $period_start->datetime,
-                epoch => $period_start->epoch,
-            },
-            date_expiry => {
-                date  => $recent_2_hour_end->datetime,
-                epoch => $recent_2_hour_end->epoch,
-            },
-            duration => '2h',
-            };
-
+                date_start => {
+                    date  => $period_start->datetime,
+                    epoch => $period_start->epoch,
+                },
+                date_expiry => {
+                    date  => $_->datetime,
+                    epoch => $_->epoch,
+                },
+                duration => ($_->hour - $period_start->hour) . 'h',
+                }
+            } grep {
+            $now->is_before($_)
+            } map {
+            $period_start->plus_time_interval($_)
+            } @hourly_durations;
         # We will hold it for the duration of the period which is a little too long, but no big deal.
         Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
     }
