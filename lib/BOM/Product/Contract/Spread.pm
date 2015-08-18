@@ -394,7 +394,7 @@ sub current_value {
 }
 
 has payout => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
