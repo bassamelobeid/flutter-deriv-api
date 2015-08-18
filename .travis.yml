@@ -7,6 +7,7 @@ env:
     - TEST_SUITE=syntax_lib
     - TEST_SUITE=unit_test_marketdata
     - TEST_SUITE=unit_test_market
+    - TEST_SUITE=cover
 services:
     - redis-server
 addons:
@@ -48,4 +49,5 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
 
 script:
-    - make $TEST_SUITE
+    # - make $TEST_SUITE
+    - /tmp/travis-scripts/bom_cover.sh

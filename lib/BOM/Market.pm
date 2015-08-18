@@ -501,6 +501,11 @@ has 'official_ohlc' => (
     isa => 'Bool',
 );
 
+has spread_divisor => (
+    is      => 'ro',
+    default => 1,
+);
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 

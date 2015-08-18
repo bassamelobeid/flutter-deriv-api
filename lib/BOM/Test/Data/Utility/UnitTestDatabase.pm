@@ -4,6 +4,7 @@ use MooseX::Singleton;
 use BOM::Database::ClientDB;
 use BOM::Platform::Client;
 use BOM::Database::Model::FinancialMarketBet::HigherLowerBet;
+use BOM::Database::Model::FinancialMarketBet::SpreadBet;
 use BOM::Database::Model::FinancialMarketBet::TouchBet;
 use BOM::Database::Model::FinancialMarketBet::RangeBet;
 use BOM::Database::Helper::FinancialMarketBet;

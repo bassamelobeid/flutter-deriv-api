@@ -86,7 +86,8 @@ my $params = {
     currency     => 'USD',
     barrier      => 98,
 };
-
+my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface;
+BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface('{}');
 my $c = produce_contract($params);
 is roundnear(0.0001, $c->bs_probability->amount), 0.1496, 'correct bs probability for FX contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0381, 'correct market supplement';
@@ -135,6 +136,7 @@ $c = produce_contract({
     underlying => 'AEX',
     currency   => 'EUR',
 });
+
 is roundnear(0.0001, $c->bs_probability->amount), 0.5992, 'correct bs probability for indices contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0251, 'correct market supplement';
 
@@ -148,3 +150,4 @@ $c = produce_contract({
 });
 is roundnear(0.0001, $c->bs_probability->amount), 0.263, 'correct bs probability for indices contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0173, 'correct market supplement';
+BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface($orig);

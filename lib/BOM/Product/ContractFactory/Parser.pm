@@ -63,8 +63,8 @@ sub financial_market_bet_to_parameters {
     if ($contract_start_time->epoch - $purchase_time->epoch > 5) {
         $bet_parameters->{is_forward_starting} = 1;
     }
-    $bet_parameters->{date_start}  = $contract_start_time;
-    $bet_parameters->{date_expiry} = $fmb->expiry_time;
+    $bet_parameters->{date_start} = $contract_start_time;
+    $bet_parameters->{date_expiry} = $fmb->expiry_time if $fmb->expiry_time;
 
     if ($fmb->tick_count) {
         $bet_parameters->{tick_expiry} = 1;
@@ -93,6 +93,8 @@ sub financial_market_bet_to_parameters {
               $fmb->relative_barrier
             ? $fmb->relative_barrier
             : $fmb->absolute_barrier;
+    } elsif ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
+        $bet_parameters->{$_} = $fmb->$_ for qw(amount_per_point stop_type stop_loss stop_profit spread);
     }
 
     return $bet_parameters;
@@ -138,6 +140,20 @@ sub shortcode_to_parameters {
         return {
             bet_type => 'Invalid',    # it doesn't matter what it is if it is a legacy
             currency => $currency,
+        };
+    }
+
+    if ($shortcode =~ /^(SPREADU|SPREADD)_([\w\d]+)_(\d*.?\d*)_(\d+)_(\d+.?\d*)_(\d+.?\d*)_(DOLLAR|POINT)/) {
+        return {
+            shortcode        => $shortcode,
+            bet_type         => $1,
+            underlying       => BOM::Market::Underlying->new($2),
+            amount_per_point => $3,
+            date_start       => $4,
+            stop_loss        => $5,
+            stop_profit      => $6,
+            stop_type        => lc $7,
+            currency         => $currency,
         };
     }
 
