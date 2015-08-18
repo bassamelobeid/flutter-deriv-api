@@ -7,8 +7,10 @@ use BOM::Product::Offerings;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Finder qw (get_barrier);
+use Format::Util::Numbers qw(roundnear);
 use base qw( Exporter );
-our @EXPORT_OK = qw(predefined_contracts_for_symbol);
+use BOM::Product::ContractFactory qw(produce_contract);
+our @EXPORT_OK = qw(predefined_contracts_for_symbol get_barrier_by_probability);
 
 sub predefined_contracts_for_symbol {
     my $args         = shift;
@@ -215,4 +217,58 @@ sub _set_predefined_barriers {
 
     return;
 }
+
+=head2 get_barrier_by_probability
+
+To get the strikes that associated with a given theo probability.
+
+=cut
+
+sub get_barrier_by_probability {
+    my $args = shift;
+
+    my ($underlying, $duration, $contract_type, $barrier_tick, $atm_vol, $target_theo_prob, $date_start) =
+        @{$args}{'underlying', 'duration', 'contract_type', 'barrier_tick', 'atm_vol', 'theo_prob', 'date_start'};
+
+    my $bet_params = {
+        underlying => $underlying,
+        bet_type   => $contract_type,
+        currency   => 'USD',
+        payout     => 100,
+        date_start => $date_start,
+        r_rate     => 0,
+        q_rate     => 0,
+        duration     => $duration,
+        pricing_vol  => $atm_vol,
+        date_pricing => $date_start,
+    };
+    # Initialise the bet object
+    my $bet = produce_contract($bet_params);
+
+    my ($high, $low) = (1.5 * $barrier_tick, 0.5 * $barrier_tick);
+
+    my $pip_size = $underlying->pip_size;
+
+    my $iterations = 0;
+    for ($iterations = 0; $iterations < 20; $iterations++) {
+        $bet_params->{'barrier'} = ($low + $high) / 2;
+        my $found_barrier = roundnear($pip_size, $bet_params->{'barrier'});
+
+        $bet = produce_contract($bet_params);
+
+        my $theo_prob = $bet->theo_probability->amount;
+
+        if (abs($theo_prob - $target_theo_prob) < 0.01) {
+            return ($iterations, $found_barrier);
+        }
+
+        if ($theo_prob > $target_theo_prob) {
+            $low = ($low + $high) / 2;
+        } else {
+            $high = ($low + $high) / 2;
+        }
+    }
+    return ($iterations, $bet->barrier);
+}
+
 1;
