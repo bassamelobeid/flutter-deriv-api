@@ -114,6 +114,7 @@ foreach my $bet_info (@bet_infos) {
                 purchase_time     => $start_time,
                 start_time        => $start_time,
                 expiry_time       => $end_time,
+                settlement_time   => $end_time,
                 is_expired        => 0,
                 is_sold           => 0,
                 bet_class         => $bet_info->{bet_class},
