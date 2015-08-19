@@ -1,5 +1,3 @@
-## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
-
 package BOM::Product::Contract::Finder;
 
 use strict;
@@ -19,7 +17,8 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
 sub available_contracts_for_symbol {
-    my $symbol = shift || die 'no symbol';
+    my $args   = shift;
+    my $symbol = $args->{symbol} || die 'no symbol';
 
     my $now        = Date::Utility->new;
     my $underlying = BOM::Market::Underlying->new($symbol);
