@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "contracts_for": {
+      
+      "type": "string",
+      "default": "R_100"
+    }
+  },
+  "required": [
+    
+    "contracts_for"
+  ]
+}
