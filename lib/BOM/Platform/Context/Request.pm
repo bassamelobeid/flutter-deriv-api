@@ -155,6 +155,11 @@ has [qw( real_account_broker virtual_account_broker financial_account_broker )] 
     lazy_build => 1,
 );
 
+has 'available_currencies' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 has 'default_currency' => (
     is         => 'ro',
     lazy_build => 1,
