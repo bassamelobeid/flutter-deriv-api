@@ -44,9 +44,6 @@ sub init {
             sub {
                 delete $ENV{BOM_ACCOUNT};                           ## no critic
                 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-                Cache::RedisDB::redis->reset_connection;
-                BOM::System::Chronicle::_redis_read->reset_connection;
-                BOM::System::Chronicle::_redis_write->reset_connection;
                 alarm 0;
             });
 
