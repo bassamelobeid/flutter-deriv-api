@@ -4,11 +4,12 @@
   "properties": {
     "active_symbols": {
       
-      "type": "string"
+      "type": "string",
+      "default": "display_name"
     }
   },
   "required": [
-    
+   
     "active_symbols"
   ]
 }
