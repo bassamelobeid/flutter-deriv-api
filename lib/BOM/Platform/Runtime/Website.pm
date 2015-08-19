@@ -209,6 +209,18 @@ sub broker_for_new_account {
     return $broker;
 }
 
+sub broker_for_new_financial {
+    my $self         = shift;
+    my $country_code = shift;
+
+    my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
+    my $company = $c_config->{financial_company} if (exists $c_config->{financial_company});
+    return if (not $company);
+
+    my $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
+    return $broker;
+}
+
 sub broker_for_new_virtual {
     my $self = shift;
     my $vr_broker = first { $_->is_virtual } @{$self->broker_codes};

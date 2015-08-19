@@ -149,20 +149,9 @@ has cookie_domain => (
     builder => '_build_cookie_domain'
 );
 
-has 'real_account_broker' => (
+has [qw( real_account_broker virtual_account_broker financial_account_broker )] => (
     is         => 'ro',
     isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
-    lazy_build => 1,
-);
-
-has 'virtual_account_broker' => (
-    is         => 'ro',
-    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
-    lazy_build => 1,
-);
-
-has 'available_currencies' => (
-    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -387,6 +376,12 @@ sub _build_real_account_broker {
     my $self = shift;
     return unless ($self->website);
     return $self->website->broker_for_new_account($self->country_code);
+}
+
+sub _build_financial_account_broker {
+    my $self = shift;
+    return unless ($self->website);
+    return $self->website->broker_for_new_financial($self->country_code);
 }
 
 sub _build_language {
