@@ -8,7 +8,7 @@ use File::Spec;
 use JSON qw(decode_json);
 
 use BOM::Test::Data::Utility::UnitTestRedis;
-use Test::More (tests => 7);
+use Test::More (tests => 5);
 use Test::Exception;
 use Test::Differences;
 use Test::NoWarnings;
@@ -17,12 +17,9 @@ use List::MoreUtils qw( all none );
 
 use BOM::Product::Contract::Offerings;
 
-throws_ok { BOM::Product::Contract::Offerings->new } qr/broker_code.*is required/, 'BOM::Product::Contract::Offerings requires a broker code.';
-throws_ok { BOM::Product::Contract::Offerings->new(broker_code => 'PFUNK') } qr/Unknown broker code/, '..a VALID broker code.';
 
-my $test_constructor_args = [broker_code => 'CR'];
 my $expected_levels       = 4;
-my $offerings             = new_ok('BOM::Product::Contract::Offerings' => $test_constructor_args);
+my $offerings             = new_ok('BOM::Product::Contract::Offerings');
 
 my $original_levels = $offerings->levels;
 subtest levels => sub {
@@ -69,8 +66,9 @@ subtest 'decorate_tree' => sub {
     my $second_level_items = $offerings->get_items_on_level($second_level);
     ok((none { exists $_->{$decoration_name} } (@$second_level_items)),
         '.. decorations called ' . $decoration_name . ' do not exist on any of the "' . $second_level . '" level items');
+
     eq_or_diff($offerings->tree, $original_tree, "Asking for the tree again produces the decorated_tree");
-    my $new_offerings = new_ok('BOM::Product::Contract::Offerings' => $test_constructor_args);
+    my $new_offerings = new_ok('BOM::Product::Contract::Offerings');
     isnt($new_offerings->tree, $original_tree, "..but asking the new copy does not have the decorations.");
 };
 
