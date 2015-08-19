@@ -10,7 +10,7 @@ use BOM::Product::Contract::Finder qw (get_barrier);
 use Format::Util::Numbers qw(roundnear);
 use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
-our @EXPORT_OK = qw(predefined_contracts_for_symbol get_barrier_by_probability);
+our @EXPORT_OK = qw(predefined_contracts_for_symbol);
 
 sub predefined_contracts_for_symbol {
     my $args         = shift;
@@ -171,7 +171,8 @@ sub _predefined_trading_period {
 =head2 _set_predefined_barriers
 
 To set the predefined barriers on each trading period.
-We will take strike from 34,42,48,52,56,62,70 delta.
+We do a binary search to find out the boundaries barriers associated with theo_prob [0.05,0.95] of a digital call,
+then split into 20 barriers that within this boundaries. The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 
 =cut
 
@@ -179,43 +180,83 @@ sub _set_predefined_barriers {
     my $args = shift;
     my ($underlying, $contract, $current_tick) = @{$args}{'underlying', 'contract', 'current_tick'};
 
-    my $trading_period = $contract->{trading_period};
-    my $date_start     = Date::Utility->new($trading_period->{date_start}->{epoch});
-    my $date_expiry    = Date::Utility->new($trading_period->{date_expiry}->{epoch});
-
-    my $barrier_key = join($cache_sep, $underlying->symbol, $date_start->epoch, $date_expiry->epoch);
+    my $trading_period     = $contract->{trading_period};
+    my $date_start         = $trading_period->{date_start}->{epoch};
+    my $date_expiry        = $trading_period->{date_expiry}->{epoch};
+    my $duration           = $trading_period->{duration};
+    my $barrier_key        = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
     my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
     if (not $available_barriers) {
-        my $barrier_tick = $underlying->tick_at($date_start->epoch) // $current_tick;
-        my $duration     = $date_expiry->epoch - $date_start->epoch;
-        my @delta        = (0.34, 0.42, 0.48, 0.52, 0.56, 0.62, 0.70);
-        foreach my $delta (@delta) {
-            push @$available_barriers, [
-                map {
-                    get_barrier({
-                            underlying       => $underlying,
-                            duration         => $duration,
-                            direction        => $_,
-                            barrier_delta    => $delta,
-                            barrier_tick     => $barrier_tick,
-                            absolute_barrier => 1,
-                            atm_vol          => 0.1
-                        })
-                } (qw(high low))];
-        }
+        my $start_tick = $underlying->tick_at($date_start) // $current_tick;
+        push my @boundaries_barrier, map {
+            get_barrier_by_probability({
+                underlying    => $underlying,
+                duration      => $duration,
+                contract_type => 'CALL',
+                start_tick    => $start_tick->quote,
+                atm_vol       => 0.1,
+                theo_prob     => $_,
+                date_start    => $date_start
+            });
+        } qw(0.05 0.95);
+        push @$available_barriers,
+            split_boundaries_barriers({
+                pip_size           => $underlying->pip_size,
+                start_tick         => $start_tick->quote,
+                boundaries_barrier => \@boundaries_barrier
+            });
         # Expires at the end of the available period.
-        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry->epoch - time);
+        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - time);
     }
     if ($contract->{barriers} == 1) {
-        $contract->{available_barriers} = [map { $_->[0] } @$available_barriers];
-        $contract->{barrier} = (sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$contract->{available_barriers}})[0];
-    } elsif ($contract->{barriers} == 2) {
         $contract->{available_barriers} = $available_barriers;
-        ($contract->{high_barrier}, $contract->{low_barrier}) =
-            @{(sort { abs($current_tick->quote - $a->[0]) <=> abs($current_tick->quote - $b->[0]) } @{$contract->{available_barriers}})[0]};
+        $contract->{barrier} = (sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$available_barriers})[0];
+    } elsif ($contract->{barriers} == 2) {
+        my @lower_barriers  = map { $_ } grep { $current_tick->quote > $_ } @{$available_barriers};
+        my @higher_barriers = map { $_ } grep { $current_tick->quote < $_ } @{$available_barriers};
+        push $contract->{available_barriers}, \@lower_barriers, \@higher_barriers;
+        $contract->{high_barrier} = $higher_barriers[0];
+        $contract->{low_barrier}  = $lower_barriers[0];
     }
 
     return;
+}
+
+=head2 split_boundaries_barriers
+
+
+Split the boundaries barriers into 20 barriers.
+The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
+Rules:
+   -  5 barrriers with +- 1 minimum_step from previous barrier (with the start_tick as start point)
+   -  2 barriers with +- 2 minimum_step from previous barrier
+   -  1 barrier with +- 5  minimum_step from previous barrier
+   -  1 barrier with +- 10 minimum_step from previous barrier
+   -  1 barrier with +- 20 minimum_step from previous_barrier
+=cut
+
+sub split_boundaries_barriers {
+    my $args = shift;
+
+    my $pip_size           = $args->{pip_size};
+    my $spot_at_start      = $args->{start_tick};
+    my @boundaries_barrier = @{$args->{boundaries_barrier}};
+
+    my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
+    my $minimum_step = roundnear($pip_size, $distance_between_boundaries / 78);
+    my @available_barriers;
+    my @steps                  = (1, 1, 1, 1, 1, 2, 2, 5, 10, 20);
+    my $previous_right_barrier = $spot_at_start;
+    my $previous_left_barrier  = $spot_at_start;
+    foreach my $step (sort @steps) {
+        my $right_barrier = $previous_right_barrier + $step * $minimum_step;
+        my $left_barrier  = $previous_left_barrier - $step * $minimum_step;
+        $previous_right_barrier = $right_barrier;
+        $previous_left_barrier  = $left_barrier;
+        push @available_barriers, ($right_barrier, $left_barrier);
+
+    }
+    return @available_barriers;
 }
 
 =head2 get_barrier_by_probability
@@ -227,30 +268,31 @@ To get the strikes that associated with a given theo probability.
 sub get_barrier_by_probability {
     my $args = shift;
 
-    my ($underlying, $duration, $contract_type, $barrier_tick, $atm_vol, $target_theo_prob, $date_start) =
-        @{$args}{'underlying', 'duration', 'contract_type', 'barrier_tick', 'atm_vol', 'theo_prob', 'date_start'};
+    my ($underlying, $duration, $contract_type, $start_tick, $atm_vol, $target_theo_prob, $date_start) =
+        @{$args}{'underlying', 'duration', 'contract_type', 'start_tick', 'atm_vol', 'theo_prob', 'date_start'};
 
     my $bet_params = {
-        underlying => $underlying,
-        bet_type   => $contract_type,
-        currency   => 'USD',
-        payout     => 100,
-        date_start => $date_start,
-        r_rate     => 0,
-        q_rate     => 0,
+        underlying   => $underlying,
+        bet_type     => $contract_type,
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $date_start,
+        r_rate       => 0,
+        q_rate       => 0,
         duration     => $duration,
         pricing_vol  => $atm_vol,
         date_pricing => $date_start,
+        barrier      => $start_tick,
     };
     # Initialise the bet object
     my $bet = produce_contract($bet_params);
 
-    my ($high, $low) = (1.5 * $barrier_tick, 0.5 * $barrier_tick);
+    my ($high, $low) = (1.5 * $start_tick, 0.5 * $start_tick);
 
     my $pip_size = $underlying->pip_size;
 
     my $iterations = 0;
-    for ($iterations = 0; $iterations < 20; $iterations++) {
+    for ($iterations = 0; $iterations <= 20; $iterations++) {
         $bet_params->{'barrier'} = ($low + $high) / 2;
         my $found_barrier = roundnear($pip_size, $bet_params->{'barrier'});
 
@@ -259,7 +301,7 @@ sub get_barrier_by_probability {
         my $theo_prob = $bet->theo_probability->amount;
 
         if (abs($theo_prob - $target_theo_prob) < 0.01) {
-            return ($iterations, $found_barrier);
+            return $found_barrier;
         }
 
         if ($theo_prob > $target_theo_prob) {
@@ -268,7 +310,7 @@ sub get_barrier_by_probability {
             $high = ($low + $high) / 2;
         }
     }
-    return ($iterations, $bet->barrier);
+    return $bet->barrier;
 }
 
 1;
