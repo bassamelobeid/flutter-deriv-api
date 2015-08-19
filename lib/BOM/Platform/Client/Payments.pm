@@ -647,11 +647,7 @@ sub validate_agent_payment {
 
     my $total_amount = scalar @$total ? $total->[0]->amount || 0 : 0;
 
-    my $pa_total_amount = $payment_agent->default_account->find_payment(
-        query  => $query,
-        select => 'sum(abs(amount)) as amount'
-    );
-    $pa_total_amount = scalar @$pa_total_amount ? $pa_total_amount->[0]->amount || 0 : 0;
+    my $pa_total_amount = $payment_agent->default_account->payment_agent_total_transaction_in_current_day;
     if ($pa_total_amount + abs($amount) > 100_000) {
         die "Payment agents can not exceed an aggregate value of 100,000 in a day\n";
     }
