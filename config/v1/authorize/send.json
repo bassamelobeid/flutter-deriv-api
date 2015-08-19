@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "authorize": {
+      
+      "type": "string",
+      "default": "8DQ7wDH6RNGbisBWbKupYs6D4NxE0Mrb03uaWLd9jrcCG2YM",
+      "description": "Authentication token"
+    }
+  },
+  "required": [
+    "authorize"
+  ]
+}
