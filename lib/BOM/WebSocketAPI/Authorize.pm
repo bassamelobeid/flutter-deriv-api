@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::Platform::SessionCookie;
+use BOM::Platform::Client;
 
 sub authorize {
     my ($c, $token) = @_;
