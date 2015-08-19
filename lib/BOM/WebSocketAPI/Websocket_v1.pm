@@ -321,7 +321,7 @@ my $json_receiver = sub {
                 json => {
                     msg_type  => 'offerings',
                     echo_req  => $p1,
-                    offerings => BOM::WebSocketAPI::Offerings::query($c, $options);
+                    offerings => BOM::WebSocketAPI::Offerings::query($c, $options)
                 }});
     }
 

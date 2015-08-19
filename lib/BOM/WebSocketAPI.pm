@@ -26,7 +26,7 @@ sub startup {
 
     # Alias, to be deprecated.
     for ($r->under('/websockets/')) {
-        $_->to('websocket_v1#ok');
+        $_->to('Websocket_v1#ok');
         $_->websocket('/contracts')->to('#entry_point');
     }
 
