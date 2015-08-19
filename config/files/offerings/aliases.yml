@@ -1,7 +1,4 @@
 ---
-threeday_to_year:
-  max: 365d
-  min: 3d
 active_fx:
   callput:
     daily:
