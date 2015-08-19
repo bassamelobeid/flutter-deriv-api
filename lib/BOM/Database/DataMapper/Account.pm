@@ -141,21 +141,6 @@ sub last_modified {
     return;
 }
 
-sub payment_agent_total_transaction_in_current_day {
-    my $self = shift;
-
-    # Total transaction for the day
-    my $query = [
-        payment_gateway_code => 'payment_agent_transfer',
-        payment_time         => {gt => \'current_date'}];
-
-    my $pa_total_amount = $self->find_payment(
-        query  => $query,
-        select => 'sum(abs(amount)) as amount'
-    );
-    $pa_total_amount = scalar @$pa_total_amount ? $pa_total_amount->[0]->amount || 0 : 0;
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
