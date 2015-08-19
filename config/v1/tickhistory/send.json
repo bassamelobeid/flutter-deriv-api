@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Tick history request",
-  "description": "For a given symbol name, receive history"
+  "description": "For a given symbol name, receive history",
   "properties": {
     "ticks": {
       
