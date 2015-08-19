@@ -18,6 +18,7 @@ use BOM::WebSocketAPI::Authorize;
 use BOM::WebSocketAPI::ContractDiscovery;
 use BOM::WebSocketAPI::System;
 use BOM::WebSocketAPI::Accounts;
+use BOM::WebSocketAPI::MarketDiscovery;
 
 my $DOM = Mojo::DOM->new;
 
@@ -366,78 +367,15 @@ my $json_receiver = sub {
                 }});
     }
 
-    if (my $symbol = $p1->{ticks}) {
-        # TODO: Must go to BOM::WebSocketAPI::MakretDiscovery::ticks($c);
-        my $ul = BOM::Market::Underlying->new($symbol)
-            || return $c->send({
-                json => {
-                    msg_type => 'tick',
-                    echo_req => $p1,
-                    tick     => {
-                        error => {
-                            message => "symbol $symbol invalid",
-                            code    => "InvalidSymbol"
-                        }}}});
-        if ($p1->{end}) {
-            my $style = $p1->{style} || ($p1->{granularity} ? 'candles' : 'ticks');
-            if ($style eq 'ticks') {
-                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks({%$p1, ul => $ul});    ## no critic
-                my $history = {
-                    prices => [map { $_->{price} } @$ticks],
-                    times  => [map { $_->{time} } @$ticks],
-                };
-                return $c->send({
-                        json => {
-                            msg_type => 'history',
-                            echo_req => $p1,
-                            history  => $history
-                        }});
-            } elsif ($style eq 'candles') {
-                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul})    ## no critic
-                    || return $c->send({
-                        json => {
-                            msg_type => 'candles',
-                            echo_req => $p1,
-                            candles  => {
-                                error => {
-                                    message => 'invalid candles request',
-                                    code    => 'InvalidCandlesRequest'
-                                }}}});
-                return $c->send({
-                        json => {
-                            msg_type => 'candles',
-                            echo_req => $p1,
-                            candles  => $candles
-                        }});
-            } else {
-                return $c->send({
-                        json => {
-                            msg_type => 'tick',
-                            echo_req => $p1,
-                            tick     => {
-                                error => {
-                                    message => "style $style invalid",
-                                    code    => "InvalidStyle"
-                                }}}});
+    if ($p1->{ticks}) {
+        my $json = BOM::WebSocketAPI::MarketDiscovery::ticks($c, $p1);
+        return unless $json;
+        return $c->send({
+            json => {
+                echo_req => $p1,
+                %$json
             }
-        }
-        if ($ul->feed_license eq 'realtime') {
-            my $id;
-            $id = Mojo::IOLoop->recurring(1 => sub { $c->send_tick($id, $p1, $ul) });
-            $c->send_tick($id, $p1, $ul);
-            $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
-        } else {
-            return $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $p1,
-                        tick     => {
-                            error => {
-                                message => "realtime quotes not available",
-                                code    => "NoRealtimeQuotes"
-                            }}}});
-        }
-        return;
+        });
     }
 
     if ($p1->{proposal}) {
