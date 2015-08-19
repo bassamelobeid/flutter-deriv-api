@@ -8,7 +8,7 @@
       "type": "string",
       "default": "ID",
       "description": "The id received from a Get Price call"
-    }
+    },
 
 	"price": {
 	   "type": "string",

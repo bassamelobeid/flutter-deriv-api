@@ -8,7 +8,7 @@
       "type": "string",
       "default": "ID",
       "description": "The id received from the Portfolio call"
-    }
+    },
 
 	"price": {
 	   "type": "string",
