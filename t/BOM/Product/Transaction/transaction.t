@@ -415,6 +415,102 @@ subtest 'buy a spread bet' => sub {
         is $chld->{stop_profit}, 20, 'stop_profit is 20';
     };
 
+    local $ENV{REQUEST_STARTTIME} = time;
+    $c = produce_contract({
+        date_pricing     => time,
+        underlying       => 'R_100',
+        bet_type         => 'SPREADU',
+        currency         => 'USD',
+        amount_per_point => 2,
+        stop_loss        => 10,
+        stop_profit      => 20,
+        current_tick     => $tick_r100,
+        stop_type        => 'dollar',
+    });
+    $txn = BOM::Product::Transaction->new({
+        client   => $new_client,
+        contract => $c,
+        price    => 10,
+        source   => 22,
+    });
+
+    ok !$txn->buy, 'buy spread bet without error';
+
+    subtest 'transaction report', sub {
+        plan tests => 11;
+        note $txn->report;
+        my $report = $txn->report;
+        like $report, qr/\ATransaction Report:$/m,                                                    'header';
+        like $report, qr/^\s*Client: \Q${\$new_client}\E$/m,                                          'client';
+        like $report, qr/^\s*Contract: \Q${\$c->code}\E$/m,                                           'contract';
+        like $report, qr/^\s*Price: \Q${\$txn->price}\E$/m,                                           'price';
+        like $report, qr/^\s*Payout: \Q${\$txn->payout}\E$/m,                                         'payout';
+        like $report, qr/^\s*Amount Type: \Q${\$txn->amount_type}\E$/m,                               'amount_type';
+        like $report, qr/^\s*Comment: \Q${\$txn->comment}\E$/m,                                       'comment';
+        like $report, qr/^\s*Staff: \Q${\$txn->staff}\E$/m,                                           'staff';
+        like $report, qr/^\s*Transaction Parameters: \$VAR1 = \{$/m,                                  'transaction parameters';
+        like $report, qr/^\s*Transaction ID: \Q${\$txn->transaction_id}\E$/m,                         'transaction id';
+        like $report, qr/^\s*Purchase Date: \Q${\$txn->purchase_date->datetime_yyyymmdd_hhmmss}\E$/m, 'purchase date';
+    };
+
+    ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db spread_bet => $txn->transaction_id;
+
+    # note explain $trx;
+
+    subtest 'transaction row', sub {
+        plan tests => 13;
+        cmp_ok $trx->{id}, '>', 0, 'id';
+        is $trx->{account_id}, $acc_usd->id, 'account_id';
+        is $trx->{action_type}, 'buy', 'action_type';
+        is $trx->{amount} + 0, -10, 'amount';
+        is $trx->{balance_after} + 0, 5000 - 30, 'balance_after';
+        is $trx->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+        is $trx->{payment_id},    undef,                  'payment_id';
+        is $trx->{quantity},      1,                      'quantity';
+        is $trx->{referrer_type}, 'financial_market_bet', 'referrer_type';
+        is $trx->{remark},        undef,                  'remark';
+        is $trx->{staff_loginid}, $new_client->loginid, 'staff_loginid';
+        is $trx->{source}, 22, 'source';
+        cmp_ok +Date::Utility->new($trx->{transaction_time})->epoch, '<=', time, 'transaction_time';
+    };
+
+    # note explain $fmb;
+
+    subtest 'fmb row', sub {
+        plan tests => 21;
+        cmp_ok $fmb->{id}, '>', 0, 'id';
+        is $fmb->{account_id}, $acc_usd->id, 'account_id';
+        is $fmb->{bet_class}, 'spread_bet', 'bet_class';
+        is $fmb->{bet_type},  'SPREADU',    'bet_type';
+        is $fmb->{buy_price} + 0, 10, 'buy_price';
+        note "time=" . time . ', expiry=' . Date::Utility->new($fmb->{expiry_time})->epoch;
+        cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '>', time + 365 * 24 * 3600 - 60, 'expiry_time lower boundary';
+        cmp_ok +Date::Utility->new($fmb->{expiry_time})->epoch, '<=', time + 365 * 24 * 3600, 'expiry_time upper boundary';
+        is $fmb->{fixed_expiry}, undef, 'fixed_expiry';
+        is !$fmb->{is_expired}, !0, 'is_expired';
+        is !$fmb->{is_sold},    !0, 'is_sold';
+        cmp_ok $fmb->{payout_price}, '==', 20, 'payout_price';
+        cmp_ok +Date::Utility->new($fmb->{purchase_time})->epoch, '<=', time, 'purchase_time';
+        like $fmb->{remark},   qr/amount_per_point/, 'remark';
+        is $fmb->{sell_price}, undef,                'sell_price';
+        is $fmb->{sell_time},  undef,                'sell_time';
+        note "time=" . time . ', settlement=' . Date::Utility->new($fmb->{settlement_time})->epoch;
+        cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '>', time + 365 * 24 * 3600 - 60, 'settlement_time lower boundary';
+        cmp_ok +Date::Utility->new($fmb->{settlement_time})->epoch, '<=', time + 365 * 24 * 3600, 'settlement_time upper boundary';
+        like $fmb->{short_code}, qr/SPREADU/, 'short_code';
+        cmp_ok +Date::Utility->new($fmb->{start_time})->epoch, '<=', time, 'start_time';
+        is $fmb->{tick_count},        undef,   'tick_count';
+        is $fmb->{underlying_symbol}, 'R_100', 'underlying_symbol';
+    };
+
+    # note explain $chld;
+    subtest 'chld row', sub {
+        plan tests => 4;
+        is $chld->{amount_per_point}, 2, 'amount_per_point is 2';
+        is $chld->{financial_market_bet_id}, $fmb->{id}, 'financial_market_bet_id';
+        is $chld->{stop_loss},   10, 'stop_loss is 10';
+        is $chld->{stop_profit}, 20, 'stop_profit is 20';
+    };
 };
 
 subtest 'buy a bet', sub {
