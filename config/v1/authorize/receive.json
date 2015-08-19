@@ -1,0 +1,66 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "authorize": {
+      "id": "undefined/authorize",
+      "type": "object",
+      "properties": {
+        "email": {
+          
+          "type": "string",
+          "default": "ehtesham.ahmed@live.com"
+        },
+        "currency": {
+          
+          "type": "string",
+          "default": "USD"
+        },
+        "balance": {
+          
+          "type": "string",
+          "default": "10377.9900"
+        },
+        "loginid": {
+         
+          "type": "string",
+          "default": "VRTC573035"
+        },
+        "fullname": {
+          
+          "type": "string",
+          "default": " Ehtesham Ahmed"
+        }
+      },
+      "required": [
+        "email",
+        "currency",
+        "balance",
+        "loginid",
+        "fullname"
+      ]
+    },
+    "echo_req": {
+      
+      "type": "object",
+      "properties": {
+        "authorize": {
+          "id": "undefined/echo_req/authorize",
+          "type": "string",
+          "default": "mEWBm8ECUwKzxMj1XcvYkGz0tOyt4ocN0UiP00NyamR14Z5Y"
+        }
+      }
+    },
+    "msg_type": {
+      
+      "type": "string",
+      "default": "authorize"
+    }
+  },
+  "required": [
+    
+    "authorize",
+    "echo_req",
+    "msg_type"
+  ]
+}
