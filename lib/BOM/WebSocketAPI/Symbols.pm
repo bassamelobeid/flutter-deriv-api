@@ -236,8 +236,8 @@ sub candles {
 }
 
 sub contracts_for {
-    my $args     = shift;
-    my $symbol   = $args->{symbol};
+    my $args   = shift;
+    my $symbol = $args->{symbol};
     my $region = $args->{region} || 'other';
 
     if ($region eq 'japan') {
