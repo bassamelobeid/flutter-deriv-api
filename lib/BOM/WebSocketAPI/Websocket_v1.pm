@@ -310,12 +310,11 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{contracts_for}) {
-        my $contracts_for = BOM::WebSocketAPI::Symbols::contracts_for($options);
         return $c->send({
                 json => {
                     msg_type      => 'contracts_for',
                     echo_req      => $p1,
-                    contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol)}});
+                    contracts_for => BOM::WebSocketAPI::Symbols::contracts_for($options)}});
     }
 
     if (my $options = $p1->{offerings}) {
