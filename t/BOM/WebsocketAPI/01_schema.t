@@ -32,7 +32,7 @@ sub strip_doc_send {
 
 foreach my $f (@f) {
     $test_name = $f;
-    next if (!$ENV{TRAVIS} and $f eq 'tick');
+    next if ($ENV{TRAVIS} and $f eq 'ticks');
     my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("config/v1/$f/send.json")));
     my $response_json = &same_structure_tests($f, $send);
     my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/v1/$f/receive.json")));
