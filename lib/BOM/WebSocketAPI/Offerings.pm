@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::Offerings;
 use strict;
 use warnings;
 
+use Try::Tiny;
+
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use BOM::Product::Offerings;
@@ -162,6 +164,41 @@ sub query {
 
     my $logdata = {hit_count => $hit_count};
     return $c->_pass($results, $logdata);
+}
+
+sub trading_times {
+    my ($c, $args) = @_;
+
+    my $date = try { Date::Utility->new($args->{date}) } || Date::Utility->new;
+    my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
+        markets     => {name => 'name'},
+        submarkets  => {name => 'name'},
+        underlyings => {
+            name   => 'name',
+            times  => 'times',
+            events => 'events'
+        });
+    my $trading_times = {};
+    for my $mkt (@$tree) {
+        my $market = {};
+        push @{$trading_times->{markets}}, $market;
+        $market->{name} = $mkt->{name};
+        for my $sbm (@{$mkt->{submarkets}}) {
+            my $submarket = {};
+            push @{$market->{submarkets}}, $submarket;
+            $submarket->{name} = $sbm->{name};
+            for my $ul (@{$sbm->{underlyings}}) {
+                push @{$submarket->{symbols}},
+                    {
+                    name       => $ul->{name},
+                    settlement => $ul->{settlement} || '',
+                    events     => $ul->{events},
+                    times      => $ul->{times},
+                    };
+            }
+        }
+    }
+    return $trading_times;
 }
 
 1;

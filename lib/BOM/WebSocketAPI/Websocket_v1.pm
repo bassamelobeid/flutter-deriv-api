@@ -1,17 +1,24 @@
-package BOM::WebSocketAPI::Websocket;
+package BOM::WebSocketAPI::Websocket_v1;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use Mojo::DOM;
 
+use Try::Tiny;
+
 use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::Contract::Finder;
+use BOM::Product::Contract::Offerings;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
 use BOM::Product::Contract::Finder::Japan;
+use BOM::WebSocketAPI::Authorize;
+use BOM::WebSocketAPI::ContractDiscovery;
+use BOM::WebSocketAPI::System;
+use BOM::WebSocketAPI::Accounts;
 
 my $DOM = Mojo::DOM->new;
 
@@ -70,7 +77,7 @@ sub get_ask {
     my $app = $c->app;
     my $log = $app->log;
     # $log->debug("pricing with p2 " . $c->dumper($p2));
-    my $contract = eval { produce_contract({%$p2}) } || do {
+    my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $log->info("contract creation failure: $err");
         return {
@@ -158,7 +165,7 @@ sub get_bid {
     my $log = $app->log;
 
     my @similar_args = ($p2->{contract}, {priced_at => 'now'});
-    my $contract = eval { make_similar_contract(@similar_args) } || do {
+    my $contract = try { make_similar_contract(@similar_args) } || do {
         my $err = $@;
         $log->info("contract for sale creation failure: $err");
         return {
@@ -244,9 +251,8 @@ my $json_receiver = sub {
     my $source = $c->stash('source');
 
     if (my $token = $p1->{authorize}) {
-
-        my $session = BOM::Platform::SessionCookie->new(token => $token);
-        if (!$session || !$session->validate_session()) {
+        my ($client, $account, $email, $loginid) = BOM::WebSocketAPI::Authorize::authorize($c, $token);
+        if (not $client) {
             return $c->send({
                     json => {
                         msg_type  => 'authorize',
@@ -257,56 +263,41 @@ my $json_receiver = sub {
                                 code    => "InvalidToken"
                             },
                         }}});
+        } else {
+            return $c->send({
+                    json => {
+                        msg_type  => 'authorize',
+                        echo_req  => $p1,
+                        authorize => {
+                            fullname => $client->full_name,
+                            loginid  => $client->loginid,
+                            balance  => ($account ? $account->balance : 0),
+                            currency => ($account ? $account->currency_code : ''),
+                            email    => $email,
+                        }}});
         }
-
-        my $email   = $session->email;
-        my $loginid = $session->loginid;
-        my $client  = BOM::Platform::Client->new({loginid => $loginid});
-        my $account = $client->default_account;
-
-        $c->stash(
-            token   => $token,
-            client  => $client,
-            account => $account,
-            email   => $email
-        );
-
-        return $c->send({
-                json => {
-                    msg_type  => 'authorize',
-                    echo_req  => $p1,
-                    authorize => {
-                        fullname => $client->full_name,
-                        loginid  => $client->loginid,
-                        balance  => ($account ? $account->balance : 0),
-                        currency => ($account ? $account->currency_code : ''),
-                        email    => $email,
-                    }}});
     }
 
     if (my $id = $p1->{forget}) {
-        Mojo::IOLoop->remove($id);
-        if (my $fmb_id = eval { $c->{$id}->{fmb}->id }) {
-            delete $c->{fmb_ids}{$fmb_id};
-        }
-        delete $c->{$id};
-        $log->debug("cancelled $id");
-        return;
+        BOM::WebSocketAPI::System::forget($c, $p1->{forget});
     }
 
     if ($p1->{payout_currencies}) {
-        my $currencies;
-        if (my $account = $c->stash('account')) {
-            $currencies = [$account->currency_code];
-        } else {
-            my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
-            $currencies = $lc->legal_allowed_currencies;
-        }
         return $c->send({
                 json => {
                     msg_type          => 'payout_currencies',
                     echo_req          => $p1,
-                    payout_currencies => $currencies
+                    payout_currencies => BOM::WebSocketAPI::ContractDiscovery::payout_currencies($c)}});
+    }
+
+    if (my $options = $p1->{statement}) {
+        my $client = $c->stash('client') || return $c->_authorize_error($p1);
+        my $results = $c->BOM::WebSocketAPI::Accounts::get_transactions($options);
+        return $c->send({
+                json => {
+                    msg_type  => 'statement',
+                    echo_req  => $p1,
+                    statement => $results
                 }});
     }
 
@@ -324,21 +315,29 @@ my $json_receiver = sub {
                 json => {
                     msg_type      => 'contracts_for',
                     echo_req      => $p1,
-                    contracts_for => $contracts_for
-                }});
+                    contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol)}});
     }
 
     if (my $options = $p1->{offerings}) {
-        my $results = BOM::WebSocketAPI::Offerings::query($c, $options);
         return $c->send({
                 json => {
                     msg_type  => 'offerings',
                     echo_req  => $p1,
-                    offerings => $results
+                    offerings => BOM::WebSocketAPI::Offerings::query($c, $options)}});
+    }
+
+    if (my $options = $p1->{trading_times}) {
+        my $trading_times = $c->BOM::WebSocketAPI::Offerings::trading_times($options);
+        return $c->send({
+                json => {
+                    msg_type      => 'trading_times',
+                    echo_req      => $p1,
+                    trading_times => $trading_times,
                 }});
     }
 
     if ($p1->{portfolio}) {
+        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::portfolio($c);
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
         my $portfolio_stats = BOM::Product::Transaction::sell_expired_contracts({
                 client => $client,
@@ -370,6 +369,7 @@ my $json_receiver = sub {
     }
 
     if (my $symbol = $p1->{ticks}) {
+        # TODO: Must go to BOM::WebSocketAPI::MakretDiscovery::ticks($c);
         my $ul = BOM::Market::Underlying->new($symbol)
             || return $c->send({
                 json => {
@@ -381,9 +381,9 @@ my $json_receiver = sub {
                             code    => "InvalidSymbol"
                         }}}});
         if ($p1->{end}) {
-            my $style = delete($p1->{style}) || ($p1->{granularity} ? 'candles' : 'ticks');
+            my $style = $p1->{style} || ($p1->{granularity} ? 'candles' : 'ticks');
             if ($style eq 'ticks') {
-                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks(%$p1, ul => $ul);
+                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks({%$p1, ul => $ul});    ## no critic
                 my $history = {
                     prices => [map { $_->{price} } @$ticks],
                     times  => [map { $_->{time} } @$ticks],
@@ -395,7 +395,16 @@ my $json_receiver = sub {
                             history  => $history
                         }});
             } elsif ($style eq 'candles') {
-                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles(%$p1, ul => $ul);
+                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul})    ## no critic
+                    || return $c->send({
+                        json => {
+                            msg_type => 'candles',
+                            echo_req => $p1,
+                            candles  => {
+                                error => {
+                                    message => 'invalid candles request',
+                                    code    => 'InvalidCandlesRequest'
+                                }}}});
                 return $c->send({
                         json => {
                             msg_type => 'candles',
@@ -430,10 +439,14 @@ my $json_receiver = sub {
                                 code    => "NoRealtimeQuotes"
                             }}}});
         }
+        return;
     }
 
-    if ($p1->{proposal}) {    # this is a recurring contract-price watch ("price streamer")
-                              # p2 is a manipulated copy of p1 suitable for produce_contract.
+    if ($p1->{proposal}) {
+        # TODO: Must go to BOM::WebSocketAPI::MakretDiscovery::proposal($c);
+
+        # this is a recurring contract-price watch ("price streamer")
+        # p2 is a manipulated copy of p1 suitable for produce_contract.
         my $p2 = $c->prepare_ask($p1);
         my $id;
         $id = Mojo::IOLoop->recurring(1 => sub { $c->send_ask($id, {}, $p2) });
@@ -444,6 +457,8 @@ my $json_receiver = sub {
     }
 
     if (my $id = $p1->{buy}) {
+        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::buy($c);
+
         Mojo::IOLoop->remove($id);
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'open_receipt');
         my $json = {
@@ -456,7 +471,7 @@ my $json_receiver = sub {
                 $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
                 last;
             };
-            my $contract = eval { produce_contract({%$p2}) } || do {
+            my $contract = try { produce_contract({%$p2}) } || do {
                 my $err = $@;
                 $log->debug("contract creation failure: $err");
                 $json->{open_receipt}->{error}->{message} = "cannot create contract";
@@ -492,6 +507,8 @@ my $json_receiver = sub {
     }
 
     if (my $id = $p1->{sell}) {
+        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::sell($c);
+
         Mojo::IOLoop->remove($id);
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'close_receipt');
         my $json = {
@@ -533,11 +550,11 @@ my $json_receiver = sub {
         return $c->send({json => $json});
     }
 
-    $log->error("unrecognised request");
+    $log->debug("unrecognised request: " . $c->dumper($p1));
     return;
 };
 
-sub contracts {
+sub entry_point {
     my $c   = shift;
     my $app = $c->app;
     my $log = $app->log;
