@@ -6,7 +6,6 @@ use Time::Duration::Concise;
 use BOM::Product::Offerings;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
-use BOM::Product::Contract::Finder qw (get_barrier);
 use Format::Util::Numbers qw(roundnear);
 use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -271,21 +270,7 @@ sub get_barrier_by_probability {
     my ($underlying, $duration, $contract_type, $start_tick, $atm_vol, $target_theo_prob, $date_start) =
         @{$args}{'underlying', 'duration', 'contract_type', 'start_tick', 'atm_vol', 'theo_prob', 'date_start'};
 
-    my $bet_params = {
-        underlying   => $underlying,
-        bet_type     => $contract_type,
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $date_start,
-        r_rate       => 0,
-        q_rate       => 0,
-        duration     => $duration,
-        pricing_vol  => $atm_vol,
-        date_pricing => $date_start,
-        barrier      => $start_tick,
-    };
-    # Initialise the bet object
-    my $bet = produce_contract($bet_params);
+    my $bet;
 
     my ($high, $low) = (1.5 * $start_tick, 0.5 * $start_tick);
 
@@ -293,7 +278,19 @@ sub get_barrier_by_probability {
 
     my $iterations = 0;
     for ($iterations = 0; $iterations <= 20; $iterations++) {
-        $bet_params->{'barrier'} = ($low + $high) / 2;
+        my $bet_params = {
+            underlying   => $underlying,
+            bet_type     => $contract_type,
+            currency     => 'USD',
+            payout       => 100,
+            date_start   => $date_start,
+            r_rate       => 0,
+            q_rate       => 0,
+            duration     => $duration,
+            pricing_vol  => $atm_vol,
+            date_pricing => $date_start,
+            barrier      => ($low + $high) / 2,
+        };
         my $found_barrier = roundnear($pip_size, $bet_params->{'barrier'});
 
         $bet = produce_contract($bet_params);
