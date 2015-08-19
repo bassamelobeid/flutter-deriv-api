@@ -14,9 +14,9 @@ subtest 'get countries config' => sub {
         $configs = BOM::Platform::Runtime->instance->countries_list;
     } 'get countries config ok';
 
-    is ref($configs), 'HASH', 'countries config is hashref';
-    is ref($configs->{id}), 'HASH', 'Indonesia config is hashref';
-    is scalar (keys %$configs), 246, 'total countries = 246';
+    is(ref($configs), 'HASH', 'countries config is hashref');
+    is(ref($configs->{id}), 'HASH', 'Indonesia config is hashref');
+    is(scalar (keys %$configs), 246, 'total countries = 246');
 };
 
 my @iom_country = qw( gb im );
@@ -24,11 +24,16 @@ my @countries = @iom_country;
 subtest 'iom countries' => sub {
     foreach my $c (@countries) {
         my $c_config = $configs->{$c};
-        isnt $c_config->{name}, undef, "$c [$c_config->{name}]";
-        is $c_config->{financial_company}, 'iom', 'financial company = iom';
-        is $c_config->{gaming_company}, undef, 'no explicit gaming company';
-        is $c_config->{restricted}, undef, 'not restricted';
-        is $c_config->{random_restricted}, undef, 'not random restricted';
+        isnt($c_config->{name}, undef, "$c [$c_config->{name}]");
+        is($c_config->{financial_company}, 'iom', 'financial company = iom');
+        is($c_config->{gaming_company}, undef, 'no explicit gaming company');
+        is($c_config->{restricted}, undef, 'not restricted');
+        is($c_config->{random_restricted}, undef, 'not random restricted');
+
+        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), undef, '! country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
     }
 };
 
@@ -37,11 +42,16 @@ my @mlt_country = qw( at be bg cy cz dk ee fi hr hu lt lv nl pl pt ro se si sk )
 subtest 'EU countries' => sub {
     foreach my $c (@countries) {
         my $c_config = $configs->{$c};
-        isnt $c_config->{name}, undef, "$c [$c_config->{name}]";
-        is $c_config->{gaming_company}, 'malta', 'gaming company = malta';
-        is $c_config->{financial_company}, 'maltainvest', 'financial company = maltainvest';
-        is $c_config->{restricted}, undef, 'not restricted';
-        is $c_config->{random_restricted}, undef, 'not random restricted';
+        isnt($c_config->{name}, undef, "$c [$c_config->{name}]");
+        is($c_config->{gaming_company}, 'malta', 'gaming company = malta');
+        is($c_config->{financial_company}, 'maltainvest', 'financial company = maltainvest');
+        is($c_config->{restricted}, undef, 'not restricted');
+        is($c_config->{random_restricted}, undef, 'not random restricted');
+
+        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), 1, 'country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
     }
 };
 
@@ -55,6 +65,11 @@ subtest 'EU countries, no Random' => sub {
         is $c_config->{financial_company}, 'maltainvest', 'financial company = maltainvest';
         is $c_config->{restricted}, undef, 'not restricted';
         is $c_config->{random_restricted}, 1, 'random restricted';
+
+        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, 'random_restricted_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), 1, 'country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), 1, 'financial_only_country');
     }
 };
 
@@ -63,11 +78,16 @@ my @restricted_country = qw( cr gg hk iq ir je jp kp mt my um us vi );
 subtest 'restricted countries' => sub {
     foreach my $c (@countries) {
         my $c_config = $configs->{$c};
-        isnt $c_config->{name}, undef, "$c [$c_config->{name}]";
-        is $c_config->{gaming_company}, undef, 'no gaming company';
-        is $c_config->{financial_company}, undef, 'financial company = maltainvest';
-        is $c_config->{restricted}, 1, 'not restricted';
-        is $c_config->{random_restricted}, undef, 'no explicit random restricted';
+        isnt($c_config->{name}, undef, "$c [$c_config->{name}]");
+        is($c_config->{gaming_company}, undef, 'no gaming company');
+        is($c_config->{financial_company}, undef, 'financial company = maltainvest');
+        is($c_config->{restricted}, 1, 'not restricted');
+        is($c_config->{random_restricted}, undef, 'no explicit random restricted');
+
+        is(BOM::Platform::Runtime->instance->restricted_country($c), 1, 'restricted_country');
+        is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), undef, '! country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
     }
 };
 
@@ -78,20 +98,26 @@ subtest 'CR countries' => sub {
         next if (first { $cc eq $_ } @exclude);
         push @countries, $cc;
     }
-    is @countries, 205, 'CR countries count';
+    is(@countries, 205, 'CR countries count');
 
     foreach my $c (@countries) {
         my $c_config = $configs->{$c};
-        isnt $c_config->{name}, undef, "$c [$c_config->{name}]";
-        is $c_config->{gaming_company}, undef, 'no explicit gaming company';
-        is $c_config->{financial_company}, 'costarica', 'financial company = costarica';
-        is $c_config->{restricted}, undef, 'not restricted';
+        isnt($c_config->{name}, undef, "$c [$c_config->{name}]");
+        is($c_config->{gaming_company}, undef, 'no explicit gaming company');
+        is($c_config->{financial_company}, 'costarica', 'financial company = costarica');
+        is($c_config->{restricted}, undef, 'not restricted');
 
         if ($c eq 'sg') {
-            is $c_config->{random_restricted}, 1, 'random restricted';
+            is($c_config->{random_restricted}, 1, 'random restricted');
+            is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, 'random_restricted_country');
         } else {
-            is $c_config->{random_restricted}, undef, 'no random restricted';
+            is($c_config->{random_restricted}, undef, 'no random restricted');
+            is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
         }
+
+        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), undef, '! country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
     }
 };
 
