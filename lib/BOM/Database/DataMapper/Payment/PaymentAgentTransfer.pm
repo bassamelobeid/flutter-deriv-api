@@ -48,10 +48,6 @@ sub get_today_client_payment_agent_transfer_total_amount {
     return $amount;
 }
 
-=head1 METHODS
-
-=over
-
 =item get_today_payment_agent_transfer_total_withdrawal
 
 =cut
