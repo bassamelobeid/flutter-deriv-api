@@ -14087,7 +14087,7 @@
     }
   },
   "required": [
-    "/",
+  
     "echo_req",
     "active_symbols",
     "msg_type"
