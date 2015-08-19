@@ -1,0 +1,2217 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "echo_req": {
+      "id": "undefined/echo_req",
+      "type": "object",
+      "properties": {
+        "offerings": {
+          "id": "undefined/echo_req/offerings",
+          "type": "object",
+          "properties": {
+            "underlying_symbol": {
+              "id": "undefined/echo_req/offerings/underlying_symbol",
+              "type": "string",
+              "default": "R_100"
+            },
+            "symbol": {
+              "id": "undefined/echo_req/offerings/symbol",
+              "type": "string",
+              "default": "R_100"
+            }
+          },
+          "required": [
+            "underlying_symbol",
+            "symbol"
+          ]
+        }
+      },
+      "required": [
+        "offerings"
+      ]
+    },
+    "offerings": {
+      "id": "undefined/offerings",
+      "type": "object",
+      "properties": {
+        "offerings": {
+          "id": "undefined/offerings/offerings",
+          "type": "array",
+          "items": {
+            "id": "undefined/offerings/offerings/0",
+            "type": "object",
+            "properties": {
+              "market": {
+                "id": "undefined/offerings/offerings/0/market",
+                "type": "string",
+                "default": "Random"
+              },
+              "available": {
+                "id": "undefined/offerings/offerings/0/available",
+                "type": "array",
+                "items": {
+                  "id": "undefined/offerings/offerings/0/available/0",
+                  "type": "object",
+                  "properties": {
+                    "submarket": {
+                      "id": "undefined/offerings/offerings/0/available/0/submarket",
+                      "type": "string",
+                      "default": "Random Index"
+                    },
+                    "available": {
+                      "id": "undefined/offerings/offerings/0/available/0/available",
+                      "type": "array",
+                      "items": {
+                        "id": "undefined/offerings/offerings/0/available/0/available/0",
+                        "type": "object",
+                        "properties": {
+                          "symbol": {
+                            "id": "undefined/offerings/offerings/0/available/0/available/0/symbol",
+                            "type": "string",
+                            "default": "R_100"
+                          },
+                          "symbol_display": {
+                            "id": "undefined/offerings/offerings/0/available/0/available/0/symbol_display",
+                            "type": "string",
+                            "default": "Random 100 Index"
+                          },
+                          "available": {
+                            "id": "undefined/offerings/offerings/0/available/0/available/0/available",
+                            "type": "array",
+                            "items": [
+                              {
+                                "id": "undefined/offerings/offerings/0/available/0/available/0/available/0",
+                                "type": "object",
+                                "properties": {
+                                  "contract_category": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/contract_category",
+                                    "type": "string",
+                                    "default": "asian"
+                                  },
+                                  "available": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available",
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/contract_display",
+                                            "type": "string",
+                                            "default": "Asian Up"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "payout_limit": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/payout_limit",
+                                            "type": "string",
+                                            "default": "10000"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/barrier_category",
+                                            "type": "string",
+                                            "default": "asian"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/expiry_type",
+                                            "type": "string",
+                                            "default": "Tick"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/0/contract_type",
+                                            "type": "string",
+                                            "default": "ASIANU"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/contract_display",
+                                            "type": "string",
+                                            "default": "Asian Down"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "payout_limit": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/payout_limit",
+                                            "type": "string",
+                                            "default": "10000"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/barrier_category",
+                                            "type": "string",
+                                            "default": "asian"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/expiry_type",
+                                            "type": "string",
+                                            "default": "Tick"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/0/available/1/contract_type",
+                                            "type": "string",
+                                            "default": "ASIAND"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "id": "undefined/offerings/offerings/0/available/0/available/0/available/1",
+                                "type": "object",
+                                "properties": {
+                                  "contract_category": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/contract_category",
+                                    "type": "string",
+                                    "default": "callput"
+                                  },
+                                  "available": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available",
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/contract_display",
+                                            "type": "string",
+                                            "default": "Higher"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/0/contract_type",
+                                            "type": "string",
+                                            "default": "CALL"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/contract_display",
+                                            "type": "string",
+                                            "default": "Lower"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/1/contract_type",
+                                            "type": "string",
+                                            "default": "PUT"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/contract_display",
+                                            "type": "string",
+                                            "default": "Higher"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/2/contract_type",
+                                            "type": "string",
+                                            "default": "CALL"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/contract_display",
+                                            "type": "string",
+                                            "default": "Lower"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/3/contract_type",
+                                            "type": "string",
+                                            "default": "PUT"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/contract_display",
+                                            "type": "string",
+                                            "default": "Higher"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/start_type",
+                                            "type": "string",
+                                            "default": "Forward"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/4/contract_type",
+                                            "type": "string",
+                                            "default": "CALL"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/contract_display",
+                                            "type": "string",
+                                            "default": "Lower"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/start_type",
+                                            "type": "string",
+                                            "default": "Forward"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/5/contract_type",
+                                            "type": "string",
+                                            "default": "PUT"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/contract_display",
+                                            "type": "string",
+                                            "default": "Higher"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/min_contract_duration",
+                                            "type": "string",
+                                            "default": "15s"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/6/contract_type",
+                                            "type": "string",
+                                            "default": "CALL"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/contract_display",
+                                            "type": "string",
+                                            "default": "Lower"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/min_contract_duration",
+                                            "type": "string",
+                                            "default": "15s"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/7/contract_type",
+                                            "type": "string",
+                                            "default": "PUT"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/contract_display",
+                                            "type": "string",
+                                            "default": "Higher"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/8/contract_type",
+                                            "type": "string",
+                                            "default": "CALL"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/contract_display",
+                                            "type": "string",
+                                            "default": "Lower"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/9/contract_type",
+                                            "type": "string",
+                                            "default": "PUT"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/contract_display",
+                                            "type": "string",
+                                            "default": "Higher"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/expiry_type",
+                                            "type": "string",
+                                            "default": "Tick"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/10/contract_type",
+                                            "type": "string",
+                                            "default": "CALL"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/contract_display",
+                                            "type": "string",
+                                            "default": "Lower"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/expiry_type",
+                                            "type": "string",
+                                            "default": "Tick"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/1/available/11/contract_type",
+                                            "type": "string",
+                                            "default": "PUT"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "id": "undefined/offerings/offerings/0/available/0/available/0/available/2",
+                                "type": "object",
+                                "properties": {
+                                  "contract_category": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/contract_category",
+                                    "type": "string",
+                                    "default": "digits"
+                                  },
+                                  "available": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available",
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/contract_display",
+                                            "type": "string",
+                                            "default": "Matches"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/sentiment",
+                                            "type": "string",
+                                            "default": "Match"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/barrier_category",
+                                            "type": "string",
+                                            "default": "non_financial"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/expiry_type",
+                                            "type": "string",
+                                            "default": "Tick"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/0/contract_type",
+                                            "type": "string",
+                                            "default": "DIGITMATCH"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/contract_display",
+                                            "type": "string",
+                                            "default": "Differs"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/sentiment",
+                                            "type": "string",
+                                            "default": "Differ"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/barrier_category",
+                                            "type": "string",
+                                            "default": "non_financial"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/expiry_type",
+                                            "type": "string",
+                                            "default": "Tick"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/2/available/1/contract_type",
+                                            "type": "string",
+                                            "default": "DIGITDIFF"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "id": "undefined/offerings/offerings/0/available/0/available/0/available/3",
+                                "type": "object",
+                                "properties": {
+                                  "contract_category": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/contract_category",
+                                    "type": "string",
+                                    "default": "endsinout"
+                                  },
+                                  "available": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available",
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/contract_display",
+                                            "type": "string",
+                                            "default": "Ends Outside"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/sentiment",
+                                            "type": "string",
+                                            "default": "High Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/0/contract_type",
+                                            "type": "string",
+                                            "default": "EXPIRYMISS"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/contract_display",
+                                            "type": "string",
+                                            "default": "Ends Between"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/sentiment",
+                                            "type": "string",
+                                            "default": "Low Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/1/contract_type",
+                                            "type": "string",
+                                            "default": "EXPIRYRANGE"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/contract_display",
+                                            "type": "string",
+                                            "default": "Ends Outside"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/sentiment",
+                                            "type": "string",
+                                            "default": "High Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/2/contract_type",
+                                            "type": "string",
+                                            "default": "EXPIRYMISS"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/contract_display",
+                                            "type": "string",
+                                            "default": "Ends Between"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/sentiment",
+                                            "type": "string",
+                                            "default": "Low Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/barrier_category",
+                                            "type": "string",
+                                            "default": "euro_non_atm"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/3/available/3/contract_type",
+                                            "type": "string",
+                                            "default": "EXPIRYRANGE"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "id": "undefined/offerings/offerings/0/available/0/available/0/available/4",
+                                "type": "object",
+                                "properties": {
+                                  "contract_category": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/contract_category",
+                                    "type": "string",
+                                    "default": "spreads"
+                                  },
+                                  "available": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available",
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/contract_display",
+                                            "type": "string",
+                                            "default": "Spread Up"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/sentiment",
+                                            "type": "string",
+                                            "default": "Up"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/barrier_category",
+                                            "type": "string",
+                                            "default": "spreads"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/0/contract_type",
+                                            "type": "string",
+                                            "default": "SPREADU"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/contract_display",
+                                            "type": "string",
+                                            "default": "Spread Down"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/min_contract_duration",
+                                            "type": "string",
+                                            "default": "5"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/max_contract_duration",
+                                            "type": "string",
+                                            "default": "10"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/sentiment",
+                                            "type": "string",
+                                            "default": "Down"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/barrier_category",
+                                            "type": "string",
+                                            "default": "spreads"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/4/available/1/contract_type",
+                                            "type": "string",
+                                            "default": "SPREADD"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "id": "undefined/offerings/offerings/0/available/0/available/0/available/5",
+                                "type": "object",
+                                "properties": {
+                                  "contract_category": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/contract_category",
+                                    "type": "string",
+                                    "default": "staysinout"
+                                  },
+                                  "available": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available",
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/contract_display",
+                                            "type": "string",
+                                            "default": "Stays Between"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/sentiment",
+                                            "type": "string",
+                                            "default": "Low Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/0/contract_type",
+                                            "type": "string",
+                                            "default": "RANGE"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/contract_display",
+                                            "type": "string",
+                                            "default": "Goes Outside"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/sentiment",
+                                            "type": "string",
+                                            "default": "High Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/1/contract_type",
+                                            "type": "string",
+                                            "default": "UPORDOWN"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/contract_display",
+                                            "type": "string",
+                                            "default": "Stays Between"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/sentiment",
+                                            "type": "string",
+                                            "default": "Low Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/2/contract_type",
+                                            "type": "string",
+                                            "default": "RANGE"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/contract_display",
+                                            "type": "string",
+                                            "default": "Goes Outside"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/sentiment",
+                                            "type": "string",
+                                            "default": "High Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/5/available/3/contract_type",
+                                            "type": "string",
+                                            "default": "UPORDOWN"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "id": "undefined/offerings/offerings/0/available/0/available/0/available/6",
+                                "type": "object",
+                                "properties": {
+                                  "contract_category": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/contract_category",
+                                    "type": "string",
+                                    "default": "touchnotouch"
+                                  },
+                                  "available": {
+                                    "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available",
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/contract_display",
+                                            "type": "string",
+                                            "default": "Touches"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/sentiment",
+                                            "type": "string",
+                                            "default": "High Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/0/contract_type",
+                                            "type": "string",
+                                            "default": "ONETOUCH"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/contract_display",
+                                            "type": "string",
+                                            "default": "Does Not Touch"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/min_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/max_contract_duration",
+                                            "type": "string",
+                                            "default": "365d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/sentiment",
+                                            "type": "string",
+                                            "default": "Low Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/expiry_type",
+                                            "type": "string",
+                                            "default": "Daily"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/1/contract_type",
+                                            "type": "string",
+                                            "default": "NOTOUCH"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/contract_display",
+                                            "type": "string",
+                                            "default": "Touches"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/sentiment",
+                                            "type": "string",
+                                            "default": "High Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/2/contract_type",
+                                            "type": "string",
+                                            "default": "ONETOUCH"
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3",
+                                        "type": "object",
+                                        "properties": {
+                                          "contract_display": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/contract_display",
+                                            "type": "string",
+                                            "default": "Does Not Touch"
+                                          },
+                                          "min_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/min_contract_duration",
+                                            "type": "string",
+                                            "default": "2m"
+                                          },
+                                          "max_contract_duration": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/max_contract_duration",
+                                            "type": "string",
+                                            "default": "1d"
+                                          },
+                                          "sentiment": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/sentiment",
+                                            "type": "string",
+                                            "default": "Low Vol"
+                                          },
+                                          "start_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/start_type",
+                                            "type": "string",
+                                            "default": "Spot"
+                                          },
+                                          "barrier_category": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/barrier_category",
+                                            "type": "string",
+                                            "default": "american"
+                                          },
+                                          "expiry_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/expiry_type",
+                                            "type": "string",
+                                            "default": "Intraday"
+                                          },
+                                          "contract_type": {
+                                            "id": "undefined/offerings/offerings/0/available/0/available/0/available/6/available/3/contract_type",
+                                            "type": "string",
+                                            "default": "NOTOUCH"
+                                          }
+                                        }
+                                      }
+                                    ]
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "hit_count": {
+          "id": "undefined/offerings/hit_count",
+          "type": "integer",
+          "default": 30
+        },
+        "selectors": {
+          "id": "undefined/offerings/selectors",
+          "type": "object",
+          "properties": {
+            "market": {
+              "id": "undefined/offerings/selectors/market",
+              "type": "object",
+              "properties": {
+                "Random": {
+                  "id": "undefined/offerings/selectors/market/Random",
+                  "type": "integer",
+                  "default": 30
+                }
+              }
+            },
+            "contract_display": {
+              "id": "undefined/offerings/selectors/contract_display",
+              "type": "object",
+              "properties": {
+                "Matches": {
+                  "id": "undefined/offerings/selectors/contract_display/Matches",
+                  "type": "integer",
+                  "default": 1
+                },
+                "Ends Outside": {
+                  "id": "undefined/offerings/selectors/contract_display/Ends Outside",
+                  "type": "integer",
+                  "default": 2
+                },
+                "Stays Between": {
+                  "id": "undefined/offerings/selectors/contract_display/Stays Between",
+                  "type": "integer",
+                  "default": 2
+                },
+                "Spread Up": {
+                  "id": "undefined/offerings/selectors/contract_display/Spread Up",
+                  "type": "integer",
+                  "default": 1
+                },
+                "Ends Between": {
+                  "id": "undefined/offerings/selectors/contract_display/Ends Between",
+                  "type": "integer",
+                  "default": 2
+                },
+                "Spread Down": {
+                  "id": "undefined/offerings/selectors/contract_display/Spread Down",
+                  "type": "integer",
+                  "default": 1
+                },
+                "Lower": {
+                  "id": "undefined/offerings/selectors/contract_display/Lower",
+                  "type": "integer",
+                  "default": 6
+                },
+                "Differs": {
+                  "id": "undefined/offerings/selectors/contract_display/Differs",
+                  "type": "integer",
+                  "default": 1
+                },
+                "Does Not Touch": {
+                  "id": "undefined/offerings/selectors/contract_display/Does Not Touch",
+                  "type": "integer",
+                  "default": 2
+                },
+                "Touches": {
+                  "id": "undefined/offerings/selectors/contract_display/Touches",
+                  "type": "integer",
+                  "default": 2
+                },
+                "Asian Down": {
+                  "id": "undefined/offerings/selectors/contract_display/Asian Down",
+                  "type": "integer",
+                  "default": 1
+                },
+                "Higher": {
+                  "id": "undefined/offerings/selectors/contract_display/Higher",
+                  "type": "integer",
+                  "default": 6
+                },
+                "Goes Outside": {
+                  "id": "undefined/offerings/selectors/contract_display/Goes Outside",
+                  "type": "integer",
+                  "default": 2
+                },
+                "Asian Up": {
+                  "id": "undefined/offerings/selectors/contract_display/Asian Up",
+                  "type": "integer",
+                  "default": 1
+                }
+              }
+            },
+            "sbm_hierarchy": {
+              "id": "undefined/offerings/selectors/sbm_hierarchy",
+              "type": "object",
+              "properties": {
+                "Random": {
+                  "id": "undefined/offerings/selectors/sbm_hierarchy/Random",
+                  "type": "object",
+                  "properties": {
+                    "Random Index": {
+                      "id": "undefined/offerings/selectors/sbm_hierarchy/Random/Random Index",
+                      "type": "integer",
+                      "default": 30
+                    }
+                  }
+                }
+              }
+            },
+            "max_contract_duration": {
+              "id": "undefined/offerings/selectors/max_contract_duration",
+              "type": "object",
+              "properties": {
+                "10": {
+                  "id": "undefined/offerings/selectors/max_contract_duration/10",
+                  "type": "integer",
+                  "default": 8
+                },
+                "1d": {
+                  "id": "undefined/offerings/selectors/max_contract_duration/1d",
+                  "type": "integer",
+                  "default": 12
+                },
+                "365d": {
+                  "id": "undefined/offerings/selectors/max_contract_duration/365d",
+                  "type": "integer",
+                  "default": 10
+                }
+              }
+            },
+            "payout_limit": {
+              "id": "undefined/offerings/selectors/payout_limit",
+              "type": "object",
+              "properties": {
+                "10000": {
+                  "id": "undefined/offerings/selectors/payout_limit/10000",
+                  "type": "integer",
+                  "default": 2
+                },
+                "(n/a)": {
+                  "id": "undefined/offerings/selectors/payout_limit/(n/a)",
+                  "type": "integer",
+                  "default": 28
+                }
+              }
+            },
+            "barrier_category": {
+              "id": "undefined/offerings/selectors/barrier_category",
+              "type": "object",
+              "properties": {
+                "spreads": {
+                  "id": "undefined/offerings/selectors/barrier_category/spreads",
+                  "type": "integer",
+                  "default": 2
+                },
+                "non_financial": {
+                  "id": "undefined/offerings/selectors/barrier_category/non_financial",
+                  "type": "integer",
+                  "default": 2
+                },
+                "euro_non_atm": {
+                  "id": "undefined/offerings/selectors/barrier_category/euro_non_atm",
+                  "type": "integer",
+                  "default": 8
+                },
+                "asian": {
+                  "id": "undefined/offerings/selectors/barrier_category/asian",
+                  "type": "integer",
+                  "default": 2
+                },
+                "american": {
+                  "id": "undefined/offerings/selectors/barrier_category/american",
+                  "type": "integer",
+                  "default": 8
+                },
+                "euro_atm": {
+                  "id": "undefined/offerings/selectors/barrier_category/euro_atm",
+                  "type": "integer",
+                  "default": 8
+                }
+              }
+            },
+            "ct_hierarchy": {
+              "id": "undefined/offerings/selectors/ct_hierarchy",
+              "type": "object",
+              "properties": {
+                "spreads": {
+                  "id": "undefined/offerings/selectors/ct_hierarchy/spreads",
+                  "type": "object",
+                  "properties": {
+                    "Spread Down": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/spreads/Spread Down",
+                      "type": "integer",
+                      "default": 1
+                    },
+                    "Spread Up": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/spreads/Spread Up",
+                      "type": "integer",
+                      "default": 1
+                    }
+                  }
+                },
+                "endsinout": {
+                  "id": "undefined/offerings/selectors/ct_hierarchy/endsinout",
+                  "type": "object",
+                  "properties": {
+                    "Ends Between": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/endsinout/Ends Between",
+                      "type": "integer",
+                      "default": 2
+                    },
+                    "Ends Outside": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/endsinout/Ends Outside",
+                      "type": "integer",
+                      "default": 2
+                    }
+                  }
+                },
+                "asian": {
+                  "id": "undefined/offerings/selectors/ct_hierarchy/asian",
+                  "type": "object",
+                  "properties": {
+                    "Asian Down": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/asian/Asian Down",
+                      "type": "integer",
+                      "default": 1
+                    },
+                    "Asian Up": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/asian/Asian Up",
+                      "type": "integer",
+                      "default": 1
+                    }
+                  }
+                },
+                "touchnotouch": {
+                  "id": "undefined/offerings/selectors/ct_hierarchy/touchnotouch",
+                  "type": "object",
+                  "properties": {
+                    "Does Not Touch": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/touchnotouch/Does Not Touch",
+                      "type": "integer",
+                      "default": 2
+                    },
+                    "Touches": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/touchnotouch/Touches",
+                      "type": "integer",
+                      "default": 2
+                    }
+                  }
+                },
+                "staysinout": {
+                  "id": "undefined/offerings/selectors/ct_hierarchy/staysinout",
+                  "type": "object",
+                  "properties": {
+                    "Stays Between": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/staysinout/Stays Between",
+                      "type": "integer",
+                      "default": 2
+                    },
+                    "Goes Outside": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/staysinout/Goes Outside",
+                      "type": "integer",
+                      "default": 2
+                    }
+                  }
+                },
+                "digits": {
+                  "id": "undefined/offerings/selectors/ct_hierarchy/digits",
+                  "type": "object",
+                  "properties": {
+                    "Matches": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/digits/Matches",
+                      "type": "integer",
+                      "default": 1
+                    },
+                    "Differs": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/digits/Differs",
+                      "type": "integer",
+                      "default": 1
+                    }
+                  }
+                },
+                "callput": {
+                  "id": "undefined/offerings/selectors/ct_hierarchy/callput",
+                  "type": "object",
+                  "properties": {
+                    "Lower": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/callput/Lower",
+                      "type": "integer",
+                      "default": 6
+                    },
+                    "Higher": {
+                      "id": "undefined/offerings/selectors/ct_hierarchy/callput/Higher",
+                      "type": "integer",
+                      "default": 6
+                    }
+                  }
+                }
+              }
+            },
+            "submarket": {
+              "id": "undefined/offerings/selectors/submarket",
+              "type": "object",
+              "properties": {
+                "Random Index": {
+                  "id": "undefined/offerings/selectors/submarket/Random Index",
+                  "type": "integer",
+                  "default": 30
+                }
+              }
+            },
+            "exchange_name": {
+              "id": "undefined/offerings/selectors/exchange_name",
+              "type": "object",
+              "properties": {
+                "RANDOM": {
+                  "id": "undefined/offerings/selectors/exchange_name/RANDOM",
+                  "type": "integer",
+                  "default": 30
+                }
+              }
+            },
+            "max_historical_pricer_duration": {
+              "id": "undefined/offerings/selectors/max_historical_pricer_duration",
+              "type": "object",
+              "properties": {
+                "(n/a)": {
+                  "id": "undefined/offerings/selectors/max_historical_pricer_duration/(n/a)",
+                  "type": "integer",
+                  "default": 30
+                }
+              }
+            },
+            "contract_type": {
+              "id": "undefined/offerings/selectors/contract_type",
+              "type": "object",
+              "properties": {
+                "UPORDOWN": {
+                  "id": "undefined/offerings/selectors/contract_type/UPORDOWN",
+                  "type": "integer",
+                  "default": 2
+                },
+                "EXPIRYRANGE": {
+                  "id": "undefined/offerings/selectors/contract_type/EXPIRYRANGE",
+                  "type": "integer",
+                  "default": 2
+                },
+                "ONETOUCH": {
+                  "id": "undefined/offerings/selectors/contract_type/ONETOUCH",
+                  "type": "integer",
+                  "default": 2
+                },
+                "SPREADD": {
+                  "id": "undefined/offerings/selectors/contract_type/SPREADD",
+                  "type": "integer",
+                  "default": 1
+                },
+                "ASIAND": {
+                  "id": "undefined/offerings/selectors/contract_type/ASIAND",
+                  "type": "integer",
+                  "default": 1
+                },
+                "DIGITDIFF": {
+                  "id": "undefined/offerings/selectors/contract_type/DIGITDIFF",
+                  "type": "integer",
+                  "default": 1
+                },
+                "PUT": {
+                  "id": "undefined/offerings/selectors/contract_type/PUT",
+                  "type": "integer",
+                  "default": 6
+                },
+                "ASIANU": {
+                  "id": "undefined/offerings/selectors/contract_type/ASIANU",
+                  "type": "integer",
+                  "default": 1
+                },
+                "DIGITMATCH": {
+                  "id": "undefined/offerings/selectors/contract_type/DIGITMATCH",
+                  "type": "integer",
+                  "default": 1
+                },
+                "EXPIRYMISS": {
+                  "id": "undefined/offerings/selectors/contract_type/EXPIRYMISS",
+                  "type": "integer",
+                  "default": 2
+                },
+                "NOTOUCH": {
+                  "id": "undefined/offerings/selectors/contract_type/NOTOUCH",
+                  "type": "integer",
+                  "default": 2
+                },
+                "CALL": {
+                  "id": "undefined/offerings/selectors/contract_type/CALL",
+                  "type": "integer",
+                  "default": 6
+                },
+                "RANGE": {
+                  "id": "undefined/offerings/selectors/contract_type/RANGE",
+                  "type": "integer",
+                  "default": 2
+                },
+                "SPREADU": {
+                  "id": "undefined/offerings/selectors/contract_type/SPREADU",
+                  "type": "integer",
+                  "default": 1
+                }
+              }
+            },
+            "min_contract_duration": {
+              "id": "undefined/offerings/selectors/min_contract_duration",
+              "type": "object",
+              "properties": {
+                "5": {
+                  "id": "undefined/offerings/selectors/min_contract_duration/5",
+                  "type": "integer",
+                  "default": 8
+                },
+                "15s": {
+                  "id": "undefined/offerings/selectors/min_contract_duration/15s",
+                  "type": "integer",
+                  "default": 2
+                },
+                "2m": {
+                  "id": "undefined/offerings/selectors/min_contract_duration/2m",
+                  "type": "integer",
+                  "default": 10
+                },
+                "1d": {
+                  "id": "undefined/offerings/selectors/min_contract_duration/1d",
+                  "type": "integer",
+                  "default": 10
+                }
+              }
+            },
+            "sentiment": {
+              "id": "undefined/offerings/selectors/sentiment",
+              "type": "object",
+              "properties": {
+                "High Vol": {
+                  "id": "undefined/offerings/selectors/sentiment/High Vol",
+                  "type": "integer",
+                  "default": 6
+                },
+                "Differ": {
+                  "id": "undefined/offerings/selectors/sentiment/Differ",
+                  "type": "integer",
+                  "default": 1
+                },
+                "Match": {
+                  "id": "undefined/offerings/selectors/sentiment/Match",
+                  "type": "integer",
+                  "default": 1
+                },
+                "Up": {
+                  "id": "undefined/offerings/selectors/sentiment/Up",
+                  "type": "integer",
+                  "default": 8
+                },
+                "Down": {
+                  "id": "undefined/offerings/selectors/sentiment/Down",
+                  "type": "integer",
+                  "default": 8
+                },
+                "Low Vol": {
+                  "id": "undefined/offerings/selectors/sentiment/Low Vol",
+                  "type": "integer",
+                  "default": 6
+                }
+              }
+            },
+            "contract_category": {
+              "id": "undefined/offerings/selectors/contract_category",
+              "type": "object",
+              "properties": {
+                "spreads": {
+                  "id": "undefined/offerings/selectors/contract_category/spreads",
+                  "type": "integer",
+                  "default": 2
+                },
+                "endsinout": {
+                  "id": "undefined/offerings/selectors/contract_category/endsinout",
+                  "type": "integer",
+                  "default": 4
+                },
+                "asian": {
+                  "id": "undefined/offerings/selectors/contract_category/asian",
+                  "type": "integer",
+                  "default": 2
+                },
+                "touchnotouch": {
+                  "id": "undefined/offerings/selectors/contract_category/touchnotouch",
+                  "type": "integer",
+                  "default": 4
+                },
+                "staysinout": {
+                  "id": "undefined/offerings/selectors/contract_category/staysinout",
+                  "type": "integer",
+                  "default": 4
+                },
+                "digits": {
+                  "id": "undefined/offerings/selectors/contract_category/digits",
+                  "type": "integer",
+                  "default": 2
+                },
+                "callput": {
+                  "id": "undefined/offerings/selectors/contract_category/callput",
+                  "type": "integer",
+                  "default": 12
+                }
+              }
+            },
+            "start_type": {
+              "id": "undefined/offerings/selectors/start_type",
+              "type": "object",
+              "properties": {
+                "Spot": {
+                  "id": "undefined/offerings/selectors/start_type/Spot",
+                  "type": "integer",
+                  "default": 28
+                },
+                "Forward": {
+                  "id": "undefined/offerings/selectors/start_type/Forward",
+                  "type": "integer",
+                  "default": 2
+                }
+              }
+            },
+            "expiry_type": {
+              "id": "undefined/offerings/selectors/expiry_type",
+              "type": "object",
+              "properties": {
+                "Intraday": {
+                  "id": "undefined/offerings/selectors/expiry_type/Intraday",
+                  "type": "integer",
+                  "default": 14
+                },
+                "Daily": {
+                  "id": "undefined/offerings/selectors/expiry_type/Daily",
+                  "type": "integer",
+                  "default": 10
+                },
+                "Tick": {
+                  "id": "undefined/offerings/selectors/expiry_type/Tick",
+                  "type": "integer",
+                  "default": 6
+                }
+              }
+            },
+            "underlying_symbol": {
+              "id": "undefined/offerings/selectors/underlying_symbol",
+              "type": "object",
+              "properties": {
+                "R_100": {
+                  "id": "undefined/offerings/selectors/underlying_symbol/R_100",
+                  "type": "integer",
+                  "default": 30
+                }
+              }
+            },
+            "sym_hierarchy": {
+              "id": "undefined/offerings/selectors/sym_hierarchy",
+              "type": "object",
+              "properties": {
+                "Random": {
+                  "id": "undefined/offerings/selectors/sym_hierarchy/Random",
+                  "type": "object",
+                  "properties": {
+                    "Random Index": {
+                      "id": "undefined/offerings/selectors/sym_hierarchy/Random/Random Index",
+                      "type": "object",
+                      "properties": {
+                        "Random 100 Index": {
+                          "id": "undefined/offerings/selectors/sym_hierarchy/Random/Random Index/Random 100 Index",
+                          "type": "integer",
+                          "default": 30
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "min_historical_pricer_duration": {
+              "id": "undefined/offerings/selectors/min_historical_pricer_duration",
+              "type": "object",
+              "properties": {
+                "(n/a)": {
+                  "id": "undefined/offerings/selectors/min_historical_pricer_duration/(n/a)",
+                  "type": "integer",
+                  "default": 30
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "msg_type": {
+      "id": "undefined/msg_type",
+      "type": "string",
+      "default": "offerings"
+    }
+  },
+  "required": [
+  
+    "echo_req",
+    "offerings",
+    "msg_type"
+  ]
+}
