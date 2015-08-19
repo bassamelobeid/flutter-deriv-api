@@ -5,7 +5,7 @@
     "authorize": {
       
       "type": "string",
-      "default": "8DQ7wDH6RNGbisBWbKupYs6D4NxE0Mrb03uaWLd9jrcCG2YM",
+      "default": "mEWBm8ECUwKzxMj1XcvYkGz0tOyt4ocN0UiP00NyamR14Z5Y",
       "description": "Authentication token"
     }
   },
