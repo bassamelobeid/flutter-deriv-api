@@ -1,32 +1,37 @@
+## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
+
 package BOM::Product::Contract::Finder;
 
 use strict;
 use warnings;
+
 use Date::Utility;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
+
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
+use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::Contract::Category;
 use BOM::Product::Contract::Strike;
-use BOM::Product::Offerings;
+
 use base qw( Exporter );
-our @EXPORT_OK = qw(available_contracts_for_symbol get_barrier);
+our @EXPORT_OK = qw(available_contracts_for_symbol);
 
 sub available_contracts_for_symbol {
-    my $args         = shift;
-    my $symbol       = $args->{symbol} || die 'no symbol';
-    my $underlying   = BOM::Market::Underlying->new($symbol);
-    my $now          = Date::Utility->new;
-    my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
+    my $symbol = shift || die 'no symbol';
 
-    my $exchange  = $underlying->exchange;
-    my $open      = $exchange->opening_on($now)->epoch;
-    my $close     = $exchange->closing_on($now)->epoch;
-    my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
+    my $now        = Date::Utility->new;
+    my $underlying = BOM::Market::Underlying->new($symbol);
+    my $exchange   = $underlying->exchange;
+    my $open       = $exchange->opening_on($now)->epoch;
+    my $close      = $exchange->closing_on($now)->epoch;
+
+    my $flyby = BOM::Product::Offerings::get_offerings_flyby;
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
+
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 
@@ -59,44 +64,22 @@ sub available_contracts_for_symbol {
             : die "don't know about contract category $cc";
 
         if ($o->{barriers}) {
-            my $min_duration = Time::Duration::Concise->new(interval => $o->{min_contract_duration})->seconds;
-            my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
-            my $atm_vol = $volsurface->get_volatility({
-                delta => 50,
-                days  => $min_duration / 86400,
-            });
+
+            my %args = (
+                underlying => $underlying,
+                duration   => $o->{min_contract_duration});
 
             if ($o->{barriers} == 1) {
-                $o->{barrier} = get_barrier({
-                    underlying    => $underlying,
-                    duration      => $min_duration,
-                    direction     => 'high',
-                    barrier_delta => 0.2,
-                    barrier_tick  => $current_tick,
-                    atm_vol       => $atm_vol
-                });
+                $o->{barrier} = _default_barrier({%args, barrier_type => 'high'});
             }
 
             if ($o->{barriers} == 2) {
-                $o->{high_barrier} = get_barrier({
-                    underlying    => $underlying,
-                    duration      => $min_duration,
-                    direction     => 'high',
-                    barrier_delta => 0.2,
-                    barrier_tick  => $current_tick,
-                    atm_vol       => $atm_vol
-                });
-                $o->{low_barrier} = get_barrier({
-                    underlying    => $underlying,
-                    duration      => $min_duration,
-                    direction     => 'low',
-                    barrier_delta => 0.2,
-                    barrier_tick  => $current_tick,
-                    atm_vol       => $atm_vol
-                });
+                $o->{high_barrier} = _default_barrier({%args, barrier_type => 'high'});
+                $o->{low_barrier}  = _default_barrier({%args, barrier_type => 'low'});
             }
         }
     }
+
     return {
         available => \@offerings,
         hit_count => scalar(@offerings),
@@ -105,28 +88,42 @@ sub available_contracts_for_symbol {
     };
 }
 
-sub get_barrier {
+sub _default_barrier {
     my $args = shift;
 
-    my ($underlying, $duration, $direction, $barrier_delta, $barrier_tick, $absolute_barrier, $atm_vol) =
-        @{$args}{'underlying', 'duration', 'direction', 'barrier_delta', 'barrier_tick', 'absolute_barrier', 'atm_vol'};
+    my ($underlying, $duration, $barrier_type) = @{$args}{'underlying', 'duration', 'barrier_type'};
+    my $option_type = 'VANILLA_CALL';
+    $option_type = 'VANILLA_PUT' if $barrier_type eq 'low';
 
+    $duration = Time::Duration::Concise->new(interval => $duration)->seconds;
+
+    my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
+    # latest available spot should be sufficient.
+    my $barrier_spot        = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+    my $tid                 = $duration / 86400;
+    my $tiy                 = $tid / 365;
     my $approximate_barrier = get_strike_for_spot_delta({
-        option_type => ($direction eq 'low') ? 'VANILLA_PUT' : 'VANILLA_CALL',
-        delta       => $barrier_delta,
-        atm_vol     => $atm_vol,
-        t => $duration / (86400 * 365),
-        r_rate           => 0,
-        q_rate           => 0,
-        spot             => $barrier_tick->quote,
-        premium_adjusted => 0,
-    });
+            delta       => 0.2,
+            option_type => $option_type,
+            atm_vol     => $volsurface->get_volatility({
+                    delta => 50,
+                    days  => $tid
+                }
+            ),
+            t                => $tiy,
+            r_rate           => 0,
+            q_rate           => 0,
+            spot             => $barrier_spot->quote,
+            premium_adjusted => 0,
+        });
+
     my $strike = BOM::Product::Contract::Strike->new(
         underlying       => $underlying,
-        basis_tick       => $barrier_tick,
+        basis_tick       => $barrier_spot,
         supplied_barrier => $approximate_barrier,
     );
 
-    return ($absolute_barrier or $duration > 86400) ? $strike->as_absolute : $strike->as_relative;
+    return $duration > 86400 ? $strike->as_absolute : $strike->as_difference;
 }
+
 1;
