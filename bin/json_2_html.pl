@@ -35,7 +35,7 @@ sub print_doc_receive {
 }
 sub print_doc_send {
     my $data = shift;
-    print "<h1>".$data->{title}, "</h1>\n";
+    print "<h2>".$data->{title}, "</h2>\n";
     print $data->{description}, "\n";
     print "<pre>{\n";
     for my $p (keys %{$data->{properties}}) {
