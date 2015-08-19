@@ -79,5 +79,18 @@ sub ticks {
     }
 }
 
+sub proposal {
+    my ($c, $args) = @_;
+
+    # this is a recurring contract-price watch ("price streamer")
+    # p2 is a manipulated copy of p1 suitable for produce_contract.
+    my $p2 = $c->prepare_ask($args);
+    my $id;
+    $id = Mojo::IOLoop->recurring(1 => sub { $c->send_ask($id, {}, $p2) });
+    $c->{$id} = $p2;
+    $c->send_ask($id, $args, $p2);
+    $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
+}
+
 1;
 
