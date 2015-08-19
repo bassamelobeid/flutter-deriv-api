@@ -214,9 +214,9 @@ sub broker_for_new_financial {
     my $country_code = shift;
 
     my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
-    my $company = $c_config->{financial_company} if (exists $c_config->{financial_company});
-    return if (not $company);
+    return if (not exists $c_config->{financial_company});
 
+    my $company = $c_config->{financial_company};
     my $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
     return $broker;
 }
