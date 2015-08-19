@@ -3,22 +3,26 @@ use Test::Mojo;
 use JSON::Schema;
 use JSON;
 use File::Slurp;
+use File::Basename;
 
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t   = $svr? Test::Mojo->new: Test::Mojo->new('BOM::WebSocketAPI');
 
 $t->websocket_ok("$svr/websockets/contracts");
 
-$t->send_ok('some random stuff not even json', 'sent random stuff not even json, will be ignored');
-$t->send_ok({json=>{this=>'that'}},            'valid json but nonsense message, will be ignored');
-
 my ($test_name, $response);
 
-opendir(my $dh, './config/v1') || die;
-my @f = ();
-while(my $f = readdir $dh) {
-    next if ($f eq '.' or $f eq '..');
-    push @f, $f;
+foreach my $v (grep { -d } glob 'config/v*') {
+    explain "Testing version: $v";
+    foreach my $f (grep { -d } glob "$v/*") {
+        $test_name = File::Basename::basename($f);
+        next if ($ENV{TRAVIS} and $f =~ /\/tick$/);
+        my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("$f/send.json")));
+        my $response_json = &same_structure_tests($test_name, $send);
+        my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
+        my $result = $validator->validate($response_json);
+        ok $result, "$f response is valid"; # print " - $_\n" foreach $result->errors;
+    }
 }
 
 sub strip_doc_send {
@@ -28,16 +32,6 @@ sub strip_doc_send {
         $r->{$p} = $data->{properties}->{$p}->{default};
     }
     return $r;
-}
-
-foreach my $f (@f) {
-    $test_name = $f;
-    next if ($ENV{TRAVIS} and $f eq 'tick');
-    my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("config/v1/$f/send.json")));
-    my $response_json = &same_structure_tests($f, $send);
-    my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/v1/$f/receive.json")));
-    my $result    = $validator->validate($response_json);
-    ok $result, "$f response is valid"; # print " - $_\n" foreach $result->errors;
 }
 
 sub same_structure_tests {
