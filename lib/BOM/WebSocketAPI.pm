@@ -11,6 +11,7 @@ sub startup {
     my $log = $app->log;
 
     my $signature = "Binary.com Websockets API";
+
     $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
@@ -18,9 +19,15 @@ sub startup {
 
     my $r = $app->routes;
 
-    for ($r->under('/websockets')) {
-        $_->to('websocket#ok');
-        $_->websocket('/contracts')->to('#contracts');
+    for ($r->under('/websockets/v2')) {
+        $_->to('Websocket_v1#ok');
+        $_->websocket('/')->to('#entry_point');
+    }
+
+    # Alias, to be deprecated.
+    for ($r->under('/websockets/')) {
+        $_->to('Websocket_v1#ok');
+        $_->websocket('/contracts')->to('#entry_point');
     }
 
     return;
