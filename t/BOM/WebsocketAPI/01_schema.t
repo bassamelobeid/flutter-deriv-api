@@ -14,11 +14,11 @@ $t->send_ok({json=>{this=>'that'}},            'valid json but nonsense message,
 
 my ($test_name, $response);
 
-opendir(my $dh, './config') || die;
+opendir(my $dh, './config/v1') || die;
 my @f = ();
 while(my $f = readdir $dh) {
     next if ($f eq '.' or $f eq '..');
-    push @f, "$f";
+    push @f, $f;
 }
 
 sub strip_doc_send {
@@ -32,9 +32,9 @@ sub strip_doc_send {
 
 foreach my $f (@f) {
     $test_name = $f;
-    my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("config/$f/send.json")));
+    my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("config/v1/$f/send.json")));
     my $response_json = &same_structure_tests($f, $send);
-    my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/$f/receive.json")));
+    my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("config/v1/$f/receive.json")));
 
     my $result    = $validator->validate($response_json);
 

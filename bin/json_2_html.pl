@@ -3,12 +3,12 @@ use File::Slurp;
 use Data::Dumper;
 
 
-opendir(my $dh, 'config') || die;
+opendir(my $dh, 'config/v1') || die;
 my @f = ();
 while(my $f = readdir $dh) {
 	next if ($f eq '.' or $f eq '..');
 
-	push @f, "config/$f";
+	push @f, "config/v1/$f";
 }
 
 foreach my $f (@f) {
