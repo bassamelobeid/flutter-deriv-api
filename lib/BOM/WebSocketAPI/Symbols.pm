@@ -213,6 +213,7 @@ sub _candles {
 
 }
 
+# needed only for REST API..
 sub candles {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};
@@ -230,9 +231,10 @@ sub candles {
         }) || return $c->_fail("invalid candles request");
 
     $done->recv;
-    return $c->_pass({candles=>$candles});
+    return $c->_pass({candles => $candles});
 }
 
+# needed only for REST API..
 sub contracts {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};

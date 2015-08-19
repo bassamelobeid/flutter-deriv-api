@@ -23,9 +23,7 @@ my $DOM = Mojo::DOM->new;
 
 sub ok {
     my $c      = shift;
-    # We can check http origin here, and/or determine source of initial websocket-open request.
-    # to reject unwanted websocket-open requests, return false.
-    my $source = 1;
+    my $source = 1;       # check http origin here
     $c->stash(source => $source);
     return 1;
 }
@@ -396,7 +394,7 @@ my $json_receiver = sub {
                         }});
             } elsif ($style eq 'candles') {
 
-                my $sender = sub { 
+                my $sender = sub {
                     my $candles = shift;
                     $c->send({
                             json => {
@@ -406,8 +404,19 @@ my $json_receiver = sub {
                             }});
                 };
 
-                my $watcher = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul, sender => $sender})    ## no critic
-                    || return $c->send({
+                if (
+                    my $watcher = $c->BOM::WebSocketAPI::Symbols::_candles({
+                            %$p1,    ## no critic
+                            ul     => $ul,
+                            sender => $sender
+                        }))
+                {
+                    # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
+                    push @{$c->stash->{watchers}}, $watcher;
+                    return;
+                }
+
+                return $c->send({
                         json => {
                             msg_type => 'candles',
                             echo_req => $p1,
@@ -416,10 +425,6 @@ my $json_receiver = sub {
                                     message => 'invalid candles request',
                                     code    => 'InvalidCandlesRequest'
                                 }}}});
-
-                # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
-                push @{$c->stash->{watchers}}, $watcher;
-                return;
 
             } else {
 
