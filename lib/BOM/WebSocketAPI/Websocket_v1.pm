@@ -23,8 +23,10 @@ my $DOM = Mojo::DOM->new;
 
 sub ok {
     my $c      = shift;
-    my $source = 1;       # check http origin here
-    $c->stash(source => 1);
+    # We can check http origin here, and/or determine source of initial websocket-open request.
+    # to reject unwanted websocket-open requests, return false.
+    my $source = 1;
+    $c->stash(source => $source);
     return 1;
 }
 
@@ -395,15 +397,13 @@ my $json_receiver = sub {
             } elsif ($style eq 'candles') {
 
                 my $sender = sub { 
-                    open my $file, ">>/tmp/xx";
-                    printf $file "%s\n", scalar(localtime);
-                    close $file;
-                    #$c->send({
-                    #        json => {
-                    #            msg_type => 'candles',
-                    #            echo_req => $p1,
-                    #            candles  => $candles
-                    #        }});
+                    my $candles = shift;
+                    $c->send({
+                            json => {
+                                msg_type => 'candles',
+                                echo_req => $p1,
+                                candles  => $candles
+                            }});
                 };
 
                 my $watcher = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul, sender => $sender})    ## no critic
@@ -417,10 +417,12 @@ my $json_receiver = sub {
                                     code    => 'InvalidCandlesRequest'
                                 }}}});
 
-                $log->debug("watcher is back");
+                # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
                 push @{$c->stash->{watchers}}, $watcher;
                 return;
+
             } else {
+
                 return $c->send({
                         json => {
                             msg_type => 'tick',
