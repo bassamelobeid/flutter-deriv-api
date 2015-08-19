@@ -4,6 +4,7 @@ use Moose;
 use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
+use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
 use List::Util qw(min max first);
 use JSON qw( from_json );
@@ -204,26 +205,33 @@ sub stats_validation_done {
 }
 
 sub stats_stop {
-    my $self = shift;
-    my $data = shift;
+    my ($self, $data, $error) = @_;
+
     my $what = $data->{what};
-
     my $tags = $data->{tags};
-    my $now  = [gettimeofday];
-    stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
-    stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
-    stats_inc("transaction.$what.success", $tags);
 
-    if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
-        my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
-        if ($what eq 'buy') {
-            stats_count('business.turnover_usd',       $usd_amount, $tags);
-            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
-        } elsif ($what eq 'sell') {
-            stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
+    if ($error) {
+        my $whatsit = blessed $error;
+        my $why = ($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : $error;
+        $why =~ s/\s+//g;    # No spaces in tags, even if they sent us a silly string.
+        stats_inc("transaction.$what.failure", [@$tags, "reason:$why"]);
+    } else {
+        my $now = [gettimeofday];
+        stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
+        stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
+        stats_inc("transaction.$what.success", $tags);
+
+        if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
+            my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
+            if ($what eq 'buy') {
+                stats_count('business.turnover_usd',       $usd_amount, $tags);
+                stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
+            } elsif ($what eq 'sell') {
+                stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
+            }
         }
     }
-    return;
+    return $error;
 }
 
 sub calculate_limits {
@@ -495,7 +503,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
         # all these validations MUST NOT use the database
         # database related validations MUST be implemented in the database
         # ask your friendly DBA team if in doubt
-        $error_status = $self->$_ and return $error_status
+        $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
             qw/_validate_iom_withdrawal_limit
             _validate_payout_limit
@@ -514,7 +522,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
-    return $error_status if $error_status;
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
 
@@ -537,15 +545,17 @@ sub buy {    ## no critic (RequireArgUnpacking)
             # otherwise the function re-throws the exception (unrecoverable).
             $error_status = $self->_recover($_, $try);
         };
-        return $error_status if $error_status;
+        return $self->stats_stop($stats_data, $error_status) if $error_status;
         redo TRY if $error and $try++ < 3;
     }
 
-    return Error::Base->cuss(
-        -type              => 'GeneralError',
-        -mesg              => 'Cannot perform database action',
-        -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-    ) if $error;
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'GeneralError',
+            -mesg              => 'Cannot perform database action',
+            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+        )) if $error;
 
     $self->stats_stop($stats_data);
 
@@ -626,7 +636,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
         # all these validations MUST NOT use the database
         # database related validations MUST be implemented in the database
         # ask your friendly DBA team if in doubt
-        $error_status = $self->$_ and return $error_status
+        $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
             qw/_validate_iom_withdrawal_limit
             _validate_payout_limit
@@ -641,7 +651,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
-    return $error_status if $error_status;
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
 
@@ -664,21 +674,25 @@ sub sell {    ## no critic (RequireArgUnpacking)
             # otherwise the function re-throws the exception (unrecoverable).
             $error_status = $self->_recover($_, $try);
         };
-        return $error_status if $error_status;
+        return $self->stats_stop($stats_data, $error_status) if $error_status;
         redo TRY if $error and $try++ < 3;
     }
 
-    return Error::Base->cuss(
-        -type              => 'GeneralError',
-        -mesg              => 'Cannot perform database action',
-        -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-    ) if $error;
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'GeneralError',
+            -mesg              => 'Cannot perform database action',
+            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+        )) if $error;
 
-    return Error::Base->cuss(
-        -type              => 'NoOpenPosition',
-        -mesg              => 'No such open contract.',
-        -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
-    ) unless defined $txn->{id};
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'NoOpenPosition',
+            -mesg              => 'No such open contract.',
+            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
+        )) unless defined $txn->{id};
 
     $self->stats_stop($stats_data);
 
