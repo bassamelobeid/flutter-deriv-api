@@ -1364,7 +1364,7 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'random' && BOM::Platform::Runtime->instance->countries_list->{$residence}->{random_restricted}) {
+    if ($residence && $market_name eq 'random' && BOM::Platform::Runtime->instance->random_restricted_country($residence)) {
         return Error::Base->cuss(
             -type => 'RandomRestrictedCountry',
             -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
