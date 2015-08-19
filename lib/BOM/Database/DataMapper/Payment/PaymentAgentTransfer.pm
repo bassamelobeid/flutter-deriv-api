@@ -16,6 +16,42 @@ has '_mapper_required_objects' => (
 
 =over
 
+=item get_today_payment_agent_transfer_total_amount
+
+=cut
+
+sub get_today_client_payment_agent_transfer_total_amount {
+    my $self = shift;
+
+    my $sql = q{
+        SELECT
+            ROUND(SUM(ABS(p.amount)), 2) AS amount
+        FROM
+            payment.payment p,
+            transaction.account a
+        WHERE
+            p.account_id = a.id
+            AND a.client_loginid = ?
+            AND a.is_default = 'TRUE'
+            AND p.payment_gateway_code = 'payment_agent_transfer'
+            AND p.payment_time::DATE >= 'today'
+    };
+
+    my $dbh = $self->db->dbh;
+    my $sth = $dbh->prepare($sql);
+    $sth->execute($self->client_loginid);
+    my $amount = 0;
+    if (my $result = $sth->fetchrow_hashref()) {
+        $amount = $result->{amount} || 0;
+    }
+
+    return $amount;
+}
+
+=head1 METHODS
+
+=over
+
 =item get_today_payment_agent_transfer_total_withdrawal
 
 =cut
@@ -80,6 +116,7 @@ sub get_today_client_payment_agent_transfer_withdrawal_count {
     return deposit count
 =back
 =cut
+
 sub get_today_client_payment_agent_transfer_deposit_count {
     my $self = shift;
 
@@ -104,7 +141,6 @@ sub get_today_client_payment_agent_transfer_deposit_count {
     my $result = $sth->fetchrow_hashref();
     return $result->{count};
 }
-
 
 =item get_payment_agent_withdrawal_txn_by_date
     returns withdrawal payment_agent_transfer receord by date
