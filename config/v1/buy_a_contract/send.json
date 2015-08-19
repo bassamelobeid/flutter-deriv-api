@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Buy a Contract Send",
+  "description": "Buy the Contract using an ID from a previous Get Price call.",
+  "properties": {
+    "buy": {
+      "type": "string",
+      "default": "ID",
+      "description": "The id received from a Get Price call"
+    }
+
+	"price": {
+	   "type": "string",
+	   "default": "PRICE",
+	   "description": "The price being offered for this contract"
+  }
+  },
+  "required": [
+    "buy",
+    "price"
+  ]
+}
