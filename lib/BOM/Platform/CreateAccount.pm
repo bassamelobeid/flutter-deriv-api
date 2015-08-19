@@ -176,9 +176,7 @@ sub financial_acc_checks {
     my $check = real_acc_checks($args);
     return $check if ($check->{err});
 
-    my $c_config = BOM::Platform::Runtime->instance->countries_list->{$check->{from_client}->residence};
-    return $check if (exists $c_config->{financial_company} and $c_config->{financial_company} eq 'maltainvest');
-
+    return $check if (BOM::Platform::Runtime->instance->country_has_financial($check->{from_client}->residence));
     return {err => localize('Financial account opening unavailable')};
 }
 

@@ -153,7 +153,7 @@ sub check_jurisdiction {
         return;
     }
 
-    if (BOM::Platform::Runtime->instance->countries_list->{$country_code}->{restricted}) {
+    if (BOM::Platform::Runtime->instance->restricted_country($country_code)) {
         return localize('Sorry, our service is not available for residents of [_1].', Locale::Country::code2country($country_code));
     }
     return;

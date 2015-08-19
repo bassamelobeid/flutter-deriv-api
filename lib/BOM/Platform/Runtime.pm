@@ -154,6 +154,38 @@ sub _build_countries_list {
     return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
 }
 
+sub country_has_financial {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+
+    return 1 if (exists $config->{financial_company} and $config->{financial_company} eq 'maltainvest');
+    return;
+}
+
+sub financial_only_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+
+    return 1 if ($config->{random_restricted} and $config->{financial_company} eq 'maltainvest');
+    return;
+}
+
+sub restricted_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+
+    return 1 if ($config->{restricted});
+    return;
+}
+
+sub random_restricted_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+
+    return 1 if ($config->{random_restricted});
+    return;
+}
+
 sub _build_app_config {
     my $self = shift;
     return BOM::Platform::Runtime::AppConfig->new(couch => $self->datasources->couchdb);
