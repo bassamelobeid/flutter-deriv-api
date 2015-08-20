@@ -21,7 +21,7 @@ sub other_side_code { return 'DIGITDIFF'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] <strong>[_2]</strong> payout if the last digit of [_3] <strong>is [_6]</strong> after <strong>[_5] ticks</strong>.',
+        tick => '[_1] [_2] payout if the last digit of [_3] is [_6] after [_5] ticks.',
     };
 }
 
