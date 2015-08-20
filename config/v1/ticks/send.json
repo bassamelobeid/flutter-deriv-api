@@ -5,18 +5,15 @@
   "description": "For a given symbol name, receive history",
   "properties": {
     "ticks": {
-      
       "type": "string",
       "default": "R_100"
     },
     "end": {
-      
       "type": "string",
       "default": "END"
     }
   },
   "required": [
-    
     "ticks",
     "end"
   ]
