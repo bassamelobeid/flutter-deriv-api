@@ -24,7 +24,7 @@ my $DOM = Mojo::DOM->new;
 sub ok {
     my $c      = shift;
     my $source = 1;       # check http origin here
-    $c->stash(source => 1);
+    $c->stash(source => $source);
     return 1;
 }
 
@@ -393,8 +393,30 @@ my $json_receiver = sub {
                             history  => $history
                         }});
             } elsif ($style eq 'candles') {
-                my $candles = $c->BOM::WebSocketAPI::Symbols::_candles({%$p1, ul => $ul})    ## no critic
-                    || return $c->send({
+
+                my $sender = sub {
+                    my $candles = shift;
+                    $c->send({
+                            json => {
+                                msg_type => 'candles',
+                                echo_req => $p1,
+                                candles  => $candles
+                            }});
+                };
+
+                if (
+                    my $watcher = $c->BOM::WebSocketAPI::Symbols::_candles({
+                            %$p1,    ## no critic
+                            ul     => $ul,
+                            sender => $sender
+                        }))
+                {
+                    # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
+                    push @{$c->stash->{watchers}}, $watcher;
+                    return;
+                }
+
+                return $c->send({
                         json => {
                             msg_type => 'candles',
                             echo_req => $p1,
@@ -403,13 +425,9 @@ my $json_receiver = sub {
                                     message => 'invalid candles request',
                                     code    => 'InvalidCandlesRequest'
                                 }}}});
-                return $c->send({
-                        json => {
-                            msg_type => 'candles',
-                            echo_req => $p1,
-                            candles  => $candles
-                        }});
+
             } else {
+
                 return $c->send({
                         json => {
                             msg_type => 'tick',
