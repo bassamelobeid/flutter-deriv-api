@@ -157,6 +157,7 @@ sub _build_countries_list {
 sub country_has_financial {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
+    return unless ($config);
 
     return 1 if ($config->{financial_company} eq 'maltainvest');
     return;
@@ -165,6 +166,7 @@ sub country_has_financial {
 sub financial_only_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
+    return unless ($config);
 
     return 1 if ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'maltainvest');
     return;
@@ -173,6 +175,7 @@ sub financial_only_country {
 sub restricted_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
+    return 1 unless ($config);
 
     return 1 if ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
     return;
@@ -181,8 +184,9 @@ sub restricted_country {
 sub random_restricted_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
+    return 1 unless ($config);
 
-    return 1 if ($config->{gaming_company} eq 'none' and $config->{financial_company} ne 'none');
+    return 1 if ($config->{gaming_company} eq 'none');
     return;
 }
 
