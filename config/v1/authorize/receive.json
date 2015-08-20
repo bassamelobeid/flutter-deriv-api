@@ -3,33 +3,27 @@
   "type": "object",
   "properties": {
     "authorize": {
-      
       "type": "object",
       "properties": {
         "email": {
-          
           "type": "string",
-          "default": "ehtesham.ahmed@live.com"
+          "default": "exmaple@example.com"
         },
         "currency": {
-          
           "type": "string",
           "default": "USD"
         },
         "balance": {
-          
-          "type": "string",
+          "type": "number",
           "default": "10377.9900"
         },
         "loginid": {
-         
           "type": "string",
           "default": "VRTC573035"
         },
         "fullname": {
-          
           "type": "string",
-          "default": " Ehtesham Ahmed"
+          "default": "fullname"
         }
       },
       "required": [
@@ -41,24 +35,20 @@
       ]
     },
     "echo_req": {
-      
       "type": "object",
       "properties": {
         "authorize": {
-          "id": "undefined/echo_req/authorize",
           "type": "string",
-          "default": "mEWBm8ECUwKzxMj1XcvYkGz0tOyt4ocN0UiP00NyamR14Z5Y"
+          "default": "ABCDABCDABCDABCDABCDABCDABCDABCD"
         }
       }
     },
     "msg_type": {
-      
       "type": "string",
       "default": "authorize"
     }
   },
   "required": [
-    
     "authorize",
     "echo_req",
     "msg_type"
