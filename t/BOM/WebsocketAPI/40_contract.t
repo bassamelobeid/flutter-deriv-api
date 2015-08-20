@@ -60,7 +60,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         date => Date::Utility->new,
     });
 
-local $ENV{MOJO_USERAGENT_DEBUG} = 1; # for test only
+$ENV{MOJO_USERAGENT_DEBUG} = 1;    # for test only
 
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
@@ -114,8 +114,8 @@ ok $res->{open_receipt};
 ok $res->{open_receipt}->{fmb_id};
 ok $res->{open_receipt}->{purchase_time};
 
-$t = $t->send_ok({json => {portfolio => 1}})->message_ok;
-diag Dumper(decode_json($t->message->[1]));
+# $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
+# diag Dumper(decode_json($t->message->[1]));
 
 # $t = $t->send_ok({
 #     json => {

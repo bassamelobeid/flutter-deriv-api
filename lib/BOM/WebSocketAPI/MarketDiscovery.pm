@@ -56,12 +56,12 @@ sub ticks {
             }
 
             return {
-                    msg_type => 'candles',
-                    candles  => {
-                        error => {
-                            message => 'invalid candles request',
-                            code    => 'InvalidCandlesRequest'
-                        }}};
+                msg_type => 'candles',
+                candles  => {
+                    error => {
+                        message => 'invalid candles request',
+                        code    => 'InvalidCandlesRequest'
+                    }}};
         } else {
             return {
                 msg_type => 'tick',
