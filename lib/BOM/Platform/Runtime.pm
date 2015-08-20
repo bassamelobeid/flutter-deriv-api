@@ -124,6 +124,11 @@ has 'non_restricted_countries' => (
     lazy_build => 1,
 );
 
+has 'countries_list' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 =head1 METHODS
 
 =head2 instance
@@ -163,6 +168,46 @@ sub _build_non_restricted_countries {
         }
     }
     return $countries;
+}
+
+sub _build_countries_list {
+    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
+}
+
+sub country_has_financial {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return unless ($config);
+
+    return 1 if ($config->{financial_company} eq 'maltainvest');
+    return;
+}
+
+sub financial_only_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return unless ($config);
+
+    return 1 if ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'maltainvest');
+    return;
+}
+
+sub restricted_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return 1 unless ($config);
+
+    return 1 if ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
+    return;
+}
+
+sub random_restricted_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return 1 unless ($config);
+
+    return 1 if ($config->{gaming_company} eq 'none');
+    return;
 }
 
 sub _build_app_config {
