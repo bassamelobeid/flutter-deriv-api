@@ -10,7 +10,7 @@
       "description": "Echo of the request made.",
       "properties": {
         "price": {
-          "type": "string",
+          "type": "number",
           "default": "5.14"
         },
         "sell": {
@@ -29,22 +29,22 @@
       "description": "Echo of the request made.",
       "properties": {
         "balance_after": {
-          "type": "string",
+          "type": "number",
           "default": "3853.5200",
           "description":"It is the new account balance after completion of the sale."
         },
         "fmb_id": {
-          "type": "string",
+          "type": "integer",
           "default": "3973987168",
           "description":"It is the binary.com internal contract identifier for the sold contract."
         },
         "sold_for": {
-          "type": "string",
+          "type": "number",
           "default": "5.67",
           "description": "It is the actual effected sale price."
         },
         "trx_id": {
-          "type": "string",
+          "type": "integer",
           "default": "7802331968",
           "description":"It is a binary.com internal transaction identifier for the sale transaction."
         }
