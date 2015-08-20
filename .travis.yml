@@ -28,8 +28,9 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
-
     - /tmp/travis-scripts/redis.sh
+    - /tmp/travis-scripts/websocket_schema_update.sh
+
 
 install:
     - /tmp/travis-scripts/devbox.sh
