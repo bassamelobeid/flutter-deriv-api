@@ -24,6 +24,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_flat', {symbol
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'R_100'});
 
+my $today = Date::Utility->new->truncate_to_day;
+my $next_day = $today->plus_time_interval('1d');
+foreach my $date ($today, $next_day) {
+    my @epochs = map {$date->epoch + $_} (-2,-1,0,1,2,3,4);
+    map { BOM::Test::Data::Utility::FeedTestDatabase::create_tick({underlying => 'R_100', epoch => $_, quote => 100}) } @epochs;
+}
+
 my $cr = create_client('CR');
 top_up($cr, 'USD', 5000);
 my $acc_usd = $cr->find_account(query => [currency_code => 'USD'])->[0];
@@ -62,7 +69,6 @@ subtest 'successful run' => sub {
         SPREADU => 1,
         SPREADD => 1,
     );
-    my $next_day = Date::Utility->new->plus_time_interval('1d');
     # buy all valid contracts
     foreach my $type (keys %contracts) {
         if ($type eq 'SPREADU' or $type eq 'SPREADD') {
