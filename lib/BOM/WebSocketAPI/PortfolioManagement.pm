@@ -66,7 +66,7 @@ sub buy {
 sub sell {
     my ($c, $args) = @_;
 
-    my $id = $args->{buy};
+    my $id = $args->{sell};
     my $source = $c->stash('source');
 
     Mojo::IOLoop->remove($id);
@@ -92,12 +92,12 @@ sub sell {
             source      => $source,
         });
         if (my $err = $trx->sell) {
-            $log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
+            $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
             $json->{close_receipt}->{error}->{code}    = $err->get_type;
             $json->{close_receipt}->{error}->{message} = $err->{-message_to_client};
             last;
         }
-        $log->info("websocket-based sell " . $trx->report);
+        $c->app->log->info("websocket-based sell " . $trx->report);
         $trx                   = $trx->transaction_record;
         $fmb                   = $trx->financial_market_bet;
         $json->{close_receipt} = {

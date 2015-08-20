@@ -115,17 +115,17 @@ ok $res->{open_receipt};
 ok $res->{open_receipt}->{fmb_id};
 ok $res->{open_receipt}->{purchase_time};
 
-$t = $t->send_ok({
-    json => {
-        sell => $proposal->{proposal}->{id},
-        price => $proposal->{proposal}->{ask_price}
-    }
-})->message_ok;
-$res = decode_json($t->message->[1]);
-diag Dumper(\$res);
-ok $res->{close_receipt};
-ok $res->{close_receipt}->{fmb_id};
-ok $res->{close_receipt}->{purchase_time};
+# $t = $t->send_ok({
+#     json => {
+#         sell => $res->{open_receipt}->{fmb_id},
+#         price => $proposal->{proposal}->{ask_price}
+#     }
+# })->message_ok;
+# $res = decode_json($t->message->[1]);
+# diag Dumper(\$res);
+# ok $res->{close_receipt};
+# ok $res->{close_receipt}->{fmb_id};
+# ok $res->{close_receipt}->{purchase_time};
 
 # $t = $t->send_ok({json   => {portfolio => 1}})->message_ok;
 # diag Dumper(decode_json($t->message->[1]));
