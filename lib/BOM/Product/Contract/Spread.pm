@@ -352,7 +352,7 @@ sub _build_bid_price {
     } else {
         $self->exit_level($self->sell_level);
         $self->_recalculate_value($self->sell_level);
-        $bid = $self->ask_price + $self->value;
+        $bid = max(0, $self->ask_price + $self->value);
     }
 
     return roundnear(0.01, $bid);
