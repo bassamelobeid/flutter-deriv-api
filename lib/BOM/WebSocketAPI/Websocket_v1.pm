@@ -337,9 +337,8 @@ my $json_receiver = sub {
     }
 
     if ($p1->{portfolio}) {
-        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::portfolio($c);
-        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
-        my $p0    = {%$p1};
+        my $client          = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
+        my $p0              = {%$p1};
         my $portfolio_stats = BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1);
         return $c->send({
                 json => {
@@ -353,11 +352,10 @@ my $json_receiver = sub {
         my $json = BOM::WebSocketAPI::MarketDiscovery::ticks($c, $p1);
         return unless $json;
         return $c->send({
-            json => {
-                echo_req => $p1,
-                %$json
-            }
-        });
+                json => {
+                    echo_req => $p1,
+                    %$json
+                }});
     }
 
     if ($p1->{proposal}) {

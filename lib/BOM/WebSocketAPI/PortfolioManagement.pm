@@ -12,12 +12,12 @@ use BOM::Product::Transaction;
 sub buy {
     my ($c, $args) = @_;
 
-    my $id = $args->{buy};
+    my $id     = $args->{buy};
     my $source = $c->stash('source');
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json = {
+    my $json   = {
         echo_req => $args,
         msg_type => 'open_receipt'
     };
@@ -66,12 +66,12 @@ sub buy {
 sub sell {
     my ($c, $args) = @_;
 
-    my $id = $args->{sell};
+    my $id     = $args->{sell};
     my $source = $c->stash('source');
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json = {
+    my $json   = {
         echo_req => $args,
         msg_type => 'close_receipt'
     };
@@ -118,9 +118,9 @@ sub portfolio {
     my $source = $c->stash('source');
 
     my $portfolio_stats = BOM::Product::Transaction::sell_expired_contracts({
-        client => $client,
-        source => $source
-    }) || {number_of_sold_bets => 0};
+            client => $client,
+            source => $source
+        }) || {number_of_sold_bets => 0};
 
     # TODO: run these under a separate event loop to avoid workload batching..
     my @fmbs = grep { !$c->{fmb_ids}->{$_->id} } $client->open_bets;
@@ -134,8 +134,8 @@ sub portfolio {
         $id = Mojo::IOLoop->recurring(2 => sub { $c->send_bid($id, $p0, {}, $p2) });
         $c->{$id}                 = $p2;
         $c->{fmb_ids}->{$fmb->id} = $id;
-        $args->{batch_index}        = ++$count;
-        $args->{batch_count}        = @fmbs;
+        $args->{batch_index}      = ++$count;
+        $args->{batch_count}      = @fmbs;
         $c->send_bid($id, $p0, $args, $p2);
         $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
     }
