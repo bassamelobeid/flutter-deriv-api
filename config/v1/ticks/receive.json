@@ -40,7 +40,6 @@
   },
   "required": [
     "echo_req",
-    "history",
     "msg_type"
   ]
 }
