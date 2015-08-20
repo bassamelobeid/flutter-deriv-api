@@ -203,13 +203,15 @@ sub _candles {
     my $end_max = $start + $period * $count;
     $end = $end_max > $end ? $end : $end_max;
 
-    return BOM::Feed::Data::AnyEvent->new->get_ohlc(
+    $c->stash->{feeder} ||= BOM::Feed::Data::AnyEvent->new;
+    my $w = $c->stash->{feeder}->get_ohlc(
         underlying => $ul->symbol,
         start_time => $start,
         end_time   => $end,
         interval   => $size . lc $unit,
         on_result  => $args->{sender},
     );
+    return $w;
 
 }
 
@@ -231,6 +233,8 @@ sub candles {
         }) || return $c->_fail("invalid candles request");
 
     $done->recv;
+    $c->stash->{feeder}->_pg->destroy;
+    delete $c->stash->{feeder};
     return $c->_pass({candles => $candles});
 }
 
