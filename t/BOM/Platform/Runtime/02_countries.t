@@ -77,7 +77,7 @@ subtest 'restricted countries' => sub {
         is($c_config->{financial_company}, 'none', 'no financial company');
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), 1, 'restricted_country');
-        is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, '! random_restricted_country');
         is(BOM::Platform::Runtime->instance->country_has_financial($c), undef, '! country_has_financial');
         is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
     }
