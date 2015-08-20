@@ -11,6 +11,12 @@ use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(predefined_contracts_for_symbol);
 
+=head1 predefined_contracts_for_symbol
+
+Returns predefined set of contracts for a particular contract which included predefined trading period and 20 predefined barriers associated with the trading period
+
+=cut
+
 sub predefined_contracts_for_symbol {
     my $args         = shift;
     my $symbol       = $args->{symbol} || die 'no symbol';
@@ -187,7 +193,7 @@ sub _set_predefined_barriers {
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
         push my @boundaries_barrier, map {
-            get_barrier_by_probability({
+            _get_barrier_by_probability({
                 underlying    => $underlying,
                 duration      => $duration,
                 contract_type => 'CALL',
@@ -199,7 +205,7 @@ sub _set_predefined_barriers {
         } qw(0.05 0.95);
 
         push @$available_barriers,
-            split_boundaries_barriers({
+            _split_boundaries_barriers({
                 pip_size           => $underlying->pip_size,
                 start_tick         => $start_tick->quote,
                 boundaries_barrier => \@boundaries_barrier
@@ -222,7 +228,7 @@ sub _set_predefined_barriers {
     return;
 }
 
-=head2 split_boundaries_barriers
+=head2 _split_boundaries_barriers
 
 
 Split the boundaries barriers into 20 barriers.
@@ -235,7 +241,7 @@ Rules:
    -  1 barrier with +- 20 minimum_step from previous_barrier
 =cut
 
-sub split_boundaries_barriers {
+sub _split_boundaries_barriers {
     my $args = shift;
 
     my $pip_size           = $args->{pip_size};
@@ -259,13 +265,13 @@ sub split_boundaries_barriers {
     return @available_barriers;
 }
 
-=head2 get_barrier_by_probability
+=head2 _get_barrier_by_probability
 
-To get the strikes that associated with a given theo probability.
+To get the strike that associated with a given theo probability.
 
 =cut
 
-sub get_barrier_by_probability {
+sub _get_barrier_by_probability {
     my $args = shift;
 
     my ($underlying, $duration, $contract_type, $start_tick, $atm_vol, $target_theo_prob, $date_start) =
