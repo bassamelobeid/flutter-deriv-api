@@ -64,17 +64,13 @@ sub available_contracts_for_symbol {
 
         if ($o->{barriers}) {
 
-            my %args = (
-                underlying => $underlying,
-                duration   => $o->{min_contract_duration});
-
             if ($o->{barriers} == 1) {
-                $o->{barrier} = _default_barrier({%args, barrier_type => 'high'});
+                $o->{barrier} = _default_barrier({underlying => $underlying, duration => $o->{min_contract_duration} , barrier_type => 'high'});
             }
 
             if ($o->{barriers} == 2) {
-                $o->{high_barrier} = _default_barrier({%args, barrier_type => 'high'});
-                $o->{low_barrier}  = _default_barrier({%args, barrier_type => 'low'});
+                $o->{high_barrier} = _default_barrier({underlying => $underlying, duration => $o->{min_contract_duration}, barrier_type => 'high'});
+                $o->{low_barrier}  = _default_barrier({underlying => $underlying, duration => $o->{min_contract_duration}, barrier_type => 'low'});
             }
         }
     }
