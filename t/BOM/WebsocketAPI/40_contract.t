@@ -105,11 +105,17 @@ ok $proposal->{proposal}->{ask_price};
 
 $t = $t->send_ok({
     json => {
-        buy => $proposal->{id},
-        price => $proposal->{ask_price}
+        buy => $proposal->{proposal}->{id},
+        price => $proposal->{proposal}->{ask_price}
     }
 })->message_ok;
-diag Dumper(decode_json($t->message->[1]));
+my $res = decode_json($t->message->[1]);
+next if $res->{msg_type} eq 'proposal'; # wait until buy
+diag Dumper(\$res);
+ok $res->{open_receipt};
+ok $res->{open_receipt}->{fmb_id};
+ok $res->{open_receipt}->{purchase_time};
+
 
 # $t = $t->send_ok({
 #     json => {

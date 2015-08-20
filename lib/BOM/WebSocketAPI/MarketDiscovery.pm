@@ -6,7 +6,6 @@ use warnings;
 use BOM::WebSocketAPI::Symbols;
 
 use BOM::Market::Underlying;
-use BOM::Product::ContractFactory;
 
 sub ticks {
     my ($c, $args) = @_;

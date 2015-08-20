@@ -19,6 +19,7 @@ use BOM::WebSocketAPI::ContractDiscovery;
 use BOM::WebSocketAPI::System;
 use BOM::WebSocketAPI::Accounts;
 use BOM::WebSocketAPI::MarketDiscovery;
+use BOM::WebSocketAPI::PortfolioManagement;
 
 my $DOM = Mojo::DOM->new;
 
@@ -383,53 +384,9 @@ my $json_receiver = sub {
         return;
     }
 
-    if (my $id = $p1->{buy}) {
-        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::buy($c);
-
-        Mojo::IOLoop->remove($id);
+    if ($p1->{buy}) {
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'open_receipt');
-        my $json = {
-            echo_req => $p1,
-            msg_type => 'open_receipt'
-        };
-        {
-            my $p2 = delete $c->{$id} || do {
-                $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
-                $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
-                last;
-            };
-            my $contract = try { produce_contract({%$p2}) } || do {
-                my $err = $@;
-                $log->debug("contract creation failure: $err");
-                $json->{open_receipt}->{error}->{message} = "cannot create contract";
-                $json->{open_receipt}->{error}->{code}    = "ContractCreationFailure";
-                last;
-            };
-            my $trx = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-                price    => ($p1->{price} || 0),
-                source   => $source,
-            });
-            if (my $err = $trx->buy) {
-                $log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-                $json->{open_receipt}->{error}->{message} = $err->{-message_to_client};
-                $json->{open_receipt}->{error}->{code}    = $err->get_type;
-                last;
-            }
-            $log->info("websocket-based buy " . $trx->report);
-            $trx = $trx->transaction_record;
-            my $fmb = $trx->financial_market_bet;
-            $json->{open_receipt} = {
-                trx_id        => $trx->id,
-                fmb_id        => $fmb->id,
-                balance_after => $trx->balance_after,
-                purchase_time => $fmb->purchase_time->epoch,
-                buy_price     => $fmb->buy_price,
-                start_time    => $fmb->start_time->epoch,
-                longcode      => $DOM->parse($contract->longcode)->all_text,
-            };
-        }
+        my $json = BOM::WebSocketAPI::PortfolioManagement::buy($c, $p1);
         return $c->send({json => $json});
     }
 
