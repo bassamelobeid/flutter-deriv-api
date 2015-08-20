@@ -3,12 +3,12 @@
   "type": "object",
   "properties": {
     "proposal": {
-      "type": "string",
+      "type": "integer",
       "default": "1"
     },
     "amount_val": {
-      "type": "string",
-      "default": "10"
+      "type": "number",
+      "default": "10.0"
     },
     "basis": {
       "type": "string",

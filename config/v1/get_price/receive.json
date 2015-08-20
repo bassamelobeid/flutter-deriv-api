@@ -9,7 +9,7 @@
           "default": "R_100"
         },
         "duration": {
-          "type": "string",
+          "type": "integer",
           "default": "900"
         },
         "currency": {
@@ -17,11 +17,11 @@
           "default": "USD"
         },
         "proposal": {
-          "type": "string",
+          "type": "integer",
           "default": "1"
         },
         "amount_val": {
-          "type": "string",
+          "type": "number",
           "default": "10"
         },
         "date_start": {
@@ -58,7 +58,7 @@
       "type": "object",
       "properties": {
         "bid_price": {
-          "type": "string",
+          "type": "number",
           "default": "4.96"
         },
         "longcode": {
@@ -66,15 +66,15 @@
           "default": "USD 10.00 payout if Random 100 Index is strictly higher than entry spot at 15 minutes after contract start time."
         },
         "spot": {
-          "type": "string",
+          "type": "number",
           "default": "9874.52"
         },
         "spot_time": {
-          "type": "string",
+          "type": "integer",
           "default": "1439999052"
         },
         "ask_price": {
-          "type": "string",
+          "type": "number",
           "default": "5.14"
         },
         "date_start": {
@@ -86,7 +86,7 @@
           "default": "1d6651e7d599bce6c54bd71a8283e579"
         },
         "payout": {
-          "type": "string",
+          "type": "number",
           "default": "10"
         }
       }
