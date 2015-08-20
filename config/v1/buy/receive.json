@@ -10,7 +10,7 @@
       "description": "Echo of the request made.",
       "properties": {
         "price": {
-          "type": "string",
+          "type": "number",
           "default": "5.14"
         },
         "buy": {
@@ -29,7 +29,7 @@
       "description": "Echo of the request made.",
       "properties": {
         "balance_after": {
-          "type": "string",
+          "type": "number",
           "default": "9984.8400",
           "description":"It is the new account balance after completion of the purchase"
         	  
@@ -47,13 +47,13 @@
           
         },
         "fmb_id": {
-          "type": "string",
+          "type": "integer",
           "default": "299",
           "description":"is a binary.com internal contract identifier."
         	  
         },
         "buy_price": {
-          "type": "string",
+          "type": "number",
           "default": "5.14",
           "description":"It is the actual effected purchase price."
         },
@@ -63,7 +63,7 @@
           "description":"is an epoch value showing the transaction purchase time."
         },
         "trx_id": {
-          "type": "string",
+          "type": "integer",
           "default": "519",
           "description":"It is a binary.com internal transaction identifier."
         }
