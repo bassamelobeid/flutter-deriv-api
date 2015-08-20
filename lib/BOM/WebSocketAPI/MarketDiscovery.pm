@@ -82,6 +82,8 @@ sub proposal {
     $c->{$id} = $p2;
     $c->send_ask($id, $args, $p2);
     $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
+
+    return;
 }
 
 1;
