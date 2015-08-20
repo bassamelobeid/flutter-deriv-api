@@ -18,8 +18,7 @@ sub other_side_code { return 'ASIANU'; }
 
 sub localizable_description {
     return +{
-        tick =>
-            '[_1] <strong>[_2]</strong> payout if the <strong>last tick</strong> of [_3] is strictly <strong>lower</strong> than the <strong>average</strong> of the <strong>[_5] ticks</strong>.',
+        tick => '[_1] [_2] payout if the last tick of [_3] is strictly lower than the average of the [_5] ticks.',
     };
 }
 
