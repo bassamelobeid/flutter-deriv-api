@@ -75,8 +75,8 @@ sub prepare_ask {
 
 sub get_ask {
     my ($c, $p2) = @_;
-    my $app = $c->app;
-    my $log = $app->log;
+    my $app      = $c->app;
+    my $log      = $app->log;
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $log->info("contract creation failure: $err");
@@ -281,9 +281,9 @@ my $json_receiver = sub {
     if (my $id = $p1->{forget}) {
         return $c->send({
                 json => {
-                    msg_type  => 'forget',
-                    echo_req  => $p1,
-                    forget    => BOM::WebSocketAPI::System::forget($c, $id),
+                    msg_type => 'forget',
+                    echo_req => $p1,
+                    forget   => BOM::WebSocketAPI::System::forget($c, $id),
                 }});
     }
 
