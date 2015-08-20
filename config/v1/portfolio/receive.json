@@ -24,7 +24,7 @@
       "description": "Information about the contract",
       "properties": {
         "ask_price": {
-          "type": "string",
+          "type": "number",
           "default": "1040.02",
           "description": "Ask price of the contract"
         },
@@ -39,12 +39,12 @@
           "description": "Batch index"
         },
         "bid_price": {
-          "type": "string",
+          "type": "number",
           "default": "965.43",
           "description": "Bid price of the contract"
         },
         "buy_price": {
-          "type": "string",
+          "type": "number",
           "default": "1454.11",
           "description": "It is the actual effected purchase price."
         	  
@@ -70,7 +70,7 @@
           "description": "Time when this contract will expire"
         },
         "fmb_id": {
-          "type": "string",
+          "type": "integer",
           "default": "3789083468",
           "description": "It is a binary.com internal contract identifier."
         },
@@ -85,7 +85,7 @@
           "description": "It is the description of contract purchased"
         },
         "payout": {
-          "type": "string",
+          "type": "number",
           "default": "2976",
           "description": "Payout"
         },
@@ -95,7 +95,7 @@
           "description": "It is an epoch value showing the transaction purchase time."
         },
         "spot": {
-          "type": "string",
+          "type": "number",
           "default": "1.12329",
           "description": "Spot price of the symbol"
         },
