@@ -201,8 +201,8 @@ sub broker_for_new_account {
 
     my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
     my $company;
-    $company = $c_config->{gaming_company} if (exists $c_config->{gaming_company});
-    $company = $c_config->{financial_company} if (not $company and exists $c_config->{financial_company});
+    $company = $c_config->{gaming_company} if ($c_config->{gaming_company} ne 'none');
+    $company = $c_config->{financial_company} if (not $company and $c_config->{financial_company} ne 'none');
     return if (not $company);
 
     my $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
@@ -214,7 +214,7 @@ sub broker_for_new_financial {
     my $country_code = shift;
 
     my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
-    return if (not exists $c_config->{financial_company});
+    return if ($c_config->{financial_company} eq 'none');
 
     my $company = $c_config->{financial_company};
     my $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
