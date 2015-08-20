@@ -6,8 +6,7 @@
   "properties": {
     "portfolio": {
       "type": "integer",
-      "default": "1",
-      "description": "The number of portfolio entries that were sent."
+      "default": "1"
     }
   },
   "required": [
