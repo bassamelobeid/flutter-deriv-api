@@ -18,6 +18,8 @@ use BOM::WebSocketAPI::Authorize;
 use BOM::WebSocketAPI::ContractDiscovery;
 use BOM::WebSocketAPI::System;
 use BOM::WebSocketAPI::Accounts;
+use BOM::WebSocketAPI::MarketDiscovery;
+use BOM::WebSocketAPI::PortfolioManagement;
 
 my $DOM = Mojo::DOM->new;
 
@@ -335,29 +337,9 @@ my $json_receiver = sub {
     }
 
     if ($p1->{portfolio}) {
-        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::portfolio($c);
-        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
-        my $portfolio_stats = BOM::Product::Transaction::sell_expired_contracts({
-                client => $client,
-                source => $source
-            }) || {number_of_sold_bets => 0};
-        # TODO: run these under a separate event loop to avoid workload batching..
-        my @fmbs = grep { !$c->{fmb_ids}->{$_->id} } $client->open_bets;
-        $portfolio_stats->{batch_count} = @fmbs;
-        my $count = 0;
-        my $p0    = {%$p1};
-        for my $fmb (@fmbs) {
-            $p1->{fmb} = $fmb;
-            my $p2 = $c->prepare_bid($p1);
-            my $id;
-            $id = Mojo::IOLoop->recurring(2 => sub { $c->send_bid($id, $p0, {}, $p2) });
-            $c->{$id}                 = $p2;
-            $c->{fmb_ids}->{$fmb->id} = $id;
-            $p1->{batch_index}        = ++$count;
-            $p1->{batch_count}        = @fmbs;
-            $c->send_bid($id, $p0, $p1, $p2);
-            $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
-        }
+        my $client          = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
+        my $p0              = {%$p1};
+        my $portfolio_stats = BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1);
         return $c->send({
                 json => {
                     msg_type        => 'portfolio_stats',
@@ -366,203 +348,30 @@ my $json_receiver = sub {
                 }});
     }
 
-    if (my $symbol = $p1->{ticks}) {
-        # TODO: Must go to BOM::WebSocketAPI::MakretDiscovery::ticks($c);
-        my $ul = BOM::Market::Underlying->new($symbol)
-            || return $c->send({
+    if ($p1->{ticks}) {
+        my $json = BOM::WebSocketAPI::MarketDiscovery::ticks($c, $p1);
+        return unless $json;
+        return $c->send({
                 json => {
-                    msg_type => 'tick',
                     echo_req => $p1,
-                    tick     => {
-                        error => {
-                            message => "symbol $symbol invalid",
-                            code    => "InvalidSymbol"
-                        }}}});
-        if ($p1->{end}) {
-            my $style = $p1->{style} || ($p1->{granularity} ? 'candles' : 'ticks');
-            if ($style eq 'ticks') {
-                my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks({%$p1, ul => $ul});    ## no critic
-                my $history = {
-                    prices => [map { $_->{price} } @$ticks],
-                    times  => [map { $_->{time} } @$ticks],
-                };
-                return $c->send({
-                        json => {
-                            msg_type => 'history',
-                            echo_req => $p1,
-                            history  => $history
-                        }});
-            } elsif ($style eq 'candles') {
-
-                my $sender = sub {
-                    my $candles = shift;
-                    $c->send({
-                            json => {
-                                msg_type => 'candles',
-                                echo_req => $p1,
-                                candles  => $candles
-                            }});
-                };
-
-                if (
-                    my $watcher = $c->BOM::WebSocketAPI::Symbols::_candles({
-                            %$p1,    ## no critic
-                            ul     => $ul,
-                            sender => $sender
-                        }))
-                {
-                    # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
-                    push @{$c->stash->{watchers}}, $watcher;
-                    return;
-                }
-
-                return $c->send({
-                        json => {
-                            msg_type => 'candles',
-                            echo_req => $p1,
-                            candles  => {
-                                error => {
-                                    message => 'invalid candles request',
-                                    code    => 'InvalidCandlesRequest'
-                                }}}});
-
-            } else {
-
-                return $c->send({
-                        json => {
-                            msg_type => 'tick',
-                            echo_req => $p1,
-                            tick     => {
-                                error => {
-                                    message => "style $style invalid",
-                                    code    => "InvalidStyle"
-                                }}}});
-            }
-        }
-        if ($ul->feed_license eq 'realtime') {
-            my $id;
-            $id = Mojo::IOLoop->recurring(1 => sub { $c->send_tick($id, $p1, $ul) });
-            $c->send_tick($id, $p1, $ul);
-            $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
-        } else {
-            return $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $p1,
-                        tick     => {
-                            error => {
-                                message => "realtime quotes not available",
-                                code    => "NoRealtimeQuotes"
-                            }}}});
-        }
-        return;
+                    %$json
+                }});
     }
 
     if ($p1->{proposal}) {
-        # TODO: Must go to BOM::WebSocketAPI::MakretDiscovery::proposal($c);
-
-        # this is a recurring contract-price watch ("price streamer")
-        # p2 is a manipulated copy of p1 suitable for produce_contract.
-        my $p2 = $c->prepare_ask($p1);
-        my $id;
-        $id = Mojo::IOLoop->recurring(1 => sub { $c->send_ask($id, {}, $p2) });
-        $c->{$id} = $p2;
-        $c->send_ask($id, $p1, $p2);
-        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
+        BOM::WebSocketAPI::MarketDiscovery::proposal($c, $p1);
         return;
     }
 
-    if (my $id = $p1->{buy}) {
-        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::buy($c);
-
-        Mojo::IOLoop->remove($id);
+    if ($p1->{buy}) {
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'open_receipt');
-        my $json = {
-            echo_req => $p1,
-            msg_type => 'open_receipt'
-        };
-        {
-            my $p2 = delete $c->{$id} || do {
-                $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
-                $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
-                last;
-            };
-            my $contract = try { produce_contract({%$p2}) } || do {
-                my $err = $@;
-                $log->debug("contract creation failure: $err");
-                $json->{open_receipt}->{error}->{message} = "cannot create contract";
-                $json->{open_receipt}->{error}->{code}    = "ContractCreationFailure";
-                last;
-            };
-            my $trx = BOM::Product::Transaction->new({
-                client   => $client,
-                contract => $contract,
-                price    => ($p1->{price} || 0),
-                source   => $source,
-            });
-            if (my $err = $trx->buy) {
-                $log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-                $json->{open_receipt}->{error}->{message} = $err->{-message_to_client};
-                $json->{open_receipt}->{error}->{code}    = $err->get_type;
-                last;
-            }
-            $log->info("websocket-based buy " . $trx->report);
-            $trx = $trx->transaction_record;
-            my $fmb = $trx->financial_market_bet;
-            $json->{open_receipt} = {
-                trx_id        => $trx->id,
-                fmb_id        => $fmb->id,
-                balance_after => $trx->balance_after,
-                purchase_time => $fmb->purchase_time->epoch,
-                buy_price     => $fmb->buy_price,
-                start_time    => $fmb->start_time->epoch,
-                longcode      => $DOM->parse($contract->longcode)->all_text,
-            };
-        }
+        my $json = BOM::WebSocketAPI::PortfolioManagement::buy($c, $p1);
         return $c->send({json => $json});
     }
 
-    if (my $id = $p1->{sell}) {
-        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::sell($c);
-
-        Mojo::IOLoop->remove($id);
+    if ($p1->{sell}) {
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'close_receipt');
-        my $json = {
-            echo_req => $p1,
-            msg_type => 'close_receipt'
-        };
-        {
-            my $p2 = delete $c->{$id} || do {
-                $json->{error}                             = "";
-                $json->{close_receipt}->{error}->{message} = "unknown contract sell proposal";
-                $json->{close_receipt}->{error}->{code}    = "InvalidSellContractProposal";
-                last;
-            };
-            my $fmb      = $p2->{fmb};
-            my $contract = $p2->{contract};
-            my $trx      = BOM::Product::Transaction->new({
-                client      => $client,
-                contract    => $contract,
-                contract_id => $fmb->id,
-                price       => ($p1->{price} || 0),
-                source      => $source,
-            });
-            if (my $err = $trx->sell) {
-                $log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-                $json->{close_receipt}->{error}->{code}    = $err->get_type;
-                $json->{close_receipt}->{error}->{message} = $err->{-message_to_client};
-                last;
-            }
-            $log->info("websocket-based sell " . $trx->report);
-            $trx                   = $trx->transaction_record;
-            $fmb                   = $trx->financial_market_bet;
-            $json->{close_receipt} = {
-                trx_id        => $trx->id,
-                fmb_id        => $fmb->id,
-                balance_after => $trx->balance_after,
-                sold_for      => abs($trx->amount),
-            };
-        }
+        my $json = BOM::WebSocketAPI::PortfolioManagement::sell($c, $p1);
         return $c->send({json => $json});
     }
 
