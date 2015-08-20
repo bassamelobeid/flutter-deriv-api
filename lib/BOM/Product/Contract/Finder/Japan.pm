@@ -27,7 +27,6 @@ sub predefined_contracts_for_symbol {
             start_type        => 'spot',
             expiry_type       => ['daily', 'intraday'],
             barrier_category  => ['euro_non_atm', 'american']});
-
     @offerings = _predefined_trading_period({
         offerings => \@offerings,
         exchange  => $exchange
@@ -48,6 +47,7 @@ sub predefined_contracts_for_symbol {
             current_tick => $current_tick,
             contract     => $o,
         });
+
     }
     return {
         available => \@offerings,
@@ -198,12 +198,14 @@ sub _set_predefined_barriers {
                 date_start    => $date_start
             });
         } qw(0.05 0.95);
+
         push @$available_barriers,
             split_boundaries_barriers({
                 pip_size           => $underlying->pip_size,
                 start_tick         => $start_tick->quote,
                 boundaries_barrier => \@boundaries_barrier
             });
+
         # Expires at the end of the available period.
         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - time);
     }
@@ -213,9 +215,9 @@ sub _set_predefined_barriers {
     } elsif ($contract->{barriers} == 2) {
         my @lower_barriers  = map { $_ } grep { $current_tick->quote > $_ } @{$available_barriers};
         my @higher_barriers = map { $_ } grep { $current_tick->quote < $_ } @{$available_barriers};
-        push $contract->{available_barriers}, \@lower_barriers, \@higher_barriers;
-        $contract->{high_barrier} = $higher_barriers[0];
-        $contract->{low_barrier}  = $lower_barriers[0];
+        $contract->{available_barriers} = [\@lower_barriers, \@higher_barriers];
+        $contract->{high_barrier}       = $higher_barriers[0];
+        $contract->{low_barrier}        = $lower_barriers[0];
     }
 
     return;
@@ -274,23 +276,23 @@ sub get_barrier_by_probability {
 
     my ($high, $low) = (1.5 * $start_tick, 0.5 * $start_tick);
 
-    my $pip_size = $underlying->pip_size;
+    my $pip_size   = $underlying->pip_size;
+    my $bet_params = {
+        underlying   => $underlying,
+        bet_type     => $contract_type,
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $date_start,
+        r_rate       => 0,
+        q_rate       => 0,
+        duration     => $duration,
+        pricing_vol  => $atm_vol,
+        date_pricing => $date_start,
+    };
 
     my $iterations = 0;
     for ($iterations = 0; $iterations <= 20; $iterations++) {
-        my $bet_params = {
-            underlying   => $underlying,
-            bet_type     => $contract_type,
-            currency     => 'USD',
-            payout       => 100,
-            date_start   => $date_start,
-            r_rate       => 0,
-            q_rate       => 0,
-            duration     => $duration,
-            pricing_vol  => $atm_vol,
-            date_pricing => $date_start,
-            barrier      => ($low + $high) / 2,
-        };
+        $bet_params->{'barrier'} = ($high + $low) / 2;
         my $found_barrier = roundnear($pip_size, $bet_params->{'barrier'});
 
         $bet = produce_contract($bet_params);
