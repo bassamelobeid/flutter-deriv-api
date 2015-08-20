@@ -339,27 +339,8 @@ my $json_receiver = sub {
     if ($p1->{portfolio}) {
         # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::portfolio($c);
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
-        my $portfolio_stats = BOM::Product::Transaction::sell_expired_contracts({
-                client => $client,
-                source => $source
-            }) || {number_of_sold_bets => 0};
-        # TODO: run these under a separate event loop to avoid workload batching..
-        my @fmbs = grep { !$c->{fmb_ids}->{$_->id} } $client->open_bets;
-        $portfolio_stats->{batch_count} = @fmbs;
-        my $count = 0;
         my $p0    = {%$p1};
-        for my $fmb (@fmbs) {
-            $p1->{fmb} = $fmb;
-            my $p2 = $c->prepare_bid($p1);
-            my $id;
-            $id = Mojo::IOLoop->recurring(2 => sub { $c->send_bid($id, $p0, {}, $p2) });
-            $c->{$id}                 = $p2;
-            $c->{fmb_ids}->{$fmb->id} = $id;
-            $p1->{batch_index}        = ++$count;
-            $p1->{batch_count}        = @fmbs;
-            $c->send_bid($id, $p0, $p1, $p2);
-            $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
-        }
+        my $portfolio_stats = BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1);
         return $c->send({
                 json => {
                     msg_type        => 'portfolio_stats',
@@ -390,47 +371,9 @@ my $json_receiver = sub {
         return $c->send({json => $json});
     }
 
-    if (my $id = $p1->{sell}) {
-        # TODO: Must go to BOM::WebSocketAPI::PortfolioManagement::sell($c);
-
-        Mojo::IOLoop->remove($id);
+    if ($p1->{sell}) {
         my $client = $c->stash('client') || return $c->_authorize_error($p1, 'close_receipt');
-        my $json = {
-            echo_req => $p1,
-            msg_type => 'close_receipt'
-        };
-        {
-            my $p2 = delete $c->{$id} || do {
-                $json->{error}                             = "";
-                $json->{close_receipt}->{error}->{message} = "unknown contract sell proposal";
-                $json->{close_receipt}->{error}->{code}    = "InvalidSellContractProposal";
-                last;
-            };
-            my $fmb      = $p2->{fmb};
-            my $contract = $p2->{contract};
-            my $trx      = BOM::Product::Transaction->new({
-                client      => $client,
-                contract    => $contract,
-                contract_id => $fmb->id,
-                price       => ($p1->{price} || 0),
-                source      => $source,
-            });
-            if (my $err = $trx->sell) {
-                $log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-                $json->{close_receipt}->{error}->{code}    = $err->get_type;
-                $json->{close_receipt}->{error}->{message} = $err->{-message_to_client};
-                last;
-            }
-            $log->info("websocket-based sell " . $trx->report);
-            $trx                   = $trx->transaction_record;
-            $fmb                   = $trx->financial_market_bet;
-            $json->{close_receipt} = {
-                trx_id        => $trx->id,
-                fmb_id        => $fmb->id,
-                balance_after => $trx->balance_after,
-                sold_for      => abs($trx->amount),
-            };
-        }
+        my $json = BOM::WebSocketAPI::PortfolioManagement::sell($c, $p1);
         return $c->send({json => $json});
     }
 
