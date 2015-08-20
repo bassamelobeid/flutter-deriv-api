@@ -1,0 +1,113 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Statement Receive",
+  "description": "A summary of account transactions is received.",
+  "properties": {
+    "echo_req": {
+      "type": "array",
+      "title": "Echo request",
+      "description": "Echo of the request made.",
+      "items": {
+    	  "oneOf":
+    		  [
+    		   {
+    			   "type": "object",
+    			   "properties": {
+    				   "sort_by": {
+    					   "type": "string",
+    					   "default": "id desc",
+    				   }
+    			   }  
+    		   },
+    		   {
+    			   "type": "object",
+    			   "properties": {
+    				   "limit": {
+    					   "type": "number",
+    					   "default": "100",
+    				   }
+    			   }
+    		   },
+    		   {
+    			   "type": "object",
+    			   "properties": {
+    				   "offset": {
+    					   "type": "number",
+    					   "default": "0",
+    				   }
+    			   }
+    		   },
+    		   {
+    			   "type": "object",
+    			   "properties": {
+    				   "dt_fm": {
+    					   "type": "integer",
+    					   "default": 1439432307,
+    				   }
+    			   }
+    		   },
+    		   
+    		   {
+    			   "type": "object",
+    			   "properties": {
+    				   "dt_to": {
+    					   "type": "integer",
+    					   "default": 1439432307,
+    				   }
+    			   }
+    		   },
+    		   {
+    			   "type": "object",
+    			   "properties": {
+    				   "yyyymm": {
+    					   "type": "integer",
+    					   "default": 201510,
+    				   }
+    			   }
+    		   },
+    		   {
+    			   "type": "object",
+    			   "properties": {
+    				   "action_type": {
+    					   "type": "string",
+    					   "enum": ["deposit","withdrawal","buy","sell"],
+    				 }
+    			   }
+    		   },
+    		   ]
+      }
+    },
+    
+    "statement": {
+        "type": "object",
+        "title": "Echo request",
+        "description": "Echo of the request made.",
+        "properties": {
+          "count": {
+            "type": "number",
+            "default": "0",
+            "description":"It is the number of transactions returned in this call"
+          	  
+          },
+          "transactions": {
+              "type": "array",
+              "items": {
+            	  "type": "string"
+              },
+              "minItems": "1",
+              "description":"It is an array of returned transactions"
+            },
+    
+    "msg_type": {
+      "type": "string",
+      "default": "statement"
+      
+    }
+  },
+  "required": [
+    "echo_req",
+    "statement",
+    "msg_type"
+  ]
+}
