@@ -35,17 +35,11 @@ my $now    = Date::Utility->new;
 my %input = %{request()->params};
 my $email = trim(lc defang($input{email}));
 
-my @emails = ($email);
-
 my $new_email;
 if ($input{new_email}) {
     $new_email = trim(lc defang($input{new_email}));
-    push @emails, $new_email;
-}
-
-foreach my $item (@emails) {
-    if (not Email::Valid->address($item)) {
-        print "invalid email format [$item]";
+    if (not Email::Valid->address($new_email)) {
+        print "invalid email format [$new_email]";
         code_exit_BO();
     }
 }
