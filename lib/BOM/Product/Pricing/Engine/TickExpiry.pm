@@ -231,7 +231,7 @@ sub _build_risk_markup {
     my $y_min = $coef->{y_min};
     my $y_max = $coef->{y_max};
 
-    if ($x_base_amount > $x_max) or ($x_base_amount < $x_min) or ($y_base_amount > $y_max) or ($y_base_amount < $y_min) {
+    if (($x_base_amount > $x_max) or ($x_base_amount < $x_min) or ($y_base_amount > $y_max) or ($y_base_amount < $y_min)) {
         $risk_markup->include_adjustment('multiply', 1.03) 
     }
 
