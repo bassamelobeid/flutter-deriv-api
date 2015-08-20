@@ -222,6 +222,19 @@ sub _build_risk_markup {
 
     $risk_markup->include_adjustment('multiply', $self->tie_factor);
 
+    #TODO: add 3% to the markup in case the (x=trend,y=vol) is outside boundaries of the surface
+    my $x_base_amount = $self->trend_proxy->base_amount;
+    my $y_base_amount = $self->vol_proxy->base_amount;
+
+    my $x_min = $coef->{x_prime_min};
+    my $x_max = $coef->{x_prime_max};
+    my $y_min = $coef->{y_min};
+    my $y_max = $coef->{y_max};
+
+    if ($x_base_amount > $x_max) or ($x_base_amount < $x_min) or ($y_base_amount > $y_max) or ($y_base_amount < $y_min) {
+        $risk_markup->include_adjustment('multiply', 1.03) 
+    }
+
     return $risk_markup;
 }
 
