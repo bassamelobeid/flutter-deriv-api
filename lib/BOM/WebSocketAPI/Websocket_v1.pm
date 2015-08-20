@@ -77,7 +77,6 @@ sub get_ask {
     my ($c, $p2) = @_;
     my $app = $c->app;
     my $log = $app->log;
-    # $log->debug("pricing with p2 " . $c->dumper($p2));
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $log->info("contract creation failure: $err");
@@ -280,7 +279,12 @@ my $json_receiver = sub {
     }
 
     if (my $id = $p1->{forget}) {
-        BOM::WebSocketAPI::System::forget($c, $p1->{forget});
+        return $c->send({
+                json => {
+                    msg_type  => 'forget',
+                    echo_req  => $p1,
+                    forget    => BOM::WebSocketAPI::System::forget($c, $id),
+                }});
     }
 
     if ($p1->{payout_currencies}) {
@@ -293,12 +297,11 @@ my $json_receiver = sub {
 
     if (my $options = $p1->{statement}) {
         my $client = $c->stash('client') || return $c->_authorize_error($p1);
-        my $results = $c->BOM::WebSocketAPI::Accounts::get_transactions($options);
         return $c->send({
                 json => {
                     msg_type  => 'statement',
                     echo_req  => $p1,
-                    statement => $results
+                    statement => BOM::WebSocketAPI::Accounts::get_transactions($c, $options),
                 }});
     }
 
@@ -327,30 +330,26 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{trading_times}) {
-        my $trading_times = $c->BOM::WebSocketAPI::Offerings::trading_times($options);
         return $c->send({
                 json => {
                     msg_type      => 'trading_times',
                     echo_req      => $p1,
-                    trading_times => $trading_times,
+                    trading_times => BOM::WebSocketAPI::Offerings::trading_times($c, $options),
                 }});
     }
 
     if ($p1->{portfolio}) {
-        my $client          = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
-        my $p0              = {%$p1};
-        my $portfolio_stats = BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1);
+        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'portfolio');
         return $c->send({
                 json => {
-                    msg_type        => 'portfolio_stats',
-                    echo_req        => $p0,
-                    portfolio_stats => $portfolio_stats
+                    msg_type        => 'portfolio',
+                    echo_req        => $p1,
+                    portfolio_stats => BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1),
                 }});
     }
 
     if ($p1->{ticks}) {
         my $json = BOM::WebSocketAPI::MarketDiscovery::ticks($c, $p1);
-        return unless $json;
         return $c->send({
                 json => {
                     echo_req => $p1,
