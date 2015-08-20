@@ -41,7 +41,6 @@ sub predefined_contracts_for_symbol {
 
         $o->{barriers} = $cat->two_barriers ? 2 : 1;
 
-        # get the closest from spot barrier from the predefined set
         _set_predefined_barriers({
             underlying   => $underlying,
             current_tick => $current_tick,
@@ -60,8 +59,8 @@ sub predefined_contracts_for_symbol {
 =head2 _predefined_trading_period
 
 We set the predefined trading periods based on Japan requirement:
-1) Start at 00:00GMT and expire with duration of 2,4,6,8,12,16,20 hours
-2) Start at closest even hour and expire with duration of 2 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT.
+1) Start at 00:00GMT and expire with duration of 2,3,4 and 5 hours
+2) Start at closest even hour and expire with duration of 2,3,4,5 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT, 02-05GMT, 02-06GMT, 02-07GMT.
 3) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
 
 =cut
@@ -129,7 +128,7 @@ sub _predefined_trading_period {
                 duration => $actual_day_string,
                 };
         }
-        # Starting in the most recent even hour, running for.our period
+        # Starting in the most recent even hour, running through those hours
         my $period_start = $today->plus_time_interval($in_period . 'h');
         push @$trading_periods, map {
             +{
