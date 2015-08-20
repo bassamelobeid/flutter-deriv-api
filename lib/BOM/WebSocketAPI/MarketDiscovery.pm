@@ -38,7 +38,7 @@ sub ticks {
                 $c->send({
                         json => {
                             msg_type => 'candles',
-                            echo_req => $p1,
+                            echo_req => $args,
                             candles  => $candles
                         }});
             };
