@@ -13,13 +13,38 @@ use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use Date::Utility;
 
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => $_, recorded_date => $now}) for qw(FOREX RANDOM RANDOM_NOCTURNE SYNEURONEXT EURONEXT);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(FOREX RANDOM RANDOM_NOCTURNE SYNEURONEXT EURONEXT);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_}) for qw(AEX SYNAEX frxXAUUSD frxXPDUSD);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_flat', {symbol => $_, recorded_date => $now}) for qw(R_100 RDBEAR WLDUSD SYNAEX);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_phased', {symbol => 'RDMARS', recorded_date => $now});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_delta', {symbol => $_, recorded_date => $now}) for qw(frxUSDJPY frxAUDCAD frxXAUUSD frxXPDUSD);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_moneyness', {symbol => $_, recorded_date => $now}) for qw(AEX FPCS);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index',    {symbol => $_}) for qw(AEX SYNAEX frxXAUUSD frxXPDUSD);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(R_100 RDBEAR WLDUSD SYNAEX);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_phased',
+    {
+        symbol        => 'RDMARS',
+        recorded_date => $now
+    });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(frxUSDJPY frxAUDCAD frxXAUUSD frxXPDUSD);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => $_,
+        recorded_date => $now
+    }) for qw(AEX FPCS);
 subtest "available contracts for symbol" => sub {
     my %input = (
         random  => ['R_100',     'RDMARS',    'RDBEAR'],
@@ -93,7 +118,7 @@ subtest "available contracts for symbol" => sub {
                 epoch      => time,
                 quote      => 100
             });
-            my $f = available_contracts_for_symbol($u);
+            my $f = available_contracts_for_symbol({symbol => $u});
             my %got;
             $got{$_->{contract_category}}++ for (@{$f->{available}});
             cmp_ok $got{$_}, '==', $expected{$u}{$_}, "expected outcome for $u-$_" for (keys %{$expected{$u}});

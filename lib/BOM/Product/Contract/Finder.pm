@@ -17,7 +17,7 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
 sub available_contracts_for_symbol {
-    my $args   = shift;
+    my $args = shift;
     my $symbol = $args->{symbol} || die 'no symbol';
 
     my $now        = Date::Utility->new;
