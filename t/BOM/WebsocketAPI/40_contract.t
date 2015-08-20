@@ -60,8 +60,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         date => Date::Utility->new,
     });
 
-$ENV{MOJO_USERAGENT_DEBUG} = 1;    # for test only
-
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
 
