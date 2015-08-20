@@ -219,11 +219,7 @@ subtest 'stop type' => sub {
         stop_loss        => 10
     });
     is $c->ask_price, 20.00, 'ask is 20.00';
-    like(
-        $c->longcode,
-        qr/with stop loss of <strong>10 points<\/strong> and stop profit of <strong>10 points<\/strong>/,
-        'correct longcode for stop_type: point and stop_loss of 10'
-    );
+    like($c->longcode, qr/with stop loss of 10 points and stop profit of 10 points/, 'correct longcode for stop_type: point and stop_loss of 10');
     $c = produce_contract({
         %$params,
         stop_type        => 'point',
@@ -233,7 +229,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        qr/with stop loss of 1 point and stop profit of 10 points/,
         '[SPREADU] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
@@ -245,7 +241,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        qr/with stop loss of 1 point and stop profit of 10 points/,
         '[SPREADD] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
@@ -255,10 +251,6 @@ subtest 'stop type' => sub {
         stop_loss        => 10
     });
     is $c->ask_price, 10.00, 'ask is 10.00';
-    like(
-        $c->longcode,
-        qr/with stop loss of <strong>USD 10<\/strong> and stop profit of <strong>USD 10<\/strong>/,
-        'correct longcode for stop_type: dollar'
-    );
+    like($c->longcode, qr/with stop loss of USD 10 and stop profit of USD 10/, 'correct longcode for stop_type: dollar');
     is $c->shortcode, 'SPREADU_R_100_2_' . $now->epoch . '_10_10_DOLLAR';
 };
