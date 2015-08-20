@@ -26,7 +26,7 @@ my $DOM = Mojo::DOM->new;
 sub ok {
     my $c      = shift;
     my $source = 1;       # check http origin here
-    $c->stash(source => 1);
+    $c->stash(source => $source);
     return 1;
 }
 
