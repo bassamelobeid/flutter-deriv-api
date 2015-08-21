@@ -12,7 +12,7 @@ use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Data::Sources;
 use BOM::Platform::Runtime::Broker::Codes;
 use BOM::Platform::Runtime::Website::List;
-use YAML::CacheLoader;
+use YAML::XS;
 use Locale::Country::Extra;
 use Locale::Country;
 
@@ -124,6 +124,11 @@ has 'countries_list' => (
     lazy_build => 1,
 );
 
+has 'countries_list' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 =head1 METHODS
 
 =head2 instance
@@ -188,6 +193,42 @@ sub random_restricted_country {
 
     return 1 if ($config->{gaming_company} eq 'none');
     return;
+}
+
+sub _build_countries_list {
+    return YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
+}
+
+sub country_has_financial {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return unless ($config);
+
+    return ($config and $config->{financial_company} eq 'maltainvest');
+}
+
+sub financial_only_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return unless ($config);
+
+    return ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'maltainvest');
+}
+
+sub restricted_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return 1 unless ($config);
+
+    return ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
+}
+
+sub random_restricted_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return 1 unless ($config);
+
+    return ($config->{gaming_company} eq 'none');
 }
 
 sub _build_app_config {
