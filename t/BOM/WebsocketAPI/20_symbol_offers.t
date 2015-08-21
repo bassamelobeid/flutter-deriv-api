@@ -6,6 +6,7 @@ use JSON;
 use Data::Dumper;
 use Date::Utility;
 
+use Test::MockModule;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);

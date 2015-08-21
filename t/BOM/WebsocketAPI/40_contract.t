@@ -2,10 +2,10 @@ use Test::Most;
 use Test::Mojo;
 use JSON;
 use Data::Dumper;
-use Test::MockModule;
 
 use BOM::Platform::SessionCookie;
 
+use Test::MockModule;
 use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
