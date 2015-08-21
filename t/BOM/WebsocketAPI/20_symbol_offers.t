@@ -93,8 +93,7 @@ ok($offerings->{offerings});
 ok($offerings->{offerings}->{hit_count});
 
 # test offerings
-SKIP: {
-    skip "offerings is not working under TRAVIS", 1 if $ENV{TRAVIS};
+unless ($ENV{TRAVIS}) { # not working under TRAVIS
     $t = $t->send_ok({json => {trading_times => {'date' => Date::Utility->new->date_ddmmmyyyy}}})->message_ok;
     my $trading_times = decode_json($t->message->[1]);
     diag Dumper($trading_times);
