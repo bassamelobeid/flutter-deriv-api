@@ -7,6 +7,8 @@ use Data::Dumper;
 
 use BOM::Platform::SessionCookie;
 
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
 

@@ -14,7 +14,7 @@ sub authorize {
     }
 
     my $loginid = $session->loginid;
-    my $client  = BOM::Platform::Client->new({loginid => $loginid});
+    my $client = BOM::Platform::Client->new({loginid => $loginid});
     return unless $client;
 
     my $email   = $session->email;
