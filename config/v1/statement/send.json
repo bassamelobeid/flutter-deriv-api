@@ -4,7 +4,7 @@
   "title": "Statement Send",
   "description": "Retrieve a summary of account transactions, according to given search criteria.",
   "properties": {
-    "transactions": {
+    "statement": {
       "type": "array",
       "items": {
     	  "oneOf":
@@ -17,7 +17,7 @@
     					   "default": "id desc",
     					   "description": "name an output field to sort by, optionally followed by 'desc' for reverse sort order"
     				   }
-    			   }  
+    			   }
     		   },
     		   {
     			   "type": "object",
@@ -49,7 +49,6 @@
     				   }
     			   }
     		   },
-    		   
     		   {
     			   "type": "object",
     			   "properties": {
@@ -79,13 +78,12 @@
     					   "description": "optional filter"
     				 }
     			   }
-    		   },
+    		   }
     		   ]
-    	 
       }
     }
   },
   "required": [
-    "transactions"
+    "statement"
   ]
 }

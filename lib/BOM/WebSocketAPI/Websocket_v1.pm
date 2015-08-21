@@ -233,11 +233,11 @@ sub _authorize_error {
             json => {
                 msg_type  => $msg_type,
                 echo_req  => $p1,
-                $msg_type => {
-                    error => {
-                        message => "Must authorize first",
-                        code    => "AuthorizationRequired"
-                    }}}});
+                'error' => {
+                    message  => "Must authorize first",
+                    msg_type => $msg_type,
+                    code     => "AuthorizationRequired"
+                    }}});
     return;
 }
 
@@ -290,7 +290,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{statement}) {
-        my $client = $c->stash('client') || return $c->_authorize_error($p1);
+        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'statement');
         my $results = $c->BOM::WebSocketAPI::Accounts::get_transactions($options);
         return $c->send({
                 json => {
