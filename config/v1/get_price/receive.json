@@ -26,7 +26,7 @@
         },
         "date_start": {
           "type": "integer",
-          "description": 1439999052
+          "description": "1439999052"
         },
         "basis": {
           "type": "string",
@@ -71,7 +71,7 @@
         },
         "spot_time": {
           "type": "integer",
-          "description": 1439999052
+          "description": "1439999052"
         },
         "ask_price": {
           "type": "number",
@@ -79,7 +79,7 @@
         },
         "date_start": {
           "type": "integer",
-          "description": 1439999053
+          "description": "1439999053"
         },
         "id": {
           "type": "string",
