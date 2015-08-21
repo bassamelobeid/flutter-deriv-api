@@ -135,25 +135,21 @@ sub real_acc_checks {
     my ($from_loginid, $broker, $country, $residence) = @{$args}{'from_loginid', 'broker', 'country', 'residence'};
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        return {err => localize('Sorry, new account opening is suspended for the time being.')};
+        return {err => 'Sorry, new account opening is suspended for the time being.'};
     }
-    if (my $error = BOM::Platform::Client::check_jurisdiction(Locale::Country::country2code($country))) {
-        return {err => $error};
+    if (BOM::Platform::Client::check_country_restricted($country)) {
+        return {err => 'Sorry, our service is not available for your country of residence'};
     }
 
     my ($user, $from_client);
     unless ($from_client = BOM::Platform::Client->new({loginid => $from_loginid})
         and $user = BOM::Platform::User->new({email => $from_client->email}))
     {
-        return {err => localize("Sorry, an error occurred. Please contact customer support if this problem persists.")};
+        return {err => 'Sorry, an error occurred. Please contact customer support if this problem persists.'};
     }
 
     if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
-        return {
-            err => localize(
-                'The provided email address [_1] is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_2]">try our password recovery tool</a> or contact customer service.',
-                $from_client->email,
-                request()->url_for('/user/lost_password'))};
+        return {err => 'duplicate account'};
     }
     unless ($user->email_verified) {
         return {err => 'email unverified'};
@@ -162,7 +158,7 @@ sub real_acc_checks {
         return {err => 'no residence'};
     }
     if ($residence and $from_client->residence ne $residence) {
-        return {err => localize("Wrong country of residence")};
+        return {err => 'Wrong country of residence'};
     }
 
     return {
@@ -177,7 +173,7 @@ sub financial_acc_checks {
     return $check if ($check->{err});
 
     return $check if (BOM::Platform::Runtime->instance->country_has_financial($check->{from_client}->residence));
-    return {err => localize('Financial account opening unavailable')};
+    return {err => 'Financial account opening unavailable'};
 }
 
 sub register_real_acc {

@@ -144,19 +144,10 @@ sub save {
     return $r;
 }
 
-sub check_jurisdiction {
+sub check_country_restricted {
     my $country_code = shift;
-
-    if (   BOM::Platform::Runtime->instance->app_config->system->on_development
-        or BOM::Platform::Runtime->instance->app_config->system->on_qa)
-    {
-        return;
-    }
-
-    if (BOM::Platform::Runtime->instance->restricted_country($country_code)) {
-        return localize('Sorry, our service is not available for residents of [_1].', Locale::Country::code2country($country_code));
-    }
-    return;
+    return (    BOM::Platform::Runtime->instance->app_config->system->on_production
+            and BOM::Platform::Runtime->instance->restricted_country($country_code));
 }
 
 sub _validate_new_account {
@@ -192,9 +183,8 @@ sub _validate_new_account {
         return ("errordob", localize('Sorry, you are too young to open an account!'));
     }
 
-    my $error_message = check_jurisdiction($country);
-    if (defined $error_message and length $error_message > 0) {
-        return ('residence', $error_message);
+    if (check_country_restricted($country)) {
+        return ('residence', localize('Sorry, our service is not available for your country of residence'));
     }
 
     return (undef, undef);
