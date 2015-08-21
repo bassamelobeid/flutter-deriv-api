@@ -2,8 +2,6 @@ package BOM::WebSocketAPI::Websocket_v1;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
-use Try::Tiny;
-
 use BOM::Product::Contract::Finder;
 
 use BOM::WebSocketAPI::Symbols;
