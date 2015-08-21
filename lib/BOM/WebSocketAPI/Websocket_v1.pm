@@ -88,7 +88,7 @@ sub __handle {
     }
 
     if (my $options = $p1->{statement}) {
-        my $client = $c->stash('client') || return $c->_authorize_error('statement');
+        my $client = $c->stash('client') || return __authorize_error('statement');
         return {
             msg_type  => 'statement',
             statement => BOM::WebSocketAPI::Accounts::get_transactions($c, $options),
@@ -121,7 +121,7 @@ sub __handle {
     }
 
     if ($p1->{portfolio}) {
-        my $client = $c->stash('client') || return $c->_authorize_error('portfolio');
+        my $client = $c->stash('client') || return __authorize_error('portfolio');
         return {
             msg_type        => 'portfolio',
             portfolio_stats => BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1),
@@ -141,13 +141,13 @@ sub __handle {
     }
 
     if ($p1->{buy}) {
-        my $client = $c->stash('client') || return $c->_authorize_error('open_receipt');
+        my $client = $c->stash('client') || return __authorize_error('open_receipt');
         my $json = BOM::WebSocketAPI::PortfolioManagement::buy($c, $p1);
         return $json;
     }
 
     if ($p1->{sell}) {
-        my $client = $c->stash('client') || return $c->_authorize_error('close_receipt');
+        my $client = $c->stash('client') || return __authorize_error('close_receipt');
         my $json = BOM::WebSocketAPI::PortfolioManagement::sell($c, $p1);
         return $json;
     }
@@ -156,8 +156,8 @@ sub __handle {
     return;
 }
 
-sub _authorize_error {
-    my ($c, $msg_type) = @_;
+sub __authorize_error {
+    my ($msg_type) = @_;
     return {
         msg_type => $msg_type,
         'error'  => {
