@@ -149,16 +149,25 @@ sub real_acc_checks {
     }
 
     if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
-        return {err => 'duplicate account'};
+        return {
+            err_type => 'duplicate account',
+            err      => 'Your provided email address is already in use by another Login ID'
+        };
     }
     unless ($user->email_verified) {
-        return {err => 'email unverified'};
+        return {
+            err_type => 'email unverified',
+            err      => 'Your email address is unverified'
+        };
     }
     unless ($from_client->residence) {
-        return {err => 'no residence'};
+        return {
+            err_type => 'no residence',
+            err      => 'Your account has no country of residence'
+        };
     }
     if ($residence and $from_client->residence ne $residence) {
-        return {err => 'Wrong country of residence'};
+        return {err => 'Your country of residence is invalid'};
     }
 
     return {
