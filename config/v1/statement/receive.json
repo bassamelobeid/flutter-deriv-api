@@ -2,11 +2,11 @@
   "$schema":"http://json-schema.org/draft-04/schema#",
   "type":"object",
   "title":"Statement Receive",
-  "description":"A summary of account statement is received.",
+  "description":"A summary of account statement is received",
   "properties":{
     "echo_req":{
       "title":"Echo request",
-      "description":"Echo of the request made."
+      "description":"Echo of the request made"
     },
     "statement":{
       "type":"object",
@@ -15,8 +15,7 @@
       "properties":{
         "count":{
           "type":"number",
-          "default":"0",
-          "description":"It is the number of transactions returned in this call"
+          "description":"Number of transactions returned in this call"
         },
         "transactions":{
           "type":"array",
@@ -24,13 +23,13 @@
             "type":"string"
           },
           "minItems":"1",
-          "description":"It is an array of returned transactions"
+          "description":"Array of returned transactions"
         }
       }
     },
     "msg_type":{
       "type":"string",
-      "default":"statement"
+      "description":"statement"
     }
   },
   "required":[

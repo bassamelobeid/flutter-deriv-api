@@ -30,7 +30,7 @@ sub strip_doc_send {
     my $data = shift;
     my $r;
     for my $p (keys %{$data->{properties}}) {
-        $r->{$p} = $data->{properties}->{$p}->{default} // {};
+        $r->{$p} = $data->{properties}->{$p}->{sample} // {};
     }
     return $r;
 }
