@@ -6,7 +6,7 @@ use warnings;
 use Mojo::DOM;
 
 use Try::Tiny;
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 
 sub buy {
@@ -17,10 +17,7 @@ sub buy {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json   = {
-        echo_req => $args,
-        msg_type => 'open_receipt'
-    };
+    my $json = {msg_type => 'open_receipt'};
     {
         my $p2 = delete $c->{$id} || do {
             $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
@@ -71,10 +68,7 @@ sub sell {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json   = {
-        echo_req => $args,
-        msg_type => 'close_receipt'
-    };
+    my $json = {msg_type => 'close_receipt'};
     {
         my $p2 = delete $c->{$id} || do {
             $json->{error}                             = "";
@@ -129,19 +123,95 @@ sub portfolio {
     my $p0    = {%$args};
     for my $fmb (@fmbs) {
         $args->{fmb} = $fmb;
-        my $p2 = $c->prepare_bid($args);
+        my $p2 = prepare_bid($c, $args);
         my $id;
-        $id = Mojo::IOLoop->recurring(2 => sub { $c->send_bid($id, $p0, {}, $p2) });
+        $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
         $c->{$id}                 = $p2;
         $c->{fmb_ids}->{$fmb->id} = $id;
         $args->{batch_index}      = ++$count;
         $args->{batch_count}      = @fmbs;
-        $c->send_bid($id, $p0, $args, $p2);
+        send_bid($c, $id, $p0, $args, $p2);
         $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
     }
 
     return $portfolio_stats;
 }
 
-1;
+sub prepare_bid {
+    my ($c, $p1) = @_;
+    my $app      = $c->app;
+    my $log      = $app->log;
+    my $fmb      = delete $p1->{fmb};
+    my $currency = $fmb->account->currency_code;
+    my $contract = produce_contract($fmb->short_code, $currency);
+    %$p1 = (
+        fmb_id        => $fmb->id,
+        purchase_time => $fmb->purchase_time->epoch,
+        symbol        => $fmb->underlying_symbol,
+        payout        => $fmb->payout_price,
+        buy_price     => $fmb->buy_price,
+        date_start    => $fmb->start_time->epoch,
+        expiry_time   => $fmb->expiry_time->epoch,
+        contract_type => $fmb->bet_type,
+        currency      => $currency,
+        longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
+    );
+    return {
+        fmb      => $fmb,
+        contract => $contract,
+    };
+}
 
+sub get_bid {
+    my ($c, $p2) = @_;
+    my $app = $c->app;
+    my $log = $app->log;
+
+    my @similar_args = ($p2->{contract}, {priced_at => 'now'});
+    my $contract = try { make_similar_contract(@similar_args) } || do {
+        my $err = $@;
+        $log->info("contract for sale creation failure: $err");
+        return {
+            error => {
+                message => "cannot create sell contract",
+                code    => "ContractSellCreateError"
+            }};
+    };
+    if (!$contract->is_valid_to_sell) {
+        $log->error("primary error: " . $contract->primary_validation_error->message);
+        return {
+            error => {
+                message => $contract->primary_validation_error->message_to_client,
+                code    => "ContractSellValidationError"
+            }};
+    }
+
+    return {
+        ask_price => sprintf('%.2f', $contract->ask_price),
+        bid_price => sprintf('%.2f', $contract->bid_price),
+        spot      => $contract->current_spot,
+        spot_time => $contract->current_tick->epoch,
+    };
+}
+
+sub send_bid {
+    my ($c, $id, $p0, $p1, $p2) = @_;
+    my $latest = get_bid($c, $p2);
+    if ($latest->{error}) {
+        Mojo::IOLoop->remove($id);
+        delete $c->{$id};
+        delete $c->{fmb_ids}{$p2->{fmb}->id};
+    }
+    $c->send({
+            json => {
+                msg_type  => 'portfolio',
+                echo_req  => $p0,
+                portfolio => {
+                    id => $id,
+                    %$p1,
+                    %$latest
+                }}});
+    return;
+}
+
+1;
