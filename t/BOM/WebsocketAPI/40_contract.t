@@ -74,13 +74,11 @@ my $CR0005_token = BOM::Platform::SessionCookie->new(
 )->token;
 
 $t = $t->send_ok({json => {authorize => $CR0005_token}})->message_ok;
-diag Dumper(\$t->message);
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'CR2002@binary.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
 $t = $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
-diag Dumper(\$t->message);
 my $tick = decode_json($t->message->[1]);
 ok $tick->{tick}->{id};
 ok $tick->{tick}->{quote};
@@ -98,7 +96,6 @@ $t = $t->send_ok({
             "duration_unit" => "s"
         }})->message_ok;
 my $proposal = decode_json($t->message->[1]);
-diag Dumper($proposal);
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 
@@ -107,25 +104,9 @@ $t = $t->send_ok({
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}}})->message_ok;
 my $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
 ok $res->{open_receipt};
 ok $res->{open_receipt}->{fmb_id};
 ok $res->{open_receipt}->{purchase_time};
-
-# $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
-# diag Dumper(decode_json($t->message->[1]));
-
-# $t = $t->send_ok({
-#     json => {
-#         sell => $res->{open_receipt}->{fmb_id},
-#         price => $proposal->{proposal}->{ask_price}
-#     }
-# })->message_ok;
-# $res = decode_json($t->message->[1]);
-# diag Dumper(\$res);
-# ok $res->{close_receipt};
-# ok $res->{close_receipt}->{fmb_id};
-# ok $res->{close_receipt}->{purchase_time};
 
 $t->finish_ok;
 

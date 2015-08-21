@@ -232,13 +232,13 @@ sub _authorize_error {
     my ($c, $p1, $msg_type) = @_;
     $c->send({
             json => {
-                msg_type  => $msg_type,
-                echo_req  => $p1,
-                $msg_type => {
-                    error => {
-                        message => "Must authorize first",
-                        code    => "AuthorizationRequired"
-                    }}}});
+                msg_type => $msg_type,
+                echo_req => $p1,
+                'error'  => {
+                    message  => "Must authorize first",
+                    msg_type => $msg_type,
+                    code     => "AuthorizationRequired"
+                }}});
     return;
 }
 
@@ -296,7 +296,7 @@ my $json_receiver = sub {
     }
 
     if (my $options = $p1->{statement}) {
-        my $client = $c->stash('client') || return $c->_authorize_error($p1);
+        my $client = $c->stash('client') || return $c->_authorize_error($p1, 'statement');
         return $c->send({
                 json => {
                     msg_type  => 'statement',
