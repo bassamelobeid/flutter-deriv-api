@@ -232,13 +232,13 @@ sub _authorize_error {
     my ($c, $p1, $msg_type) = @_;
     $c->send({
             json => {
-                msg_type  => $msg_type,
-                echo_req  => $p1,
-                'error' => {
+                msg_type => $msg_type,
+                echo_req => $p1,
+                'error'  => {
                     message  => "Must authorize first",
                     msg_type => $msg_type,
                     code     => "AuthorizationRequired"
-                    }}});
+                }}});
     return;
 }
 
