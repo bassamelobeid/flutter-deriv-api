@@ -4,35 +4,35 @@
   "properties": {
     "proposal": {
       "type": "integer",
-      "description": "1"
+      "default": "1"
     },
     "amount_val": {
       "type": "number",
-      "description": "10.0"
+      "default": "10.0"
     },
     "basis": {
       "type": "string",
-      "description": "payout"
+      "default": "payout"
     },
     "contract_type": {
       "type": "string",
-      "description": "CALL"
+      "default": "CALL"
     },
     "currency": {
       "type": "string",
-      "description": "USD"
+      "default": "USD"
     },
     "duration": {
       "type": "string",
-      "description": "900"
+      "default": "900"
     },
     "duration_unit": {
       "type": "string",
-      "description": "s"
+      "default": "s"
     },
     "symbol": {
       "type": "string",
-      "description": "R_100"
+      "default": "R_100"
     }
   },
   "required": [
