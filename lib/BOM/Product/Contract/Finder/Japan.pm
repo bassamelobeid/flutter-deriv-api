@@ -21,7 +21,7 @@ sub predefined_contracts_for_symbol {
     my $args         = shift;
     my $symbol       = $args->{symbol} || die 'no symbol';
     my $underlying   = BOM::Market::Underlying->new($symbol);
-    my $now          = Date::Utility->new;
+    my $now          = $args->{date} || Date::Utility->new;
     my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
 
     my $exchange  = $underlying->exchange;
@@ -35,7 +35,8 @@ sub predefined_contracts_for_symbol {
             barrier_category  => ['euro_non_atm', 'american']});
     @offerings = _predefined_trading_period({
         offerings => \@offerings,
-        exchange  => $exchange
+        exchange  => $exchange,
+        date      => $now,
     });
 
     for my $o (@offerings) {
@@ -79,7 +80,7 @@ sub _predefined_trading_period {
     my @offerings       = @{$args->{offerings}};
     my $exchange        = $args->{exchange};
     my $period_length   = Time::Duration::Concise->new({interval => '2h'});              # Two hour intraday rolling periods.
-    my $now             = Date::Utility->new;
+    my $now             = $args->{date};
     my $in_period       = $now->hour - ($now->hour % $period_length->hours);
     my $trading_key     = join($cache_sep, $exchange->symbol, $now->date, $in_period);
     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
@@ -149,7 +150,7 @@ sub _predefined_trading_period {
                 duration => ($_->hour - $period_start->hour) . 'h',
                 }
             } grep {
-            $now->is_before($_)
+            $now->is_before($_) and $period_start->hour > 0
             } map {
             $period_start->plus_time_interval($_)
             } @hourly_durations;
