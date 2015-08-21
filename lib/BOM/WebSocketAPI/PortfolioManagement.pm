@@ -18,7 +18,6 @@ sub buy {
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
     my $json   = {
-        echo_req => $args,
         msg_type => 'open_receipt'
     };
     {
@@ -72,7 +71,6 @@ sub sell {
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
     my $json   = {
-        echo_req => $args,
         msg_type => 'close_receipt'
     };
     {
