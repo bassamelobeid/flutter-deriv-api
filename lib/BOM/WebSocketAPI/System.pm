@@ -9,8 +9,7 @@ sub forget {
     if (my $fmb_id = eval { $c->{$id}->{fmb}->id }) {
         delete $c->{fmb_ids}{$fmb_id};
     }
-    delete $c->{$id};
-    return;
+    return delete $c->{$id};
 }
 
 1;

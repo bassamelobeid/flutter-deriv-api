@@ -55,6 +55,7 @@ sub ticks {
             {
                 # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
                 push @{$c->stash->{watchers}}, $watcher;
+                $c->on(finish => sub { $c->stash->{feeder}->_pg->destroy });
                 return;
             }
 
@@ -152,9 +153,8 @@ sub prepare_ask {
 
 sub get_ask {
     my ($c, $p2) = @_;
-    my $app = $c->app;
-    my $log = $app->log;
-    # $log->debug("pricing with p2 " . $c->dumper($p2));
+    my $app      = $c->app;
+    my $log      = $app->log;
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $log->info("contract creation failure: $err");
