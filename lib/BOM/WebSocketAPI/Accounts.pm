@@ -7,6 +7,9 @@ use BOM::Product::ContractFactory;
 
 sub get_transactions {
     my ($c, $args) = @_;
+
+    $args = $args->{statement};
+
     my $log          = $c->app->log;
     my $acc          = $c->stash('account');
     my $APPS_BY_DBID = $c->config('APPS_BY_DBID') || {};
@@ -85,10 +88,12 @@ sub get_transactions {
     ];
 
     return {
-        %$args,
-        transactions => $trxs,
-        count        => $count
-    };
+        msg_type  => 'statement',
+        statement => {
+            %$args,
+            transactions => $trxs,
+            count        => $count
+        }};
 }
 
 1;

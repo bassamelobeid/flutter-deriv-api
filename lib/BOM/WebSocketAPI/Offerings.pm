@@ -12,6 +12,15 @@ use BOM::WebSocketAPI::Symbols;
 
 my @READABLES = qw/market submarket contract_display start_type sentiment expiry_type/;
 
+sub offerings {
+    my ($c, $args) = @_;
+
+    return {
+        msg_type => 'offerings',
+        offerings => query($c, $args->{offerings}),
+    };
+}
+
 sub query {
     my $c    = shift;
     my $args = shift || $c->req->params->to_hash;    # get args either via @_ (websockets) or as query params (REST)
@@ -92,7 +101,7 @@ sub query {
 
         # accumulate stats..
         for (@all_keys) {
-            my $val = $row->{$_} // '(n/a)';
+            my $val = $row->{$_} // '(n/a)';    #'
             $selectors->{$_}->{$val}++;
         }
 
@@ -198,7 +207,10 @@ sub trading_times {
             }
         }
     }
-    return $trading_times;
+    return {
+        msg_type      => 'trading_times',
+        trading_times => $trading_times,
+    };
 }
 
 1;

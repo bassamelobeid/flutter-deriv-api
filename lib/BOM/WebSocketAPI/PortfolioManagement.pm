@@ -134,7 +134,10 @@ sub portfolio {
         $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
     }
 
-    return $portfolio_stats;
+    return {
+        msg_type        => 'portfolio',
+        portfolio_stats => $portfolio_stats,
+    };
 }
 
 sub prepare_bid {

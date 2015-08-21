@@ -2,8 +2,6 @@ package BOM::WebSocketAPI::Websocket_v1;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
-use BOM::Product::Contract::Finder;
-
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
 use BOM::WebSocketAPI::Authorize;
@@ -46,96 +44,28 @@ sub __handle {
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
 
-    if (my $token = $p1->{authorize}) {
-        my ($client, $account, $email, $loginid) = BOM::WebSocketAPI::Authorize::authorize($c, $token);
-        return {
-            msg_type  => 'authorize',
-            authorize => $client
-            ? {
-                fullname => $client->full_name,
-                loginid  => $client->loginid,
-                balance  => ($account ? $account->balance : 0),
-                currency => ($account ? $account->currency_code : ''),
-                email    => $email,
-                }
-            : {
-                error => {
-                    message => "Token invalid",
-                    code    => "InvalidToken"
-                },
-            }};
-    }
+    # [param key, sub, require auth, unauth-error-code]
+    my @dispatch = (
+        ['authorize',         \&BOM::WebSocketAPI::Authorize::authorize,                              0],
+        ['ticks',             \&BOM::WebSocketAPI::MarketDiscovery::ticks,                            0],
+        ['proposal',          \&BOM::WebSocketAPI::MarketDiscovery::proposal,                         0],
+        ['forget',            \&BOM::WebSocketAPI::System::forget,                                    0],
+        ['payout_currencies', \&BOM::WebSocketAPI::ContractDiscovery::payout_currencies,              0],
+        ['statement',         \&BOM::WebSocketAPI::Accounts::get_transactions,                        1],
+        ['active_symbols',    \&BOM::WebSocketAPI::Symbols::active_symbols,                           0],
+        ['contracts_for',     \&BOM::WebSocketAPI::ContractDiscovery::available_contracts_for_symbol, 0],
+        ['offerings',         \&BOM::WebSocketAPI::Offerings::offerings,                              0],
+        ['trading_times',     \&BOM::WebSocketAPI::Offerings::trading_times,                          0],
+        ['buy',       \&BOM::WebSocketAPI::PortfolioManagement::buy,       1, 'open_receipt'],
+        ['sell',      \&BOM::WebSocketAPI::PortfolioManagement::sell,      1, 'close_receipt'],
+        ['portfolio', \&BOM::WebSocketAPI::PortfolioManagement::portfolio, 1]);
 
-    elsif ($p1->{ticks}) {
-        return BOM::WebSocketAPI::MarketDiscovery::ticks($c, $p1);
-    }
-
-    elsif ($p1->{proposal}) {
-        return BOM::WebSocketAPI::MarketDiscovery::proposal($c, $p1);
-    }
-
-    elsif (my $id = $p1->{forget}) {
-        return {
-            msg_type => 'forget',
-            forget   => BOM::WebSocketAPI::System::forget($c, $id),
-        };
-    }
-
-    elsif ($p1->{payout_currencies}) {
-        return {
-            msg_type          => 'payout_currencies',
-            payout_currencies => BOM::WebSocketAPI::ContractDiscovery::payout_currencies($c)};
-    }
-
-    elsif ($p1->{statement}) {
-        my $client = $c->stash('client') || return __authorize_error('statement');
-        return {
-            msg_type  => 'statement',
-            statement => BOM::WebSocketAPI::Accounts::get_transactions($c, $p1->{statement}),
-        };
-    }
-
-    elsif ($p1->{active_symbols}) {
-        return {
-            msg_type       => 'active_symbols',
-            active_symbols => BOM::WebSocketAPI::Symbols->active_symbols($p1->{active_symbols})};
-    }
-
-    elsif ($p1->{contracts_for}) {
-        return {
-            msg_type      => 'contracts_for',
-            contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($p1->{contracts_for})};
-    }
-
-    elsif ($p1->{offerings}) {
-        return {
-            msg_type  => 'offerings',
-            offerings => BOM::WebSocketAPI::Offerings::query($c, $p1->{offerings})};
-    }
-
-    elsif ($p1->{trading_times}) {
-        return {
-            msg_type      => 'trading_times',
-            trading_times => BOM::WebSocketAPI::Offerings::trading_times($c, $p1->{trading_times}),
-        };
-    }
-
-    elsif ($p1->{buy}) {
-        my $client = $c->stash('client') || return __authorize_error('open_receipt');
-        return BOM::WebSocketAPI::PortfolioManagement::buy($c, $p1);
-    }
-
-    elsif ($p1->{sell}) {
-        my $client = $c->stash('client') || return __authorize_error('close_receipt');
-        return BOM::WebSocketAPI::PortfolioManagement::sell($c, $p1);
-    }
-
-    elsif ($p1->{portfolio}) {
-        my $client = $c->stash('client') || return __authorize_error('portfolio');
-        return {
-            msg_type        => 'portfolio',
-            portfolio_stats => BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1),
-        };
+    foreach my $dispatch (@dispatch) {
+        next unless $p1->{$dispatch->[0]};
+        if ($dispatch->[2] and not $c->stash('client')) {
+            return __authorize_error($dispatch->[3] || $dispatch->[0]);
+        }
+        return $dispatch->[1]->($c, $p1);
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
