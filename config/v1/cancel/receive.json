@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Cancel an Incoming Stream Receive",
+  "description": "There is no response to this message",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made"
+    }
+    
+  },
+  "required": [
+    "echo_req"
+  ]
+}
