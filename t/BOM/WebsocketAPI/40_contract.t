@@ -5,9 +5,8 @@ use Data::Dumper;
 use Test::MockModule;
 
 use BOM::Platform::SessionCookie;
-use BOM::Market::Underlying;
-use Math::Util::CalculatedValue::Validatable;
 
+use Math::Util::CalculatedValue::Validatable;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
@@ -60,10 +59,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         date => Date::Utility->new,
     });
 
-my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
-my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
+my $t = Test::Mojo->new('BOM::WebSocketAPI');
 
-$t->websocket_ok("$svr/websockets/contracts");
+$t->websocket_ok("websockets/contracts");
 
 my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
