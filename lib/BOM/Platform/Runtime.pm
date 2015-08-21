@@ -12,7 +12,7 @@ use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Data::Sources;
 use BOM::Platform::Runtime::Broker::Codes;
 use BOM::Platform::Runtime::Website::List;
-use YAML::CacheLoader;
+use YAML::XS;
 use Locale::Country::Extra;
 use Locale::Country;
 
@@ -171,7 +171,7 @@ sub _build_non_restricted_countries {
 }
 
 sub _build_countries_list {
-    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
+    return YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
 }
 
 sub country_has_financial {
@@ -179,8 +179,7 @@ sub country_has_financial {
     my $config = $self->countries_list->{$country};
     return unless ($config);
 
-    return 1 if ($config->{financial_company} eq 'maltainvest');
-    return;
+    return ($config and $config->{financial_company} eq 'maltainvest');
 }
 
 sub financial_only_country {
@@ -188,8 +187,7 @@ sub financial_only_country {
     my $config = $self->countries_list->{$country};
     return unless ($config);
 
-    return 1 if ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'maltainvest');
-    return;
+    return ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'maltainvest');
 }
 
 sub restricted_country {
@@ -197,8 +195,7 @@ sub restricted_country {
     my $config = $self->countries_list->{$country};
     return 1 unless ($config);
 
-    return 1 if ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
-    return;
+    return ($config->{gaming_company} eq 'none' and $config->{financial_company} eq 'none');
 }
 
 sub random_restricted_country {
@@ -206,8 +203,7 @@ sub random_restricted_country {
     my $config = $self->countries_list->{$country};
     return 1 unless ($config);
 
-    return 1 if ($config->{gaming_company} eq 'none');
-    return;
+    return ($config->{gaming_company} eq 'none');
 }
 
 sub _build_app_config {

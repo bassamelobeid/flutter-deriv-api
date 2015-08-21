@@ -28,10 +28,10 @@ subtest 'iom countries' => sub {
         is($c_config->{financial_company}, 'iom', 'financial company = iom');
         is($c_config->{gaming_company}, 'iom', 'gaming company = iom');
 
-        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
-        is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), undef, '! country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->random_restricted_country($c), !1, '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), !1, '! country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
     }
 };
 
@@ -44,10 +44,10 @@ subtest 'EU countries' => sub {
         is($c_config->{gaming_company}, 'malta', 'gaming company = malta');
         is($c_config->{financial_company}, 'maltainvest', 'financial company = maltainvest');
 
-        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
-        is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
+        is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->random_restricted_country($c), !1, '! random_restricted_country');
         is(BOM::Platform::Runtime->instance->country_has_financial($c), 1, 'country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
     }
 };
 
@@ -60,7 +60,7 @@ subtest 'EU countries, no Random' => sub {
         is $c_config->{gaming_company}, 'none', 'no gaming company';
         is $c_config->{financial_company}, 'maltainvest', 'financial company = maltainvest';
 
-        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
         is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, 'random_restricted_country');
         is(BOM::Platform::Runtime->instance->country_has_financial($c), 1, 'country_has_financial');
         is(BOM::Platform::Runtime->instance->financial_only_country($c), 1, 'financial_only_country');
@@ -78,8 +78,8 @@ subtest 'restricted countries' => sub {
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), 1, 'restricted_country');
         is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, '! random_restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), undef, '! country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), !1, '! country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
     }
 };
 
@@ -102,12 +102,12 @@ subtest 'CR countries' => sub {
             is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, 'random_restricted_country');
         } else {
             is($c_config->{gaming_company}, 'costarica', 'gaming company = costarica');
-            is(BOM::Platform::Runtime->instance->random_restricted_country($c), undef, '! random_restricted_country');
+            is(BOM::Platform::Runtime->instance->random_restricted_country($c), !1, '! random_restricted_country');
         }
 
-        is(BOM::Platform::Runtime->instance->restricted_country($c), undef, '! restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), undef, '! country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), undef, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
+        is(BOM::Platform::Runtime->instance->country_has_financial($c), !1, '! country_has_financial');
+        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
     }
 };
 
