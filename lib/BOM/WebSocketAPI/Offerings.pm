@@ -9,6 +9,7 @@ use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use BOM::Product::Offerings;
 use BOM::WebSocketAPI::Symbols;
+use BOM::Product::Contract::Offerings;
 
 my @READABLES = qw/market submarket contract_display start_type sentiment expiry_type/;
 
@@ -177,6 +178,8 @@ sub query {
 
 sub trading_times {
     my ($c, $args) = @_;
+
+    $args = $args->{trading_times};
 
     my $date = try { Date::Utility->new($args->{date}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(

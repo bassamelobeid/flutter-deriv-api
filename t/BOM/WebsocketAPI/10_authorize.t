@@ -6,13 +6,10 @@ use JSON;
 use Data::Dumper;
 
 use BOM::Platform::SessionCookie;
-
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
-my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
-
-$t->websocket_ok("$svr/websockets/contracts");
+my $t = Test::Mojo->new('BOM::WebSocketAPI');
+$t->websocket_ok("/websockets/contracts");
 
 my $faked_token = 'ABC';
 $t = $t->send_ok({json => {authorize => $faked_token}})->message_ok;

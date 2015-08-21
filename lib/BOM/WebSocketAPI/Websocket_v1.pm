@@ -51,14 +51,15 @@ sub __handle {
         ['proposal',          \&BOM::WebSocketAPI::MarketDiscovery::proposal,                         0],
         ['forget',            \&BOM::WebSocketAPI::System::forget,                                    0],
         ['payout_currencies', \&BOM::WebSocketAPI::ContractDiscovery::payout_currencies,              0],
-        ['statement',         \&BOM::WebSocketAPI::Accounts::get_transactions,                        1],
         ['active_symbols',    \&BOM::WebSocketAPI::Symbols::active_symbols,                           0],
         ['contracts_for',     \&BOM::WebSocketAPI::ContractDiscovery::available_contracts_for_symbol, 0],
         ['offerings',         \&BOM::WebSocketAPI::Offerings::offerings,                              0],
         ['trading_times',     \&BOM::WebSocketAPI::Offerings::trading_times,                          0],
         ['buy',       \&BOM::WebSocketAPI::PortfolioManagement::buy,       1, 'open_receipt'],
         ['sell',      \&BOM::WebSocketAPI::PortfolioManagement::sell,      1, 'close_receipt'],
-        ['portfolio', \&BOM::WebSocketAPI::PortfolioManagement::portfolio, 1]);
+        ['portfolio', \&BOM::WebSocketAPI::PortfolioManagement::portfolio, 1],
+        ['statement', \&BOM::WebSocketAPI::Accounts::get_transactions,     1],
+    );
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
