@@ -52,6 +52,7 @@ sub predefined_contracts_for_symbol {
             underlying   => $underlying,
             current_tick => $current_tick,
             contract     => $o,
+            date         => $now,
         });
 
     }
@@ -183,7 +184,7 @@ then split into 20 barriers that within this boundaries. The barriers will be sp
 
 sub _set_predefined_barriers {
     my $args = shift;
-    my ($underlying, $contract, $current_tick) = @{$args}{'underlying', 'contract', 'current_tick'};
+    my ($underlying, $contract, $current_tick, $date) = @{$args}{'underlying', 'contract', 'current_tick', 'date'};
 
     my $trading_period     = $contract->{trading_period};
     my $date_start         = $trading_period->{date_start}->{epoch};
@@ -213,7 +214,7 @@ sub _set_predefined_barriers {
             });
 
         # Expires at the end of the available period.
-        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - time);
+        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $date->epoch);
     }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = $available_barriers;
