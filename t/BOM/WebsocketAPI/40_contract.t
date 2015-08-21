@@ -61,7 +61,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
 
 my $t = Test::Mojo->new('BOM::WebSocketAPI');
 
-$t->websocket_ok("websockets/contracts");
+$t->websocket_ok("/websockets/contracts");
 
 my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
