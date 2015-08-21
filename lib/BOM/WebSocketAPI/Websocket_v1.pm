@@ -23,23 +23,22 @@ sub ok {
 }
 
 sub entry_point {
-    my $c   = shift;
+    my $c = shift;
 
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
 
     $c->inactivity_timeout(600);
-    $c->on(json => sub {
-        my ($c, $p1) = @_;
+    $c->on(
+        json => sub {
+            my ($c, $p1) = @_;
 
-        my $data = __handle($c, $p1);
-        return unless $data;
+            my $data = __handle($c, $p1);
+            return unless $data;
 
-        $data->{echo_req} = $p1;
-        $c->send({
-            json => $data
+            $data->{echo_req} = $p1;
+            $c->send({json => $data});
         });
-    });
     return;
 }
 
@@ -55,84 +54,78 @@ sub __handle {
         my ($client, $account, $email, $loginid) = BOM::WebSocketAPI::Authorize::authorize($c, $token);
         if (not $client) {
             return {
-                        msg_type  => 'authorize',
-                        authorize => {
-                            error => {
-                                message => "Token invalid",
-                                code    => "InvalidToken"
-                            },
-                        }
-                    };
+                msg_type  => 'authorize',
+                authorize => {
+                    error => {
+                        message => "Token invalid",
+                        code    => "InvalidToken"
+                    },
+                }};
         } else {
             return {
-                        msg_type  => 'authorize',
-                        authorize => {
-                            fullname => $client->full_name,
-                            loginid  => $client->loginid,
-                            balance  => ($account ? $account->balance : 0),
-                            currency => ($account ? $account->currency_code : ''),
-                            email    => $email,
-                        }
-                    };
+                msg_type  => 'authorize',
+                authorize => {
+                    fullname => $client->full_name,
+                    loginid  => $client->loginid,
+                    balance  => ($account ? $account->balance : 0),
+                    currency => ($account ? $account->currency_code : ''),
+                    email    => $email,
+                }};
         }
     }
 
     if (my $id = $p1->{forget}) {
         return {
-                    msg_type => 'forget',
-                    forget   => BOM::WebSocketAPI::System::forget($c, $id),
-                };
+            msg_type => 'forget',
+            forget   => BOM::WebSocketAPI::System::forget($c, $id),
+        };
     }
 
     if ($p1->{payout_currencies}) {
         return {
-                    msg_type          => 'payout_currencies',
-                    payout_currencies => BOM::WebSocketAPI::ContractDiscovery::payout_currencies($c)
-                };
+            msg_type          => 'payout_currencies',
+            payout_currencies => BOM::WebSocketAPI::ContractDiscovery::payout_currencies($c)};
     }
 
     if (my $options = $p1->{statement}) {
         my $client = $c->stash('client') || return $c->_authorize_error('statement');
         return {
-                    msg_type  => 'statement',
-                    statement => BOM::WebSocketAPI::Accounts::get_transactions($c, $options),
-                };
+            msg_type  => 'statement',
+            statement => BOM::WebSocketAPI::Accounts::get_transactions($c, $options),
+        };
     }
 
     if (my $by = $p1->{active_symbols}) {
         return {
-                    msg_type       => 'active_symbols',
-                    active_symbols => BOM::WebSocketAPI::Symbols->active_symbols($by)
-                };
+            msg_type       => 'active_symbols',
+            active_symbols => BOM::WebSocketAPI::Symbols->active_symbols($by)};
     }
 
     if (my $symbol = $p1->{contracts_for}) {
         return {
-                    msg_type      => 'contracts_for',
-                    contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol)
-                };
+            msg_type      => 'contracts_for',
+            contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol)};
     }
 
     if (my $options = $p1->{offerings}) {
         return {
-                    msg_type  => 'offerings',
-                    offerings => BOM::WebSocketAPI::Offerings::query($c, $options)
-                };
+            msg_type  => 'offerings',
+            offerings => BOM::WebSocketAPI::Offerings::query($c, $options)};
     }
 
     if (my $options = $p1->{trading_times}) {
         return {
-                    msg_type      => 'trading_times',
-                    trading_times => BOM::WebSocketAPI::Offerings::trading_times($c, $options),
-                };
+            msg_type      => 'trading_times',
+            trading_times => BOM::WebSocketAPI::Offerings::trading_times($c, $options),
+        };
     }
 
     if ($p1->{portfolio}) {
         my $client = $c->stash('client') || return $c->_authorize_error('portfolio');
         return {
-                    msg_type        => 'portfolio',
-                    portfolio_stats => BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1),
-                };
+            msg_type        => 'portfolio',
+            portfolio_stats => BOM::WebSocketAPI::PortfolioManagement::portfolio($c, $p1),
+        };
     }
 
     if ($p1->{ticks}) {
@@ -171,8 +164,7 @@ sub _authorize_error {
             message  => "Must authorize first",
             msg_type => $msg_type,
             code     => "AuthorizationRequired"
-        }
-    };
+        }};
 }
 
 1;

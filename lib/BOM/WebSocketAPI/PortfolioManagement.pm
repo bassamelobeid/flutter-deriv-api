@@ -17,9 +17,7 @@ sub buy {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json   = {
-        msg_type => 'open_receipt'
-    };
+    my $json = {msg_type => 'open_receipt'};
     {
         my $p2 = delete $c->{$id} || do {
             $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
@@ -70,9 +68,7 @@ sub sell {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json   = {
-        msg_type => 'close_receipt'
-    };
+    my $json = {msg_type => 'close_receipt'};
     {
         my $p2 = delete $c->{$id} || do {
             $json->{error}                             = "";
