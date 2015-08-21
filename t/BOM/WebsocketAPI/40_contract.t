@@ -65,7 +65,7 @@ my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
 
 $t->websocket_ok("$svr/websockets/contracts");
 
-my $CR0005_token = BOM::Platform::SessionCookie->new(
+my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
     loginid         => "CR2002",
     email           => 'CR2002@binary.com',
@@ -73,7 +73,7 @@ my $CR0005_token = BOM::Platform::SessionCookie->new(
     scopes          => ['price', 'trade'],
 )->token;
 
-$t = $t->send_ok({json => {authorize => $CR0005_token}})->message_ok;
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'CR2002@binary.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';

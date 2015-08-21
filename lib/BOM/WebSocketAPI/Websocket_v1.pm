@@ -52,26 +52,22 @@ sub __handle {
 
     if (my $token = $p1->{authorize}) {
         my ($client, $account, $email, $loginid) = BOM::WebSocketAPI::Authorize::authorize($c, $token);
-        if (not $client) {
-            return {
-                msg_type  => 'authorize',
-                authorize => {
-                    error => {
-                        message => "Token invalid",
-                        code    => "InvalidToken"
-                    },
-                }};
-        } else {
-            return {
-                msg_type  => 'authorize',
-                authorize => {
-                    fullname => $client->full_name,
-                    loginid  => $client->loginid,
-                    balance  => ($account ? $account->balance : 0),
-                    currency => ($account ? $account->currency_code : ''),
-                    email    => $email,
-                }};
-        }
+        return {
+            msg_type  => 'authorize',
+            authorize => $client
+            ? {
+                fullname => $client->full_name,
+                loginid  => $client->loginid,
+                balance  => ($account ? $account->balance : 0),
+                currency => ($account ? $account->currency_code : ''),
+                email    => $email,
+                }
+            : {
+                error => {
+                    message => "Token invalid",
+                    code    => "InvalidToken"
+                },
+            }};
     }
 
     if (my $id = $p1->{forget}) {
