@@ -349,12 +349,14 @@ my $json_receiver = sub {
     }
 
     if ($p1->{ticks}) {
-        my $json = BOM::WebSocketAPI::MarketDiscovery::ticks($c, $p1);
-        return $c->send({
-                json => {
-                    echo_req => $p1,
-                    %$json
-                }});
+        if (my $json = BOM::WebSocketAPI::MarketDiscovery::ticks($c, $p1)) {
+            return $c->send({
+                    json => {
+                        echo_req => $p1,
+                        %$json
+                    }});
+        }
+        return;
     }
 
     if ($p1->{proposal}) {

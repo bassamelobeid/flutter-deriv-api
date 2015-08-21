@@ -52,6 +52,7 @@ sub ticks {
             {
                 # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
                 push @{$c->stash->{watchers}}, $watcher;
+                $c->on(finish => sub { $c->stash->{feeder}->_pg->destroy });
                 return;
             }
 
