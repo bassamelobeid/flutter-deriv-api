@@ -108,6 +108,13 @@ ok $res->{open_receipt};
 ok $res->{open_receipt}->{fmb_id};
 ok $res->{open_receipt}->{purchase_time};
 
+# $t = $t->send_ok({
+#         json => {
+#             portfolio => 1
+#         }})->message_ok;
+# $res = decode_json($t->message->[1]);
+# diag Dumper( decode_json($t->message->[1]) );
+
 $t->finish_ok;
 
 done_testing();

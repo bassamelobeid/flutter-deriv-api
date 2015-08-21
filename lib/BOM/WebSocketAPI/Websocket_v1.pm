@@ -87,36 +87,36 @@ sub __handle {
             payout_currencies => BOM::WebSocketAPI::ContractDiscovery::payout_currencies($c)};
     }
 
-    elsif (my $options = $p1->{statement}) {
+    elsif ($p1->{statement}) {
         my $client = $c->stash('client') || return __authorize_error('statement');
         return {
             msg_type  => 'statement',
-            statement => BOM::WebSocketAPI::Accounts::get_transactions($c, $options),
+            statement => BOM::WebSocketAPI::Accounts::get_transactions($c, $p1->{statement}),
         };
     }
 
-    elsif (my $by = $p1->{active_symbols}) {
+    elsif ($p1->{active_symbols}) {
         return {
             msg_type       => 'active_symbols',
-            active_symbols => BOM::WebSocketAPI::Symbols->active_symbols($by)};
+            active_symbols => BOM::WebSocketAPI::Symbols->active_symbols($p1->{active_symbols})};
     }
 
-    elsif (my $symbol = $p1->{contracts_for}) {
+    elsif ($p1->{contracts_for}) {
         return {
             msg_type      => 'contracts_for',
-            contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($symbol)};
+            contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($p1->{contracts_for})};
     }
 
-    elsif (my $options = $p1->{offerings}) {
+    elsif ($p1->{offerings}) {
         return {
             msg_type  => 'offerings',
-            offerings => BOM::WebSocketAPI::Offerings::query($c, $options)};
+            offerings => BOM::WebSocketAPI::Offerings::query($c, $p1->{offerings})};
     }
 
-    elsif (my $options = $p1->{trading_times}) {
+    elsif ($p1->{trading_times}) {
         return {
             msg_type      => 'trading_times',
-            trading_times => BOM::WebSocketAPI::Offerings::trading_times($c, $options),
+            trading_times => BOM::WebSocketAPI::Offerings::trading_times($c, $p1->{trading_times}),
         };
     }
 
