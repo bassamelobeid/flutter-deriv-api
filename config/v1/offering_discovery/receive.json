@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Offering discovery Receive",
+  "description": "A message with offerings",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made",
+      "properties": {
+        "offerings": {
+          "id": "offerings",
+          "type": "object",
+          "properties": {
+            "underlying_symbol": {
+              "id": "underlying_symbol",
+              "type": "string",
+              "desciption": "Example R_100"
+            },
+            "symbol": {
+              "id": "symbol",
+              "type": "string",
+              "desciption": "Example R_100"
+            }
+          },
+          "required": [
+            "underlying_symbol",
+            "symbol"
+          ]
+        }
+      },
+      "required": [
+        "offerings"
+      ]
+    },
+    "offerings": {
+      "id": "offerings",
+      "type": "array",
+      "description":"The OFFERINGS structure is a hierarchy of Market -> SubMarket -> Symbol -> ContractCategory -> Contract Type",
+      "items": {
+        "id": "auto-generated-schema-896"
+      }
+    },
+    "msg_type": {
+      "id": "msg_type",
+      "type": "string",
+      "description": "offerings"
+    }
+  },
+  "required": [
+    "echo_req",
+    "offerings",
+    "msg_type"
+  ]
+}

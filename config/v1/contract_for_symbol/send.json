@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "title":"Contracts for symbol send",
+    "description":"Get all the contracts for specified symbol",
+    "properties": {
+        "contracts_for": {
+            "id": "contracts_for",
+            "type": "string",
+            "sample": "R_100",
+            "description": "where contracts_for is the short symbol name"
+        }
+    },
+    "required": [
+        "contracts_for"
+    ]
+}

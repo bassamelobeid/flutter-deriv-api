@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  
+  "type": "object",
+  "title": "Get list of active symbols Receive",
+  "description": "A message list of active symbols",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made",
+      "properties": {
+        "active_symbols": {
+          "id": "active_symbols",
+          "type": "string",
+          "description":"where active_symbols is 'display_name' or 'symbol'"
+        }
+      },
+      "required": [
+        "active_symbols"
+      ]
+    },
+    "active_symbols": {
+      "id": "active_symbols",
+      "type": "array",
+      "items": {
+        "id": "auto-generated-schema-730"
+      }
+    },
+    "msg_type": {
+      "id": "msg_type",
+      "type": "string",
+      "description": "active_symbols"
+    }
+  },
+  "required": [
+    "echo_req",
+    "active_symbols",
+    "msg_type"
+  ]
+}
