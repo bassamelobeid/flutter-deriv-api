@@ -33,9 +33,12 @@
                 "available": {
                     
                     "type": "array",
-                    "items": {
-                        "item": "auto-generated-schema-184"
-                    }
+                    "items": [
+            			{
+			              "type": "object",
+			              "description": "contracts for specified symbol"
+			         }
+			      ]
                 }
             }
         },
