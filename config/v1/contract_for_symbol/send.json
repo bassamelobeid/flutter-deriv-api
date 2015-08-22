@@ -7,8 +7,9 @@
         "contracts_for": {
             "id": "contracts_for",
             "type": "string",
-            "sample": "R_100",
-            "description": "where contracts_for is the short symbol name"
+            "description": "where contracts_for is the short symbol name",
+            "sample": "R_100"
+            
         }
     },
     "required": [
