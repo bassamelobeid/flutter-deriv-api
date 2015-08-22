@@ -5,8 +5,12 @@ use warnings;
 
 use BOM::Product::ContractFactory;
 
-sub statement {    # alias
-    return get_transactions(@_);
+sub statement {
+    my $statement = get_transactions(@_);
+    return {
+        msg_type  => 'statement',
+        statement => $statement,
+    };
 }
 
 sub get_transactions {
@@ -92,13 +96,10 @@ sub get_transactions {
     ];
 
     return {
-        msg_type  => 'statement',
-        statement => {
-            %$args,
-            transactions => $trxs,
-            count        => $count
-        }};
+        %$args,
+        transactions => $trxs,
+        count        => $count
+    };
 }
 
 1;
-
