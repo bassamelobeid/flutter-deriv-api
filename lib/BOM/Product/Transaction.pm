@@ -204,6 +204,15 @@ sub stats_validation_done {
     return;
 }
 
+# Given a generic error string, try to turn it into a GenericCamelCase string which
+# might be the same across multiple failures.
+sub _normalize_error_string {
+    my $string = shift;
+
+    $string =~ s/\[[^\]]+\]//g;    # Bits between [] are contract specific.
+    return join('', map { ucfirst lc $_ } split /\s+/, $string);
+}
+
 sub stats_stop {
     my ($self, $data, $error) = @_;
 
@@ -212,9 +221,8 @@ sub stats_stop {
 
     if ($error) {
         my $whatsit = blessed $error;
-        my $why = ($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : $error;
-        $why =~ s/\s+//g;    # No spaces in tags, even if they sent us a silly string.
-        stats_inc("transaction.$what.failure", [@$tags, "reason:$why"]);
+        my $why = _normalize_error_string(($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : $error);
+        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, "reason:$why",]});
     } else {
         my $now = [gettimeofday];
         stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
@@ -231,6 +239,7 @@ sub stats_stop {
             }
         }
     }
+
     return $error;
 }
 
@@ -1465,10 +1474,19 @@ sub sell_expired_contracts {
     my @bets_to_sell;
     my @transdata;
     my %stats_attempt;
+    my %stats_failure;
     for my $bet (@$bets) {
         my $contract = produce_contract($bet->{short_code}, $currency);
-        $stats_attempt{$BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}}++;
-        next if not $contract->is_expired or $contract->category_code eq 'legacy';
+        my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+        $stats_attempt{$logging_class}++;
+        if (not $contract->is_expired) {
+            my $reason = ($contract->has_exit_tick) ? 'NotExpired' : 'NoExitTick';    # These will often times be the same thing!
+            $stats_failure{$logging_class}{$reason}++;
+            next;
+        } elsif ($contract->category_code eq 'legacy') {
+            $stats_failure{$logging_class}{Legacy}++;
+            next;
+        }
 
         try {
             if ($contract->is_valid_to_sell) {
@@ -1490,6 +1508,9 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
+            } else {
+                my $reason = _normalize_error_string($contract->primary_validation_error->message);
+                $stats_failure{$logging_class}{$reason}++;
             }
         };
     }
@@ -1499,8 +1520,14 @@ sub sell_expired_contracts {
     my $rmgenv    = BOM::System::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
     my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
+
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
+    }
+    for my $class (keys %stats_failure) {
+        for my $reason (keys %{$stats_failure{$class}}) {
+            stats_count("transaction.sell.failure", $stats_failure{$class}{$reason}, {tags => [@tags, "contract_class:$class", "reason:$reason"]});
+        }
     }
 
     return unless @bets_to_sell;    # nothing to do
@@ -1522,7 +1549,20 @@ sub sell_expired_contracts {
         get_logger->warn(ref eq 'ARRAY' ? "@$_" : "$_");
     };
 
-    return unless $sold and @$sold;    # nothing has been sold
+    if (not $sold or @bets_to_sell > @$sold) {
+        # We missed some, let's figure out which ones they are.
+        my %sold_fmbs = map { $_->{fmb}->{id} } @{$sold // []};
+        my %missed;
+        foreach my $bet (@bets_to_sell) {
+            next if $sold_fmbs{$bet->{id}};    # Was not missed.
+            $missed{$bet->{bet_class}}++;
+        }
+        foreach my $class (keys %missed) {
+            stats_count("transaction.sell.failure", $missed{$class}, {tags => [@tags, "contract_class:$class", "reason:TransactionFailure"]});
+        }
+    }
+
+    return unless $sold and @$sold;            # nothing has been sold
 
     my $skip_contract  = @$bets - @$sold;
     my $total_credited = 0;
