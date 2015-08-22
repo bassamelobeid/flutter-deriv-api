@@ -5,7 +5,7 @@
     "description":"Get all the contracts for specified symbol",
     "properties": {
         "contracts_for": {
-            "id": "contracts_for",
+            
             "type": "string",
             "description": "where contracts_for is the short symbol name",
             "sample": "R_100"
