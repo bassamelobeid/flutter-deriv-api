@@ -7,17 +7,7 @@
   "properties": {
     "echo_req": {
       "title":"Echo request",
-      "description":"Echo of the request made",
-      "properties": {
-        "active_symbols": {
-          "id": "active_symbols",
-          "type": "string",
-          "description":"where active_symbols is 'display_name' or 'symbol'"
-        }
-      },
-      "required": [
-        "active_symbols"
-      ]
+      "description":"Echo of the request made"
     },
     "active_symbols": {
       "id": "active_symbols",
