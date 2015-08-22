@@ -10,14 +10,14 @@
       "description":"Echo of the request made"
     },
     "active_symbols": {
-      "id": "active_symbols",
+      
       "type": "array",
       "items": {
-        "id": "auto-generated-schema-730"
+        "item": "auto-generated-schema-730"
       }
     },
     "msg_type": {
-      "id": "msg_type",
+      
       "type": "string",
       "description": "active_symbols"
     }
