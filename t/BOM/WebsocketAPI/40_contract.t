@@ -99,10 +99,7 @@ ok $result, "tick response is valid";
 # diag " - $_\n" foreach $result->errors;
 
 # stop tick
-$t = $t->send_ok({
-        json => {
-            forget => $tick->{tick}->{id}
-        }})->message_ok;
+$t = $t->send_ok({json => {forget => $tick->{tick}->{id}}})->message_ok;
 my $forget = decode_json($t->message->[1]);
 ok $forget->{forget};
 
@@ -150,24 +147,18 @@ while (1) {
     last;
 }
 
-$t = $t->send_ok({
-        json => {
-            forget => $proposal->{proposal}->{id}
-        }})->message_ok;
+$t = $t->send_ok({json => {forget => $proposal->{proposal}->{id}}})->message_ok;
 $forget = decode_json($t->message->[1]);
 ok $forget->{forget};
 
 if (not $ENV{TRAVIS}) {
     ## test portfolio and sell
-    $t = $t->send_ok({
-            json => {
-                portfolio => 1
-            }});
+    $t = $t->send_ok({json => {portfolio => 1}});
     my $start_time = time();
     while (1) {
         $t = $t->message_ok;
         my $res = decode_json($t->message->[1]);
-        diag Dumper( decode_json($t->message->[1]) );
+        diag Dumper(decode_json($t->message->[1]));
 
         if (exists $res->{portfolio}) {
             ok $res->{portfolio}->{id};
@@ -180,9 +171,9 @@ if (not $ENV{TRAVIS}) {
 
             ## try sell
             $t = $t->send_ok({
-                json => {
-                    sell   => $res->{portfolio}->{id},
-                    price => $res->{portfolio}->{ask_price}}});
+                    json => {
+                        sell  => $res->{portfolio}->{id},
+                        price => $res->{portfolio}->{ask_price}}});
 
         } elsif (exists $res->{portfolio_stats}) {
             ok(defined $res->{portfolio_stats}->{number_of_sold_bets});
