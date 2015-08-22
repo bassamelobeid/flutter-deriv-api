@@ -10,37 +10,37 @@
       	    "description":"Echo of the request made"
         },
         "contracts_for": {
-            "id": "contracts_for",
+           
             "type": "object",
             "properties": {
                 "open": {
-                    "id": "open",
+                    
                     "type": "integer",
-					"description":"time in integer format e.g 1440115200"
+		    "description":"time in integer format e.g 1440115200"
                 },
                 "close": {
-                    "id": "close",
+                    
                     "type": "integer",
-					"description":"time in integer format e.g 1440201599"
+		    "description":"time in integer format e.g 1440201599"
                 },
                 "hit_count": {
-                    "id": "hit_count",
+                    
                     "type": "integer",
-					"default":"30",
-					"description": "hit count"
+		    "default":"30",
+		    "description": "hit count"
 					
                 },
                 "available": {
-                    "id": "available",
+                    
                     "type": "array",
                     "items": {
-                        "id": "auto-generated-schema-184"
+                        "item": "auto-generated-schema-184"
                     }
                 }
             }
         },
         "msg_type": {
-            "id": "msg_type",
+            
             "type": "string",
 			"default": "contracts_for"
         }
