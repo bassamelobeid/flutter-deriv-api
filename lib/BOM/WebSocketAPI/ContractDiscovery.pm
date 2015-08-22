@@ -23,7 +23,7 @@ sub payout_currencies {
     };
 }
 
-sub available_contracts_for_symbol {
+sub contracts_for {
     my ($c, $args) = @_;
 
     return {

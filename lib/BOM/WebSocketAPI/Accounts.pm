@@ -5,6 +5,10 @@ use warnings;
 
 use BOM::Product::ContractFactory;
 
+sub statement {    # alias
+    return get_transactions(@_);
+}
+
 sub get_transactions {
     my ($c, $args) = @_;
 
