@@ -6,7 +6,8 @@ use warnings;
 use BOM::Product::ContractFactory;
 
 sub statement {
-    my $statement = get_transactions(@_);
+    my ($c, $args) = @_;
+    my $statement = get_transactions($c, $args->{statement});
     return {
         msg_type  => 'statement',
         statement => $statement,
@@ -15,8 +16,6 @@ sub statement {
 
 sub get_transactions {
     my ($c, $args) = @_;
-
-    $args = $args->{statement};
 
     my $log          = $c->app->log;
     my $acc          = $c->stash('account');
