@@ -12,9 +12,12 @@
       
       "type": "array",
       "description":"The OFFERINGS structure is a hierarchy of Market -> SubMarket -> Symbol -> ContractCategory -> Contract Type",
-      "items": {
-        "item": "auto-generated-schema-896"
-      }
+      "items": [
+            {
+              "type": "object",
+              "description": "Offerings"
+            }
+          ]
     },
     "msg_type": {
      
