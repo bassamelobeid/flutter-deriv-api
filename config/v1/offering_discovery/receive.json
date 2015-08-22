@@ -6,32 +6,7 @@
   "properties": {
     "echo_req": {
       "title":"Echo request",
-      "description":"Echo of the request made",
-      "properties": {
-        "offerings": {
-          "id": "offerings",
-          "type": "object",
-          "properties": {
-            "underlying_symbol": {
-              "id": "underlying_symbol",
-              "type": "string",
-              "desciption": "Example R_100"
-            },
-            "symbol": {
-              "id": "symbol",
-              "type": "string",
-              "desciption": "Example R_100"
-            }
-          },
-          "required": [
-            "underlying_symbol",
-            "symbol"
-          ]
-        }
-      },
-      "required": [
-        "offerings"
-      ]
+      "description":"Echo of the request made"
     },
     "offerings": {
       "id": "offerings",
