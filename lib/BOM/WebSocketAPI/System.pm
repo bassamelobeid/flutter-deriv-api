@@ -15,7 +15,7 @@ sub forget {
 
     return {
         msg_type => 'forget',
-        forget   => delete $c->{$id},
+        forget   => delete $c->{$id} ? 1 : 0,
     };
 }
 

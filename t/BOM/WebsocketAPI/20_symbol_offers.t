@@ -33,8 +33,9 @@ $active_symbols = decode_json($t->message->[1]);
 ok($active_symbols->{active_symbols});
 ok($active_symbols->{active_symbols}->{"Random 50 Index"});
 
-unless ($ENV{TRAVIS}) {    # not working under TRAVIS
-                           # test contracts_for
+# not working under TRAVIS
+unless ($ENV{TRAVIS}) {
+    # test contracts_for
     $t = $t->send_ok({json => {contracts_for => 'R_50'}})->message_ok;
     my $contracts_for = decode_json($t->message->[1]);
     ok($contracts_for->{contracts_for});

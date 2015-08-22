@@ -22,7 +22,7 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{error}->{code}, 'InvalidToken';
 
 my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/authorize/receive.json")));
-my $result    = $validator->validate(decode_json $t->message->[1]);
+my $result    = $validator->validate($authorize);
 ok $result, "authorize response is valid";
 # diag " - $_\n" foreach $result->errors;
 
@@ -40,7 +40,7 @@ is $authorize->{authorize}->{email},   'CR2002@binary.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
 $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/authorize/receive.json")));
-$result    = $validator->validate(decode_json $t->message->[1]);
+$result    = $validator->validate($authorize);
 ok $result, "authorize response is valid";
 # diag " - $_\n" foreach $result->errors;
 
