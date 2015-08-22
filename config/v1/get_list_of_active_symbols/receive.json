@@ -12,9 +12,12 @@
     "active_symbols": {
       
       "type": "array",
-      "items": {
-        "item": "auto-generated-schema-730"
-      }
+      "items": [
+            			{
+			              "type": "string",
+			              "description": "active symbols"
+			         }
+			      ]
     },
     "msg_type": {
       
