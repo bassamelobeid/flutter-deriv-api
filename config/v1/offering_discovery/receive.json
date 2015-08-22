@@ -9,15 +9,15 @@
       "description":"Echo of the request made"
     },
     "offerings": {
-      "id": "offerings",
+      
       "type": "array",
       "description":"The OFFERINGS structure is a hierarchy of Market -> SubMarket -> Symbol -> ContractCategory -> Contract Type",
       "items": {
-        "id": "auto-generated-schema-896"
+        "item": "auto-generated-schema-896"
       }
     },
     "msg_type": {
-      "id": "msg_type",
+     
       "type": "string",
       "description": "offerings"
     }
