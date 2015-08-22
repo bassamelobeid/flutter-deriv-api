@@ -7,23 +7,7 @@
     "properties": {
         "echo_req": {
             "title":"Echo request",
-      	    "description":"Echo of the request made",
-            "properties": {
-                "contracts_for": {
-                    "id": "contracts_for",
-                    "type": "string",
-					"description": "example: R_100",
-                    "required": [
-                        "open",
-                        "close",
-                        "hit_count",
-                        "available"
-                    ]
-                }
-            },
-            "required": [
-                "contracts_for"
-            ]
+      	    "description":"Echo of the request made"
         },
         "contracts_for": {
             "id": "contracts_for",
