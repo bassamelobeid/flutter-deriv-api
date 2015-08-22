@@ -7,10 +7,6 @@
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "forget": {
-    	"type": "boolean",
-    	"description" : "Example: true"
-    },
     "msg_type": {
         "type": "string",
         "description": "forget"
@@ -18,7 +14,6 @@
   },
   "required": [
     "echo_req",
-    "forget",
     "msg_type"
   ]
 }
