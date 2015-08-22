@@ -2,6 +2,9 @@ use Test::Most;
 use Test::Mojo;
 use JSON;
 use Data::Dumper;
+use FindBin qw/$Bin/;
+use JSON::Schema;
+use File::Slurp;
 
 use BOM::Platform::SessionCookie;
 
@@ -59,8 +62,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         date => Date::Utility->new,
     });
 
-my $t = Test::Mojo->new('BOM::WebSocketAPI');
+my $config_dir = "$Bin/../../../config/v1";
 
+my $t = Test::Mojo->new('BOM::WebSocketAPI');
 $t->websocket_ok("/websockets/contracts");
 
 my $token = BOM::Platform::SessionCookie->new(
@@ -82,6 +86,11 @@ ok $tick->{tick}->{id};
 ok $tick->{tick}->{quote};
 ok $tick->{tick}->{epoch};
 
+my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/tick/receive.json")));
+my $result    = $validator->validate(decode_json $t->message->[1]);
+ok $result, "tick response is valid";
+# diag " - $_\n" foreach $result->errors;
+
 $t = $t->send_ok({
         json => {
             "proposal"      => 1,
@@ -97,6 +106,11 @@ my $proposal = decode_json($t->message->[1]);
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 
+$validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/get_price/receive.json")));
+$result    = $validator->validate(decode_json $t->message->[1]);
+ok $result, "get_price response is valid";
+# diag " - $_\n" foreach $result->errors;
+
 $t = $t->send_ok({
         json => {
             buy   => $proposal->{proposal}->{id},
@@ -105,6 +119,11 @@ my $res = decode_json($t->message->[1]);
 ok $res->{open_receipt};
 ok $res->{open_receipt}->{fmb_id};
 ok $res->{open_receipt}->{purchase_time};
+
+$validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/buy/receive.json")));
+$result    = $validator->validate(decode_json $t->message->[1]);
+ok $result, "buy response is valid";
+# diag " - $_\n" foreach $result->errors;
 
 # $t = $t->send_ok({
 #         json => {

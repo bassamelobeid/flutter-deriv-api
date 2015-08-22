@@ -34,13 +34,12 @@ is($statement->{statement}->{count}, 100);
 
 ## validate statement
 # my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/statement/receive.json")));
-# my $result    = $validator->validate(Mojo::JSON::decode_json $t->message->[1]);
+# my $result    = $validator->validate(decode_json $t->message->[1]);
 # ok $result, "statement response is valid";
 # diag " - $_\n" foreach $result->errors;
 
 $t = $t->send_ok({json => {statement => {limit => 2}}})->message_ok;
 $statement = decode_json($t->message->[1]);
-diag Dumper(\$statement);
 ok($statement->{statement});
 is($statement->{statement}->{count}, 2);
 
