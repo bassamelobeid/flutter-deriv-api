@@ -2,6 +2,9 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Mojo;
+use FindBin qw/$Bin/;
+use JSON::Schema;
+use File::Slurp;
 use JSON;
 use Data::Dumper;
 use Date::Utility;
@@ -10,6 +13,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $t = Test::Mojo->new('BOM::WebSocketAPI');
 $t->websocket_ok("/websockets/contracts");
+
+my $config_dir = "$Bin/../config/v1";
 
 # test payout_currencies
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
@@ -44,8 +49,8 @@ unless ($ENV{TRAVIS}) { # not working under TRAVIS
     # test offerings
     $t = $t->send_ok({json => {trading_times => {'date' => Date::Utility->new->date_ddmmmyyyy}}})->message_ok;
     my $trading_times = decode_json($t->message->[1]);
-    diag Dumper($trading_times);
     ok($trading_times->{trading_times});
+    ok($trading_times->{trading_times}->{markets});
 }
 
 $t->finish_ok;
