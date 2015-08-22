@@ -7,8 +7,9 @@
     "active_symbols": {
       
       "type": "string",
-      "sample": "display_name",
-      "description": "It should be 'display_name' or 'symbol'"
+      "description": "It should be 'display_name' or 'symbol'",
+      "sample": "display_name"
+      
     }
   },
   "required": [
