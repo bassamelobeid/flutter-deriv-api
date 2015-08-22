@@ -26,8 +26,7 @@
                 "hit_count": {
                     
                     "type": "integer",
-		    "default":"30",
-		    "description": "hit count"
+		    "description": "hit count e.g. 30"
 					
                 },
                 "available": {
@@ -45,7 +44,7 @@
         "msg_type": {
             
             "type": "string",
-			"default": "contracts_for"
+			"description": "contracts_for"
         }
     },
     "required": [
