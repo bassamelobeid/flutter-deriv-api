@@ -221,7 +221,8 @@ sub stats_stop {
 
     if ($error) {
         my $whatsit = blessed $error;
-        my $why = _normalize_error_string(($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : $error);
+        # If we don't get Error::Base, assume it's a string or will stringify with some minor coercion.
+        my $why = _normalize_error_string(($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : "$error");
         stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, "reason:$why",]});
     } else {
         my $now = [gettimeofday];
