@@ -11,7 +11,7 @@ use Math::Round qw(round);
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
 use BOM::Platform::Context qw(localize request);
-use Format::Util::Numbers qw(roundnear);
+use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
@@ -136,7 +136,7 @@ sub _build_date_settlement {
 }
 
 # the value of the position at close
-has [qw(value point_value)] => (
+has [qw(value point_value value_display point_value_display)] => (
     is       => 'rw',
     init_arg => undef,
     default  => 0,
@@ -352,10 +352,10 @@ sub _build_bid_price {
     } else {
         $self->exit_level($self->sell_level);
         $self->_recalculate_value($self->sell_level);
-        $bid = max(0, $self->ask_price + $self->value);
+        $bid = $self->ask_price + $self->value;
     }
 
-    return roundnear(0.01, $bid);
+    return to_monetary_number_format(max(0,$bid));
 }
 
 has is_expired => (

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -147,6 +147,40 @@ subtest 'spread up' => sub {
 
     }
     'hit stop profit';
+};
+
+subtest 'value and point_value checks' => sub {
+    my $new_now = $now->plus_time_interval('8s');
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $new_now->epoch,
+        quote      => 118.1234
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $new_now->epoch + 2,
+        quote      => 110.9434
+    });
+    my $params = {
+        spread           => 2,
+        bet_type         => 'SPREADD',
+        currency         => 'USD',
+        underlying       => 'R_100',
+        date_start       => $new_now->epoch - 1,
+        stop_loss        => 10,
+        stop_profit      => 25,
+        amount_per_point => 100,
+        stop_type        => 'point',
+        date_pricing     => $new_now->epoch + 2,
+    };
+    my $c = produce_contract($params);
+    is ($c->entry_tick->quote, 118.1234, 'entry tick 118.1234');
+    is ($c->barrier->as_absolute, 117.12, 'barrier 119.12');
+    ok $c->current_value;
+    is ($c->value, 518.000000000001, 'correct value');
+    is ($c->point_value, 5.18000000000001, 'correct point value');
+    is ($c->value_display, '518.00', 'correct display value');
+    is ($c->point_value_display, 5.18, 'correct display value');
 };
 
 subtest 'past expiry' => sub {
