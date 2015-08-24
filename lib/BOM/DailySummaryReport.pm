@@ -115,11 +115,7 @@ sub generate_report {
 
                         try {
                             my $contract = produce_contract($bet->{short_code}, $currency);
-                            if ($contract->is_spread) {
-                                $theo = $contract->bid_price;    # current value + buy price of the contract
-                            } else {
-                                $theo = $contract->theo_price;
-                            }
+                            $theo = ($contract->is_spread) ? $contract->bid_price : $contract->theo_price;
                             return 0;
                         }
                         catch {
