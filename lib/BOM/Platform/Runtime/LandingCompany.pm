@@ -84,6 +84,20 @@ has country => (
     required => 1,
 );
 
+=head2 counterparty_for
+
+A list of countries for which this landing company should act as a counterparty.
+Note that in order to act as a counter party, there must also be a broker code
+(real or virtual) assigned to this company.
+
+=cut
+
+has counterparty_for => (
+    is      => 'ro',
+    isa     => 'ArrayRef[Str]',
+    default => sub { [] },
+);
+
 =head2 legal_allowed_currencies
 
 A list of currencies which can legally be traded by this company.

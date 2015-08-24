@@ -17,7 +17,7 @@ subtest 'request' => sub {
     ok(BOM::Platform::Context::request(), 'default');
     is(BOM::Platform::Context::request()->broker->code, 'CR', 'default request');
 
-    my $request = BOM::Platform::Context::Request->new(country_code => 'nl');
+    my $request = BOM::Platform::Context::Request->new(country => 'Malta');
     is(BOM::Platform::Context::request()->broker->code, 'CR', 'default request');
 
     ok(BOM::Platform::Context::request($request), 'new request');

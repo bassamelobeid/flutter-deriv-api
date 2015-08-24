@@ -119,6 +119,11 @@ has 'countries' => (
     lazy_build => 1,
 );
 
+has 'non_restricted_countries' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 has 'countries_list' => (
     is         => 'ro',
     lazy_build => 1,
@@ -148,6 +153,21 @@ sub instance {
 sub _build_countries {
     my $self = shift;
     return Locale::Country::Extra->new();
+}
+
+sub _build_non_restricted_countries {
+    my $self = shift;
+    my $bad  = $self->app_config->legal->countries_restricted;
+    my %bad  = map { $_ => 1 } @$bad;
+    my @good = grep { !$bad{$_} } $self->countries->all_country_names;
+    my $countries;
+    for my $country (@good) {
+        my $code = country2code($country);
+        if ($code) {
+            $countries->{$code} = $country;
+        }
+    }
+    return $countries;
 }
 
 sub _build_countries_list {
