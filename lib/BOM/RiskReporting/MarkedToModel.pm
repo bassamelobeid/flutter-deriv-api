@@ -252,13 +252,14 @@ sub sell_expired_contracts {
             $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
             $bb_lookup = $csv->string;
         }
-
+        # for spread max payout is determined by stop_profit.
+        my $payout = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
         my $bet_info = {
             loginid   => $client_id,
             ref       => $ref_number,
             fmb_id    => $fmb_id,
             buy_price => $buy_price,
-            payout    => $bet->payout,
+            payout    => $payout,
             currency  => $currency,
             shortcode => $bet->shortcode,
             bb_lookup => $bb_lookup,
@@ -307,7 +308,7 @@ sub sell_expired_contracts {
                         stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
                     }
                 } else{
-                    if (@{$bet->corporate_actions}){
+                    if ($bet->can('corporate_actions') and @{$bet->corporate_actions}){
 
                         $bet_info->{reason} = "This contract is affected by corporate action. Can you please verify the contract has been adjusted correctly to the corporte action.";
                     }else{

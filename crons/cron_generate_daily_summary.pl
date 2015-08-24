@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use Getopt::Long;
 use Path::Tiny;
+use Try::Tiny;
 
 use Date::Utility;
 use BOM::Utility::Log4perl qw( get_logger );
@@ -144,19 +145,15 @@ foreach my $currency (sort @currencies) {
                     my $bet = $bets_ref->{$bet_id};
                     my $theo;
 
-                    eval {
-                        $contract = produce_contract($bet->{short_code}, $currency);
-                        if ($contract->is_spread) {
-                            $theo = $contract->bid_price; # current value + buy price of the contract
-                        } else {
-                            $theo = $contract->theo_price;
-                        }
-                    };
-                    if ($@) {
+                    try {
+                        my $contract = produce_contract($bet->{short_code}, $currency);
+                        $theo = $contract->is_spread ? $contract->bid_price : $contract->theo_price;
+                        return 0;
+                    } catch {
                         $logger->warn(
-                            "theo price error[$@], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
-                        next;
-                    }
+                            "theo price error[$_], bet_id[" . $bet_id . "], account_id[$account_id], end_of_day_balance_id[" . $eod_id[0] . "]");
+                        return 1;
+                    } and next;
 
                     $open_pos_sth->execute(($eod_id[0], $bet_id, $theo));
 
