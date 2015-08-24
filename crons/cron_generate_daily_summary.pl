@@ -43,11 +43,11 @@ if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_liv
     exit 0;
 }
 
-my $run_for           = Date::Utility->new($for_date);
+my $run_for = Date::Utility->new($for_date);
 
 my $total_pl = BOM::DailySummaryReport->new(
-    for_date => $for_date,
-    currencies => \@currencies,
+    for_date    => $for_date,
+    currencies  => \@currencies,
     brokercodes => \@brokercodes,
     broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
 )->generate_report;

@@ -13,17 +13,17 @@ use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Product::ContractFactory qw(produce_contract);
 
 has save_file => (
-    is => 'ro',
+    is      => 'ro',
     default => 1,
 );
 
 has [qw(for_date currencies brokercodes broker_path)] => (
-    is => 'ro',
+    is       => 'ro',
     required => 1,
 );
 
 has [qw(collector_dbh balance_statement open_position_statement)] => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -46,7 +46,7 @@ sub _build_balance_statement {
     my $self = shift;
 
     return $self->collector_dbh->prepare(
-    q{
+        q{
                 INSERT INTO accounting.end_of_day_balances (account_id, effective_date, balance)
                     VALUES(?,?,?) RETURNING id
                 }
@@ -57,7 +57,7 @@ sub _build_open_position_statement {
     my $self = shift;
 
     return $self->collector_dbh->prepare(
-    q{
+        q{
                 INSERT INTO accounting.end_of_day_open_positions
                     (end_of_day_balance_id, financial_market_bet_id, marked_to_market_value)
                     VALUES(?,?,?)
@@ -70,7 +70,7 @@ sub generate_report {
 
     my $run_for           = Date::Utility->new($self->for_date);
     my $start_of_next_day = Date::Utility->new($run_for->epoch - $run_for->seconds_after_midnight)->datetime_iso8601;
-    my $logger = get_logger();
+    my $logger            = get_logger();
     my $total_pl;
     foreach my $currency (sort @{$self->currencies}) {
         foreach my $broker (sort @{$self->brokercodes}) {
@@ -116,7 +116,7 @@ sub generate_report {
                         try {
                             my $contract = produce_contract($bet->{short_code}, $currency);
                             if ($contract->is_spread) {
-                                $theo = $contract->bid_price; # current value + buy price of the contract
+                                $theo = $contract->bid_price;    # current value + buy price of the contract
                             } else {
                                 $theo = $contract->theo_price;
                             }
@@ -173,7 +173,8 @@ sub generate_report {
                     . ' from entire database since inception by f_consolidated.cgi ('
                     . $currency . ")\n";
 
-                my $header = "loginid,account_balance,total_open_bets_value,total_open_bets_profit,total_equity,aggregate_deposit_withdrawals,portfolio\n";
+                my $header =
+                    "loginid,account_balance,total_open_bets_value,total_open_bets_profit,total_equity,aggregate_deposit_withdrawals,portfolio\n";
                 print $sm_fh ($generation_msg, $header, @sum_lines);
                 close $sm_fh;
                 rename($tempsummary, $summary);
@@ -226,7 +227,6 @@ sub get_bo_replica_db_for {
 
     return $db;
 }
-
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

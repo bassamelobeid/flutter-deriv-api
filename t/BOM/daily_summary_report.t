@@ -20,14 +20,19 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'RANDOM'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_flat', {symbol => 'R_100', recorded_date => Date::Utility->new});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol        => 'R_100',
+        recorded_date => Date::Utility->new
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'R_100'});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index',    {symbol => 'R_100'});
 
-my $today = Date::Utility->new->truncate_to_day;
+my $today    = Date::Utility->new->truncate_to_day;
 my $next_day = $today->plus_time_interval('1d');
 foreach my $date ($today, $next_day) {
-    my @epochs = map {$date->epoch + $_} (-2,-1,0,1,2,3,4);
+    my @epochs = map { $date->epoch + $_ } (-2, -1, 0, 1, 2, 3, 4);
     map { BOM::Test::Data::Utility::FeedTestDatabase::create_tick({underlying => 'R_100', epoch => $_, quote => 100}) } @epochs;
 }
 
@@ -35,56 +40,90 @@ my $cr = create_client('CR');
 top_up($cr, 'USD', 5000);
 my $acc_usd = $cr->find_account(query => [currency_code => 'USD'])->[0];
 my $mocked_dsr = Test::MockModule->new('BOM::DailySummaryReport');
-$mocked_dsr->mock('get_client_details', sub {return {
-    $cr->loginid => {
-          'account_id' => $acc_usd->id,
-          'balance_at' => 5000.00,
-          'deposits' => 5000.00,
-          'loginid' => $cr->loginid,
-          'withdrawals' => 0,
+$mocked_dsr->mock(
+    'get_client_details',
+    sub {
+        return {
+            $cr->loginid => {
+                'account_id'  => $acc_usd->id,
+                'balance_at'  => 5000.00,
+                'deposits'    => 5000.00,
+                'loginid'     => $cr->loginid,
+                'withdrawals' => 0,
             },
-}});
+        };
+    });
 
 subtest 'skip if it dies' => sub {
     # buys one bet on a different date
-    buy_one_bet($acc_usd, {bet_type => 'CALL', barrier => 'S0P', bet_class => 'higher_lower_bet', shortcode => 'wrong_shortcode'});
+    buy_one_bet(
+        $acc_usd,
+        {
+            bet_type  => 'CALL',
+            barrier   => 'S0P',
+            bet_class => 'higher_lower_bet',
+            shortcode => 'wrong_shortcode'
+        });
     lives_ok {
         my $total_pl = BOM::DailySummaryReport->new(
-            for_date => Date::Utility->new->date_yyyymmdd,
-            currencies => ['USD'],
+            for_date    => Date::Utility->new->date_yyyymmdd,
+            currencies  => ['USD'],
             brokercodes => ['CR'],
             broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-            save_file => 0,
+            save_file   => 0,
         )->generate_report;
         cmp_ok $total_pl->{CR}->{USD}, '==', 0;
-    } 'skip if it dies';
+    }
+    'skip if it dies';
 };
 
 subtest 'successful run' => sub {
     my %contracts = (
-        CALL => { barrier => 'S0P', bet_class => 'higher_lower_bet'},
-        PUT  => {barrier => 'S0P', bet_class => 'higher_lower_bet'},
-        ONETOUCH => {barrier => 'S100P', bet_class => 'touch_bet'},
-        NOTOUCH  => {barrier => 'S-99P', bet_class => 'touch_bet'},
+        CALL => {
+            barrier   => 'S0P',
+            bet_class => 'higher_lower_bet'
+        },
+        PUT => {
+            barrier   => 'S0P',
+            bet_class => 'higher_lower_bet'
+        },
+        ONETOUCH => {
+            barrier   => 'S100P',
+            bet_class => 'touch_bet'
+        },
+        NOTOUCH => {
+            barrier   => 'S-99P',
+            bet_class => 'touch_bet'
+        },
         SPREADU => 1,
         SPREADD => 1,
     );
     # buy all valid contracts
     foreach my $type (keys %contracts) {
         if ($type eq 'SPREADU' or $type eq 'SPREADD') {
-            buy_one_spread_bet($acc_usd, {bet_type => $type, start_time => $next_day});
+            buy_one_spread_bet(
+                $acc_usd,
+                {
+                    bet_type   => $type,
+                    start_time => $next_day
+                });
         } else {
-            buy_one_bet($acc_usd, {bet_type => $type, start_time => $next_day, %{$contracts{$type}}});
+            buy_one_bet(
+                $acc_usd,
+                {
+                    bet_type   => $type,
+                    start_time => $next_day,
+                    %{$contracts{$type}}});
         }
     }
 
     lives_ok {
         my $total_pl = BOM::DailySummaryReport->new(
-            for_date => $next_day->date_yyyymmdd,
-            currencies => ['USD'],
+            for_date    => $next_day->date_yyyymmdd,
+            currencies  => ['USD'],
             brokercodes => ['CR'],
             broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-            save_file => 0,
+            save_file   => 0,
         )->generate_report;
         my @brokers = keys %$total_pl;
         ok @brokers, 'has element';
@@ -92,7 +131,8 @@ subtest 'successful run' => sub {
         ok exists $total_pl->{CR};
         ok exists $total_pl->{CR}->{USD};
         cmp_ok $total_pl->{CR}->{USD}, '>', 0;
-    } 'generate daily summary report';
+    }
+    'generate daily summary report';
 };
 
 sub db {
@@ -104,14 +144,22 @@ sub db {
 sub buy_one_bet {
     my ($acc, $args) = @_;
 
-    my $now      = $args->{start_time} ? $args->{start_time}->truncate_to_day->minus_time_interval('1s') : Date::Utility->new->truncate_to_day->minus_time_interval('1s');
-    my $buy_price    = delete $args->{buy_price}    // 20;
-    my $payout_price = delete $args->{payout_price} // $buy_price * 10;
-    my $limits       = delete $args->{limits};
-    my $duration     = delete $args->{duration}     // '30d';
+    my $now =
+          $args->{start_time}
+        ? $args->{start_time}->truncate_to_day->minus_time_interval('1s')
+        : Date::Utility->new->truncate_to_day->minus_time_interval('1s');
+    my $buy_price        = delete $args->{buy_price}        // 20;
+    my $payout_price     = delete $args->{payout_price}     // $buy_price * 10;
+    my $limits           = delete $args->{limits};
+    my $duration         = delete $args->{duration}         // '30d';
     my $relative_barrier = delete $args->{relative_barrier} // 'S0P';
-    my $bet_class    = delete $args->{bet_class};
-    my $shortcode = delete $args->{shortcode} // $args->{bet_type}.'_R_100_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_'.$relative_barrier.'_0';
+    my $bet_class        = delete $args->{bet_class};
+    my $shortcode        = delete $args->{shortcode}        // $args->{bet_type}
+        . '_R_100_'
+        . $payout_price . '_'
+        . $now->epoch . '_'
+        . $now->plus_time_interval($duration)->epoch . '_'
+        . $relative_barrier . '_0';
 
     my $bet_data = +{
         underlying_symbol => 'R_100',
@@ -147,14 +195,17 @@ sub buy_one_bet {
 sub buy_one_spread_bet {
     my ($acc, $args) = @_;
 
-    my $now      = $args->{start_time} ? $args->{start_time}->truncate_to_day->minus_time_interval('1s') : Date::Utility->new->truncate_to_day->minus_time_interval('1s');
-    my $buy_price    = delete $args->{buy_price}    // 20;
-    my $limits       = delete $args->{limits};
-    my $app          = delete $args->{amount_per_point} // 2;
-    my $stop_type    = delete $args->{stop_type} // 'point';
-    my $stop_loss    = delete $args->{stop_loss} // 10;
-    my $stop_profit  = delete $args->{stop_profit} // 10;
-    my $spread       = delete $args->{spread} // 2;
+    my $now =
+          $args->{start_time}
+        ? $args->{start_time}->truncate_to_day->minus_time_interval('1s')
+        : Date::Utility->new->truncate_to_day->minus_time_interval('1s');
+    my $buy_price      = delete $args->{buy_price} // 20;
+    my $limits         = delete $args->{limits};
+    my $app            = delete $args->{amount_per_point} // 2;
+    my $stop_type      = delete $args->{stop_type} // 'point';
+    my $stop_loss      = delete $args->{stop_loss} // 10;
+    my $stop_profit    = delete $args->{stop_profit} // 10;
+    my $spread         = delete $args->{spread} // 2;
     my $spread_divisor = delete $args->{spread_divisor} // 1;
 
     my $bet_data = +{
@@ -169,7 +220,7 @@ sub buy_one_spread_bet {
         is_sold           => 0,
         bet_class         => 'spread_bet',
         bet_type          => $args->{bet_type},
-        short_code        => ($args->{bet_type}.'_R_100_' . $app . '_' . $now->epoch . '_' . $stop_loss . '_' . $stop_profit . '_' . uc $stop_type),
+        short_code        => ($args->{bet_type} . '_R_100_' . $app . '_' . $now->epoch . '_' . $stop_loss . '_' . $stop_profit . '_' . uc $stop_type),
         amount_per_point  => $app,
         stop_type         => $stop_type,
         stop_profit       => $stop_profit,
