@@ -121,7 +121,7 @@ has 'ui_settings' => (
 
 has 'broker_code' => (
     is         => 'ro',
-    isa        => 'Maybe[bom_broker_code]',
+    isa        => 'bom_broker_code',
     lazy_build => 1,
 );
 
@@ -139,7 +139,7 @@ has 'website' => (
 
 has 'broker' => (
     is         => 'ro',
-    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
+    isa        => 'BOM::Platform::Runtime::Broker',
     lazy_build => 1,
 );
 
@@ -149,9 +149,15 @@ has cookie_domain => (
     builder => '_build_cookie_domain'
 );
 
-has [qw( real_account_broker virtual_account_broker financial_account_broker )] => (
+has 'real_account_broker' => (
     is         => 'ro',
-    isa        => 'Maybe[BOM::Platform::Runtime::Broker]',
+    isa        => 'BOM::Platform::Runtime::Broker',
+    lazy_build => 1,
+);
+
+has 'virtual_account_broker' => (
+    is         => 'ro',
+    isa        => 'BOM::Platform::Runtime::Broker',
     lazy_build => 1,
 );
 
@@ -361,32 +367,24 @@ sub _build_broker_code {
         return BOM::Platform::Runtime->instance->broker_codes->get($self->loginid)->code;
     }
 
-    return $self->real_account_broker->code if ($self->real_account_broker);
-    return;
+    return $self->real_account_broker->code;
 }
 
 sub _build_broker {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code) if ($self->broker_code);
-    return;
+    return BOM::Platform::Runtime->instance->broker_codes->get($self->broker_code);
 }
 
 sub _build_virtual_account_broker {
     my $self = shift;
     return unless ($self->website);
-    return $self->website->broker_for_new_virtual();
+    return $self->website->broker_for_new_virtual($self->country);
 }
 
 sub _build_real_account_broker {
     my $self = shift;
     return unless ($self->website);
-    return $self->website->broker_for_new_account($self->country_code);
-}
-
-sub _build_financial_account_broker {
-    my $self = shift;
-    return unless ($self->website);
-    return $self->website->broker_for_new_financial($self->country_code);
+    return $self->website->broker_for_new_account($self->country);
 }
 
 sub _build_language {

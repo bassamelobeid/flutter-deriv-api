@@ -30,12 +30,19 @@ sub create_virtual_acc {
     $email    = lc $email;
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        return {err => 'Sorry, new account opening is suspended for the time being.'};
+        return {
+            err_type => 'new_acc_suspend',
+            err      => localize('Sorry, new account opening is suspended for the time being.'),
+        };
     }
     if (BOM::Platform::User->new({email => $email})) {
         return {
-            err_type => 'duplicate account',
-            err      => 'Your provided email address is already in use by another Login ID'
+            err_type => 'duplicate_acc',
+            err      => localize(
+                'The provided email address [_1] is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_2]">try our password recovery tool</a> or contact customer service.',
+                $email,
+                request()->url_for('/user/lost_password')
+            ),
         };
     }
 
@@ -125,42 +132,45 @@ sub create_virtual_acc {
 
 sub real_acc_checks {
     my $args = shift;
-    my ($from_loginid, $broker, $country, $residence) = @{$args}{'from_loginid', 'broker', 'country', 'residence'};
+    my ($email, $from_loginid, $broker, $country, $residence) = @{$args}{'email', 'from_loginid', 'broker', 'country', 'residence'};
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        return {err => 'Sorry, new account opening is suspended for the time being.'};
+        return {
+            err_type => 'new_acc_suspend',
+            err      => localize('Sorry, new account opening is suspended for the time being.'),
+        };
     }
-    if (BOM::Platform::Client::check_country_restricted($country)) {
-        return {err => 'Sorry, our service is not available for your country of residence'};
+    if (my $error = BOM::Platform::Client::check_jurisdiction($country)) {
+        return {
+            err_type => 'restricted_country',
+            err      => $error,
+        };
     }
 
     my ($user, $from_client);
-    unless ($from_client = BOM::Platform::Client->new({loginid => $from_loginid})
-        and $user = BOM::Platform::User->new({email => $from_client->email}))
+    if (   not $user = BOM::Platform::User->new({email => $email})
+        or not $from_client = BOM::Platform::Client->new({loginid => $from_loginid}))
     {
-        return {err => 'Sorry, an error occurred. Please contact customer support if this problem persists.'};
+        return {
+            err_type => 'invalid_user',
+            err      => localize("Sorry, an error occurred. Please contact customer support if this problem persists."),
+        };
     }
-
     if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
         return {
-            err_type => 'duplicate account',
-            err      => 'Your provided email address is already in use by another Login ID'
+            err_type => 'duplicate_acc',
+            err      => localize(
+                'The provided email address [_1] is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_2]">try our password recovery tool</a> or contact customer service.',
+                $email,
+                request()->url_for('/user/lost_password')
+            ),
         };
     }
-    unless ($user->email_verified) {
+    if ($residence and $from_client->residence and $from_client->residence ne $residence) {
         return {
-            err_type => 'email unverified',
-            err      => 'Your email address is unverified'
+            err_type => 'wrong residence',
+            err      => localize("Wrong country of residence"),
         };
-    }
-    unless ($from_client->residence) {
-        return {
-            err_type => 'no residence',
-            err      => 'Your account has no country of residence'
-        };
-    }
-    if ($residence and $from_client->residence ne $residence) {
-        return {err => 'Your country of residence is invalid'};
     }
 
     return {
@@ -170,12 +180,14 @@ sub real_acc_checks {
 }
 
 sub financial_acc_checks {
-    my $args  = shift;
-    my $check = real_acc_checks($args);
-    return $check if ($check->{err});
-
-    return $check if (BOM::Platform::Runtime->instance->country_has_financial($check->{from_client}->residence));
-    return {err => 'Financial account opening unavailable'};
+    my $args = shift;
+    if (BOM::Platform::Runtime->instance->broker_codes->landing_company_for($args->{from_loginid})->short ne 'malta') {
+        return {
+            error_type => 'no_financial',
+            err        => localize('Financial account opening unavailable'),
+        };
+    }
+    return real_acc_checks($args);
 }
 
 sub register_real_acc {
