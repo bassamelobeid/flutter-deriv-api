@@ -88,10 +88,10 @@ sub _sanity_failed {
     my $arg = shift;
     my $failed;
     OUTER:
-    foreach my $k (keys %$arg){
-        if ($k !~ /([A-Za-z0-9_-]+)/ or (not ref $arg->{$k} and $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/)) { $failed = 1; last OUTER;}
-         if (ref $arg) {
-             foreach my $l(keys %$arg){
+    foreach my $k (keys %$arg) {
+        if ($k !~ /([A-Za-z0-9_-]+)/ or (not ref $arg->{$k} and $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/)) { $failed = 1; last OUTER; }
+        if (ref $arg) {
+            foreach my $l (keys %$arg) {
                 if ($k !~ /([A-Za-z0-9_-]+)/ or $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/) { $failed = 1; last OUTER; }
             }
         }
@@ -100,11 +100,10 @@ sub _sanity_failed {
         warn 'Sanity check failed.';
         return {
             msg_type => 'sanity_check',
-            error => {
+            error    => {
                 message => "Parameters sanity check failed",
                 code    => "InvalidParameters"
-            }
-        }
+            }};
     }
     return;
 }
