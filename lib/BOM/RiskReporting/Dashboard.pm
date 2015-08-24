@@ -207,14 +207,18 @@ sub _open_bets_report {
 
     # big payout open positions
     @open_bets =
-        sort { $self->amount_in_usd($b->{payout_price}, $b->{currency_code}) <=> $self->amount_in_usd($a->{payout_price}, $a->{currency_code}) }
+        map {$_->[1]}
+        sort {$b->[0] <=> $a->[0]}
+        map {[$self->amount_in_usd($_->{payout_price}, $_->{currency_code}), $_]}
         @open_bets;
     $report->{big_payouts} =
         [((scalar @open_bets <= 10) ? @open_bets : @open_bets[0 .. 9])];
 
     # big marked to market value
     @open_bets =
-        sort { $self->amount_in_usd($b->{market_price}, $b->{currency_code}) <=> $self->amount_in_usd($a->{market_price}, $a->{currency_code}) }
+        map {$_->{1]}
+        sort {$b->[0] <=> $a->{0]}
+        map {[$self->amount_in_usd($_->{market_price}, $_->{currency_code}), $_]}
         @open_bets;
     $report->{big_mtms} =
         [((scalar @open_bets <= 10) ? @open_bets : @open_bets[0 .. 9])];
