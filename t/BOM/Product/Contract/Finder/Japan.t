@@ -65,12 +65,20 @@ subtest "predefined trading_period" => sub {
             range_daily   => 7,
         });
 
-    my %expected_usdjpy_call_trading_period = (
-        duration    => ['2h', '3h', '4h', '5h', '1d', '4d', '7d', '32d' , '60d' , '180d', '365d'],
-        date_expiry => [1438826400,1438830000,1438833600,1438837200,1438981200,1439251199,1439510399,1470430800],
-        date_start  => [1438819200],
-        );
-
+    my %expected_trading_period = (
+        call_intraday => {
+            duration => ['2h', '3h', '4h', '5h', '1d', '4d', '7d', '32d', '60d', '180d', '365d'],
+            date_expiry =>
+                [1438826400, 1438830000, 1438833600, 1438837200, 1438981200, 1439251199, 1439510399, 1441670399, 1444089599, 1454457599, 1470430800],
+            date_start =>
+                [1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200],
+        },
+        range_daily => {
+            duration    => ['1d',       '4d',       '7d',       '32d',      '60d',      '180d',     '365d'],
+            date_expiry => [1438981200, 1439251199, 1439510399, 1441670399, 1444089599, 1454457599, 1470430800],
+            date_start  => [1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200, 1438819200],
+        },
+    );
 
     my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
     my @offerings = $flyby->query({
@@ -96,7 +104,6 @@ subtest "predefined trading_period" => sub {
             and $offerings[$_]{expiry_type} eq 'intraday' ? push @{$got{range_intraday}}, $offerings[$_]{trading_period} : push @{$got{range_daily}},
             $offerings[$_]{trading_period};
     }
-    $DB::single=1;
     is(
         scalar(keys @offerings),
         $expected_count{'offering_with_predefined_trading_period'},
@@ -104,4 +111,14 @@ subtest "predefined trading_period" => sub {
     );
     is(scalar(@{$got{$_}}), $expected_count{trading_period}{$_}, "Expected total trading period on $_") for (keys %{$expected_count{trading_period}});
 
+    foreach my $bet_type (keys %expected_trading_period ) {
+
+        my @got_duration = map { $got{$bet_type}[$_]{duration} } keys $got{$bet_type};
+        is_deeply(\@got_duration, $expected_trading_period{$bet_type}{duration}, "Expected duration for $bet_type");
+        my @got_date_start = map { $got{$bet_type}[$_]{date_start}{epoch} } keys $got{$bet_type};
+        is_deeply(\@got_date_start, $expected_trading_period{$bet_type}{date_start}, "Expected date_start for $bet_type");
+
+        my @got_date_expiry = map { $got{$bet_type}[$_]{date_expiry}{epoch} } keys $got{$bet_type};
+        is_deeply(\@got_date_expiry, $expected_trading_period{$bet_type}{date_expiry}, "Expected date_expiry for $bet_type");
+    }
 };
