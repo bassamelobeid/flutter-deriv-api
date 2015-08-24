@@ -5,6 +5,7 @@ use warnings;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
+use BOM::Feed::Data::AnyEvent;
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder;
@@ -56,13 +57,18 @@ sub _description {
 }
 
 sub active_symbols {
-    my ($class, $by) = @_;
+    my ($c, $args) = @_;
+
+    my $by = $args->{active_symbols};
     $by =~ /^(symbol|display_name)$/ or die 'by symbol or display_name only';
     return {
-        map { $_->{$by} => $_ }
-            grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
-            map { _description($_) }
-            keys %$_by_symbol
+        msg_type       => 'active_symbols',
+        active_symbols => {
+            map { $_->{$by} => $_ }
+                grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
+                map { _description($_) }
+                keys %$_by_symbol
+        },
     };
 }
 
@@ -195,43 +201,46 @@ sub _candles {
     {
         $count = 500;
     }
-    my $candles;
 
-    if ($granularity eq 'D') {
-        my $end_max = $start + 86400 * $count;
-        $end = $end_max > $end ? $end : $end_max;
-        $candles = $ul->feed_api->ohlc_daily_list({
-            start_time => $start,
-            end_time   => $end,
-        });
-    } elsif (my ($unit, $size) = $granularity =~ /^([HMS])(\d+)$/) {
-        my $period = do { {H => 3600, M => 60, S => 1}->{$unit} * $size };
-        $start = $start - $start % $period;
-        my $end_max = $start + $period * $count;
-        $end = $end_max > $end ? $end : $end_max;
-        $candles = $ul->ohlc_between_start_end({
-            start_time         => $start,
-            end_time           => $end,
-            aggregation_period => $period,
-        });
-    } else {
-        return;
-    }
-    return [map { {time => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @$candles];
+    my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
+
+    my $period = do { {D => 86400, H => 3600, M => 60, S => 1}->{$unit} * $size };
+    $start = $start - $start % $period;
+    my $end_max = $start + $period * $count;
+    $end = $end_max > $end ? $end : $end_max;
+
+    $c->stash->{feeder} ||= BOM::Feed::Data::AnyEvent->new;
+    my $w = $c->stash->{feeder}->get_ohlc(
+        underlying => $ul->symbol,
+        start_time => $start,
+        end_time   => $end,
+        interval   => $size . lc $unit,
+        on_result  => $args->{sender},
+    );
+    return $w;
+
 }
 
+# needed only for REST API..
 sub candles {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};
     my $ul     = BOM::Market::Underlying->new($symbol);
 
-    my $candles = $c->_candles({
+    my $done = AnyEvent->condvar;
+    my $candles;
+    my $watcher = $c->_candles({
             ul          => $ul,
             start       => $c->param('start') // 0,
             end         => $c->param('end') // 0,
             count       => $c->param('count') // 0,
             granularity => $c->param('granularity') // '',
+            sender      => sub { $candles = shift; $done->send },
         }) || return $c->_fail("invalid candles request");
+
+    $done->recv;
+    $c->stash->{feeder}->_pg->destroy;
+    delete $c->stash->{feeder};
     return $c->_pass({candles => $candles});
 }
 
@@ -246,7 +255,7 @@ sub contracts_for {
         return BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
 }
-# talking to Frank, this is just to support Rest API which will be expired soon
+# needed only for REST API..
 sub contracts {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Tick history request",
+  "description": "For a given symbol name, receive history",
+  "properties": {
+    "ticks": {
+      "type": "string",
+      "sample": "R_100",
+      "description": "The short symbol name. Example: frxUSDJPY, R_50"
+    },
+    "end": {
+      "type": "string",
+      "sample": "END",
+      "description": "END"
+    }
+  },
+  "required": [
+    "ticks",
+    "end"
+  ]
+}

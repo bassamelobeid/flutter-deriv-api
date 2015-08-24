@@ -2,7 +2,7 @@ language: perl
 perl:
     - "5.14.2"
 env:
-    - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom-websocket-api/lib:/home/travis/perl5
+    - PERL5LIB=/home/git/regentmarkets/bom-platform/lib:/home/git/regentmarkets/bom-feed/lib:/home/git/regentmarkets/cpan/local/lib/perl5:/home/git/regentmarkets/bom-utility/lib:/home/git/regentmarkets/bom/lib:/home/git/regentmarkets/bom-postgres/lib:$HOME/build/regentmarkets/bom-websocket-api/lib:/home/travis/perl5
 addons:
     postgresql: "9.3"
 services:
@@ -25,10 +25,12 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
-
     - /tmp/travis-scripts/redis.sh
+    - /tmp/travis-scripts/websocket_schema_update.sh
+
 
 install:
     - /tmp/travis-scripts/devbox.sh

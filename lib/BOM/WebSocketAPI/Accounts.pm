@@ -5,8 +5,18 @@ use warnings;
 
 use BOM::Product::ContractFactory;
 
+sub statement {
+    my ($c, $args) = @_;
+    my $statement = get_transactions($c, $args->{statement});
+    return {
+        msg_type  => 'statement',
+        statement => $statement,
+    };
+}
+
 sub get_transactions {
     my ($c, $args) = @_;
+
     my $log          = $c->app->log;
     my $acc          = $c->stash('account');
     my $APPS_BY_DBID = $c->config('APPS_BY_DBID') || {};
@@ -92,4 +102,3 @@ sub get_transactions {
 }
 
 1;
-
