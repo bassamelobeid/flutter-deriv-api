@@ -139,7 +139,7 @@ subtest 'get_historical_pricer_durations' => sub {
     use BOM::Market::Underlying;
     my $eu = BOM::Market::Underlying->new('frxEURUSD');
 
-    ok !exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch intraday durations removed';
+    ok exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch has intraday durations';
     ok !exists $eu_tnt->{daily},    '... but not daily';
     ok !exists $eu_tnt->{tick},     '... nor tick';
     SKIP: {
