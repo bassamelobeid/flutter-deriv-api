@@ -207,8 +207,8 @@ sub _open_bets_report {
 
     # big marked to market value
     @open_bets =
-        map {$_->{1]}
-        sort {$b->[0] <=> $a->{0]}
+        map {$_->[1]}
+        sort {$b->[0] <=> $a->[0]}
         map {[$self->amount_in_usd($_->{market_price}, $_->{currency_code}), $_]}
         @open_bets;
     $report->{big_mtms} =
