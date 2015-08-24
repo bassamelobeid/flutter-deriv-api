@@ -24,9 +24,19 @@ subtest 'defaults' => sub {
 
 subtest 'get' => sub {
     my $website = $website_list->get('Binary');
-    is $website->broker_for_new_account()->code, 'CR',   'New Broker Code - Binary';
     is $website->broker_for_new_virtual()->code, 'VRTC', 'New Virtual Broker Code - Binary';
 
+    is $website->broker_for_new_account('id')->code, 'CR', 'New Broker Code for Indonesia - Binary';
+    is $website->broker_for_new_financial('id')->code, 'CR', 'New financial Broker Code for Indonesia - Binary';
+
+    is $website->broker_for_new_account('gb')->code, 'MX', 'New Broker Code for UK - Binary';
+    is $website->broker_for_new_financial('gb')->code, 'MX', 'New financial Broker Code for UK - Binary';
+
+    is $website->broker_for_new_account('nl')->code, 'MLT', 'New Broker Code for Netherlands - Binary';
+    is $website->broker_for_new_financial('nl')->code, 'MF', 'New financial Broker Code for Netherlands - Binary';
+
+    is $website->broker_for_new_account('de')->code, 'MF', 'New Broker Code for Germany - Binary';
+    is $website->broker_for_new_financial('de')->code, 'MF', 'New financial Broker Code for Germany - Binary';
 };
 
 subtest 'get_by_broker_code' => sub {
