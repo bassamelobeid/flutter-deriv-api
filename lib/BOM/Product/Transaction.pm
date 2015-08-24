@@ -362,23 +362,6 @@ sub calculate_limits {
             };
     }
 
-    my %euro_pairs = (
-        frxEURUSD => 1,
-        frxEURJPY => 1,
-        frxEURCAD => 1,
-        frxEURNZD => 1,
-        frxEURGBP => 1,
-        frxEURAUD => 1,
-    );
-    if ($euro_pairs{$contract->underlying->symbol}) {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name    => 'euro_pairs_turnover_limit',
-            limit   => $ql->euro_pairs_turnover_limit,
-            symbols => [map { {n => $_} } keys %euro_pairs],
-            };
-    }
-
     return;
 }
 
@@ -1364,19 +1347,13 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'random') {
-        foreach my $country_code (map { Locale::Country::country2code($_) }
-            @{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries})
-        {
-            if ($residence =~ /$country_code/i) {
-                return Error::Base->cuss(
-                    -type => 'RandomRestrictedCountry',
-                    -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
-                    -message_to_client =>
-                        BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
-                );
-            }
-        }
+    if ($residence && $market_name eq 'random' && BOM::Platform::Runtime->instance->random_restricted_country($residence)) {
+        return Error::Base->cuss(
+            -type => 'RandomRestrictedCountry',
+            -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
+            -message_to_client =>
+                BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
+        );
     }
 
     return;
