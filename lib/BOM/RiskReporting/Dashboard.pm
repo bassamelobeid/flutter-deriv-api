@@ -224,7 +224,13 @@ sub _open_bets_report {
 
     foreach my $bet_details (@open_bets) {
         my $bet = produce_contract($bet_details->{short_code}, $bet_details->{currency_code});
-        next if $bet->is_spread; # temporarily skipping spread bet.
+        my $date_expiry;
+        if ($bet->is_spread) {
+            $bet_details->{payout_price} = $bet->amount_per_point * $bet->stop_profit;
+            $date_expiry = $today->plus_time_interval('1d'); # fake expiry for spread. Temporary fix.
+        } else {
+            $date_expiry = $bet->date_expiry;
+        }
 
         my $normalized_mtm = $self->amount_in_usd($bet_details->{market_price}, $bet_details->{currency_code});
 
@@ -238,7 +244,7 @@ sub _open_bets_report {
         $bet_details->{expires_in} =
             ($til_expiry->seconds > 0) ? $til_expiry->as_string(1) : 'expired';
         my $currency      = $bet_details->{currency_code};
-        my $how_long      = $bet->date_expiry->days_between($self->end);
+        my $how_long      = $date_expiry->days_between($self->end);
         my $expiry_period = ($how_long < 1) ? 'Today' : 'Longer';
         my $buy_usd       = $self->amount_in_usd($bet_details->{buy_price}, $currency);
         my $payout_usd    = $self->amount_in_usd($bet_details->{payout_price}, $currency);
@@ -254,7 +260,7 @@ sub _open_bets_report {
             market        => $underlying->market->name,
             bet_type      => $bet->code,
             bet_category  => $bet_cat->code,
-            expiry_date   => $bet->date_expiry->date_yyyymmdd,
+            expiry_date   => $date_expiry->date_yyyymmdd,
             expiry_period => $expiry_period,
             buy_price_usd => $buy_usd,
             payout_usd    => $payout_usd,
@@ -262,7 +268,7 @@ sub _open_bets_report {
             mtm_profit    => $mtm_profit,
             };
         $treemap_info->{$bet_cat->display_order}->{$underlying->display_name . ' | ' . $bet_cat->code} += $normalized_mtm;
-        my $days_hence = $bet->date_expiry->days_between($today);
+        my $days_hence = $date_expiry->days_between($today);
         $spark_info->{$days_hence}->{mtm} += $normalized_mtm;
     }
 
