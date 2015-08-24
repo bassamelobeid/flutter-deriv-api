@@ -33,10 +33,10 @@ ok($statement->{statement});
 is($statement->{statement}->{count}, 100);
 
 ## validate statement
-# my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/statement/receive.json")));
-# my $result    = $validator->validate($statement);
-# ok $result, "statement response is valid";
-# diag " - $_\n" foreach $result->errors;
+my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/statement/receive.json")));
+my $result    = $validator->validate($statement);
+ok $result, "statement response is valid";
+diag " - $_\n" foreach $result->errors;
 
 $t = $t->send_ok({json => {statement => {limit => 2}}})->message_ok;
 $statement = decode_json($t->message->[1]);
