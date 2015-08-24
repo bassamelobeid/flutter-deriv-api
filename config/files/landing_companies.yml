@@ -27,6 +27,11 @@
       - staysinout
       - touchnotouch
     legal_default_currency: GBP
+    counterparty_for:
+      - UNITED KINGDOM
+      - ISLE OF MAN
+      - JERSEY
+      - GUERNSEY
 'Binary (Europe) Ltd':
     short: malta
     address:
@@ -51,6 +56,34 @@
       - staysinout
       - touchnotouch
     legal_default_currency: EUR
+    counterparty_for:
+      - AUSTRIA
+      - BELGIUM
+      - BULGARIA
+      - CROATIA
+      - CYPRUS
+      - CZECH REPUBLIC
+      - DENMARK
+      - ESTONIA
+      - FINLAND
+      - FRANCE
+      - GERMANY
+      - GREECE
+      - HUNGARY
+      - IRELAND
+      - ITALY
+      - LATVIA
+      - LITHUANIA
+      - LUXEMBOURG
+      - MALTA
+      - NETHERLANDS
+      - POLAND
+      - PORTUGAL
+      - ROMANIA
+      - SLOVAKIA
+      - SLOVENIA
+      - SPAIN
+      - SWEDEN
     has_reality_check: 1
 'Binary Investments (Europe) Ltd':
     short: maltainvest
@@ -80,6 +113,34 @@
       - staysinout
       - touchnotouch
     legal_default_currency: EUR
+    counterparty_for:
+      - AUSTRIA
+      - BELGIUM
+      - BULGARIA
+      - CROATIA
+      - CYPRUS
+      - CZECH REPUBLIC
+      - DENMARK
+      - ESTONIA
+      - FINLAND
+      - FRANCE
+      - GERMANY
+      - GREECE
+      - HUNGARY
+      - IRELAND
+      - ITALY
+      - LATVIA
+      - LITHUANIA
+      - LUXEMBOURG
+      - MALTA
+      - NETHERLANDS
+      - POLAND
+      - PORTUGAL
+      - ROMANIA
+      - SLOVAKIA
+      - SLOVENIA
+      - SPAIN
+      - SWEDEN
     has_reality_check: 1
 'Binary (C.R.) S.A.':
     short: costarica
@@ -109,6 +170,8 @@
     legal_default_currency: USD
     allows_payment_agents: 1
     payment_agents_residence_disable: jp
+    counterparty_for:
+      - "*"
 'Binary Ltd':
     short: fog
     name: Binary Ltd
@@ -132,3 +195,5 @@
       - spreads
     legal_allowed_currencies:
       - USD
+    counterparty_for:
+      - "*"
