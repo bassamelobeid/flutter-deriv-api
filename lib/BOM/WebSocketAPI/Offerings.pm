@@ -102,7 +102,7 @@ sub query {
 
         # accumulate stats..
         for (@all_keys) {
-            my $val = $row->{$_} // '(n/a)';    #'
+            my $val = $row->{$_} // '(n/a)';
             $selectors->{$_}->{$val}++;
         }
 
