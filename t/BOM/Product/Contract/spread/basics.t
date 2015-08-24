@@ -114,7 +114,7 @@ subtest 'validate amount per point' => sub {
         ok $c->is_valid_to_buy;
         $c = produce_contract({
             %$params,
-            amount_per_point => 100,
+            amount_per_point => 99.9,
             date_pricing     => $now
         });
         ok $c->is_valid_to_buy;

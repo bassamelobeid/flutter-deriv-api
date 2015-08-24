@@ -414,7 +414,7 @@ sub _validate_stop_profit {
     my @err;
     my $limits = {
         min => 1,
-        max => min($self->stop_loss * 5, 1000 / $self->amount_per_point)};
+        max => min($self->stop_loss * 5, 999 / $self->amount_per_point)};
     if ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max}) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
