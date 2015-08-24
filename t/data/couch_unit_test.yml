@@ -17,7 +17,7 @@ client:
     allow_login:
     broker_code: CR
     cashier_setting_password: ''
-    citizen: ''
+    citizen: USA
     client_password: '1c8bfe8f801d79745c4631d09fff36c82aa37fc4cce4fc946683d7b336b63032'
     comment: 'This is a test comment'
     date_joined: '1999-09-09 23:59:59'
@@ -35,7 +35,7 @@ client:
     custom_max_daily_turnover:
     custom_max_payout:
     phone: +112123121
-    residence: 'id'
+    residence: USA
     restricted_ip_address: ''
     salutation: MR
     secret_answer: 'its not your bussined'

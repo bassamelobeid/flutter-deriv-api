@@ -87,6 +87,39 @@ marketing:
       isa: Str
       default: "affiliates@binary.com"
       global: 1
+legal:
+  description: "Legal Settings"
+  isa: section
+  contains:
+    countries_restricted:
+      description: "Countries restricted for account opening (comma separated values)"
+      isa: ArrayRef
+      default:
+        - Costa Rica
+        - Hong Kong
+        - 'Iran, Islamic Republic of'
+        - Malaysia
+        - Malta
+        - United States
+        - Virgin Islands, U.S.
+        - United States Minor Outlying Islands
+        - Japan
+        - Jersey
+        - Guernsey
+        - Iraq
+        - Korea, Democratic People's Republic of
+    random_restricted_countries:
+      description: "Countries restricted for random indices trading due to change in regulations"
+      isa: ArrayRef
+      default:
+        - Germany
+        - Spain
+        - Greece
+        - Luxembourg
+        - Singapore
+        - France
+        - Italy
+        - Ireland
 payments:
   description: "Control parameters for cashier and other payment systems"
   isa: section
