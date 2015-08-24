@@ -26,7 +26,7 @@ sub predefined_contracts_for_symbol {
 
     my $exchange  = $underlying->exchange;
     my ($open, $close);
-    if ($exchange->trades_on($now){
+    if ($exchange->trades_on($now)){
        $open      = $exchange->opening_on($now)->epoch;
        $close     = $exchange->closing_on($now)->epoch;
     }
