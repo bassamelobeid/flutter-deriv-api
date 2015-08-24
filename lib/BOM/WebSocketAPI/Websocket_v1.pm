@@ -29,7 +29,7 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            my $data = __handle($c, $p1);
+            my $data = _sanity_failed($p1) || __handle($c, $p1);
             return unless $data;
 
             $data->{echo_req} = $p1;
@@ -82,6 +82,31 @@ sub __authorize_error {
             msg_type => $msg_type,
             code     => "AuthorizationRequired"
         }};
+}
+
+sub _sanity_failed {
+    my $arg = shift;
+    my $failed;
+    OUTER:
+    foreach my $k (keys %$arg){
+        if ($k !~ /([A-Za-z0-9_-]+)/ or (not ref $arg->{$k} and $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/)) { $failed = 1; last OUTER;}
+         if (ref $arg) {
+             foreach my $l(keys %$arg){
+                if ($k !~ /([A-Za-z0-9_-]+)/ or $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/) { $failed = 1; last OUTER; }
+            }
+        }
+    }
+    if ($failed) {
+        warn 'Sanity check failed.';
+        return {
+            msg_type => 'sanity_check',
+            error => {
+                message => "Parameters sanity check failed",
+                code    => "InvalidParameters"
+            }
+        }
+    }
+    return;
 }
 
 1;
