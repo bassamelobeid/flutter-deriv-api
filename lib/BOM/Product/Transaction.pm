@@ -1422,9 +1422,10 @@ sub _validate_client_self_exclusion {
         and Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil)))
     {
         return Error::Base->cuss(
-            -type              => 'ClientSelfExcluded',
-            -mesg              => 'your account is not authorised for any further contract purchases.',
-            -message_to_client => BOM::Platform::Context::localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
+            -type => 'ClientSelfExcluded',
+            -mesg => 'your account is not authorised for any further contract purchases.',
+            -message_to_client =>
+                BOM::Platform::Context::localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
         );
     }
 
