@@ -308,7 +308,7 @@ sub sell_expired_contracts {
                         stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
                     }
                 } else{
-                    if (@{$bet->corporate_actions}){
+                    if ($bet->can('corporate_actions') and @{$bet->corporate_actions}){
 
                         $bet_info->{reason} = "This contract is affected by corporate action. Can you please verify the contract has been adjusted correctly to the corporte action.";
                     }else{
