@@ -13,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 ## skip now. FIXME
-if ( ($ENV{TEST_SUITE} || '') eq 'cover' ) {
+if (($ENV{TEST_SUITE} || '') eq 'cover') {
     plan skip_all => "It fails under cover right now. skipping.";
 }
 
