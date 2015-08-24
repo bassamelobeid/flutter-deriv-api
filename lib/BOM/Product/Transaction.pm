@@ -1464,8 +1464,7 @@ sub sell_expired_contracts {
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
         if (not $contract->is_expired) {
-            my $reason = ($contract->has_exit_tick) ? 'NotExpired' : 'NoExitTick';    # These will often times be the same thing!
-            $stats_failure{$logging_class}{$reason}++;
+            $stats_failure{$logging_class}{'NotExpired'}++;
             next;
         } elsif ($contract->category_code eq 'legacy') {
             $stats_failure{$logging_class}{Legacy}++;
