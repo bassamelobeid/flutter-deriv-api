@@ -252,13 +252,14 @@ sub sell_expired_contracts {
             $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
             $bb_lookup = $csv->string;
         }
-
+        # for spread max payout is determined by stop_profit.
+        my $payout = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
         my $bet_info = {
             loginid   => $client_id,
             ref       => $ref_number,
             fmb_id    => $fmb_id,
             buy_price => $buy_price,
-            payout    => $bet->payout,
+            payout    => $payout,
             currency  => $currency,
             shortcode => $bet->shortcode,
             bb_lookup => $bb_lookup,
