@@ -25,8 +25,11 @@ sub predefined_contracts_for_symbol {
     my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
 
     my $exchange  = $underlying->exchange;
-    my $open      = $exchange->opening_on($now)->epoch;
-    my $close     = $exchange->closing_on($now)->epoch;
+    my ($open, $close);
+    if ($exchange->trades_on($now){
+       $open      = $exchange->opening_on($now)->epoch;
+       $close     = $exchange->closing_on($now)->epoch;
+    }
     my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
     my @offerings = $flyby->query({
             underlying_symbol => $symbol,
@@ -184,7 +187,7 @@ then split into 20 barriers that within this boundaries. The barriers will be sp
 
 sub _set_predefined_barriers {
     my $args = shift;
-    my ($underlying, $contract, $current_tick, $date) = @{$args}{'underlying', 'contract', 'current_tick', 'date'};
+    my ($underlying, $contract, $current_tick, $now) = @{$args}{'underlying', 'contract', 'current_tick', 'date'};
 
     my $trading_period     = $contract->{trading_period};
     my $date_start         = $trading_period->{date_start}->{epoch};
@@ -214,7 +217,7 @@ sub _set_predefined_barriers {
             });
 
         # Expires at the end of the available period.
-        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $date->epoch);
+        Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
     }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = $available_barriers;
