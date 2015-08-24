@@ -65,7 +65,7 @@ sub __handle {
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
         warn "test";
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.'.$p1->{$dispatch->[0]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $p1->{$dispatch->[0]});
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
         }
