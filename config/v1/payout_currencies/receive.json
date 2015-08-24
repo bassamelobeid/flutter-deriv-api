@@ -7,18 +7,23 @@
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "currencies": {
-      "type": "object",
-      "description":"The currencies structure is account->currency_code"
+    "payout_currencies": {
+    	"type": "object",
+    	"properties":{
+    		"currencies":{
+    			"type":"string",
+    			"description":"Example:USD"
+    		}
+    	}
     },
-    "msg_type": {
-      "type": "string",
-      "description": "currencies"
-    }
-  },
+    "msg_type":{
+        "type":"string",
+        "description":"payout_currencies"
+      }
+    },
   "required": [
     "echo_req",
-    "currencies",
+    "payout_currencies",
     "msg_type"
   ]
 }
