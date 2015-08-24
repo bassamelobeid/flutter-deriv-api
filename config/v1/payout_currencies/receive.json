@@ -1,0 +1,24 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Payout Currencies Receive",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made"
+    },
+    "currencies": {
+      "type": "object",
+      "description":"The currencies structure is account->currency_code"
+    },
+    "msg_type": {
+      "type": "string",
+      "description": "currencies"
+    }
+  },
+  "required": [
+    "echo_req",
+    "currencies",
+    "msg_type"
+  ]
+}
