@@ -21,15 +21,15 @@
                 "description":"Array of returned transactions"
                 },
             "close":{
-            	"type":"string",
+            	"type":"integer",
             	"description":"Symbol's next market-close time as an epoch value"
                },
             "open":{
-            	"type":"string",
+            	"type":"integer",
             	"description":"Symbol's next market-open time as an epoch value"
               },
             "hit_count":{
-              	"type":"string",
+              	"type":"number",
               	"description":"It is the count of contracts available"
               }
         }
