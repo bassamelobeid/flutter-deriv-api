@@ -66,9 +66,13 @@ sub __handle {
         next unless $p1->{$dispatch->[0]};
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0]);
         if (my $origin = $c->req->headers->header("Origin")) {
-            if (my $origin = $c->req->headers->header("Origin") and $origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/ and $origin = $1 and $origin =~ s/\./_/g ) {
+            if (    my $origin = $c->req->headers->header("Origin")
+                and $origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/
+                and $origin = $1
+                and $origin =~ s/\./_/g)
+            {
                 DataDog::DogStatsd::Helper::stats_inc('websocket_api.origin.' . $origin);
-                DataDog::DogStatsd::Helper::stats_inc('websocket_api.origin.' . $origin. '.call.' . $dispatch->[0]);
+                DataDog::DogStatsd::Helper::stats_inc('websocket_api.origin.' . $origin . '.call.' . $dispatch->[0]);
             }
         }
         if ($dispatch->[2] and not $c->stash('client')) {
