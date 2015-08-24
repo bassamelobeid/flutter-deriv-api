@@ -205,15 +205,6 @@ sub _open_bets_report {
     $report->{top_ten_movers} =
         [((scalar @movers <= 10) ? @movers : @movers[0 .. 9])];
 
-    # big payout open positions
-    @open_bets =
-        map {$_->[1]}
-        sort {$b->[0] <=> $a->[0]}
-        map {[$self->amount_in_usd($_->{payout_price}, $_->{currency_code}), $_]}
-        @open_bets;
-    $report->{big_payouts} =
-        [((scalar @open_bets <= 10) ? @open_bets : @open_bets[0 .. 9])];
-
     # big marked to market value
     @open_bets =
         map {$_->{1]}
@@ -275,6 +266,15 @@ sub _open_bets_report {
         my $days_hence = $date_expiry->days_between($today);
         $spark_info->{$days_hence}->{mtm} += $normalized_mtm;
     }
+
+    # big payout open positions
+    my @big_payouts =
+        map {$_->[1]}
+        sort {$b->[0] <=> $a->[0]}
+        map {[$self->amount_in_usd($_->{payout_price}, $_->{currency_code}), $_]}
+        @open_bets;
+    $report->{big_payouts} =
+        [((scalar @big_payouts <= 10) ? @big_payouts : @big_payouts[0 .. 9])];
 
     my $sparks = {
         mtm  => [],
