@@ -10,17 +10,10 @@
       "description":"Echo of the request made"
     },
     "active_symbols": {
-      
-      "type": "array",
-      "items": [
-            			{
-			              "type": "object",
-			              "description": "active symbols"
-			         }
-			      ]
+        "type": "object",
+        "description": "active symbols"
     },
     "msg_type": {
-      
       "type": "string",
       "description": "active_symbols"
     }

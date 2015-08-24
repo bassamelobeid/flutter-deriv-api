@@ -9,18 +9,10 @@
       "description":"Echo of the request made"
     },
     "offerings": {
-      
-      "type": "array",
-      "description":"The OFFERINGS structure is a hierarchy of Market -> SubMarket -> Symbol -> ContractCategory -> Contract Type",
-      "items": [
-            {
-              "type": "object",
-              "description": "Offerings"
-            }
-          ]
+      "type": "object",
+      "description":"The OFFERINGS structure is a hierarchy of Market -> SubMarket -> Symbol -> ContractCategory -> Contract Type"
     },
     "msg_type": {
-     
       "type": "string",
       "description": "offerings"
     }
