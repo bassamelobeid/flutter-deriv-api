@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::System;
 use BOM::WebSocketAPI::Accounts;
 use BOM::WebSocketAPI::MarketDiscovery;
 use BOM::WebSocketAPI::PortfolioManagement;
+use DataDog::DogStatsd::Helper;
 
 sub ok {
     my $c      = shift;
@@ -30,7 +31,7 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            my $data = __handle($c, $p1);
+            my $data = _sanity_failed($p1) || __handle($c, $p1);
             return unless $data;
 
             $data->{echo_req} = $p1;
@@ -64,6 +65,15 @@ sub __handle {
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
+        my $tag = 'origin:';
+        if (my $origin = $c->req->headers->header("Origin")) {
+            if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
+                $tag = "origin:$1";
+            }
+        }
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',               {tags => [$tag]});
+
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
         }
@@ -83,6 +93,30 @@ sub __authorize_error {
             msg_type => $msg_type,
             code     => "AuthorizationRequired"
         }};
+}
+
+sub _sanity_failed {
+    my $arg = shift;
+    my $failed;
+    OUTER:
+    foreach my $k (keys %$arg) {
+        if ($k !~ /([A-Za-z0-9_-]+)/ or (not ref $arg->{$k} and $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/)) { $failed = 1; last OUTER; }
+        if (ref $arg) {
+            foreach my $l (keys %$arg) {
+                if ($k !~ /([A-Za-z0-9_-]+)/ or $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/) { $failed = 1; last OUTER; }
+            }
+        }
+    }
+    if ($failed) {
+        warn 'Sanity check failed.';
+        return {
+            msg_type => 'sanity_check',
+            error    => {
+                message => "Parameters sanity check failed",
+                code    => "InvalidParameters"
+            }};
+    }
+    return;
 }
 
 1;
