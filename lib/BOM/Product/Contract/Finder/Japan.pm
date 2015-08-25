@@ -24,11 +24,11 @@ sub predefined_contracts_for_symbol {
     my $now          = $args->{date} || Date::Utility->new;
     my $current_tick = $args->{current_tick} // $underlying->spot_tick // $underlying->tick_at($now->epoch, {allow_inconsistent => 1});
 
-    my $exchange  = $underlying->exchange;
+    my $exchange = $underlying->exchange;
     my ($open, $close);
-    if ($exchange->trades_on($now)){
-       $open      = $exchange->opening_on($now)->epoch;
-       $close     = $exchange->closing_on($now)->epoch;
+    if ($exchange->trades_on($now)) {
+        $open  = $exchange->opening_on($now)->epoch;
+        $close = $exchange->closing_on($now)->epoch;
     }
     my $flyby     = BOM::Product::Offerings::get_offerings_flyby;
     my @offerings = $flyby->query({
