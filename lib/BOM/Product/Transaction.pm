@@ -4,6 +4,7 @@ use Moose;
 use Data::Dumper;
 use Error::Base;
 use Path::Tiny;
+use Scalar::Util qw(blessed);
 use Time::HiRes qw(tv_interval gettimeofday time);
 use List::Util qw(min max first);
 use JSON qw( from_json );
@@ -203,27 +204,44 @@ sub stats_validation_done {
     return;
 }
 
+# Given a generic error string, try to turn it into a GenericCamelCase string which
+# might be the same across multiple failures.
+sub _normalize_error_string {
+    my $string = shift;
+
+    $string =~ s/\[[^\]]+\]//g;    # Bits between [] are contract specific.
+    return join('', map { ucfirst lc $_ } split /\s+/, $string);
+}
+
 sub stats_stop {
-    my $self = shift;
-    my $data = shift;
+    my ($self, $data, $error) = @_;
+
     my $what = $data->{what};
-
     my $tags = $data->{tags};
-    my $now  = [gettimeofday];
-    stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
-    stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
-    stats_inc("transaction.$what.success", $tags);
 
-    if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
-        my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
-        if ($what eq 'buy') {
-            stats_count('business.turnover_usd',       $usd_amount, $tags);
-            stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
-        } elsif ($what eq 'sell') {
-            stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
+    if ($error) {
+        my $whatsit = blessed $error;
+        # If we don't get Error::Base, assume it's a string or will stringify with some minor coercion.
+        my $why = _normalize_error_string(($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : "$error");
+        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, "reason:$why",]});
+    } else {
+        my $now = [gettimeofday];
+        stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
+        stats_timing("transaction.$what.db_time",      1000 * tv_interval($data->{validation_done}, $now), $tags);
+        stats_inc("transaction.$what.success", $tags);
+
+        if ($data->{rmgenv} eq 'production' and $data->{virtual} eq 'no') {
+            my $usd_amount = int(in_USD($self->price, $self->contract->currency) * 100);
+            if ($what eq 'buy') {
+                stats_count('business.turnover_usd',       $usd_amount, $tags);
+                stats_count('business.buy_minus_sell_usd', $usd_amount, $tags);
+            } elsif ($what eq 'sell') {
+                stats_count('business.buy_minus_sell_usd', -$usd_amount, $tags);
+            }
         }
     }
-    return;
+
+    return $error;
 }
 
 sub calculate_limits {
@@ -362,23 +380,6 @@ sub calculate_limits {
             };
     }
 
-    my %euro_pairs = (
-        frxEURUSD => 1,
-        frxEURJPY => 1,
-        frxEURCAD => 1,
-        frxEURNZD => 1,
-        frxEURGBP => 1,
-        frxEURAUD => 1,
-    );
-    if ($euro_pairs{$contract->underlying->symbol}) {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name    => 'euro_pairs_turnover_limit',
-            limit   => $ql->euro_pairs_turnover_limit,
-            symbols => [map { {n => $_} } keys %euro_pairs],
-            };
-    }
-
     return;
 }
 
@@ -495,7 +496,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
         # all these validations MUST NOT use the database
         # database related validations MUST be implemented in the database
         # ask your friendly DBA team if in doubt
-        $error_status = $self->$_ and return $error_status
+        $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
             qw/_validate_iom_withdrawal_limit
             _validate_payout_limit
@@ -514,7 +515,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
-    return $error_status if $error_status;
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
 
@@ -537,15 +538,17 @@ sub buy {    ## no critic (RequireArgUnpacking)
             # otherwise the function re-throws the exception (unrecoverable).
             $error_status = $self->_recover($_, $try);
         };
-        return $error_status if $error_status;
+        return $self->stats_stop($stats_data, $error_status) if $error_status;
         redo TRY if $error and $try++ < 3;
     }
 
-    return Error::Base->cuss(
-        -type              => 'GeneralError',
-        -mesg              => 'Cannot perform database action',
-        -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-    ) if $error;
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'GeneralError',
+            -mesg              => 'Cannot perform database action',
+            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+        )) if $error;
 
     $self->stats_stop($stats_data);
 
@@ -626,7 +629,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
         # all these validations MUST NOT use the database
         # database related validations MUST be implemented in the database
         # ask your friendly DBA team if in doubt
-        $error_status = $self->$_ and return $error_status
+        $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
             qw/_validate_iom_withdrawal_limit
             _validate_payout_limit
@@ -641,7 +644,7 @@ sub sell {    ## no critic (RequireArgUnpacking)
     }
 
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_sell;
-    return $error_status if $error_status;
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
 
@@ -664,21 +667,25 @@ sub sell {    ## no critic (RequireArgUnpacking)
             # otherwise the function re-throws the exception (unrecoverable).
             $error_status = $self->_recover($_, $try);
         };
-        return $error_status if $error_status;
+        return $self->stats_stop($stats_data, $error_status) if $error_status;
         redo TRY if $error and $try++ < 3;
     }
 
-    return Error::Base->cuss(
-        -type              => 'GeneralError',
-        -mesg              => 'Cannot perform database action',
-        -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-    ) if $error;
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'GeneralError',
+            -mesg              => 'Cannot perform database action',
+            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+        )) if $error;
 
-    return Error::Base->cuss(
-        -type              => 'NoOpenPosition',
-        -mesg              => 'No such open contract.',
-        -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
-    ) unless defined $txn->{id};
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'NoOpenPosition',
+            -mesg              => 'No such open contract.',
+            -message_to_client => BOM::Platform::Context::localize('This contract was not found among your open positions.'),
+        )) unless defined $txn->{id};
 
     $self->stats_stop($stats_data);
 
@@ -1451,10 +1458,18 @@ sub sell_expired_contracts {
     my @bets_to_sell;
     my @transdata;
     my %stats_attempt;
+    my %stats_failure;
     for my $bet (@$bets) {
         my $contract = produce_contract($bet->{short_code}, $currency);
-        $stats_attempt{$BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code}}++;
-        next if not $contract->is_expired or $contract->category_code eq 'legacy';
+        my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+        $stats_attempt{$logging_class}++;
+        if (not $contract->is_expired) {
+            $stats_failure{$logging_class}{'NotExpired'}++;
+            next;
+        } elsif ($contract->category_code eq 'legacy') {
+            $stats_failure{$logging_class}{Legacy}++;
+            next;
+        }
 
         try {
             if ($contract->is_valid_to_sell) {
@@ -1476,6 +1491,9 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
+            } else {
+                my $reason = _normalize_error_string($contract->primary_validation_error->message);
+                $stats_failure{$logging_class}{$reason}++;
             }
         };
     }
@@ -1485,8 +1503,14 @@ sub sell_expired_contracts {
     my $rmgenv    = BOM::System::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
     my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
+
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
+    }
+    for my $class (keys %stats_failure) {
+        for my $reason (keys %{$stats_failure{$class}}) {
+            stats_count("transaction.sell.failure", $stats_failure{$class}{$reason}, {tags => [@tags, "contract_class:$class", "reason:$reason"]});
+        }
     }
 
     return unless @bets_to_sell;    # nothing to do
@@ -1508,7 +1532,20 @@ sub sell_expired_contracts {
         get_logger->warn(ref eq 'ARRAY' ? "@$_" : "$_");
     };
 
-    return unless $sold and @$sold;    # nothing has been sold
+    if (not $sold or @bets_to_sell > @$sold) {
+        # We missed some, let's figure out which ones they are.
+        my %sold_fmbs = map { $_->{fmb}->{id} } @{$sold // []};
+        my %missed;
+        foreach my $bet (@bets_to_sell) {
+            next if $sold_fmbs{$bet->{id}};    # Was not missed.
+            $missed{$bet->{bet_class}}++;
+        }
+        foreach my $class (keys %missed) {
+            stats_count("transaction.sell.failure", $missed{$class}, {tags => [@tags, "contract_class:$class", "reason:TransactionFailure"]});
+        }
+    }
+
+    return unless $sold and @$sold;            # nothing has been sold
 
     my $skip_contract  = @$bets - @$sold;
     my $total_credited = 0;
