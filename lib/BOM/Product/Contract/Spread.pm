@@ -408,6 +408,17 @@ sub _build_payout {
     return $self->stop_profit * $self->amount_per_point;
 }
 
+sub _update {
+    my ($self, $value, $point_diff) = @_;
+
+    $self->value($value);
+    $self->value_display(to_monetary_number_format($value));
+    $self->point_value($point_diff);
+    $self->point_value_display(roundnear(0.01, $point_diff));
+
+    return;
+}
+
 # VALIDATIONS #
 sub _validate_quote {
     my $self = shift;

@@ -77,10 +77,7 @@ sub _recalculate_value {
     if ($level) {
         my $point_diff = $self->barrier->as_absolute - $level;
         my $value      = $point_diff * $self->amount_per_point;
-        $self->value($value);
-        $self->value_display(to_monetary_number_format($value));
-        $self->point_value($point_diff);
-        $self->point_value_display(roundnear(0.01, $point_diff));
+        $self->_update($value, $point_diff);
     }
 
     return;
