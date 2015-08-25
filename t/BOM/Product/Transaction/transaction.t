@@ -328,6 +328,7 @@ subtest 'buy a spread bet' => sub {
         amount_per_point => 2,
         stop_loss        => 10,
         stop_profit      => 20,
+        entry_tick       => $tick_r100,
         current_tick     => $tick_r100,
         stop_type        => 'point',
     });
@@ -337,6 +338,7 @@ subtest 'buy a spread bet' => sub {
         price    => 20.00,
         source   => 21,
     });
+
     ok !$txn->buy, 'buy spread bet without error';
 
     subtest 'transaction report', sub {
@@ -424,6 +426,7 @@ subtest 'buy a spread bet' => sub {
         amount_per_point => 2,
         stop_loss        => 10,
         stop_profit      => 20,
+        entry_tick       => $tick_r100,
         current_tick     => $tick_r100,
         stop_type        => 'dollar',
     });
