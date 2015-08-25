@@ -506,6 +506,7 @@ sub buy {    ## no critic (RequireArgUnpacking)
             _validate_stake_limit
             _validate_jurisdictional_restrictions
             _validate_client_status
+            _validate_client_self_exclusion
             _validate_currency/
             );
 
@@ -1405,6 +1406,33 @@ sub _validate_client_status {
             -type              => 'ClientUnwelcome',
             -mesg              => 'your account is not authorised for any further contract purchases.',
             -message_to_client => BOM::Platform::Context::localize('Sorry, your account is not authorised for any further contract purchases.'),
+        );
+    }
+
+    return;
+}
+
+=head2 $self->_validate_client_self_exclusion
+
+Validates to make sure that the client with self exclusion
+is not able to purchase contract
+
+=cut
+
+sub _validate_client_self_exclusion {
+    my $self   = shift;
+    my $client = $self->client;
+
+    my $limit_excludeuntil;
+    if (    $limit_excludeuntil = $client->get_self_exclusion
+        and $limit_excludeuntil = $limit_excludeuntil->exclude_until
+        and Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil)))
+    {
+        return Error::Base->cuss(
+            -type => 'ClientSelfExcluded',
+            -mesg => 'your account is not authorised for any further contract purchases.',
+            -message_to_client =>
+                BOM::Platform::Context::localize('Sorry, you have excluded yourself from the website until [_1].', $limit_excludeuntil),
         );
     }
 
