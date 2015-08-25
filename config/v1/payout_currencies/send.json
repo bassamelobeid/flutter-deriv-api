@@ -4,8 +4,8 @@
   "title":"Payout Currencies Send",
   "properties": {
     "payout_currencies": {
-      "type": "number",
-      "sample": "1",
+      "type": "string",
+      "sample": "USD",
       "description": "It is the currency code for the account"
     }
   },
