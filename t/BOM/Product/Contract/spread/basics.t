@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockModule;
@@ -114,7 +114,7 @@ subtest 'validate amount per point' => sub {
         ok $c->is_valid_to_buy;
         $c = produce_contract({
             %$params,
-            amount_per_point => 100,
+            amount_per_point => 99.9,
             date_pricing     => $now
         });
         ok $c->is_valid_to_buy;
@@ -261,4 +261,18 @@ subtest 'stop type' => sub {
         'correct longcode for stop_type: dollar'
     );
     is $c->shortcode, 'SPREADU_R_100_2_' . $now->epoch . '_10_10_DOLLAR';
+};
+
+subtest 'category' => sub {
+    my $c = produce_contract({
+        %$params,
+        stop_type        => 'point',
+        amount_per_point => 2,
+        stop_loss        => 10
+    });
+    ok !$c->supported_expiries, 'no expiry concept';
+    is_deeply $c->supported_start_types, ['spot'], 'spot';
+    ok !$c->is_path_dependent, 'non path dependent';
+    ok !$c->allow_forward_starting, 'non forward-starting';
+    ok !$c->two_barriers, 'non two barriers';
 };
