@@ -180,6 +180,8 @@ subtest 'value and point_value checks' => sub {
     is ($c->point_value, -9.18000000000001, 'correct point value');
     is ($c->value_display, '-918.00', 'correct display value');
     is ($c->point_value_display, -9.18, 'correct display value');
+    is ($c->deposit_amount, 1000, 'correct deposit amount');
+    is ($c->ask_price, '1,000.00', 'correct ask price');
 };
 
 subtest 'past expiry' => sub {
