@@ -89,14 +89,15 @@ sub _do_proveid {
 
     my $prove_id_result = $self->_fetch_proveid || {};
 
-    if ($prove_id_result->{age_verified}) {
+    if ($prove_id_result->{deny} or scalar @{$prove_id_result->{matches}}) {
+        $client->set_status('unwelcome', 'system', 'Failed identity test via 192.com');
+        $self->_notify('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
+    } elsif ($prove_id_result->{age_verified}) {
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->save;
         $prove_id_result->{matches} ||= [];
 
-        if ($prove_id_result->{deny} or scalar @{$prove_id_result->{matches}}) {
-            $self->_notify('EXPERIAN PROVE ID KYC PASSED BUT CLIENT FLAGGED!', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
-        } elsif ($prove_id_result->{fully_authenticated}) {
+        if ($prove_id_result->{fully_authenticated}) {
             $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
             $client->set_authentication('ID_192')->status('pass');
             $client->save;
@@ -109,6 +110,7 @@ sub _do_proveid {
         $self->_notify('192_PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
         return $self->_request_id_authentication;
     }
+
     return;
 }
 
@@ -171,7 +173,7 @@ EOM
 sub _notify {
     my ($self, $id, $msg) = @_;
 
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     my $client = $self->client;
     $client->add_note($id, $client->loginid . ' ' . $msg);
@@ -190,7 +192,7 @@ sub _premise {
 sub _fetch_proveid {
     my $self = shift;
 
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     return BOM::Platform::ProveID->new(
         client        => $self->client,
@@ -203,7 +205,7 @@ sub _fetch_proveid {
 sub _fetch_checkid {
     my $self = shift;
 
-    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     return BOM::Platform::ProveID->new(
         client        => $self->client,
