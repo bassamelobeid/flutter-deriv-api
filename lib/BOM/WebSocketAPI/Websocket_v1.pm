@@ -4,7 +4,6 @@ use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
 use BOM::WebSocketAPI::Symbols;
 use BOM::WebSocketAPI::Offerings;
-use BOM::Product::Contract::Finder::Japan;
 use BOM::WebSocketAPI::Authorize;
 use BOM::WebSocketAPI::ContractDiscovery;
 use BOM::WebSocketAPI::System;
