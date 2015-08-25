@@ -218,7 +218,8 @@ sub broker_for_new_financial {
     my $self         = shift;
     my $country_code = shift;
 
-    if (my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code} and $config->{financial_company} ne 'none') {
+    my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
+    if ($config and $config->{financial_company} ne 'none') {
         my $broker = first { $_->landing_company->short eq $config->{financial_company} } @{$self->broker_codes};
         return $broker;
     }
