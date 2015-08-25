@@ -392,8 +392,8 @@ sub current_value {
     my $self = shift;
     $self->_recalculate_value($self->sell_level);
     return {
-        dollar => $self->value,
-        point  => $self->point_value,
+        dollar => $self->value_display,
+        point  => $self->point_value_display,
     };
 }
 
