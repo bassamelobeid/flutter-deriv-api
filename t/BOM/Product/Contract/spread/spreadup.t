@@ -115,15 +115,15 @@ subtest 'spread up' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 6,
-            quote      => 117
+            quote      => 119
         });
         my $c = produce_contract($params);
         is $c->entry_tick->quote, 92, 'entry tick is 92';
         cmp_ok $c->barrier->as_absolute, '==', 93.00, 'barrier is 93';
         cmp_ok $c->stop_profit_level, '==', 118.00, 'stop profit level 118';
-        is $c->current_tick->quote, 117, 'current tick is 117';
+        is $c->current_tick->quote, 119, 'current tick is 119';
         ok $c->is_expired;
-        is $c->breaching_tick->quote, 117, 'breaching tick is 117';
+        is $c->breaching_tick->quote, 119, 'breaching tick is 119';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct breaching tick epoch';
         cmp_ok $c->exit_level, '==', 118.00, 'exit level is 118.00';
         cmp_ok $c->value,      '==', 50,     'value is 50';
@@ -132,16 +132,16 @@ subtest 'spread up' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 7,
-            quote      => 118
+            quote      => 120
         });
         $c = produce_contract($params);
         is $c->entry_tick->quote, 92, 'entry tick is 92';
         cmp_ok $c->barrier->as_absolute, '==', 93.00, 'barrier is 93';
         cmp_ok $c->stop_profit_level, '==', 118.00, 'stop profit level 118';
-        is $c->current_tick->quote, 118, 'current tick is 117';
+        is $c->current_tick->quote, 120, 'current tick is 120';
         ok $c->is_expired;
         # always the first hit tick
-        is $c->breaching_tick->quote, 117, 'breaching tick is 117';
+        is $c->breaching_tick->quote, 119, 'breaching tick is 117';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct breaching tick epoch';
         cmp_ok $c->exit_level, '==', 118.00, 'exit level is 118.00';
         cmp_ok $c->value,      '==', 50,     'value is 50';

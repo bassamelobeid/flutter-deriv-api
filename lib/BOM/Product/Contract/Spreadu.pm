@@ -91,7 +91,7 @@ has _highlow_args => (
 sub _build__highlow_args {
     my $self        = shift;
     my $half_spread = $self->half_spread;
-    return [$self->stop_profit_level - $half_spread, $self->stop_loss_level + $half_spread];
+    return [$self->stop_profit_level + $half_spread, $self->stop_loss_level + $half_spread];
 }
 
 sub localizable_description {

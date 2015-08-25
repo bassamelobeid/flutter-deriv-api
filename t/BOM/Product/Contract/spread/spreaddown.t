@@ -79,6 +79,7 @@ subtest 'spread up' => sub {
             epoch      => $now->epoch + 3,
             quote      => 110
         });
+        is $c->current_tick->quote, 110, 'current tick is 110';
         ok $c->is_expired;
         is $c->breaching_tick->quote, 110, 'breaching tick is 110';
         is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
@@ -95,6 +96,7 @@ subtest 'spread up' => sub {
             epoch      => $now->epoch + 4,
             quote      => 111
         });
+        is $c->current_tick->quote, 111, 'current tick is 110';
         ok $c->is_expired;
         # always the first hit tick
         is $c->breaching_tick->quote, 110, 'breaching tick is 110';
@@ -116,14 +118,14 @@ subtest 'spread up' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 6,
-            quote      => 68
+            quote      => 66
         });
         my $c = produce_contract($params);
         is $c->entry_tick->quote, 93, 'entry tick is 93';
         cmp_ok $c->barrier->as_absolute, '==', 92.00, 'barrier is 92.00';
         cmp_ok $c->stop_profit_level, '==', 67.00, 'stop profit level 67.00';
         ok $c->is_expired;
-        is $c->breaching_tick->quote, 68, 'breaching tick is 68';
+        is $c->breaching_tick->quote, 66, 'breaching tick is 68';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
         cmp_ok $c->value,      '==', 50, 'value is 50';
         cmp_ok $c->exit_level, '==', 67, 'exit level 67';
@@ -140,7 +142,7 @@ subtest 'spread up' => sub {
         cmp_ok $c->stop_profit_level, '==', 67.00, 'stop profit level 67.00';
         ok $c->is_expired;
         # always the first hit tick
-        is $c->breaching_tick->quote, 68, 'breaching tick is 68';
+        is $c->breaching_tick->quote, 66, 'breaching tick is 66';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
         cmp_ok $c->value,      '==', 50, 'value is 50';
         cmp_ok $c->exit_level, '==', 67, 'exit level 67';
