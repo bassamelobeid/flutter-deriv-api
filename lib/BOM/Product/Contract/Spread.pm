@@ -241,17 +241,9 @@ The deposit amount display to the client.
 
 The unformatted amount that we debit from the client account upon contract purchase.
 
-=head2 buy_level
-
-Current tick plus half spread.
-
-=head2 sell_level
-
-Current tick minus hald spread.
-
 =cut
 
-has [qw(ask_price deposit_amount buy_level sell_level)] => (
+has [qw(ask_price deposit_amount)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -264,16 +256,6 @@ sub _build_ask_price {
 sub _build_deposit_amount {
     my $self = shift;
     return $self->stop_loss * $self->amount_per_point;
-}
-
-sub _build_buy_level {
-    my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote + $self->half_spread);
-}
-
-sub _build_sell_level {
-    my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote - $self->half_spread);
 }
 
 has [qw(is_valid_to_buy is_valid_to_sell may_settle_automatically)] => (

@@ -4,6 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract::Spread';
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
+use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract::Strike::Spread;
 
 # Static methods
@@ -103,6 +104,22 @@ sub localizable_description {
         point =>
             'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, with stop loss of <strong>[plural,_4,%d point,%d points]</strong> and stop profit of <strong>[plural,_5,%d point,%d points]</strong>.',
     };
+}
+
+#VALIDATIONS
+sub _validate_sell_consistency {
+    my $self = shift;
+
+    my @err;
+    if (not $self->is_expired and ($self->sell_level <= $self->stop_loss_level or $self->sell_level >= $self->stop_profit_level)) {
+        push @err, {
+            message           => 'Feed has not been updated in feed database yet for[' . $self->underlying->symbol . ']',
+            severity          => 98,
+            message_to_client => localize('Sell on [_1] is pending due to missing market data.', $self->underlying->translated_display_name),
+        };
+    }
+
+    return @err;
 }
 
 no Moose;
