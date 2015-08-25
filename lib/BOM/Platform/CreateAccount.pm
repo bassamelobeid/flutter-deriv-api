@@ -38,6 +38,9 @@ sub create_virtual_acc {
             err      => 'Your provided email address is already in use by another Login ID'
         };
     }
+    if (BOM::Platform::Client::check_country_restricted($residence)) {
+        return {err => 'Sorry, our service is not available for your country of residence'};
+    }
 
     my ($client, $register_err);
     try {

@@ -199,13 +199,18 @@ sub broker_for_new_account {
     my $self         = shift;
     my $country_code = shift;
 
-    my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
     my $company;
-    $company = $c_config->{gaming_company} if ($c_config->{gaming_company} ne 'none');
-    $company = $c_config->{financial_company} if (not $company and $c_config->{financial_company} ne 'none');
-    return if (not $company);
+    if (my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code}) {
+        $company = $config->{gaming_company} if ($config->{gaming_company} ne 'none');
+        $company = $config->{financial_company} if (not $company and $config->{financial_company} ne 'none');
+    }
 
+    # For restricted countries without landing company (eg: Malaysia, US), default to CR
+    # As without this, accessing www.binary.com from restricted countries will die
+    # This needs refactor later
+    $company //= 'costarica';
     my $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
+
     return $broker;
 }
 
@@ -213,12 +218,11 @@ sub broker_for_new_financial {
     my $self         = shift;
     my $country_code = shift;
 
-    my $c_config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
-    return if ($c_config->{financial_company} eq 'none');
-
-    my $company = $c_config->{financial_company};
-    my $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
-    return $broker;
+    if (my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code} and $config->{financial_company} ne 'none') {
+        my $broker = first { $_->landing_company->short eq $config->{financial_company} } @{$self->broker_codes};
+        return $broker;
+    }
+    return;
 }
 
 sub broker_for_new_virtual {
