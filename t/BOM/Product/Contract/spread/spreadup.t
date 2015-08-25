@@ -174,22 +174,22 @@ subtest 'value and point_value checks' => sub {
         date_pricing     => $new_now->epoch + 2,
     };
     my $c = produce_contract($params);
-    is ($c->entry_tick->quote, 118.1234, 'entry tick 118.1234');
-    is ($c->barrier->as_absolute, 119.12, 'barrier 119.12');
+    is($c->entry_tick->quote,    118.1234, 'entry tick 118.1234');
+    is($c->barrier->as_absolute, 119.12,   'barrier 119.12');
     ok $c->current_value;
-    is ($c->value, -918.000000000001, 'correct value');
-    is ($c->point_value, -9.18000000000001, 'correct point value');
-    is ($c->value_display, '-918.00', 'correct display value');
-    is ($c->point_value_display, -9.18, 'correct display value');
-    is ($c->deposit_amount, 1000, 'correct deposit amount');
-    is ($c->ask_price, '1,000.00', 'correct ask price');
+    is($c->value,               -918.000000000001, 'correct value');
+    is($c->point_value,         -9.18000000000001, 'correct point value');
+    is($c->value_display,       '-918.00',         'correct display value');
+    is($c->point_value_display, -9.18,             'correct display value');
+    is($c->deposit_amount,      1000,              'correct deposit amount');
+    is($c->ask_price,           '1,000.00',        'correct ask price');
 };
 
 subtest 'consistent sell at expiry' => sub {
-    my $new_now = $now->plus_time_interval('8s');
+    my $new_now        = $now->plus_time_interval('8s');
     my $stop_loss_tick = BOM::Market::Data::Tick->new({
         quote  => 108.12,
-        epoch  => $new_now->epoch + 3,                             # Intentionally very old for recognizability.
+        epoch  => $new_now->epoch + 3,    # Intentionally very old for recognizability.
         symbol => 'R_100',
     });
     my $params = {
@@ -208,20 +208,20 @@ subtest 'consistent sell at expiry' => sub {
     my $c = produce_contract($params);
     is $c->barrier->as_absolute, 119.12, 'correct barrier';
     is $c->stop_profit_level, 129.12, 'correct stop profit level';
-    is $c->stop_loss_level, 109.12, 'correct stop loss level';
+    is $c->stop_loss_level,   109.12, 'correct stop loss level';
     is $c->current_tick->quote, 108.12, 'correct current_tick';
-    ok !$c->is_expired, 'not expired because tick has not reached the db';
+    ok !$c->is_expired,       'not expired because tick has not reached the db';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like $c->primary_validation_error->{message}, qr/Feed has not been updated in feed database yet/, 'correct error message';
     my $stop_profit_tick = BOM::Market::Data::Tick->new({
         quote  => 130.12,
-        epoch  => $new_now->epoch + 3,                             # Intentionally very old for recognizability.
+        epoch  => $new_now->epoch + 3,    # Intentionally very old for recognizability.
         symbol => 'R_100',
     });
     $params->{current_tick} = $stop_profit_tick;
     $c = produce_contract($params);
     is $c->current_tick->quote, 130.12, 'correct current_tick';
-    ok !$c->is_expired, 'not expired because tick has not reached the db';
+    ok !$c->is_expired,       'not expired because tick has not reached the db';
     ok !$c->is_valid_to_sell, 'not valid to sell';
     like $c->primary_validation_error->{message}, qr/Feed has not been updated in feed database yet/, 'correct error message';
 };

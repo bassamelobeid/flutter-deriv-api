@@ -355,7 +355,7 @@ sub _build_bid_price {
         $bid = $self->deposit_amount + $self->value;
     }
 
-    return to_monetary_number_format(max(0,$bid));
+    return to_monetary_number_format(max(0, $bid));
 }
 
 has is_expired => (

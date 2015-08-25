@@ -76,8 +76,8 @@ sub _recalculate_value {
 
     if ($level) {
         my $point_diff = $level - $self->barrier->as_absolute;
-        my $value = $point_diff * $self->amount_per_point;
-        $self->value($value+0);
+        my $value      = $point_diff * $self->amount_per_point;
+        $self->value($value + 0);
         $self->value_display(to_monetary_number_format($value));
         $self->point_value($point_diff);
         $self->point_value_display(roundnear(0.01, $point_diff));
@@ -112,11 +112,12 @@ sub _validate_sell_consistency {
 
     my @err;
     if (not $self->is_expired and ($self->sell_level <= $self->stop_loss_level or $self->sell_level >= $self->stop_profit_level)) {
-        push @err, {
+        push @err,
+            {
             message           => 'Feed has not been updated in feed database yet for[' . $self->underlying->symbol . ']',
             severity          => 98,
             message_to_client => localize('Sell on [_1] is pending due to missing market data.', $self->underlying->translated_display_name),
-        };
+            };
     }
 
     return @err;
