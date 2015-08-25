@@ -233,20 +233,38 @@ sub _build_entry_tick {
     return $entry_tick;
 }
 
-has ask_price => (
+=head2 ask_price
+
+The deposit amount display to the client.
+
+=head2 deposit_amount
+
+The unformatted amount that we debit from the client account upon contract purchase.
+
+=head2 buy_level
+
+Current tick plus half spread.
+
+=head2 sell_level
+
+Current tick minus hald spread.
+
+=cut
+
+has [qw(ask_price deposit_amount buy_level sell_level)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
 sub _build_ask_price {
     my $self = shift;
-    return roundnear(0.01, $self->stop_loss * $self->amount_per_point);
+    return to_monetary_number_format($self->deposit_amount);
 }
 
-has [qw(buy_level sell_level)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _build_deposit_amount {
+    my $self = shift;
+    return $self->stop_loss * $self->amount_per_point;
+}
 
 sub _build_buy_level {
     my $self = shift;
@@ -348,11 +366,11 @@ sub _build_bid_price {
     my $bid;
     # we need to take into account the stop loss premium paid.
     if ($self->is_expired) {
-        $bid = $self->ask_price + $self->value;
+        $bid = $self->deposit_amount + $self->value;
     } else {
         $self->exit_level($self->sell_level);
         $self->_recalculate_value($self->sell_level);
-        $bid = $self->ask_price + $self->value;
+        $bid = $self->deposit_amount + $self->value;
     }
 
     return to_monetary_number_format(max(0,$bid));
