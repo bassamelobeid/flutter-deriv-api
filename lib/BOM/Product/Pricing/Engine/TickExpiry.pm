@@ -232,7 +232,15 @@ sub _build_risk_markup {
     my $y_max = $coef->{y_max};
 
     if (($x_base_amount > $x_max) or ($x_base_amount < $x_min) or ($y_base_amount > $y_max) or ($y_base_amount < $y_min)) {
-        $risk_markup->include_adjustment('multiply', 1.03) 
+        my $risk_adj = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'risk_markup_adjustment',
+                description => 'A markup adjustment for the probability of extreme cases where trend/vol are outside pre-specified surface',
+                set_by      => __PACKAGE__,
+                minimum     => 1.03,
+                base_amount => 1.03,
+            });
+
+        $risk_markup->include_adjustment('multiply', $risk_adj); 
     }
 
     return $risk_markup;
