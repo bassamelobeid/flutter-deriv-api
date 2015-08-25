@@ -507,11 +507,6 @@ quants:
           isa: Num
           default: 5000
           global: 1
-        euro_pairs_turnover_limit:
-          description: "Daily euro pairs turnover limit per client"
-          isa: Num
-          default: 30000
-          global: 1
         smart_index_turnover_limit:
           description: "Daily smart index turnover limit per client"
           isa: Num
