@@ -224,7 +224,7 @@ subtest 'consistent sell at expiry' => sub {
     $c = produce_contract($params);
     is $c->current_tick->quote, 110.11, 'correct current_tick';
     is $c->sell_level, 109.11, 'correct sell level';
-    is $c->bid_price, '0.00', 'bid price floored at 0';
+    is $c->bid_price,  '0.00', 'bid price floored at 0';
 
     my $stop_profit_tick = BOM::Market::Data::Tick->new({
         quote  => 130.12,
@@ -246,8 +246,8 @@ subtest 'consistent sell at expiry' => sub {
     $params->{current_tick} = $stop_profit_tick;
     $c = produce_contract($params);
     is $c->current_tick->quote, 130.13, 'correct current_tick';
-    is $c->sell_level, 129.13, 'correct sell level';
-    is $c->bid_price, '10.00', 'bid_price max at payout';
+    is $c->sell_level, 129.13,  'correct sell level';
+    is $c->bid_price,  '10.00', 'bid_price max at payout';
 };
 
 subtest 'past expiry' => sub {
