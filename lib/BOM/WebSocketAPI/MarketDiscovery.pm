@@ -38,11 +38,13 @@ sub ticks {
         } elsif ($style eq 'candles') {
             my $sender = sub {
                 my $candles = shift;
+                my @labeled_candles = map { {'epoch' => $_->[0], 'open' => $_->[1], 'high' => $_->[2], 'low' => $_->[3], 'close' => $_->[4],} };
+
                 $c->send({
                         json => {
                             msg_type => 'candles',
                             echo_req => $args,
-                            candles  => $candles
+                            candles  => \@labeled_candles,
                         }});
             };
 
