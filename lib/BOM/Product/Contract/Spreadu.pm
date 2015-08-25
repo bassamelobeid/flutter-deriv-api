@@ -99,7 +99,7 @@ sub localizable_description {
         dollar =>
             'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, with stop loss of <strong>[_6] [_4]</strong> and stop profit of <strong>[_6] [_5]</strong>.',
         point =>
-            'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, with stop loss of <strong>[plural,_4,%d point,%d points]</strong> and stop profit of <strong>[plural,_5,%d point,%d points]</strong>.',
+            'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>rises</strong> from <strong>entry level</strong>, with stop loss of <strong>[_4] [plural,_4,point,points]</strong> and stop profit of <strong>[_5] [plural,_5,point,points]</strong>.',
     };
 }
 

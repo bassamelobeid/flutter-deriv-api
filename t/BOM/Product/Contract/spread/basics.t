@@ -261,6 +261,30 @@ subtest 'stop type' => sub {
         'correct longcode for stop_type: dollar'
     );
     is $c->shortcode, 'SPREADU_R_100_2_' . $now->epoch . '_10_10_DOLLAR';
+
+    # decimals longcode
+    $c = produce_contract({
+        %$params,
+        bet_type  => 'SPREADU',
+        stop_type => 'point',
+        stop_loss => 0.6,
+    });
+    like(
+        $c->longcode,
+        qr/with stop loss of <strong>0\.6 points<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        'correct longcode decimals stop_loss'
+    );
+    $c = produce_contract({
+        %$params,
+        bet_type  => 'SPREADD',
+        stop_type => 'point',
+        stop_loss => 0.6,
+    });
+    like(
+        $c->longcode,
+        qr/with stop loss of <strong>0\.6 points<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        'correct longcode for decimals stop_loss'
+    );
 };
 
 subtest 'category' => sub {
