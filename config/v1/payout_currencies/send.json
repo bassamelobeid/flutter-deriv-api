@@ -5,7 +5,7 @@
   "properties": {
     "payout_currencies": {
       "type": "string",
-      "description": "It is the payout currency",
+      "description": "It is the currency code for the account",
       "sample": "USD"
     }
   },
