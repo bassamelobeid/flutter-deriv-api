@@ -1,17 +1,17 @@
 package BOM::Product::Contract::Spread;
-use Time::HiRes qw(sleep);
 
 use Moose;
 
+use Time::HiRes qw(sleep);
 use Date::Utility;
 use BOM::Platform::Runtime;
-
 use POSIX qw(floor);
 use Math::Round qw(round);
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
-use BOM::Platform::Context qw(localize request);
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+
+use BOM::Platform::Context qw(localize request);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
@@ -355,7 +355,10 @@ sub _build_bid_price {
         $bid = $self->deposit_amount + $self->value;
     }
 
-    return to_monetary_number_format(max(0, $bid));
+    # final safeguard for bid price.
+    $bid = max(0, min($self->payout, $bid));
+
+    return to_monetary_number_format($bid);
 }
 
 has is_expired => (
