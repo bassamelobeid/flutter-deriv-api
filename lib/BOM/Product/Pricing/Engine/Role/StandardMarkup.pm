@@ -173,7 +173,7 @@ sub _build_eod_market_risk_markup {
             ? localize('Resale of this contract is not offered.')
             : localize('The contract is not available after [_1] GMT.', $ny_1600->time_hhmm);
         $eod_market_risk_markup->add_errors({
-            message           => 'Underlying [' . $bet->underlying->symbol . '] buying suspended between NY1600 and GMT0000.',
+            message           => 'Underlying buying suspended between NY1600 and GMT0000.',
             message_to_client => $message . ' ',
             info_link         => request()->url_for('/resources/asset_index'),
             info_text         => localize('View Asset Index'),

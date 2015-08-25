@@ -189,7 +189,7 @@ is($bet->volsurface->recorded_date->datetime_iso8601, '2012-11-08T00:00:00Z',   
 is($bet->volsurface->cutoff->code,                    'UTC 23:59',                                      'Cutoff is correct for 8-Nov');
 is($bet->pricing_engine_name,                         'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 my $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                             0.4965,  'Ask probability is correct.');
+is(roundnear(1e-4, $ask->amount),                             0.4965, 'Ask probability is correct.');
 is(roundnear(1e-2, $bet->average_tick_count),                 6.86,   'Correct number of average ticks.');
 is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0131, 'model_markup is correct.');
 is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), 0.0063, 'intraday_bounceback is correct.');
@@ -322,7 +322,7 @@ is(roundnear(1e-4, $ask->amount),                             0.4805, 'Ask proba
 is(roundnear(1e-2, $bet->average_tick_count),                 6.95,   'Correct number of average ticks.');
 is(roundnear(1e-4, $ask->peek_amount('model_markup')),        0.0131, 'model_markup is correct.');
 is(roundnear(1e-4, $ask->peek_amount('intraday_bounceback')), 0.0059, 'intraday_bounceback is correct.');
-is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     0.0029,  'vega_correction is correct.');
+is(roundnear(1e-4, $ask->peek_amount('vega_correction')),     0.0029, 'vega_correction is correct.');
 is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
 is(roundnear(1e-4, $bet->pricing_args->{iv}), 0.1105, 'Expected intraday vol amount');
 

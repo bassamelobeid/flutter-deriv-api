@@ -4,6 +4,7 @@ use Moose::Role;
 with 'BOM::Product::Role::BarrierBuilder';
 
 use BOM::Platform::Context qw(localize);
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 sub BUILD {
     my $self = shift;
@@ -12,7 +13,7 @@ sub BUILD {
         if ($barrier2->as_absolute > $barrier1->as_absolute) {
             $self->add_errors({
                 severity          => 5,
-                message           => 'High and low barriers inverted [' . $barrier1->as_absolute . ', ' . $barrier2->as_absolute . ']',
+                message           => 'High and low barriers inverted',
                 message_to_client => localize('The barriers are improperly entered for this contract.'),
             });
             $self->low_barrier($barrier1);
@@ -20,7 +21,7 @@ sub BUILD {
         } elsif ($barrier1->as_absolute == $barrier2->as_absolute) {
             $self->add_errors({
                 severity          => 100,
-                message           => 'High and low barriers must be different [' . $barrier1->as_absolute . ', ' . $barrier2->as_absolute . ']',
+                message           => 'High and low barriers must be different',
                 message_to_client => localize('The barriers are improperly entered for this contract.'),
             });
             $self->low_barrier(
@@ -105,19 +106,24 @@ sub _validate_barrier {
         if ($high_barrier->as_absolute <= $current_spot or $low_barrier->as_absolute >= $current_spot) {
             push @errors,
                 {
-                message => 'Barriers should straddle the spot ['
-                    . $high_barrier->as_absolute . ', '
-                    . $current_spot . ', '
-                    . $low_barrier->as_absolute . ']',
+                message => format_error_string(
+                    'Barriers should straddle the spot',
+                    spot => $current_spot,
+                    high => $high_barrier->as_absolute,
+                    low  => $low_barrier->as_absolute
+                ),
                 severity          => 1,
                 message_to_client => localize('Barriers must be on either side of the spot.'),
                 };
         } elsif (abs($high_pip_move) < $min_allowed or abs($low_pip_move) < $min_allowed) {
             push @errors,
                 {
-                message => 'Relative barrier path dependents must move a minimum of '
-                    . $min_allowed
-                    . "pips. Moved[high:$high_pip_move, low:$low_pip_move]",
+                message => format_error_string(
+                    'Relative barrier path dependent move below minimum',
+                    'high move' => $high_pip_move,
+                    'low move'  => $low_pip_move,
+                    min         => $min_allowed
+                ),
                 severity          => 1,
                 message_to_client => localize('Barrier must be at least ' . $min_allowed . ' pips away from the spot.'),
                 };
