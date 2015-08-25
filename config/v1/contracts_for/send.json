@@ -7,7 +7,7 @@
     "contracts_for": {
       "type": "string",
       "description": "It is the short symbol name",
-      "sample": "frxGBPAUD"
+      "sample": "R_50"
     }
   },
   "required": [
