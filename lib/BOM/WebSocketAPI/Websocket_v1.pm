@@ -64,16 +64,16 @@ sub __handle {
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0]);
+        my $tags = ['no_origin'];
         if (my $origin = $c->req->headers->header("Origin")) {
             if (    $origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/
                 and $origin = $1
                 and $origin =~ s/\./_/g)
             {
-                DataDog::DogStatsd::Helper::stats_inc('websocket_api.origin.' . $origin);
-                DataDog::DogStatsd::Helper::stats_inc('websocket_api.origin.' . $origin . '.call.' . $dispatch->[0]);
+                $tags = [$origin];
             }
         }
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], $tags);
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
         }
