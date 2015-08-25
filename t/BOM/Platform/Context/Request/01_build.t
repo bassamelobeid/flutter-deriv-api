@@ -88,22 +88,22 @@ subtest 'build' => sub {
 
         subtest 'country => Malta' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'mt');
-            is $request->broker_code, undef;
+            is $request->broker_code, 'CR';
             is $request->language,    'EN';
             is $request->website->name, 'Devbin';
-            is $request->broker, undef;
-            is $request->real_account_broker, undef;
+            is $request->broker->code, 'CR';
+            is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
             is $request->virtual_account_broker->code, 'VRTC';
         };
 
         subtest 'country => US' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'us');
-            is $request->broker_code, undef;
+            is $request->broker_code, 'CR';
             is $request->language,    'EN';
             is $request->website->name, 'Devbin';
-            is $request->broker, undef;
-            is $request->real_account_broker, undef;
+            is $request->broker->code, 'CR';
+            is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
             is $request->virtual_account_broker->code, 'VRTC';
         };
