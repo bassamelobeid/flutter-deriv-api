@@ -16,11 +16,10 @@ sub other_side_code { return 'PUT'; }
 
 sub localizable_description {
     return +{
-        tick =>
-            '[_1] <strong>[_2]</strong> payout if [_3] after <strong>[_5] ticks</strong> is strictly <strong>higher</strong> than <strong>[_6]</strong>.',
-        daily    => '[_1] <strong>[_2]</strong> payout if [_3] is strictly <strong>higher</strong> than <strong>[_6]</strong> at [_5].',
-        intraday => '[_1] <strong>[_2]</strong> payout if [_3] is strictly <strong>higher</strong> than <strong>[_6]</strong> at [_5] after [_4].',
-        intraday_fixed_expiry => '[_1] <strong>[_2]</strong> payout if [_3] is strictly <strong>higher</strong> than <strong>[_6]</strong> at [_5].',
+        tick                  => '[_1] [_2] payout if [_3] after [plural,_5,%d tick,%d ticks] is strictly higher than [_6].',
+        daily                 => '[_1] [_2] payout if [_3] is strictly higher than [_6] at [_5].',
+        intraday              => '[_1] [_2] payout if [_3] is strictly higher than [_6] at [_5] after [_4].',
+        intraday_fixed_expiry => '[_1] [_2] payout if [_3] is strictly higher than [_6] at [_5].',
     };
 }
 
