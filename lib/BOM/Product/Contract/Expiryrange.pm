@@ -14,11 +14,9 @@ sub other_side_code { return 'EXPIRYMISS'; }
 
 sub localizable_description {
     return +{
-        daily => '[_1] <strong>[_2]</strong> payout if [_3] <strong>ends strictly between [_7]</strong> to <strong>[_6]</strong> at [_5].',
-        intraday =>
-            '[_1] <strong>[_2]</strong> payout if [_3] <strong>ends strictly between [_7]</strong> to <strong>[_6]</strong> at [_5] after [_4].',
-        intraday_fixed_expiry =>
-            '[_1] <strong>[_2]</strong> payout if [_3] <strong>ends strictly between [_7]</strong> to <strong>[_6]</strong> at [_5].',
+        daily                 => '[_1] [_2] payout if [_3] ends strictly between [_7] to [_6] at [_5].',
+        intraday              => '[_1] [_2] payout if [_3] ends strictly between [_7] to [_6] at [_5] after [_4].',
+        intraday_fixed_expiry => '[_1] [_2] payout if [_3] ends strictly between [_7] to [_6] at [_5].',
     };
 }
 

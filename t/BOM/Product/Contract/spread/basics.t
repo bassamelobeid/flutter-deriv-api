@@ -233,7 +233,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        qr/with stop loss of 1 point and stop profit of 10 points/,
         '[SPREADU] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
@@ -245,7 +245,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        qr/with stop loss of 1 point and stop profit of 10 points/,
         '[SPREADD] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
