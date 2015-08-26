@@ -136,7 +136,7 @@ sub _build_date_settlement {
 }
 
 # the value of the position at close
-has [qw(value point_value value_display point_value_display)] => (
+has [qw(value point_value)] => (
     is       => 'rw',
     init_arg => undef,
     default  => 0,
@@ -393,8 +393,8 @@ sub current_value {
     my $self = shift;
     $self->_recalculate_value($self->sell_level);
     return {
-        dollar => $self->value_display,
-        point  => $self->point_value_display,
+        dollar => $self->value,
+        point  => $self->point_value,
     };
 }
 
@@ -407,17 +407,6 @@ sub _build_payout {
     my $self = shift;
 
     return $self->stop_profit * $self->amount_per_point;
-}
-
-sub _update {
-    my ($self, $value, $point_diff) = @_;
-
-    $self->value($value);
-    $self->value_display(to_monetary_number_format($value));
-    $self->point_value($point_diff);
-    $self->point_value_display($self->underlying->pipsized_value($point_diff));
-
-    return;
 }
 
 # VALIDATIONS #
