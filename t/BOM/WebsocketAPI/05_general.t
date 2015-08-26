@@ -18,6 +18,11 @@ my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'error';
 is $res->{error}->{code}, 'UnrecognisedRequest';
 
+$t = $t->send_ok({json => {ping => 1}})->message_ok;
+my $res = decode_json($t->message->[1]);
+is $res->{msg_type}, 'ping';
+is $res->{ping},     'pong';
+
 $t->finish_ok;
 
 done_testing();

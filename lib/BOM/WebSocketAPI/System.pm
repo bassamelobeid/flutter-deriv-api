@@ -19,4 +19,13 @@ sub forget {
     };
 }
 
+sub ping {
+    my ($c, $args) = @_;
+
+    return {
+        msg_type => 'ping',
+        ping     => 'pong',
+    };
+}
+
 1;

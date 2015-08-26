@@ -62,6 +62,7 @@ sub __handle {
         ['ticks',             \&BOM::WebSocketAPI::MarketDiscovery::ticks,               0],
         ['proposal',          \&BOM::WebSocketAPI::MarketDiscovery::proposal,            0],
         ['forget',            \&BOM::WebSocketAPI::System::forget,                       0],
+        ['ping',              \&BOM::WebSocketAPI::System::ping,                         0],
         ['payout_currencies', \&BOM::WebSocketAPI::ContractDiscovery::payout_currencies, 0],
         ['active_symbols',    \&BOM::WebSocketAPI::Symbols::active_symbols,              0],
         ['contracts_for',     \&BOM::WebSocketAPI::ContractDiscovery::contracts_for,     0],
