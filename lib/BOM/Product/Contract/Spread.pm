@@ -303,7 +303,8 @@ sub _build_longcode {
         push @other, $self->currency;
     }
 
-    return localize($description, ($self->currency, to_monetary_number_format($self->amount_per_point), $self->underlying->translated_display_name, @other));
+    return localize($description,
+        ($self->currency, to_monetary_number_format($self->amount_per_point), $self->underlying->translated_display_name, @other));
 }
 
 sub breaching_tick {

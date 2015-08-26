@@ -184,7 +184,7 @@ subtest 'value and point_value checks' => sub {
     is($c->value_display,       '518.00',         'correct display value');
     is($c->point_value_display, 5.18,             'correct display value');
     is($c->deposit_amount,      1000,             'correct deposit amount');
-    is($c->ask_price,           1000,       'correct ask price');
+    is($c->ask_price,           1000,             'correct ask price');
 };
 
 subtest 'consistent sell at expiry' => sub {
@@ -225,7 +225,7 @@ subtest 'consistent sell at expiry' => sub {
     $c = produce_contract($params);
     is $c->current_tick->quote, 126.13, 'correct current_tick';
     is $c->sell_level, 127.13, 'correct sell_level';
-    is $c->bid_price,  0, 'bid price floored to 0';
+    is $c->bid_price,  0,      'bid price floored to 0';
 
     my $stop_profit_tick = BOM::Market::Data::Tick->new({
         quote  => 106.12,
@@ -247,8 +247,8 @@ subtest 'consistent sell at expiry' => sub {
     $params->{current_tick} = $stop_profit_tick;
     $c = produce_contract($params);
     is $c->current_tick->quote, 106.11, 'correct current_tick';
-    is $c->sell_level, 107.11,  'correct sell_level';
-    is $c->bid_price,  10, 'bid_price max to payout';
+    is $c->sell_level, 107.11, 'correct sell_level';
+    is $c->bid_price,  10,     'bid_price max to payout';
 };
 
 subtest 'past expiry' => sub {
