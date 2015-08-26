@@ -34,9 +34,12 @@ sub entry_point {
             if (ref($p1) eq 'HASH') {
                 $data = _sanity_failed($p1) || __handle($c, $p1);
                 return unless $data;
+
+                $data->{echo_req} = $p1;
             } else {
                 # for invalid call, eg: not json
                 $data = {
+                    echo_req => {},
                     msg_type => 'error',
                     error    => {
                         message => "Bad Request",
@@ -44,7 +47,6 @@ sub entry_point {
                     }};
             }
 
-            $data->{echo_req} = $p1;
             $c->send({json => $data});
         });
     return;
