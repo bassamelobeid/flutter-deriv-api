@@ -197,7 +197,7 @@ sub _set_predefined_barriers {
     my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
-        push my @boundaries_barrier, map {
+        my @boundaries_barrier =  map {
             _get_barrier_by_probability({
                 underlying    => $underlying,
                 duration      => $duration,
@@ -209,7 +209,7 @@ sub _set_predefined_barriers {
             });
         } qw(0.05 0.95);
 
-        push @$available_barriers,
+        @$available_barriers =
             _split_boundaries_barriers({
                 pip_size           => $underlying->pip_size,
                 start_tick         => $start_tick->quote,
@@ -254,7 +254,7 @@ sub _split_boundaries_barriers {
     my @boundaries_barrier = @{$args->{boundaries_barrier}};
 
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
-    my $minimum_step = roundnear($pip_size, $distance_between_boundaries / 78);
+    my $minimum_step = roundnear($pip_size, $distance_between_boundaries / 88);
     my @available_barriers;
     my @steps                  = (1, 1, 1, 1, 1, 2, 2, 5, 10, 20);
     my $previous_right_barrier = $spot_at_start;
@@ -303,14 +303,12 @@ sub _get_barrier_by_probability {
     my $iterations = 0;
     for ($iterations = 0; $iterations <= 20; $iterations++) {
         $bet_params->{'barrier'} = ($high + $low) / 2;
-        my $found_barrier = roundnear($pip_size, $bet_params->{'barrier'});
-
         $bet = produce_contract($bet_params);
 
         my $theo_prob = $bet->theo_probability->amount;
 
         if (abs($theo_prob - $target_theo_prob) < 0.01) {
-            return $found_barrier;
+            last;
         }
 
         if ($theo_prob > $target_theo_prob) {
@@ -319,7 +317,7 @@ sub _get_barrier_by_probability {
             $high = ($low + $high) / 2;
         }
     }
-    return $bet->barrier;
+    return $bet->barrier->as_absolute;
 }
 
 1;
