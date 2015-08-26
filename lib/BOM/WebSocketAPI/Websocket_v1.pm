@@ -30,8 +30,19 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            my $data = _sanity_failed($p1) || __handle($c, $p1);
-            return unless $data;
+            my $data;
+            if (ref($p1) eq 'HASH') {
+                $data = _sanity_failed($p1) || __handle($c, $p1);
+                return unless $data;
+            } else {
+                # for invalid call, eg: not json
+                $data = {
+                    msg_type => 'error',
+                    error    => {
+                        message => "Bad Request",
+                        code    => "BadRequest"
+                    }};
+            }
 
             $data->{echo_req} = $p1;
             $c->send({json => $data});
@@ -80,7 +91,12 @@ sub __handle {
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return;
+    return {
+        msg_type => 'error',
+        error    => {
+            message => "unrecognised request",
+            code    => "UnrecognisedRequest"
+        }};
 }
 
 sub __authorize_error {
