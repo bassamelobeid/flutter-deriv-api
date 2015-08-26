@@ -24,7 +24,7 @@ foreach my $v (grep { -d } glob 'config/v*') {
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
         my $result    = $validator->validate(Mojo::JSON::decode_json $t->message->[1]);
         ok $result, "$f response is valid";
-         if (not $result) {print " - $_\n" foreach $result->errors;print Data::Dumper::Dumper(Mojo::JSON::decode_json $t->message->[1])}
+        if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper(Mojo::JSON::decode_json $t->message->[1]) }
     }
 }
 
