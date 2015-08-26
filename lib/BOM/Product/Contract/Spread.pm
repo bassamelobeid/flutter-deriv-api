@@ -250,7 +250,7 @@ has [qw(ask_price deposit_amount)] => (
 
 sub _build_ask_price {
     my $self = shift;
-    return $self->deposit_amount;
+    return roundnear(0.01, $self->deposit_amount);
 }
 
 sub _build_deposit_amount {
@@ -359,7 +359,7 @@ sub _build_bid_price {
     # final safeguard for bid price.
     $bid = max(0, min($self->payout + $self->deposit_amount, $bid));
 
-    return $bid;
+    return roundnear(0.01, $bid);
 }
 
 has is_expired => (
