@@ -111,10 +111,9 @@ sub _build__highlow_args {
 
 sub localizable_description {
     return {
-        dollar =>
-            'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, with stop loss of <strong>[_6] [_4]</strong> and stop profit of <strong>[_6] [_5]</strong>.',
+        dollar => 'Payout of [_1] [_2] for every point [_3] falls from entry level, with stop loss of [_6] [_4] and stop profit of [_6] [_5].',
         point =>
-            'Payout of [_1] <strong>[_2]</strong> for every point [_3] <strong>falls</strong> from <strong>entry level</strong>, with stop loss of <strong>[plural,_4,%d point,%d points]</strong> and stop profit of <strong>[plural,_5,%d point,%d points]</strong>.',
+            'Payout of [_1] [_2] for every point [_3] falls from entry level, with stop loss of [plural,_4,%d point,%d points] and stop profit of [plural,_5,%d point,%d points].',
     };
 }
 
