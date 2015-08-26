@@ -303,7 +303,7 @@ sub _build_longcode {
         push @other, $self->currency;
     }
 
-    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));
+    return localize($description, ($self->currency, to_monetary_number_format($self->amount_per_point), $self->underlying->translated_display_name, @other));
 }
 
 sub breaching_tick {
@@ -414,7 +414,7 @@ sub _update {
     $self->value($value);
     $self->value_display(to_monetary_number_format($value));
     $self->point_value($point_diff);
-    $self->point_value_display(roundnear(0.01, $point_diff));
+    $self->point_value_display($self->underlying->pipsized_value($point_diff));
 
     return;
 }
