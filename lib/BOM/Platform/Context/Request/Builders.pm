@@ -18,8 +18,8 @@ sub from_cgi {
         delete $args->{http_cookie};
     }
 
-    my $client_country = $main::ENV{'HTTP_CF_IPCOUNTRY'} || 'aq';
-    $client_country = 'aq' if lc $client_country eq 'xx';
+    my $client_country = lc($main::ENV{'HTTP_CF_IPCOUNTRY'} || 'aq');
+    $client_country = 'aq' if ($client_country eq 'xx');
     $args->{country_code} = $client_country;
 
     if (my $client_ip = $main::ENV{'REMOTE_ADDR'}) {
@@ -64,8 +64,8 @@ sub from_mojo {
 
     $args->{domain_name} = $request->url->to_abs->host;
 
-    my $client_country = $request->headers->header('CF-IPCOUNTRY') || 'aq';
-    $client_country = 'aq' if lc $client_country eq 'xx';
+    my $client_country = lc($request->headers->header('CF-IPCOUNTRY') || 'aq');
+    $client_country = 'aq' if ($client_country eq 'xx');
     $args->{country_code} = $client_country;
     $args->{from_ui}      = 1;
 
