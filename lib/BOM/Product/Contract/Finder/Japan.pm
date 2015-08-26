@@ -197,7 +197,7 @@ sub _set_predefined_barriers {
     my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
-        my @boundaries_barrier =  map {
+        my @boundaries_barrier = map {
             _get_barrier_by_probability({
                 underlying    => $underlying,
                 duration      => $duration,
@@ -209,12 +209,11 @@ sub _set_predefined_barriers {
             });
         } qw(0.05 0.95);
 
-        @$available_barriers =
-            _split_boundaries_barriers({
-                pip_size           => $underlying->pip_size,
-                start_tick         => $start_tick->quote,
-                boundaries_barrier => \@boundaries_barrier
-            });
+        @$available_barriers = _split_boundaries_barriers({
+            pip_size           => $underlying->pip_size,
+            start_tick         => $start_tick->quote,
+            boundaries_barrier => \@boundaries_barrier
+        });
 
         # Expires at the end of the available period.
         Cache::RedisDB->set($cache_keyspace, $barrier_key, $available_barriers, $date_expiry - $now->epoch);
@@ -304,17 +303,25 @@ sub _get_barrier_by_probability {
     for ($iterations = 0; $iterations <= 20; $iterations++) {
         $bet_params->{'barrier'} = ($high + $low) / 2;
         $bet = produce_contract($bet_params);
-
-        my $theo_prob = $bet->theo_probability->amount;
-
+        my $bet_sentiment     = $bet->sentiment;
+        my $theo_prob         = $bet->theo_probability->amount;
+        my $barrier_direction = $bet_params->{'barrier'} > $start_tick ? 'up' : 'down';
         if (abs($theo_prob - $target_theo_prob) < 0.01) {
             last;
         }
 
-        if ($theo_prob > $target_theo_prob) {
-            $low = ($low + $high) / 2;
-        } else {
-            $high = ($low + $high) / 2;
+        if ($bet_sentiment eq 'up' or $bet_sentiment eq 'high_vol' or ($contract_type eq 'NOTOUCH' and $barrier_direction eq 'down')) {
+            if ($theo_prob > $target_theo_prob) {
+                $low = ($low + $high) / 2;
+            } else {
+                $high = ($low + $high) / 2;
+            }
+        } elsif ($bet_sentiment eq 'down' or $bet_sentiment eq 'low_vol' or ($contract_type eq 'ONETOUCH' and $barrier_direction eq 'down')) {
+            if ($theo_prob > $target_theo_prob) {
+                $high = ($low + $high) / 2;
+            } else {
+                $low = ($low + $high) / 2;
+            }
         }
     }
     return $bet->barrier->as_absolute;
