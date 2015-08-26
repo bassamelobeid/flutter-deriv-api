@@ -8,13 +8,11 @@
       "description":"Echo of the request made"
     },
     "payout_currencies": {
-    	"type": "object",
-    	"properties":{
-    		"currencies":{
-    			"type":"string",
-    			"description":"Example:USD"
-    		}
-    	}
+      "type": "array",
+      "items":{
+        "type":"string",
+        "description":"Example: USD"
+      }
     },
     "msg_type":{
         "type":"string",
