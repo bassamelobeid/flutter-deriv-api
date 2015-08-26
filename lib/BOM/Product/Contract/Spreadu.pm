@@ -77,7 +77,7 @@ sub _recalculate_value {
     if ($level) {
         my $point_diff = $level - $self->barrier->as_absolute;
         my $value      = $point_diff * $self->amount_per_point;
-        $self->value(roundnear(0.01,$value));
+        $self->value(roundnear(0.01, $value));
         $self->point_value($self->underlying->pipsized_value($point_diff));
     }
 
