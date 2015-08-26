@@ -218,7 +218,7 @@ subtest 'stop type' => sub {
         amount_per_point => 2,
         stop_loss        => 10
     });
-    is $c->ask_price, '20.00', 'ask is 20.00';
+    is $c->ask_price, 20, 'ask is 20';
     like(
         $c->longcode,
         qr/with stop loss of <strong>10 points<\/strong> and stop profit of <strong>10 points<\/strong>/,
@@ -254,7 +254,7 @@ subtest 'stop type' => sub {
         amount_per_point => 2,
         stop_loss        => 10
     });
-    is $c->ask_price, '10.00', 'ask is 10.00';
+    is $c->ask_price, 10, 'ask is 10';
     like(
         $c->longcode,
         qr/with stop loss of <strong>USD 10<\/strong> and stop profit of <strong>USD 10<\/strong>/,
