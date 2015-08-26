@@ -357,7 +357,7 @@ sub _build_bid_price {
     }
 
     # final safeguard for bid price.
-    $bid = max(0, min($self->payout, $bid));
+    $bid = max(0, min($self->payout + $self->deposit_amount, $bid));
 
     return $bid;
 }

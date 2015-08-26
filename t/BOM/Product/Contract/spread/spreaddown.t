@@ -248,7 +248,7 @@ subtest 'consistent sell at expiry' => sub {
     $c = produce_contract($params);
     is $c->current_tick->quote, 106.11, 'correct current_tick';
     is $c->sell_level, 107.11, 'correct sell_level';
-    is $c->bid_price,  10,     'bid_price max to payout';
+    is $c->bid_price,  20,     'bid_price max to payout';
 };
 
 subtest 'past expiry' => sub {
