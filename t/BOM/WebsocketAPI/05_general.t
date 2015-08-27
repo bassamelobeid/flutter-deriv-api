@@ -14,12 +14,12 @@ is $res->{msg_type}, 'error';
 is $res->{error}->{code}, 'BadRequest';
 
 $t = $t->send_ok({json => {UnrecognisedRequest => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+$res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'error';
 is $res->{error}->{code}, 'UnrecognisedRequest';
 
 $t = $t->send_ok({json => {ping => 1}})->message_ok;
-my $res = decode_json($t->message->[1]);
+$res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 

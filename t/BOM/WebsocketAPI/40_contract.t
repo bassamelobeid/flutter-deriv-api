@@ -128,6 +128,8 @@ while (1) {
     my $res = decode_json($t->message->[1]);
     next if $res->{msg_type} eq 'proposal';
 
+    diag Dumper(\$res);
+
     ok $res->{open_receipt};
     ok $res->{open_receipt}->{fmb_id};
     ok $res->{open_receipt}->{purchase_time};
