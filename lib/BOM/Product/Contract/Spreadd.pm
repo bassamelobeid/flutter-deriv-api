@@ -4,6 +4,7 @@ use Moose;
 extends 'BOM::Product::Contract::Spread';
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 
+use BOM::Platform::Context qw(localize);
 use BOM::Product::Contract::Strike::Spread;
 # Static methods
 
@@ -42,32 +43,17 @@ sub _build_stop_profit_level {
     return $self->underlying->pipsized_value($self->barrier->as_absolute - $self->stop_profit);
 }
 
-has is_expired => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub _get_hit_level {
+    my ($self, $high_hit, $low_hit) = @_;
 
-sub _build_is_expired {
-    my $self = shift;
-
-    my $is_expired = 0;
-    my $tick       = $self->breaching_tick();
-    if ($tick) {
-        my $half_spread = $self->half_spread;
-        my ($high_hit, $low_hit) =
-            ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
-        my $stop_level;
-        if ($low_hit <= $self->stop_profit_level) {
-            $stop_level = $self->stop_profit_level;
-        } elsif ($high_hit >= $self->stop_loss_level) {
-            $stop_level = $self->stop_loss_level;
-        }
-        $is_expired = 1;
-        $self->exit_level($stop_level);
-        $self->_recalculate_value($stop_level);
+    my $stop_level;
+    if ($low_hit <= $self->stop_profit_level) {
+        $stop_level = $self->stop_profit_level;
+    } elsif ($high_hit >= $self->stop_loss_level) {
+        $stop_level = $self->stop_loss_level;
     }
 
-    return $is_expired;
+    return $stop_level;
 }
 
 has [qw(buy_level sell_level)] => (
@@ -89,10 +75,10 @@ sub _recalculate_value {
     my ($self, $level) = @_;
 
     if ($level) {
-        my $point_diff = roundnear(0.01, $self->barrier->as_absolute - $level);
-        my $value = to_monetary_number_format($point_diff * $self->amount_per_point);
-        $self->value($value);
-        $self->point_value($point_diff);
+        my $point_diff = $self->barrier->as_absolute - $level;
+        my $value      = $point_diff * $self->amount_per_point;
+        $self->value(roundnear(0.01, $value));
+        $self->point_value($self->underlying->pipsized_value($point_diff));
     }
 
     return;
@@ -106,15 +92,34 @@ has _highlow_args => (
 sub _build__highlow_args {
     my $self        = shift;
     my $half_spread = $self->half_spread;
-    return [$self->stop_loss_level - $half_spread, $self->stop_profit_level + $half_spread];
+    return [$self->stop_loss_level - $half_spread, $self->stop_profit_level - $half_spread];
 }
 
 sub localizable_description {
     return {
-        dollar => 'Payout of [_1] [_2] for every point [_3] falls from entry level, with stop loss of [_6] [_4] and stop profit of [_6] [_5].',
-        point =>
-            'Payout of [_1] [_2] for every point [_3] falls from entry level, with stop loss of [plural,_4,%d point,%d points] and stop profit of [plural,_5,%d point,%d points].',
+        dollar => '[_1] [_2] payout for every point [_3] falls from entry level, with stop loss of [_6] [_4] and stop profit of [_6] [_5].',
+        point  => '[_1] [_2] payout for every point [_3] falls from entry level, with stop loss of [_4] points and stop profit of [_5] points.',
     };
+}
+
+#VALIDATIONS
+sub _validate_sell_consistency {
+    my $self = shift;
+
+    my @err;
+    if (    $self->date_pricing->is_after($self->date_start)
+        and not $self->is_expired
+        and ($self->sell_level >= $self->stop_loss_level or $self->sell_level <= $self->stop_profit_level))
+    {
+        push @err,
+            {
+            message           => 'Feed has not been updated in feed database yet for[' . $self->underlying->symbol . ']',
+            severity          => 98,
+            message_to_client => localize('Sell on [_1] is pending due to missing market data.', $self->underlying->translated_display_name),
+            };
+    }
+
+    return @err;
 }
 
 no Moose;
