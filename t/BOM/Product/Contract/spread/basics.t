@@ -219,11 +219,7 @@ subtest 'stop type' => sub {
         stop_loss        => 10
     });
     is $c->ask_price, 20, 'ask is 20';
-    like(
-        $c->longcode,
-        qr/with stop loss of 10 points and stop profit of 10 points/,
-        'correct longcode for stop_type: point and stop_loss of 10'
-    );
+    like($c->longcode, qr/with stop loss of 10 points and stop profit of 10 points/, 'correct longcode for stop_type: point and stop_loss of 10');
     $c = produce_contract({
         %$params,
         stop_type        => 'point',
@@ -233,7 +229,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of 1 point and stop profit of 10 points/,
+        qr/with stop loss of 1 points and stop profit of 10 points/,
         '[SPREADU] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
@@ -245,7 +241,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of 1 point and stop profit of 10 points/,
+        qr/with stop loss of 1 points and stop profit of 10 points/,
         '[SPREADD] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
@@ -255,11 +251,7 @@ subtest 'stop type' => sub {
         stop_loss        => 10
     });
     is $c->ask_price, 10, 'ask is 10';
-    like(
-        $c->longcode,
-        qr/with stop loss of USD 10 and stop profit of USD 10/,
-        'correct longcode for stop_type: dollar'
-    );
+    like($c->longcode, qr/with stop loss of USD 10 and stop profit of USD 10/, 'correct longcode for stop_type: dollar');
     is $c->shortcode, 'SPREADU_R_100_2_' . $now->epoch . '_10_10_DOLLAR';
 
     # decimals longcode
@@ -269,22 +261,14 @@ subtest 'stop type' => sub {
         stop_type => 'point',
         stop_loss => 0.6,
     });
-    like(
-        $c->longcode,
-        qr/with stop loss of 0\.6 points and stop profit of 10 points/,
-        'correct longcode decimals stop_loss'
-    );
+    like($c->longcode, qr/with stop loss of 0\.6 points and stop profit of 10 points/, 'correct longcode decimals stop_loss');
     $c = produce_contract({
         %$params,
         bet_type  => 'SPREADD',
         stop_type => 'point',
         stop_loss => 0.6,
     });
-    like(
-        $c->longcode,
-        qr/with stop loss of 0\.6 points and stop profit of 10 points/,
-        'correct longcode for decimals stop_loss'
-    );
+    like($c->longcode, qr/with stop loss of 0\.6 points and stop profit of 10 points/, 'correct longcode for decimals stop_loss');
 };
 
 subtest 'category' => sub {

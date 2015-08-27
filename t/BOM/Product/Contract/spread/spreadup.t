@@ -177,10 +177,10 @@ subtest 'value and point_value checks' => sub {
     is($c->entry_tick->quote,    118.1234, 'entry tick 118.1234');
     is($c->barrier->as_absolute, 119.12,   'barrier 119.12');
     ok $c->current_value;
-    is($c->value,               -918.00, 'correct value');
-    is($c->point_value,         -9.18, 'correct point value');
-    is($c->deposit_amount,      1000,              'correct deposit amount');
-    is($c->ask_price,           1000,              'correct ask price');
+    is($c->value,          -918.00, 'correct value');
+    is($c->point_value,    -9.18,   'correct point value');
+    is($c->deposit_amount, 1000,    'correct deposit amount');
+    is($c->ask_price,      1000,    'correct ask price');
 };
 
 subtest 'consistent sell at expiry' => sub {
