@@ -30,10 +30,23 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            my $data = _sanity_failed($p1) || __handle($c, $p1);
-            return unless $data;
+            my $data;
+            if (ref($p1) eq 'HASH') {
+                $data = _sanity_failed($p1) || __handle($c, $p1);
+                return unless $data;
 
-            $data->{echo_req} = $p1;
+                $data->{echo_req} = $p1;
+            } else {
+                # for invalid call, eg: not json
+                $data = {
+                    echo_req => {},
+                    msg_type => 'error',
+                    error    => {
+                        message => "Bad Request",
+                        code    => "BadRequest"
+                    }};
+            }
+
             $c->send({json => $data});
         });
     return;
@@ -51,6 +64,7 @@ sub __handle {
         ['ticks',             \&BOM::WebSocketAPI::MarketDiscovery::ticks,               0],
         ['proposal',          \&BOM::WebSocketAPI::MarketDiscovery::proposal,            0],
         ['forget',            \&BOM::WebSocketAPI::System::forget,                       0],
+        ['ping',              \&BOM::WebSocketAPI::System::ping,                         0],
         ['payout_currencies', \&BOM::WebSocketAPI::ContractDiscovery::payout_currencies, 0],
         ['active_symbols',    \&BOM::WebSocketAPI::Symbols::active_symbols,              0],
         ['contracts_for',     \&BOM::WebSocketAPI::ContractDiscovery::contracts_for,     0],
@@ -80,7 +94,12 @@ sub __handle {
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return;
+    return {
+        msg_type => 'error',
+        error    => {
+            message => "unrecognised request",
+            code    => "UnrecognisedRequest"
+        }};
 }
 
 sub __authorize_error {
