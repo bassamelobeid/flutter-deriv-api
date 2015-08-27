@@ -6,6 +6,7 @@ use warnings;
 use BOM::Product::Contract::Finder;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Finder::Japan;
+
 sub payout_currencies {
     my $c = shift;
 
