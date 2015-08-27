@@ -5,29 +5,16 @@
   "description":"For a given SYMBOL name, get the list of currently available contracts, and the latest barrier and duration limits for each contract.",
   "properties": {
     "contracts_for": {
-
-      "type": "object",
-      "properties": {
-        "symbol": {
-
-          "type": "string",
-          "description": "It is the short symbol name",
-          "sample": "R_100"
-
+      "type": "string",
+      "description": "It is the short symbol name",
+      "sample": "R_100"
         },
-
-        "region": {
-
-          "type": "string",
-          "description": "An optional flag to determine we would like to to get contract for japan which will include a list of predefined trading period and barriers"
+    "region": {
+      "type": "string",
+      "description": "specifies the region to call the finder",
+      "sample": "other"
         }
-      },
-      "required": [
-        "symbol"
-      ]
-
-    }
-  },
+    },
   "required": [
     "contracts_for"
   ]
