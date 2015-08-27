@@ -58,13 +58,13 @@ subtest 'broker_for_new_account' => sub {
     subtest 'Malaysia' => sub {
         my $bom    = prepare_website();
         my $broker = $bom->broker_for_new_account('my');
-        is $broker, undef, 'no broker';
+        is $broker->code, 'CR', 'restricted countries [Malaysia], default to CR';
     };
 
     subtest 'Malta' => sub {
         my $bom    = prepare_website();
         my $broker = $bom->broker_for_new_account('mt');
-        is $broker, undef, 'no broker';
+        is $broker->code, 'CR', 'restricted countries [Malta], default to CR';
     };
 };
 
