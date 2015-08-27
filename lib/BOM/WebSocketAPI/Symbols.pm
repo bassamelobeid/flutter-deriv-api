@@ -5,6 +5,7 @@ use warnings;
 
 use Mojo::Base 'BOM::WebSocketAPI::BaseController';
 
+use Date::Utility;
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::UnderlyingConfig;
 use BOM::Market::Underlying;
@@ -116,19 +117,20 @@ sub symbol_search {
     return $_by_symbol->{$s} || $_by_display_name->{$s}    # or undef if not found.
 }
 
-sub _ticks {
+sub __validate_start_end {
     my ($c, $args) = @_;
+
     my $ul    = $args->{ul} || die 'no underlying';
     my $start = $args->{start};
     my $end   = $args->{end};
     my $count = $args->{count};
 
-    # we must not return to the client any ticks after this epoch
+    # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
 
     unless ($start
         and $start =~ /^[0-9]+$/
-        and $start > time - 365 * 86400
+        and $start > time() - 365 * 86400
         and $start < $licensed_epoch)
     {
         $start = $licensed_epoch - 86400;
@@ -147,6 +149,43 @@ sub _ticks {
     {
         $count = 500;
     }
+
+    if ($args->{adjust_start_time}) {
+        unless ($ul->exchange->is_open_at($end)) {
+            $c->app->log->debug("Exchange is closed at $end, adjusting start_time");
+            my $shift_back = $ul->exchange->seconds_since_close_at($end);
+            unless (defined $shift_back) {
+                my $last_day = $ul->exchange->trade_date_before(Date::Utility->new($end));
+                if ($last_day) {
+                    my $closes = $ul->exchange->closing_on($last_day)->epoch;
+                    $shift_back = $end - $closes;
+                }
+            }
+            if ($shift_back) {
+                $start -= $shift_back;
+                $end   -= $shift_back;
+                $c->app->log->debug("Adjusted time range: $start - " . ($end // 'disconnect'));
+            }
+        }
+    }
+
+    $args->{start} = $start;
+    $args->{end}   = $end;
+    $args->{count} = $count;
+
+    return $args;
+}
+
+sub _ticks {
+    my ($c, $args) = @_;
+
+    $args = __validate_start_end($c, $args);
+
+    my $ul    = $args->{ul} || die 'no underlying';
+    my $start = $args->{start};
+    my $end   = $args->{end};
+    my $count = $args->{count};
+
     my $ticks = $ul->feed_api->ticks_start_end_with_limit_for_charting({
         start_time => $start,
         end_time   => $end,
@@ -171,35 +210,14 @@ sub ticks {
 
 sub _candles {
     my ($c, $args) = @_;
+
+    $args = __validate_start_end($c, $args);
+
     my $ul          = $args->{ul} || die 'no underlying';
     my $start       = $args->{start};
     my $end         = $args->{end};
     my $count       = $args->{count};
     my $granularity = uc($args->{granularity} || 'M1');
-
-    # we must not return to the client any candles after this epoch
-    my $licensed_epoch = $ul->last_licensed_display_epoch;
-
-    unless ($start
-        and $start =~ /^[0-9]+$/
-        and $start < $licensed_epoch)
-    {
-        $start = $licensed_epoch - 86400;
-    }
-    unless ($end
-        and $end =~ /^[0-9]+$/
-        and $end > $start
-        and $end <= $licensed_epoch)
-    {
-        $end = $licensed_epoch;
-    }
-    unless ($count
-        and $count =~ /^[0-9]+$/
-        and $count > 0
-        and $count < 5000)
-    {
-        $count = 500;
-    }
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
 
