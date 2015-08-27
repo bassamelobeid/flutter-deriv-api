@@ -73,6 +73,7 @@ sub __handle {
         ['buy',       \&BOM::WebSocketAPI::PortfolioManagement::buy,       1, 'open_receipt'],
         ['sell',      \&BOM::WebSocketAPI::PortfolioManagement::sell,      1, 'close_receipt'],
         ['portfolio', \&BOM::WebSocketAPI::PortfolioManagement::portfolio, 1],
+        ['balance',   \&BOM::WebSocketAPI::Accounts::balance,              1],
         ['statement', \&BOM::WebSocketAPI::Accounts::statement,            1],
     );
 
