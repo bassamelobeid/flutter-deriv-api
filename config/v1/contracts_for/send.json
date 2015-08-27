@@ -5,9 +5,21 @@
   "description":"For a given SYMBOL name, get the list of currently available contracts, and the latest barrier and duration limits for each contract.",
   "properties": {
     "contracts_for": {
-      "type": "string",
-      "description": "It is the short symbol name",
-      "sample": "R_50"
+
+      "type": "object",
+      "properties": {
+        "symbol": {
+
+          "type": "string",
+          "description": " OPTIONS is an object which can be empty or can have region as an optional flag: region => japan",
+          "sample":{"symbol": "R_100"}
+
+        }
+      },
+      "required": [
+        "symbol"
+      ]
+
     }
   },
   "required": [
