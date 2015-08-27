@@ -11,9 +11,15 @@
         "symbol": {
 
           "type": "string",
-          "description": " OPTIONS is an object which can be empty or can have region as an optional flag: region => japan",
-          "sample":{"symbol": "R_100"}
+          "description": "It is the short symbol name",
+          "sample": "R_100"
 
+        },
+
+        "region": {
+
+          "type": "string",
+          "description": "An optional flag to determine we would like to to get contract for japan which will include a list of predefined trading period and barriers"
         }
       },
       "required": [
