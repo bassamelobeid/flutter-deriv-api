@@ -105,6 +105,7 @@
       - endsinout
       - staysinout
       - touchnotouch
+      - spreads
     legal_default_currency: USD
     allows_payment_agents: 1
     payment_agents_residence_disable: jp
@@ -128,5 +129,6 @@
       - endsinout
       - staysinout
       - touchnotouch
+      - spreads
     legal_allowed_currencies:
       - USD

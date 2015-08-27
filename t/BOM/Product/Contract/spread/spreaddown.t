@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 5;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -24,18 +24,18 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now
     });
 
+my $params = {
+    spread           => 2,
+    bet_type         => 'SPREADD',
+    currency         => 'USD',
+    underlying       => 'R_100',
+    date_start       => $now,
+    stop_loss        => 10,
+    stop_profit      => 25,
+    amount_per_point => 2,
+    stop_type        => 'point',
+};
 subtest 'spread up' => sub {
-    my $params = {
-        spread           => 2,
-        bet_type         => 'SPREADD',
-        currency         => 'USD',
-        underlying       => 'R_100',
-        date_start       => $now,
-        stop_loss        => 10,
-        stop_profit      => 25,
-        amount_per_point => 2,
-        stop_type        => 'point',
-    };
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $now->epoch,
@@ -79,6 +79,7 @@ subtest 'spread up' => sub {
             epoch      => $now->epoch + 3,
             quote      => 110
         });
+        is $c->current_tick->quote, 110, 'current tick is 110';
         ok $c->is_expired;
         is $c->breaching_tick->quote, 110, 'breaching tick is 110';
         is $c->breaching_tick->epoch, $now->epoch + 3, 'correct breaching tick epoch';
@@ -95,6 +96,7 @@ subtest 'spread up' => sub {
             epoch      => $now->epoch + 4,
             quote      => 111
         });
+        is $c->current_tick->quote, 111, 'current tick is 110';
         ok $c->is_expired;
         # always the first hit tick
         is $c->breaching_tick->quote, 110, 'breaching tick is 110';
@@ -116,14 +118,14 @@ subtest 'spread up' => sub {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch + 6,
-            quote      => 68
+            quote      => 66
         });
         my $c = produce_contract($params);
         is $c->entry_tick->quote, 93, 'entry tick is 93';
         cmp_ok $c->barrier->as_absolute, '==', 92.00, 'barrier is 92.00';
         cmp_ok $c->stop_profit_level, '==', 67.00, 'stop profit level 67.00';
         ok $c->is_expired;
-        is $c->breaching_tick->quote, 68, 'breaching tick is 68';
+        is $c->breaching_tick->quote, 66, 'breaching tick is 68';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
         cmp_ok $c->value,      '==', 50, 'value is 50';
         cmp_ok $c->exit_level, '==', 67, 'exit level 67';
@@ -140,11 +142,130 @@ subtest 'spread up' => sub {
         cmp_ok $c->stop_profit_level, '==', 67.00, 'stop profit level 67.00';
         ok $c->is_expired;
         # always the first hit tick
-        is $c->breaching_tick->quote, 68, 'breaching tick is 68';
+        is $c->breaching_tick->quote, 66, 'breaching tick is 66';
         is $c->breaching_tick->epoch, $now->epoch + 6, 'correct braching tick epoch';
         cmp_ok $c->value,      '==', 50, 'value is 50';
         cmp_ok $c->exit_level, '==', 67, 'exit level 67';
 
     }
     'hit stop profit';
+};
+
+subtest 'value and point_value checks' => sub {
+    my $new_now = $now->plus_time_interval('8s');
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $new_now->epoch,
+        quote      => 118.1234
+    });
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $new_now->epoch + 2,
+        quote      => 110.9434
+    });
+    my $params = {
+        spread           => 2,
+        bet_type         => 'SPREADD',
+        currency         => 'USD',
+        underlying       => 'R_100',
+        date_start       => $new_now->epoch - 1,
+        stop_loss        => 10,
+        stop_profit      => 25,
+        amount_per_point => 100,
+        stop_type        => 'point',
+        date_pricing     => $new_now->epoch + 2,
+    };
+    my $c = produce_contract($params);
+    is($c->entry_tick->quote,    118.1234, 'entry tick 118.1234');
+    is($c->barrier->as_absolute, 117.12,   'barrier 119.12');
+    ok $c->current_value;
+    is($c->value,          518.00, 'correct value');
+    is($c->point_value,    5.18,   'correct point value');
+    is($c->deposit_amount, 1000,   'correct deposit amount');
+    is($c->ask_price,      1000,   'correct ask price');
+};
+
+subtest 'consistent sell at expiry' => sub {
+    my $new_now        = $now->plus_time_interval('8s');
+    my $stop_loss_tick = BOM::Market::Data::Tick->new({
+        quote  => 126.12,
+        epoch  => $new_now->epoch + 3,    # Intentionally very old for recognizability.
+        symbol => 'R_100',
+    });
+    my $params = {
+        spread           => 2,
+        bet_type         => 'SPREADD',
+        currency         => 'USD',
+        underlying       => 'R_100',
+        date_start       => $new_now->epoch - 1,
+        stop_loss        => 10,
+        stop_profit      => 10,
+        amount_per_point => 1,
+        stop_type        => 'point',
+        date_pricing     => $new_now->epoch + 3,
+        current_tick     => $stop_loss_tick,
+    };
+    my $c = produce_contract($params);
+    is $c->barrier->as_absolute, 117.12, 'correct barrier';
+    is $c->stop_profit_level, 107.12, 'correct stop profit level';
+    is $c->stop_loss_level,   127.12, 'correct stop loss level';
+    is $c->current_tick->quote, 126.12, 'correct current_tick';
+    ok !$c->is_expired,       'not expired because tick has not reached the db';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like $c->primary_validation_error->{message}, qr/Feed has not been updated in feed database yet/, 'correct error message';
+
+    $stop_loss_tick = BOM::Market::Data::Tick->new({
+        quote  => 126.13,
+        epoch  => $new_now->epoch + 3,
+        symbol => 'R_100',
+    });
+    $params->{current_tick} = $stop_loss_tick;
+    $c = produce_contract($params);
+    is $c->current_tick->quote, 126.13, 'correct current_tick';
+    is $c->sell_level, 127.13, 'correct sell_level';
+    is $c->bid_price,  0,      'bid price floored to 0';
+
+    my $stop_profit_tick = BOM::Market::Data::Tick->new({
+        quote  => 106.12,
+        epoch  => $new_now->epoch + 3,
+        symbol => 'R_100',
+    });
+    $params->{current_tick} = $stop_profit_tick;
+    $c = produce_contract($params);
+    is $c->current_tick->quote, 106.12, 'correct current_tick';
+    ok !$c->is_expired,       'not expired because tick has not reached the db';
+    ok !$c->is_valid_to_sell, 'not valid to sell';
+    like $c->primary_validation_error->{message}, qr/Feed has not been updated in feed database yet/, 'correct error message';
+
+    $stop_profit_tick = BOM::Market::Data::Tick->new({
+        quote  => 106.11,
+        epoch  => $new_now->epoch + 3,
+        symbol => 'R_100',
+    });
+    $params->{current_tick} = $stop_profit_tick;
+    $c = produce_contract($params);
+    is $c->current_tick->quote, 106.11, 'correct current_tick';
+    is $c->sell_level, 107.11, 'correct sell_level';
+    is $c->bid_price,  20,     'bid_price max to payout';
+};
+
+subtest 'past expiry' => sub {
+    $params->{stop_loss}   = 100;
+    $params->{stop_profit} = 100;
+    $params->{spread}      = 2;
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'R_100',
+        epoch      => $now->epoch + 86400 * 365 + 1,
+        quote      => 128
+    });
+    $params->{date_pricing} = $params->{date_start} + 86400 * 365;    # one second after expiry
+    my $c = produce_contract($params);
+    ok !$c->is_expired, 'not expired';
+    $params->{date_pricing} = $params->{date_start} + 86400 * 365 + 1;    # one second after expiry
+    $c = produce_contract($params);
+    cmp_ok $c->date_pricing->epoch, ">", $c->date_expiry->epoch, "past expiry";
+    cmp_ok $c->date_expiry->epoch,     '==', $c->date_start->plus_time_interval('365d')->epoch, 'expiry is 365d after start';
+    cmp_ok $c->date_settlement->epoch, '==', $c->date_start->plus_time_interval('365d')->epoch, 'settlement is 365d after start';
+    ok $c->is_expired, 'is expired after contract past expiry time';
+    cmp_ok $c->exit_level, '==', 129, 'exit_level at expiry';
 };
