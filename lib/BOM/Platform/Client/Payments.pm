@@ -12,6 +12,7 @@ use List::Util qw(min);
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Client::IDAuthentication;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
+use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
 
