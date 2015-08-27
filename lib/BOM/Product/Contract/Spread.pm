@@ -1,17 +1,17 @@
 package BOM::Product::Contract::Spread;
-use Time::HiRes qw(sleep);
 
 use Moose;
 
+use Time::HiRes qw(sleep);
 use Date::Utility;
 use BOM::Platform::Runtime;
-
 use POSIX qw(floor);
 use Math::Round qw(round);
 use List::Util qw(min max);
 use Scalar::Util qw(looks_like_number);
+use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+
 use BOM::Platform::Context qw(localize request);
-use Format::Util::Numbers qw(roundnear);
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
@@ -19,13 +19,14 @@ use BOM::Market::Types;
 
 with 'MooseX::Role::Validatable';
 
-# STATIC
-# added for transaction validation
-sub pricing_engine_name { return '' }
-sub tick_expiry         { return 0 }
-# added for CustomClientLimits
-sub is_atm_bet { return 0 }
-sub is_spread  { return 1 }
+use constant {    # added for CustomClientLimits & Transaction
+    is_spread           => 1,
+    is_atm_bet          => 0,
+    expiry_daily        => 0,
+    fixed_expiry        => 0,
+    tick_expiry         => 0,
+    pricing_engine_name => '',
+};
 
 sub BUILD {
     my $self = shift;
@@ -117,10 +118,22 @@ has date_pricing => (
     default => sub { Date::Utility->new },
 );
 
-has [qw(date_expiry)] => (
-    is  => 'ro',
-    isa => 'Maybe[bom_date_object]',
+has [qw(date_expiry date_settlement)] => (
+    is         => 'ro',
+    isa        => 'bom_date_object',
+    lazy_build => 1,
 );
+
+sub _build_date_expiry {
+    my $self = shift;
+    # Spread contracts do not have a fixed expiry.
+    # But in our case, we set an expiry of 365d as the maximum holding time for a spread contract.
+    return $self->date_start->plus_time_interval('365d');
+}
+
+sub _build_date_settlement {
+    return shift->date_expiry;
+}
 
 # the value of the position at close
 has [qw(value point_value)] => (
@@ -220,29 +233,29 @@ sub _build_entry_tick {
     return $entry_tick;
 }
 
-has ask_price => (
+=head2 ask_price
+
+The deposit amount display to the client.
+
+=head2 deposit_amount
+
+The unformatted amount that we debit from the client account upon contract purchase.
+
+=cut
+
+has [qw(ask_price deposit_amount)] => (
     is         => 'ro',
     lazy_build => 1,
 );
 
 sub _build_ask_price {
     my $self = shift;
-    return roundnear(0.01, $self->stop_loss * $self->amount_per_point);
+    return roundnear(0.01, $self->deposit_amount);
 }
 
-has [qw(buy_level sell_level)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_buy_level {
+sub _build_deposit_amount {
     my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote + $self->half_spread);
-}
-
-sub _build_sell_level {
-    my $self = shift;
-    return $self->underlying->pipsized_value($self->current_tick->quote - $self->half_spread);
+    return $self->stop_loss * $self->amount_per_point;
 }
 
 has [qw(is_valid_to_buy is_valid_to_sell may_settle_automatically)] => (
@@ -290,7 +303,8 @@ sub _build_longcode {
         push @other, $self->currency;
     }
 
-    return localize($description, ($self->currency, $self->amount_per_point, $self->underlying->translated_display_name, @other));
+    return localize($description,
+        ($self->currency, to_monetary_number_format($self->amount_per_point), $self->underlying->translated_display_name, @other));
 }
 
 sub breaching_tick {
@@ -335,14 +349,44 @@ sub _build_bid_price {
     my $bid;
     # we need to take into account the stop loss premium paid.
     if ($self->is_expired) {
-        $bid = $self->ask_price + $self->value;
+        $bid = $self->deposit_amount + $self->value;
     } else {
         $self->exit_level($self->sell_level);
         $self->_recalculate_value($self->sell_level);
-        $bid = $self->ask_price + $self->value;
+        $bid = $self->deposit_amount + $self->value;
     }
 
+    # final safeguard for bid price.
+    $bid = max(0, min($self->payout + $self->deposit_amount, $bid));
+
     return roundnear(0.01, $bid);
+}
+
+has is_expired => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_is_expired {
+    my $self = shift;
+
+    my $is_expired = 0;
+    my $tick       = $self->breaching_tick();
+    if ($self->date_pricing->is_after($self->date_expiry)) {
+        $is_expired = 1;
+        $self->exit_level($self->sell_level);
+        $self->_recalculate_value($self->sell_level);
+    } elsif ($tick) {
+        my $half_spread = $self->half_spread;
+        my ($high_hit, $low_hit) =
+            ($self->underlying->pipsized_value($tick->quote + $half_spread), $self->underlying->pipsized_value($tick->quote - $half_spread));
+        my $stop_level = $self->_get_hit_level($high_hit, $low_hit);
+        $is_expired = 1;
+        $self->exit_level($stop_level);
+        $self->_recalculate_value($stop_level);
+    }
+
+    return $is_expired;
 }
 
 sub current_value {
@@ -352,6 +396,17 @@ sub current_value {
         dollar => $self->value,
         point  => $self->point_value,
     };
+}
+
+has payout => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_payout {
+    my $self = shift;
+
+    return $self->stop_profit * $self->amount_per_point;
 }
 
 # VALIDATIONS #
@@ -422,7 +477,7 @@ sub _validate_stop_profit {
     my @err;
     my $limits = {
         min => 1,
-        max => min($self->stop_loss * 5, 999 / $self->amount_per_point)};
+        max => min($self->stop_loss * 5, 1000 / $self->amount_per_point)};
     if ($self->stop_profit < $limits->{min} or $self->stop_profit > $limits->{max}) {
         my ($min, $max, $unit) = $self->_get_min_max_unit(@{$limits}{'min', 'max'});
         my $message_to_client = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
