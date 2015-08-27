@@ -102,26 +102,6 @@ sub localizable_description {
     };
 }
 
-#VALIDATIONS
-sub _validate_sell_consistency {
-    my $self = shift;
-
-    my @err;
-    if (    $self->date_pricing->is_after($self->date_start)
-        and not $self->is_expired
-        and ($self->sell_level >= $self->stop_loss_level or $self->sell_level <= $self->stop_profit_level))
-    {
-        push @err,
-            {
-            message           => 'Feed has not been updated in feed database yet for[' . $self->underlying->symbol . ']',
-            severity          => 98,
-            message_to_client => localize('Sell on [_1] is pending due to missing market data.', $self->underlying->translated_display_name),
-            };
-    }
-
-    return @err;
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
