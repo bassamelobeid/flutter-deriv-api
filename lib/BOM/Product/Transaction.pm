@@ -1552,7 +1552,7 @@ sub sell_expired_contracts {
 
     if (not $sold or @bets_to_sell > @$sold) {
         # We missed some, let's figure out which ones they are.
-        my %sold_fmbs = map { $_->{fmb}->{id} } @{$sold // []};
+        my %sold_fmbs = map { $_->{fmb}->{id} => 1 } @{$sold // []};
         my %missed;
         foreach my $bet (@bets_to_sell) {
             next if $sold_fmbs{$bet->{id}};    # Was not missed.
