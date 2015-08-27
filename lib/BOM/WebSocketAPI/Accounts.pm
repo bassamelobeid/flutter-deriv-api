@@ -101,4 +101,27 @@ sub get_transactions {
     };
 }
 
+sub balance {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+
+    my @client_balances;
+    for my $cl ($client->siblings) {
+        next unless $cl->default_account;
+
+        push @client_balances,
+            {
+            loginid  => $cl->loginid,
+            currency => $cl->default_account->currency_code,
+            balance  => $cl->default_account->balance,
+            };
+    }
+
+    return {
+        msg_type => 'balance',
+        balance  => \@client_balances,
+    };
+}
+
 1;

@@ -43,6 +43,12 @@ $statement = decode_json($t->message->[1]);
 ok($statement->{statement});
 is($statement->{statement}->{count}, 2);
 
+## balance
+$t = $t->send_ok({json => {balance => 1}})->message_ok;
+my $balance = decode_json($t->message->[1]);
+ok($balance->{balance});
+# diag Dumper(\$balance);
+
 $t->finish_ok;
 
 done_testing();
