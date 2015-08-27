@@ -16,7 +16,6 @@ my $all = [qw(
         endsinout
         staysinout
         touchnotouch
-        spreads
         )];
 my $no_spreads = [qw(
         asian
