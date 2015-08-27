@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 4;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -181,71 +181,6 @@ subtest 'value and point_value checks' => sub {
     is($c->point_value,    -9.18,   'correct point value');
     is($c->deposit_amount, 1000,    'correct deposit amount');
     is($c->ask_price,      1000,    'correct ask price');
-};
-
-subtest 'consistent sell at expiry' => sub {
-    my $new_now        = $now->plus_time_interval('8s');
-    my $stop_loss_tick = BOM::Market::Data::Tick->new({
-        quote  => 110.12,
-        epoch  => $new_now->epoch + 3,
-        symbol => 'R_100',
-    });
-    my $params = {
-        spread           => 2,
-        bet_type         => 'SPREADU',
-        currency         => 'USD',
-        underlying       => 'R_100',
-        date_start       => $new_now->epoch - 1,
-        stop_loss        => 10,
-        stop_profit      => 10,
-        amount_per_point => 1,
-        stop_type        => 'point',
-        date_pricing     => $new_now->epoch + 3,
-        current_tick     => $stop_loss_tick,
-    };
-    my $c = produce_contract($params);
-    is $c->barrier->as_absolute, 119.12, 'correct barrier';
-    is $c->stop_profit_level, 129.12, 'correct stop profit level';
-    is $c->stop_loss_level,   109.12, 'correct stop loss level';
-    is $c->current_tick->quote, 110.12, 'correct current_tick';
-    is $c->sell_level, 109.12, 'correct sell level';
-    ok !$c->is_expired,       'not expired because tick has not reached the db';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
-    like $c->primary_validation_error->{message}, qr/Feed has not been updated in feed database yet/, 'correct error message';
-
-    $stop_loss_tick = BOM::Market::Data::Tick->new({
-        quote  => 110.11,
-        epoch  => $new_now->epoch + 3,
-        symbol => 'R_100',
-    });
-    $params->{current_tick} = $stop_loss_tick;
-    $c = produce_contract($params);
-    is $c->current_tick->quote, 110.11, 'correct current_tick';
-    is $c->sell_level, 109.11, 'correct sell level';
-    is $c->bid_price,  0.,     'bid price floored at 0';
-
-    my $stop_profit_tick = BOM::Market::Data::Tick->new({
-        quote  => 130.12,
-        epoch  => $new_now->epoch + 3,
-        symbol => 'R_100',
-    });
-    $params->{current_tick} = $stop_profit_tick;
-    $c = produce_contract($params);
-    is $c->current_tick->quote, 130.12, 'correct current_tick';
-    ok !$c->is_expired,       'not expired because tick has not reached the db';
-    ok !$c->is_valid_to_sell, 'not valid to sell';
-    like $c->primary_validation_error->{message}, qr/Feed has not been updated in feed database yet/, 'correct error message';
-
-    $stop_profit_tick = BOM::Market::Data::Tick->new({
-        quote  => 130.13,
-        epoch  => $new_now->epoch + 3,
-        symbol => 'R_100',
-    });
-    $params->{current_tick} = $stop_profit_tick;
-    $c = produce_contract($params);
-    is $c->current_tick->quote, 130.13, 'correct current_tick';
-    is $c->sell_level, 129.13, 'correct sell level';
-    is $c->bid_price,  20,     'bid_price max at payout';
 };
 
 subtest 'past expiry' => sub {
