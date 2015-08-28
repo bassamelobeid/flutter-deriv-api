@@ -14,6 +14,7 @@ use Date::Utility;
 use BOM::Database::Helper::FinancialMarketBet;
 
 use BOM::Platform::Client::Utility;
+use BOM::Utility::Config;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
