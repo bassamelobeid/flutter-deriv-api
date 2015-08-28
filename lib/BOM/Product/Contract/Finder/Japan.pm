@@ -7,6 +7,7 @@ use BOM::Product::Offerings;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Category;
 use Format::Util::Numbers qw(roundnear);
+use List::Util qw(reduce);
 use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(available_contracts_for_symbol);
@@ -167,9 +168,10 @@ sub _predefined_trading_period {
     foreach my $o (@offerings) {
         my $minimum_contract_duration = Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds;
         foreach my $trading_period (@$trading_periods) {
-            if (Time::Duration::Concise->new({interval => $trading_period->{duration}})->seconds < $minimum_contract_duration) {
+            my $trading_duration = Time::Duration::Concise->new({interval => $trading_period->{duration}})->seconds;
+            if ($trading_duration < $minimum_contract_duration) {
                 next;
-            } elsif ($now->day_of_week == 5 and $trading_period->{date_expiry}->epoch > $today_close->epoch) {
+            } elsif ($now->day_of_week == 5 and $trading_duration < 86400 and $trading_period->{date_expiry}->{epoch} > $today_close->epoch) {
                 next;
             } else {
                 push @new_offerings, {%{$o}, trading_period => $trading_period};
@@ -198,6 +200,7 @@ sub _set_predefined_barriers {
     my $duration           = $trading_period->{duration};
     my $barrier_key        = join($cache_sep, $underlying->symbol, $date_start, $date_expiry);
     my $available_barriers = Cache::RedisDB->get($cache_keyspace, $barrier_key);
+    my $current_tick_quote = $current_tick->quote;
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
         my @boundaries_barrier = map {
@@ -223,10 +226,10 @@ sub _set_predefined_barriers {
     }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = $available_barriers;
-        $contract->{barrier} = (sort { abs($current_tick->quote - $a) <=> abs($current_tick->quote - $b) } @{$available_barriers})[0];
+        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @{$available_barriers};
     } elsif ($contract->{barriers} == 2) {
-        my @lower_barriers  = map { $_ } grep { $current_tick->quote > $_ } @{$available_barriers};
-        my @higher_barriers = map { $_ } grep { $current_tick->quote < $_ } @{$available_barriers};
+        my @lower_barriers  = grep { $current_tick_quote > $_ } @{$available_barriers};
+        my @higher_barriers = grep { $current_tick_quote < $_ } @{$available_barriers};
         $contract->{available_barriers} = [\@lower_barriers, \@higher_barriers];
         $contract->{high_barrier}       = $higher_barriers[0];
         $contract->{low_barrier}        = $lower_barriers[0];
@@ -240,36 +243,19 @@ sub _set_predefined_barriers {
 
 Split the boundaries barriers into 20 barriers.
 The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
-Rules:
-   -  5 barrriers with +- 1 minimum_step from previous barrier (with the start_tick as start point)
-   -  2 barriers with +- 2 minimum_step from previous barrier
-   -  1 barrier with +- 5  minimum_step from previous barrier
-   -  1 barrier with +- 10 minimum_step from previous barrier
-   -  1 barrier with +- 20 minimum_step from previous_barrier
+
 =cut
 
 sub _split_boundaries_barriers {
     my $args = shift;
 
-    my $pip_size           = $args->{pip_size};
-    my $spot_at_start      = $args->{start_tick};
-    my @boundaries_barrier = @{$args->{boundaries_barrier}};
-
+    my $pip_size                    = $args->{pip_size};
+    my $spot_at_start               = $args->{start_tick};
+    my @boundaries_barrier          = @{$args->{boundaries_barrier}};
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
-    my $minimum_step = roundnear($pip_size, $distance_between_boundaries / 88);
-    my @available_barriers;
-    my @steps                  = (1, 1, 1, 1, 1, 2, 2, 5, 10, 20);
-    my $previous_right_barrier = $spot_at_start;
-    my $previous_left_barrier  = $spot_at_start;
-    foreach my $step (sort @steps) {
-        my $right_barrier = $previous_right_barrier + $step * $minimum_step;
-        my $left_barrier  = $previous_left_barrier - $step * $minimum_step;
-        $previous_right_barrier = $right_barrier;
-        $previous_left_barrier  = $left_barrier;
-        push @available_barriers, ($right_barrier, $left_barrier);
-
-    }
-    return @available_barriers;
+    my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
+    my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[$#steps] * 2));
+    return map { $spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step } @steps;
 }
 
 =head2 _get_barrier_by_probability
@@ -302,8 +288,7 @@ sub _get_barrier_by_probability {
         date_pricing => $date_start,
     };
 
-    my $iterations = 0;
-    for ($iterations = 0; $iterations <= 20; $iterations++) {
+    for (my $iterations = 0; $iterations <= 20; $iterations++) {
         $bet_params->{'barrier'} = ($high + $low) / 2;
         $bet = produce_contract($bet_params);
         my $bet_sentiment     = $bet->sentiment;
