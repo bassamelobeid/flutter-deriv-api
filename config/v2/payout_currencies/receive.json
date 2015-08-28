@@ -9,9 +9,10 @@
     },
     "payout_currencies": {
       "type": "array",
-      "items":{
-        "type":"string",
-        "description":"Example: USD"
+      "items": {
+        "type": "string",
+        "sample": "USD",
+        "description": ""
       }
     },
     "msg_type":{
