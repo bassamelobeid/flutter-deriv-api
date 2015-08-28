@@ -236,11 +236,11 @@ sub _build_risk_markup {
             name        => 'risk_markup_adjustment',
             description => 'A markup adjustment for the probability of extreme cases where trend/vol are outside pre-specified surface',
             set_by      => __PACKAGE__,
-            minimum     => 1.03,
-            base_amount => 1.03,
+            minimum     => 3,
+            base_amount => 3,
         });
 
-        $risk_markup->include_adjustment('multiply', $risk_adj);
+        $risk_markup->include_adjustment('add', $risk_adj);
     }
 
     return $risk_markup;
