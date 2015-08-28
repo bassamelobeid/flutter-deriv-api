@@ -254,8 +254,9 @@ sub _split_boundaries_barriers {
     my @boundaries_barrier          = @{$args->{boundaries_barrier}};
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
     my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
-    my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[$#steps] * 2));
-    return map { $spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step } @steps;
+    my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
+    my @barriers                    = map { $spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step } @steps;
+    return @barriers;
 }
 
 =head2 _get_barrier_by_probability
