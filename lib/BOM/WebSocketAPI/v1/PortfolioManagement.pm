@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::PortfolioManagement;
+package BOM::WebSocketAPI::v1::PortfolioManagement;
 
 use strict;
 use warnings;

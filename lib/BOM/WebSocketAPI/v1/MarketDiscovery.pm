@@ -1,11 +1,11 @@
-package BOM::WebSocketAPI::MarketDiscovery;
+package BOM::WebSocketAPI::v1::MarketDiscovery;
 
 use strict;
 use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
-use BOM::WebSocketAPI::Symbols;
+use BOM::WebSocketAPI::v1::Symbols;
 
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -26,7 +26,7 @@ sub ticks {
     if ($args->{end}) {
         my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
         if ($style eq 'ticks') {
-            my $ticks = $c->BOM::WebSocketAPI::Symbols::_ticks({%$args, ul => $ul});    ## no critic
+            my $ticks = $c->BOM::WebSocketAPI::v1::Symbols::_ticks({%$args, ul => $ul});    ## no critic
             my $history = {
                 prices => [map { $_->{price} } @$ticks],
                 times  => [map { $_->{time} } @$ticks],
@@ -50,7 +50,7 @@ sub ticks {
             };
 
             if (
-                my $watcher = $c->BOM::WebSocketAPI::Symbols::_candles({
+                my $watcher = $c->BOM::WebSocketAPI::v1::Symbols::_candles({
                         %$args,    ## no critic
                         ul     => $ul,
                         sender => $sender

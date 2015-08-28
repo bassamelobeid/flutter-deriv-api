@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::Accounts;
+package BOM::WebSocketAPI::v1::Accounts;
 
 use strict;
 use warnings;

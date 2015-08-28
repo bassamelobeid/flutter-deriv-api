@@ -1,9 +1,9 @@
-package BOM::WebSocketAPI::Symbols;
+package BOM::WebSocketAPI::v1::Symbols;
 
 use strict;
 use warnings;
 
-use Mojo::Base 'BOM::WebSocketAPI::BaseController';
+use Mojo::Base 'BOM::WebSocketAPI::v1::BaseController';
 
 use Date::Utility;
 use BOM::Feed::Data::AnyEvent;

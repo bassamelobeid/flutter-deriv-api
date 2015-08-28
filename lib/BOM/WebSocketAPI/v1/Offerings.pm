@@ -1,14 +1,14 @@
-package BOM::WebSocketAPI::Offerings;
+package BOM::WebSocketAPI::v1::Offerings;
 
 use strict;
 use warnings;
 
 use Try::Tiny;
 
-use Mojo::Base 'BOM::WebSocketAPI::BaseController';
+use Mojo::Base 'BOM::WebSocketAPI::v1::BaseController';
 
 use BOM::Product::Offerings;
-use BOM::WebSocketAPI::Symbols;
+use BOM::WebSocketAPI::v1::Symbols;
 use BOM::Product::Contract::Offerings;
 
 my @READABLES = qw/market submarket contract_display start_type sentiment expiry_type/;
@@ -40,7 +40,7 @@ sub query {
     # special-case: if symbol missing, map any symbol_display field to it.
     if (my $symbol_display = $args->{symbol_display}) {
         $args->{symbol} //= do {
-            my $sp = BOM::WebSocketAPI::Symbols::symbol_search($symbol_display);
+            my $sp = BOM::WebSocketAPI::v1::Symbols::symbol_search($symbol_display);
             $sp ? $sp->{symbol} : $symbol_display;
             }
     }
@@ -85,7 +85,7 @@ sub query {
         # special-case: efficiently generate symbol displayname too; remember mapping in both directions..
         for ($row->{underlying_symbol}) {
             $row->{symbol_display} = $sym_to_ds{$_} ||= do {
-                my $sp = BOM::WebSocketAPI::Symbols::symbol_search($_);
+                my $sp = BOM::WebSocketAPI::v1::Symbols::symbol_search($_);
                 $sp ? $sp->{display_name} : $_;
             };
             $ds_to_sym{$sym_to_ds{$_}} ||= $_;

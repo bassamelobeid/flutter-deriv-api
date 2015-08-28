@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::Authorize;
+package BOM::WebSocketAPI::v1::Authorize;
 
 use strict;
 use warnings;
