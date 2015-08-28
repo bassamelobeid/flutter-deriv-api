@@ -28,7 +28,7 @@
               "description": "Tick value."
             }
           ]
-        },
+        }
       }
     },
     "msg_type": {
