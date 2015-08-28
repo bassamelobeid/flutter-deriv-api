@@ -46,6 +46,7 @@ sub entry_point {
                         code    => "BadRequest"
                     }};
             }
+            $data->{version} = 2;
 
             $c->send({json => $data});
         });
