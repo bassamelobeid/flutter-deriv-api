@@ -8,7 +8,7 @@
       "description":"Echo of the request made"
     },
     "ping": {
-    	"type": "string",
+    	"type": "object",
     	"description": "Example: pong"
     },
     "msg_type": {
