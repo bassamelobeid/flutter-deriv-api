@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title":"Balance Send",
+  "properties": {
+    "balance": {
+      "type": "number",
+      "sample": "1",
+      "description": "It is the default account number"
+    }
+  },
+  "required": [
+    "balance"
+  ]
+}
