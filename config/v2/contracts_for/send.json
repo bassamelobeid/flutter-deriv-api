@@ -7,9 +7,14 @@
     "contracts_for": {
       "type": "string",
       "description": "It is the short symbol name",
-      "sample": "R_50"
-    }
-  },
+      "sample": "R_100"
+        },
+    "region": {
+      "type": "string",
+      "description": "specifies the region to call the finder",
+      "sample": "other"
+        }
+    },
   "required": [
     "contracts_for"
   ]
