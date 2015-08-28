@@ -87,6 +87,7 @@ sub _predefined_trading_period {
     my $now             = $args->{date};
     my $in_period       = $now->hour - ($now->hour % $period_length->hours);
     my $trading_key     = join($cache_sep, $exchange->symbol, $now->date, $in_period);
+    my $today_close     = $exchange->closing_on($now);
     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
         my $today        = $now->truncate_to_day;                                        # Start of the day object.
@@ -154,7 +155,7 @@ sub _predefined_trading_period {
                 duration => ($_->hour - $period_start->hour) . 'h',
                 }
             } grep {
-            $now->is_before($_) and $period_start->hour > 0
+            $now->is_before($_) and $period_start->hour > 0 and $period_start->epoch < $today_close->epoch
             } map {
             $period_start->plus_time_interval($_)
             } @hourly_durations;
@@ -167,6 +168,8 @@ sub _predefined_trading_period {
         my $minimum_contract_duration = Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds;
         foreach my $trading_period (@$trading_periods) {
             if (Time::Duration::Concise->new({interval => $trading_period->{duration}})->seconds < $minimum_contract_duration) {
+                next;
+            } elsif ($now->day_of_week == 5 and $trading_period->{date_expiry}->epoch > $today_close->epoch) {
                 next;
             } else {
                 push @new_offerings, {%{$o}, trading_period => $trading_period};
