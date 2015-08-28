@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::v1::ContractDiscovery;
+package BOM::WebSocketAPI::v2::ContractDiscovery;
 
 use strict;
 use warnings;
