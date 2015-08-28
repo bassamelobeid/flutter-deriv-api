@@ -226,7 +226,7 @@ sub _set_predefined_barriers {
     }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = $available_barriers;
-        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @{$available_barriers};
+        $contract->{barrier} = reduce { $current_tick->quote - $a < $current_tick->quote - $b ? $a : $b } @{$available_barriers};
     } elsif ($contract->{barriers} == 2) {
         my @lower_barriers  = grep { $current_tick_quote > $_ } @{$available_barriers};
         my @higher_barriers = grep { $current_tick_quote < $_ } @{$available_barriers};
