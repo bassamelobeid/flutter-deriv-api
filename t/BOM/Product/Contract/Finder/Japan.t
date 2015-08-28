@@ -9,7 +9,7 @@ use Test::NoWarnings;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Product::Contract::Finder::Japan qw(predefined_contracts_for_symbol);
+use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::Market::Underlying;
 use Date::Utility;
@@ -43,7 +43,7 @@ subtest "predefined contracts for symbol" => sub {
             epoch      => $now->epoch,
             quote      => 100
         });
-        my $f = predefined_contracts_for_symbol({
+        my $f = available_contracts_for_symbol({
             symbol => $u,
             date   => $now
         });

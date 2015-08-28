@@ -9,15 +9,15 @@ use BOM::Product::Contract::Category;
 use Format::Util::Numbers qw(roundnear);
 use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
-our @EXPORT_OK = qw(predefined_contracts_for_symbol);
+our @EXPORT_OK = qw(available_contracts_for_symbol);
 
-=head1 predefined_contracts_for_symbol
+=head1 available_contracts_for_symbol
 
-Returns predefined set of contracts for a particular contract which included predefined trading period and 20 predefined barriers associated with the trading period
+Returns a set of available contracts for a particular contract which included predefined trading period and 20 predefined barriers associated with the trading period
 
 =cut
 
-sub predefined_contracts_for_symbol {
+sub available_contracts_for_symbol {
     my $args         = shift;
     my $symbol       = $args->{symbol} || die 'no symbol';
     my $underlying   = BOM::Market::Underlying->new($symbol);
