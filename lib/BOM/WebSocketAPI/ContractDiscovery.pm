@@ -30,7 +30,7 @@ sub contracts_for {
     my $region = $args->{region} || 'other';
     my $contracts_for;
     if ($region eq 'japan') {
-        $contracts_for = BOM::Product::Contract::Finder::Japan::predefined_contracts_for_symbol({symbol => $symbol});
+        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
     } else {
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
