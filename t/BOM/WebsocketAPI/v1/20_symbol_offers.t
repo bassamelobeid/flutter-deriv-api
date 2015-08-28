@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Mojo;
-use FindBin qw/$Bin/;
 use JSON::Schema;
 use File::Slurp;
 use JSON;
@@ -14,7 +13,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 my $t = Test::Mojo->new('BOM::WebSocketAPI');
 $t->websocket_ok("/websockets/contracts");
 
-my $config_dir = "$Bin/../config/v1";
+my $config_dir = "config/v1";
 
 # test payout_currencies
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;

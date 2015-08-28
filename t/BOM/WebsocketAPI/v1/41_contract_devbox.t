@@ -2,7 +2,6 @@ use Test::Most;
 use Test::Mojo;
 use JSON;
 use Data::Dumper;
-use FindBin qw/$Bin/;
 use JSON::Schema;
 use File::Slurp;
 
@@ -11,7 +10,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 plan skip_all => 'devbox only' if $ENV{TRAVIS};
 
-my $config_dir = "$Bin/../../../config/v1";
+my $config_dir = "config/v1";
 
 my $t = Test::Mojo->new('BOM::WebSocketAPI');
 $t->websocket_ok("/websockets/contracts");

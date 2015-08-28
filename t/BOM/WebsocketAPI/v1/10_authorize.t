@@ -2,7 +2,6 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Mojo;
-use FindBin qw/$Bin/;
 use JSON::Schema;
 use File::Slurp;
 use JSON;
@@ -11,7 +10,7 @@ use Data::Dumper;
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $config_dir = "$Bin/../../../config/v1";
+my $config_dir = "config/v1";
 
 my $t = Test::Mojo->new('BOM::WebSocketAPI');
 $t->websocket_ok("/websockets/contracts");

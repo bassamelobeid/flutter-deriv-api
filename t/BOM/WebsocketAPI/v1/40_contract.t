@@ -2,7 +2,6 @@ use Test::Most;
 use Test::Mojo;
 use JSON;
 use Data::Dumper;
-use FindBin qw/$Bin/;
 use JSON::Schema;
 use File::Slurp;
 
@@ -62,7 +61,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         date => Date::Utility->new,
     });
 
-my $config_dir = "$Bin/../../../config/v1";
+my $config_dir = "config/v1";
 
 my $t = Test::Mojo->new('BOM::WebSocketAPI');
 $t->websocket_ok("/websockets/contracts");
