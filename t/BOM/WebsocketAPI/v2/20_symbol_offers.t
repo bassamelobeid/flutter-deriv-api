@@ -12,12 +12,22 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
+use BOM::Market::UnderlyingDB;
+
+my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    market            => 'indices',
+    contract_category => 'ANY',
+    broker            => 'VRT',
+);
+my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } @underlying_symbols;
+push @exchange, ('RANDOM', 'FOREX',);
+print Data::Dumper::Dumper(@exchange);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
     'exchange',
     {
         symbol => $_,
         date   => Date::Utility->new,
-    }) for qw(FOREX RANDOM );
+    }) for @exchange;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new('2015-08-21 05:30:00');
@@ -83,13 +93,11 @@ $t = $t->send_ok({json => {offerings => {'symbol' => 'R_50'}}})->message_ok;
 my $offerings = decode_json($t->message->[1]);
 ok($offerings->{offerings});
 ok($offerings->{offerings}->{hit_count});
-unless ($ENV{TRAVIS}) {
 # test offerings
-    $t = $t->send_ok({json => {trading_times => {'date' => Date::Utility->new->date_ddmmmyyyy}}})->message_ok;
-    my $trading_times = decode_json($t->message->[1]);
-    ok($trading_times->{trading_times});
-    ok($trading_times->{trading_times}->{markets});
-}
+$t = $t->send_ok({json => {trading_times => {'date' => Date::Utility->new->date_ddmmmyyyy}}})->message_ok;
+my $trading_times = decode_json($t->message->[1]);
+ok($trading_times->{trading_times});
+ok($trading_times->{trading_times}->{markets});
 $t->finish_ok;
 
 done_testing();
