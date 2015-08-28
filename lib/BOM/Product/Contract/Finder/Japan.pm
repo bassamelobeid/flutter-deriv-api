@@ -226,7 +226,7 @@ sub _set_predefined_barriers {
     }
     if ($contract->{barriers} == 1) {
         $contract->{available_barriers} = $available_barriers;
-        $contract->{barrier} = reduce { $current_tick->quote - $a < $current_tick->quote - $b ? $a : $b } @{$available_barriers};
+        $contract->{barrier} = reduce { abs($current_tick->quote - $a) < abs($current_tick->quote - $b) ? $a : $b } @{$available_barriers};
     } elsif ($contract->{barriers} == 2) {
         my @lower_barriers  = grep { $current_tick_quote > $_ } @{$available_barriers};
         my @higher_barriers = grep { $current_tick_quote < $_ } @{$available_barriers};
@@ -255,8 +255,7 @@ sub _split_boundaries_barriers {
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
     my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my @barriers                    = map { $spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step } @steps;
-    return @barriers;
+    return map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
 }
 
 =head2 _get_barrier_by_probability
