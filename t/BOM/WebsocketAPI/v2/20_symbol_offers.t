@@ -20,7 +20,7 @@ my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     broker            => 'VRT',
 );
 my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } @underlying_symbols;
-push @exchange, ('RANDOM', 'FOREX','ODLS');
+push @exchange, ('RANDOM', 'FOREX','ODLS', 'RANDOM_NOCTURNE');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
     'exchange',
     {
