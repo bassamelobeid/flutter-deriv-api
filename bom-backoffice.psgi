@@ -11,5 +11,6 @@ use lib qw!/etc/perl
            /home/git/regentmarkets/bom-backoffice/lib!;
 
 use BOM::System::Plack::App;
+use BOM::Utility::Config;
 
 BOM::System::Plack::App::app("root"=>"/home/git/regentmarkets/bom-backoffice");
