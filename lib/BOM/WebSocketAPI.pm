@@ -20,7 +20,7 @@ sub startup {
     my $r = $app->routes;
 
     for ($r->under('/websockets/v2')) {
-        $_->to('Websocket_v1#ok');
+        $_->to('Websocket_v2#ok');
         $_->websocket('/')->to('#entry_point');
     }
 
