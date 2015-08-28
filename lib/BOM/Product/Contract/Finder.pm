@@ -34,10 +34,8 @@ sub available_contracts_for_symbol {
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
-
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
-
         my $cat = BOM::Product::Contract::Category->new($cc);
         $o->{contract_category_display} = $cat->display_name;
 
@@ -67,7 +65,6 @@ sub available_contracts_for_symbol {
             : die "don't know about contract category $cc";
 
         if ($o->{barriers}) {
-
             my %args = (
                 underlying => $underlying,
                 duration   => $o->{min_contract_duration});
@@ -80,6 +77,18 @@ sub available_contracts_for_symbol {
                 $o->{high_barrier} = _default_barrier({%args, barrier_type => 'high'});
                 $o->{low_barrier}  = _default_barrier({%args, barrier_type => 'low'});
             }
+        }
+
+        # digits has a non_financial barrier which is between 0 to 9
+        if ($cc eq 'digits') {
+            $o->{last_digit_range} = [0 .. 9];
+        }
+
+        if ($cc eq 'spreads') {
+            $o->{amount_per_point} = 1;
+            $o->{stop_type} = 'point';
+            $o->{stop_profit} = 10;
+            $o->{stop_loss} = 10;
         }
     }
 
