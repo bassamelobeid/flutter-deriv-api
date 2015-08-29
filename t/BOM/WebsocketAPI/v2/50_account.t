@@ -1,19 +1,17 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Mojo;
 use JSON;
 use Data::Dumper;
 use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema/;
+use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-my $t = Test::Mojo->new('BOM::WebSocketAPI');
-$t->websocket_ok("/websockets/contracts");
+my $t = build_mojo_test();
 
 my $token = BOM::Platform::SessionCookie->new(
     loginid => "CR0021",

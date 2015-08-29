@@ -1,10 +1,9 @@
 use Test::Most;
-use Test::Mojo;
 use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema/;
+use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Platform::SessionCookie;
 
@@ -62,8 +61,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         date => Date::Utility->new,
     });
 
-my $t = Test::Mojo->new('BOM::WebSocketAPI');
-$t->websocket_ok("/websockets/contracts");
+my $t = build_mojo_test();
 
 my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
