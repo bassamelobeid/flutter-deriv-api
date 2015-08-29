@@ -2,7 +2,6 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Ping Send",
-  "description": "Ping server to make sure the connection is alive",
   "properties": {
 	  "ping": {
 		  "type": "bool",
