@@ -4,9 +4,8 @@
   "title":"Balance Send",
   "properties": {
     "balance": {
-      "type": "number",
-      "sample": "1",
-      "description": "It is the default account number"
+      "type": "bool",
+      "sample": "1"
     }
   },
   "required": [

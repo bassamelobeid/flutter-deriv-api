@@ -1,36 +1,24 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title":"Balance Receive",
+  "title": "Balance Receive",
   "properties": {
-    "balance": {
-      "type": "object",
-      "properties": {
-    	"loginid": {
-              "type": "string",
-              "description": "Example: VRTC573035"
-            },
-        "currency": {
-          "type": "string",
-          "description": "Example: USD"
-        },
-        "balance": {
-          "type": "number",
-          "description": "Example: 10377.9900"
-        }
-    }
-    },
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
+    "balance": {
+      "type": "array",
+      "items":{
+        "type":"object"
+      }
+    },
     "msg_type": {
-      "type": "string",
-      "description": "balance"
-    }
+        "type": "string",
+        "description": "balance"
+      }
   },
   "required": [
-    "balance",
     "echo_req",
     "msg_type"
   ]
