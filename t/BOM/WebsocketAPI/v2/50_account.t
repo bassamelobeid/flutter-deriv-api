@@ -33,11 +33,13 @@ $t = $t->send_ok({json => {statement => {limit => 2}}})->message_ok;
 $statement = decode_json($t->message->[1]);
 ok($statement->{statement});
 is($statement->{statement}->{count}, 2);
+test_schema('statement', $statement);
 
 ## balance
 $t = $t->send_ok({json => {balance => 1}})->message_ok;
 my $balance = decode_json($t->message->[1]);
 ok($balance->{balance});
+test_schema('balance', $balance);
 # diag Dumper(\$balance);
 
 $t->finish_ok;
