@@ -9,7 +9,6 @@
     },
     "forget": {
     	"type": "integer",
-        "sample": "234234",
     	"description": "Id of the stream to cancel"
     },
     "msg_type": {
