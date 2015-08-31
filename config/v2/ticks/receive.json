@@ -8,7 +8,7 @@
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "ticks":{
+    "style":{
     	"type": "object",
     	"properties": {
     	"history": {
@@ -47,7 +47,7 @@
     
     "msg_type": {
       "type": "string",
-      "description": "ticks"
+      "description": "style"
     }
   },
   "required": [
