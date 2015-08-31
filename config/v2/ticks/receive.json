@@ -8,9 +8,6 @@
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "style":{
-    	"type": "object",
-    	"properties": {
     	"history": {
     	      "type": "object",
     	      "properties": {
@@ -41,9 +38,7 @@
     	          },
     	          "minItems":"1",
     	          "description":"Array of OHLC price values for the given time"
-    	    }
-    	}
-    },
+    	    },
     
     "msg_type": {
       "type": "string",
