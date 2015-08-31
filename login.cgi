@@ -3,7 +3,6 @@ package main;
 
 #official globals
 use strict 'vars';
-use version;
 use open qw[ :encoding(UTF-8) ];
 
 use f_brokerincludeall;
@@ -17,10 +16,9 @@ use BOM::Platform::Context qw(request);
 use BOM::StaffPages;
 use BOM::System::Config;
 use BOM::Platform::Sysinit ();
-
 BOM::Platform::Sysinit::init();
 
-if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or version->parse($1) lt version->parse('44.0.2403.157')) {
+if (not $ENV{'HTTP_USER_AGENT'} =~ /Chrome\/(\d+\.\d+\.\d+)\./ or $1 lt '44.0.24') {
     print "Only newest Chrome browser is supported in backoffice.";
     code_exit_BO();
 }
