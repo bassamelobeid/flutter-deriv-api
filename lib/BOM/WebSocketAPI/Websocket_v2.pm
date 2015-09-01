@@ -72,20 +72,19 @@ sub __handle {
         ['contracts_for',     \&BOM::WebSocketAPI::v2::ContractDiscovery::contracts_for,     0],
         ['offerings',         \&BOM::WebSocketAPI::v2::Offerings::offerings,                 0],
         ['trading_times',     \&BOM::WebSocketAPI::v2::Offerings::trading_times,             0],
-        ['buy',       \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,       1, 'open_receipt'],
-        ['sell',      \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,      1, 'close_receipt'],
-        ['portfolio', \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio, 1],
-        ['balance',   \&BOM::WebSocketAPI::v2::Accounts::balance,              1],
-        ['statement', \&BOM::WebSocketAPI::v2::Accounts::statement,            1],
+        ['buy',               \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,             1],
+        ['sell',              \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,            1],
+        ['portfolio',         \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio,       1],
+        ['balance',           \&BOM::WebSocketAPI::v2::Accounts::balance,                    1],
+        ['statement',         \&BOM::WebSocketAPI::v2::Accounts::statement,                  1],
     );
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
 
-        my $f = 'config/v2/'.$dispatch->[0]
-        my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
+        my $f = 'config/v2/' . $dispatch->[0] my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
         if (not $validator->validate($p1)) {
-            die "Invalid input parameters."
+            die "Invalid input parameters.";
         }
 
         my $tag = 'origin:';
@@ -98,13 +97,13 @@ sub __handle {
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',               {tags => [$tag]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
-            return __authorize_error($dispatch->[3] || $dispatch->[0]);
+            return __authorize_error($dispatch->[0]);
         }
         my $result = $dispatch->[1]->($c, $p1);
 
         $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
         if (not $validator->validate($result)) {
-            die "Invalid results parameters."
+            die "Invalid results parameters.";
         }
 
         return $result;
