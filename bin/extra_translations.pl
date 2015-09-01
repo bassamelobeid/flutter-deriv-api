@@ -240,9 +240,8 @@ sub is_id_unique {
 
 sub msg_id {
     my $self = shift;
-    my $string = shift;
-    $string =~ s/\[_(\d)\]/%$1/g;
-    return "msgid \"$string\"";
+    use Locale::Maketext::Extract ();
+    goto &Locale::Maketext::Extract::_maketext_to_gettext;
 }
 
 has _extant_msg_ids => (

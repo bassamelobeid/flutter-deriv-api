@@ -18,6 +18,7 @@ use feature "state";
 use Path::Tiny;
 use File::Slurp;
 use JSON qw(decode_json);
+use List::Util qw(first);
 
 use Data::Hash::DotNotation;
 
@@ -194,57 +195,41 @@ has 'static_host' => (
     default => 'binary-com',
 );
 
-sub select_broker {
-    my $self = shift;
-    my $params = shift || {};
+sub broker_for_new_account {
+    my $self         = shift;
+    my $country_code = shift;
 
-    my @brokers;
-    if ($params->{virtual}) {
-        @brokers = grep {
-            $_->is_virtual
-                and grep { uc $params->{country} eq $_ }
-                @{$_->landing_company->counterparty_for}
-        } @{$self->broker_codes} if ($params->{country});
-        @brokers = grep {
-            $_->is_virtual
-                and grep { $_ eq '*' }
-                @{$_->landing_company->counterparty_for}
-        } @{$self->broker_codes} if (scalar @brokers == 0);
-    } else {
-        @brokers = grep {
-            not $_->is_virtual
-                and grep { uc $params->{country} eq $_ }
-                @{$_->landing_company->counterparty_for}
-        } @{$self->broker_codes} if ($params->{country});
-        @brokers = grep {
-            not $_->is_virtual
-                and grep { $_ eq '*' }
-                @{$_->landing_company->counterparty_for}
-        } @{$self->broker_codes} if (scalar @brokers == 0);
+    my $company;
+    if (my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code}) {
+        $company = $config->{gaming_company} if ($config->{gaming_company} ne 'none');
+        $company = $config->{financial_company} if (not $company and $config->{financial_company} ne 'none');
     }
 
-    my $default_broker = $brokers[0];
+    # For restricted countries without landing company (eg: Malaysia, US), default to CR
+    # As without this, accessing www.binary.com from restricted countries will die
+    # This needs refactor later
+    $company //= 'costarica';
+    my $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
 
-    # for Europe, don't default to MF
-    if ($default_broker->landing_company->short eq 'maltainvest' and scalar @brokers > 1) {
-        $default_broker = $brokers[1];
-    }
-    return $default_broker;
+    return $broker;
 }
 
-sub broker_for_new_account {
-    my $self    = shift;
-    my $country = shift;
-    return $self->select_broker({country => $country});
+sub broker_for_new_financial {
+    my $self         = shift;
+    my $country_code = shift;
+
+    my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
+    if ($config and $config->{financial_company} ne 'none') {
+        my $broker = first { $_->landing_company->short eq $config->{financial_company} } @{$self->broker_codes};
+        return $broker;
+    }
+    return;
 }
 
 sub broker_for_new_virtual {
-    my $self    = shift;
-    my $country = shift;
-    return $self->select_broker({
-        country => $country,
-        virtual => 1
-    });
+    my $self = shift;
+    my $vr_broker = first { $_->is_virtual } @{$self->broker_codes};
+    return $vr_broker;
 }
 
 sub rebuild_config {
