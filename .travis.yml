@@ -43,4 +43,3 @@ install:
     - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom/t/config/log4perl.conf
 script:
     - perl Makefile.PL && make test
-    - MOJO_USERAGENT_DEBUG=1 perl -Ilib t/BOM/WebsocketAPI/v2/20_symbol_offers.t
