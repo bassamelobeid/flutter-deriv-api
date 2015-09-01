@@ -17,6 +17,7 @@ use TestHelper qw/test_schema build_mojo_test/;
 
 initialize_realtime_ticks_db();
 use BOM::Market::UnderlyingDB;
+use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
 my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market            => 'indices',
@@ -52,6 +53,11 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     quote      => 100
 });
+#load it the contract finder at first load to resolve time out issue
+my $f = available_contracts_for_symbol({
+            symbol => 'frxUSDJPY',
+            date   => $now
+        });
 
 
 my $t = build_mojo_test();
