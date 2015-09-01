@@ -53,7 +53,6 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     quote      => 100
 });
 
-my $config_dir = "config/v2";
 
 my $t = build_mojo_test();
 
