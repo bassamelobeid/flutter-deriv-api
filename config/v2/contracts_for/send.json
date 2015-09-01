@@ -11,7 +11,7 @@
         },
     "region": {
       "type": "string",
-      "description": "specifies the region to call the finder",
+      "description": "Set to 'japan' to retrieve contracts available under Japanese regulations, or 'other' otherwise.",
       "sample": "other"
         }
     },
