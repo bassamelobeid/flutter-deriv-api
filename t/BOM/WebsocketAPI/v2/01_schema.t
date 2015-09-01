@@ -13,7 +13,7 @@ $t->websocket_ok("$svr/websockets/v2");
 
 my ($test_name, $response);
 
-my $v='config/v2';
+my $v = 'config/v2';
 explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
@@ -26,7 +26,6 @@ foreach my $f (grep { -d } glob "$v/*") {
     ok $result, "$f response is valid";
     if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper(Mojo::JSON::decode_json $t->message->[1]) }
 }
-
 
 sub strip_doc_send {
     my $data = shift;
