@@ -110,9 +110,9 @@ my $proposal = decode_json($t->message->[1]);
 ok $proposal->{proposal}->{id};
 ok $proposal->{proposal}->{ask_price};
 
-$validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/get_price/receive.json")));
+$validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$config_dir/proposal/receive.json")));
 $result    = $validator->validate($proposal);
-ok $result, "get_price response is valid";
+ok $result, "proposal response is valid";
 # diag " - $_\n" foreach $result->errors;
 
 sleep 1;
