@@ -11,7 +11,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "description": ""
+        "description": "Example: USD"
       }
     },
     "msg_type":{
