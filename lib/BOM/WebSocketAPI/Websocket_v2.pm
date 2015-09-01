@@ -12,6 +12,8 @@ use BOM::WebSocketAPI::v2::MarketDiscovery;
 use BOM::WebSocketAPI::v2::PortfolioManagement;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
+use File::Slurp;
+use JSON;
 
 sub ok {
     my $c      = shift;
@@ -81,11 +83,10 @@ sub __handle {
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
-
         my $f         = 'config/v2/' . $dispatch->[0];
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
-        if (not $validator->validate($p1)) {
-            die "Invalid input parameters.";
+        if ($dispatch->[0] ne 'statement' and not $validator->validate($p1)) {
+            die "Invalid input parameter for [".$dispatch->[0]."]";
         }
 
         my $tag = 'origin:';
