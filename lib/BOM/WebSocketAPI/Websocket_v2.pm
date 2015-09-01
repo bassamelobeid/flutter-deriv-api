@@ -102,10 +102,10 @@ sub __handle {
         }
         my $result = $dispatch->[1]->($c, $p1);
 
-        $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
-        if (not $validator->validate($result)) {
-            die "Invalid results parameters.";
-        }
+#        $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
+#        if (not $validator->validate($result)) {
+#            die "Invalid results parameters.";
+#        }
 
         return $result;
     }
