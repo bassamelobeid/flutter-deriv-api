@@ -61,7 +61,17 @@ my $f = available_contracts_for_symbol({
 
 
 my $t = build_mojo_test();
-
+my $t2 = $t->send_ok({
+        json => {
+            contracts_for => 'frxUSDJPY',
+            region        => 'japan'
+        }})->message_ok;
+print STDERR Dumper($t2);
+my $contracts_for_japan = decode_json($t2->message->[1]);
+ok($contracts_for_japan->{contracts_for});
+ok($contracts_for_japan->{contracts_for}->{available});
+test_schema('contracts_for', $contracts_for_japan);
+#
 # test payout_currencies
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
 my $payout_currencies = decode_json($t->message->[1]);
@@ -89,13 +99,13 @@ ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for);
 # test contracts_for japan
-$t = $t->send_ok({
+my $t2 = $t->send_ok({
         json => {
             contracts_for => 'frxUSDJPY',
             region        => 'japan'
         }})->message_ok;
-print STDERR Dumper($t);
-my $contracts_for_japan = decode_json($t->message->[1]);
+print STDERR Dumper($t2);
+my $contracts_for_japan = decode_json($t2->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for_japan);
