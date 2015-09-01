@@ -226,3 +226,82 @@ frxUSDJPY:
   tie_B: 0.419561
   tie_C: 5445.96
   tie_D: -86.0927
+
+
+
+WLDAUD:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:23:09
+  ma_step: 7
+  x_prime_min: -3.02135
+  x_prime_max: 3.01595
+  y_min: 5.23792e-06
+  y_max: 4.67158e-05
+  #adj_r_sq .95
+  A: -39.83
+  B: 4179
+  C: 0.1411
+  D: 1.858
+  #adj_r_sq 0.927814
+  tie_A: -0.000316618
+  tie_B: 0.0521804
+  tie_C: 923.706
+  tie_D: -12.4566
+WLDEUR:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:23:37
+  ma_step: 7
+  x_prime_min: -2.9258
+  x_prime_max: 2.95879
+  y_min: 4.45187e-06
+  y_max: 4.40527e-05
+  #adj_r_sq 0.907984
+  A: -32447.7
+  B: 3.79438e+06
+  C: 90.5483
+  D: 0.00149566
+  #adj_r_sq 0.974874
+  tie_A: -0.000399221
+  tie_B: 0.0699389
+  tie_C: 1516.56
+  tie_D: -19.3753
+WLDGBP:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:24:01
+  ma_step: 7
+  x_prime_min: -2.92896
+  x_prime_max: 2.92352
+  y_min: 4.90366e-06
+  y_max: 3.35274e-05
+  #adj_r_sq 0.865493
+  A: -69175.5
+  B: 7.71357e+06
+  C: 163.199
+  D: 0.00185616
+  #adj_r_sq 0.972154
+  tie_A: -0.00048763
+  tie_B: 0.0684276
+  tie_C: 1926.39
+  tie_D: -21.3305
+WLDUSD:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:24:28
+  ma_step: 7
+  x_prime_min: -3.14028
+  x_prime_max: 3.13153
+  y_min: 4.23668e-06
+  y_max: 3.15565e-05
+  #adj_r_sq 0.960744
+  A: -42964.6
+  B: 6.01304e+06
+  C: 76.4714
+  D: 0.00198441
+  #adj_r_sq 0.975162
+  tie_A: -0.000364691
+  tie_B: 0.0697953
+  tie_C: 1996.31
+  tie_D: -22.1759
