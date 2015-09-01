@@ -58,7 +58,6 @@ my $f = available_contracts_for_symbol({
             symbol => 'frxUSDJPY',
         });
 
-print Data::Dumper::Dumper($f);
 my $t = build_mojo_test();
 # test payout_currencies
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
@@ -92,8 +91,6 @@ $t = $t->send_ok({
             contracts_for => 'frxUSDJPY',
             region        => 'japan'
         }})->message_ok;
-print "------------";
-print Data::Dumper::Dumper($t);
 my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
