@@ -10,43 +10,35 @@
       "properties": {
         "bid_price": {
           "type": "number",
-          "sample": "4.96",
-          "description": ""
+          "description": "Example: 4.96"
         },
         "longcode": {
           "type": "string",
-          "sample": "USD 10.00 payout if Random 100 Index is strictly higher than entry spot at 15 minutes after contract start time.",
-          "description": ""
+          "description": "Example: USD 10.00 payout if Random 100 Index is strictly higher than entry spot at 15 minutes after contract start time."
         },
         "spot": {
           "type": "number",
-          "sample": "9874.52",
-          "description": ""
+          "description": "Example: 9874.52"
         },
         "spot_time": {
           "type": "integer",
-          "sample": "1439999052",
-          "description": ""
+          "description": "Example: 1439999052"
         },
         "ask_price": {
           "type": "number",
-          "sample": "5.14",
-          "description": ""
+          "description": "Example: 5.14"
         },
         "date_start": {
           "type": "integer",
-          "sample": "1439999053",
-          "description": ""
+          "description": "Example: 1439999053"
         },
         "id": {
           "type": "string",
-          "sample": "1d6651e7d599bce6c54bd71a8283e579",
-          "description": ""
+          "description": "Example: 1d6651e7d599bce6c54bd71a8283e579"
         },
         "payout": {
           "type": "number",
-          "sample": "10"
-          "description": ""
+          "description": "Example: 10"
         }
       }
     },
