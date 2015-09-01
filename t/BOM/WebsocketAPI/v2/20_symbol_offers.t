@@ -104,29 +104,6 @@ ok($trading_times->{trading_times});
 ok($trading_times->{trading_times}->{markets});
 test_schema('active_symbols', $active_symbols);
 
-# not working under TRAVIS
-unless ($ENV{TRAVIS}) {
-    # test contracts_for
-    $t = $t->send_ok({json => {contracts_for => 'R_50'}})->message_ok;
-    my $contracts_for = decode_json($t->message->[1]);
-    ok($contracts_for->{contracts_for});
-    ok($contracts_for->{contracts_for}->{available});
-    test_schema('contracts_for', $contracts_for);
-
-    # test offerings
-    $t = $t->send_ok({json => {offerings => {'symbol' => 'R_50'}}})->message_ok;
-    my $offerings = decode_json($t->message->[1]);
-    ok($offerings->{offerings});
-    ok($offerings->{offerings}->{hit_count});
-    test_schema('offerings', $offerings);
-
-    # test offerings
-    $t = $t->send_ok({json => {trading_times => {'date' => Date::Utility->new->date_ddmmmyyyy}}})->message_ok;
-    my $trading_times = decode_json($t->message->[1]);
-    ok($trading_times->{trading_times});
-    ok($trading_times->{trading_times}->{markets});
-    test_schema('trading_times', $trading_times);
-}
 
 $t->finish_ok;
 
