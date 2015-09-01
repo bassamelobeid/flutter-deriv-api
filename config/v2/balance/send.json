@@ -1,12 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "User Balance",
-  "description": "get user balance",
+  "title":"Balance Send",
+  "description": "Get user balance",
   "properties": {
     "balance": {
       "type": "bool",
-      "sample": "1"
+      "sample": "1",
+      "description": "It is the default account"
     }
   },
   "required": [

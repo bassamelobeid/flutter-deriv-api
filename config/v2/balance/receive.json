@@ -1,7 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "User Balance",
+  "title": "Balance Receive",
+  "description": "A message with user balance is received",
   "properties": {
     "echo_req": {
       "title":"Echo request",

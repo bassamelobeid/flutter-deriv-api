@@ -1,15 +1,15 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Cancel an Incoming Stream Receive",
+  "title": "Ping Receive",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
     "ping": {
-      "type": "string",
-      "sample": "pong"
+    	"type": "string",
+    	"description": "Example: pong"
     },
     "msg_type": {
         "type": "string",

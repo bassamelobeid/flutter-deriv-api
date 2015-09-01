@@ -1,13 +1,13 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Ping server for status",
-  "description": "Ping server to make sure the connection is alive",
+  "title": "Ping Send",
   "properties": {
-    "ping": {
-      "type": "bool",
-      "sample": "1"
-    }
+	  "ping": {
+		  "type": "bool",
+		  "sample": "1",
+		  "description": "It is the default ping value"
+	  }
   },
   "required": [
     "ping"
