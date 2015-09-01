@@ -1,14 +1,26 @@
-package BOM::WebSocketAPI::Offerings;
+package BOM::WebSocketAPI::v2::Offerings;
 
 use strict;
 use warnings;
 
-use Mojo::Base 'BOM::WebSocketAPI::BaseController';
+use Try::Tiny;
+
+use Mojo::Base 'BOM::WebSocketAPI::v2::BaseController';
 
 use BOM::Product::Offerings;
-use BOM::WebSocketAPI::Symbols;
+use BOM::WebSocketAPI::v2::Symbols;
+use BOM::Product::Contract::Offerings;
 
 my @READABLES = qw/market submarket contract_display start_type sentiment expiry_type/;
+
+sub offerings {
+    my ($c, $args) = @_;
+
+    return {
+        msg_type => 'offerings',
+        offerings => query($c, $args->{offerings}),
+    };
+}
 
 sub query {
     my $c    = shift;
@@ -28,7 +40,7 @@ sub query {
     # special-case: if symbol missing, map any symbol_display field to it.
     if (my $symbol_display = $args->{symbol_display}) {
         $args->{symbol} //= do {
-            my $sp = BOM::WebSocketAPI::Symbols::symbol_search($symbol_display);
+            my $sp = BOM::WebSocketAPI::v2::Symbols::symbol_search($symbol_display);
             $sp ? $sp->{symbol} : $symbol_display;
             }
     }
@@ -73,7 +85,7 @@ sub query {
         # special-case: efficiently generate symbol displayname too; remember mapping in both directions..
         for ($row->{underlying_symbol}) {
             $row->{symbol_display} = $sym_to_ds{$_} ||= do {
-                my $sp = BOM::WebSocketAPI::Symbols::symbol_search($_);
+                my $sp = BOM::WebSocketAPI::v2::Symbols::symbol_search($_);
                 $sp ? $sp->{display_name} : $_;
             };
             $ds_to_sym{$sym_to_ds{$_}} ||= $_;
@@ -162,6 +174,46 @@ sub query {
 
     my $logdata = {hit_count => $hit_count};
     return $c->_pass($results, $logdata);
+}
+
+sub trading_times {
+    my ($c, $args) = @_;
+
+    $args = $args->{trading_times};
+
+    my $date = try { Date::Utility->new($args->{date}) } || Date::Utility->new;
+    my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
+        markets     => {name => 'name'},
+        submarkets  => {name => 'name'},
+        underlyings => {
+            name   => 'name',
+            times  => 'times',
+            events => 'events'
+        });
+    my $trading_times = {};
+    for my $mkt (@$tree) {
+        my $market = {};
+        push @{$trading_times->{markets}}, $market;
+        $market->{name} = $mkt->{name};
+        for my $sbm (@{$mkt->{submarkets}}) {
+            my $submarket = {};
+            push @{$market->{submarkets}}, $submarket;
+            $submarket->{name} = $sbm->{name};
+            for my $ul (@{$sbm->{underlyings}}) {
+                push @{$submarket->{symbols}},
+                    {
+                    name       => $ul->{name},
+                    settlement => $ul->{settlement} || '',
+                    events     => $ul->{events},
+                    times      => $ul->{times},
+                    };
+            }
+        }
+    }
+    return {
+        msg_type      => 'trading_times',
+        trading_times => $trading_times,
+    };
 }
 
 1;

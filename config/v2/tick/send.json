@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Tick Stream Request",
+  "description": "Initiate a continuous stream of spot price updates for a given symbol",
+  "properties": {
+    "ticks": {
+      "type": "string",
+      "sample": "frxUSDJPY",
+      "description": "The short symbol name"
+    }
+  },
+  "required": [
+    "ticks"
+  ]
+}

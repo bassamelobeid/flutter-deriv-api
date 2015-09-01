@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Request list of active symbols",
+  "description": "Retrieve all available active symbol definitions",
+  "properties": {
+    "active_symbols": {
+
+      "type": "string",
+      "description": "Value should be 'display_name' (group by user-facing symbol title) or 'symbol' (group by internal symbol code)",
+      "sample": "display_name"
+
+    }
+  },
+  "required": [
+    "active_symbols"
+  ]
+}
