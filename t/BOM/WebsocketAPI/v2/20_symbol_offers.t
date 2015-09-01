@@ -66,7 +66,8 @@ my $t2 = $t->send_ok({
             contracts_for => 'frxUSDJPY',
             region        => 'japan'
         }})->message_ok;
-print STDERR Dumper($t2);
+print STDERR Dumper($t);
+
 my $contracts_for_japan = decode_json($t2->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
