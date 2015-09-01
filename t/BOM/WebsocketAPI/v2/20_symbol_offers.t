@@ -80,7 +80,7 @@ $t = $t->send_ok({json => {contracts_for => 'R_50'}})->message_ok;
 my $contracts_for = decode_json($t->message->[1]);
 ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
-
+unless ($ENV{TRAVIS}) {
 # test contracts_for japan
 $t = $t->send_ok({
         json => {
@@ -90,7 +90,7 @@ $t = $t->send_ok({
 my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
-
+}
 # test offerings
 $t = $t->send_ok({json => {offerings => {'symbol' => 'R_50'}}})->message_ok;
 my $offerings = decode_json($t->message->[1]);
