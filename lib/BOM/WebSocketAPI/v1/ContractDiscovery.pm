@@ -27,8 +27,8 @@ sub contracts_for {
     my ($c, $args) = @_;
 
     return {
-        msg_type      => 'contracts_for',
-        contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($args->{contracts_for}),
+        msg_type => 'contracts_for',
+        contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $args->{contracts_for}}),
     };
 }
 

@@ -5,7 +5,17 @@ use JSON;
 use File::Slurp;
 use File::Basename;
 use Data::Dumper;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+initialize_realtime_ticks_db();
+use BOM::Market::UnderlyingDB;
 
+my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    market            => 'indices',
+    contract_category => 'ANY',
+    broker            => 'VRT',
+);
+my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } @underlying_symbols;
+push @exchange, ('RANDOM', 'FOREX','ODLS', 'RANDOM_NOCTURNE');
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
 
@@ -13,7 +23,7 @@ $t->websocket_ok("$svr/websockets/v2");
 
 my ($test_name, $response);
 
-my $v='config/v2';
+my $v = 'config/v2';
 explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
@@ -26,7 +36,6 @@ foreach my $f (grep { -d } glob "$v/*") {
     ok $result, "$f response is valid";
     if (not $result) { print " - $_\n" foreach $result->errors; print Data::Dumper::Dumper(Mojo::JSON::decode_json $t->message->[1]) }
 }
-
 
 sub strip_doc_send {
     my $data = shift;

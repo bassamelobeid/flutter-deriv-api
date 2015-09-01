@@ -265,7 +265,7 @@ sub candles {
 sub contracts {
     my $c      = shift;
     my $symbol = $c->stash('sp')->{symbol};
-    my $output = available_contracts_for_symbol($symbol);
+    my $output = available_contracts_for_symbol({symbol => $symbol});
     return $c->_pass($output);
 }
 
