@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::Product::Contract::Finder;
 use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Product::Contract::Finder::Japan;
 
 sub payout_currencies {
     my $c = shift;
@@ -25,10 +26,17 @@ sub payout_currencies {
 
 sub contracts_for {
     my ($c, $args) = @_;
-
+    my $symbol = $args->{contracts_for};
+    my $region = $args->{region} || 'other';
+    my $contracts_for;
+    if ($region eq 'japan') {
+        $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
+    } else {
+        $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
+    }
     return {
         msg_type      => 'contracts_for',
-        contracts_for => BOM::Product::Contract::Finder::available_contracts_for_symbol($args->{contracts_for}),
+        contracts_for => $contracts_for,
     };
 }
 
