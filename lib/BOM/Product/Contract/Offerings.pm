@@ -10,7 +10,7 @@ Help for getting insight into what is offered.
 
 To be deprecated in favor of BOM::Product::Offerings
 
-my $offerings = BOM::Product::Contract::Offerings->new(broker_code => 'CR');
+my $offerings = BOM::Product::Contract::Offerings->new;
 
 =cut
 
@@ -31,20 +31,6 @@ use Cache::RedisDB;
 use BOM::Platform::Context qw(request);
 
 =head1 ATTRIBUTES
-
-=head2 broker_code
-
-The broker code for which these offerings apply.
-
-Required
-
-=cut
-
-has broker_code => (
-    is       => 'ro',
-    isa      => 'bom_broker_code',
-    required => 1,
-);
 
 =head2 tree
 
@@ -73,6 +59,138 @@ has levels => (
 
 );
 
+has date => (
+    is      => 'ro',
+    isa     => 'Date::Utility',
+    default => sub { return Date::Utility->today },
+);
+
+has decorations => (
+    is      => 'ro',
+    default => sub { return [] },
+    isa     => 'ArrayRef',
+);
+
+has times_cache => (
+    is      => 'ro',
+    default => sub { return {} },
+);
+
+has holidays_cache => (
+    is      => 'ro',
+    default => sub { return {} },
+);
+
+has c => (
+    is  => 'ro',
+    isa => 'Mojolicious::Controller',
+);
+
+my %known_decorations = (
+
+    name => sub { return $_->translated_display_name },
+
+    times => sub {
+        my ($parent_obj, $self) = @_;
+        my $exchange = $_->exchange;
+
+        if (my $cached = $self->times_cache->{$exchange->symbol}) {
+            return $cached;
+        }
+
+        my $times;
+        my $no_data        = '--';
+        my $display_method = 'time_hhmmss';
+        $times = {
+            open       => [],
+            close      => [],
+            settlement => $no_data
+        };
+        if (my $open = $exchange->opening_on($self->date)) {
+            push @{$times->{open}}, $open->$display_method;
+            my @closes;
+            push @closes, $exchange->closing_on($self->date);
+            $times->{settlement} = $exchange->settlement_on($self->date)->$display_method;
+            if (my $breaks = $exchange->trading_breaks($self->date)) {
+                for my $break (@$breaks) {
+                    push @{$times->{open}}, $break->[-1]->$display_method;
+                    push @closes, $break->[0];
+                }
+            }
+            @{$times->{close}} = map { $_->$display_method } sort { $a->epoch <=> $b->epoch } @closes;
+        }
+        push @{$times->{open}},  $no_data if not @{$times->{open}};
+        push @{$times->{close}}, $no_data if not @{$times->{close}};
+        $self->times_cache->{$exchange->symbol} = $times;
+
+        return $times;
+    },
+
+    events => sub {
+        my ($parent_obj, $self) = @_;
+        my $exchange = $_->exchange;
+        my @events;
+
+        if (my $cached = $self->holidays_cache->{$exchange->symbol}) {
+            @events = @$cached;
+        } else {
+            my $today               = Date::Utility->today;
+            my $trading_day         = $exchange->trading_date_for($self->date);
+            my $how_long            = $today->days_in_month;
+            my $date_display_method = 'date';
+            my %seen_rules;
+            foreach my $day (0 .. $how_long) {
+                my $when = $trading_day->plus_time_interval($day . 'd');
+                # Assumption is these are all mutually exclusive.
+                # If you would both open late and close early, you'd make it a holiday.
+                # If you have a holiday you wouldn't open or close at all.
+                # Put a note here when you discover the exception.
+                my ($rule, $message);
+                my $change_rules = $exchange->regularly_adjusts_trading_hours_on($when);
+                if ($exchange->closes_early_on($when)) {
+                    $rule = $change_rules->{daily_close}->{rule};
+                    $message =
+                          $self->c
+                        ? $self->c->l('Closes early (at [_1])', $exchange->closing_on($when)->time_hhmm)
+                        : 'Closes early (at ' . $exchange->closing_on($when)->time_hhmm . ')';
+                } elsif ($exchange->opens_late_on($when)) {
+                    $rule = $change_rules->{daily_open}->{rule};
+                    $message =
+                          $self->c
+                        ? $self->c->l('Opens late (at [_1])', $exchange->opening_on($when)->time_hhmm)
+                        : 'Opens late (at ' . $exchange->opening_on($when)->time_hhmm . ')';
+                } elsif ($exchange->has_holiday_on($when)) {
+                    $message = $exchange->holidays->{$when->days_since_epoch};
+                }
+                if ($message) {
+                    # This would be easier here with a hash, but then they might end up out of order.
+                    # I'd rather deal with that here than in TT.
+
+                    my $where = first_index { $_->{descrip} eq $message } @events;
+                    # first_index returns -1 for not found.  Idiots.
+                    my $explain = $rule // $when->$date_display_method;
+                    if ($where != -1) {
+                        $events[$where]->{dates} .= ', ' . $explain unless ($rule && $explain eq $rule && $seen_rules{$rule});
+                    } else {
+                        if ($when->is_same_as($trading_day) and $trading_day->is_same_as($today)) {
+                            $explain = $self->c ? $self->c->l('today') : 'today';
+                        }
+                        push @events,
+                            {
+                            descrip => $message,
+                            dates   => $explain,
+                            };
+                    }
+                    $seen_rules{$rule} = 1 if ($rule and $explain eq $rule);
+                }
+                $self->holidays_cache->{$exchange->symbol} = \@events;
+            }
+        }
+        return \@events;
+    },
+
+);
+
 # This is not fully generalized enough to become its own object, yet.
 # The "tree" should be able produce different representations of itself, say HashRef or JSON and have
 # filtering by levels, removal of "obj", and clonability.
@@ -81,7 +199,7 @@ has levels => (
 sub _build_tree {
     my $self = shift;
 
-    my @cache_info = ('OFFERINGS', $self->broker_code . '/' . request()->language);
+    my @cache_info = ('OFFERINGS');
 
     if (my $cached = Cache::RedisDB->get(@cache_info)) {
         return $cached;
@@ -169,8 +287,9 @@ sub decorate_tree {
         foreach my $item (@{$self->get_items_on_level($level)}) {
             foreach my $as (keys %{$decorations{$level}}) {
                 my $func = $decorations{$level}->{$as};
+                my $sub = (ref $func ? $func : $known_decorations{$func}) || next;
                 local $_ = $item->{obj};
-                $item->{$as} = $func->($item->{parent_obj});
+                $item->{$as} = $sub->($item->{parent_obj}, $self);
             }
         }
     }
@@ -195,10 +314,5 @@ sub get_items_on_level {
 
 __PACKAGE__->meta->make_immutable;
 
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2013 RMG Technology (M) Sdn Bhd
-
-=cut
-
 1;
+

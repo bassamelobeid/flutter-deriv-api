@@ -1401,17 +1401,13 @@ sub _build_staking_limits {
             max => $stake_max,
             err => ($self->built_with_bom_parameters)
             ? localize('Contract market price is too close to final payout.')
-            : localize(
-                'Stake must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
-                to_monetary_number_format($stake_min, 1),
-                to_monetary_number_format($stake_max, 1)
-            ),
+            : localize('Stake must be between [_1] and [_2].', to_monetary_number_format($stake_min, 1), to_monetary_number_format($stake_max, 1)),
         },
         payout => {
             min => $payout_min,
             max => $payout_max,
             err => localize(
-                'Payout must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
+                'Payout must be between [_1] and [_2].',
                 to_monetary_number_format($payout_min, 1),
                 to_monetary_number_format($payout_max, 1)
             ),
@@ -1996,30 +1992,15 @@ sub _validate_start_date {
             {
             severity          => 120,
             message           => 'underlying [' . $underlying->symbol . '] is closed',
-            message_to_client => $message
-                . " <a href="
-                . request()->url_for('/resources/trading_times', undef, {no_host => 1}) . ">"
-                . localize('View Trading Times') . "</a> "
-                . localize(
-                "or try out the <a href='[_1]'>Random Indices</a> which are always open.",
-                request()->url_for('trade.cgi', {market => "random"})
-                ),
-            };
+            message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
     } elsif (my $open_seconds = ($exchange->seconds_since_open_at($self->date_start) // 0) < $underlying->sod_blackout_start->seconds) {
         my $blackout_time = $underlying->sod_blackout_start->as_string;
         push @errors,
             {
             message           => 'underlying [' . $underlying->symbol . '] is in first ' . $blackout_time,
             severity          => 80,
-            message_to_client => localize("Trading is available after the first [_1] of the session.", $blackout_time)
-                . " <a href="
-                . request()->url_for('/resources/trading_times', undef, {no_host => 1}) . ">"
-                . localize('View Trading Times') . "</a> "
-                . localize(
-                "or try out the <a href='[_1]'>Random Indices</a> which are always open.",
-                request()->url_for('trade.cgi', {market => "random"})
-                ),
-            };
+            message_to_client => localize("Trading is available after the first [_1] of the session.", $blackout_time) . " "
+                . localize("Try out the Random Indices which are always open.")};
     } elsif ($self->is_forward_starting and not $self->built_with_bom_parameters) {
         # Intraday cannot be bought in the 5 mins before the bet starts, unless we've built it for that purpose.
         if ($epoch_start < $when->epoch + $forward_starting_blackout->seconds) {

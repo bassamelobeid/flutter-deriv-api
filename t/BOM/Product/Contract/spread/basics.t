@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 7;
+use Test::More tests => 10;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockModule;
@@ -114,7 +114,7 @@ subtest 'validate amount per point' => sub {
         ok $c->is_valid_to_buy;
         $c = produce_contract({
             %$params,
-            amount_per_point => 100,
+            amount_per_point => 99.9,
             date_pricing     => $now
         });
         ok $c->is_valid_to_buy;
@@ -218,12 +218,8 @@ subtest 'stop type' => sub {
         amount_per_point => 2,
         stop_loss        => 10
     });
-    is $c->ask_price, 20.00, 'ask is 20.00';
-    like(
-        $c->longcode,
-        qr/with stop loss of <strong>10 points<\/strong> and stop profit of <strong>10 points<\/strong>/,
-        'correct longcode for stop_type: point and stop_loss of 10'
-    );
+    is $c->ask_price, 20, 'ask is 20';
+    like($c->longcode, qr/with stop loss of 10 points and stop profit of 10 points/, 'correct longcode for stop_type: point and stop_loss of 10');
     $c = produce_contract({
         %$params,
         stop_type        => 'point',
@@ -233,7 +229,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        qr/with stop loss of 1 points and stop profit of 10 points/,
         '[SPREADU] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
@@ -245,7 +241,7 @@ subtest 'stop type' => sub {
     });
     like(
         $c->longcode,
-        qr/with stop loss of <strong>1 point<\/strong> and stop profit of <strong>10 points<\/strong>/,
+        qr/with stop loss of 1 points and stop profit of 10 points/,
         '[SPREADD] correct longcode for stop_type: point and stop_loss of 1'
     );
     $c = produce_contract({
@@ -254,11 +250,64 @@ subtest 'stop type' => sub {
         amount_per_point => 2,
         stop_loss        => 10
     });
-    is $c->ask_price, 10.00, 'ask is 10.00';
-    like(
-        $c->longcode,
-        qr/with stop loss of <strong>USD 10<\/strong> and stop profit of <strong>USD 10<\/strong>/,
-        'correct longcode for stop_type: dollar'
-    );
+    is $c->ask_price, 10, 'ask is 10';
+    like($c->longcode, qr/with stop loss of USD 10 and stop profit of USD 10/, 'correct longcode for stop_type: dollar');
     is $c->shortcode, 'SPREADU_R_100_2_' . $now->epoch . '_10_10_DOLLAR';
+
+    # decimals longcode
+    $c = produce_contract({
+        %$params,
+        bet_type  => 'SPREADU',
+        stop_type => 'point',
+        stop_loss => 0.6,
+    });
+    like($c->longcode, qr/with stop loss of 0\.6 points and stop profit of 10 points/, 'correct longcode decimals stop_loss');
+    $c = produce_contract({
+        %$params,
+        bet_type  => 'SPREADD',
+        stop_type => 'point',
+        stop_loss => 0.6,
+    });
+    like($c->longcode, qr/with stop loss of 0\.6 points and stop profit of 10 points/, 'correct longcode for decimals stop_loss');
+};
+
+subtest 'category' => sub {
+    my $c = produce_contract({
+        %$params,
+        stop_type        => 'point',
+        amount_per_point => 2,
+        stop_loss        => 10
+    });
+    ok !$c->supported_expiries, 'no expiry concept';
+    is_deeply $c->supported_start_types, ['spot'], 'spot';
+    ok !$c->is_path_dependent,      'non path dependent';
+    ok !$c->allow_forward_starting, 'non forward-starting';
+    ok !$c->two_barriers,           'non two barriers';
+};
+
+subtest 'payout' => sub {
+    my $c = produce_contract({
+        %$params,
+        stop_type        => 'point',
+        amount_per_point => 2,
+        stop_profit      => 10,
+    });
+    cmp_ok $c->payout, '==', 20, 'correct payout with stop_type as point';
+    $c = produce_contract({
+        %$params,
+        stop_type        => 'dollar',
+        amount_per_point => 2,
+        stop_profit      => 10,
+    });
+    cmp_ok $c->payout, '==', 10, 'correct payout with stop_type as dollar';
+};
+
+subtest 'spread constants' => sub {
+    my $c = produce_contract($params);
+    ok $c->is_spread, 'is_spread';
+    ok !$c->fixed_expiry,        'not fixed_expiry';
+    ok !$c->tick_expiry,         'not tick_expiry';
+    ok !$c->is_atm_bet,          'not is_atm_bet';
+    ok !$c->expiry_daily,        'not expiry_daily';
+    ok !$c->pricing_engine_name, 'pricing engine name is \'\'';
 };

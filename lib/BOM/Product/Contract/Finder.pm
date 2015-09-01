@@ -24,8 +24,11 @@ sub available_contracts_for_symbol {
     my $now        = Date::Utility->new;
     my $underlying = BOM::Market::Underlying->new($symbol);
     my $exchange   = $underlying->exchange;
-    my $open       = $exchange->opening_on($now)->epoch;
-    my $close      = $exchange->closing_on($now)->epoch;
+    my ($open, $close);
+    if ($exchange->trades_on($now)) {
+        $open  = $exchange->opening_on($now)->epoch;
+        $close = $exchange->closing_on($now)->epoch;
+    }
 
     my $flyby = BOM::Product::Offerings::get_offerings_flyby;
     my @offerings = $flyby->query({underlying_symbol => $symbol});
@@ -99,7 +102,8 @@ sub _default_barrier {
 
     my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $underlying});
     # latest available spot should be sufficient.
-    my $barrier_spot        = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+    my $barrier_spot = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
+    return unless $barrier_spot;
     my $tid                 = $duration / 86400;
     my $tiy                 = $tid / 365;
     my $approximate_barrier = get_strike_for_spot_delta({

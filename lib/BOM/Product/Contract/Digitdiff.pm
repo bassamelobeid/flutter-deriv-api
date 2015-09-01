@@ -20,7 +20,7 @@ sub other_side_code { return 'DIGITMATCH'; }
 
 sub localizable_description {
     return +{
-        tick => '[_1] <strong>[_2]</strong> payout if the last digit of [_3] <strong>is not [_6]</strong> after <strong>[_5] ticks</strong>.',
+        tick => '[_1] [_2] payout if the last digit of [_3] is not [_6] after [plural,_5,%d tick,%d ticks].',
     };
 }
 
