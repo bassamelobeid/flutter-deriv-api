@@ -33,6 +33,7 @@ before_install:
 
 
 install:
+    - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
