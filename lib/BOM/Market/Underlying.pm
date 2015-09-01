@@ -25,6 +25,7 @@ use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
 use BOM::Utility::Log4perl qw( get_logger );
 use Memoize;
+use Finance::Asset;
 
 use Cache::RedisDB;
 use Date::Utility;
@@ -38,7 +39,6 @@ use BOM::Market::Registry;
 use Format::Util::Numbers qw(roundnear);
 use Time::Duration::Concise;
 use BOM::Platform::Runtime;
-use BOM::Market::UnderlyingConfig;
 use BOM::Market::Data::DatabaseAPI;
 use BOM::MarketData::CorporateAction;
 use BOM::Platform::Context qw(request localize);
@@ -75,7 +75,7 @@ sub new {
     if (scalar keys %{$args} == 1) {
 
         # Symbol only requests can use cache.
-        my $cache = BOM::Market::UnderlyingConfig->instance->cached_underlyings;
+        my $cache = Finance::Asset->instance->cached_underlyings;
         if (not $cache->{$symbol}) {
             my $new_obj = $self->_new($args);
             $symbol = $new_obj->symbol;
@@ -423,7 +423,7 @@ around BUILDARGS => sub {
     # we have volatilities and etc, which shouldn't be here IMO, but
     # unfortunately they are
 
-    my $params = BOM::Market::UnderlyingConfig->instance->get_parameters_for($params_ref->{symbol});
+    my $params = Finance::Asset->instance->get_parameters_for($params_ref->{symbol});
     if ($params) {
         @$params_ref{keys %$params} = @$params{keys %$params};
     } elsif ($params_ref->{'symbol'} =~ /^frx/) {
@@ -435,7 +435,7 @@ around BUILDARGS => sub {
 
         my $inverted_symbol = 'frx' . $quoted . $asset;
 
-        $params = BOM::Market::UnderlyingConfig->instance->get_parameters_for($inverted_symbol);
+        $params = Finance::Asset->instance->get_parameters_for($inverted_symbol);
         if ($params) {
             @$params_ref{keys %$params} = @$params{keys %$params};
             $params_ref->{inverted} = 1;
