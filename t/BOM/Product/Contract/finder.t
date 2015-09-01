@@ -118,7 +118,7 @@ subtest "available contracts for symbol" => sub {
                 epoch      => time,
                 quote      => 100
             });
-            my $f = available_contracts_for_symbol($u);
+            my $f = available_contracts_for_symbol({symbol => $u});
             my %got;
             $got{$_->{contract_category}}++ for (@{$f->{available}});
             cmp_ok $got{$_}, '==', $expected{$u}{$_}, "expected outcome for $u-$_" for (keys %{$expected{$u}});
