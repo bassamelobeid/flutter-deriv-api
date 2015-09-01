@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::v2::Accounts;
 use BOM::WebSocketAPI::v2::MarketDiscovery;
 use BOM::WebSocketAPI::v2::PortfolioManagement;
 use DataDog::DogStatsd::Helper;
+use JSON::Schema;
 
 sub ok {
     my $c      = shift;
@@ -80,6 +81,13 @@ sub __handle {
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
+
+        my $f = 'config/v2/'.$dispatch->[0]
+        my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
+        if (not $validator->validate($p1)) {
+            die "Invalid input parameters."
+        }
+
         my $tag = 'origin:';
         if (my $origin = $c->req->headers->header("Origin")) {
             if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
@@ -92,7 +100,14 @@ sub __handle {
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
         }
-        return $dispatch->[1]->($c, $p1);
+        my $result = $dispatch->[1]->($c, $p1);
+
+        $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
+        if (not $validator->validate($result)) {
+            die "Invalid results parameters."
+        }
+
+        return $result;
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
