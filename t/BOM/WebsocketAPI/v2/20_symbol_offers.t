@@ -56,7 +56,6 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 #load it the contract finder at first load to resolve time out issue
 my $f = available_contracts_for_symbol({
             symbol => 'frxUSDJPY',
-            date   => $now
         });
 
 print Data::Dumper::Dumper($f);
@@ -88,15 +87,17 @@ ok($contracts_for->{contracts_for});
 ok($contracts_for->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for);
 # test contracts_for japan
-#my $t2 = $t->send_ok({
-#        json => {
-#            contracts_for => 'frxUSDJPY',
-#            region        => 'japan'
-#        }})->message_ok;
-#my $contracts_for_japan = decode_json($t2->message->[1]);
-#ok($contracts_for_japan->{contracts_for});
-#ok($contracts_for_japan->{contracts_for}->{available});
-#test_schema('contracts_for', $contracts_for_japan);
+$t = $t->send_ok({
+        json => {
+            contracts_for => 'frxUSDJPY',
+            region        => 'japan'
+        }})->message_ok;
+print "------------";
+print Data::Dumper::Dumper($t);
+my $contracts_for_japan = decode_json($t->message->[1]);
+ok($contracts_for_japan->{contracts_for});
+ok($contracts_for_japan->{contracts_for}->{available});
+test_schema('contracts_for', $contracts_for_japan);
 # test offerings
 $t = $t->send_ok({json => {offerings => {'symbol' => 'R_50'}}})->message_ok;
 my $offerings = decode_json($t->message->[1]);
