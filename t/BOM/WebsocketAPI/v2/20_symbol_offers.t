@@ -52,7 +52,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my $t = Test::Mojo->new('BOM::WebSocketAPI');
 $t->websocket_ok("/websockets/contracts");
 
-my $config_dir = "config/v1";
+my $config_dir = "config/v2";
 
 # test payout_currencies
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
