@@ -4,9 +4,10 @@ use strict;
 use warnings;
 
 use YAML::XS qw(LoadFile);
+use Finance::Asset;
 use BOM::Database::ClientDB;
 
-my $u_file = LoadFile('/home/git/regentmarkets/bom/config/files/underlyings.yml');
+my $u_file = Finance::Asset->instance->all_parameters;
 my $u_subm = LoadFile('/home/git/regentmarkets/bom/config/files/submarkets.yml');
 
 my $dbh = BOM::Database::ClientDB->new({
