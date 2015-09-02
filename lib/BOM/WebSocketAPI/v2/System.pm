@@ -28,4 +28,12 @@ sub ping {
     };
 }
 
+sub time {
+    my ($c, $args) = @_;
+
+    return {
+        msg_type => 'time',
+        time     => time,
+    };
+}
 1;
