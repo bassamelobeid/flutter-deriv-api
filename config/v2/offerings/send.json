@@ -12,7 +12,7 @@
     "symbol": {
       "type": "string",
       "description": "Specifies the symbol",
-      "sample":{"symbol": "R_100"}
+      "sample":"R_100"
     },
     "hierarchy": {
       "type": "string",
@@ -28,13 +28,11 @@
       "type": "string",
       "description": "Include a flat list in the results (default: 0)",
       "sample":"1"
-    },
-    "required": [
-      "symbol"
-    ]
+    }
   },
+
   "required": [
-    
-    "offerings"
+    "offerings",
+    "symbol"
   ]
 }
