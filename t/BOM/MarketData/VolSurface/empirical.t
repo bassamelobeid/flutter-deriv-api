@@ -113,7 +113,7 @@ subtest 'seasonalized naked volatility with news' => sub {
 
 subtest 'coefficients check' => sub {
     my $emp = BOM::MarketData::VolSurface::Empirical->new(underlying => $underlying);
-    for (BOM::Market::UnderlyingDB->symbols_for_intraday_forex) {
+    for (BOM::Market::UnderlyingDB->symbols_for_intraday_fx) {
         ok $emp->_get_coefficients('volatility_seasonality_coef', BOM::Market::Underlying->new($_)),
             'volatility seasonality coefficient defined ' . $_;
         ok $emp->_get_coefficients('duration_coef', BOM::Market::Underlying->new($_)), 'duration coefficient ' . $_;

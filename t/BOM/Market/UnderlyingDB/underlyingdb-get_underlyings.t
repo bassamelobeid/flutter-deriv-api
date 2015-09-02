@@ -24,7 +24,7 @@ eq_or_diff [sort $udb->available_start_types], [sort qw(spot forward)], 'Correct
 
 eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices random stocks)], "Correct list of markets";
 
-eq_or_diff [sort $udb->symbols_for_intraday_forex], [
+eq_or_diff [sort $udb->symbols_for_intraday_fx], [
     sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDPLN frxAUDUSD frxEURAUD frxEURCAD
         frxEURGBP frxEURJPY frxEURNZD frxEURUSD frxGBPAUD frxGBPCAD
         frxGBPJPY frxGBPNZD frxGBPUSD frxNZDUSD frxUSDCAD frxUSDJPY frxXAGUSD frxXAUUSD WLDAUD WLDEUR WLDGBP WLDUSD)

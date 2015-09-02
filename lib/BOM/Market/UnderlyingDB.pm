@@ -49,7 +49,7 @@ has _file_content => (
     default => sub { return Finance::Asset->instance->all_parameters; },
 );
 
-=head2 $self->symbols_for_intraday_forex
+=head2 $self->symbols_for_intraday_fx
 
 The standard list of non RMG underlyings which have active bets anywhere.
 
@@ -57,7 +57,7 @@ Convenience wrapper for get_symbols_for
 
 =cut
 
-sub symbols_for_intraday_forex {
+sub symbols_for_intraday_fx {
     my $self = shift;
 
     return $self->get_symbols_for(
