@@ -63,12 +63,12 @@ sub active_symbols {
     $by =~ /^(symbol|display_name)$/ or die 'by symbol or display_name only';
     return {
         msg_type       => 'active_symbols',
-        active_symbols => {
-            map { $_->{$by} => $_ }
+        active_symbols => [
+            map { $_ }
                 grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
                 map { _description($_) }
                 keys %$_by_symbol
-        },
+        ],
     };
 }
 
