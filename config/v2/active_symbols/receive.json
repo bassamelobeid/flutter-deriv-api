@@ -39,11 +39,11 @@
             "description": "display name"
           },
           "spot": {
-            "type": "number",
+            "type": ["number", "null"],
             "description": "Spot"
           },
           "spot_time": {
-            "type": "integer",
+            "type": "string",
             "description": "Epoch of spot time."
           },
           "is_trading_suspended": {
@@ -55,7 +55,7 @@
             "description": "Quoted currency symbol"
           },
           "spot_age": {
-            "type": "integer",
+            "type": "string",
             "description": "Spot age"
           },
           "pip": {

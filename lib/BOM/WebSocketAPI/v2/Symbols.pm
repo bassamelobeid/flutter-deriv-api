@@ -64,11 +64,12 @@ sub active_symbols {
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
-            map { $_->{$by} }
+            map { $_ }
                 grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
                 map { _description($_) }
                 keys %$_by_symbol
-        ],
+        ]
+        ,
     };
 }
 
