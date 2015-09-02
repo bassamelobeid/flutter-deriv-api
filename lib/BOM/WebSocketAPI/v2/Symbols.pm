@@ -68,8 +68,7 @@ sub active_symbols {
                 grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
                 map { _description($_) }
                 keys %$_by_symbol
-        ]
-        ,
+        ],
     };
 }
 
