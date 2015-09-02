@@ -1,9 +1,6 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Mojo;
-use JSON::Schema;
-use File::Slurp;
 use JSON;
 use Data::Dumper;
 use Date::Utility;

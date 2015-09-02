@@ -9,9 +9,15 @@ use JSON::Schema;
 use File::Slurp;
 use Data::Dumper;
 
+use Date::Utility;
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test/;
+@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data/;
 
 my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
@@ -32,4 +38,44 @@ sub test_schema {
         diag Dumper(\$data);
         diag " - $_" foreach $result->errors;
     }
+}
+
+sub build_test_R_50_data {
+    initialize_realtime_ticks_db();
+
+    my @exchange = ('RANDOM');
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
+        'exchange',
+        {
+            symbol => $_,
+            date   => Date::Utility->new,
+        }) for @exchange;
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD);
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_flat',
+        {
+            symbol        => 'R_50',
+            recorded_date => Date::Utility->new,
+        });
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'randomindex',
+        {
+            symbol => 'R_50',
+            date   => Date::Utility->new
+        });
+
+    my %dups;
+    Mojo::IOLoop->recurring(1 => sub {
+        my $now = Date::Utility->new->epoch;
+        unless ($dups{$now}) {
+            # diag "create R_50 tick for $now";
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                epoch      => $now,
+                underlying => 'R_50',
+            });
+            $dups{$now} = 1;
+        }
+    });
 }

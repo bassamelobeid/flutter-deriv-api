@@ -83,7 +83,6 @@ sub ticks {
         my $id;
         $id = Mojo::IOLoop->recurring(1 => sub { send_tick($c, $id, $args, $ul) });
         send_tick($c, $id, $args, $ul);
-        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
         return 0;
     } else {
         return {
@@ -104,9 +103,15 @@ sub proposal {
     my $p2 = prepare_ask($c, $args);
     my $id;
     $id = Mojo::IOLoop->recurring(1 => sub { send_ask($c, $id, {}, $p2) });
-    $c->{$id} = $p2;
+
+    my $ws_id = $c->tx->connection;
+    $c->{ws}{$ws_id}{$id} = {
+        started => time(),
+        type => 'proposal',
+        data => $p2
+    };
+
     send_ask($c, $id, $args, $p2);
-    $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
 
     return;
 }
@@ -202,7 +207,8 @@ sub send_ask {
     my $latest = get_ask($c, $p2);
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
-        delete $c->{$id};
+        my $ws_id = $c->tx->connection;
+        delete $c->{ws}{$ws_id}{$id};
     }
     $c->send({
             json => {
@@ -217,8 +223,15 @@ sub send_ask {
 
 sub send_tick {
     my ($c, $id, $p1, $ul) = @_;
+
+    my $ws_id = $c->tx->connection;
+    $c->{ws}{$ws_id}{$id} //= {
+        started => time(),
+        type => 'tick'
+    };
+
     my $tick = $ul->get_combined_realtime;
-    if ($tick->{epoch} > ($c->{$id}{epoch} || 0)) {
+    if ($tick->{epoch} > ($c->{ws}{$ws_id}{$id}{epoch} || 0)) {
         $c->send({
                 json => {
                     msg_type => 'tick',
@@ -227,7 +240,7 @@ sub send_tick {
                         id    => $id,
                         epoch => $tick->{epoch},
                         quote => $tick->{quote}}}});
-        $c->{$id}{epoch} = $tick->{epoch};
+        $c->{ws}{$ws_id}{$id}{epoch} = $tick->{epoch};
     }
     return;
 }

@@ -14,12 +14,13 @@ sub buy {
 
     my $id     = $args->{buy};
     my $source = $c->stash('source');
+    my $ws_id = $c->tx->connection;
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
     my $json = {msg_type => 'open_receipt'};
     {
-        my $p2 = delete $c->{$id} || do {
+        my $p2 = delete $c->{ws}{$ws_id}{$id}{data} || do {
             $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
             $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
             last;
@@ -65,12 +66,13 @@ sub sell {
 
     my $id     = $args->{sell};
     my $source = $c->stash('source');
+    my $ws_id = $c->tx->connection;
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
     my $json = {msg_type => 'close_receipt'};
     {
-        my $p2 = delete $c->{$id} || do {
+        my $p2 = delete $c->{ws}{$ws_id}{$id}{data} || do {
             $json->{error}                             = "";
             $json->{close_receipt}->{error}->{message} = "unknown contract sell proposal";
             $json->{close_receipt}->{error}->{code}    = "InvalidSellContractProposal";
@@ -110,6 +112,7 @@ sub portfolio {
 
     my $client = $c->stash('client');
     my $source = $c->stash('source');
+    my $ws_id = $c->tx->connection;
 
     BOM::Product::Transaction::sell_expired_contracts({
         client => $client,
@@ -126,7 +129,13 @@ sub portfolio {
         my $p2 = prepare_bid($c, $args);
         my $id;
         $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
-        $c->{$id}                 = $p2;
+
+        $c->{ws}{$ws_id}{$id} = {
+            started => time(),
+            type => 'portfolio',
+            data => $p2
+        };
+
         $c->{fmb_ids}->{$fmb->id} = $id;
         $args->{batch_index}      = ++$count;
         $args->{batch_count}      = @fmbs;
@@ -145,7 +154,7 @@ sub portfolio {
             currency      => $fmb->account->currency_code,
             longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
             };
-        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
+        $c->on(finish => sub { delete $c->{fmb_ids}{$fmb->id} });
     }
 
     return {
@@ -216,7 +225,8 @@ sub send_bid {
     my $latest = get_bid($c, $p2);
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
-        delete $c->{$id};
+        my $ws_id = $c->tx->connection;
+        delete $c->{ws}{$ws_id}{$id};
         delete $c->{fmb_ids}{$p2->{fmb}->id};
     }
     $c->send({

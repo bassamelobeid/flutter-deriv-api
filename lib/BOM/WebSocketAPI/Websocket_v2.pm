@@ -33,6 +33,8 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
+            print STDERR Dumper(\$c); use Data::Dumper;
+
             my $data;
             if (ref($p1) eq 'HASH') {
                 $data = _sanity_failed($p1) || __handle($c, $p1);
@@ -53,6 +55,17 @@ sub entry_point {
 
             $c->send({json => $data});
         });
+
+    # stop all recurring
+    $c->on(finish => sub {
+        my $ws_id = $c->tx->connection;
+        foreach my $id (keys %{$c->{ws}{$ws_id}}) {
+            print STDERR "remove $id\n";
+            Mojo::IOLoop->remove($id);
+        }
+        delete $c->{ws}{$ws_id};
+    });
+
     return;
 }
 
