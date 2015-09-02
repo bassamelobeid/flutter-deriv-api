@@ -96,7 +96,7 @@ ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for_japan);
 # test offerings
-$t = $t->send_ok({json => {offerings => {'symbol' => 'R_50'}}})->message_ok;
+$t = $t->send_ok({json => {offerings => 1, 'symbol' => 'R_50'}})->message_ok;
 my $offerings = decode_json($t->message->[1]);
 ok($offerings->{offerings});
 ok($offerings->{offerings}->{hit_count});

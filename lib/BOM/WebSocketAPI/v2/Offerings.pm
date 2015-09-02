@@ -18,7 +18,7 @@ sub offerings {
 
     return {
         msg_type => 'offerings',
-        offerings => query($c, $args->{offerings}),
+        offerings => query($c, $args),
     };
 }
 
