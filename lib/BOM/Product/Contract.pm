@@ -507,17 +507,32 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name;
-    if ($self->tick_expiry and BOM::Product::Pricing::Engine::TickExpiry::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry';
-    } elsif ($self->is_intraday and BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::Intraday::Forex';
-    } elsif ($self->is_intraday and BOM::Product::Pricing::Engine::Intraday::Index::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::Intraday::Index';
-    } elsif ($self->is_path_dependent) {
-        $engine_name = 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-    } else {
-        $engine_name = 'BOM::Product::Pricing::Engine::Slope::Observed';
+    my $engine_name =
+        $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope::Observed';
+
+    if ($self->tick_expiry) {
+        my %compatible_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => $self->market->name,
+            contract_category => $self->category_code,
+            market            => 'forex',                # forex is the only financial market that offers tick expiry contracts for now.
+        );
+        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry' if $compatible_symbols{$self->underlying->symbol};
+    } elsif (
+        $self->is_intraday and not $self->is_forward_starting and grep {
+            $self->market->name eq $_
+        } qw(forex indices)
+        )
+    {
+        my $func = 'symbols_for_intraday_' . $self->market->name;
+        my %compatible_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->$method;
+        if ($compatible_symbols{$self->underlying->symbol} and my $loc = $self->offering_specifics->{historical}) {
+            my $duration = $self->remaining_time;
+            my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
+            $engine_name = 'BOM::Product::Pricing::Engine::Intraday::' . $name
+                if ((defined $loc->{min} and defined $loc->{max})
+                and $duration->seconds <= $loc->{max}->seconds
+                and $duration->seconds >= $loc->{min}->seconds);
+        }
     }
 
     return $engine_name;
