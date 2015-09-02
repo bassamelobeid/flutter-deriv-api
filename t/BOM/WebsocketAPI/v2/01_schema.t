@@ -27,7 +27,6 @@ my $v = 'config/v2';
 explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
-    next if ($ENV{TRAVIS} and $f =~ /\/(ticks?|trading_times)$/);
     my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("$f/send.json")));
     $t->send_ok({json => $send}, "send request for $test_name");
     $t->message_ok("$test_name got a response");
