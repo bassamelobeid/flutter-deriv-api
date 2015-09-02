@@ -9,6 +9,7 @@ use List::Util qw(min max first);
 use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
 
+use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -524,7 +525,7 @@ sub _build_pricing_engine_name {
         )
     {
         my $func = 'symbols_for_intraday_' . $self->market->name;
-        my %compatible_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->$method;
+        my %compatible_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->$func;
         if ($compatible_symbols{$self->underlying->symbol} and my $loc = $self->offering_specifics->{historical}) {
             my $duration = $self->remaining_time;
             my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
