@@ -222,7 +222,7 @@ sub _build_risk_markup {
 
     $risk_markup->include_adjustment('multiply', $self->tie_factor);
 
-    #TODO: add 3% to the markup in case the (x=trend,y=vol) is outside boundaries of the surface
+    #add 3% to the markup in case the (x=trend,y=vol) is outside boundaries of the surface
     my $x_base_amount = $self->trend_proxy->base_amount;
     my $y_base_amount = $self->vol_proxy->base_amount;
 
