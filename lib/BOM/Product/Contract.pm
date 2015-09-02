@@ -524,7 +524,7 @@ sub _build_pricing_engine_name {
         } qw(forex indices)
         )
     {
-        my $func = 'symbols_for_intraday_' . $self->market->name;
+        my $func = $self->market->name eq 'forex' ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
         my %compatible_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->$func;
         if ($compatible_symbols{$self->underlying->symbol} and my $loc = $self->offering_specifics->{historical}) {
             my $duration = $self->remaining_time;
