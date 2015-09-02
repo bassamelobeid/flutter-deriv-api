@@ -22,39 +22,6 @@ use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
 use Time::Duration::Concise;
 
-=head2 is_compatible
-
-A static method which will tell you if a bet is compatible with this engine.
-
-=cut
-
-# Should be expanded to Pricing::Engine allowing us to cycle through and find the correct engine.
-sub is_compatible {
-    my $bet = shift;
-
-    my $underlying = $bet->underlying;
-    my $symbol     = $underlying->system_symbol;
-    my $submarket  = $underlying->submarket->name;
-    my $cat        = $bet->category->code;
-
-    my $error_cond;
-    if ($bet->is_forward_starting) {
-        $error_cond = 'Bet type [' . $bet->code . ']';
-    } elsif ($bet->expiry_daily) {
-        $error_cond = 'Daily expiry bet';
-    } else {
-        my $duration       = $bet->remaining_time;
-        my $duration_error = 'Unsupported duration [' . $duration->as_concise_string . ']';
-        $error_cond = $duration_error;
-        my $loc = $bet->offering_specifics->{historical};
-        if (defined $loc->{min} && defined $loc->{max}) {
-            $error_cond = undef if ($duration->seconds <= $loc->{max}->seconds && $duration->seconds >= $loc->{min}->seconds);
-        }
-    }
-
-    return $error_cond ? 0 : 1;
-}
-
 =head2 chunk_count
 
 How many sub-chunks to use for vol computation.

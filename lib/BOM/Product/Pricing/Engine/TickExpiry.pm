@@ -244,23 +244,6 @@ sub _build_tie_factor {
     });
 }
 
-sub is_compatible {
-    my $bet = shift;
-
-    my %supported_sentiment = (
-        up   => 1,
-        down => 1
-    );
-    return unless $supported_sentiment{$bet->sentiment};
-    my %symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market            => ['forex'],
-        expiry_type       => 'tick',
-        contract_category => 'callput'
-    );
-    return unless $symbols{$bet->underlying->symbol};
-    return 1;
-}
-
 no Moose;
 
 __PACKAGE__->meta->make_immutable;

@@ -1222,8 +1222,8 @@ subtest 'intraday index missing pricing coefficient' => sub {
         payout       => 100,
         barrier      => 'S0P',
     };
-    my $mock = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Index');
-    $mock->mock('is_compatible' => sub { 1 });
+    my $mock = Test::MockModule->new('BOM::Product::Contract');
+    $mock->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
     my $c = produce_contract($params);
     # it kind of suck to have 4 errors. But we just want to see if calibration coefficient error works!
     my $expected_reasons = [

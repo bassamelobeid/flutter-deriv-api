@@ -14,14 +14,6 @@ use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
 
-sub BUILD {
-    my $self = shift;
-
-    is_compatible($self->bet);
-
-    return;
-}
-
 sub clone {
     my ($self, $changes) = @_;
     return $self->new({
@@ -87,14 +79,6 @@ has [qw(_delta_formula _vega_formula)] => (
     is         => 'ro',
     lazy_build => 1,
 );
-
-sub is_compatible {
-    my $bet = shift;
-
-    my %ref = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx;
-
-    return (defined $ref{$bet->underlying->symbol} and BOM::Product::Pricing::Engine::Intraday::is_compatible($bet));
-}
 
 =head1 probability
 
