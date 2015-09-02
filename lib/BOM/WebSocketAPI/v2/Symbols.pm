@@ -117,7 +117,7 @@ sub symbol_search {
     return $_by_symbol->{$s} || $_by_display_name->{$s}    # or undef if not found.
 }
 
-sub __validate_start_end {
+sub _validate_start_end {
     my ($c, $args) = @_;
 
     my $ul    = $args->{ul} || die 'no underlying';
@@ -137,10 +137,9 @@ sub __validate_start_end {
     }
     unless ($end
         and $end =~ /^[0-9]+$/
-        and $end > $start
-        and $end <= $licensed_epoch)
+        and $end > $start)
     {
-        $end = $licensed_epoch;
+        $end = time();
     }
     unless ($count
         and $count =~ /^[0-9]+$/
@@ -148,6 +147,22 @@ sub __validate_start_end {
         and $count < 5000)
     {
         $count = 500;
+    }
+
+    unless ($ul->feed_license eq 'realtime') {
+        # if feed doesn't have realtime license, we should adjust end_time in such a way
+        # as not to break license conditions
+        if ($licensed_epoch < $end) {
+            my $shift_back = $end - $licensed_epoch;
+            unless ($ul->feed_license eq 'delayed') {
+                $end = $licensed_epoch;
+                $c->app->log->debug("Due to feed license end_time has been changed to $licensed_epoch");
+            }
+            if ($args->{adjust_start_time}) {
+                $start -= $shift_back;
+                $c->app->log->debug("start_time has been changed to $start");
+            }
+        }
     }
 
     if ($args->{adjust_start_time}) {
@@ -179,7 +194,7 @@ sub __validate_start_end {
 sub _ticks {
     my ($c, $args) = @_;
 
-    $args = __validate_start_end($c, $args);
+    $args = _validate_start_end($c, $args);
 
     my $ul    = $args->{ul} || die 'no underlying';
     my $start = $args->{start};
@@ -211,7 +226,7 @@ sub ticks {
 sub _candles {
     my ($c, $args) = @_;
 
-    $args = __validate_start_end($c, $args);
+    $args = _validate_start_end($c, $args);
 
     my $ul          = $args->{ul} || die 'no underlying';
     my $start       = $args->{start};
