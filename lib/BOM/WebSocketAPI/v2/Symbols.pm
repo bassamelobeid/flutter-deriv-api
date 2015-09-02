@@ -154,7 +154,7 @@ sub _validate_start_end {
         # as not to break license conditions
         if ($licensed_epoch < $end) {
             my $shift_back = $end - $licensed_epoch;
-            unless ($ul->feed_license eq 'delayed' and $ul->delay_amount <= 20) {
+            unless ($ul->feed_license eq 'delayed') {
                 $end = $licensed_epoch;
                 $c->app->log->debug("Due to feed license end_time has been changed to $licensed_epoch");
             }
