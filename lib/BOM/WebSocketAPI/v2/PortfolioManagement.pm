@@ -111,14 +111,14 @@ sub portfolio {
     my $client = $c->stash('client');
     my $source = $c->stash('source');
 
-    my $portfolio_stats = BOM::Product::Transaction::sell_expired_contracts({
-            client => $client,
-            source => $source
-        }) || {number_of_sold_bets => 0};
+    BOM::Product::Transaction::sell_expired_contracts({
+        client => $client,
+        source => $source
+    });
 
     # TODO: run these under a separate event loop to avoid workload batching..
     my @fmbs = grep { !$c->{fmb_ids}->{$_->id} } $client->open_bets;
-    $portfolio_stats->{batch_count} = @fmbs;
+    my $portfolio;
     my $count = 0;
     my $p0    = {%$args};
     for my $fmb (@fmbs) {
@@ -131,12 +131,26 @@ sub portfolio {
         $args->{batch_index}      = ++$count;
         $args->{batch_count}      = @fmbs;
         send_bid($c, $id, $p0, $args, $p2);
+        push @$portfolio->{contracts},
+            {
+            id            => $id,
+            fmb_id        => $fmb->id,
+            purchase_time => $fmb->purchase_time->epoch,
+            symbol        => $fmb->underlying_symbol,
+            payout        => $fmb->payout_price,
+            buy_price     => $fmb->buy_price,
+            date_start    => $fmb->start_time->epoch,
+            expiry_time   => $fmb->expiry_time->epoch,
+            contract_type => $fmb->bet_type,
+            currency      => $fmb->account->currency_code,
+            longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
+            };
         $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
     }
 
     return {
-        msg_type        => 'portfolio',
-        portfolio_stats => $portfolio_stats,
+        msg_type  => 'portfolio',
+        portfolio => $portfolio,
     };
 }
 
