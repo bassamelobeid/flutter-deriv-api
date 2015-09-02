@@ -254,7 +254,7 @@ sub update_combined_realtime {
     $tick->{epoch} = $unixtime;
     my $res = $args{underlying}->set_combined_realtime($tick);
 
-    if (scalar grep { $args{underlying}->symbol eq $_ } (BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx)) {
+    if (scalar grep { $args{underlying}->symbol eq $_ } (BOM::Market::UnderlyingDB->instance->symbols_for_intraday_forex)) {
         BOM::Market::AggTicks->new->add({
             underlying => $args{underlying},
             epoch      => $tick->{epoch},

@@ -91,7 +91,7 @@ has [qw(_delta_formula _vega_formula)] => (
 sub is_compatible {
     my $bet = shift;
 
-    my %ref = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_fx;
+    my %ref = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_forex;
 
     return (defined $ref{$bet->underlying->symbol} and BOM::Product::Pricing::Engine::Intraday::is_compatible($bet));
 }
