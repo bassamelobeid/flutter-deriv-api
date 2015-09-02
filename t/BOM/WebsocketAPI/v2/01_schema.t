@@ -15,7 +15,7 @@ my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     broker            => 'VRT',
 );
 my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } @underlying_symbols;
-push @exchange, ('RANDOM', 'FOREX','ODLS', 'RANDOM_NOCTURNE');
+push @exchange, ('RANDOM', 'FOREX', 'ODLS', 'RANDOM_NOCTURNE');
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
 

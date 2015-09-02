@@ -28,7 +28,7 @@ sub ping {
     };
 }
 
-sub time {
+sub server_time {
     my ($c, $args) = @_;
 
     return {

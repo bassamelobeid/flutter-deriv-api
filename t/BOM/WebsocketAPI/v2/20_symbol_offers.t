@@ -25,7 +25,7 @@ my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     broker            => 'VRT',
 );
 my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } @underlying_symbols;
-push @exchange, ('RANDOM', 'FOREX','ODLS', 'RANDOM_NOCTURNE');
+push @exchange, ('RANDOM', 'FOREX', 'ODLS', 'RANDOM_NOCTURNE');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
     'exchange',
     {
@@ -55,8 +55,8 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 #load it the contract finder at first load to resolve time out issue
 my $f = available_contracts_for_symbol({
-            symbol => 'frxUSDJPY',
-        });
+    symbol => 'frxUSDJPY',
+});
 
 my $t = build_mojo_test();
 # test payout_currencies
@@ -94,7 +94,11 @@ ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for_japan);
 # test offerings
-$t = $t->send_ok({json => {offerings => 1, 'symbol' => 'R_50'}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            offerings => 1,
+            'symbol'  => 'R_50'
+        }})->message_ok;
 my $offerings = decode_json($t->message->[1]);
 ok($offerings->{offerings});
 ok($offerings->{offerings}->{hit_count});
