@@ -70,13 +70,11 @@ test_schema('payout_currencies', $payout_currencies);
 $t = $t->send_ok({json => {active_symbols => 'symbol'}})->message_ok;
 my $active_symbols = decode_json($t->message->[1]);
 ok($active_symbols->{active_symbols});
-ok($active_symbols->{active_symbols}->{R_50});
 test_schema('active_symbols', $active_symbols);
 
 $t = $t->send_ok({json => {active_symbols => 'display_name'}})->message_ok;
 $active_symbols = decode_json($t->message->[1]);
 ok($active_symbols->{active_symbols});
-ok($active_symbols->{active_symbols}->{"Random 50 Index"});
 test_schema('active_symbols', $active_symbols);
 
 # test contracts_for
