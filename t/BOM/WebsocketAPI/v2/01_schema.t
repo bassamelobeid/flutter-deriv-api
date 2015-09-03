@@ -26,7 +26,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
     }) for @exchange;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',
-    epoch      => 1420070400 ,
+    epoch      => Date::Utility->new->epoch,
     quote      => 100
 });
 
@@ -41,6 +41,7 @@ my $v = 'config/v2';
 explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
+    explain $f;
     my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("$f/send.json")));
     $t->send_ok({json => $send}, "send request for $test_name");
     $t->message_ok("$test_name got a response");

@@ -105,6 +105,36 @@ sub sell {
     return $json;
 }
 
+sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+    my $source = $c->stash('source');
+
+    my @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
+    my $p0 = {%$args};
+    if (scalar @fmbs > 0) {
+        my $fmb = $fmbs[0];
+        my $id  = '';
+        $args->{fmb} = $fmb;
+        my $p2 = prepare_bid($c, $args);
+        $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
+        $c->{$id} = $p2;
+        $c->{fmb_ids}->{$fmb->id} = $id;
+        send_bid($c, $id, $p0, $args, $p2);
+        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
+
+    } else {
+        return {
+            echo_req => $args,
+            msg_type => 'proposal_open_contract',
+            error    => {
+                message => "Not found",
+                code    => "NotFound"
+            }};
+    }
+}
+
 sub portfolio {
     my ($c, $args) = @_;
 
@@ -122,18 +152,20 @@ sub portfolio {
     my $count = 0;
     my $p0    = {%$args};
     for my $fmb (@fmbs) {
-        $args->{fmb} = $fmb;
-        my $p2 = prepare_bid($c, $args);
-        my $id;
-        $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
-        $c->{$id}                 = $p2;
-        $c->{fmb_ids}->{$fmb->id} = $id;
-        $args->{batch_index}      = ++$count;
-        $args->{batch_count}      = @fmbs;
-        send_bid($c, $id, $p0, $args, $p2);
+        my $id = '';
+
+        if ($args->{spawn} eq '1') {
+            $args->{fmb} = $fmb;
+            my $p2 = prepare_bid($c, $args);
+            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
+            $c->{$id} = $p2;
+            $c->{fmb_ids}->{$fmb->id} = $id;
+            send_bid($c, $id, $p0, $args, $p2);
+            $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
+        }
+
         push @$portfolio->{contracts},
             {
-            id            => $id,
             fmb_id        => $fmb->id,
             purchase_time => $fmb->purchase_time->epoch,
             symbol        => $fmb->underlying_symbol,
@@ -145,7 +177,6 @@ sub portfolio {
             currency      => $fmb->account->currency_code,
             longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
             };
-        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
     }
 
     return {
@@ -221,9 +252,9 @@ sub send_bid {
     }
     $c->send({
             json => {
-                msg_type  => 'portfolio',
-                echo_req  => $p0,
-                portfolio => {
+                msg_type               => 'proposal_open_contract',
+                echo_req               => $p0,
+                proposal_open_contract => {
                     id => $id,
                     %$p1,
                     %$latest
