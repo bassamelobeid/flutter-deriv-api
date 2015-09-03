@@ -105,21 +105,21 @@ sub sell {
     return $json;
 }
 
-sub proposal_open_contract {
+sub proposal_open_contract { ## no critic (Subroutines::RequireFinalReturn)
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
     my $source = $c->stash('source');
 
     my @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
-    my $p0    = {%$args};
+    my $p0 = {%$args};
     if (scalar @fmbs > 0) {
         my $fmb = $fmbs[0];
-        my $id = '';
+        my $id  = '';
         $args->{fmb} = $fmb;
         my $p2 = prepare_bid($c, $args);
         $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
-        $c->{$id}                 = $p2;
+        $c->{$id} = $p2;
         $c->{fmb_ids}->{$fmb->id} = $id;
         send_bid($c, $id, $p0, $args, $p2);
         $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
@@ -131,9 +131,7 @@ sub proposal_open_contract {
             error    => {
                 message => "Not found",
                 code    => "NotFound"
-            }
-        }
-
+            }}
     }
 }
 
@@ -160,7 +158,7 @@ sub portfolio {
             $args->{fmb} = $fmb;
             my $p2 = prepare_bid($c, $args);
             $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
-            $c->{$id}                 = $p2;
+            $c->{$id} = $p2;
             $c->{fmb_ids}->{$fmb->id} = $id;
             send_bid($c, $id, $p0, $args, $p2);
             $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
