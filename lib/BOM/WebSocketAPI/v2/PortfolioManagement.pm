@@ -149,6 +149,7 @@ sub portfolio {
     # TODO: run these under a separate event loop to avoid workload batching..
     my @fmbs = grep { !$c->{fmb_ids}->{$_->id} } $client->open_bets;
     my $portfolio;
+    $portfolio->{contracts} = [];
     my $count = 0;
     my $p0    = {%$args};
     for my $fmb (@fmbs) {
@@ -164,7 +165,7 @@ sub portfolio {
             $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
         }
 
-        push @$portfolio->{contracts},
+        push @{$portfolio->{contracts}},
             {
             fmb_id        => $fmb->id,
             purchase_time => $fmb->purchase_time->epoch,
@@ -178,6 +179,7 @@ sub portfolio {
             longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
             };
     }
+
 
     return {
         msg_type  => 'portfolio',
