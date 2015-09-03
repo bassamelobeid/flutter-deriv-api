@@ -46,6 +46,7 @@ sub _description {
         pip                       => $ul->pip_size,
         symbol_type               => $ul->instrument_type,
         exchange_name             => $ul->exchange_name,
+        delay_amount              => $ul->delay_amount,
         exchange_is_open          => $exchange_is_open,
         quoted_currency_symbol    => $ul->quoted_currency_symbol,
         intraday_interval_minutes => $iim,
