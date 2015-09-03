@@ -84,6 +84,7 @@ has [qw(_delta_formula _vega_formula)] => (
 sub _build_coefficients {
     return LoadFile('/home/git/regentmarkets/bom/config/files/intraday_trend_calibration.yml');
 }
+
 =head1 probability
 
 The final theoretical probability after corrections.  Math::Util::CalculatedValue::Validatable

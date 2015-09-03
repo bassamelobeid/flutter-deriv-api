@@ -61,7 +61,7 @@ sub probability {
     my $y_min = $coef->{y_min};
     my $y_max = $coef->{y_max};
 
-    $vol_proxy   = min($y_max,       max($y_min,       $vol_proxy));
+    $vol_proxy   = min($y_max, max($y_min, $vol_proxy));
     $trend_proxy = min($x_max, max($x_min, $trend_proxy));
 
     # calculates trend adjustment
@@ -90,7 +90,11 @@ sub probability {
         my $tie_factor      = (@economic_events) ? 0 : 0.75;
         $risk_markup .= $tie_factor;
 
-        if (($debug_information{trend_proxy} > $x_max) or ($debug_information{trend_proxy} < $x_min) or ($debug_information{vol_proxy} > $y_max) or ($debug_information{vol_proxy} < $y_min)) {
+        if (   ($debug_information{trend_proxy} > $x_max)
+            or ($debug_information{trend_proxy} < $x_min)
+            or ($debug_information{vol_proxy} > $y_max)
+            or ($debug_information{vol_proxy} < $y_min))
+        {
             $risk_markup += 0.03;
         }
         $debug_information{risk_markup} = $risk_markup;
