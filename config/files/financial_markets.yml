@@ -91,9 +91,9 @@ forex:
           spot:
             american:
               min: '1h'
-              max: '10h'
+              max: '5h'
               historical_pricer_min: '15m'
-              historical_pricer_max: '10h'
+              historical_pricer_max: '5h'
         daily:
           spot:
             american: day_to_year

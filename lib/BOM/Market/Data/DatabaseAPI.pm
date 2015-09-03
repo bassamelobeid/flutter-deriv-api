@@ -740,6 +740,8 @@ sub _query_ticks {
     my $self      = shift;
     my $statement = shift;
 
+    my $symbol = $self->underlying;
+
     my @ticks;
     if ($statement->execute()) {
         my ($epoch, $quote, $runbet_quote, $bid, $ask);
@@ -751,10 +753,11 @@ sub _query_ticks {
 
         while ($statement->fetch()) {
             my $tick_compiled = BOM::Market::Data::Tick->new({
-                epoch => $epoch,
-                quote => $quote,
-                bid   => $bid,
-                ask   => $ask,
+                symbol => $symbol,
+                epoch  => $epoch,
+                quote  => $quote,
+                bid    => $bid,
+                ask    => $ask,
             });
             $tick_compiled->invert_values if ($self->invert_values);
             push @ticks, $tick_compiled;
@@ -783,10 +786,11 @@ sub _query_single_tick {
         # anything truish before assuming we got good data back.
         if ($statement->fetch() and $epoch) {
             $tick_compiled = BOM::Market::Data::Tick->new({
-                epoch => $epoch,
-                quote => $quote,
-                bid   => $bid,
-                ask   => $ask,
+                symbol => $self->underlying,
+                epoch  => $epoch,
+                quote  => $quote,
+                bid    => $bid,
+                ask    => $ask,
             });
         }
     }

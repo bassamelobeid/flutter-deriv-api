@@ -11,6 +11,7 @@ use Time::Duration::Concise::Localize;
 
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
+use BOM::Market::Underlying;
 use BOM::Market::Types;
 
 sub get_volatility {
@@ -99,26 +100,26 @@ sub _naked_vol {
         ending_epoch => $current_epoch,
         fill_cache   => $fill_cache,
     });
-
-    my ($total_ticks, $sum_squaredinput, $variance) = (0) x 3;
+    my ($tick_count, $variance, $sum_squaredinput) = (0, 0, 0);
     my $length      = scalar @$ticks;
     my $returns_sep = $at->returns_to_agg_ratio;
+
     if ($length > $returns_sep) {
         # Can compute vol.
         for (my $i = $returns_sep; $i < $length; $i++) {
             $real_periods++;
-            my $return = log($ticks->[$i]{value} / $ticks->[$i - $returns_sep]{value});
-            $sum_squaredinput += ($return**2);
-            $total_ticks += $ticks->[$i]{full_count};
+            my ($now, $then) = ($ticks->[$i], $ticks->[$i - $returns_sep]);
+            $sum_squaredinput += (log($now->{quote} / $then->{quote})**2);
+            $tick_count += $now->{count};
         }
-        $variance = $at->annualization / ($length - $returns_sep) * $sum_squaredinput;
+        $variance = $sum_squaredinput * ($at->annualization / $real_periods);
     }
 
     my $uc_vol = sqrt($variance) || $self->long_term_vol;    # set vol to long term vol if variance goes to zero.
 
-    my $average_tick_count = ($real_periods > 0) ? $total_ticks / $real_periods : 0;
-    my $err;
-    $err = 1 if ($real_periods + 1 < int($lookback_interval->minutes) * 0.8);
+    # Per 15-seconds, for legacy reasons.
+    my $average_tick_count = ($tick_count) ? ($tick_count / $real_periods) : 0;
+    my $err = ($tick_count < $lookback_interval->minutes * 0.8) ? 1 : undef;
 
     my $ref = {
         naked_vol          => $uc_vol,

@@ -1,0 +1,547 @@
+# Calibration parameters for trend adjustment for intraday trades. 'lt' is for long term (>15 mins) while 'st' impacts short term (<= 15 mins)
+# These will then be used by the Intraday trend adjustment in the corresponding pricing engine
+
+WLDAUD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jun-2014 00:00:01
+  #calib end: 10-Apr-2015 21:00:00
+  trend_min: -2.46872e-05
+  trend_max: 2.26937e-05
+  #adj r square lt: 0.986715
+  A_lt: 0.259825
+  B_lt: -0.141272
+  C_lt: 1.77368
+  D_lt: 44065.1
+  #adj r square st: 0.991813
+  A_st: 0.0706134
+  B_st: -2.22164e-14
+  C_st: 9.04227
+  D_st: 44065.1
+WLDEUR:
+  #calib date: 07-May-2015
+  #calib start: 02-Jun-2014 00:00:01
+  #calib end: 10-Apr-2015 21:00:00
+  trend_min: -2.14327e-05
+  trend_max: 1.77547e-05
+  #adj r square lt: 0.961785
+  A_lt: 0.245372
+  B_lt: -0.179267
+  C_lt: 3.68988
+  D_lt: 56323.2
+  #adj r square st: 0.990183
+  A_st: 0.0702919
+  B_st: -2.22054e-14
+  C_st: 8.42787
+  D_st: 56323.2
+WLDGBP:
+  #calib date: 07-May-2015
+  #calib start: 02-Jun-2014 00:00:01
+  #calib end: 10-Apr-2015 21:00:00
+  trend_min: -1.6405e-05
+  trend_max: 1.67011e-05
+  #adj r square lt: 0.994909
+  A_lt: 0.11852
+  B_lt: -2.52146e-14
+  C_lt: 3.70639
+  D_lt: 59876.2
+  #adj r square st: 0.991597
+  A_st: 0.0678912
+  B_st: -2.22054e-14
+  C_st: 17.0637
+  D_st: 59876.2
+WLDUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jun-2014 00:00:01
+  #calib end: 10-Apr-2015 20:59:59
+  trend_min: -1.26286e-05
+  trend_max: 1.4156e-05
+  #adj r square lt: 0.84754
+  A_lt: 0.396567
+  B_lt: -0.582146
+  C_lt: 5.95993
+  D_lt: 70641.5
+  #adj r square st: 0.988949
+  A_st: 0.152771
+  B_st: -0.270501
+  C_st: 21.2832
+  D_st: 70641.5
+frxAUDCAD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 21:00:00
+  trend_min: -2.9092e-05
+  trend_max: 2.94473e-05
+  #adj r square lt: 0.998121
+  A_lt: 0.81861
+  B_lt: -0.296906
+  C_lt: 3.11638
+  D_lt: 33958.9
+  #adj r square st: 0.997791
+  A_st: 0.268098
+  B_st: -0.143294
+  C_st: 4.37358
+  D_st: 33958.9
+frxAUDCHF:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 21:00:00
+  trend_min: -3.87347e-05
+  trend_max: 3.80367e-05
+  #adj r square lt: 0.995036
+  A_lt: 1.07181
+  B_lt: -0.437088
+  C_lt: 5.25162
+  D_lt: 26290.4
+  #adj r square st: 0.997116
+  A_st: 0.319813
+  B_st: -0.181181
+  C_st: 5.88151
+  D_st: 26290.4
+frxAUDJPY:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 21:00:00
+  trend_min: -3.02523e-05
+  trend_max: 3.07023e-05
+  #adj r square lt: 0.982296
+  A_lt: 0.784303
+  B_lt: -0.342176
+  C_lt: 2.10757
+  D_lt: 32570.9
+  #adj r square st: 0.993111
+  A_st: 0.118593
+  B_st: -0.0370173
+  C_st: 4.53741
+  D_st: 32570.9
+frxAUDNZD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 20:59:59
+  trend_min: -2.7409e-05
+  trend_max: 2.74554e-05
+  #adj r square lt: 0.998638
+  A_lt: 0.790506
+  B_lt: -0.23158
+  C_lt: 3.41605
+  D_lt: 36422.7
+  #adj r square st: 0.998818
+  A_st: 0.265508
+  B_st: -0.104042
+  C_st: 5.29475
+  D_st: 36422.7
+frxAUDPLN:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014
+  #calib end: 03-Apr-2015 20:59:56
+  trend_min: -3.55622e-05
+  trend_max: 3.57279e-05
+  #adj r square lt: 0.995311
+  A_lt: 0.31736
+  B_lt: -0.161773
+  C_lt: 2.14461
+  D_lt: 27989.3
+  #adj r square st: 0.993568
+  A_st: 0.0902963
+  B_st: -2.55413e-14
+  C_st: 3.5551
+  D_st: 27989.3
+frxAUDUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 20:59:56
+  trend_min: -2.98343e-05
+  trend_max: 2.97663e-05
+  #adj r square lt: 0.988031
+  A_lt: 1.09619
+  B_lt: -0.484835
+  C_lt: 3.27669
+  D_lt: 33595
+  #adj r square st: 0.997262
+  A_st: 0.208535
+  B_st: -0.138484
+  C_st: 5.28508
+  D_st: 33595
+frxBROUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 08:15:01
+  #calib end: 10-Apr-2015 18:30:00
+  trend_min: -0.000122499
+  trend_max: 0.000122092
+  #adj r square lt: 0.916767
+  A_lt: 9.59091
+  B_lt: -0.285041
+  C_lt: 0.0358884
+  D_lt: 8190.54
+  #adj r square st: 0.935791
+  A_st: 0.0297152
+  B_st: -2.76802e-14
+  C_st: 5.0511
+  D_st: 8190.54
+frxEURAUD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:02
+  #calib end: 20-Mar-2015 21:00:00
+  trend_min: -2.73884e-05
+  trend_max: 2.76687e-05
+  #adj r square lt: 0.991527
+  A_lt: 0.625453
+  B_lt: -0.316356
+  C_lt: 3.37283
+  D_lt: 36141.9
+  #adj r square st: 0.99753
+  A_st: 0.162379
+  B_st: -0.0961461
+  C_st: 5.84122
+  D_st: 36141.9
+frxEURCAD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 20:59:59
+  trend_min: -2.50084e-05
+  trend_max: 2.52991e-05
+  #adj r square lt: 0.995269
+  A_lt: 0.447568
+  B_lt: -0.263315
+  C_lt: 4.77821
+  D_lt: 39527.1
+  #adj r square st: 0.997255
+  A_st: 0.138614
+  B_st: -0.0820162
+  C_st: 10.6228
+  D_st: 39527.1
+frxEURGBP:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 20:59:59
+  trend_min: -1.94527e-05
+  trend_max: 1.87889e-05
+  #adj r square lt: 0.986622
+  A_lt: 0.264745
+  B_lt: -0.155021
+  C_lt: 4.00952
+  D_lt: 53223
+  #adj r square st: 0.996612
+  A_st: 0.0898807
+  B_st: -2.22069e-14
+  C_st: 12.1495
+  D_st: 53223
+frxEURJPY:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 21:00:00
+  trend_min: -2.51904e-05
+  trend_max: 2.31372e-05
+  #adj r square lt: 0.979837
+  A_lt: 0.105934
+  B_lt: -0.0735808
+  C_lt: 2.81422
+  D_lt: 43220.4
+  #adj r square st: 0.989959
+  A_st: 0.0668989
+  B_st: -2.22065e-14
+  C_st: 6.86958
+  D_st: 43220.4
+frxEURNZD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 03-Apr-2015 20:59:53
+  trend_min: -2.95904e-05
+  trend_max: 2.95482e-05
+  #adj r square lt: 0.994791
+  A_lt: 0.317772
+  B_lt: -0.111464
+  C_lt: 2.16912
+  D_lt: 33843
+  #adj r square st: 0.995625
+  A_st: 0.194325
+  B_st: -0.110251
+  C_st: 5.08345
+  D_st: 33843
+frxEURUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 21:00:00
+  trend_min: -2.30424e-05
+  trend_max: 2.1522e-05
+  #adj r square lt: 0.963843
+  A_lt: 0.665714
+  B_lt: -0.442201
+  C_lt: 6.33763
+  D_lt: 46464.2
+  #adj r square st: 0.996886
+  A_st: 0.141759
+  B_st: -0.112625
+  C_st: 13.9031
+  D_st: 46464.2
+frxGBPAUD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:02
+  #calib end: 20-Mar-2015 21:00:00
+  trend_min: -2.6702e-05
+  trend_max: 2.89513e-05
+  #adj r square lt: 0.993487
+  A_lt: 0.210692
+  B_lt: -0.139974
+  C_lt: 3.71477
+  D_lt: 34540.7
+  #adj r square st: 0.997754
+  A_st: 0.0933513
+  B_st: -2.60273e-14
+  C_st: 5.82742
+  D_st: 34540.7
+frxGBPCAD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 20:59:58
+  trend_min: -2.47374e-05
+  trend_max: 2.50206e-05
+  #adj r square lt: 0.996296
+  A_lt: 0.337957
+  B_lt: -0.182083
+  C_lt: 4.57353
+  D_lt: 39967
+  #adj r square st: 0.99767
+  A_st: 0.144498
+  B_st: -0.0672463
+  C_st: 8.87585
+  D_st: 39967
+frxGBPJPY:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 20:59:59
+  trend_min: -2.49776e-05
+  trend_max: 2.41727e-05
+  #adj r square lt: 0.979373
+  A_lt: 0.189114
+  B_lt: -0.171398
+  C_lt: 3.09763
+  D_lt: 41368.9
+  #adj r square st: 0.992858
+  A_st: 0.074406
+  B_st: -2.3426e-14
+  C_st: 5.97591
+  D_st: 41368.9
+frxGBPNOK:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 21:00:00
+  trend_min: -4.08465e-05
+  trend_max: 4.01163e-05
+  #adj r square lt: 0.994333
+  A_lt: 0.401295
+  B_lt: -0.163969
+  C_lt: 3.04382
+  D_lt: 24927.5
+  #adj r square st: 0.995183
+  A_st: 0.112764
+  B_st: -2.22154e-14
+  C_st: 7.75306
+  D_st: 24927.5
+frxGBPNZD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:02
+  #calib end: 27-Mar-2015 20:59:59
+  trend_min: -2.9434e-05
+  trend_max: 2.94866e-05
+  #adj r square lt: 0.996558
+  A_lt: 0.191016
+  B_lt: -0.00693045
+  C_lt: 1.86879
+  D_lt: 33913.7
+  #adj r square st: 0.994497
+  A_st: 0.136578
+  B_st: -0.0571617
+  C_st: 4.98545
+  D_st: 33913.7
+frxGBPPLN:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 20:59:56
+  trend_min: -3.24598e-05
+  trend_max: 3.28047e-05
+  #adj r square lt: 0.992784
+  A_lt: 0.110366
+  B_lt: -0.0581468
+  C_lt: 5.99189
+  D_lt: 30483.4
+  #adj r square st: 0.97854
+  A_st: 0.0667144
+  B_st: -2.54134e-14
+  C_st: 11.1307
+  D_st: 30483.4
+frxGBPUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 20:59:57
+  trend_min: -1.9384e-05
+  trend_max: 1.9569e-05
+  #adj r square lt: 0.991164
+  A_lt: 0.653475
+  B_lt: -0.347104
+  C_lt: 4.4014
+  D_lt: 51101.3
+  #adj r square st: 0.99817
+  A_st: 0.208021
+  B_st: -0.168645
+  C_st: 13.6416
+  D_st: 51101.3
+frxNZDJPY:
+  #calib date: 07-May-2015
+  #calib start: 31-Mar-2014 05:24:02
+  #calib end: 27-Mar-2015 20:59:13
+  trend_min: -3.07561e-05
+  trend_max: 3.11523e-05
+  #adj r square lt: 0.996157
+  A_lt: 0.297846
+  B_lt: -0.12618
+  C_lt: 2.3478
+  D_lt: 32100.4
+  #adj r square st: 0.99467
+  A_st: 0.115891
+  B_st: -0.0236621
+  C_st: 4.70341
+  D_st: 32100.4
+frxNZDUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 21:00:00
+  trend_min: -3.32702e-05
+  trend_max: 3.34546e-05
+  #adj r square lt: 0.992874
+  A_lt: 0.504722
+  B_lt: -0.191196
+  C_lt: 1.372
+  D_lt: 29891.2
+  #adj r square st: 0.994865
+  A_st: 0.269014
+  B_st: -0.201999
+  C_st: 4.94532
+  D_st: 29891.2
+frxUSDCAD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 20:59:59
+  trend_min: -2.48857e-05
+  trend_max: 2.37691e-05
+  #adj r square lt: 0.987969
+  A_lt: 0.668306
+  B_lt: -0.385565
+  C_lt: 4.98804
+  D_lt: 42071.5
+  #adj r square st: 0.99615
+  A_st: 0.219409
+  B_st: -0.149027
+  C_st: 6.05138
+  D_st: 42071.5
+frxUSDJPY:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 20-Mar-2015 21:00:00
+  trend_min: -2.13062e-05
+  trend_max: 2.1338e-05
+  #adj r square lt: 0.959524
+  A_lt: 7.81008
+  B_lt: -0.128429
+  C_lt: 0.0238755
+  D_lt: 46864.6
+  #adj r square st: 0.989866
+  A_st: 0.0758238
+  B_st: -2.46388e-14
+  C_st: 6.00512
+  D_st: 46864.6
+frxUSDMXN:
+  #calib date: 07-May-2015
+  #calib start: 13-Mar-2014 06:00:15
+  #calib end: 27-Mar-2015 21:00:00
+  trend_min: -2.37515e-05
+  trend_max: 2.44149e-05
+  #adj r square lt: 0.882791
+  A_lt: 60.4509
+  B_lt: -1.84992
+  C_lt: 6.29071
+  D_lt: 40958.6
+  #adj r square st: 0.994413
+  A_st: 0.269731
+  B_st: -0.313467
+  C_st: 21.6218
+  D_st: 40958.6
+frxUSDNOK:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 20:59:57
+  trend_min: -3.49636e-05
+  trend_max: 3.491e-05
+  #adj r square lt: 0.988544
+  A_lt: 0.624021
+  B_lt: -0.306107
+  C_lt: 3.24724
+  D_lt: 28645.1
+  #adj r square st: 0.99737
+  A_st: 0.2331
+  B_st: -0.16626
+  C_st: 10.7111
+  D_st: 28645.1
+frxUSDPLN:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:02
+  #calib end: 27-Mar-2015 21:00:00
+  trend_min: -3.40916e-05
+  trend_max: 3.48561e-05
+  #adj r square lt: 0.991274
+  A_lt: 0.722632
+  B_lt: -0.339387
+  C_lt: 2.21363
+  D_lt: 28689.4
+  #adj r square st: 0.994271
+  A_st: 0.13538
+  B_st: -0.0606197
+  C_st: 6.14861
+  D_st: 28689.4
+frxUSDSEK:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:01
+  #calib end: 27-Mar-2015 20:59:41
+  trend_min: -3.19883e-05
+  trend_max: 3.20747e-05
+  #adj r square lt: 0.990706
+  A_lt: 0.293196
+  B_lt: -0.0806091
+  C_lt: 1.90455
+  D_lt: 31177.2
+  #adj r square st: 0.997066
+  A_st: 0.171843
+  B_st: -0.124836
+  C_st: 12.0526
+  D_st: 31177.2
+frxXAGUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014 00:00:44
+  #calib end: 10-Apr-2015 20:59:03
+  trend_min: -6.81814e-05
+  trend_max: 6.79413e-05
+  #adj r square lt: 0.978131
+  A_lt: 5.14625
+  B_lt: -0.100136
+  C_lt: 0.0342187
+  D_lt: 14718.6
+  #adj r square st: 0.992722
+  A_st: 0.0801781
+  B_st: -2.3946e-14
+  C_st: 5.52465
+  D_st: 14718.6
+frxXAUUSD:
+  #calib date: 07-May-2015
+  #calib start: 02-Jan-2014
+  #calib end: 10-Apr-2015 20:59:50
+  trend_min: -3.71936e-05
+  trend_max: 3.72813e-05
+  #adj r square lt: 0.907378
+  A_lt: 0.379866
+  B_lt: -8.18272e-05
+  C_lt: 0.0542695
+  D_lt: 26823.1
+  #adj r square st: 0.989649
+  A_st: 0.0732652
+  B_st: -2.22073e-14
+  C_st: 4.188
+  D_st: 26823.1
