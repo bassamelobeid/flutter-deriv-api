@@ -1495,10 +1495,11 @@ sub _get_probability_reference {
     my $prob_ref;
     if ($self->new_interface_engine->{$self->pricing_engine_name}) {
         # will make this more generic as we move more pricing engines to this interface
-        my $func = $self->pricing_engine_name . '::' . $probability_name;
-        $prob_ref = $func->({
+        my $func_name = $self->pricing_engine_name . '::' . $probability_name;
+        my $subref = \&$func_name;
+        $prob_ref = &$subref({
             underlying_symbol => $self->underlying->symbol,
-            pricing_date      => $self->effective_date,
+            pricing_date      => $self->effective_start,
             contract_type     => $self->code,
         });
     } else {
