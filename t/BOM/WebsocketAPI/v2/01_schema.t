@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 use BOM::Market::UnderlyingDB;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use Date::Utility;
 my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
     market            => 'indices',
     contract_category => 'ANY',
@@ -22,6 +23,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         symbol => $_,
         date   => Date::Utility->new,
     }) for @exchange;
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol        => 'R_100',
+        recorded_date => Date::Utility->new,
+    });
+
 
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
