@@ -16,10 +16,25 @@ use BOM::MarketData::Fetcher::EconomicEvent;
 sub probability {
     my $args = shift;
 
-    my %debug_information;
+    # input check
+    my $err;
+    my @required = qw(underlying_symbol pricing_date contract_type);
+    if (grep {not $args->{$_}} @required) {
+        $err = 'Insufficient input to calculate probability';
+    }
+
+    my %allowed_contract_type = (
+        CALL => 1,
+        PUT  => 1,
+    );
+    if (not $allowed_contract_type{$args->{contract_type}}) {
+        $err = "Could not calculate probability for $args->{contract_type}";
+    }
+
+    my (%debug_information, $latest);
     my $coef  = LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml')->{$args->{underlying_symbol}};
     my $start = Date::Utility->new($args->{pricing_date});
-    my ($latest, $err) = _get_ticks($args->{underlying_symbol}, $start);
+    ($latest, $err) = _get_ticks($args->{underlying_symbol}, $start);
 
     my ($vol_proxy, $trend_proxy);
     if (not $err) {
