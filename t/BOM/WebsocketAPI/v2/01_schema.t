@@ -26,7 +26,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
     }) for @exchange;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',
-    epoch      => 1420070400 ,
+    epoch      => 1420070400,
     quote      => 100
 });
 

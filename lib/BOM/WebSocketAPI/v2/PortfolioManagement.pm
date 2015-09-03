@@ -105,7 +105,7 @@ sub sell {
     return $json;
 }
 
-sub proposal_open_contract { ## no critic (Subroutines::RequireFinalReturn)
+sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
@@ -131,7 +131,7 @@ sub proposal_open_contract { ## no critic (Subroutines::RequireFinalReturn)
             error    => {
                 message => "Not found",
                 code    => "NotFound"
-            }}
+            }};
     }
 }
 
