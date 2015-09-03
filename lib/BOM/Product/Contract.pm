@@ -25,6 +25,8 @@ use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Offerings qw( get_contract_specifics );
 
+use Math::Util::CalculatedValue::Validatable;
+
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
@@ -1100,13 +1102,27 @@ sub _build_payout {
 sub _build_theo_probability {
     my $self = shift;
 
-    return $self->pricing_engine->probability;
+    my $theo_cv;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        $theo_cv = $self->_get_probability_reference('probability')->{probability};
+    } else {
+        $theo_cv = $self->pricing_engine->probability;
+    }
+
+    return $theo_cv;
 }
 
 sub _build_bs_probability {
     my $self = shift;
 
-    return $self->pricing_engine->bs_probability;
+    my $bs_cv;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        $bs_cv = $self->_get_probability_reference('bs_probability')->{probability};
+    } else {
+        $bs_cv = $self->pricing_engine->bs_probability;
+    }
+
+    return $bs_cv;
 }
 
 sub _build_bs_price {
@@ -1118,7 +1134,14 @@ sub _build_bs_price {
 sub _build_model_markup {
     my $self = shift;
 
-    return $self->pricing_engine->model_markup;
+    my $model_markup_cv;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        # theo_probability markup will always be used.
+        $model_markup_cv = $self->_get_probability_reference('probability')->{markups}->{model_markup};
+    } else {
+        $model_markup_cv = $self->pricing_engine->probability;
+    }
+    return $model_markup_cv;
 }
 
 sub _build_theo_price {
@@ -1455,6 +1478,56 @@ has [qw(atm_vols rho)] => (
     isa        => 'HashRef',
     lazy_build => 1
 );
+
+# a hash reference for slow migration of pricing engine to the new interface.
+has new_interface_engine => (
+    is      => 'ro',
+    default => sub {
+        {
+            'BOM::Product::Pricing::Engine::TickExpiry' => 1,
+        };
+    },
+);
+
+sub _get_probability_reference {
+    my ($self, $probability_name) = @_;
+
+    my $prob_ref;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        # will make this more generic as we move more pricing engines to this interface
+        my $func = $self->pricing_engine_name . '::' . $probability_name;
+        $prob_ref = $func->({
+            underlying_symbol => $self->underlying->symbol,
+            pricing_date      => $self->effective_date,
+            contract_type     => $self->code,
+        });
+    } else {
+        # shouldn't be calling this if it doesn't have the new interface
+        $prob_ref = {
+            error       => 'Invalid call to [' . $probability_name . '] for engine [' . $self->pricing_engine_name . ']',
+            probability => 1,
+        };
+    }
+
+    # convert it to a CV.
+    $prob_ref->{probability} = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => '0.5 probability adjusted for trend',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $pr->{probability},
+    });
+    # We always get a value for probability.
+    # Here is where we decide whether it is a valid probability or not!
+    if ($prob_ref->{error}) {
+        $self->add_errors({
+            severity          => 100,
+            message           => 'Error in calculating probability [' . $pr->{error} . ']',
+            message_to_client => localize("We could not price this contract now, please try again later."),
+        });
+    }
+
+    return $prob_ref;
+}
 
 sub _build_priced_with {
     my $self = shift;

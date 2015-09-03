@@ -15,6 +15,20 @@ use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::EconomicEvent;
 
+sub bs_probability {
+    # there's nothing much to be done here.
+    return {
+        probability => 0.5,
+        debug_info  => {},
+        markups     => {
+            model_markup      => 0,
+            commission_markup => 0,
+            risk_markup       => 0,
+        },
+        error => undef,
+    };
+}
+
 sub probability {
     my $args = shift;
 
