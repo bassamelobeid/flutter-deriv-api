@@ -180,7 +180,6 @@ sub portfolio {
             };
     }
 
-
     return {
         msg_type  => 'portfolio',
         portfolio => $portfolio,
