@@ -78,6 +78,7 @@ sub __handle {
         ['buy',               \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,             1],
         ['sell',              \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,            1],
         ['portfolio',         \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio,       1],
+        ['proposal_open_contract',         \&BOM::WebSocketAPI::v2::PortfolioManagement::proposal_open_contract,       1],
         ['balance',           \&BOM::WebSocketAPI::v2::Accounts::balance,                    1],
         ['statement',         \&BOM::WebSocketAPI::v2::Accounts::statement,                  1],
     );
