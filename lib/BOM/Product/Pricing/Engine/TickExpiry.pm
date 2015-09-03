@@ -9,6 +9,7 @@ use List::MoreUtils qw(uniq);
 use List::Util qw(sum min max);
 use YAML::XS qw(Load);
 use YAML::CacheLoader qw(LoadFile);
+use Date::Utility;
 
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::EconomicEvent;
@@ -19,7 +20,7 @@ sub probability {
     # input check
     my $err;
     my @required = qw(underlying_symbol pricing_date contract_type);
-    if (grep {not $args->{$_}} @required) {
+    if (grep { not $args->{$_} } @required) {
         $err = 'Insufficient input to calculate probability';
     }
 
