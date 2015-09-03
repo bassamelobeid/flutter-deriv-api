@@ -34,10 +34,6 @@
             "type": "string",
             "description": "Exchange name"
           },
-          "delay_amount": {
-            "type": "integer",
-            "description": "Amount the feed is delayed (in minutes)"
-          },
           "display_name": {
             "type": "string",
             "description": "display name"
