@@ -12,6 +12,7 @@ use Mojo::URL;
 use BOM::View::JavascriptConfig;
 use BOM::Platform::Plack qw( AjaxSession );
 use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Auth0;
 
 our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 
@@ -47,6 +48,13 @@ sub BrokerPresentation {
         '<body class="BlueTopBack" marginheight="0" marginwidth="0" topmargin="0" bottommargin="0" leftmargin="0" rightmargin="0" style="margin:0px;">';
 
     print "
+
+        <script>
+            dataLayer = [{
+                'staff': '".BOM::Backoffice::Auth0::from_cookie()->{nickname}."'
+          }];
+        </script>
+
         <!-- Google Tag Manager -->
         <noscript><iframe src=\"//www.googletagmanager.com/ns.html?id=GTM-N4HNTG\"
         height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript>
