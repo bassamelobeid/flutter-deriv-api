@@ -166,7 +166,6 @@ sub portfolio {
 
         push @$portfolio->{contracts},
             {
-            id            => $id,
             fmb_id        => $fmb->id,
             purchase_time => $fmb->purchase_time->epoch,
             symbol        => $fmb->underlying_symbol,

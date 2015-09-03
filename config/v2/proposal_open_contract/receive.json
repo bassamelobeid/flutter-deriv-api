@@ -13,10 +13,6 @@
       "title": "Open contract proposal",
       "description": "Client open contract information",
       "properties":{
-        "id": {
-          "type": "string",
-          "description": "If spawn=1, streams of type 'proposal_open_contract' are created for each open contract in the portfolio. This 'id' field contains the stream id that can be used to cancel this stream using the Forget request"
-        },
         "fmb_id": {
           "type": "integer",
           "description": "Contract ID"
