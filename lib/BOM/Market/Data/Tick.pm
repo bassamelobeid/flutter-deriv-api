@@ -108,14 +108,8 @@ Returns tick as a hash
 
 sub as_hash {
     my $self = shift;
-    my $hash = {
-        epoch => $self->epoch,
-        quote => $self->quote,
-    };
-    $hash->{bid} = $self->bid if $self->bid;
-    $hash->{ask} = $self->ask if $self->ask;
 
-    return $hash;
+    return +{map { $_ => $self->$_ } grep { defined $self->$_ } qw(epoch quote symbol bid ask)};
 }
 
 __PACKAGE__->meta->make_immutable;

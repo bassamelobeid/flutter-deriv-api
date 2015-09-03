@@ -1,344 +1,304 @@
-# tick_trade_coefficients_Nov-5-2014 NOTES:
-# WLDAUD
-# Fit computation did not converge:
-# Success, but fitting stopped because magnitude of search direction smaller than tolerance (TolX).
-#
-# Fit found when optimization terminated:
-#
-# General model:
-#      f(x,y) = (a*y^.5+b*y+c)/(1+exp(d*x))+(.5-(a*y^.5+b*y+c)/2)
-# Coefficients (with 95% confidence bounds):
-#        a =      -115.7  (-132.4, -99.06)
-#        b =   1.289e+04  (1.078e+04, 1.499e+04)
-#        c =      0.2906  (0.2603, 0.321)
-#        d =       1.584  (1.318, 1.849)
-#
-# Goodness of fit:
-#   SSE: 0.001044
-#   R-square: 0.9846
-#   Adjusted R-square: 0.9836
-#   RMSE: 0.004816
-#
-# WLDEUR
-# Fit computation did not converge:
-# Success, but fitting stopped because magnitude of search direction smaller than tolerance (TolX).
-#
-# Fit found when optimization terminated:
-#
-# General model:
-#      f(x,y) = (a*y^.5+b*y+c)/(1+exp(d*x))+(.5-(a*y^.5+b*y+c)/2)
-# Coefficients (with 95% confidence bounds):
-#        a =      -171.1  (-201.6, -140.7)
-#        b =   2.491e+04  (2.041e+04, 2.941e+04)
-#        c =      0.3132  (0.2642, 0.3622)
-#        d =       1.833  (1.319, 2.348)
-#
-# Goodness of fit:
-#   SSE: 0.001685
-#   R-square: 0.9534
-#   Adjusted R-square: 0.9503
-#   RMSE: 0.006119
-#
-# WLDGBP
-# Fit computation did not converge:
-# Success, but fitting stopped because magnitude of search direction smaller than tolerance (TolX).
-#
-# Fit found when optimization terminated:
-#
-# General model:
-#      f(x,y) = (a*y^.5+b*y+c)/(1+exp(d*x))+(.5-(a*y^.5+b*y+c)/2)
-# Coefficients (with 95% confidence bounds):
-#        a =      -197.4  (-215.8, -179.1)
-#        b =   2.566e+04  (2.303e+04, 2.828e+04)
-#        c =      0.3957  (0.3654, 0.4261)
-#        d =       1.916  (1.635, 2.198)
-#
-# Goodness of fit:
-#   SSE: 0.0006281
-#   R-square: 0.9878
-#   Adjusted R-square: 0.9869
-#   RMSE: 0.003736
-#
-#
-#
-# WLDUSD
-# Fit computation did not converge:
-# Success, but fitting stopped because magnitude of search direction smaller than tolerance (TolX).
-#
-# Fit found when optimization terminated:
-#
-# General model:
-#      f(x,y) = (a*y^.5+b*y+c)/(1+exp(d*x))+(.5-(a*y^.5+b*y+c)/2)
-# Coefficients (with 95% confidence bounds):
-#        a =      -265.9  (-302.8, -229.1)
-#        b =    4.06e+04  (3.413e+04, 4.706e+04)
-#        c =      0.4628  (0.4125, 0.5131)
-#        d =        1.94  (1.637, 2.243)
-#
-# Goodness of fit:
-#   SSE: 0.000972
-#   R-square: 0.9864
-#   Adjusted R-square: 0.9855
-#   RMSE: 0.004648
-
----
 frxAUDJPY:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:25:52
   ma_step: 7
-  x_prime_min: -2.05851
-  x_prime_max: 2.05209
-  y_min: 1.34301e-05
-  y_max: 5.31607e-05
-  A: 90.1591
-  B: -2.40743
-  C: -0.314757
-  D: 0.228865
-  tie_A: -0.00468208
-  tie_B: 0.333564
-  tie_C: 3277.48
-  tie_D: -59.6647
+  x_prime_min: -2.29506
+  x_prime_max: 2.29228
+  y_min: 1.20459e-05
+  y_max: 6.74188e-05
+  #adj_r_sq 0.915186
+  A: 9671.16
+  B: -641068
+  C: -28.1574
+  D: 0.0087305
+  #adj_r_sq 0.979984
+  tie_A: -0.00342243
+  tie_B: 0.292459
+  tie_C: 2176.12
+  tie_D: -45.5993
 frxAUDUSD:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:27:34
   ma_step: 7
-  x_prime_min: -2.22289
-  x_prime_max: 2.23082
-  y_min: 1.08359e-05
-  y_max: 5.18135e-05
-  A: 285.936
-  B: 197.151
-  C: -1.47697
-  D: 0.083911
-  tie_A: -0.00652329
-  tie_B: 0.450826
-  tie_C: 3994.66
-  tie_D: -75.3874
+  x_prime_min: -2.44745
+  x_prime_max: 2.45366
+  y_min: 1.1519e-05
+  y_max: 7.20732e-05
+  #adj_r_sq 0.771342
+  A: 9599.3
+  B: -585122
+  C: -32.6455
+  D: 0.00902235
+  #adj_r_sq 0.955021
+  tie_A: -0.00376411
+  tie_B: 0.390294
+  tie_C: 2595.43
+  tie_D: -58.3255
 frxEURAUD:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:28:10
   ma_step: 7
-  x_prime_min: -2.07873
-  x_prime_max: 2.06986
-  y_min: 1.14458e-05
-  y_max: 4.93887e-05
-  A: 86.4255
-  B: -9.51168
-  C: -0.255845
-  D: 0.174349
-  tie_A: -0.00386537
-  tie_B: 0.266238
-  tie_C: 3247.4
-  tie_D: -52.4949
+  x_prime_min: -2.28128
+  x_prime_max: 2.28087
+  y_min: 1.17821e-05
+  y_max: 7.12968e-05
+  #adj_r_sq 0.90651
+  A: 9469.82
+  B: -603045
+  C: -26.8239
+  D: 0.00582849
+  #adj_r_sq 0.982235
+  tie_A: -0.00235655
+  tie_B: 0.220616
+  tie_C: 2206.66
+  tie_D: -40.1035
 frxEURCAD:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:28:46
   ma_step: 7
-  x_prime_min: -2.03322
-  x_prime_max: 2.01921
-  y_min: 1.1028e-05
-  y_max: 4.41842e-05
-  A: 64.8019
-  B: -18.4204
-  C: -0.158321
-  D: 0.218561
-  tie_A: -0.00529766
-  tie_B: 0.332537
-  tie_C: 4566.38
-  tie_D: -70.6992
+  x_prime_min: -2.23831
+  x_prime_max: 2.23304
+  y_min: 1.12426e-05
+  y_max: 7.20055e-05
+  #adj_r_sq 0.941561
+  A: 9325.03
+  B: -541143
+  C: -25.6886
+  D: 0.00578347
+  #adj_r_sq 0.985214
+  tie_A: -0.00292406
+  tie_B: 0.298481
+  tie_C: 3670.46
+  tie_D: -61.5012
 frxEURGBP:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015 00:00:01
+  #calibrated data end: 11-Aug-2015 02:29:43
   ma_step: 7
-  x_prime_min: -2.00086
-  x_prime_max: 1.99403
-  y_min: 1.06947e-05
-  y_max: 3.68856e-05
-  A: 160.201
-  B: 45.1651
-  C: -0.673095
-  D: 0.140778
-  tie_A: -0.0108749
-  tie_B: 0.527198
-  tie_C: 5646.73
-  tie_D: -97.1651
+  x_prime_min: -2.22847
+  x_prime_max: 2.24862
+  y_min: 1.22857e-05
+  y_max: 6.34946e-05
+  #adj_r_sq -1.16283e+51
+  A: 7559.04
+  B: 906724
+  C: -50.0373
+  D: 0.000956824
+  #adj_r_sq 0.991774
+  tie_A: -0.00666365
+  tie_B: 0.548237
+  tie_C: 6678.74
+  tie_D: -110.843
 frxEURJPY:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:30:36
   ma_step: 7
-  x_prime_min: -2.20208
-  x_prime_max: 2.18541
-  y_min: 8.43119e-06
-  y_max: 3.96527e-05
-  A: 176.957
-  B: -0.617801
-  C: -0.618724
-  D: 0.161693
-  tie_A: -0.00458429
-  tie_B: 0.401901
-  tie_C: 7158.74
-  tie_D: -98.0068
+  x_prime_min: -2.41633
+  x_prime_max: 2.44129
+  y_min: 9.02042e-06
+  y_max: 6.51042e-05
+  #adj_r_sq 0.911246
+  A: 10412.8
+  B: -321294
+  C: -33.1545
+  D: 0.00291196
+  #adj_r_sq 0.985866
+  tie_A: -0.00318112
+  tie_B: 0.340971
+  tie_C: 4526.77
+  tie_D: -73.2077
 frxEURUSD:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:32:45
   ma_step: 7
-  x_prime_min: -2.25753
-  x_prime_max: 2.24994
-  y_min: 9.46879e-06
-  y_max: 7.22847e-05
-  A: 64.5
-  B: -3000.7
-  C: -0.2001
-  D: 2.5
-  tie_A: -0.00464552
-  tie_B: 0.42093
-  tie_C: 5137.09
-  tie_D: -86.3235
+  x_prime_min: -2.48767
+  x_prime_max: 2.49401
+  y_min: 7.84908e-06
+  y_max: 7.1125e-05
+  #adj_r_sq 0.808298
+  A: 12291.2
+  B: -421586
+  C: -47.1385
+  D: 0.00302627
+  #adj_r_sq 0.99821
+  tie_A: -0.0070259
+  tie_B: 0.452723
+  tie_C: 5753.31
+  tie_D: -95.4813
 frxGBPAUD:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:33:27
   ma_step: 7
-  x_prime_min: -2.08058
-  x_prime_max: 2.07883
-  y_min: 1.2327e-05
-  y_max: 5.12703e-05
-  A: 87.8731
-  B: -1948.16
-  C: -0.379904
-  D: 0.319904
-  tie_A: -0.00289759
-  tie_B: 0.2017
-  tie_C: 2427.23
-  tie_D: -39.3305
-frxGBPCAD:
-  ma_step: 7
-  x_prime_min: -2.00621
-  x_prime_max: 2.00315
-  y_min: 1.17103e-05
-  y_max: 4.52512e-05
-  A: 212.432
-  B: -15505.9
-  C: -0.618397
-  D: 0.344956
-  tie_A: -0.00340178
-  tie_B: 0.238846
-  tie_C: 3325.31
-  tie_D: -50.3578
+  x_prime_min: -2.32916
+  x_prime_max: 2.31402
+  y_min: 1.09484e-05
+  y_max: 6.90403e-05
+  #adj_r_sq 0.75433
+  A: 10392.2
+  B: -596569
+  C: -37.128
+  D: 0.00640134
+  #adj_r_sq 0.96669
+  tie_A: -0.00207205
+  tie_B: 0.163849
+  tie_C: 1520.54
+  tie_D: -28.3258
 frxGBPJPY:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:35:21
   ma_step: 7
-  x_prime_min: -2.23029
-  x_prime_max: 2.19874
-  y_min: 9.44894e-06
-  y_max: 4.30431e-05
-  A: 338.818
-  B: 64.2579
-  C: -1.4735
-  D: 0.114741
-  tie_A: -0.0028999
-  tie_B: 0.273194
-  tie_C: 4325.11
-  tie_D: -62.6955
-frxUSDCAD:
-  ma_step: 7
-  x_prime_min: -2.23876
-  x_prime_max: 2.24628
-  y_min: 8.10757e-06
-  y_max: 3.83142e-05
-  A: -69.2105
-  B: -264.048
-  C: 0.373162
-  D: -0.194541
-  tie_A: -0.00983667
-  tie_B: 0.483893
-  tie_C: 6907.64
-  tie_D: -99.0279
-frxUSDJPY:
-  ma_step: 7
-  x_prime_min: -2.33752
-  x_prime_max: 2.3055
-  y_min: 7.94914e-06
-  y_max: 4.24999e-05
-  A: 602.392
-  B: 160.72
-  C: -2.54969
-  D: 0.075828
-  tie_A: -0.0060358
-  tie_B: 0.452533
-  tie_C: 5985.59
-  tie_D: -94.0248
+  x_prime_min: -2.40776
+  x_prime_max: 2.41022
+  y_min: 7.90745e-06
+  y_max: 5.39362e-05
+  #adj_r_sq 0.889961
+  A: 10697.4
+  B: -803813
+  C: -27.1569
+  D: 0.00701066
+  #adj_r_sq 0.980305
+  tie_A: -0.00269349
+  tie_B: 0.281438
+  tie_C: 4527.31
+  tie_D: -65.7905
 frxGBPUSD:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:37:17
   ma_step: 7
-  x_prime_min: -2.21378
-  x_prime_max: 2.19593
-  y_min: 1.42363e-10
-  y_max: 5.39663e-05
-  A: 0
-  B: 0
-  C: -0.02325
-  D: -21.82
-  tie_A: -0.0329332
-  tie_B: 0.830027
-  tie_C: -5072.39
-  tie_D: -7.89197
+  x_prime_min: -2.19254
+  x_prime_max: 2.19321
+  y_min: 1.25087e-10
+  y_max: 6.72336e-05
+  #adj_r_sq 0.961776
+  A: -24586.5
+  B: 2.08047e+06
+  C: 86.0871
+  D: 0.00252492
+  #adj_r_sq 0.94901
+  tie_A: -0.0269202
+  tie_B: 0.807645
+  tie_C: -3468.97
+  tie_D: -19.2114
+frxUSDCAD:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:38:41
+  ma_step: 7
+  x_prime_min: -2.48551
+  x_prime_max: 2.49102
+  y_min: 8.27007e-06
+  y_max: 5.95534e-05
+  #adj_r_sq 0.710718
+  A: 11125.5
+  B: -457616
+  C: -41.9662
+  D: 0.0038569
+  #adj_r_sq 0.997001
+  tie_A: -0.00523293
+  tie_B: 0.362461
+  tie_C: 4196.69
+  tie_D: -69.7654
+frxUSDJPY:
+  #calibrated on: 18-Aug-2015
+  #calibrated data start: 13-Feb-2015
+  #calibrated data end: 11-Aug-2015 02:40:04
+  ma_step: 7
+  x_prime_min: -2.48089
+  x_prime_max: 2.48909
+  y_min: 6.507e-06
+  y_max: 4.29296e-05
+  #adj_r_sq 0.942485
+  A: 12920.5
+  B: -770456
+  C: -33.3479
+  D: 0.00656006
+  #adj_r_sq 0.970584
+  tie_A: -0.00543481
+  tie_B: 0.419561
+  tie_C: 5445.96
+  tie_D: -86.0927
 WLDAUD:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:23:09
   ma_step: 7
-  x_prime_min: -2.31391
-  x_prime_max: 2.31522
-  y_min: 6.03179e-06
-  y_max: 3.88823e-05
-  A: -23.6211
-  B: 2352.91
-  C: 0.1098
-  D: 2.38792
-  tie_A: -0.000839112
-  tie_B: 0.0679085
-  tie_C: 1515.75
-  tie_D: -18.3491
+  x_prime_min: -3.02135
+  x_prime_max: 3.01595
+  y_min: 5.23792e-06
+  y_max: 4.67158e-05
+  #adj_r_sq .95
+  A: -39.83
+  B: 4179
+  C: 0.1411
+  D: 1.858
+  #adj_r_sq 0.927814
+  tie_A: -0.000316618
+  tie_B: 0.0521804
+  tie_C: 923.706
+  tie_D: -12.4566
 WLDEUR:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:23:37
   ma_step: 7
-  x_prime_min: -2.33014
-  x_prime_max: 2.32923
-  y_min: 4.55075e-06
-  y_max: 2.53464e-05
-  A: -84.9888
-  B: 12876.8
-  C: 0.181017
-  D: 1.06466
-  tie_A: -0.00090137
-  tie_B: 0.100695
-  tie_C: 3580.61
-  tie_D: -35.2552
+  x_prime_min: -2.9258
+  x_prime_max: 2.95879
+  y_min: 4.45187e-06
+  y_max: 4.40527e-05
+  #adj_r_sq 0.907984
+  A: -32447.7
+  B: 3.79438e+06
+  C: 90.5483
+  D: 0.00149566
+  #adj_r_sq 0.974874
+  tie_A: -0.000399221
+  tie_B: 0.0699389
+  tie_C: 1516.56
+  tie_D: -19.3753
 WLDGBP:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:24:01
   ma_step: 7
-  x_prime_min: -2.32035
-  x_prime_max: 2.32055
-  y_min: 5.34378e-06
-  y_max: 2.58822e-05
-  A: -57.0864
-  B: 7213.52
-  C: 0.130613
-  D: 3.69346
-  tie_A: -0.00074219
-  tie_B: 0.0904257
-  tie_C: 3145.18
-  tie_D: -31.0978
+  x_prime_min: -2.92896
+  x_prime_max: 2.92352
+  y_min: 4.90366e-06
+  y_max: 3.35274e-05
+  #adj_r_sq 0.865493
+  A: -69175.5
+  B: 7.71357e+06
+  C: 163.199
+  D: 0.00185616
+  #adj_r_sq 0.972154
+  tie_A: -0.00048763
+  tie_B: 0.0684276
+  tie_C: 1926.39
+  tie_D: -21.3305
 WLDUSD:
+  #calibrated on: 01-Sep-2015
+  #calibrated data start: 16-Feb-2015 00:00:01
+  #calibrated data end: 27-Aug-2015 03:24:28
   ma_step: 7
-  x_prime_min: -2.52131
-  x_prime_max: 2.49313
-  y_min: 4.5553e-06
-  y_max: 2.46059e-05
-  A: -319.409
-  B: -1106.08
-  C: 1.18122
-  D: -0.0672427
-  tie_A: -0.00116599
-  tie_B: 0.109925
-  tie_C: 4190.33
-  tie_D: -40.1436
-OPIDAXFTSE:
-# This is from SEP to Dec 2014
-  ma_step: 20
-  x_prime_min: -4.3048135075162914
-  x_prime_max: 4.2031445887563441
-  y_min: 1.3697644416625916e-05
-  y_max: 9.1479404422126006e-05
-  A: 0
-  B: 1.76319286e+05
-  C: -1.28538334e+01
-  D: 4.94301739e-03
-OPIDAXSMI:
-# This is from SEP to DEC 2014
-  ma_step: 20
-  x_prime_min: -4.152812787210105
-  x_prime_max: 4.0290074748430111
-  y_min: 3.5077899614949344e-05
-  y_max: 0.00014714642572486022
-  A: 0
-  B: 8.23231422e+02
-  C: 4.47710084e-02
-  D: 7.22839279e-01
+  x_prime_min: -3.14028
+  x_prime_max: 3.13153
+  y_min: 4.23668e-06
+  y_max: 3.15565e-05
+  #adj_r_sq 0.960744
+  A: -42964.6
+  B: 6.01304e+06
+  C: 76.4714
+  D: 0.00198441
+  #adj_r_sq 0.975162
+  tie_A: -0.000364691
+  tie_B: 0.0697953
+  tie_C: 1996.31
+  tie_D: -22.1759

@@ -1137,7 +1137,7 @@ subtest 'intraday indices duration test' => sub {
         quote  => 100
     };
 
-    for (my $i = 300; $i > 0; $i -= 5) {
+    for (my $i = 1800; $i > 0; $i -= 5) {
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             epoch      => $now->epoch - $i,
             underlying => 'AS51',

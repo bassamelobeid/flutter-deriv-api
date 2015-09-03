@@ -11,6 +11,7 @@ use YAML::XS qw(Load);
 use YAML::CacheLoader qw(LoadFile);
 use Date::Utility;
 
+use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::EconomicEvent;
 
@@ -55,8 +56,13 @@ sub probability {
         $trend_proxy = 0;      # no trend
     }
 
-    $vol_proxy   = min($coef->{y_max},       max($coef->{y_min},       $vol_proxy));
-    $trend_proxy = min($coef->{x_prime_max}, max($coef->{x_prime_min}, $trend_proxy));
+    my $x_min = $coef->{x_prime_min};
+    my $x_max = $coef->{x_prime_max};
+    my $y_min = $coef->{y_min};
+    my $y_max = $coef->{y_max};
+
+    $vol_proxy   = min($y_max,       max($y_min,       $vol_proxy));
+    $trend_proxy = min($x_max, max($x_min, $trend_proxy));
 
     # calculates trend adjustment
     # A,B,C,D are paramters that defines the pricing "surface".  The values are obtained emperically.
@@ -83,9 +89,13 @@ sub probability {
         my @economic_events = _get_applicable_economic_events($args->{underlying_symbol}, $start_period, $end_period);
         my $tie_factor      = (@economic_events) ? 0 : 0.75;
         $risk_markup .= $tie_factor;
+
+        if (($debug_information{trend_proxy} > $x_max) or ($debug_information{trend_proxy} < $x_min) or ($debug_information{vol_proxy} > $y_max) or ($debug_information{vol_proxy} < $y_min)) {
+            $risk_markup += 0.03;
+        }
         $debug_information{risk_markup} = $risk_markup;
     } else {
-        $err = "Missing coefficients for $underlying_symbol";
+        $err = "Missing coefficients for $args->{underlying_symbol}";
     }
 
     # commission_markup

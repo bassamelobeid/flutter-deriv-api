@@ -145,7 +145,7 @@ subtest 'get_historical_pricer_durations' => sub {
     SKIP: {
         skip 'skip because of euro pairs offerings adjustment', 2 unless exists $eu_tnt->{intraday};
         cmp_ok $eu_cp->{intraday}->{min}->seconds, '<', $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
-        cmp_ok $eu_cp->{intraday}->{max}->seconds, '<', $eu_tnt->{intraday}->{max}->seconds, '... but touchnotouch can run for longer';
+        cmp_ok $eu_cp->{intraday}->{max}->seconds, '==', $eu_tnt->{intraday}->{max}->seconds, '... and run for the same maximum';
     }
 
     my $r100_digits_tick = get_permitted_expiries({
