@@ -14,6 +14,9 @@ use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
 use JSON;
+use BOM::Platform::Context;
+use BOM::Platform::Context::Request;
+
 
 sub ok {
     my $c      = shift;
@@ -24,6 +27,11 @@ sub ok {
 
 sub entry_point {
     my $c = shift;
+
+    my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+    if ($request) {
+        BOM::Platform::Context::request($request);
+    }
 
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
