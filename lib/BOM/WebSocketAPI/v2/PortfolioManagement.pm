@@ -122,7 +122,7 @@ sub portfolio {
     my $count = 0;
     my $p0    = {%$args};
     for my $fmb (@fmbs) {
-        my $id;
+        my $id = '';
 
         if ($args->{spawn} eq '1') {
             $args->{fmb} = $fmb;
@@ -138,7 +138,7 @@ sub portfolio {
 
         push @$portfolio->{contracts},
             {
-            id => $id // '',
+            id            => $id,
             fmb_id        => $fmb->id,
             purchase_time => $fmb->purchase_time->epoch,
             symbol        => $fmb->underlying_symbol,
