@@ -1514,14 +1514,14 @@ sub _get_probability_reference {
         name        => 'theo_probability',
         description => '0.5 probability adjusted for trend',
         set_by      => $self->pricing_engine_name,
-        base_amount => $pr->{probability},
+        base_amount => $prob_ref->{probability},
     });
     # We always get a value for probability.
     # Here is where we decide whether it is a valid probability or not!
     if ($prob_ref->{error}) {
         $self->add_errors({
             severity          => 100,
-            message           => 'Error in calculating probability [' . $pr->{error} . ']',
+            message           => 'Error in calculating probability [' . $prob_ref->{error} . ']',
             message_to_client => localize("We could not price this contract now, please try again later."),
         });
     }
