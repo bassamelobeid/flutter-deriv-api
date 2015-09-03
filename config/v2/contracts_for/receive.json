@@ -26,7 +26,7 @@
                 		  "description":"Type of contract Example: asian up"
                 	  },
                 	  "max_contract_duration":{
-                		  "type":"number",
+                		  "type":"string",
                 		  "description":"Maximum contract duration Example: 10"
                 	  },
                 	  "barrier_category":{
@@ -54,7 +54,7 @@
                 		  "description":"Type of contract Example: ASIANU"
                 	  },
                 	  "min_contract_duration":{
-                		  "type":"number",
+                		  "type":"string",
                 		  "description":"Minimum contract duration Example: 5"
                 	  },
                 	  "sentiment":{
