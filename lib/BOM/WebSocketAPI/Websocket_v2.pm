@@ -17,7 +17,6 @@ use JSON;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 
-
 sub ok {
     my $c      = shift;
     my $source = 1;       # check http origin here
