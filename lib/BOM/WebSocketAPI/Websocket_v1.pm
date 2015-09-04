@@ -46,8 +46,10 @@ sub entry_point {
                         code    => "BadRequest"
                     }};
             }
-            if (length JSON::to_json($data) > 64000) {
-                die "data too large";
+
+            my $l = length JSON::to_json($data);
+            if ($l > 128000) {
+                die "data too large [$l]";
             }
             $c->send({json => $data});
         });

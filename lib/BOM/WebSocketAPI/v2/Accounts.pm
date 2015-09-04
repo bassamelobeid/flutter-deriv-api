@@ -25,8 +25,8 @@ sub get_transactions {
 
     my $and_description = $args->{description};
 
-    $args->{limit}   ||= 100;
-    $args->{offset}  ||= 0;
+    $args->{limit}  ||= 100;
+    $args->{offset} ||= 0;
     my $dt_fm   = $args->{dt_fm};
     my $dt_to   = $args->{dt_to};
     my $actions = $args->{action} || [];
