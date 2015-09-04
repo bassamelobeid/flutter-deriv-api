@@ -25,9 +25,8 @@ sub get_transactions {
 
     my $and_description = $args->{description};
 
-    $args->{sort_by} ||= 'id desc';
-    $args->{limit}   ||= 100;
-    $args->{offset}  ||= 0;
+    $args->{limit}  ||= 100;
+    $args->{offset} ||= 0;
     my $dt_fm   = $args->{dt_fm};
     my $dt_to   = $args->{dt_to};
     my $actions = $args->{action} || [];
@@ -62,7 +61,7 @@ sub get_transactions {
                 $source = $APPS_BY_DBID->{$app_id};
             }
             my $struct = {
-                id               => $trx->id,
+                transaction_id   => $trx->id,
                 transaction_time => $trx->transaction_time->epoch,
                 amount           => $trx->amount,
                 who              => $trx->staff_loginid,

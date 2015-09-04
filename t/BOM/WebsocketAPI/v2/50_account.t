@@ -23,7 +23,11 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'cr0021@binary.com';
 is $authorize->{authorize}->{loginid}, 'CR0021';
 
-$t = $t->send_ok({json => {statement => 1, limit => 54}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            statement => 1,
+            limit     => 54
+        }})->message_ok;
 my $statement = decode_json($t->message->[1]);
 ok($statement->{statement});
 is($statement->{statement}->{count}, 54);

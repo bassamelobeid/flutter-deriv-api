@@ -47,6 +47,10 @@ sub entry_point {
                     }};
             }
 
+            my $l = length JSON::to_json($data);
+            if ($l > 328000) {
+                die "data too large [$l]";
+            }
             $c->send({json => $data});
         });
     return;
@@ -119,10 +123,18 @@ sub _sanity_failed {
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
-        if ($k !~ /([A-Za-z0-9_-]+)/ or (not ref $arg->{$k} and $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/)) { $failed = 1; last OUTER; }
-        if (ref $arg) {
-            foreach my $l (keys %$arg) {
-                if ($k !~ /([A-Za-z0-9_-]+)/ or $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/) { $failed = 1; last OUTER; }
+        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/)) {
+            $failed = 1;
+            warn "Sanity check failed: $k -> " . $arg->{$k};
+            last OUTER;
+        }
+        if (ref $arg->{$k}) {
+            foreach my $l (keys %{$arg->{$k}}) {
+                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/) {
+                    $failed = 1;
+                    warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                    last OUTER;
+                }
             }
         }
     }
