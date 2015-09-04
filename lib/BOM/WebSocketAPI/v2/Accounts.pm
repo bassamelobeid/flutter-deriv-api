@@ -62,7 +62,7 @@ sub get_transactions {
                 $source = $APPS_BY_DBID->{$app_id};
             }
             my $struct = {
-                id               => $trx->id,
+                transaction_id   => $trx->id,
                 transaction_time => $trx->transaction_time->epoch,
                 amount           => $trx->amount,
                 who              => $trx->staff_loginid,
