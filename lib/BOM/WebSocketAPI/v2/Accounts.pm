@@ -25,7 +25,6 @@ sub get_transactions {
 
     my $and_description = $args->{description};
 
-    $args->{sort_by} ||= 'id desc';
     $args->{limit}   ||= 100;
     $args->{offset}  ||= 0;
     my $dt_fm   = $args->{dt_fm};

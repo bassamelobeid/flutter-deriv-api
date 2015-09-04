@@ -119,10 +119,10 @@ sub _sanity_failed {
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
-        if ($k !~ /([A-Za-z0-9_-]+)/ or (not ref $arg->{$k} and $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/)) { $failed = 1; last OUTER; }
+        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([A-Za-z0-9_-]{1,50})$/)) { $failed = 1; last OUTER; }
         if (ref $arg) {
             foreach my $l (keys %$arg) {
-                if ($k !~ /([A-Za-z0-9_-]+)/ or $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/) { $failed = 1; last OUTER; }
+                if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k} !~ /^([A-Za-z0-9_-]{1,50})$/) { $failed = 1; last OUTER; }
             }
         }
     }
