@@ -4,14 +4,17 @@ use strict;
 use warnings;
 
 use List::Util qw(sum);
+use List::MoreUtils qw(uniq);
 use BOM::Market::AggTicks;
+use BOM::MarketData::Fetcher::EconomicEvent;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(get_parameter);
 
 my $allow_methods = {
-    vol_proxy   => \&vol_proxy,
-    trend_proxy => \&trend_proxy,
+    vol_proxy       => \&vol_proxy,
+    trend_proxy     => \&trend_proxy,
+    economic_events => \&economic_events,
 };
 
 sub get_parameter {
@@ -74,6 +77,22 @@ sub trend_proxy {
         value => $trend_proxy,
         error => $err,
     };
+}
+
+sub economic_events {
+    my $args = shift;
+
+    my $err;
+    my $eco_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+        from => $args->{start},
+        to   => $args->{end},
+    });
+    my $underlying             = $args->{underlying};
+    my @influential_currencies = qw(USD AUD CAD CNY NZD);
+    my %applicable_symbols     = map { $_ => 1 } uniq($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
+    my @applicable_events      = sort { $a->release_date->epoch <=> $b->release_date->epoch } grep { $applicable_symbols{$_->symbol} } @$eco_events;
+
+    return @applicable_events;
 }
 
 1;
