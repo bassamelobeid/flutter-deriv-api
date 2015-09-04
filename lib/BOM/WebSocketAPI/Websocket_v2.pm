@@ -35,8 +35,10 @@ sub entry_point {
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
 
-    $c->inactivity_timeout(120);
+    # enable permessage-deflate
+    $c->tx->with_compression;
 
+    $c->inactivity_timeout(120);
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
 
