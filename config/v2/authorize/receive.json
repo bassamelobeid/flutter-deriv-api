@@ -46,7 +46,6 @@
     }
   },
   "required": [
-    "authorize",
     "echo_req",
     "msg_type"
   ]
