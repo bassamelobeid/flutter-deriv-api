@@ -1496,7 +1496,7 @@ sub _get_probability_reference {
     if ($self->new_interface_engine->{$self->pricing_engine_name}) {
         # will make this more generic as we move more pricing engines to this interface
         my $func_name = $self->pricing_engine_name . '::' . $probability_name;
-        my $subref = \&$func_name;
+        my $subref    = \&$func_name;
         $prob_ref = &$subref({
             underlying_symbol => $self->underlying->symbol,
             pricing_date      => $self->effective_start,
@@ -1507,10 +1507,10 @@ sub _get_probability_reference {
         $prob_ref = {
             error       => 'Invalid call to [' . $probability_name . '] for engine [' . $self->pricing_engine_name . ']',
             probability => 1,
-            markups => {
+            markups     => {
                 # avoid undefined markups
-                model_markup => 0,
-                risk_markup  => 0,
+                model_markup      => 0,
+                risk_markup       => 0,
                 commission_markup => 0,
             },
         };
@@ -1524,7 +1524,7 @@ sub _get_probability_reference {
         base_amount => $prob_ref->{probability},
     });
     # convert markups to CV
-    for my $markup_name ( keys $prob_ref->{markups}) {
+    for my $markup_name (keys $prob_ref->{markups}) {
         $prob_ref->{markups}->{$markup_name} = Math::Util::CalculatedValue::Validatable->new({
             name        => $markup_name,
             description => $markup_name,

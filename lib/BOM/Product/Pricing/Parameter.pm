@@ -10,7 +10,7 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(get_parameter);
 
 my $allow_methods = {
-    vol_proxy => \&vol_proxy,
+    vol_proxy   => \&vol_proxy,
     trend_proxy => \&trend_proxy,
 };
 
@@ -23,23 +23,23 @@ sub vol_proxy {
     my $args = shift;
 
     my $err;
-    my $underlying = $args->{underlying};
+    my $underlying   = $args->{underlying};
     my $date_pricing = $args->{date_pricing};
 
     my $ticks = BOM::Market::AggTicks->new->retrieve({
-        underlying => $underlying,
+        underlying   => $underlying,
         ending_epoch => $date_pricing->epoch,
-        tick_count => 20,
+        tick_count   => 20,
     });
 
     my @latest = @$ticks;
     my $vol_proxy;
     if (@latest and @latest == 20 and abs($date_pricing->epoch - $latest[0]->{epoch}) < 300) {
-        my $sum = sum(map {log($latest[$_]->{quote} / $latest[$_ - 1]->{quote})**2} (1 .. 19));
+        my $sum = sum(map { log($latest[$_]->{quote} / $latest[$_ - 1]->{quote})**2 } (1 .. 19));
         $vol_proxy = sqrt($sum / 19);
     } else {
-        $vol_proxy = 0.20; # 20% volatility
-        $err = 'Do not have enough ticks to calculate volatility';
+        $vol_proxy = 0.20;                                                 # 20% volatility
+        $err       = 'Do not have enough ticks to calculate volatility';
     }
 
     return {
@@ -56,24 +56,24 @@ sub trend_proxy {
     my $vol_proxy_reference = vol_proxy($args);
     my $trend_proxy;
     if (not $vol_proxy_reference->{error}) {
-        my $latest        = BOM::Market::AggTicks->new->retrieve({
-            underlying => $args->{underlying},
+        my $latest = BOM::Market::AggTicks->new->retrieve({
+            underlying   => $args->{underlying},
             ending_epoch => $args->{date_pricing}->epoch,
-            tick_count => 20,
+            tick_count   => 20,
         });
-        my $ma_step       = 7;
-        my $avg           = sum(map { $_->{quote} } @$latest[-$ma_step .. -1]) / $ma_step;
-        my $x             = ($latest->[-1]{quote} - $avg) / $latest->[-1]{quote};
+        my $ma_step = 7;
+        my $avg     = sum(map { $_->{quote} } @$latest[-$ma_step .. -1]) / $ma_step;
+        my $x       = ($latest->[-1]{quote} - $avg) / $latest->[-1]{quote};
         $trend_proxy = $x / $vol_proxy_reference->{value};
     } else {
-        $trend_proxy = 0; # no trend
-        $err = $vol_proxy_reference->{error};
+        $trend_proxy = 0;                               # no trend
+        $err         = $vol_proxy_reference->{error};
     }
 
     return {
         value => $trend_proxy,
         error => $err,
-    }
+    };
 }
 
 1;
