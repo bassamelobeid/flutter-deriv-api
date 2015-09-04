@@ -12,14 +12,11 @@ sub authorize {
     my $token = $args->{authorize};
 
     my $err = {
-        msg_type  => 'authorize',
-        authorize => {
-            error => {
-                message => "Token invalid",
-                code    => "InvalidToken"
-            }
-        },
-    };
+        msg_type => 'authorize',
+        error    => {
+            message => "Token invalid",
+            code    => "InvalidToken"
+        }};
 
     my $session = BOM::Platform::SessionCookie->new(token => $token);
     if (!$session || !$session->validate_session()) {
