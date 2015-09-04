@@ -2,12 +2,9 @@ use strict;
 use warnings;
 use Test::More;
 use JSON;
-use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/build_mojo_test/;
-
-$Data::Dumper::Indent = 1;
 
 ## test without deflate
 my $t = build_mojo_test();
