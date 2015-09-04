@@ -95,6 +95,9 @@ sub __handle {
         my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v2/' . $dispatch->[0];
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
         if (not $validator->validate($p1)) {
+            my $result = $validator->validate($p1);
+            print " - $_\n" foreach $result->errors;
+            print Data::Dumper::Dumper($p1);
             die "Invalid input parameter for [" . $dispatch->[0] . "]";
         }
 
