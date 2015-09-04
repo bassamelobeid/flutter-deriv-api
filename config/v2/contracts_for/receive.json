@@ -91,19 +91,16 @@
                 	  },
                           "available_barriers":{
                 		  "type":"array",
-                          "items":{
-                            "type":"number"
-                          },
-                          "minItems":"1",
-                          "description":"Array of available barriers"
+                                  "minItems":"1",
+                                  "description":"Array of available barriers"
                 	  },
                           "trading_period":{
-                		  "type":"array",
+                		  "type":"object",
                           "items":{
-                            "type":"array"
+                            "type":"object"
                           },
                           "minItems":"1",
-                          "description":"Array of trading period"
+                          "description":"A hash of trading period"
                 	  }
                   } 
                 },
