@@ -6,6 +6,8 @@
   "properties": {
     "authorize": {
       "type": "object",
+      "title": "Authorization Response",
+      "description": "Account information for the holder of the token",
       "properties": {
         "email": {
           "type": "string",
@@ -27,14 +29,7 @@
           "type": "string",
           "description": "User's full name"
         }
-      },
-      "required": [
-        "email",
-        "currency",
-        "balance",
-        "loginid",
-        "fullname"
-      ]
+      }
     },
     "echo_req": {
       "title": "Echo request",
@@ -46,7 +41,6 @@
     }
   },
   "required": [
-    "authorize",
     "echo_req",
     "msg_type"
   ]

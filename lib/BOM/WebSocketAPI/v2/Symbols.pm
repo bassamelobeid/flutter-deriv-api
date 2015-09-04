@@ -46,6 +46,7 @@ sub _description {
         pip                       => $ul->pip_size,
         symbol_type               => $ul->instrument_type,
         exchange_name             => $ul->exchange_name,
+        delay_amount              => $ul->delay_amount,
         exchange_is_open          => $exchange_is_open,
         quoted_currency_symbol    => $ul->quoted_currency_symbol,
         intraday_interval_minutes => $iim,
@@ -128,9 +129,10 @@ sub _validate_start_end {
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
 
+    # max allow 3 years
     unless ($start
         and $start =~ /^[0-9]+$/
-        and $start > time() - 365 * 86400
+        and $start > time() - 365 * 86400 * 3
         and $start < $licensed_epoch)
     {
         $start = $licensed_epoch - 86400;

@@ -7,7 +7,7 @@ use BOM::Product::ContractFactory;
 
 sub statement {
     my ($c, $args) = @_;
-    my $statement = get_transactions($c, $args->{statement});
+    my $statement = get_transactions($c, $args);
     return {
         msg_type  => 'statement',
         statement => $statement,
@@ -25,9 +25,8 @@ sub get_transactions {
 
     my $and_description = $args->{description};
 
-    $args->{sort_by} ||= 'id desc';
-    $args->{limit}   ||= 100;
-    $args->{offset}  ||= 0;
+    $args->{limit}  ||= 100;
+    $args->{offset} ||= 0;
     my $dt_fm   = $args->{dt_fm};
     my $dt_to   = $args->{dt_to};
     my $actions = $args->{action} || [];
@@ -37,17 +36,6 @@ sub get_transactions {
         my $dt = eval { DateTime->from_epoch(epoch => $_) }
             || return $c->_fail("date expression [$_] should be a valid epoch value");
         $_ = $dt;
-    }
-
-    if (my $yyyymm = $c->req->param('yyyymm')) {
-        my ($year, $month) = $yyyymm =~ /^(....)-(..)$/
-            or return $c->_fail("parameter yyyymm [$yyyymm] invalid format, need yyyy-mm e.g. 2015-01");
-        $dt_fm = DateTime->new(
-            year  => $year,
-            month => $month,
-            day   => 1
-        );
-        $dt_to = $dt_fm->clone->add(months => 1);
     }
 
     my $query = [];
@@ -73,7 +61,7 @@ sub get_transactions {
                 $source = $APPS_BY_DBID->{$app_id};
             }
             my $struct = {
-                id               => $trx->id,
+                transaction_id   => $trx->id,
                 transaction_time => $trx->transaction_time->epoch,
                 amount           => $trx->amount,
                 who              => $trx->staff_loginid,

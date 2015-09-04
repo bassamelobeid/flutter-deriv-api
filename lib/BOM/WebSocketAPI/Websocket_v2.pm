@@ -14,6 +14,8 @@ use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
 use JSON;
+use BOM::Platform::Context;
+use BOM::Platform::Context::Request;
 
 sub ok {
     my $c      = shift;
@@ -25,10 +27,21 @@ sub ok {
 sub entry_point {
     my $c = shift;
 
+    my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+    if ($request) {
+        BOM::Platform::Context::request($request);
+    }
+
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
 
-    $c->inactivity_timeout(600);
+    # enable permessage-deflate
+    $c->tx->with_compression;
+
+    $c->inactivity_timeout(120);
+    # Increase inactivity timeout for connection a bit
+    Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
+
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
@@ -53,6 +66,10 @@ sub entry_point {
             }
             $data->{version} = 2;
 
+            my $l = length JSON::to_json($data);
+            if ($l > 328000) {
+                die "data too large [$l]";
+            }
             $c->send({json => $data});
         });
 
@@ -77,30 +94,34 @@ sub __handle {
 
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
-        ['authorize',         \&BOM::WebSocketAPI::v2::Authorize::authorize,                 0],
-        ['ticks',             \&BOM::WebSocketAPI::v2::MarketDiscovery::ticks,               0],
-        ['proposal',          \&BOM::WebSocketAPI::v2::MarketDiscovery::proposal,            0],
-        ['forget',            \&BOM::WebSocketAPI::v2::System::forget,                       0],
-        ['ping',              \&BOM::WebSocketAPI::v2::System::ping,                         0],
-        ['time',              \&BOM::WebSocketAPI::v2::System::server_time,                  0],
-        ['payout_currencies', \&BOM::WebSocketAPI::v2::ContractDiscovery::payout_currencies, 0],
-        ['active_symbols',    \&BOM::WebSocketAPI::v2::Symbols::active_symbols,              0],
-        ['contracts_for',     \&BOM::WebSocketAPI::v2::ContractDiscovery::contracts_for,     0],
-        ['offerings',         \&BOM::WebSocketAPI::v2::Offerings::offerings,                 0],
-        ['trading_times',     \&BOM::WebSocketAPI::v2::Offerings::trading_times,             0],
-        ['buy',               \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,             1],
-        ['sell',              \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,            1],
-        ['portfolio',         \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio,       1],
-        ['balance',           \&BOM::WebSocketAPI::v2::Accounts::balance,                    1],
-        ['statement',         \&BOM::WebSocketAPI::v2::Accounts::statement,                  1],
+        ['authorize',              \&BOM::WebSocketAPI::v2::Authorize::authorize,                        0],
+        ['ticks',                  \&BOM::WebSocketAPI::v2::MarketDiscovery::ticks,                      0],
+        ['proposal',               \&BOM::WebSocketAPI::v2::MarketDiscovery::proposal,                   0],
+        ['forget',                 \&BOM::WebSocketAPI::v2::System::forget,                              0],
+        ['ping',                   \&BOM::WebSocketAPI::v2::System::ping,                                0],
+        ['time',                   \&BOM::WebSocketAPI::v2::System::server_time,                         0],
+        ['payout_currencies',      \&BOM::WebSocketAPI::v2::ContractDiscovery::payout_currencies,        0],
+        ['active_symbols',         \&BOM::WebSocketAPI::v2::Symbols::active_symbols,                     0],
+        ['contracts_for',          \&BOM::WebSocketAPI::v2::ContractDiscovery::contracts_for,            0],
+        ['offerings',              \&BOM::WebSocketAPI::v2::Offerings::offerings,                        0],
+        ['trading_times',          \&BOM::WebSocketAPI::v2::Offerings::trading_times,                    0],
+        ['buy',                    \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,                    1],
+        ['sell',                   \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,                   1],
+        ['portfolio',              \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio,              1],
+        ['proposal_open_contract', \&BOM::WebSocketAPI::v2::PortfolioManagement::proposal_open_contract, 1],
+        ['balance',                \&BOM::WebSocketAPI::v2::Accounts::balance,                           1],
+        ['statement',              \&BOM::WebSocketAPI::v2::Accounts::statement,                         1],
     );
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
         my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v2/' . $dispatch->[0];
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
-        if ($dispatch->[0] ne 'statement' and not $validator->validate($p1)) {
-            die "Invalid input parameter for [" . $dispatch->[0] . "]";
+        if (not $validator->validate($p1)) {
+            my $result = $validator->validate($p1);
+            my $error;
+            $error .= " - $_" foreach $result->errors;
+            die "Invalid input parameter for [" . $dispatch->[0] . " $error]";
         }
 
         my $tag = 'origin:';
@@ -150,10 +171,18 @@ sub _sanity_failed {
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
-        if ($k !~ /([A-Za-z0-9_-]+)/ or (not ref $arg->{$k} and $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/)) { $failed = 1; last OUTER; }
-        if (ref $arg) {
-            foreach my $l (keys %$arg) {
-                if ($k !~ /([A-Za-z0-9_-]+)/ or $arg->{$k} !~ /([A-Za-z0-9_\-@\.]+)/) { $failed = 1; last OUTER; }
+        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/)) {
+            $failed = 1;
+            warn "Sanity check failed: $k -> " . $arg->{$k};
+            last OUTER;
+        }
+        if (ref $arg->{$k}) {
+            foreach my $l (keys %{$arg->{$k}}) {
+                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/) {
+                    $failed = 1;
+                    warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                    last OUTER;
+                }
             }
         }
     }

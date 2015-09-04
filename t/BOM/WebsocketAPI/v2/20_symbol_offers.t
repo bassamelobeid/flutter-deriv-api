@@ -13,16 +13,10 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
 initialize_realtime_ticks_db();
-use BOM::Market::UnderlyingDB;
+use Finance::Asset;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
-my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-    market            => 'indices',
-    contract_category => 'ANY',
-    broker            => 'VRT',
-);
-my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } @underlying_symbols;
-push @exchange, ('RANDOM', 'FOREX', 'ODLS', 'RANDOM_NOCTURNE');
+my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } Finance::Asset->instance->symbols;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
     'exchange',
     {
@@ -42,6 +36,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
         symbol        => 'R_50',
+        recorded_date => $now,
+    });
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol        => 'R_100',
         recorded_date => $now,
     });
 

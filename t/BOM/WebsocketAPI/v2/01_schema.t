@@ -7,15 +7,23 @@ use File::Basename;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
-use BOM::Market::UnderlyingDB;
+use Finance::Asset;
+use BOM::Test::Data::Utility::UnitTestCouchDB;
+use Date::Utility;
+use BOM::Test::Data::Utility::FeedTestDatabase;
+my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } Finance::Asset->instance->symbols;
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
+    'exchange',
+    {
+        symbol => $_,
+        date   => Date::Utility->new,
+    }) for @exchange;
+BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    underlying => 'R_100',
+    epoch      => Date::Utility->new->epoch,
+    quote      => 100
+});
 
-my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-    market            => 'indices',
-    contract_category => 'ANY',
-    broker            => 'VRT',
-);
-my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } @underlying_symbols;
-push @exchange, ('RANDOM', 'FOREX', 'ODLS', 'RANDOM_NOCTURNE');
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
 
@@ -27,7 +35,7 @@ my $v = 'config/v2';
 explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
-    next if ($ENV{TRAVIS} and $f =~ /\/(ticks?|trading_times)$/);
+    explain $f;
     my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("$f/send.json")));
     $t->send_ok({json => $send}, "send request for $test_name");
     $t->message_ok("$test_name got a response");

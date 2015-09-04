@@ -11,14 +11,12 @@ services:
 cache: apt
 before_install:
     - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
-    - /tmp/travis-scripts/websocket_schema_update_old.sh
+    - /tmp/travis-scripts/websocket_schema_update.sh
 
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
-    - sudo ifconfig lo:1 172.28.128.3
+    - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
-    - sudo mkdir -p /home/git/regentmarkets
-    - sudo mkdir -p /home/git/binary-com
-    - sudo rm -f /tmp/unittest_*
+    - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
     - /tmp/travis-scripts/couchdb.sh
 

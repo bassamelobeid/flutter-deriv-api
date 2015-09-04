@@ -18,18 +18,18 @@ sub buy {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json = {msg_type => 'open_receipt'};
+    my $json = {msg_type => 'buy'};
     {
         my $p2 = delete $c->{ws}{$ws_id}{$id}{data} || do {
-            $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
-            $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
+            $json->{error}->{message} = "unknown contract proposal";
+            $json->{error}->{code}    = "InvalidContractProposal";
             last;
         };
         my $contract = try { produce_contract({%$p2}) } || do {
             my $err = $@;
             $c->app->log->debug("contract creation failure: $err");
-            $json->{open_receipt}->{error}->{message} = "cannot create contract";
-            $json->{open_receipt}->{error}->{code}    = "ContractCreationFailure";
+            $json->{error}->{message} = "cannot create contract";
+            $json->{error}->{code}    = "ContractCreationFailure";
             last;
         };
         my $trx = BOM::Product::Transaction->new({
@@ -40,14 +40,14 @@ sub buy {
         });
         if (my $err = $trx->buy) {
             $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{open_receipt}->{error}->{message} = $err->{-message_to_client};
-            $json->{open_receipt}->{error}->{code}    = $err->get_type;
+            $json->{error}->{message} = $err->{-message_to_client};
+            $json->{error}->{code}    = $err->get_type;
             last;
         }
         $c->app->log->info("websocket-based buy " . $trx->report);
         $trx = $trx->transaction_record;
         my $fmb = $trx->financial_market_bet;
-        $json->{open_receipt} = {
+        $json->{buy} = {
             trx_id        => $trx->id,
             fmb_id        => $fmb->id,
             balance_after => $trx->balance_after,
@@ -70,12 +70,12 @@ sub sell {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json = {msg_type => 'close_receipt'};
+    my $json = {msg_type => 'sell'};
     {
         my $p2 = delete $c->{ws}{$ws_id}{$id}{data} || do {
-            $json->{error}                             = "";
-            $json->{close_receipt}->{error}->{message} = "unknown contract sell proposal";
-            $json->{close_receipt}->{error}->{code}    = "InvalidSellContractProposal";
+            $json->{error}            = "";
+            $json->{error}->{message} = "unknown contract sell proposal";
+            $json->{error}->{code}    = "InvalidSellContractProposal";
             last;
         };
         my $fmb      = $p2->{fmb};
@@ -89,14 +89,14 @@ sub sell {
         });
         if (my $err = $trx->sell) {
             $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{close_receipt}->{error}->{code}    = $err->get_type;
-            $json->{close_receipt}->{error}->{message} = $err->{-message_to_client};
+            $json->{error}->{code}    = $err->get_type;
+            $json->{error}->{message} = $err->{-message_to_client};
             last;
         }
         $c->app->log->info("websocket-based sell " . $trx->report);
-        $trx                   = $trx->transaction_record;
-        $fmb                   = $trx->financial_market_bet;
-        $json->{close_receipt} = {
+        $trx          = $trx->transaction_record;
+        $fmb          = $trx->financial_market_bet;
+        $json->{sell} = {
             trx_id        => $trx->id,
             fmb_id        => $fmb->id,
             balance_after => $trx->balance_after,
@@ -105,6 +105,36 @@ sub sell {
     }
 
     return $json;
+}
+
+sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+    my $source = $c->stash('source');
+
+    my @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
+    my $p0 = {%$args};
+    if (scalar @fmbs > 0) {
+        my $fmb = $fmbs[0];
+        my $id  = '';
+        $args->{fmb} = $fmb;
+        my $p2 = prepare_bid($c, $args);
+        $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
+        $c->{$id} = $p2;
+        $c->{fmb_ids}->{$fmb->id} = $id;
+        send_bid($c, $id, $p0, $args, $p2);
+        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
+
+    } else {
+        return {
+            echo_req => $args,
+            msg_type => 'proposal_open_contract',
+            error    => {
+                message => "Not found",
+                code    => "NotFound"
+            }};
+    }
 }
 
 sub portfolio {
@@ -122,27 +152,30 @@ sub portfolio {
     # TODO: run these under a separate event loop to avoid workload batching..
     my @fmbs = grep { !$c->{fmb_ids}->{$_->id} } $client->open_bets;
     my $portfolio;
+    $portfolio->{contracts} = [];
     my $count = 0;
     my $p0    = {%$args};
     for my $fmb (@fmbs) {
-        $args->{fmb} = $fmb;
-        my $p2 = prepare_bid($c, $args);
-        my $id;
-        $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
+        my $id = '';
 
-        $c->{ws}{$ws_id}{$id} = {
-            started => time(),
-            type => 'portfolio',
-            data => $p2
-        };
+        if ($args->{spawn} eq '1') {
+            $args->{fmb} = $fmb;
+            my $p2 = prepare_bid($c, $args);
+            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
 
-        $c->{fmb_ids}->{$fmb->id} = $id;
-        $args->{batch_index}      = ++$count;
-        $args->{batch_count}      = @fmbs;
-        send_bid($c, $id, $p0, $args, $p2);
-        push @$portfolio->{contracts},
+            $c->{ws}{$ws_id}{$id} = {
+                started => time(),
+                type => 'portfolio',
+                data => $p2
+            };
+
+            $c->{fmb_ids}->{$fmb->id} = $id;
+            send_bid($c, $id, $p0, $args, $p2);
+            $c->on(finish => sub { delete $c->{fmb_ids}{$fmb->id} });
+        }
+
+        push @{$portfolio->{contracts}},
             {
-            id            => $id,
             fmb_id        => $fmb->id,
             purchase_time => $fmb->purchase_time->epoch,
             symbol        => $fmb->underlying_symbol,
@@ -154,7 +187,6 @@ sub portfolio {
             currency      => $fmb->account->currency_code,
             longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
             };
-        $c->on(finish => sub { delete $c->{fmb_ids}{$fmb->id} });
     }
 
     return {
@@ -223,21 +255,36 @@ sub get_bid {
 sub send_bid {
     my ($c, $id, $p0, $p1, $p2) = @_;
     my $latest = get_bid($c, $p2);
+
+    my $response = {
+        msg_type => 'proposal_open_contract',
+        echo_req => $p0,
+    };
+
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
         my $ws_id = $c->tx->connection;
         delete $c->{ws}{$ws_id}{$id};
         delete $c->{fmb_ids}{$p2->{fmb}->id};
+        $c->send({
+                json => {
+                    %$response,
+                    proposal_open_contract => {
+                        id => $id,
+                        %$p1,
+                    },
+                    %$latest,
+                }});
+    } else {
+        $c->send({
+                json => {
+                    %$response,
+                    proposal_open_contract => {
+                        id => $id,
+                        %$p1,
+                        %$latest
+                    }}});
     }
-    $c->send({
-            json => {
-                msg_type  => 'portfolio',
-                echo_req  => $p0,
-                portfolio => {
-                    id => $id,
-                    %$p1,
-                    %$latest
-                }}});
     return;
 }
 
