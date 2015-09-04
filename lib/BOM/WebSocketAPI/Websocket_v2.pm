@@ -59,7 +59,7 @@ sub entry_point {
             $data->{version} = 2;
 
             my $l = length JSON::to_json($data);
-            if ($l > 128000) {
+            if ($l > 328000) {
                 die "data too large [$l]";
             }
             $c->send({json => $data});
