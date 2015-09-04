@@ -94,8 +94,11 @@ sub __handle {
         next unless $p1->{$dispatch->[0]};
         my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v2/' . $dispatch->[0];
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
-        if ($dispatch->[0] ne 'statement' and not $validator->validate($p1)) {
-            die "Invalid input parameter for [" . $dispatch->[0] . "]";
+        if (not $validator->validate($p1)) {
+            my $result = $validator->validate($p1);
+            my $error;
+            $error .= " - $_" foreach $result->errors;
+            die "Invalid input parameter for [" . $dispatch->[0] . " $error]";
         }
 
         my $tag = 'origin:';
