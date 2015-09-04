@@ -246,20 +246,35 @@ sub get_bid {
 sub send_bid {
     my ($c, $id, $p0, $p1, $p2) = @_;
     my $latest = get_bid($c, $p2);
+
+    my $response = {
+        msg_type => 'proposal_open_contract',
+        echo_req => $p0,
+    };
+
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
         delete $c->{$id};
         delete $c->{fmb_ids}{$p2->{fmb}->id};
+        $c->send({
+                json => {
+                    %$response,
+                    proposal_open_contract => {
+                        id => $id,
+                        %$p1,
+                    },
+                    %$latest,
+                }});
+    } else {
+        $c->send({
+                json => {
+                    %$response,
+                    proposal_open_contract => {
+                        id => $id,
+                        %$p1,
+                        %$latest
+                    }}});
     }
-    $c->send({
-            json => {
-                msg_type               => 'proposal_open_contract',
-                echo_req               => $p0,
-                proposal_open_contract => {
-                    id => $id,
-                    %$p1,
-                    %$latest
-                }}});
     return;
 }
 
