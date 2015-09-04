@@ -20,15 +20,15 @@ sub buy {
     my $json = {msg_type => 'buy'};
     {
         my $p2 = delete $c->{$id} || do {
-            $json->{buy}->{error}->{message} = "unknown contract proposal";
-            $json->{buy}->{error}->{code}    = "InvalidContractProposal";
+            $json->{error}->{message} = "unknown contract proposal";
+            $json->{error}->{code}    = "InvalidContractProposal";
             last;
         };
         my $contract = try { produce_contract({%$p2}) } || do {
             my $err = $@;
             $c->app->log->debug("contract creation failure: $err");
-            $json->{buy}->{error}->{message} = "cannot create contract";
-            $json->{buy}->{error}->{code}    = "ContractCreationFailure";
+            $json->{error}->{message} = "cannot create contract";
+            $json->{error}->{code}    = "ContractCreationFailure";
             last;
         };
         my $trx = BOM::Product::Transaction->new({
@@ -39,8 +39,8 @@ sub buy {
         });
         if (my $err = $trx->buy) {
             $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{buy}->{error}->{message} = $err->{-message_to_client};
-            $json->{buy}->{error}->{code}    = $err->get_type;
+            $json->{error}->{message} = $err->{-message_to_client};
+            $json->{error}->{code}    = $err->get_type;
             last;
         }
         $c->app->log->info("websocket-based buy " . $trx->report);
@@ -71,9 +71,9 @@ sub sell {
     my $json = {msg_type => 'sell'};
     {
         my $p2 = delete $c->{$id} || do {
-            $json->{error}                    = "";
-            $json->{sell}->{error}->{message} = "unknown contract sell proposal";
-            $json->{sell}->{error}->{code}    = "InvalidSellContractProposal";
+            $json->{error}            = "";
+            $json->{error}->{message} = "unknown contract sell proposal";
+            $json->{error}->{code}    = "InvalidSellContractProposal";
             last;
         };
         my $fmb      = $p2->{fmb};
@@ -87,8 +87,8 @@ sub sell {
         });
         if (my $err = $trx->sell) {
             $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{sell}->{error}->{code}    = $err->get_type;
-            $json->{sell}->{error}->{message} = $err->{-message_to_client};
+            $json->{error}->{code}    = $err->get_type;
+            $json->{error}->{message} = $err->{-message_to_client};
             last;
         }
         $c->app->log->info("websocket-based sell " . $trx->report);
