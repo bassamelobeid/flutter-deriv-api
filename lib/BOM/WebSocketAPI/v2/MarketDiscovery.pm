@@ -203,15 +203,26 @@ sub send_ask {
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
         delete $c->{$id};
-    }
-    $c->send({
-            json => {
-                msg_type => 'proposal',
-                echo_req => $p1,
-                proposal => {
-                    id => $id,
+        my $proposal = {id => $id};
+        $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
+        $proposal->{ask_price} = delete $latest->{ask_price} if $latest->{ask_price};
+        $c->send({
+                json => {
+                    msg_type => 'proposal',
+                    echo_req => $p1,
+                    proposal => $proposal,
                     %$latest
-                }}});
+                }});
+    } else {
+        $c->send({
+                json => {
+                    msg_type => 'proposal',
+                    echo_req => $p1,
+                    proposal => {
+                        id => $id,
+                        %$latest
+                    }}});
+    }
     return;
 }
 
