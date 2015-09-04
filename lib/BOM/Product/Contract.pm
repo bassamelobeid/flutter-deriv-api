@@ -1507,6 +1507,12 @@ sub _get_probability_reference {
         $prob_ref = {
             error       => 'Invalid call to [' . $probability_name . '] for engine [' . $self->pricing_engine_name . ']',
             probability => 1,
+            markups => {
+                # avoid undefined markups
+                model_markup => 0,
+                risk_markup  => 0,
+                commission_markup => 0,
+            },
         };
     }
 
@@ -1517,6 +1523,15 @@ sub _get_probability_reference {
         set_by      => $self->pricing_engine_name,
         base_amount => $prob_ref->{probability},
     });
+    # convert markups to CV
+    for my $markup_name ( keys $prob_ref->{markups}) {
+        $prob_ref->{markups}->{$markup_name} = Math::Util::CalculatedValue::Validatable->new({
+            name        => $markup_name,
+            description => $markup_name,
+            set_by      => $self->pricing_engine_name,
+            base_amount => $prob_ref->{markups}->{$markup_name},
+        });
+    }
     # We always get a value for probability.
     # Here is where we decide whether it is a valid probability or not!
     if ($prob_ref->{error}) {
