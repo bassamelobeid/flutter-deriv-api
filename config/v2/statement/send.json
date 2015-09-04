@@ -41,7 +41,7 @@
     },
     "action_type": {
       "type": "string",
-      "sample": "",
+      "sample": "buy",
       "description": "Optional filter for statement (deposit,withdrawal,buy,sell)"
     }
   },
