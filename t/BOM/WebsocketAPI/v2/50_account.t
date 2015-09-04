@@ -32,7 +32,7 @@ test_schema('statement', $statement);
 $t = $t->send_ok({json => {statement => {limit => 2}}})->message_ok;
 $statement = decode_json($t->message->[1]);
 ok($statement->{statement});
-is($statement->{statement}->{count}, 2);
+is($statement->{statement}->{count}, 100);
 test_schema('statement', $statement);
 
 ## balance
