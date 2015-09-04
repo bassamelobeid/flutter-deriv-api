@@ -15,7 +15,7 @@ sub buy {
 
     my $id     = $args->{buy};
     my $source = $c->stash('source');
-    my $ws_id = $c->tx->connection;
+    my $ws_id  = $c->tx->connection;
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
@@ -67,7 +67,7 @@ sub sell {
 
     my $id     = $args->{sell};
     my $source = $c->stash('source');
-    my $ws_id = $c->tx->connection;
+    my $ws_id  = $c->tx->connection;
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
@@ -113,7 +113,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
     my $client = $c->stash('client');
     my $source = $c->stash('source');
-    my $ws_id = $c->tx->connection;
+    my $ws_id  = $c->tx->connection;
 
     my @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
     my $p0 = {%$args};
@@ -126,8 +126,8 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
         $c->{ws}{$ws_id}{$id} = {
             started => time(),
-            type => 'proposal_open_contract',
-            data => $p2
+            type    => 'proposal_open_contract',
+            data    => $p2
         };
         BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
@@ -150,7 +150,7 @@ sub portfolio {
 
     my $client = $c->stash('client');
     my $source = $c->stash('source');
-    my $ws_id = $c->tx->connection;
+    my $ws_id  = $c->tx->connection;
 
     BOM::Product::Transaction::sell_expired_contracts({
         client => $client,
@@ -173,8 +173,8 @@ sub portfolio {
 
             $c->{ws}{$ws_id}{$id} = {
                 started => time(),
-                type => 'portfolio',
-                data => $p2
+                type    => 'portfolio',
+                data    => $p2
             };
             BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 

@@ -41,7 +41,7 @@ sub server_time {
 sub _limit_stream_count {
     my ($c) = @_;
 
-    my $ws_id = $c->tx->connection;
+    my $ws_id  = $c->tx->connection;
     my @ws_ids = keys %{$c->{ws}{$ws_id}};
 
     return if scalar(@ws_ids) <= 50;
@@ -49,10 +49,8 @@ sub _limit_stream_count {
     # remove first b/c we added one
     @ws_ids = sort { $c->{ws}{$ws_id}{$a}{started} <=> $c->{ws}{$ws_id}{$b}{started} } @ws_ids;
     Mojo::IOLoop->remove($ws_ids[0]);
-    my $v = delete $c->{ws}{$ws_id}{ $ws_ids[0] };
-    print STDERR Dumper(\$v); use Data::Dumper;
+    my $v = delete $c->{ws}{$ws_id}{$ws_ids[0]};
     if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
-        print STDERR "Remove fmb_ids " . $v->{fmb}->id . " as well\n";
         delete $c->{fmb_ids}{$v->{fmb}->id};
     }
 }

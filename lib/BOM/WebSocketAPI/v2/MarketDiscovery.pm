@@ -104,8 +104,8 @@ sub proposal {
     my $ws_id = $c->tx->connection;
     $c->{ws}{$ws_id}{$id} = {
         started => time(),
-        type => 'proposal',
-        data => $p2
+        type    => 'proposal',
+        data    => $p2
     };
     BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
@@ -238,7 +238,7 @@ sub send_tick {
     unless ($c->{ws}{$ws_id}{$id}) {
         $c->{ws}{$ws_id}{$id} = {
             started => time(),
-            type => 'tick'
+            type    => 'tick'
         };
         BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
     }

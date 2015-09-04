@@ -83,10 +83,11 @@ ok $portfolio->{portfolio}->{contracts}->[0]->{fmb_id};
 # test_schema('portfolio', $portfolio); # FIXME
 
 ## test portfolio and sell
-$t = $t->send_ok({json => {
-    proposal_open_contract => 1,
-    fmb_id => $portfolio->{portfolio}->{contracts}->[0]->{fmb_id},
-}});
+$t = $t->send_ok({
+        json => {
+            proposal_open_contract => 1,
+            fmb_id                 => $portfolio->{portfolio}->{contracts}->[0]->{fmb_id},
+        }});
 while (1) {
     $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
@@ -104,8 +105,7 @@ while (1) {
         $t = $t->send_ok({
                 json => {
                     sell  => $res->{proposal_open_contract}->{id},
-                    price => $res->{proposal_open_contract}->{ask_price}
-                }});
+                    price => $res->{proposal_open_contract}->{ask_price}}});
 
     } else {
         ok $res->{sell};

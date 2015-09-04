@@ -74,15 +74,16 @@ sub build_test_R_50_data {
         });
 
     my %dups;
-    Mojo::IOLoop->recurring(1 => sub {
-        my $now = Date::Utility->new->epoch;
-        unless ($dups{$now}) {
-            # diag "create R_50 tick for $now";
-            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                epoch      => $now,
-                underlying => 'R_50',
-            });
-            $dups{$now} = 1;
-        }
-    });
+    Mojo::IOLoop->recurring(
+        1 => sub {
+            my $now = Date::Utility->new->epoch;
+            unless ($dups{$now}) {
+                # diag "create R_50 tick for $now";
+                BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                    epoch      => $now,
+                    underlying => 'R_50',
+                });
+                $dups{$now} = 1;
+            }
+        });
 }
