@@ -76,8 +76,17 @@ $t = $t->send_ok({json => {forget => $proposal->{proposal}->{id}}})->message_ok;
 $forget = decode_json($t->message->[1]);
 ok $forget->{forget};
 
+$t = $t->send_ok({json => {portfolio => 1}})->message_ok;
+my $portfolio = decode_json($t->message->[1]);
+ok $portfolio->{portfolio}->{contracts};
+ok $portfolio->{portfolio}->{contracts}->[0]->{fmb_id};
+# test_schema('portfolio', $portfolio); # FIXME
+
 ## test portfolio and sell
-$t = $t->send_ok({json => {portfolio => 1, spawn => 1}});
+$t = $t->send_ok({json => {
+    proposal_open_contract => 1,
+    fmb_id => $portfolio->{portfolio}->{contracts}->[0]->{fmb_id},
+}});
 while (1) {
     $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
@@ -86,7 +95,7 @@ while (1) {
     if (exists $res->{proposal_open_contract}) {
         ok $res->{proposal_open_contract}->{id};
         ok $res->{proposal_open_contract}->{ask_price};
-        test_schema('portfolio', $res);
+        test_schema('proposal_open_contract', $res);
 
         ## FIXME, not working now
         last;
@@ -95,11 +104,9 @@ while (1) {
         $t = $t->send_ok({
                 json => {
                     sell  => $res->{proposal_open_contract}->{id},
-                    price => $res->{proposal_open_contract}->{buy_price} - 0.1
+                    price => $res->{proposal_open_contract}->{ask_price}
                 }});
 
-    } elsif (exists $res->{portfolio}) {
-        # unknown blabla
     } else {
         ok $res->{sell};
 

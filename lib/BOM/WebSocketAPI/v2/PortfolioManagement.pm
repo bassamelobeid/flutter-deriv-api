@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Mojo::DOM;
+use BOM::WebSocketAPI::v2::System;
 
 use Try::Tiny;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
@@ -112,6 +113,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
     my $client = $c->stash('client');
     my $source = $c->stash('source');
+    my $ws_id = $c->tx->connection;
 
     my @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
     my $p0 = {%$args};
@@ -121,10 +123,16 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         $args->{fmb} = $fmb;
         my $p2 = prepare_bid($c, $args);
         $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
-        $c->{$id} = $p2;
+
+        $c->{ws}{$ws_id}{$id} = {
+            started => time(),
+            type => 'proposal_open_contract',
+            data => $p2
+        };
+        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+
         $c->{fmb_ids}->{$fmb->id} = $id;
         send_bid($c, $id, $p0, $args, $p2);
-        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id}; delete $c->{fmb_ids}{$fmb->id} });
 
     } else {
         return {
@@ -168,10 +176,10 @@ sub portfolio {
                 type => 'portfolio',
                 data => $p2
             };
+            BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
             $c->{fmb_ids}->{$fmb->id} = $id;
             send_bid($c, $id, $p0, $args, $p2);
-            $c->on(finish => sub { delete $c->{fmb_ids}{$fmb->id} });
         }
 
         push @{$portfolio->{contracts}},

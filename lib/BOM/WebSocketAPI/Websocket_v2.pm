@@ -46,8 +46,6 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            # print STDERR Dumper(\$c); use Data::Dumper;
-
             my $data;
             if (ref($p1) eq 'HASH') {
                 $data = _sanity_failed($p1) || __handle($c, $p1);
@@ -76,9 +74,17 @@ sub entry_point {
     # stop all recurring
     $c->on(finish => sub {
         my $ws_id = $c->tx->connection;
+        print STDERR "FOR $ws_id\n";
+        print STDERR Dumper(\$c); use Data::Dumper;
         foreach my $id (keys %{$c->{ws}{$ws_id}}) {
             print STDERR "remove $id\n";
             Mojo::IOLoop->remove($id);
+
+            my $v = delete $c->{ws}{$ws_id}{$id};
+            if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
+                print STDERR "Remove fmb_ids " . $v->{fmb}->id . " as well\n";
+                delete $c->{fmb_ids}{$v->{fmb}->id};
+            }
         }
         delete $c->{ws}{$ws_id};
     });

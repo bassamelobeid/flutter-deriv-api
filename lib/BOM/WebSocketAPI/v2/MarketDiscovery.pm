@@ -6,6 +6,7 @@ use warnings;
 use Try::Tiny;
 use Mojo::DOM;
 use BOM::WebSocketAPI::v2::Symbols;
+use BOM::WebSocketAPI::v2::System;
 
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -106,6 +107,7 @@ sub proposal {
         type => 'proposal',
         data => $p2
     };
+    BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
     send_ask($c, $id, $args, $p2);
 
@@ -233,10 +235,13 @@ sub send_tick {
     my ($c, $id, $p1, $ul) = @_;
 
     my $ws_id = $c->tx->connection;
-    $c->{ws}{$ws_id}{$id} //= {
-        started => time(),
-        type => 'tick'
-    };
+    unless ($c->{ws}{$ws_id}{$id}) {
+        $c->{ws}{$ws_id}{$id} = {
+            started => time(),
+            type => 'tick'
+        };
+        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+    }
 
     my $tick = $ul->get_combined_realtime;
     if ($tick->{epoch} > ($c->{ws}{$ws_id}{$id}{epoch} || 0)) {
