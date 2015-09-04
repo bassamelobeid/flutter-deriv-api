@@ -99,7 +99,7 @@ while (1) {
         ok(defined $res->{portfolio_stats}->{number_of_sold_bets});
         ok($res->{portfolio_stats}->{batch_count});
     } else {
-        ok $res->{close_receipt};
+        ok $res->{sell};
 
         ## FIXME
         ## not OK to sell: Contract must be held for 1 minute before resale is offered.
