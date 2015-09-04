@@ -111,15 +111,15 @@ $t = $t->send_ok({
             buy   => $proposal->{proposal}->{id},
             price => $proposal->{proposal}->{ask_price}}});
 
-## skip proposal until we meet open_receipt
+## skip proposal until we meet buy
 while (1) {
     $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
     next if $res->{msg_type} eq 'proposal';
 
-    ok $res->{open_receipt};
-    ok $res->{open_receipt}->{fmb_id};
-    ok $res->{open_receipt}->{purchase_time};
+    ok $res->{buy};
+    ok $res->{buy}->{fmb_id};
+    ok $res->{buy}->{purchase_time};
 
     test_schema('buy', $res);
     last;
