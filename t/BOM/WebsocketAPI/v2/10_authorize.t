@@ -15,7 +15,7 @@ my $t = build_mojo_test();
 my $faked_token = 'ABC';
 $t = $t->send_ok({json => {authorize => $faked_token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{error}->{code}, 'InvalidToken';
+is $authorize->{error}->{code}, 'InvalidToken';
 test_schema('authorize', $authorize);
 
 my $token = BOM::Platform::SessionCookie->new(

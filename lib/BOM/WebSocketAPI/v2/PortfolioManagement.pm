@@ -17,18 +17,18 @@ sub buy {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json = {msg_type => 'open_receipt'};
+    my $json = {msg_type => 'buy'};
     {
         my $p2 = delete $c->{$id} || do {
-            $json->{open_receipt}->{error}->{message} = "unknown contract proposal";
-            $json->{open_receipt}->{error}->{code}    = "InvalidContractProposal";
+            $json->{error}->{message} = "unknown contract proposal";
+            $json->{error}->{code}    = "InvalidContractProposal";
             last;
         };
         my $contract = try { produce_contract({%$p2}) } || do {
             my $err = $@;
             $c->app->log->debug("contract creation failure: $err");
-            $json->{open_receipt}->{error}->{message} = "cannot create contract";
-            $json->{open_receipt}->{error}->{code}    = "ContractCreationFailure";
+            $json->{error}->{message} = "cannot create contract";
+            $json->{error}->{code}    = "ContractCreationFailure";
             last;
         };
         my $trx = BOM::Product::Transaction->new({
@@ -39,14 +39,14 @@ sub buy {
         });
         if (my $err = $trx->buy) {
             $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{open_receipt}->{error}->{message} = $err->{-message_to_client};
-            $json->{open_receipt}->{error}->{code}    = $err->get_type;
+            $json->{error}->{message} = $err->{-message_to_client};
+            $json->{error}->{code}    = $err->get_type;
             last;
         }
         $c->app->log->info("websocket-based buy " . $trx->report);
         $trx = $trx->transaction_record;
         my $fmb = $trx->financial_market_bet;
-        $json->{open_receipt} = {
+        $json->{buy} = {
             trx_id        => $trx->id,
             fmb_id        => $fmb->id,
             balance_after => $trx->balance_after,
@@ -68,12 +68,12 @@ sub sell {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json = {msg_type => 'close_receipt'};
+    my $json = {msg_type => 'sell'};
     {
         my $p2 = delete $c->{$id} || do {
-            $json->{error}                             = "";
-            $json->{close_receipt}->{error}->{message} = "unknown contract sell proposal";
-            $json->{close_receipt}->{error}->{code}    = "InvalidSellContractProposal";
+            $json->{error}            = "";
+            $json->{error}->{message} = "unknown contract sell proposal";
+            $json->{error}->{code}    = "InvalidSellContractProposal";
             last;
         };
         my $fmb      = $p2->{fmb};
@@ -87,14 +87,14 @@ sub sell {
         });
         if (my $err = $trx->sell) {
             $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{close_receipt}->{error}->{code}    = $err->get_type;
-            $json->{close_receipt}->{error}->{message} = $err->{-message_to_client};
+            $json->{error}->{code}    = $err->get_type;
+            $json->{error}->{message} = $err->{-message_to_client};
             last;
         }
         $c->app->log->info("websocket-based sell " . $trx->report);
-        $trx                   = $trx->transaction_record;
-        $fmb                   = $trx->financial_market_bet;
-        $json->{close_receipt} = {
+        $trx          = $trx->transaction_record;
+        $fmb          = $trx->financial_market_bet;
+        $json->{sell} = {
             trx_id        => $trx->id,
             fmb_id        => $fmb->id,
             balance_after => $trx->balance_after,
@@ -246,20 +246,35 @@ sub get_bid {
 sub send_bid {
     my ($c, $id, $p0, $p1, $p2) = @_;
     my $latest = get_bid($c, $p2);
+
+    my $response = {
+        msg_type => 'proposal_open_contract',
+        echo_req => $p0,
+    };
+
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
         delete $c->{$id};
         delete $c->{fmb_ids}{$p2->{fmb}->id};
+        $c->send({
+                json => {
+                    %$response,
+                    proposal_open_contract => {
+                        id => $id,
+                        %$p1,
+                    },
+                    %$latest,
+                }});
+    } else {
+        $c->send({
+                json => {
+                    %$response,
+                    proposal_open_contract => {
+                        id => $id,
+                        %$p1,
+                        %$latest
+                    }}});
     }
-    $c->send({
-            json => {
-                msg_type               => 'proposal_open_contract',
-                echo_req               => $p0,
-                proposal_open_contract => {
-                    id => $id,
-                    %$p1,
-                    %$latest
-                }}});
     return;
 }
 

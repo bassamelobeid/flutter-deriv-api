@@ -17,11 +17,10 @@ sub ticks {
     my $ul     = BOM::Market::Underlying->new($symbol)
         or return {
         msg_type => 'tick',
-        tick     => {
-            error => {
-                message => "symbol $symbol invalid",
-                code    => "InvalidSymbol"
-            }}};
+        error    => {
+            message => "symbol $symbol invalid",
+            code    => "InvalidSymbol"
+        }};
 
     if ($args->{end}) {
         my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
@@ -64,19 +63,17 @@ sub ticks {
 
             return {
                 msg_type => 'candles',
-                candles  => {
-                    error => {
-                        message => 'invalid candles request',
-                        code    => 'InvalidCandlesRequest'
-                    }}};
+                error    => {
+                    message => 'invalid candles request',
+                    code    => 'InvalidCandlesRequest'
+                }};
         } else {
             return {
                 msg_type => 'tick',
-                tick     => {
-                    error => {
-                        message => "style $style invalid",
-                        code    => "InvalidStyle"
-                    }}};
+                error    => {
+                    message => "style $style invalid",
+                    code    => "InvalidStyle"
+                }};
         }
     }
     if ($ul->feed_license eq 'realtime') {
@@ -88,11 +85,10 @@ sub ticks {
     } else {
         return {
             msg_type => 'tick',
-            tick     => {
-                error => {
-                    message => "realtime quotes not available",
-                    code    => "NoRealtimeQuotes"
-                }}};
+            error    => {
+                message => "realtime quotes not available",
+                code    => "NoRealtimeQuotes"
+            }};
     }
 }
 
@@ -203,15 +199,26 @@ sub send_ask {
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
         delete $c->{$id};
-    }
-    $c->send({
-            json => {
-                msg_type => 'proposal',
-                echo_req => $p1,
-                proposal => {
-                    id => $id,
+        my $proposal = {id => $id};
+        $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
+        $proposal->{ask_price} = delete $latest->{ask_price} if $latest->{ask_price};
+        $c->send({
+                json => {
+                    msg_type => 'proposal',
+                    echo_req => $p1,
+                    proposal => $proposal,
                     %$latest
-                }}});
+                }});
+    } else {
+        $c->send({
+                json => {
+                    msg_type => 'proposal',
+                    echo_req => $p1,
+                    proposal => {
+                        id => $id,
+                        %$latest
+                    }}});
+    }
     return;
 }
 
