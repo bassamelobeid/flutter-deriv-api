@@ -58,6 +58,9 @@ sub entry_point {
             }
             $data->{version} = 2;
 
+            if (length JSON::to_json($data) > 16000) {
+                die "data too large";
+            }
             $c->send({json => $data});
         });
     return;
