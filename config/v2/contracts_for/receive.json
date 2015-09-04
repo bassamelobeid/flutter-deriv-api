@@ -96,11 +96,7 @@
                 	  },
                           "trading_period":{
                 		  "type":"object",
-                          "items":{
-                            "type":"object"
-                          },
-                          "minItems":"1",
-                          "description":"A hash of trading period"
+                                  "description":"A hash of trading period"
                 	  }
                   } 
                 },
