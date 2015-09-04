@@ -88,6 +88,22 @@
                           },
                           "minItems":"1",
                           "description":"Array of returned forward starting options"
+                	  },
+                          "available_barriers":{
+                		  "type":"array",
+                          "items":{
+                            "type":"number"
+                          },
+                          "minItems":"1",
+                          "description":"Array of available barriers"
+                	  },
+                          "trading_period":{
+                		  "type":"array",
+                          "items":{
+                            "type":"object"
+                          },
+                          "minItems":"1",
+                          "description":"Array of trading period"
                 	  }
                   } 
                 },
