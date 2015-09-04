@@ -44,8 +44,8 @@ $t = $t->send_ok({
             "contract_type" => "CALL",
             "currency"      => "USD",
             "symbol"        => "R_50",
-            "duration"      => "15",
-            "duration_unit" => "s"
+            "duration"      => "2",
+            "duration_unit" => "m"
         }})->message_ok;
 my $proposal = decode_json($t->message->[1]);
 ok $proposal->{proposal}->{id};
@@ -77,33 +77,39 @@ $forget = decode_json($t->message->[1]);
 ok $forget->{forget};
 
 ## test portfolio and sell
-$t = $t->send_ok({json => {portfolio => 1}});
-# while (1) {
-#     $t = $t->message_ok;
-#     my $res = decode_json($t->message->[1]);
-#     diag Dumper(\$res);
+$t = $t->send_ok({json => {portfolio => 1, spawn => 1}});
+while (1) {
+    $t = $t->message_ok;
+    my $res = decode_json($t->message->[1]);
+    diag Dumper(\$res);
 
-#     if (exists $res->{portfolio}) {
-#         ok $res->{portfolio}->{id};
-#         ok $res->{portfolio}->{ask_price};
-#         test_schema('portfolio', $res);
+    if (exists $res->{proposal_open_contract}) {
+        ok $res->{proposal_open_contract}->{id};
+        ok $res->{proposal_open_contract}->{ask_price};
+        test_schema('portfolio', $res);
 
-#         ## try sell
-#         $t = $t->send_ok({
-#                 json => {
-#                     sell  => $res->{portfolio}->{id},
-#                     price => $res->{portfolio}->{ask_price}}});
+        ## FIXME, not working now
+        last;
 
-#     } else {
-#         ok $res->{close_receipt};
+        ## try sell
+        $t = $t->send_ok({
+                json => {
+                    sell  => $res->{proposal_open_contract}->{id},
+                    price => $res->{proposal_open_contract}->{buy_price} - 0.1
+                }});
 
-#         ## FIXME
-#         ## not OK to sell: Contract must be held for 1 minute before resale is offered.
-#         test_schema('sell', $res);
+    } elsif (exists $res->{portfolio}) {
+        # unknown blabla
+    } else {
+        ok $res->{sell};
 
-#         last;
-#     }
-# }
+        ## FIXME
+        ## not OK to sell: Contract must be held for 1 minute before resale is offered.
+        test_schema('sell', $res);
+
+        last;
+    }
+}
 
 $t->finish_ok;
 

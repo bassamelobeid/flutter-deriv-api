@@ -46,7 +46,7 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            print STDERR Dumper(\$c); use Data::Dumper;
+            # print STDERR Dumper(\$c); use Data::Dumper;
 
             my $data;
             if (ref($p1) eq 'HASH') {
