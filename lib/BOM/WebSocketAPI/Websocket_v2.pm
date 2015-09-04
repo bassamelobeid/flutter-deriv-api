@@ -36,6 +36,10 @@ sub entry_point {
     $log->debug("opening a websocket for " . $c->tx->remote_address);
 
     $c->inactivity_timeout(600);
+
+    # Increase inactivity timeout for connection a bit
+    Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(600);
+
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
