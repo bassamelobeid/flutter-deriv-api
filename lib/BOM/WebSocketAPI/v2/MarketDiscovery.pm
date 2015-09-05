@@ -81,6 +81,15 @@ sub ticks {
         my $id;
         $id = Mojo::IOLoop->recurring(1 => sub { send_tick($c, $id, $args, $ul) });
         send_tick($c, $id, $args, $ul);
+
+        my $ws_id = $c->tx->connection;
+        $c->{ws}{$ws_id}{$id} = {
+            started => time(),
+            type    => 'tick',
+            epoch   => 0,
+        };
+        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+
         return 0;
     } else {
         return {
@@ -245,13 +254,6 @@ sub send_tick {
                         id    => $id,
                         epoch => $tick->{epoch},
                         quote => $tick->{quote}}}});
-
-        $c->{ws}{$ws_id}{$id} //= {
-            started => time(),
-            type    => 'tick',
-            epoch   => 0,
-        };
-        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
         $c->{ws}{$ws_id}{$id}{epoch} = $tick->{epoch};
     }

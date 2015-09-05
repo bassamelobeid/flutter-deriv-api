@@ -40,7 +40,7 @@ sub server_time {
 }
 
 ## limit total stream count to 50
-sub _limit_stream_count {
+sub _limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
     my ($c) = @_;
 
     my $ws_id  = $c->tx->connection;
