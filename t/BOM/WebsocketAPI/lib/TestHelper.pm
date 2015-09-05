@@ -47,7 +47,6 @@ sub test_schema {
     }
 }
 
-my $recurring_id;
 sub build_test_R_50_data {
     initialize_realtime_ticks_db();
 
@@ -57,6 +56,7 @@ sub build_test_R_50_data {
         {
             symbol => $_,
             date   => Date::Utility->new,
+            open_on_weekends => 1
         }) for @exchange;
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD);
@@ -73,24 +73,6 @@ sub build_test_R_50_data {
             symbol => 'R_50',
             date   => Date::Utility->new
         });
-
-    my %dups;
-    $recurring_id = Mojo::IOLoop->recurring(
-        1 => sub {
-            my $now = Date::Utility->new->epoch;
-            unless ($dups{$now}) {
-                diag "create R_50 tick for $now";
-                BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                    epoch      => $now,
-                    underlying => 'R_50',
-                });
-                $dups{$now} = 1;
-            }
-        });
-}
-
-sub cleanup_build_test_R_50_data {
-    Mojo::IOLoop->remove($recurring_id);
 }
 
 1;

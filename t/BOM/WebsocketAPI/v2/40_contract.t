@@ -3,7 +3,7 @@ use JSON;
 use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
-use TestHelper qw/test_schema build_mojo_test build_test_R_50_data cleanup_build_test_R_50_data/;
+use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 
 use BOM::Platform::SessionCookie;
 
@@ -118,7 +118,6 @@ while (1) {
     }
 }
 
-cleanup_build_test_R_50_data();
 $t->finish_ok;
 
 done_testing();
