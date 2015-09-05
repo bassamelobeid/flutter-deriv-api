@@ -238,7 +238,8 @@ sub send_tick {
     unless ($c->{ws}{$ws_id}{$id}) {
         $c->{ws}{$ws_id}{$id} = {
             started => time(),
-            type    => 'tick'
+            type    => 'tick',
+            epoch   => 0,
         };
         BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
     }

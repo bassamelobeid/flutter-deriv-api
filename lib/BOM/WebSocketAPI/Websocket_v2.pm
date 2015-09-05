@@ -74,15 +74,14 @@ sub entry_point {
     # stop all recurring
     $c->on(
         finish => sub {
+            my ($c) = @_;
             my $ws_id = $c->tx->connection;
-            print STDERR "FOR $ws_id\n";
-            print STDERR Dumper(\$c);
-            use Data::Dumper;
             foreach my $id (keys %{$c->{ws}{$ws_id}}) {
                 print STDERR "remove $id\n";
                 Mojo::IOLoop->remove($id);
 
                 my $v = delete $c->{ws}{$ws_id}{$id};
+                print STDERR Dumper(\$v); use Data::Dumper;
                 if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
                     print STDERR "Remove fmb_ids " . $v->{fmb}->id . " as well\n";
                     delete $c->{fmb_ids}{$v->{fmb}->id};

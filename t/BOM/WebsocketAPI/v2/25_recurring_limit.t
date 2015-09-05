@@ -3,7 +3,6 @@ use warnings;
 use Test::More;
 use Data::Dumper;
 use JSON;
-use Date::Utility;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;

@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data/;
+@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data cleanup_build_test_R_50_data/;
 
 my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
@@ -47,6 +47,7 @@ sub test_schema {
     }
 }
 
+my $recurring_id;
 sub build_test_R_50_data {
     initialize_realtime_ticks_db();
 
@@ -74,11 +75,11 @@ sub build_test_R_50_data {
         });
 
     my %dups;
-    Mojo::IOLoop->recurring(
+    $recurring_id = Mojo::IOLoop->recurring(
         1 => sub {
             my $now = Date::Utility->new->epoch;
             unless ($dups{$now}) {
-                # diag "create R_50 tick for $now";
+                diag "create R_50 tick for $now";
                 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                     epoch      => $now,
                     underlying => 'R_50',
@@ -87,3 +88,9 @@ sub build_test_R_50_data {
             }
         });
 }
+
+sub cleanup_build_test_R_50_data {
+    Mojo::IOLoop->remove($recurring_id);
+}
+
+1;

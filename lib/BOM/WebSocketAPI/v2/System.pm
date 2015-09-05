@@ -13,9 +13,10 @@ sub forget {
         delete $c->{fmb_ids}{$fmb_id};
     }
 
+    my $ws_id  = $c->tx->connection;
     return {
         msg_type => 'forget',
-        forget => delete $c->{$id} ? 1 : 0,
+        forget => delete $c->{ws}{$ws_id}{$id} ? 1 : 0,
     };
 }
 
