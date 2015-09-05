@@ -114,7 +114,7 @@ sub proposal {
     $c->{ws}{$ws_id}{$id} = {
         started => time(),
         type    => 'proposal',
-        data    => $p2
+        data    => {%$p2},
     };
     BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
