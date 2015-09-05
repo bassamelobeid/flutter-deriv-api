@@ -127,13 +127,12 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         $c->{ws}{$ws_id}{$id} = {
             started => time(),
             type    => 'proposal_open_contract',
-            data    => $p2
+            data    => {%$p2},
         };
         BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
-        $c->{fmb_ids}->{$fmb->id} = $id;
+        $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
         send_bid($c, $id, $p0, $args, $p2);
-
     } else {
         return {
             echo_req => $args,
@@ -158,7 +157,7 @@ sub portfolio {
     });
 
     # TODO: run these under a separate event loop to avoid workload batching..
-    my @fmbs = grep { !$c->{fmb_ids}->{$_->id} } $client->open_bets;
+    my @fmbs = grep { ! $c->{fmb_ids}{$ws_id}{$_->id} } $client->open_bets;
     my $portfolio;
     $portfolio->{contracts} = [];
     my $count = 0;
@@ -174,11 +173,11 @@ sub portfolio {
             $c->{ws}{$ws_id}{$id} = {
                 started => time(),
                 type    => 'portfolio',
-                data    => $p2
+                data    => {%$p2}
             };
             BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
-            $c->{fmb_ids}->{$fmb->id} = $id;
+            $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
             send_bid($c, $id, $p0, $args, $p2);
         }
 
@@ -273,7 +272,7 @@ sub send_bid {
         Mojo::IOLoop->remove($id);
         my $ws_id = $c->tx->connection;
         delete $c->{ws}{$ws_id}{$id};
-        delete $c->{fmb_ids}{$p2->{fmb}->id};
+        delete $c->{fmb_ids}{$ws_id}{$p2->{fmb}->id};
         $c->send({
                 json => {
                     %$response,

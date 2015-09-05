@@ -235,15 +235,6 @@ sub send_tick {
     my ($c, $id, $p1, $ul) = @_;
 
     my $ws_id = $c->tx->connection;
-    unless ($c->{ws}{$ws_id}{$id}) {
-        $c->{ws}{$ws_id}{$id} = {
-            started => time(),
-            type    => 'tick',
-            epoch   => 0,
-        };
-        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
-    }
-
     my $tick = $ul->get_combined_realtime;
     if ($tick->{epoch} > ($c->{ws}{$ws_id}{$id}{epoch} || 0)) {
         $c->send({
@@ -254,6 +245,14 @@ sub send_tick {
                         id    => $id,
                         epoch => $tick->{epoch},
                         quote => $tick->{quote}}}});
+
+        $c->{ws}{$ws_id}{$id} //= {
+            started => time(),
+            type    => 'tick',
+            epoch   => 0,
+        };
+        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+
         $c->{ws}{$ws_id}{$id}{epoch} = $tick->{epoch};
     }
     return;

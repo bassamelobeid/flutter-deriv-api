@@ -79,15 +79,9 @@ sub entry_point {
             foreach my $id (keys %{$c->{ws}{$ws_id}}) {
                 print STDERR "remove $id\n";
                 Mojo::IOLoop->remove($id);
-
-                my $v = delete $c->{ws}{$ws_id}{$id};
-                print STDERR Dumper(\$v); use Data::Dumper;
-                if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
-                    print STDERR "Remove fmb_ids " . $v->{fmb}->id . " as well\n";
-                    delete $c->{fmb_ids}{$v->{fmb}->id};
-                }
             }
             delete $c->{ws}{$ws_id};
+            delete $c->{fmb_ids}{$ws_id};
         });
 
     return;
