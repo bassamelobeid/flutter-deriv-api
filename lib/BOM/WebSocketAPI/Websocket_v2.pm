@@ -77,7 +77,6 @@ sub entry_point {
             my ($c) = @_;
             my $ws_id = $c->tx->connection;
             foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-                print STDERR "remove $id\n";
                 Mojo::IOLoop->remove($id);
             }
             delete $c->{ws}{$ws_id};

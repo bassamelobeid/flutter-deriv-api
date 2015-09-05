@@ -91,7 +91,7 @@ $t = $t->send_ok({
 while (1) {
     $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
-    diag Dumper(\$res);
+    # diag Dumper(\$res);
 
     if (exists $res->{proposal_open_contract}) {
         ok $res->{proposal_open_contract}->{id};
