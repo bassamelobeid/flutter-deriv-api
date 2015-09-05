@@ -157,7 +157,7 @@ sub portfolio {
     });
 
     # TODO: run these under a separate event loop to avoid workload batching..
-    my @fmbs = grep { ! $c->{fmb_ids}{$ws_id}{$_->id} } $client->open_bets;
+    my @fmbs = grep { !$c->{fmb_ids}{$ws_id}{$_->id} } $client->open_bets;
     my $portfolio;
     $portfolio->{contracts} = [];
     my $count = 0;
@@ -165,7 +165,7 @@ sub portfolio {
     for my $fmb (@fmbs) {
         my $id = '';
 
-        if ($args->{spawn} eq '1') {
+        if (($args->{spawn} // '') eq '1') {
             $args->{fmb} = $fmb;
             my $p2 = prepare_bid($c, $args);
             $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
@@ -173,8 +173,7 @@ sub portfolio {
             $c->{ws}{$ws_id}{$id} = {
                 started => time(),
                 type    => 'portfolio',
-                data    => {%$p2}
-            };
+                data    => {%$p2}};
             BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
             $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;

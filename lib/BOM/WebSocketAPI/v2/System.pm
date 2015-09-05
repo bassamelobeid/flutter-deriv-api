@@ -10,7 +10,7 @@ sub forget {
 
     Mojo::IOLoop->remove($id);
 
-    my $ws_id  = $c->tx->connection;
+    my $ws_id = $c->tx->connection;
     if (my $fmb_id = eval { $c->{ws}{$ws_id}{$id}->{fmb}->id }) {
         delete $c->{fmb_ids}{$ws_id}{$fmb_id};
     }

@@ -235,7 +235,7 @@ sub send_tick {
     my ($c, $id, $p1, $ul) = @_;
 
     my $ws_id = $c->tx->connection;
-    my $tick = $ul->get_combined_realtime;
+    my $tick  = $ul->get_combined_realtime;
     if ($tick->{epoch} > ($c->{ws}{$ws_id}{$id}{epoch} || 0)) {
         $c->send({
                 json => {

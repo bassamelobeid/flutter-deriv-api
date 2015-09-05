@@ -54,8 +54,8 @@ sub build_test_R_50_data {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
         'exchange',
         {
-            symbol => $_,
-            date   => Date::Utility->new,
+            symbol           => $_,
+            date             => Date::Utility->new,
             open_on_weekends => 1
         }) for @exchange;
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);
