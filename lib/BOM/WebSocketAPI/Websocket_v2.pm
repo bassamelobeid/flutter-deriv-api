@@ -139,7 +139,7 @@ sub __handle {
         my $result = $dispatch->[1]->($c, $p1);
 
         $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
-        if (not $validator->validate($result)) {
+        if ($result and not $validator->validate($result)) {
             my $validation_errors = $validator->validate($p1);
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
