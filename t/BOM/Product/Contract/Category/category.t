@@ -62,7 +62,7 @@ subtest 'endsinout' => sub {
     my $cat = BOM::Product::Contract::Category->new('endsinout');
     is $cat->code,          'endsinout';
     is $cat->display_order, 3;
-    is $cat->display_name,  'Ends Between/Outside';
+    is $cat->display_name,  'Ends In/Out';
     ok !$cat->is_path_dependent;
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
     is_deeply $cat->supported_start_types, ['spot'];
@@ -73,7 +73,7 @@ subtest 'staysinout' => sub {
     my $cat = BOM::Product::Contract::Category->new('staysinout');
     is $cat->code,          'staysinout';
     is $cat->display_order, 4;
-    is $cat->display_name,  'Stays Between/Goes Outside';
+    is $cat->display_name,  'Stays In/Goes Out';
     ok $cat->is_path_dependent;
     is_deeply $cat->supported_expiries, ['intraday', 'daily'];
     is_deeply $cat->supported_start_types, ['spot'];
