@@ -28,7 +28,7 @@ touchnotouch:
 endsinout:
     display_order : 3
     two_barriers: 1
-    display_name: "Ends Between/Outside"
+    display_name: "Ends In/Out"
     supported_expiries:
       - intraday
       - daily
@@ -39,7 +39,7 @@ endsinout:
 staysinout:
     display_order : 4
     two_barriers: 1
-    display_name: "Stays Between/Goes Outside"
+    display_name: "Stays In/Goes Out"
     is_path_dependent: 1
     supported_expiries:
       - intraday
