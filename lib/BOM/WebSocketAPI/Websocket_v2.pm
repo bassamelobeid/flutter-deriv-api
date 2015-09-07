@@ -143,7 +143,7 @@ sub __handle {
             my $validation_errors = $validator->validate($p1);
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
-            die "Invalid output parameter for [" . $dispatch->[0] . " $error]";
+            die "Invalid output parameter for [" . $dispatch->[0] . ":" . JSON::to_json($result) . " $error]";
         }
 
         return $result;
