@@ -26,6 +26,7 @@ subtest 'get_offerings_flyby' => sub {
                 'underlying_symbol',              'min_contract_duration',
                 'max_contract_duration',          'payout_limit',
                 'min_historical_pricer_duration', 'max_historical_pricer_duration',
+                'contract_category_display'
             )
         ],
         'Matching key list'
