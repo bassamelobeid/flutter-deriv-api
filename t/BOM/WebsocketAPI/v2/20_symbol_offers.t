@@ -103,7 +103,7 @@ ok($offerings->{offerings});
 ok($offerings->{offerings}->{hit_count});
 test_schema('offerings', $offerings);
 # test offerings
-$t = $t->send_ok({json => {trading_times => {'date' => Date::Utility->new->date_ddmmmyyyy}}})->message_ok;
+$t = $t->send_ok({json => {trading_times => Date::Utility->new->date_ddmmmyyyy})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{trading_times});
 ok($trading_times->{trading_times}->{markets});

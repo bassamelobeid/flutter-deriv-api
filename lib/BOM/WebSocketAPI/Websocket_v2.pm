@@ -143,6 +143,7 @@ sub __handle {
             my $result = $validator->validate($p1);
             my $error;
             $error .= " - $_" foreach $result->errors;
+            File::Slurp::append_file('/tmp/a', $result."\n".$error);
             die "Invalid output parameter for [" . $dispatch->[0] . " $error]";
         }
 
