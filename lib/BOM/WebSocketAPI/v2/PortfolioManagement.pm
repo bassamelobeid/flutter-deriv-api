@@ -45,7 +45,6 @@ sub buy {
             $json->{error}->{code}    = $err->get_type;
             last;
         }
-        $c->app->log->info("websocket-based buy " . $trx->report);
         $trx = $trx->transaction_record;
         my $fmb = $trx->financial_market_bet;
         $json->{buy} = {
@@ -94,7 +93,6 @@ sub sell {
             $json->{error}->{message} = $err->{-message_to_client};
             last;
         }
-        $c->app->log->info("websocket-based sell " . $trx->report);
         $trx          = $trx->transaction_record;
         $fmb          = $trx->financial_market_bet;
         $json->{sell} = {

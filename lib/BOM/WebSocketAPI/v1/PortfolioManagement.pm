@@ -43,7 +43,6 @@ sub buy {
             $json->{open_receipt}->{error}->{code}    = $err->get_type;
             last;
         }
-        $c->app->log->info("websocket-based buy " . $trx->report);
         $trx = $trx->transaction_record;
         my $fmb = $trx->financial_market_bet;
         $json->{open_receipt} = {
@@ -91,7 +90,6 @@ sub sell {
             $json->{close_receipt}->{error}->{message} = $err->{-message_to_client};
             last;
         }
-        $c->app->log->info("websocket-based sell " . $trx->report);
         $trx                   = $trx->transaction_record;
         $fmb                   = $trx->financial_market_bet;
         $json->{close_receipt} = {
