@@ -16,7 +16,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Context::I18N;
 use BOM::Platform::Runtime;
 
-foreach my $language (qw(EN AR DE ES FR ID JA PL PT RU ZH_CN)) {
+foreach my $language (qw(EN AR DE ES FR ID JA PL PT RU ZH_CN VI ZH_TW)) {
     subtest "Testing Language : $language" => sub {
         #Force load the MakeText
         ok BOM::Platform::Context::localize("Hello, World!"), "Translation working!";
