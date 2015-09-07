@@ -5,6 +5,12 @@ use Mojo::Base 'Mojolicious';
 sub startup {
     my $app = shift;
 
+    Mojo::IOLoop->singleton->reactor->on(
+        error => sub {
+            my ($reactor, $err) = @_;
+            $app->log->error("EventLoop error: $err");
+        });
+
     $app->moniker('websocket');
     $app->plugin('Config');
 
