@@ -179,9 +179,7 @@ sub query {
 sub trading_times {
     my ($c, $args) = @_;
 
-    $args = $args->{trading_times};
-
-    my $date = try { Date::Utility->new($args->{date}) } || Date::Utility->new;
+    my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
