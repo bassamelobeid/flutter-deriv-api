@@ -110,6 +110,7 @@ sub query {
         my $mkt = delete $row->{market};
         my $sbm = delete $row->{submarket};
         my $cc  = delete $row->{contract_category};
+        my $ccd = delete $row->{contract_category_display};
         my $sym = delete $row->{symbol_display};
         my $ct  = $row->{contract_display};
         delete $row->{exchange_name};
@@ -121,7 +122,8 @@ sub query {
         $selectors->{ct_hierarchy}{$cc}{$ct}++;
 
         # put this row into a branch of a tree..
-        push @{$markets->{$mkt}->{$sbm}->{$sym}->{$cc}}, $row;
+        $markets->{$mkt}->{$sbm}->{$sym}->{$cc}->{display} = $ccd;
+        push @{$markets->{$mkt}->{$sbm}->{$sym}->{$cc}->{code}}, $row;
     }
 
     # expand into the full 'hierarchy' structure..
@@ -137,8 +139,9 @@ sub query {
                 for my $cc (sort keys %$ccs) {
                     push @$L3,
                         {
-                        contract_category => $cc,
-                        available         => $ccs->{$cc}};
+                        contract_category         => $cc,
+                        contract_category_display => $ccs->{$cc}->{display},
+                        available                 => $ccs->{$cc}->{code}};
                 }
                 push @$L2,
                     {
