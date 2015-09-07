@@ -122,7 +122,7 @@ sub run {
                 my $syn               = BOM::Market::Underlying->new('SYN' . $symbol);
                 my $synthetic_surface = $volsurface->clone({
                     underlying => $syn,
-                    cutoff     => $syn->exchange->closing_on($underlying->exchange->representative_trading_date)->time_cutoff
+                    cutoff     => $syn->exchange->closing_on($syn->exchange->representative_trading_date)->time_cutoff
                 });
                 $synthetic_surface->save;
             }

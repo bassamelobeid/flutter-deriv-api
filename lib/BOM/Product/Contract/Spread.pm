@@ -16,6 +16,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Market::Types;
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 with 'MooseX::Role::Validatable';
 
@@ -38,11 +39,16 @@ sub BUILD {
     if ($self->amount_per_point < $limits->{min} or $self->amount_per_point > $limits->{max}) {
         $self->amount_per_point($limits->{min});    # set to minimum
         $self->add_errors({
-            message  => 'amount_per_point[' . $self->amount_per_point . "] is not between [$limits->{min}] and [$limits->{max}]",
-            severity => 99,
-            message_to_client =>
-                localize('Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
-        });
+                message => format_error_string(
+                    'amount_per_point is not within limits',
+                    given => $self->amount_per_point,
+                    min   => $limits->{min},
+                    max   => $limits->{max}
+                ),
+                severity => 99,
+                message_to_client =>
+                    localize('Amount Per Point must be between [_1] and [_2] [_3].', $limits->{min}, $limits->{max}, $self->currency),
+            });
     }
 
     return;
@@ -183,8 +189,8 @@ sub _build_current_tick {
     unless ($current_tick) {
         $current_tick = $self->_pip_size_tick;
         $self->add_errors({
-            message           => 'Current tick is undefined for [' . $self->underlying->symbol . ']',
-            severity          => 99,
+            message  => format_error_string('Current tick is undefined', symbol => $self->underlying->symbol),
+            severity => 99,
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
         });
     }
@@ -224,8 +230,8 @@ sub _build_entry_tick {
     if (not $entry_tick) {
         $entry_tick = $self->current_tick // $self->_pip_size_tick;
         $self->add_errors({
-            message           => 'Entry tick is undefined for [' . $self->underlying->symbol . ']',
-            severity          => 99,
+            message  => format_error_string('Entry tick is undefined', symbol => $self->underlying->symbol),
+            severity => 99,
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
         });
     }
@@ -417,8 +423,8 @@ sub _validate_quote {
     if ($self->date_pricing->epoch - $self->underlying->max_suspend_trading_feed_delay->seconds > $self->current_tick->epoch) {
         push @err,
             {
-            message           => 'Quote too old [' . $self->underlying->symbol . ']',
-            severity          => 98,
+            message  => format_error_string('Quote too old', symbol => $self->underlying->symbol),
+            severity => 98,
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
             };
     }
@@ -433,8 +439,8 @@ sub _validate_underlying {
     if ($self->underlying->submarket->name ne 'random_index') {
         push @err,
             {
-            message           => 'Invalid underlying for spread[' . $self->underlying->symbol . ']',
-            severity          => 98,
+            message  => format_error_string('Invalid underlying for spread', symbol => $self->underlying->symbol),
+            severity => 98,
             message_to_client => localize('Trading on [_1] is not offered for this contract type.', $self->underlying->translated_display_name),
             };
     }
@@ -442,7 +448,7 @@ sub _validate_underlying {
     if (not $self->underlying->exchange->is_open) {
         push @err,
             {
-            message           => 'Market is closed [' . $self->underlying->symbol . ']',
+            message           => 'Market is closed',
             severity          => 98,
             message_to_client => localize("This market is presently closed. Try out the Random Indices which are always open.")};
     }
@@ -462,7 +468,12 @@ sub _validate_stop_loss {
         my $message_to_client = localize('Stop Loss must be between [_1] and [_2] [_3]', $min, $max, $unit);
         push @err,
             {
-            message           => "Stop Loss is not between [$limits->{min}] and [$limits->{max}]",
+            message => format_error_string(
+                'Stop Loss is not within limits',
+                given => $self->stop_loss,
+                min   => $limits->{min},
+                max   => $limits->{max}
+            ),
             severity          => 99,
             message_to_client => $message_to_client,
             };
@@ -483,7 +494,12 @@ sub _validate_stop_profit {
         my $message_to_client = localize('Stop Profit must be between [_1] and [_2] [_3]', $min, $max, $unit);
         push @err,
             {
-            message           => "Stop Profit is not between [$limits->{min}] and [$limits->{max}]",
+            message => format_error_string(
+                'Stop Profit is not within limits',
+                given => $self->stop_profit,
+                min   => $limits->{min},
+                max   => $limits->{max}
+            ),
             severity          => 99,
             message_to_client => $message_to_client,
             };

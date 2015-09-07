@@ -3,6 +3,7 @@ package BOM::Product::Role::AmericanExpiry;
 use Moose::Role;
 
 use BOM::Platform::Context qw(localize);
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 sub _build_is_expired {
     my $self = shift;
@@ -65,13 +66,14 @@ sub get_high_low_for_contract_period {
         if ($self->entry_tick->epoch > $end->epoch) {
             $start = $end;
             $self->add_errors({
-                severity => 100,
-                message  => 'No tick received throughout the duration of the contract. Contract start time['
-                    . $self->date_start->datetime
-                    . '] expiry['
-                    . $self->date_expiry->datetime . ']',
-                message_to_client => localize("Missing market data for contract duration"),
-            });
+                    severity => 100,
+                    message  => format_error_string(
+                        'No tick received throughout the duration of the contract',
+                        start  => $self->date_start->datetime,
+                        expiry => $self->date_expiry->datetime,
+                    ),
+                    message_to_client => localize("Missing market data for contract duration"),
+                });
         } else {
             # Contract doesn't reasonably start until the entry tick arrives.
             # Also, ticks after settlement do not apply

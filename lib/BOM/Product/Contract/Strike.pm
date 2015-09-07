@@ -13,6 +13,7 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw(localize);
 use Format::Util::Numbers qw(roundnear);
 use BOM::Product::Types;
+use BOM::Utility::ErrorStrings qw( format_error_string );
 use feature "state";
 
 with 'MooseX::Role::Validatable';
@@ -134,7 +135,7 @@ sub _build_as_absolute {
         if ($value <= 0) {
             $self->add_errors({
                 severity          => 100,
-                message           => 'Non-positive barrier provided [' . $value . ']',
+                message           => format_error_string('Non-positive barrier', value => $value),
                 message_to_client => localize('Contract barrier must be positive.'),
             });
             $value = 10 * $underlying->pip_size;
