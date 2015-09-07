@@ -1,4 +1,4 @@
-use Test::Most 0.22 (tests => 12);
+use Test::Most 0.22 (tests => 14);
 use Test::NoWarnings;
 use Test::Warn;
 use Test::MockModule;
