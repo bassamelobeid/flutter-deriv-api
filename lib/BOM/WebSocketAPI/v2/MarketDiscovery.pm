@@ -6,6 +6,7 @@ use warnings;
 use Try::Tiny;
 use Mojo::DOM;
 use BOM::WebSocketAPI::v2::Symbols;
+use BOM::WebSocketAPI::v2::System;
 
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -80,7 +81,15 @@ sub ticks {
         my $id;
         $id = Mojo::IOLoop->recurring(1 => sub { send_tick($c, $id, $args, $ul) });
         send_tick($c, $id, $args, $ul);
-        $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
+
+        my $ws_id = $c->tx->connection;
+        $c->{ws}{$ws_id}{$id} = {
+            started => time(),
+            type    => 'tick',
+            epoch   => 0,
+        };
+        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+
         return 0;
     } else {
         return {
@@ -100,9 +109,16 @@ sub proposal {
     my $p2 = prepare_ask($c, $args);
     my $id;
     $id = Mojo::IOLoop->recurring(1 => sub { send_ask($c, $id, {}, $p2) });
-    $c->{$id} = $p2;
+
+    my $ws_id = $c->tx->connection;
+    $c->{ws}{$ws_id}{$id} = {
+        started => time(),
+        type    => 'proposal',
+        data    => {%$p2},
+    };
+    BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+
     send_ask($c, $id, $args, $p2);
-    $c->on(finish => sub { Mojo::IOLoop->remove($id); delete $c->{$id} });
 
     return;
 }
@@ -198,7 +214,9 @@ sub send_ask {
     my $latest = get_ask($c, $p2);
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
-        delete $c->{$id};
+        my $ws_id = $c->tx->connection;
+        delete $c->{ws}{$ws_id}{$id};
+
         my $proposal = {id => $id};
         $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
         $proposal->{ask_price} = delete $latest->{ask_price} if $latest->{ask_price};
@@ -224,8 +242,10 @@ sub send_ask {
 
 sub send_tick {
     my ($c, $id, $p1, $ul) = @_;
-    my $tick = $ul->get_combined_realtime;
-    if ($tick->{epoch} > ($c->{$id}{epoch} || 0)) {
+
+    my $ws_id = $c->tx->connection;
+    my $tick  = $ul->get_combined_realtime;
+    if ($tick->{epoch} > ($c->{ws}{$ws_id}{$id}{epoch} || 0)) {
         $c->send({
                 json => {
                     msg_type => 'tick',
@@ -234,7 +254,8 @@ sub send_tick {
                         id    => $id,
                         epoch => $tick->{epoch},
                         quote => $tick->{quote}}}});
-        $c->{$id}{epoch} = $tick->{epoch};
+
+        $c->{ws}{$ws_id}{$id}{epoch} = $tick->{epoch};
     }
     return;
 }
