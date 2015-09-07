@@ -140,9 +140,9 @@ sub __handle {
 
         $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
         if (not $validator->validate($result)) {
-            my $result = $validator->validate($p1);
+            my $validation_errors = $validator->validate($p1);
             my $error;
-            $error .= " - $_" foreach $result->errors;
+            $error .= " - $_" foreach $validation_errors->errors;
             die "Invalid output parameter for [" . $dispatch->[0] . " $error]";
         }
 
