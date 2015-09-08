@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -22,8 +22,8 @@ use BOM::Product::Pricing::Parameter qw(get_parameter);
 my $now = Date::Utility->new->minus_time_interval('32m');
 my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'FOREX'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD JPY JPY-USD);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_delta', {symbol => $underlying->symbol, recorded_date => $now});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD JPY JPY-USD EUR);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('volsurface_delta', {symbol => $_, recorded_date => $now}) for qw(frxEURJPY frxUSDJPY);
 my $at = BOM::Market::AggTicks->new;
 $at->flush;
 
@@ -48,3 +48,10 @@ subtest 'vol_proxy and trend proxy' => sub {
     isnt $trend_proxy_reference->{value}, 0, 'trend proxy isn\'t 0';
 };
 
+subtest 'economic_events' => sub {
+    my $underlying = BOM::Market::Underlying->new('frxEURJPY');
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('economic_events', {symbol => 'USD', release_date => $now, recorded_date => $now});
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('economic_events', {symbol => 'EUR', release_date => $now, recorded_date => $now});
+    my @eco = get_parameter('economic_events', {underlying => $underlying, start => $now, end => $now->plus_time_interval('1h')});
+    is scalar @eco, 2, 'directly affected currency and influential currency are included';
+};
