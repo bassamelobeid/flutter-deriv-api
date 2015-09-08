@@ -44,7 +44,7 @@ sub _validate_barrier {
     my @errors;
 
     push @errors, $barrier->all_errors if defined $barrier and not $barrier->confirm_validity;
-    if ($barrier and ($barrier->as_absolute > 2.5 * $current_spot or $barrier->as_absolute < 0.25 * $current_spot)) {
+    if ($barrier and $current_spot and ($barrier->as_absolute > 2.5 * $current_spot or $barrier->as_absolute < 0.25 * $current_spot)) {
         push @errors,
             {
             message           => 'Barrier is outside of range of 25% to 250% of spot',
