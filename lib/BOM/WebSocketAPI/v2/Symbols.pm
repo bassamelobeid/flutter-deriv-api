@@ -58,9 +58,9 @@ sub _description {
         };
     } else {
         return {
-            symbol                    => $symbol,
-            display_name              => $ul->display_name,
-            symbol_type               => $ul->instrument_type,
+            symbol       => $symbol,
+            display_name => $ul->display_name,
+            symbol_type  => $ul->instrument_type,
         };
     }
 }
@@ -69,13 +69,19 @@ sub active_symbols {
     my ($c, $args) = @_;
 
     my $by = $args->{active_symbols};
-    $by =~ /^(brief|full)$/ or die 'by brief or full only';
+    $by =~ /^(brief|full)$/ or return {
+        msg_type => 'active_symbols',
+        error    => {
+            message => "Value must be brief or full",
+            code    => "InvalidValue"
+        }};
+
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
             map { $_ }
                 grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
-                map { _description($_,$by) }
+                map { _description($_, $by) }
                 keys %$_by_symbol
         ],
     };
