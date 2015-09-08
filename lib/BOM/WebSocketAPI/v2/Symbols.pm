@@ -55,16 +55,17 @@ sub _description {
             spot                      => $spot,
             spot_time                 => $spot_time,
             spot_age                  => $spot_age,
-            market_name               => $ul->market->translated_display_name
-
+            market_display_name       => $ul->market->translated_display_name,
+            market_name               => $ul->market->name,
         };
     } else {
         if (!$ul->is_trading_suspended && $exchange_is_open) {
             return {
-                symbol       => $symbol,
-                display_name => $ul->display_name,
-                symbol_type  => $ul->instrument_type,
-                market_name  => $ul->market->translated_display_name
+                symbol              => $symbol,
+                display_name        => $ul->display_name,
+                symbol_type         => $ul->instrument_type,
+                market_display_name => $ul->market->translated_display_name,
+                market_name         => $ul->market->name,
             };
         } else {
             return;
