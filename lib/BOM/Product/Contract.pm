@@ -1497,7 +1497,7 @@ sub _get_probability_reference {
 
     my $prob_ref;
     if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        my %pricing_parameters = map {my $method = '_' . $_; $_ => $_->$method} @{$self->pricing_engine_name->REQUIRED_ARGS};
+        my %pricing_parameters = map { my $method = '_' . $_; $_ => $_->$method } @{$self->pricing_engine_name->REQUIRED_ARGS};
         # will make this more generic as we move more pricing engines to this interface
         my $func_name = $self->pricing_engine_name . '::' . $probability_name;
         my $subref    = \&$func_name;
@@ -2604,8 +2604,8 @@ sub _economic_events {
     my $self = shift;
 
     my $underlying = $self->underlying;
-    my $from = $self->effective_start->minus_time_interval('10m');
-    my $to   = $self->effective_start->plus_time_interval('10m');
+    my $from       = $self->effective_start->minus_time_interval('10m');
+    my $to         = $self->effective_start->plus_time_interval('10m');
     my $eco_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
         from => $from,
         to   => $to,
@@ -2622,12 +2622,11 @@ sub _last_twenty_ticks {
     my $self = shift;
 
     return BOM::Market::AggTicks->new->retrieve({
-        underlying   => $self->underlying,
-        ending_epoch => $self->effective_start->epoch
-        tick_count   => 20,
+        underlying     => $self->underlying,
+        ending_epoch   => $self->effective_start->epoch
+            tick_count => 20,
     });
 }
-
 
 no Moose;
 
