@@ -1153,9 +1153,9 @@ sub _build_entry_tick {
                     alert    => 1,
                     message  => format_error_string(
                         'Entry tick too far away',
+                        symbol    => $self->underlying->symbol,
                         delay     => $start_delay->as_concise_string,
                         permitted => $max_delay->as_concise_string,
-                        symbol    => $self->underlying->symbol,
                         start     => $start->datetime,
                     ),
                     message_to_client => localize("Missing market data for entry spot."),
