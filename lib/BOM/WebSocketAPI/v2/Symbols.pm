@@ -72,7 +72,7 @@ sub active_symbols {
     $by =~ /^(brief|full)$/ or return {
         msg_type => 'active_symbols',
         error    => {
-            message => "Value must be brief or full",
+            message => "Value must be 'brief' or 'full'",
             code    => "InvalidValue"
         }};
 
