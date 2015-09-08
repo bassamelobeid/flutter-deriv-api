@@ -6,6 +6,7 @@ extends 'BOM::Product::Pricing::Engine::Intraday';
 use YAML::CacheLoader;
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 has pricing_vol => (
     is         => 'ro',
@@ -64,7 +65,7 @@ sub _build_probability {
     if (not $coef_ref) {
         $bet->add_errors({
             severity => 100,
-            message  => 'Calibration coefficient missing for symbol[' . $bet->underlying->symbol . ']',
+            message  => format_error_string('Calibration coefficient missing', symbol => $bet->underlying->symbol),
             message_to_client =>
                 localize('Trading on [_1] is suspended due to missing market data.', $bet->underlying->translated_display_name()),
         });

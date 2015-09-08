@@ -4,6 +4,7 @@ use Moose::Role;
 with 'BOM::Product::Role::BarrierBuilder';
 
 use BOM::Platform::Context qw(localize);
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 has supplied_barrier => (is => 'ro');
 
@@ -43,7 +44,7 @@ sub _validate_barrier {
     my @errors;
 
     push @errors, $barrier->all_errors if defined $barrier and not $barrier->confirm_validity;
-    if ($barrier and ($barrier->as_absolute > 2.5 * $current_spot or $barrier->as_absolute < 0.25 * $current_spot)) {
+    if ($barrier and $current_spot and ($barrier->as_absolute > 2.5 * $current_spot or $barrier->as_absolute < 0.25 * $current_spot)) {
         push @errors,
             {
             message           => 'Barrier is outside of range of 25% to 250% of spot',
@@ -53,7 +54,11 @@ sub _validate_barrier {
     } elsif ($self->is_path_dependent and abs($pip_move) < $self->minimum_allowable_move) {
         push @errors,
             {
-            message           => 'Relative barrier path dependents must move a minimum of ' . $self->minimum_allowable_move . "pips moved[$pip_move]",
+            message => format_error_string(
+                'Relative barrier path dependent move below minimum',
+                min    => $self->minimum_allowable_move,
+                actual => $pip_move
+            ),
             severity          => 1,
             message_to_client => localize('Barrier must be at least ' . $self->minimum_allowable_move . ' pips away from the spot.'),
             };

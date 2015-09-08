@@ -5,6 +5,7 @@ use Moose::Role;
 use Try::Tiny;
 use VolSurface::Utils qw( get_strike_for_spot_delta );
 use BOM::Platform::Context qw(localize);
+use BOM::Utility::ErrorStrings qw( format_error_string );
 use List::Util qw(max);
 
 has do_not_round_barrier => (
@@ -21,7 +22,7 @@ sub make_barrier {
         $string_version = $self->underlying->pip_size;
         $self->add_errors({
             severity          => 100,
-            message           => 'Undefined barrier for type[' . $self->code . ']',
+            message           => 'Undefined barrier',
             message_to_client => localize('We could not process this contract at this time.'),
         });
     }
@@ -45,7 +46,7 @@ sub make_barrier {
         catch {
             $self->add_errors({
                 severity          => 100,
-                message           => 'Could not apply corporate action. Reason: ' . $_,
+                message           => format_error_string('Could not apply corporate action', error => $_),
                 message_to_client => localize('System problems prevent proper settlement at this time.'),
             });
         };
