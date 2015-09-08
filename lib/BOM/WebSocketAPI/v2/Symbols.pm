@@ -55,6 +55,8 @@ sub _description {
             spot                      => $spot,
             spot_time                 => $spot_time,
             spot_age                  => $spot_age,
+            market_name               => $ul->market->translated_display_name
+
         };
     } else {
         if (!$ul->is_trading_suspended && $exchange_is_open) {
@@ -62,6 +64,7 @@ sub _description {
                 symbol       => $symbol,
                 display_name => $ul->display_name,
                 symbol_type  => $ul->instrument_type,
+                market_name  => $ul->market->translated_display_name
             };
         } else {
             return;
