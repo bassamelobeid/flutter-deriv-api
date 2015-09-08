@@ -57,11 +57,15 @@ sub _description {
             spot_age                  => $spot_age,
         };
     } else {
-        return {
-            symbol       => $symbol,
-            display_name => $ul->display_name,
-            symbol_type  => $ul->instrument_type,
-        };
+        if (!$ul->is_trading_suspended && $exchange_is_open) {
+            return {
+                symbol       => $symbol,
+                display_name => $ul->display_name,
+                symbol_type  => $ul->instrument_type,
+            };
+        } else {
+            return;
+        }
     }
 }
 
@@ -79,9 +83,9 @@ sub active_symbols {
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
-            map { $_ }
-                grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
-                map { _description($_, $by) }
+            map      { $_ }
+                grep { $_ }
+                map  { _description($_, $by) }
                 keys %$_by_symbol
         ],
     };
