@@ -66,12 +66,12 @@ ok(grep { $_ eq 'USD' } @{$payout_currencies->{payout_currencies}});
 test_schema('payout_currencies', $payout_currencies);
 
 # test active_symbols
-$t = $t->send_ok({json => {active_symbols => 'symbol'}})->message_ok;
+$t = $t->send_ok({json => {active_symbols => 'full'}})->message_ok;
 my $active_symbols = decode_json($t->message->[1]);
 ok($active_symbols->{active_symbols});
 test_schema('active_symbols', $active_symbols);
 
-$t = $t->send_ok({json => {active_symbols => 'display_name'}})->message_ok;
+$t = $t->send_ok({json => {active_symbols => 'brief'}})->message_ok;
 $active_symbols = decode_json($t->message->[1]);
 ok($active_symbols->{active_symbols});
 test_schema('active_symbols', $active_symbols);

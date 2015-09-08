@@ -30,6 +30,7 @@ for (Finance::Asset->instance->symbols) {
 # this constructs the symbol record sanitized for consumption by api clients.
 sub _description {
     my $symbol = shift;
+    my $by     = shift || 'brief';
     my $ul     = BOM::Market::Underlying->new($symbol) || return;
     my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
     # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
@@ -39,35 +40,48 @@ sub _description {
         $spot_time = $ul->spot_time;
         $spot_age  = $ul->spot_age;
     }
-
-    return {
-        symbol                    => $symbol,
-        display_name              => $ul->display_name,
-        pip                       => $ul->pip_size,
-        symbol_type               => $ul->instrument_type,
-        exchange_name             => $ul->exchange_name,
-        delay_amount              => $ul->delay_amount,
-        exchange_is_open          => $exchange_is_open,
-        quoted_currency_symbol    => $ul->quoted_currency_symbol,
-        intraday_interval_minutes => $iim,
-        is_trading_suspended      => $ul->is_trading_suspended,
-        spot                      => $spot,
-        spot_time                 => $spot_time,
-        spot_age                  => $spot_age,
-    };
+    if ($by eq 'full') {
+        return {
+            symbol                    => $symbol,
+            display_name              => $ul->display_name,
+            pip                       => $ul->pip_size,
+            symbol_type               => $ul->instrument_type,
+            exchange_name             => $ul->exchange_name,
+            delay_amount              => $ul->delay_amount,
+            exchange_is_open          => $exchange_is_open,
+            quoted_currency_symbol    => $ul->quoted_currency_symbol,
+            intraday_interval_minutes => $iim,
+            is_trading_suspended      => $ul->is_trading_suspended,
+            spot                      => $spot,
+            spot_time                 => $spot_time,
+            spot_age                  => $spot_age,
+        };
+    } else {
+        return {
+            symbol       => $symbol,
+            display_name => $ul->display_name,
+            symbol_type  => $ul->instrument_type,
+        };
+    }
 }
 
 sub active_symbols {
     my ($c, $args) = @_;
 
     my $by = $args->{active_symbols};
-    $by =~ /^(symbol|display_name)$/ or die 'by symbol or display_name only';
+    $by =~ /^(brief|full)$/ or return {
+        msg_type => 'active_symbols',
+        error    => {
+            message => "Value must be 'brief' or 'full'",
+            code    => "InvalidValue"
+        }};
+
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
             map { $_ }
                 grep { !$_->{is_trading_suspended} && $_->{exchange_is_open} }
-                map { _description($_) }
+                map { _description($_, $by) }
                 keys %$_by_symbol
         ],
     };
