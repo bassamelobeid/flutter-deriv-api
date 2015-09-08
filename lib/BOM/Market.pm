@@ -261,17 +261,6 @@ has 'equity' => (
     isa => 'Bool',
 );
 
-=head2 limited_ultra_shortterm
-
-A hashref representing info about time-limited ultra shortterm contracts.
-
-=cut
-
-has limited_ultra_shortterm => (
-    is  => 'ro',
-    isa => 'Maybe[HashRef]',
-);
-
 =head2 eod_blackout_expiry
 
 How close is too close to close for bet expiry?

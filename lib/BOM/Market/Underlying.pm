@@ -318,19 +318,6 @@ sub _build_intradays_must_be_same_day {
     return $self->submarket->intradays_must_be_same_day;
 }
 
-=head2 limited_ultra_shortterm
-
-A hashref representing info about time-limited ultra shortterm contracts.
-
-=cut
-
-has limited_ultra_shortterm => (
-    is      => 'ro',
-    isa     => 'Maybe[HashRef]',
-    lazy    => 1,
-    default => sub { return shift->submarket->limited_ultra_shortterm; },
-);
-
 =head2 max_suspend_trading_feed_delay
 
 The maximum acceptable feed delay for an underlying.
@@ -2136,24 +2123,6 @@ sub _last_trading_day_tick {
     }
 
     return;
-}
-
-sub limit_minimum_duration {
-    my $self = shift;
-    my $limit;
-
-    if (my $limitations = $self->limited_ultra_shortterm) {
-        $limitations =
-            {map { $_ => Time::Duration::Concise->new(interval => $limitations->{$_},) } grep { !ref($limitations->{$_}) } keys %$limitations};
-        my $tod = Date::Utility->new->seconds_after_midnight;
-        if (   $tod < $limitations->{start}->seconds
-            || $tod > $limitations->{end}->seconds)
-        {
-            $limit = $limitations->{otherwise};
-        }
-    }
-
-    return $limit;
 }
 
 no Moose;

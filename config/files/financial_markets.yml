@@ -101,10 +101,6 @@ forex:
         daily:
           spot:
             euro_non_atm: day_to_year
-    limited_ultra_shortterm:
-      start: '8h'
-      end:  '20h'
-      otherwise: '30s'
     eod_blackout_expiry: '0s'
     eod_blackout_start: '0s'
     sod_blackout_start: '0s'

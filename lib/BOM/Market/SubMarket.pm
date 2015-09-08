@@ -118,19 +118,6 @@ has intradays_must_be_same_day => (
     default => sub { return shift->market->intradays_must_be_same_day; },
 );
 
-=head2 limited_ultra_shortterm
-
-A hashref representing info about time-limited ultra shortterm contracts.
-
-=cut
-
-has limited_ultra_shortterm => (
-    is      => 'ro',
-    isa     => 'Maybe[HashRef]',
-    lazy    => 1,
-    default => sub { return shift->market->limited_ultra_shortterm; },
-);
-
 =head2 asset_type
 
 Represents the default asset_type for the market, can be (currency, index, asset).
