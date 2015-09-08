@@ -1497,14 +1497,11 @@ sub _get_probability_reference {
 
     my $prob_ref;
     if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        my %pricing_parameters = map {my $method = '_' . $_; $_ => $_->$method} @{$self->pricing_engine_name->REQUIRED_ARGS};
         # will make this more generic as we move more pricing engines to this interface
         my $func_name = $self->pricing_engine_name . '::' . $probability_name;
         my $subref    = \&$func_name;
-        $prob_ref = &$subref({
-            underlying_symbol => $self->underlying->symbol,
-            pricing_date      => $self->effective_start,
-            contract_type     => $self->code,
-        });
+        $prob_ref = &$subref(\%pricing_parameters);
     } else {
         # shouldn't be calling this if it doesn't have the new interface
         $prob_ref = {
@@ -2590,6 +2587,47 @@ sub _validate_volsurface {
 
     return @errors;
 }
+
+## PRICING PARAMETERS CODE ##
+## This is a temporary place for this code.
+## It would be moved to the appropriate class when we have refactored all PE to the new interface
+
+sub _contract_type {
+    return shift->code;
+}
+
+sub _underlying_symbol {
+    return shift->underlying->symbol;
+}
+
+sub _economic_events {
+    my $self = shift;
+
+    my $underlying = $self->underlying;
+    my $from = $self->effective_start->minus_time_interval('10m');
+    my $to   = $self->effective_start->plus_time_interval('10m');
+    my $eco_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+        from => $from,
+        to   => $to,
+    });
+    my $underlying             = $args->{underlying};
+    my @influential_currencies = qw(USD AUD CAD CNY NZD);
+    my %applicable_symbols     = map { $_ => 1 } uniq($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
+    my @applicable_events      = sort { $a->release_date->epoch <=> $b->release_date->epoch } grep { $applicable_symbols{$_->symbol} } @$eco_events;
+
+    return \@applicable_events;
+}
+
+sub _last_twenty_ticks {
+    my $self = shift;
+
+    return BOM::Market::AggTicks->new->retrieve({
+        underlying   => $self->underlying,
+        ending_epoch => $self->effective_start->epoch
+        tick_count   => 20,
+    });
+}
+
 
 no Moose;
 

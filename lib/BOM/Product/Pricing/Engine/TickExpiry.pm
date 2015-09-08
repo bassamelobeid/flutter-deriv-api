@@ -12,7 +12,7 @@ use YAML::CacheLoader qw(LoadFile);
 use Date::Utility;
 
 use constant {
-    REQUIRED_ARGS => [qw(contract_type vol_proxy trend_proxy economic_events coefficients)],
+    REQUIRED_ARGS => [qw(contract_type underlying_symbol last_twenty_ticks economic_events)],
     ALLOWED_TYPES => [qw(CALL PUT)],
 };
 
@@ -45,20 +45,43 @@ sub probability {
         $err = "Could not calculate probability for $args->{contract_type}";
     }
 
-    my ($contract_type, $trend_proxy, $vol_proxy, $economic_events, $coef) =
-        @{$args}{'contract_type', 'trend_proxy', 'vol_proxy', 'economic_events', 'coefficients'};
+    my ($contract_type, $ticks, $economic_events, $underlying_symbol) =
+        @{$args}{'contract_type', 'last_twenty_ticks', 'economic_events', 'underlying_symbol'};
+
+    # We allow date_pricing as a parameter for bpot
+    my $date_pricing = $args->{date_pricing} // Date::Utility->new;
+    my $coef = LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml')->{$underlying_symbol};
 
     my $affected_by_economic_events = @$economic_events ? 1 : 0;
     my %debug_information = (
         affected_by_economic_events => $affected_by_economic_events,
-        base_trend_proxy            => $trend_proxy,
-        base_vol_proxy              => $vol_proxy,
     );
 
     my $x_min = $coef->{x_prime_min};
     my $x_max = $coef->{x_prime_max};
     my $y_min = $coef->{y_min};
     my $y_max = $coef->{y_max};
+
+    # vol proxy calculation
+    my $vol_proxy;
+    if (@$ticks and @$ticks == 20 and abs($date_pricing->epoch - $ticks->[0]->{epoch}) < 300) {
+        my $sum = sum(map { log($ticks->[$_]->{quote} / $ticks->[$_ - 1]->{quote})**2 } (1 .. 19));
+        $vol_proxy = sqrt($sum / 19);
+    } else {
+        $vol_proxy = 0.20;                                                 # 20% volatility
+        $err       = 'Do not have enough ticks to calculate volatility';
+    }
+    $debug_information{base_vol_proxy} = $vol_proxy;
+
+    # trend proxy calculation
+    my $trend_proxy = 0;
+    if (not $err) {
+        my $ma_step = 7;
+        my $avg     = sum(map { $_->{quote} } @$ticks[-$ma_step .. -1]) / $ma_step;
+        my $x       = ($ticks->[-1]{quote} - $avg) / $ticks->[-1]{quote};
+        $trend_proxy = $x / $vol_proxy;
+    }
+    $debug_information{base_trend_proxy} = $trend_proxy;
 
     $vol_proxy = min($y_max, max($y_min, $vol_proxy));
     $debug_information{vol_proxy} = $vol_proxy;
