@@ -1230,7 +1230,7 @@ sub _build_pricing_vol {
             days  => $self->timeindays->amount,
             delta => 50
         });
-    } elsif (my ($which) = $pen =~ /Intraday::(Forex|Index)/) {
+    } elsif ($pen =~ /Intraday::Forex/) {
         my $volsurface = $self->empirical_volsurface;
         my $vol_args   = {
             fill_cache            => !$self->backtest,
@@ -1238,14 +1238,9 @@ sub _build_pricing_vol {
             seconds_to_expiration => $self->timeindays->amount * 86400,
         };
 
-        my $ref;
-        if (lc $which eq 'forex') {
-            $ref = $volsurface->get_seasonalized_volatility($vol_args);
-            $self->long_term_prediction($ref->{long_term_prediction});
-        } else {
-            $ref = $volsurface->get_volatility($vol_args);
-        }
+        my $ref = $volsurface->get_seasonalized_volatility($vol_args);
         $vol = $ref->{volatility};
+        $self->long_term_prediction($ref->{long_term_prediction});
         $self->average_tick_count($ref->{average_tick_count});
         if ($ref->{err}) {
             $self->add_errors({
