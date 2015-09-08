@@ -732,6 +732,4 @@ sub _build_economic_events_spot_risk_markup {
     return $spot_risk_markup;
 }
 
-
-
 1;
