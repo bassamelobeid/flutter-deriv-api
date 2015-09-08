@@ -30,7 +30,7 @@ use BOM::MarketData::Fetcher::EconomicEvent;
 =cut
 
 has [
-    qw(model_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup  trend_markup original_model_markup equal_tick_probability equal_tick_markup)
+    qw(model_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup  original_model_markup equal_tick_probability equal_tick_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -422,7 +422,6 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add', $self->butterfly_markup);
     }
 
-    $risk_markup->include_adjustment('add', $self->trend_markup);
     my $spread_to_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'spread_to_markup',
         description => 'Apply half of spread to each side',
@@ -731,75 +730,6 @@ sub _build_economic_events_spot_risk_markup {
     });
 
     return $spot_risk_markup;
-}
-
-sub _build_trend_markup {
-    my $self = shift;
-
-# Presently, highly targeted commission adjustment for players exploiting trends with forward-starting contracts.
-# These are the tunable parameters to get it to hit.
-    my $max_minutes = 65;
-
-    my $bet = $self->bet;
-
-    my $amount_to_add = 0;
-    if (    $bet->is_forward_starting
-        and (my $bet_minutes = $bet->remaining_time->minutes) <= $max_minutes
-        and (my $trend_data  = $self->_trend_data->{$bet->underlying->symbol}))
-    {
-        my $date_start          = $bet->date_start;
-        my $relevant_date       = $date_start;
-        my $relevant_minute     = $relevant_date->minute;
-        my $trend_data_for_time = $trend_data->{$date_start->hour . ':' . $relevant_minute};
-
-        #check the dst_shift flag in underlyings.yml, if the dst_shift, go in.
-        if ($bet->underlying->uses_dst_shifted_seasonality and $date_start->is_dst_in_zone('America/New_York')) {
-            my $dst_date_hour = $date_start->plus_time_interval('1h');
-            $trend_data_for_time = $trend_data->{$dst_date_hour->hour . ':' . $relevant_minute};
-        }
-
-        my $up_probability = $trend_data_for_time->{$bet_minutes};
-
-        if (not $up_probability) {
-            my $trend_before = $trend_data_for_time->{$bet_minutes - 1};
-            my $trend_after  = $trend_data_for_time->{$bet_minutes + 1};
-            if ($trend_before and $trend_after) {
-                $up_probability = ($trend_before + $trend_after) / 2;
-            }
-        }
-
-        #0.53 here is the tunable paremeter to decide the level of commission.
-
-        if ($up_probability) {
-            my $sentiment = $bet->sentiment;
-            $amount_to_add =
-                ($sentiment eq 'up')
-                ? max($up_probability - 0.53,     0)
-                : max(1 - $up_probability - 0.53, 0);
-        }
-    }
-
-    my $spot_seasonality_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'spot_seasonality_markup',
-        description => 'markup to account for expected trend on short forward-starting contracts',
-        set_by      => __PACKAGE__,
-        base_amount => $amount_to_add,
-    });
-
-    return $spot_seasonality_markup;
-}
-
-has _trend_data => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    lazy    => 1,
-    builder => '_build__trend_data',
-);
-
-sub _build__trend_data {
-    my $self = shift;
-
-    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/trend_calibration.yml');
 }
 
 1;
