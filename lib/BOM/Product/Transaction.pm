@@ -17,6 +17,7 @@ use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Utility::CurrencyConverter qw(in_USD amount_from_to_currency);
+use BOM::Utility::ErrorStrings qw( normalize_error_string );
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -204,13 +205,26 @@ sub stats_validation_done {
     return;
 }
 
-# Given a generic error string, try to turn it into a GenericCamelCase string which
+# Given a generic error, try to turn it into a tag-friendly string which
 # might be the same across multiple failures.
-sub _normalize_error_string {
-    my $string = shift;
+sub _normalize_error {
+    my $error = shift;
 
-    $string =~ s/\[[^\]]+\]//g;    # Bits between [] are contract specific.
-    return join('', map { ucfirst lc $_ } split /\s+/, $string);
+    if (my $whatsit = blessed $error) {
+        if ($whatsit eq 'Error::Base') {
+            my $type = $error->get_type;    # These are nice short camelCase descriptions
+            $error = (
+                       $type eq 'InvalidtoBuy'
+                    or $type eq 'InvalidtoSell'
+            ) ? $error->get_mesg : $type;    # In these special cases, we'd like to get the underlying contract message, instead.
+        } elsif ($whatsit eq 'MooseX::Role::Validatable::Error') {
+            $error = $error->message;        # These should be sentence-like.
+        } else {
+            $error = "$error";               # Assume it's stringifiable.
+        }
+    }
+
+    return normalize_error_string($error);
 }
 
 sub stats_stop {
@@ -220,10 +234,7 @@ sub stats_stop {
     my $tags = $data->{tags};
 
     if ($error) {
-        my $whatsit = blessed $error;
-        # If we don't get Error::Base, assume it's a string or will stringify with some minor coercion.
-        my $why = _normalize_error_string(($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : "$error");
-        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, "reason:$why",]});
+        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, 'reason:' . _normalize_error($error),]});
     } else {
         my $now = [gettimeofday];
         stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
@@ -1504,8 +1515,7 @@ sub sell_expired_contracts {
                     source        => $source,
                     };
             } else {
-                my $reason = _normalize_error_string($contract->primary_validation_error->message);
-                $stats_failure{$logging_class}{$reason}++;
+                $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
             }
         };
     }

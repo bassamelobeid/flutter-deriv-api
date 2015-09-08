@@ -4,6 +4,7 @@ use Moose::Role;
 
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 sub _build_is_expired {
     my $self = shift;
@@ -16,10 +17,14 @@ sub _build_is_expired {
     } else {
         $self->value(0);
         $self->add_errors({
-            severity          => 100,
-            message           => 'Missing settlement tick for [' . $self->date_expiry->iso8601 . '/' . $self->underlying->symbol . ']',
-            message_to_client => localize('The database is not yet updated with settlement data.'),
-        });
+                severity => 100,
+                message  => format_error_string(
+                    'Missing settlement tick',
+                    symbol => $self->underlying->symbol,
+                    expiry => $self->date_expiry->datetime
+                ),
+                message_to_client => localize('The database is not yet updated with settlement data.'),
+            });
     }
     return $is_expired;
 }
@@ -60,15 +65,16 @@ sub _build_exit_tick {
         # We should not have gotten here otherwise.
         if (not $first_date->is_before($last_date)) {
             $self->add_errors({
-                severity => 100,
-                alert    => 1,
-                message  => 'Start tick ['
-                    . $first_date->db_timestamp
-                    . '] is not before expiry tick ['
-                    . $last_date->db_timestamp . '] on '
-                    . $underlying->symbol,
-                message_to_client => localize("Missing market data for contract period."),
-            });
+                    severity => 100,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Start tick is not before expiry tick',
+                        symbol => $underlying->symbol,
+                        start  => $first_date->datetime,
+                        expiry => $last_date->datetime
+                    ),
+                    message_to_client => localize("Missing market data for contract period."),
+                });
         }
         my $end_delay = Time::Duration::Concise->new(interval => $self->date_expiry->epoch - $last_date->epoch);
 
@@ -77,51 +83,57 @@ sub _build_exit_tick {
                 and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
             {
                 $self->add_errors({
-                    severity          => 99,
-                    alert             => 1,
-                    message           => 'Missing ticks at close of ' . $self->date_expiry->iso8601 . ' on ' . $underlying->symbol,
-                    message_to_client => localize("Missing market data for exit spot."),
-                });
+                        severity => 99,
+                        alert    => 1,
+                        message  => format_error_string(
+                            'Missing ticks at close',
+                            symbol => $underlying->symbol,
+                            expiry => $self->date_expiry->datetime
+                        ),
+                        message_to_client => localize("Missing market data for exit spot."),
+                    });
             }
         } elsif ($end_delay->seconds > $max_delay->seconds) {
             $self->add_errors({
-                severity => 99,
-                alert    => 1,
-                message  => 'Exit tick too far away ['
-                    . $end_delay->as_concise_string
-                    . ', permitted: '
-                    . $max_delay->as_concise_string . '] on '
-                    . $underlying->symbol . ' at '
-                    . $self->date_expiry->iso8601,
-                message_to_client => localize("Missing market data for exit spot."),
-            });
+                    severity => 99,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Exit tick too far away',
+                        symbol    => $underlying->symbol,
+                        delay     => $end_delay->as_concise_string,
+                        permitted => $max_delay->as_concise_string,
+                        expiry    => $self->date_expiry->datetime
+                    ),
+                    message_to_client => localize("Missing market data for exit spot."),
+                });
         }
         if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
             $self->add_errors({
-                severity => 99,
-                alert    => 1,
-                message  => 'Exit tick date ['
-                    . $last_date->datetime
-                    . '] differs from entry tick date ['
-                    . $first_date->datetime
-                    . '] on intraday contract for '
-                    . $underlying->symbol,
-                message_to_client => localize("Intraday contracts may not cross market open."),
-            });
+                    severity => 99,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Exit tick date differs from entry tick date on intraday',
+                        symbol => $underlying->symbol,
+                        start  => $last_date->datetime,
+                        expiry => $first_date->datetime,
+                    ),
+                    message_to_client => localize("Intraday contracts may not cross market open."),
+                });
         }
         if ($self->tick_expiry) {
             my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
             if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
                 $self->add_errors({
-                    severity => 100,
-                    alert    => 1,
-                    message  => 'Tick expiry duration ['
-                        . $actual_duration->as_concise_string
-                        . '] exceeds permitted maximum ['
-                        . $self->max_tick_expiry_duration->as_concise_string . '] on '
-                        . $underlying->symbol,
-                    message_to_client => localize("Missing market data for contract period."),
-                });
+                        severity => 100,
+                        alert    => 1,
+                        message  => format_error_string(
+                            'Tick expiry duration exceeds permitted maximum',
+                            symbol    => $underlying->symbol,
+                            actual    => $actual_duration->as_concise_string,
+                            permitted => $self->max_tick_expiry_duration->as_concise_string
+                        ),
+                        message_to_client => localize("Missing market data for contract period."),
+                    });
             }
         }
     }

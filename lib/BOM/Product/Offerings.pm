@@ -73,6 +73,7 @@ sub _make_new_flyby {
             foreach my $cc_code (sort keys %{$ul->contracts}) {
                 $record{contract_category} = $cc_code;
                 $category_cache{$cc_code} //= BOM::Product::Contract::Category->new($cc_code);
+                $record{contract_category_display} = $category_cache{$cc_code}->{display_name};
                 foreach my $expiry_type (sort keys %{$ul->contracts->{$cc_code}}) {
                     $record{expiry_type} = $expiry_type;
                     foreach my $start_type (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}}) {
