@@ -12,7 +12,7 @@ use YAML::CacheLoader qw(LoadFile);
 use Date::Utility;
 
 use constant {
-    REQUIRED_ARGS => [qw(underlying_symbol contract_type vol_proxy trend_proxy affected_by_economic_events)],
+    REQUIRED_ARGS => [qw(contract_type vol_proxy trend_proxy economic_events coefficients)],
     ALLOWED_TYPES => [qw(CALL PUT)],
 };
 
@@ -45,16 +45,16 @@ sub probability {
         $err = "Could not calculate probability for $args->{contract_type}";
     }
 
-    my ($u_symbol, $contract_type, $trend_proxy, $vol_proxy, $affected_by_economic_events) =
-        @{$args}{'underlying_symbol', 'contract_type', 'trend_proxy', 'vol_proxy', 'affected_by_economic_events'};
+    my ($contract_type, $trend_proxy, $vol_proxy, $economic_events, $coef) =
+        @{$args}{'contract_type', 'trend_proxy', 'vol_proxy', 'economic_events', 'coefficients'};
 
+    my $affected_by_economic_events = @$economic_events ? 1 : 0;
     my %debug_information = (
         affected_by_economic_events => $affected_by_economic_events,
         base_trend_proxy            => $trend_proxy,
         base_vol_proxy              => $vol_proxy,
     );
 
-    my $coef  = LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml')->{$args->{underlying_symbol}};
     my $x_min = $coef->{x_prime_min};
     my $x_max = $coef->{x_prime_max};
     my $y_min = $coef->{y_min};
@@ -97,7 +97,7 @@ sub probability {
         }
         $debug_information{risk_markup} = $risk_markup;
     } else {
-        $err = "Missing coefficients for $args->{underlying_symbol}";
+        $err = "Missing coefficients";
     }
 
     # commission_markup

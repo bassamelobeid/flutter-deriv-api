@@ -7,6 +7,7 @@ use List::Util qw(sum);
 use List::MoreUtils qw(uniq);
 use BOM::Market::AggTicks;
 use BOM::MarketData::Fetcher::EconomicEvent;
+use YAML::CacheLoader qw(LoadFile);
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(get_parameter);
@@ -15,6 +16,7 @@ my $allow_methods = {
     vol_proxy       => \&vol_proxy,
     trend_proxy     => \&trend_proxy,
     economic_events => \&economic_events,
+    coefficients    => \&coefficients,
 };
 
 sub get_parameter {
@@ -93,6 +95,25 @@ sub economic_events {
     my @applicable_events      = sort { $a->release_date->epoch <=> $b->release_date->epoch } grep { $applicable_symbols{$_->symbol} } @$eco_events;
 
     return @applicable_events;
+}
+
+sub coefficients {
+    my $args = shift;
+
+    my ($filename, $underlying_symbol) = @{$args}{'filename', 'underlying_symbol'};
+
+    my ($err, $coef);
+    if (not ($filename and $underlying_symbol)) {
+        $err = 'Insufficient information to get coefficients';
+    } else {
+        $coef = LoadFile($filename)->{$underlying_symbol};
+        $err = "Coefficient not present for $underlying_symbol" if not defined $coef;
+    }
+
+    return {
+        value => $coef,
+        error => $err,
+    };
 }
 
 1;
