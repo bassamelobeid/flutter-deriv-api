@@ -88,10 +88,9 @@ sub active_symbols {
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
-            map      { $_ }
-                grep { $_ }
-                map  { _description($_, $by) }
-                get_offerings_with_filter('underlying_symbol')
+            map  { $_ }
+            grep { $_ }
+            map  { _description($_, $by) } get_offerings_with_filter('underlying_symbol')
         ],
     };
 }
