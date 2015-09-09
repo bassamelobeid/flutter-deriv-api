@@ -322,15 +322,10 @@ sub tick_at {
 
     my $consistent_to;
 
-    # Used to be explicit check for `1` now just truthy
     if (not $args->{allow_inconsistent}) {
-        # Make these checks before the query, in case we need them.
-        # Worst case: we get an updated tick while we run and miss
+        # Worst case: we get an updated tick while we run the second query and miss
         # Best case: updated tick is on our second and we're fine, anyway
-        my $last_agg  = $self->last_aggregation_time;
-        my $last_tick = $self->last_tick_time;
-
-        $consistent_to = ($last_agg->is_after($last_tick)) ? $last_agg : $last_tick;
+        $consistent_to = $self->last_tick_time;
     }
 
     if (my $uncertain_tick = $self->tick_at_or_before($args)) {
@@ -338,8 +333,8 @@ sub tick_at {
             $tick_at = $uncertain_tick;
         } else {
             my $end_time = Date::Utility->new($args->{end_time});
-            if (   $end_time->epoch == $uncertain_tick->epoch
-                or $end_time->is_before($consistent_to))
+            if ($end_time->epoch == $uncertain_tick->epoch
+                or not $end_time->is_after($consistent_to))
             {
                 $tick_at = $uncertain_tick;
             }
@@ -668,39 +663,6 @@ sub ohlc_daily_until_now_for_charting {
     $query_ohlc->{start_time} = $now->ymd('-') . ' ' . $now->hms;
 
     return $self->ohlc_start_end_with_limit_for_charting($query_ohlc);
-}
-
-=head2 last_aggregation_time
-
-Gets the last aggregation time for the Underlying
-
-Returns
-     Date::Utility
-
-=cut
-
-has '_last_aggregation_time_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__last_aggregation_time_statement {
-    my $self = shift;
-    return $self->dbh->prepare('SELECT last_time FROM feed.ohlc_status where underlying = $1');
-}
-
-sub last_aggregation_time {
-    my $self = shift;
-
-    my $last_aggregation_time = 0;                                         # Last done in 1970!
-    my $statement             = $self->_last_aggregation_time_statement;
-    $statement->bind_param(1, $self->underlying);
-
-    if ($statement->execute()) {
-        $last_aggregation_time = $statement->fetchrow_array // 0;
-    }
-
-    return Date::Utility->new($last_aggregation_time);
 }
 
 =head2 last_tick_time
