@@ -89,10 +89,9 @@ sub _do_proveid {
 
     my $prove_id_result = $self->_fetch_proveid || {};
 
-    if (
-        $prove_id_result->{deny}
-        or (exists $prove_id_result->{matches}
-            and scalar @{$prove_id_result->{matches}}))
+    if (    $prove_id_result->{deny}
+        and defined $prove_id_result->{matches}
+        and (scalar @{$prove_id_result->{matches}} > 0))
     {
         $client->set_status('unwelcome', 'system', 'Failed identity test via 192.com');
         $client->save();
