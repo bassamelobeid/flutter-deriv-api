@@ -59,7 +59,7 @@ sub probability {
 
     my ($vol_proxy, $trend_proxy);
     ($vol_proxy, $trend_proxy, $err) = _get_proxy($ticks, $date_pricing);
-    $debug_information{base_vol_proxy} = $vol_proxy;
+    $debug_information{base_vol_proxy}   = $vol_proxy;
     $debug_information{base_trend_proxy} = $trend_proxy;
 
     my $coef = _coefficients()->{$underlying_symbol};

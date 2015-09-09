@@ -143,7 +143,7 @@ subtest 'coefficient sanity check' => sub {
     like $ref->{error}, qr/Invalid coefficients for probability calculation/, 'error if insufficient coefficients';
     is $ref->{probability}, 1, 'default probability of 1 if error';
     $coef->{frxUSDJPY}->{tie_D} = 'string';
-    $module->mock('_coefficients', sub { return $coef});
+    $module->mock('_coefficients', sub { return $coef });
     $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
         contract_type     => 'CALL',
         underlying_symbol => 'frxUSDJPY',
@@ -154,7 +154,7 @@ subtest 'coefficient sanity check' => sub {
     like $ref->{error}, qr/Invalid coefficients for probability calculation/, 'error if insufficient coefficients';
     is $ref->{probability}, 1, 'default probability of 1 if error';
     $coef->{frxUSDJPY}->{tie_D} = -21.3305;
-    $module->mock('_coefficients', sub { return $coef});
+    $module->mock('_coefficients', sub { return $coef });
     $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
         contract_type     => 'CALL',
         underlying_symbol => 'frxUSDJPY',
@@ -184,7 +184,7 @@ subtest 'add 3% to risk_markup if vol_proxy is outside benchmark' => sub {
             tie_D       => -21.23
         }};
     $module->mock('_coefficients', sub { return $coef });
-    $module->mock('_get_proxy', sub {return (0.0001, 0, undef)});
+    $module->mock('_get_proxy', sub { return (0.0001, 0, undef) });
     my $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
         contract_type     => 'CALL',
         underlying_symbol => 'frxUSDJPY',
@@ -194,9 +194,9 @@ subtest 'add 3% to risk_markup if vol_proxy is outside benchmark' => sub {
     });
     is $ref->{debug_info}->{base_vol_proxy}, 0.0001, '0.2 base vol_proxy';
     is $ref->{debug_info}->{coefficients}->{y_max}, 1e-05, 'vol_proxy max is 0.9';
-    is $ref->{debug_info}->{vol_proxy}, 0.00001, 'final vol_proxy set to max';
+    is $ref->{debug_info}->{vol_proxy},        0.00001,              'final vol_proxy set to max';
     is $ref->{debug_info}->{base_risk_markup}, -0.00770862947798449, 'base risk markup';
-    is $ref->{debug_info}->{risk_markup}, 0.0222913705220155, 'risk markup adjusted';
+    is $ref->{debug_info}->{risk_markup},      0.0222913705220155,   'risk markup adjusted';
     $module->unmock_all;
 };
 
@@ -210,11 +210,17 @@ subtest 'tie factor' => sub {
     });
     is $ref->{debug_info}->{tie_factor}, 0.75, 'discount tie adjustment for 75% if no economic event';
     $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
-        contract_type     => 'CALL',
-        underlying_symbol => 'frxUSDJPY',
-        last_twenty_ticks => \@ticks,
-        economic_events   => [{name => 'test event', impact => 5, release_date => $now, source => 'forexfactory'}],
-        date_pricing      => $now
-    });
+            contract_type     => 'CALL',
+            underlying_symbol => 'frxUSDJPY',
+            last_twenty_ticks => \@ticks,
+            economic_events   => [{
+                    name         => 'test event',
+                    impact       => 5,
+                    release_date => $now,
+                    source       => 'forexfactory'
+                }
+            ],
+            date_pricing => $now
+        });
     is $ref->{debug_info}->{tie_factor}, 0, 'do not discount if there is economic event';
 };
