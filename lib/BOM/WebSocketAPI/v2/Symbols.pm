@@ -10,6 +10,7 @@ use Date::Utility;
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
 
 # these package-level structures let us 'memo-ize' the symbol pools for purposes
 # of full-list results and for hashed lookups by-displayname and by-symbol-code.
@@ -90,7 +91,7 @@ sub active_symbols {
             map      { $_ }
                 grep { $_ }
                 map  { _description($_, $by) }
-                keys %$_by_symbol
+                get_offerings_with_filter('underlying_symbol')
         ],
     };
 }
