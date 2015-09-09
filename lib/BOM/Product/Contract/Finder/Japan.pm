@@ -91,7 +91,7 @@ sub _predefined_trading_period {
     my $now_hour        = $now->hour;
     my $now_date        = $now->date;
     my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
-    my $today_close     = $exchange->closing_on($now);
+    my $today_close     = $exchange->closing_on($now)->epoch;
     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
         my $today        = $now->truncate_to_day;    # Start of the day object.
@@ -162,14 +162,18 @@ sub _predefined_trading_period {
 
     my @new_offerings;
     foreach my $o (@offerings) {
-        my $minimum_contract_duration = Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds;
+        # we do not want to offer intraday contract on other contracts
+        my $minimum_contract_duration =
+            $o->{contract_category} eq 'callput' ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds : 86400;
         foreach my $trading_period (@$trading_periods) {
-            my $trading_duration = Time::Duration::Concise->new({interval => $trading_period->{duration}})->seconds;
+            my $date_expiry      = $trading_period->{date_expiry}->{epoch};
+            my $date_start       = $trading_period->{date_start}->{epoch};
+            my $trading_duration = $date_expiry - $date_start;
             if ($trading_duration < $minimum_contract_duration) {
                 next;
             } elsif ($now->day_of_week == 5
                 and $trading_duration < 86400
-                and ($trading_period->{date_expiry}->{epoch} > $today_close->epoch or $trading_period->{date_start}->{epoch} > $today_close->epoch))
+                and ($date_expiry > $today_close or $date_start > $today_close))
             {
                 next;
             } else {

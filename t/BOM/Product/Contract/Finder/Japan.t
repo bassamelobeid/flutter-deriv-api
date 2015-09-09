@@ -30,11 +30,11 @@ subtest "predefined contracts for symbol" => sub {
         frxUSDJPY => {
             contract_count => {
                 callput      => 40,
-                touchnotouch => 40,
+                touchnotouch => 24,
                 staysinout   => 12,
                 endsinout    => 12,
             },
-            hit_count => 104,
+            hit_count => 88,
         },
         frxAUDCAD => {hit_count => 0},
     );
@@ -58,7 +58,7 @@ subtest "predefined contracts for symbol" => sub {
 subtest "predefined trading_period" => sub {
     my %expected_count = (
         offering                                => 12,
-        offering_with_predefined_trading_period => 100,
+        offering_with_predefined_trading_period => 86,
         trading_period                          => {
             call_intraday => 13,
             call_daily    => 6,
