@@ -139,11 +139,11 @@ subtest "predefined barriers" => sub {
         },
         range_daily => {
             available_barriers => [
-                [1.15576, 1.15561, 1.15546, 1.15531, 1.15516, 1.15486, 1.15456, 1.15381, 1.15231, 1.14931],
-                [1.15606, 1.15621, 1.15636, 1.15651, 1.15666, 1.15696, 1.15726, 1.15801, 1.15951, 1.16251]
+                [1.15559, 1.15527, 1.15495, 1.15463, 1.15431, 1.15367, 1.15303, 1.15143, 1.14823, 1.14183],
+                [1.15623, 1.15655, 1.15687, 1.15719, 1.15751, 1.15815, 1.15879, 1.16039, 1.16359, 1.16999]
             ],
-            high_barrier => 1.15606,
-            low_barrier  => 1.15576,
+            high_barrier => 1.15623,
+            low_barrier  => 1.15559,
         },
     );
 
@@ -180,8 +180,11 @@ subtest "predefined barriers" => sub {
         current_tick => $underlying->spot_tick,
         date         => $now
     });
-    is_deeply($contract->{available_barriers}, $expected_barriers{call_intraday}{available_barriers},
-        "Expected available barriers for intraday call");
+    cmp_deeply(
+        $contract->{available_barriers},
+        $expected_barriers{call_intraday}{available_barriers},
+        "Expected available barriers for intraday call"
+    );
     is($contract->{barrier}, $expected_barriers{call_intraday}{barrier}, "Expected default barrier for intraday call");
 
     my $contract_2 = {
@@ -204,7 +207,7 @@ subtest "predefined barriers" => sub {
         current_tick => $underlying->spot_tick,
         date         => $now
     });
-    is_deeply(
+    cmp_deeply(
         $contract_2->{available_barriers}[$_],
         $expected_barriers{range_daily}{available_barriers}[$_],
         "Expected available barriers for daily range"
