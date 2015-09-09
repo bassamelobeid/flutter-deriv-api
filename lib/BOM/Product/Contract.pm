@@ -2610,7 +2610,6 @@ sub _economic_events {
         from => $from,
         to   => $to,
     });
-    my $underlying             = $args->{underlying};
     my @influential_currencies = qw(USD AUD CAD CNY NZD);
     my %applicable_symbols     = map { $_ => 1 } uniq($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
     my @applicable_events      = sort { $a->release_date->epoch <=> $b->release_date->epoch } grep { $applicable_symbols{$_->symbol} } @$eco_events;
@@ -2623,8 +2622,8 @@ sub _last_twenty_ticks {
 
     return BOM::Market::AggTicks->new->retrieve({
         underlying     => $self->underlying,
-        ending_epoch   => $self->effective_start->epoch
-            tick_count => 20,
+        ending_epoch   => $self->effective_start->epoch,
+        tick_count     => 20,
     });
 }
 
