@@ -91,6 +91,7 @@ sub _do_proveid {
 
     if ($prove_id_result->{deny} or scalar @{$prove_id_result->{matches}}) {
         $client->set_status('unwelcome', 'system', 'Failed identity test via 192.com');
+        $client->save();
         $self->_notify('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
     } elsif ($prove_id_result->{age_verified}) {
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
