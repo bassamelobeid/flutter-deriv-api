@@ -11,6 +11,7 @@ use List::Util qw(reduce);
 use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(available_contracts_for_symbol);
+use Math::CDF qw(qnorm);
 
 =head1 available_contracts_for_symbol
 
@@ -236,14 +237,11 @@ sub _set_predefined_barriers {
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
         my @boundaries_barrier = map {
-            _get_barrier_by_probability({
-                underlying    => $underlying,
-                duration      => $duration,
-                contract_type => 'CALL',
-                start_tick    => $start_tick->quote,
-                atm_vol       => 0.1,
-                theo_prob     => $_,
-                date_start    => $date_start
+            _get_strike_from_call_bs_price({
+                call_price => $_,
+                timeinyear => ($date_expiry - $date_start) / (365 * 86400),
+                start_tick => $start_tick->quote,
+                vol        => 0.1,
             });
         } qw(0.05 0.95);
 
@@ -290,61 +288,24 @@ sub _split_boundaries_barriers {
     return map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
 }
 
-=head2 _get_barrier_by_probability
+=head2 _get_strike_from_call_bs_price
 
-To get the strike that associated with a given theo probability.
+To get the strike that associated with a given call bs price.
 
 =cut
 
-sub _get_barrier_by_probability {
+sub _get_strike_from_call_bs_price {
     my $args = shift;
 
-    my ($underlying, $duration, $contract_type, $start_tick, $atm_vol, $target_theo_prob, $date_start) =
-        @{$args}{'underlying', 'duration', 'contract_type', 'start_tick', 'atm_vol', 'theo_prob', 'date_start'};
+    my ($call_price, $T, $spot, $vol) =
+        @{$args}{'call_price', 'timeinyear', 'start_tick', 'vol'};
+    my $q  = 0;
+    my $r  = 0;
+    my $d2 = qnorm($call_price * exp($r * $T));
+    my $d1 = $d2 + $vol * sqrt($T);
 
-    my $bet;
-
-    my ($high, $low) = (1.5 * $start_tick, 0.5 * $start_tick);
-
-    my $pip_size   = $underlying->pip_size;
-    my $bet_params = {
-        underlying   => $underlying,
-        bet_type     => $contract_type,
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $date_start,
-        r_rate       => 0,
-        q_rate       => 0,
-        duration     => $duration,
-        pricing_vol  => $atm_vol,
-        date_pricing => $date_start,
-    };
-
-    for (my $iterations = 0; $iterations <= 20; $iterations++) {
-        $bet_params->{'barrier'} = ($high + $low) / 2;
-        $bet = produce_contract($bet_params);
-        my $bet_sentiment     = $bet->sentiment;
-        my $theo_prob         = $bet->theo_probability->amount;
-        my $barrier_direction = $bet_params->{'barrier'} > $start_tick ? 'up' : 'down';
-        if (abs($theo_prob - $target_theo_prob) < 0.01) {
-            last;
-        }
-
-        if ($bet_sentiment eq 'up' or $bet_sentiment eq 'high_vol' or ($contract_type eq 'NOTOUCH' and $barrier_direction eq 'down')) {
-            if ($theo_prob > $target_theo_prob) {
-                $low = ($low + $high) / 2;
-            } else {
-                $high = ($low + $high) / 2;
-            }
-        } elsif ($bet_sentiment eq 'down' or $bet_sentiment eq 'low_vol' or ($contract_type eq 'ONETOUCH' and $barrier_direction eq 'down')) {
-            if ($theo_prob > $target_theo_prob) {
-                $high = ($low + $high) / 2;
-            } else {
-                $low = ($low + $high) / 2;
-            }
-        }
-    }
-    return $bet->barrier->as_absolute;
+    my $strike = $spot / exp($d1 * $vol * sqrt($T) - ($r - $q + ($vol * $vol) / 2) * $T);
+    return $strike;
 }
 
 1;
