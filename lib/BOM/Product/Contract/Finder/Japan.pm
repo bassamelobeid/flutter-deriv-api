@@ -192,27 +192,28 @@ sub _get_combination_of_date_expiry_date_start {
     my $date_start = $args->{date_start};
     my @duration   = @{$args->{duration}};
     my $now        = $args->{now};
-    my @trading_period;
-    push @trading_period, map {
-        +{
-            date_start => {
-                date  => $date_start->datetime,
-                epoch => $date_start->epoch,
-            },
-            date_expiry => {
-                date  => $_->datetime,
-                epoch => $_->epoch,
-            },
-            duration => ($_->hour - $date_start->hour) . 'h',
-            }
-        }
-        grep {
-        $now->is_before($_)
-        } map {
-        $date_start->plus_time_interval($_)
-        } @duration;
+    my $start_date = {
+        date  => $date_start->datetime,
+        epoch => $date_start->epoch
+    };
 
-    return @trading_period;
+    return (
+        map {
+            +{
+                date_start  => $date_start,
+                date_expiry => {
+                    date  => $_->datetime,
+                    epoch => $_->epoch,
+                },
+                duration => ($_->hour - $date_start->hour) . 'h',
+                }
+            }
+            grep {
+            $now->is_before($_)
+            } map {
+            $date_start->plus_time_interval($_)
+            } @duration
+    );
 }
 
 =head2 _set_predefined_barriers
