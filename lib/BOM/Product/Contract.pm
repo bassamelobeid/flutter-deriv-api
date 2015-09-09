@@ -6,7 +6,7 @@ use Carp;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time sleep);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(none uniq);
 use Scalar::Util qw(looks_like_number);
 
 use BOM::Market::UnderlyingDB;
@@ -2621,9 +2621,9 @@ sub _last_twenty_ticks {
     my $self = shift;
 
     return BOM::Market::AggTicks->new->retrieve({
-        underlying     => $self->underlying,
-        ending_epoch   => $self->effective_start->epoch,
-        tick_count     => 20,
+        underlying   => $self->underlying,
+        ending_epoch => $self->effective_start->epoch,
+        tick_count   => 20,
     });
 }
 
