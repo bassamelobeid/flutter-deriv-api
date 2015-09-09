@@ -1497,7 +1497,7 @@ sub _get_probability_reference {
 
     my $prob_ref;
     if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        my %pricing_parameters = map { my $method = '_' . $_; $_ => $_->$method } @{$self->pricing_engine_name->REQUIRED_ARGS};
+        my %pricing_parameters = map { my $method = '_' . $_; $_ => $self->$method } @{$self->pricing_engine_name->REQUIRED_ARGS};
         # will make this more generic as we move more pricing engines to this interface
         my $func_name = $self->pricing_engine_name . '::' . $probability_name;
         my $subref    = \&$func_name;
