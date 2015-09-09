@@ -1135,7 +1135,7 @@ sub _build_model_markup {
         # theo_probability markup will always be used.
         $model_markup_cv = $self->_get_probability_reference('probability')->{markups}->{model_markup};
     } else {
-        $model_markup_cv = $self->pricing_engine->probability;
+        $model_markup_cv = $self->pricing_engine->model_markup;
     }
     return $model_markup_cv;
 }
