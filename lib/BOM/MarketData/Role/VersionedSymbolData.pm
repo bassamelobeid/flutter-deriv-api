@@ -21,7 +21,6 @@ use Try::Tiny;
 use Date::Utility;
 use BOM::Platform::Runtime;
 use BOM::Utility::Log4perl qw(get_logger);
-use BOM::System::Chronicle;
 use JSON;
 
 requires 'symbol', '_data_location', '_document_content';
@@ -145,10 +144,6 @@ sub save {
         $self->_couchdb->create_document($self->current_document_id);
     } else {
         $self->add_to_history;
-    }
-
-    if ($self->_data_location ne 'economic_events') {
-        BOM::System::Chronicle::add($self->_data_location, $self->current_document_id, JSON::to_json($self->_document_content));
     }
 
     my $new_document = $self->_document_content;
