@@ -18,4 +18,4 @@ sub default_probability_reference {
         error => $err,
     };
 }
-
+1;
