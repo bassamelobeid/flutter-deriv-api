@@ -9,7 +9,7 @@ sub statement {
     my ($c, $args) = @_;
     my $statement = get_transactions($c, $args);
     return {
-        echo_req => $args,
+        echo_req  => $args,
         msg_type  => 'statement',
         statement => $statement,
     };
