@@ -387,11 +387,13 @@ sub _get_long_term_delta_correction {
 sub _build_intraday_delta_correction {
     my $self = shift;
 
-    my $delta_cv;
+    my $delta_c;
+    my @info_cv;
+
     if ($self->bet->get_time_to_expiry->minutes < 10) {
-        $delta_cv = $self->_get_short_term_delta_correction;
+        $delta_c = $self->_get_short_term_delta_correction;
     } elsif ($self->bet->get_time_to_expiry->minutes > 20) {
-        $delta_cv = $self->_get_long_term_delta_correction;
+        $delta_c = $self->_get_long_term_delta_correction;
     } else {
         my $t     = $self->bet->get_time_to_expiry->minutes;
         my $alpha = ( 20 - $t ) / 10;
@@ -400,15 +402,33 @@ sub _build_intraday_delta_correction {
         my $short_term = $self->_get_short_term_delta_correction;
         my $long_term = $self->_get_long_term_delta_correction;
 
-        $delta_cv = ($alpha * $short_term) + ($beta * $long_term);
-    }
+        $delta_c = ($alpha * $short_term) + ($beta * $long_term);
 
-    return Math::Util::CalculatedValue::Validatable->new({
+        push @info_cv, Math::Util::CalculatedValue::Validatable->new({
+            name        => 'delta_correction_short_term_value',
+            description => 'delta_correction_short_term_value',
+            set_by      => __PACKAGE__,
+            base_amount => $short_term 
+        });
+
+        push @info_cv, Math::Util::CalculatedValue::Validatable->new({
+            name        => 'delta_correction_long_term_value',
+            description => 'delta_correction_long_term_value',
+            set_by      => __PACKAGE__,
+            base_amount => $long_term 
+        });
+    }
+    
+    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
                 name        => 'intraday_delta_correction',
                 description => 'Intraday delta correction based on historical data',
                 set_by      => __PACKAGE__,
-                base_amount => $delta_cv, 
+                base_amount => $delta_c, 
             });
+
+    $delta_cv->include_adjustment('info', $_) for @info_cv;
+
+    return $delta_cv;
 }
 
 =head1 intraday_vanilla_delta
