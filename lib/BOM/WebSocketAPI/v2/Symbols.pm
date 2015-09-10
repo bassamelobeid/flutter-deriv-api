@@ -84,53 +84,6 @@ sub active_symbols {
     };
 }
 
-sub exchanges {
-    my $class = shift;
-
-    my $_by_exchange;
-    for (get_offerings_with_filter('underlying_symbol')) {
-        my $ul = BOM::Market::Underlying->new($_);
-        push @{$_by_exchange->{$ul->exchange_name}}, $ul->display_name;
-    }
-
-    return $_by_exchange;
-}
-
-sub ok_symbol {
-    my $c      = shift;
-    my $symbol = $c->stash('symbol') || die 'routing error: symbol';
-    my $sp     = BOM::Market::Underlying->new($symbol)->market->name ne 'nonsense' || return $c->_fail("invalid symbol: $symbol", 404);
-    $c->stash(sp => $sp);
-    return 1;
-}
-
-sub list {
-    return shift->_pass({symbols => [map { _description($_) } sort get_offerings_with_filter('underlying_symbol')]});
-}
-
-sub symbol {
-    my $c = shift;
-    my $s = $c->stash('sp')->{symbol};
-    return $c->_pass(_description($s));
-}
-
-sub price {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $ul     = BOM::Market::Underlying->new($symbol);
-    if ($ul->feed_license eq 'realtime') {
-        my $tick = $ul->get_combined_realtime;
-        $c->_pass({
-            symbol => $symbol,
-            time   => $tick->{epoch},
-            price  => $tick->{quote},
-        });
-    } else {
-        $c->_fail("realtime quotes are not available for $symbol");
-    }
-    return;
-}
-
 sub _validate_start_end {
     my ($c, $args) = @_;
 
@@ -206,7 +159,7 @@ sub _validate_start_end {
     return $args;
 }
 
-sub _ticks {
+sub ticks {
     my ($c, $args) = @_;
 
     $args = _validate_start_end($c, $args);
@@ -225,20 +178,7 @@ sub _ticks {
     return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
 }
 
-sub ticks {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $ul     = BOM::Market::Underlying->new($symbol);
-    my $ticks  = $c->_ticks({
-        ul    => $ul,
-        start => $c->param('start') // 0,
-        end   => $c->param('end') // 0,
-        count => $c->param('count') // 0,
-    });
-    return $c->_pass({ticks => $ticks});
-}
-
-sub _candles {
+sub candles {
     my ($c, $args) = @_;
 
     $args = _validate_start_end($c, $args);
@@ -267,36 +207,4 @@ sub _candles {
     return $w;
 
 }
-
-# needed only for REST API..
-sub candles {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $ul     = BOM::Market::Underlying->new($symbol);
-
-    my $done = AnyEvent->condvar;
-    my $candles;
-    my $watcher = $c->_candles({
-            ul          => $ul,
-            start       => $c->param('start') // 0,
-            end         => $c->param('end') // 0,
-            count       => $c->param('count') // 0,
-            granularity => $c->param('granularity') // '',
-            sender      => sub { $candles = shift; $done->send },
-        }) || return $c->_fail("invalid candles request");
-
-    $done->recv;
-    $c->stash->{feeder}->_pg->destroy;
-    delete $c->stash->{feeder};
-    return $c->_pass({candles => $candles});
-}
-
-# needed only for REST API..
-sub contracts {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $output = available_contracts_for_symbol({symbol => $symbol});
-    return $c->_pass($output);
-}
-
 1;

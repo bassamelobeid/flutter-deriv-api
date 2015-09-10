@@ -8,7 +8,6 @@ use Try::Tiny;
 use Mojo::Base 'BOM::WebSocketAPI::v2::BaseController';
 
 use BOM::Product::Offerings;
-use BOM::WebSocketAPI::v2::Symbols;
 use BOM::Product::Contract::Offerings;
 use BOM::Market::Underlying;
 
