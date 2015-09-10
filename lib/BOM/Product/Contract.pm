@@ -6,7 +6,7 @@ use Carp;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time sleep);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none uniq);
+use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
 
 use BOM::Market::UnderlyingDB;
@@ -1096,27 +1096,17 @@ sub _build_payout {
 sub _build_theo_probability {
     my $self = shift;
 
-    my $theo_cv;
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        $theo_cv = $self->_get_probability_reference('probability')->{probability};
-    } else {
-        $theo_cv = $self->pricing_engine->probability;
-    }
+    return $self->_get_probability_reference('probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
 
-    return $theo_cv;
+    return $self->pricing_engine->probability;
 }
 
 sub _build_bs_probability {
     my $self = shift;
 
-    my $bs_cv;
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        $bs_cv = $self->_get_probability_reference('bs_probability')->{probability};
-    } else {
-        $bs_cv = $self->pricing_engine->bs_probability;
-    }
+    return $self->_get_probability_reference('bs_probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
 
-    return $bs_cv;
+    return $self->pricing_engine->bs_probability;
 }
 
 sub _build_bs_price {
@@ -1128,14 +1118,10 @@ sub _build_bs_price {
 sub _build_model_markup {
     my $self = shift;
 
-    my $model_markup_cv;
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        # theo_probability markup will always be used.
-        $model_markup_cv = $self->_get_probability_reference('probability')->{markups}->{model_markup};
-    } else {
-        $model_markup_cv = $self->pricing_engine->model_markup;
-    }
-    return $model_markup_cv;
+    # theo_probability markup will always be used.
+    return $self->_get_probability_reference('probability')->{markups}->{model_markup} if $self->new_interface_engine->{$self->pricing_engine_name};
+
+    return $self->pricing_engine->model_markup;
 }
 
 sub _build_theo_price {
@@ -2609,8 +2595,9 @@ sub _economic_events {
         to   => $to,
     });
     my @influential_currencies = qw(USD AUD CAD CNY NZD);
-    my %applicable_symbols     = map { $_ => 1 } uniq($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
-    my @applicable_events      = sort { $a->release_date->epoch <=> $b->release_date->epoch } grep { $applicable_symbols{$_->symbol} } @$eco_events;
+    my %applicable_symbols = map { $_ => 1 } ($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
+    my @applicable_events =
+        map { $_->[1] } sort { $a->[1] <=> $b->[0] } map { [$_->release_date->epoch, $_] } grep { $applicable_symbols{$_->symbol} } @$eco_events;
 
     return \@applicable_events;
 }
