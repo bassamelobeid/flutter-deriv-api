@@ -313,15 +313,14 @@ sub _build_more_than_short_term_cutoff {
 }
 
 sub calculate_intraday_bounceback {
-    my ($self, $t, $st_or_lt) = @_;
+    my ($self, $t_mins, $st_or_lt) = @_;
 
-    #my $st_or_lt = ($t >= 15) ? '_lt' : '_st';
     my @coef_name = map { $_ . $st_or_lt } qw(A B C D);
     my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
     my ($coef_A, $coef_B, $coef_C, $coef_D) = map { $calibration_coef->{$_} } @coef_name;
     my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
 
-    my $duration_in_secs = $t * 60;
+    my $duration_in_secs = $t_mins * 60;
     my $bounceback_base =
         $coef_A /
         ($coef_D * $coef_D_multiplier) *
@@ -357,10 +356,10 @@ sub _get_long_term_delta_correction {
     my $bet           = $self->bet;
     my $args          = $bet->pricing_args;
     my $pricing_spot  = $args->{spot};
-    my $duration = $args->{t} * 365 * 24 * 60;
-    $duration = max($duration, 15);
-    my $duration_t = $duration / (365 * 24 * 60); #convert back to year's fraction
-    my $expected_spot = $self->calculate_expected_spot($duration);
+    my $duration_mins = $args->{t} * 365 * 24 * 60;
+    $duration_mins = max($duration_mins, 15);
+    my $duration_t = $duration_mins / (365 * 24 * 60); #convert back to year's fraction
+    my $expected_spot = $self->calculate_expected_spot($duration_mins);
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
     my $spot_tv =
