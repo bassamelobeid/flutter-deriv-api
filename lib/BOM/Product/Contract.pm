@@ -26,8 +26,6 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 
-use Math::Util::CalculatedValue::Validatable;
-
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
