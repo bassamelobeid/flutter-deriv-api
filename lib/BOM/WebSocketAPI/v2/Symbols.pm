@@ -57,15 +57,19 @@ sub _description {
             spot_age                  => $spot_age,
             market_display_name       => $ul->market->translated_display_name,
             market_name               => $ul->market->name,
+            submarket                 => $ul->submarket->name,
+            submarket_display_name    => $ul->submarket->translated_display_name
         };
     } else {
         if (!$ul->is_trading_suspended && $exchange_is_open) {
             return {
-                symbol              => $symbol,
-                display_name        => $ul->display_name,
-                symbol_type         => $ul->instrument_type,
-                market_display_name => $ul->market->translated_display_name,
-                market_name         => $ul->market->name,
+                symbol                 => $symbol,
+                display_name           => $ul->display_name,
+                symbol_type            => $ul->instrument_type,
+                market_display_name    => $ul->market->translated_display_name,
+                market_name            => $ul->market->name,
+                submarket              => $ul->submarket->name,
+                submarket_display_name => $ul->submarket->translated_display_name
             };
         } else {
             return;
