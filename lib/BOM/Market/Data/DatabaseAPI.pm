@@ -24,6 +24,7 @@ use BOM::Platform::Runtime;
 use BOM::Market::Data::OHLC;
 use BOM::Market::Data::Tick;
 use DateTime;
+use Date::Utility;
 use BOM::Database::FeedDB;
 
 has 'historical' => (
@@ -287,7 +288,7 @@ sub _build__tick_at_statement {
     my $self = shift;
 
     return $self->dbh->prepare(<<'SQL');
-SELECT * FROM last_tick_time($1), tick_at_or_before($1, $2)
+SELECT * FROM last_tick_time($1), tick_at_or_before($1, $2::TIMESTAMP)
 SQL
 }
 
@@ -305,7 +306,7 @@ sub tick_at {
         $end_time->datetime_yyyymmdd_hhmmss,
     );
     $tick = $statement->fetchall_arrayref({});
-    return unless $tick and $tick = $tick->[0] and $tick->{epoch};
+    return unless $tick and $tick = $tick->[0] and $tick->{ts_epoch};
 
     my $last_tick_time = delete $tick->{last_tick_time};
     $tick->{epoch} = delete $tick->{ts_epoch};
