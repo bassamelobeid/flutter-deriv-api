@@ -10,12 +10,14 @@ use Date::Utility;
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
+
 
 # these package-level structures let us 'memo-ize' the symbol pools for purposes
 # of full-list results and for hashed lookups by-displayname and by-symbol-code.
 
 my ($_by_display_name, $_by_symbol, $_by_exchange) = ({}, {}, {});
-for (Finance::Asset->instance->symbols) {
+for (get_offerings_with_filter('underlying_symbol')) {
     my $sp = Finance::Asset->instance->get_parameters_for($_) || next;
     my $ul = BOM::Market::Underlying->new($_);
     $_by_display_name->{$ul->display_name} = $sp;
