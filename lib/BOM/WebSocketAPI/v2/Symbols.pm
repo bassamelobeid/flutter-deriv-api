@@ -56,7 +56,7 @@ sub _description {
             spot_time                 => $spot_time,
             spot_age                  => $spot_age,
             market_display_name       => $ul->market->translated_display_name,
-            market_name               => $ul->market->name,
+            market                    => $ul->market->name,
             submarket                 => $ul->submarket->name,
             submarket_display_name    => $ul->submarket->translated_display_name
         };
@@ -67,7 +67,7 @@ sub _description {
                 display_name           => $ul->display_name,
                 symbol_type            => $ul->instrument_type,
                 market_display_name    => $ul->market->translated_display_name,
-                market_name            => $ul->market->name,
+                market                 => $ul->market->name,
                 submarket              => $ul->submarket->name,
                 submarket_display_name => $ul->submarket->translated_display_name
             };
