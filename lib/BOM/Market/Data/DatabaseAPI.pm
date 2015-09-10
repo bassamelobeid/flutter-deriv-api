@@ -267,41 +267,6 @@ sub ticks_end_limit {
     return $self->_query_ticks($statement);
 }
 
-=head2 tick_at_or_before
-
-get a tick at time given or before a given time. Warning!!! The tick might no be valid. Accept argument
-    - end_time - Time at which we want the tick
-
-Returns
-     BOM::Market::Data::Tick
-
-=cut
-
-has '_tick_at_or_before_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__tick_at_or_before_statement {
-    my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM tick_at_or_before($1, $2)');
-}
-
-sub tick_at_or_before {
-    my $self = shift;
-    my $args = shift;
-
-    my $end_time;
-    $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
-        if ($args->{end_time});
-
-    my $statement = $self->_tick_at_or_before_statement;
-    $statement->bind_param(1, $self->underlying);
-    $statement->bind_param(2, $end_time);
-
-    return $self->_query_single_tick($statement);
-}
-
 =head2 tick_at
 
 get a valid tick at time given or not a valid tick before a given time. Accept argument
@@ -313,35 +278,50 @@ Returns
 
 =cut
 
+has '_tick_at_statement' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__tick_at_statement {
+    my $self = shift;
+    return $self->dbh->prepare(<<'SQL');
+SELECT lttm,
+       ts_epoch AS epoch,
+       quote,
+       bid,
+       ask
+  FROM (SELECT last_tick_time($1) AS lttm, (tick_at_or_before($1, $2)).*) t
+SQL
+}
+
 sub tick_at {
     my $self = shift;
     my $args = shift;
-    my $tick_at;
+    my $tick;
 
     return unless ($args->{end_time});
+    my $end_time = Date::Utility->new($args->{end_time});
 
-    my $consistent_to;
+    my $statement = $self->_tick_at_statement;
+    $statement->execute(
+        $self->underlying,
+        $end_time->datetime_yyyymmdd_hhmmss,
+    );
+    $tick = $statement->fetchall_arrayref({});
+    return unless $tick and $tick = $tick->[0] and $tick->{epoch};
 
-    if (not $args->{allow_inconsistent}) {
-        # Worst case: we get an updated tick while we run the second query and miss
-        # Best case: updated tick is on our second and we're fine, anyway
-        $consistent_to = $self->last_tick_time;
-    }
+    my $last_tick_time = delete $tick->{lttm};
+    $tick = BOM::Market::Data::Tick->new($tick) or return;
+    $tick->invert_values if $self->invert_values;
 
-    if (my $uncertain_tick = $self->tick_at_or_before($args)) {
-        if (not $consistent_to) {
-            $tick_at = $uncertain_tick;
-        } else {
-            my $end_time = Date::Utility->new($args->{end_time});
-            if ($end_time->epoch == $uncertain_tick->epoch
-                or not $end_time->is_after($consistent_to))
-            {
-                $tick_at = $uncertain_tick;
-            }
-        }
-    }
+    return $tick if $args->{allow_inconsistent};
 
-    return $tick_at;
+    return $tick
+        if ($end_time->epoch == $tick->epoch
+            or not $end_time->is_after(Date::Utility->new($last_tick_time)));
+
+    return;
 }
 
 =head2 tick_after
