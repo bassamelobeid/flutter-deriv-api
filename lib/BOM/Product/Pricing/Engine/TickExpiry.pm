@@ -160,7 +160,8 @@ sub _get_proxy {
 }
 
 sub _coefficients {
-    return LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml');
+    state $coef = LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml');
+    return $coef;
 }
 
 sub _default_probability_reference {
