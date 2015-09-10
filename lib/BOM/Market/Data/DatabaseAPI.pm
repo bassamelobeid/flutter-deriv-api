@@ -285,13 +285,9 @@ has '_tick_at_statement' => (
 
 sub _build__tick_at_statement {
     my $self = shift;
+
     return $self->dbh->prepare(<<'SQL');
-SELECT lttm,
-       ts_epoch AS epoch,
-       quote,
-       bid,
-       ask
-  FROM (SELECT last_tick_time($1) AS lttm, (tick_at_or_before($1, $2)).*) t
+SELECT * FROM last_tick_time($1), tick_at_or_before($1, $2)
 SQL
 }
 
@@ -311,7 +307,8 @@ sub tick_at {
     $tick = $statement->fetchall_arrayref({});
     return unless $tick and $tick = $tick->[0] and $tick->{epoch};
 
-    my $last_tick_time = delete $tick->{lttm};
+    my $last_tick_time = delete $tick->{last_tick_time};
+    $tick->{epoch} = delete $tick->{ts_epoch};
     $tick = BOM::Market::Data::Tick->new($tick) or return;
     $tick->invert_values if $self->invert_values;
 
@@ -643,39 +640,6 @@ sub ohlc_daily_until_now_for_charting {
     $query_ohlc->{start_time} = $now->ymd('-') . ' ' . $now->hms;
 
     return $self->ohlc_start_end_with_limit_for_charting($query_ohlc);
-}
-
-=head2 last_tick_time
-
-Gets the last inserted tick time for the Underlying
-
-Returns
-     Date::Utility
-
-=cut
-
-has '_last_tick_time_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__last_tick_time_statement {
-    my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM last_tick_time($1)');
-}
-
-sub last_tick_time {
-    my $self = shift;
-
-    my $last_tick_time = 0;                                  # Last done in 1970!
-    my $statement      = $self->_last_tick_time_statement;
-    $statement->bind_param(1, $self->underlying);
-
-    if ($statement->execute()) {
-        $last_tick_time = $statement->fetchrow_array // 0;
-    }
-
-    return Date::Utility->new($last_tick_time);
 }
 
 sub _query_ticks {
