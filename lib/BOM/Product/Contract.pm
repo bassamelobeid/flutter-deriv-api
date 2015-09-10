@@ -1223,6 +1223,8 @@ sub _build_pricing_args {
         barrier2        => $barriers_for_pricing->{barrier2},
         q_rate          => $self->q_rate,
         iv              => $self->pricing_vol,
+        quanto_rate     => $self->quanto_rate,
+        mu              => $self->mu,
         payouttime_code => $self->payouttime_code,
         starttime       => $start_date->epoch,
     };
@@ -1555,14 +1557,13 @@ sub _build_priced_with {
 sub _build_mu {
     my $self = shift;
 
-    my $pricing_args = $self->pricing_args;
-    my $mu           = $pricing_args->{r_rate} - $pricing_args->{q_rate};
+    my $mu = $self->r_rate - $self->q_rate;
 
     if (first { $self->underlying->market->name eq $_ } (qw(forex commodities indices))) {
         my $rho = $self->rho->{fd_dq};
         my $vol = $self->atm_vols;
         # See [1] for Quanto Formula
-        $mu = $pricing_args->{r_rate} - $pricing_args->{q_rate} - $rho * $vol->{fordom} * $vol->{domqqq};
+        $mu = $self->r_rate - $self->q_rate - $rho * $vol->{fordom} * $vol->{domqqq};
     }
 
     return $mu;
@@ -1705,20 +1706,19 @@ sub _build_fordom {
 sub _build_quanto_rate {
     my $self = shift;
 
-    my $pricing_args = $self->pricing_args;
-
-    my $rate = $pricing_args->{r_rate};
+    my $rate = $self->r_rate;
+    my $tiy  = $self->timeinyears->amount;
 
     if ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities') {
         if ($self->priced_with eq 'numeraire') {
-            $rate = $pricing_args->{'r_rate'};
+            $rate = $self->r_rate;
         } elsif ($self->priced_with eq 'base') {
-            $rate = $pricing_args->{'q_rate'};
+            $rate = $self->q_rate;
         } else {
-            $rate = $self->forqqq->{underlying}->quoted_currency->rate_for($pricing_args->{t});
+            $rate = $self->forqqq->{underlying}->quoted_currency->rate_for($tiy);
         }
     } elsif ($self->underlying->market eq 'indices' and $self->priced_with eq 'quanto') {
-        $rate = $self->domqqq->{underlying}->interest_rate_for($pricing_args->{t});
+        $rate = $self->domqqq->{underlying}->interest_rate_for($tiy);
     }
 
     return $rate;
