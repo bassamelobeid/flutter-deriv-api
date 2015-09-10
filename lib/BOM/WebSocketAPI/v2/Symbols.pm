@@ -53,7 +53,7 @@ sub _description {
             market                 => $ul->market->name,
             submarket              => $ul->submarket->name,
             submarket_display_name => $ul->submarket->translated_display_name,
-            exchange_is_open       => $exchange_is_open,
+            exchange_is_open       => $exchange_is_open || 0,
             is_trading_suspended   => $ul->is_trading_suspended,
         };
     }
