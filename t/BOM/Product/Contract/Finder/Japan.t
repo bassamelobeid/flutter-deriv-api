@@ -177,7 +177,7 @@ subtest "predefined barriers" => sub {
     BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({
         underlying   => $underlying,
         contract     => $contract,
-        current_tick => $underlying->spot_tick,
+        current_tick => $underlying->tick_at($now),
         date         => $now
     });
     cmp_deeply(
@@ -204,7 +204,7 @@ subtest "predefined barriers" => sub {
     BOM::Product::Contract::Finder::Japan::_set_predefined_barriers({
         underlying   => $underlying,
         contract     => $contract_2,
-        current_tick => $underlying->spot_tick,
+        current_tick => $underlying->tick_at($now),
         date         => $now
     });
     cmp_deeply(

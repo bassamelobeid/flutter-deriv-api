@@ -204,7 +204,7 @@ sub _get_combination_of_date_expiry_date_start {
     return (
         map {
             +{
-                date_start  => $date_start,
+                date_start  => $start_date,
                 date_expiry => {
                     date  => $_->datetime,
                     epoch => $_->epoch,
