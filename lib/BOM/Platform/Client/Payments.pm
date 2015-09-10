@@ -45,6 +45,16 @@ sub validate_payment {
         die "Deposits blocked for this Client.\n"
             if $self->get_status('unwelcome');
 
+        if (    $self->broker_code eq 'MLT'
+            and $self->is_first_deposit_pending
+            and $args{payment_type} eq 'affiliate_reward')
+        {
+            $self->set_status('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
+            $self->save();
+
+            die "Client\'s cashier is locked.\n";
+        }
+
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
         die "Balance would exceed $max_balance limit\n"
             if $amount + $accbal > $max_balance;
