@@ -301,23 +301,18 @@ sub tick_at {
     my $end_time = Date::Utility->new($args->{end_time});
 
     my $statement = $self->_tick_at_statement;
-    $statement->execute(
-        $self->underlying,
-        $end_time->datetime_yyyymmdd_hhmmss,
-    );
+    $statement->execute($self->underlying, $end_time->db_timestamp,);
     $tick = $statement->fetchall_arrayref({});
     return unless $tick and $tick = $tick->[0] and $tick->{ts_epoch};
 
-    my $last_tick_time = delete $tick->{last_tick_time};
+    my $last_tick_time = delete $tick->{last_tick_time};    # For our consistency check, not part of tick data.
     $tick->{epoch} = delete $tick->{ts_epoch};
     $tick = BOM::Market::Data::Tick->new($tick) or return;
     $tick->invert_values if $self->invert_values;
 
-    return $tick if $args->{allow_inconsistent};
+    return $tick if $args->{allow_inconsistent};            # They will take any value.
 
-    return $tick
-        if ($end_time->epoch == $tick->epoch
-            or not $end_time->is_after(Date::Utility->new($last_tick_time)));
+    return $tick unless $end_time->is_after(Date::Utility->new($last_tick_time));    # Inside the known consistency limit
 
     return;
 }
