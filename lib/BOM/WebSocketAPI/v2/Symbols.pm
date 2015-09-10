@@ -12,24 +12,6 @@ use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 
-
-# these package-level structures let us 'memo-ize' the symbol pools for purposes
-# of full-list results and for hashed lookups by-displayname and by-symbol-code.
-
-my ($_by_display_name, $_by_symbol, $_by_exchange) = ({}, {}, {});
-for (get_offerings_with_filter('underlying_symbol')) {
-    my $sp = Finance::Asset->instance->get_parameters_for($_) || next;
-    my $ul = BOM::Market::Underlying->new($_);
-    $_by_display_name->{$ul->display_name} = $sp;
-    # If this display-name has slashes, also generate a 'safe' version that can sit in REST expressions
-    if ((my $safe_name = $ul->display_name) =~ s(/)(-)g) {
-        $_by_display_name->{$safe_name} = $sp;
-    }
-    $_by_symbol->{$_} = $sp;
-    push @{$_by_exchange->{$ul->exchange_name}}, $ul->display_name;
-}
-
-# this constructs the symbol record sanitized for consumption by api clients.
 sub _description {
     my $symbol = shift;
     my $by     = shift || 'brief';
@@ -95,29 +77,35 @@ sub active_symbols {
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
-            map      { $_ }
-                grep { $_ }
-                map  { _description($_, $by) }
-                keys %$_by_symbol
+            map  { $_ }
+            grep { $_ }
+            map  { _description($_, $by) } get_offerings_with_filter('underlying_symbol')
         ],
     };
 }
 
 sub exchanges {
     my $class = shift;
+
+    my $_by_exchange;
+    for (get_offerings_with_filter('underlying_symbol')) {
+        my $ul = BOM::Market::Underlying->new($_);
+        push @{$_by_exchange->{$ul->exchange_name}}, $ul->display_name;
+    }
+
     return $_by_exchange;
 }
 
 sub ok_symbol {
     my $c      = shift;
     my $symbol = $c->stash('symbol') || die 'routing error: symbol';
-    my $sp     = symbol_search($symbol) || return $c->_fail("invalid symbol: $symbol", 404);
+    my $sp     = BOM::Market::Underlying->new($symbol)->market->name ne 'nonsense' || return $c->_fail("invalid symbol: $symbol", 404);
     $c->stash(sp => $sp);
     return 1;
 }
 
 sub list {
-    return shift->_pass({symbols => [map { _description($_) } sort keys %$_by_symbol]});
+    return shift->_pass({symbols => [map { _description($_) } sort get_offerings_with_filter('underlying_symbol')]});
 }
 
 sub symbol {
@@ -141,11 +129,6 @@ sub price {
         $c->_fail("realtime quotes are not available for $symbol");
     }
     return;
-}
-
-sub symbol_search {
-    my $s = shift;
-    return $_by_symbol->{$s} || $_by_display_name->{$s}    # or undef if not found.
 }
 
 sub _validate_start_end {
