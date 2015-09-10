@@ -9,6 +9,7 @@ sub statement {
     my ($c, $args) = @_;
     my $statement = get_transactions($c, $args);
     return {
+        echo_req => $args,
         msg_type  => 'statement',
         statement => $statement,
     };
@@ -82,7 +83,6 @@ sub get_transactions {
     ];
 
     return {
-        %$args,
         transactions => $trxs,
         count        => $count
     };
