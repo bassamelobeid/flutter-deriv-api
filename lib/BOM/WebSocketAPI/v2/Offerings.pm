@@ -8,8 +8,8 @@ use Try::Tiny;
 use Mojo::Base 'BOM::WebSocketAPI::v2::BaseController';
 
 use BOM::Product::Offerings;
-use BOM::WebSocketAPI::v2::Symbols;
 use BOM::Product::Contract::Offerings;
+use BOM::Market::Underlying;
 
 my @READABLES = qw/market submarket contract_display start_type sentiment expiry_type/;
 
@@ -37,14 +37,6 @@ sub query {
     my @all_keys = $flyby->all_keys;
     my %all_keys = map { $_ => 1 } @all_keys;
 
-    # special-case: if symbol missing, map any symbol_display field to it.
-    if (my $symbol_display = $args->{symbol_display}) {
-        $args->{symbol} //= do {
-            my $sp = BOM::WebSocketAPI::v2::Symbols::symbol_search($symbol_display);
-            $sp ? $sp->{symbol} : $symbol_display;
-            }
-    }
-    # .. and revert to the fieldname in the flyby.
     $args->{underlying_symbol} ||= $args->{symbol} if $args->{symbol};
 
     my $query = {
@@ -82,14 +74,7 @@ sub query {
 
         my $row = {%$contract};    # takes a manipulatable copy
 
-        # special-case: efficiently generate symbol displayname too; remember mapping in both directions..
-        for ($row->{underlying_symbol}) {
-            $row->{symbol_display} = $sym_to_ds{$_} ||= do {
-                my $sp = BOM::WebSocketAPI::v2::Symbols::symbol_search($_);
-                $sp ? $sp->{display_name} : $_;
-            };
-            $ds_to_sym{$sym_to_ds{$_}} ||= $_;
-        }
+        $row->{symbol_display} = BOM::Market::Underlying->new($row->{underlying_symbol})->display_name;
 
         # turn these codified_values into Readable Strings..
         for (@READABLES) {

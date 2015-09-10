@@ -10,24 +10,8 @@ use Date::Utility;
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
 
-# these package-level structures let us 'memo-ize' the symbol pools for purposes
-# of full-list results and for hashed lookups by-displayname and by-symbol-code.
-
-my ($_by_display_name, $_by_symbol, $_by_exchange) = ({}, {}, {});
-for (Finance::Asset->instance->symbols) {
-    my $sp = Finance::Asset->instance->get_parameters_for($_) || next;
-    my $ul = BOM::Market::Underlying->new($_);
-    $_by_display_name->{$ul->display_name} = $sp;
-    # If this display-name has slashes, also generate a 'safe' version that can sit in REST expressions
-    if ((my $safe_name = $ul->display_name) =~ s(/)(-)g) {
-        $_by_display_name->{$safe_name} = $sp;
-    }
-    $_by_symbol->{$_} = $sp;
-    push @{$_by_exchange->{$ul->exchange_name}}, $ul->display_name;
-}
-
-# this constructs the symbol record sanitized for consumption by api clients.
 sub _description {
     my $symbol = shift;
     my $by     = shift || 'brief';
@@ -93,57 +77,11 @@ sub active_symbols {
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
-            map      { $_ }
-                grep { $_ }
-                map  { _description($_, $by) }
-                keys %$_by_symbol
+            map  { $_ }
+            grep { $_ }
+            map  { _description($_, $by) } get_offerings_with_filter('underlying_symbol')
         ],
     };
-}
-
-sub exchanges {
-    my $class = shift;
-    return $_by_exchange;
-}
-
-sub ok_symbol {
-    my $c      = shift;
-    my $symbol = $c->stash('symbol') || die 'routing error: symbol';
-    my $sp     = symbol_search($symbol) || return $c->_fail("invalid symbol: $symbol", 404);
-    $c->stash(sp => $sp);
-    return 1;
-}
-
-sub list {
-    return shift->_pass({symbols => [map { _description($_) } sort keys %$_by_symbol]});
-}
-
-sub symbol {
-    my $c = shift;
-    my $s = $c->stash('sp')->{symbol};
-    return $c->_pass(_description($s));
-}
-
-sub price {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $ul     = BOM::Market::Underlying->new($symbol);
-    if ($ul->feed_license eq 'realtime') {
-        my $tick = $ul->get_combined_realtime;
-        $c->_pass({
-            symbol => $symbol,
-            time   => $tick->{epoch},
-            price  => $tick->{quote},
-        });
-    } else {
-        $c->_fail("realtime quotes are not available for $symbol");
-    }
-    return;
-}
-
-sub symbol_search {
-    my $s = shift;
-    return $_by_symbol->{$s} || $_by_display_name->{$s}    # or undef if not found.
 }
 
 sub _validate_start_end {
@@ -221,7 +159,7 @@ sub _validate_start_end {
     return $args;
 }
 
-sub _ticks {
+sub ticks {
     my ($c, $args) = @_;
 
     $args = _validate_start_end($c, $args);
@@ -240,20 +178,7 @@ sub _ticks {
     return [map { {time => $_->epoch, price => $_->quote} } reverse @$ticks];
 }
 
-sub ticks {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $ul     = BOM::Market::Underlying->new($symbol);
-    my $ticks  = $c->_ticks({
-        ul    => $ul,
-        start => $c->param('start') // 0,
-        end   => $c->param('end') // 0,
-        count => $c->param('count') // 0,
-    });
-    return $c->_pass({ticks => $ticks});
-}
-
-sub _candles {
+sub candles {
     my ($c, $args) = @_;
 
     $args = _validate_start_end($c, $args);
@@ -282,36 +207,4 @@ sub _candles {
     return $w;
 
 }
-
-# needed only for REST API..
-sub candles {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $ul     = BOM::Market::Underlying->new($symbol);
-
-    my $done = AnyEvent->condvar;
-    my $candles;
-    my $watcher = $c->_candles({
-            ul          => $ul,
-            start       => $c->param('start') // 0,
-            end         => $c->param('end') // 0,
-            count       => $c->param('count') // 0,
-            granularity => $c->param('granularity') // '',
-            sender      => sub { $candles = shift; $done->send },
-        }) || return $c->_fail("invalid candles request");
-
-    $done->recv;
-    $c->stash->{feeder}->_pg->destroy;
-    delete $c->stash->{feeder};
-    return $c->_pass({candles => $candles});
-}
-
-# needed only for REST API..
-sub contracts {
-    my $c      = shift;
-    my $symbol = $c->stash('sp')->{symbol};
-    my $output = available_contracts_for_symbol({symbol => $symbol});
-    return $c->_pass($output);
-}
-
 1;

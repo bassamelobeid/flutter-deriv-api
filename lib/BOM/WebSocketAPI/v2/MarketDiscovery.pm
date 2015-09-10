@@ -26,7 +26,7 @@ sub ticks {
     if ($args->{end}) {
         my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
         if ($style eq 'ticks') {
-            my $ticks = $c->BOM::WebSocketAPI::v2::Symbols::_ticks({%$args, ul => $ul});    ## no critic
+            my $ticks = $c->BOM::WebSocketAPI::v2::Symbols::ticks({%$args, ul => $ul});    ## no critic
             my $history = {
                 prices => [map { $_->{price} } @$ticks],
                 times  => [map { $_->{time} } @$ticks],
@@ -50,7 +50,7 @@ sub ticks {
             };
 
             if (
-                my $watcher = $c->BOM::WebSocketAPI::v2::Symbols::_candles({
+                my $watcher = $c->BOM::WebSocketAPI::v2::Symbols::candles({
                         %$args,    ## no critic
                         ul     => $ul,
                         sender => $sender
