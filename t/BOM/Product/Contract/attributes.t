@@ -126,7 +126,7 @@ subtest 'Numbers and stuff.' => sub {
 };
 
 subtest 'Probabilities etc.' => sub {
-    plan tests => 5;
+    plan tests => 2;
 
     my $bet_params = {
         bet_type     => 'RANGE',
@@ -145,12 +145,6 @@ subtest 'Probabilities etc.' => sub {
     isa_ok($bet->discounted_probability, 'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
     isa_ok($bet->bid_probability,        'Math::Util::CalculatedValue::Validatable', 'isa CalculatedValue.');
 
-    my $otm_defaults = BOM::Platform::Runtime->instance->app_config->quants->commission->deep_otm_threshold;
-    ok(BOM::Platform::Runtime->instance->app_config->quants->commission->deep_otm_threshold('{}'), 'Removed minimum theoreticals');
-    $bet->market->clear_deep_otm_threshold;
-    throws_ok { $bet->ask_probability } qr/Missing deep_otm_threshold for market/,
-        'Markets with undefined minimum theoretical probabilities blow up.';
-    ok(BOM::Platform::Runtime->instance->app_config->quants->commission->deep_otm_threshold($otm_defaults), 'Removed minimum theoreticals');
 };
 
 subtest 'Forward starting.' => sub {

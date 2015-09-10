@@ -971,9 +971,7 @@ sub _build_ask_probability {
     $marked_up->include_adjustment('add', $self->total_markup);
 
     my $min_allowed_ask_prob = $self->market->deep_otm_threshold;
-    croak 'Missing deep_otm_threshold for market[' . $self->market->name . "]"
-        if (not defined $min_allowed_ask_prob);
-    $min_allowed_ask_prob /= 100;
+
     if ($marked_up->amount < $min_allowed_ask_prob) {
         my $deep_otm_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'deep_otm_markup',

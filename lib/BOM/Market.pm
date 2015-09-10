@@ -373,7 +373,7 @@ Is this market disabled in couch
 
 =cut
 
-my $appconfig_attrs = [qw(disabled disable_iv deep_otm_threshold)];
+my $appconfig_attrs = [qw(disabled disable_iv)];
 has $appconfig_attrs => (
     is         => 'ro',
     lazy_build => 1,
@@ -413,13 +413,19 @@ sub _build_disable_iv {
     return (grep { $self->name eq $_ } @$disable_iv);
 }
 
-sub _build_deep_otm_threshold {
-    my $self = shift;
+=head2 deep_otm_threshold
 
-    my $otm_threshold = from_json(BOM::Platform::Runtime->instance->app_config->quants->commission->deep_otm_threshold);
-    my $market        = $self->name;
-    return $otm_threshold->{$market};
-}
+Threshold for ask price value to which deep_otm contracts will be
+pushed. For deep_itm contracts with ask price greater than
+1 - deep_otm_threshold, it will be pushed to full payout
+
+=cut
+
+has deep_otm_threshold => (
+    is      => 'ro',
+    isa     => 'Num',
+    default => 0.10,
+);
 
 sub default_underlying {
     my ($self, $submarket) = @_;
