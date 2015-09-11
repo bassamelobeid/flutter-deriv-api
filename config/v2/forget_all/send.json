@@ -16,8 +16,8 @@
     },
     "type": {
       "type": "string",
-      "sample": "tick",
-      "description": "cancel all streams based on type, example: tick, proposal, portfolio, proposal_open_contract"
+      "sample": "ticks",
+      "description": "cancel all streams based on type, example: ticks, proposal, portfolio, proposal_open_contract"
     }
   },
   "required": [

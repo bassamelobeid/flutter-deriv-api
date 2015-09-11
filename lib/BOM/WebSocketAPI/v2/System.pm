@@ -22,7 +22,7 @@ sub forget_all {
     } elsif (my $type = $args->{type}) {
         my $ws_id = $c->tx->connection;
         foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-            if ( $c->{ws}{$ws_id}{type} eq $type ) {
+            if ( $c->{ws}{$ws_id}{$id}{type} eq $type ) {
                 push @removed_ids, $id if _forget_one($c, $id);
             }
         }
@@ -44,7 +44,7 @@ sub _forget_one {
     return unless $v;
 
     if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
-        delete $c->{fmb_ids}{$ws_id}{$v->{fmb}->id};
+        delete $c->{fmb_ids}{$ws_id}{$v->{data}{fmb}->id};
     }
 
     return $v;

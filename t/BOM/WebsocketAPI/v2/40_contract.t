@@ -98,6 +98,10 @@ while (1) {
         ok $res->{proposal_open_contract}->{ask_price};
         test_schema('proposal_open_contract', $res);
 
+        $t = $t->send_ok({json => {forget => $res->{proposal_open_contract}->{id}}})->message_ok;
+        $forget = decode_json($t->message->[1]);
+        ok $forget->{forget};
+
         ## FIXME, not working now
         last;
 
