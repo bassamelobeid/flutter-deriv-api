@@ -31,6 +31,8 @@ $t = $t->send_ok({
             "duration"      => "2",
             "duration_unit" => "m"
         }})->message_ok;
+my $proposal = decode_json($t->message->[1]);
+ok $proposal->{proposal}->{id};
 
 my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
 is $now_timer_cnt, $first_timer_cnt + 10 + 1;    # 10 is ticks, 1 is proposal
@@ -59,7 +61,7 @@ while (1) {
 $t = $t->send_ok({
         json => {
             forget_all => 1,
-            type       => 'proposal'
+            id       => $proposal->{proposal}->{id}
         }});
 while (1) {
     $t = $t->message_ok;
@@ -68,6 +70,7 @@ while (1) {
 
     ok $res->{forget_all};
     is scalar(@{$res->{forget_all}}), 1;
+    is $res->{forget_all}->[0], $proposal->{proposal}->{id}; # id matched
     test_schema('forget_all', $res);
 
     my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
