@@ -97,7 +97,7 @@ sub __handle {
         ['ticks',                  \&BOM::WebSocketAPI::v2::MarketDiscovery::ticks,                      0],
         ['proposal',               \&BOM::WebSocketAPI::v2::MarketDiscovery::proposal,                   0],
         ['forget',                 \&BOM::WebSocketAPI::v2::System::forget,                              0],
-        ['forget_all',                 \&BOM::WebSocketAPI::v2::System::forget_all,                              0],
+        ['forget_all',             \&BOM::WebSocketAPI::v2::System::forget_all,                          0],
         ['ping',                   \&BOM::WebSocketAPI::v2::System::ping,                                0],
         ['time',                   \&BOM::WebSocketAPI::v2::System::server_time,                         0],
         ['payout_currencies',      \&BOM::WebSocketAPI::v2::ContractDiscovery::payout_currencies,        0],

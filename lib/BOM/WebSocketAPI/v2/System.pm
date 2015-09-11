@@ -22,14 +22,14 @@ sub forget_all {
     } elsif (my $type = $args->{type}) {
         my $ws_id = $c->tx->connection;
         foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-            if ( $c->{ws}{$ws_id}{$id}{type} eq $type ) {
+            if ($c->{ws}{$ws_id}{$id}{type} eq $type) {
                 push @removed_ids, $id if _forget_one($c, $id);
             }
         }
     }
 
     return {
-        msg_type => 'forget_all',
+        msg_type   => 'forget_all',
         forget_all => \@removed_ids
     };
 }
@@ -40,7 +40,7 @@ sub _forget_one {
     Mojo::IOLoop->remove($id);
 
     my $ws_id = $c->tx->connection;
-    my $v = delete $c->{ws}{$ws_id}{$id};
+    my $v     = delete $c->{ws}{$ws_id}{$id};
     return unless $v;
 
     if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {

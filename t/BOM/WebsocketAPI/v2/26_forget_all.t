@@ -38,30 +38,38 @@ foreach my $i (1 .. 3) {
 }
 
 ## skip tick until we meet forget_all
-$t = $t->send_ok({json => {forget_all => 1, type => 'ticks'}});
+$t = $t->send_ok({
+        json => {
+            forget_all => 1,
+            type       => 'ticks'
+        }});
 while (1) {
     $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
     next if $res->{msg_type} eq 'tick' || $res->{msg_type} eq 'proposal';
 
     ok $res->{forget_all};
-    is scalar( @{$res->{forget_all}} ), 10;
+    is scalar(@{$res->{forget_all}}), 10;
     test_schema('forget_all', $res);
 
     my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
-    is $now_timer_cnt, $first_timer_cnt + 3; # 3 is proposal
+    is $now_timer_cnt, $first_timer_cnt + 3;    # 3 is proposal
 
     last;
 }
 
-$t = $t->send_ok({json => {forget_all => 1, type => 'proposal'}});
+$t = $t->send_ok({
+        json => {
+            forget_all => 1,
+            type       => 'proposal'
+        }});
 while (1) {
     $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
     next if $res->{msg_type} eq 'proposal';
 
     ok $res->{forget_all};
-    is scalar( @{$res->{forget_all}} ), 3;
+    is scalar(@{$res->{forget_all}}), 3;
     test_schema('forget_all', $res);
 
     my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
