@@ -15,6 +15,7 @@ use BOM::Utility::Log4perl;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON;
 use Path::Tiny;
+use BOM::System::Chronicle;
 
 BOM::Utility::Log4perl::init_log4perl_console;
 
