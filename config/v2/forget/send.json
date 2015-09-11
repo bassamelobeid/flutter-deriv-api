@@ -7,6 +7,7 @@
     "forget": {
       "type": "string",
       "pattern": "[A-Za-z0-9]",
+      "sample": "045dee728d91cd60f9315318fc8e4239",
       "description": "ID of the real-time stream of messages to cancel"
     }
   },
