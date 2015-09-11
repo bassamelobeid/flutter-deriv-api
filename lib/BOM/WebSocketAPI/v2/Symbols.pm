@@ -11,6 +11,8 @@ use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
+use Cache::RedisDB;
+use JSON;
 
 sub _description {
     my $symbol = shift;
