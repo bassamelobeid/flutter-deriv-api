@@ -583,6 +583,8 @@ sub _get_overview {
         },
     );
 
+    my $barrier_to_compare = ($bet->two_barriers) ? $bet->high_barrier : $bet->barrier;
+
     my @pricing_param = ({
             label => 'Duration in days (number of vol rollovers between start and end)',
             value => sprintf('%.5g', $bet->timeindays->amount),
@@ -623,7 +625,7 @@ sub _get_overview {
         },
         {
             label => 'Barrier adjustment',
-            value => roundnear(0.0001, $bet->_barriers_for_pricing->{barrier1} - $bet->barrier->as_absolute),
+            value => roundnear(0.0001, $bet->_barriers_for_pricing->{barrier1} - $barrier_to_compare->as_absolute),
         },
     );
 
@@ -818,7 +820,10 @@ sub _get_cost_of_greeks {
                 my $date_expiry = Date::Utility->new({epoch => Date::Utility->new->epoch + $days * 86400})->date;
                 my %barriers;
                 if ($bet->two_barriers) {
-                    %barriers = (high_barrier => $bet->high_barrier->supplied_barrier, low_barrier => $bet->low_barrier->supplied_barrier);
+                    %barriers = (
+                        high_barrier => $bet->high_barrier->supplied_barrier,
+                        low_barrier  => $bet->low_barrier->supplied_barrier
+                    );
                 } else {
                     %barriers = (barrier => $bet->barrier->supplied_barrier);
                 }
