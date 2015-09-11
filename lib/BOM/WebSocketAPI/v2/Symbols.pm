@@ -64,8 +64,8 @@ sub _description {
 sub active_symbols {
     my ($c, $args) = @_;
 
-    my $by = $args->{active_symbols};
-    $by =~ /^(brief|full)$/ or return {
+    my $return_type = $args->{active_symbols};
+    $return_type =~ /^(brief|full)$/ or return {
         msg_type => 'active_symbols',
         error    => {
             message => "Value must be 'brief' or 'full'",
@@ -90,7 +90,7 @@ sub active_symbols {
                 grep { $market eq $_ } @{$legal_allowed_markets}
                 }
                 map {
-                _description($_, $by)
+                _description($_, $return_type)
                 } get_offerings_with_filter('underlying_symbol')
         ],
     };
