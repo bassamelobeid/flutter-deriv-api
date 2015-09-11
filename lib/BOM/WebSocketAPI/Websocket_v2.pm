@@ -145,7 +145,7 @@ sub __handle {
             $error .= " - $_" foreach $validation_errors->errors;
             die "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
         }
-        $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')];
+        $result->{debug} = Time::HiRes::tv_interval($t0);
         return $result;
     }
 
