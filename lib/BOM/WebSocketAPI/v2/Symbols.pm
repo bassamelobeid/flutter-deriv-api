@@ -72,7 +72,6 @@ sub active_symbols {
 
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica')->legal_allowed_markets;
     if (my $client = $c->stash('client')) {
-        die $client->landing_company;
         $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($client->landing_company->short)->legal_allowed_markets;
     }
 
