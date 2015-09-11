@@ -8,8 +8,10 @@
       "description": "Echo of the request made"
     },
     "forget": {
-    	"type": "integer",
-    	"description": "Id of the stream to cancel"
+    	"type": "string",
+    	"description": "Id of the stream to cancel",
+    	"pattern": "[A-Za-z0-9]"
+    		
     },
     "msg_type": {
         "type": "string",

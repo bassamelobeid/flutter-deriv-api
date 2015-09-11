@@ -9,7 +9,9 @@
     },
     "ping": {
     	"type": "string",
-    	"description": "Will return 'pong'"
+    	"description": "Will return 'pong'",
+    	"pattern": "[a-z]{4}"
+    		
     },
     "msg_type": {
         "type": "string",
