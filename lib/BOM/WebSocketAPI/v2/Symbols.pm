@@ -90,7 +90,6 @@ sub _validate_start_end {
 
     # we must not return to the client any ticks/candles after this epoch
     my $licensed_epoch = $ul->last_licensed_display_epoch;
-
     # max allow 3 years
     unless ($start
         and $start =~ /^[0-9]+$/
@@ -112,13 +111,12 @@ sub _validate_start_end {
     {
         $count = 500;
     }
-
-    unless ($ul->feed_license eq 'realtime') {
+    if ($ul->feed_license ne 'realtime') {
         # if feed doesn't have realtime license, we should adjust end_time in such a way
         # as not to break license conditions
         if ($licensed_epoch < $end) {
             my $shift_back = $end - $licensed_epoch;
-            unless ($ul->feed_license eq 'delayed') {
+            if ($ul->feed_license ne 'delayed' or $ul->delay_amount > 0) {
                 $end = $licensed_epoch;
                 $c->app->log->debug("Due to feed license end_time has been changed to $licensed_epoch");
             }
@@ -128,7 +126,6 @@ sub _validate_start_end {
             }
         }
     }
-
     if ($args->{adjust_start_time}) {
         unless ($ul->exchange->is_open_at($end)) {
             $c->app->log->debug("Exchange is closed at $end, adjusting start_time");
@@ -147,7 +144,6 @@ sub _validate_start_end {
             }
         }
     }
-
     $args->{start} = $start;
     $args->{end}   = $end;
     $args->{count} = $count;
@@ -186,12 +182,6 @@ sub candles {
     my $granularity = uc($args->{granularity} || 'M1');
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
-
-    my $period = do { {D => 86400, H => 3600, M => 60, S => 1}->{$unit} * $size };
-    $start = $start - $start % $period;
-    my $end_max = $start + $period * $count;
-    $end = $end_max > $end ? $end : $end_max;
-
     $c->stash->{feeder} ||= BOM::Feed::Data::AnyEvent->new;
     my $w = $c->stash->{feeder}->get_ohlc(
         underlying => $ul->symbol,
