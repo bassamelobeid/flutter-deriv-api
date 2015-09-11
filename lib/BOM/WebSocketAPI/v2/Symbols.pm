@@ -70,12 +70,22 @@ sub active_symbols {
             code    => "InvalidValue"
         }};
 
+    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica')->legal_allowed_markets;
+    if (my $client = $c->stash('client')) {
+        $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($client->landing_company->short)->legal_allowed_markets;
+    }
+
     return {
         msg_type       => 'active_symbols',
         active_symbols => [
-            map  { $_ }
-            grep { $_ }
-            map  { _description($_, $by) } get_offerings_with_filter('underlying_symbol')
+            map { $_ }
+                grep {
+                my $market = $_->{market};
+                grep { $market eq $_ } @{$legal_allowed_markets}
+                }
+                map {
+                _description($_, $by)
+                } get_offerings_with_filter('underlying_symbol')
         ],
     };
 }
