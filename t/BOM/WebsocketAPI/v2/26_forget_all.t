@@ -32,10 +32,10 @@ foreach my $i (1 .. 3) {
                 "duration_unit" => "m"
             }})->message_ok;
     # my $proposal = decode_json($t->message->[1]);
-
-    my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
-    is $now_timer_cnt, $first_timer_cnt + 10 + $i;    # 10 is ticks
 }
+
+my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
+is $now_timer_cnt, $first_timer_cnt + 10 + 3;    # 10 is ticks, 3 is proposal
 
 ## skip tick until we meet forget_all
 $t = $t->send_ok({
