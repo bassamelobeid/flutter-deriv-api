@@ -11,6 +11,8 @@ use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
+use Cache::RedisDB;
+use JSON;
 
 sub _description {
     my $symbol = shift;
@@ -62,20 +64,25 @@ sub _description {
 sub active_symbols {
     my ($c, $args) = @_;
 
-    my $by = $args->{active_symbols};
-    $by =~ /^(brief|full)$/ or return {
+    my $return_type = $args->{active_symbols};
+    $return_type =~ /^(brief|full)$/
+        or return {
         msg_type => 'active_symbols',
         error    => {
             message => "Value must be 'brief' or 'full'",
             code    => "InvalidValue"
         }};
 
-    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica')->legal_allowed_markets;
+    my $landing_company_name = 'costarica';
     if (my $client = $c->stash('client')) {
-        $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($client->landing_company->short)->legal_allowed_markets;
+        $landing_company_name = $client->landing_company->short;
     }
+    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    return {
+    my $result;
+    return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", $landing_company_name . '::' . $return_type);
+
+    $result = {
         msg_type       => 'active_symbols',
         active_symbols => [
             map { $_ }
@@ -84,10 +91,12 @@ sub active_symbols {
                 grep { $market eq $_ } @{$legal_allowed_markets}
                 }
                 map {
-                _description($_, $by)
+                _description($_, $return_type)
                 } get_offerings_with_filter('underlying_symbol')
         ],
     };
+    Cache::RedisDB->set("WS_ACTIVESYMBOL", $landing_company_name . '::' . $return_type, JSON::to_json($result), 300 - (time % 300) - 2);
+    return $result;
 }
 
 sub _validate_start_end {
