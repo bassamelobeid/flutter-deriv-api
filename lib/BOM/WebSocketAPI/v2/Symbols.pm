@@ -79,7 +79,7 @@ sub active_symbols {
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
     my $result;
-    return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", "$landing_company_name_$return_type");
+    return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", $landing_company_name . '::' . $return_type);
 
     $result = {
         msg_type       => 'active_symbols',
