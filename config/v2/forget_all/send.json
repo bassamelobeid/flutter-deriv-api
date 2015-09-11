@@ -7,7 +7,7 @@
     "forget_all": {
       "type": "integer",
       "sample": 1,
-      "description": "Must be 1."
+      "description": "Must be 1, either id or type is required"
     },
     "id": {
       "type": "string",

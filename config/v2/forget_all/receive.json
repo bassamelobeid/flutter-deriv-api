@@ -9,7 +9,7 @@
     },
     "forget_all": {
     	"type": "array",
-    	"description": "Ids of the stream to cancel"
+    	"description": "Ids of the cancelled streams"
     },
     "msg_type": {
         "type": "string",
