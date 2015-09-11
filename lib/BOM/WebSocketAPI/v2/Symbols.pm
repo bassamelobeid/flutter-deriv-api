@@ -65,7 +65,8 @@ sub active_symbols {
     my ($c, $args) = @_;
 
     my $return_type = $args->{active_symbols};
-    $return_type =~ /^(brief|full)$/ or return {
+    $return_type =~ /^(brief|full)$/
+        or return {
         msg_type => 'active_symbols',
         error    => {
             message => "Value must be 'brief' or 'full'",
