@@ -49,10 +49,7 @@ sub validate_payment {
             and $self->is_first_deposit_pending
             and $args{payment_type} eq 'affiliate_reward')
         {
-            $self->set_status('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
-            $self->save();
-
-            die "Client\'s cashier is locked.\n";
+            $self->{mlt_affiliate_first_deposit} = 1;
         }
 
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
@@ -441,6 +438,13 @@ sub payment_affiliate_reward {
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
+
+    if (exists $self->{mlt_affiliate_first_deposit} and $self->{mlt_affiliate_first_deposit}) {
+        $self->set_status('cashier_locked', 'system', 'MLT client received an affiliate reward as first deposit');
+        $self->save();
+
+        delete $self->{mlt_affiliate_first_deposit};
+    }
 
     return $trx;
 }
