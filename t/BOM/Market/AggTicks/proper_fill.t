@@ -13,7 +13,6 @@ my $test_symbol = 'XYZ';
 my $through     = 900;
 
 my $dense_ticks = [map { +{epoch => $_, quote => $_, symbol => $test_symbol} } (0 .. $through)];
-my $sparse_ticks = [map { +{epoch => $_, quote => $_, symbol => $test_symbol} } (0, 12, 15, 45, 46, 47, 60, 61, 900, 901)];
 
 my $at = BOM::Market::AggTicks->new;
 $at->flush;
@@ -77,6 +76,8 @@ subtest 'Dense ticks' => sub {
 };
 
 $at->flush;
+$through = 180;
+my $sparse_ticks = [map { +{epoch => $_, quote => $_, symbol => $test_symbol} } (1, 31, 61, 74, 91, $through, $through + 1)];
 
 subtest 'Sparse ticks' => sub {
     foreach my $run (0 .. 1) {
@@ -103,8 +104,8 @@ subtest 'Sparse ticks' => sub {
                 [{
                         count  => 1,
                         symbol => 'XYZ',
-                        epoch  => 61,
-                        quote  => 61,
+                        epoch  => 91,
+                        quote  => 91,
                     },
                     {
                         count  => 1,
@@ -120,19 +121,41 @@ subtest 'Sparse ticks' => sub {
                 ending_epoch => $through,
                 fill_cache   => 0
             });
-            is(scalar @$stuff, 60, 'Got our 60 aggregations...');
+            eq_or_diff(
+                $stuff->[2],
+                {
+                    agg_epoch => 45,
+                    count     => 1,
+                    epoch     => 31,
+                    quote     => 31,
+                    symbol    => 'XYZ',
+                },
+                'The first sparse but newly filled tick has the proper count data, especially count'
+            );
+            eq_or_diff(
+                $stuff->[3],
+                {
+                    agg_epoch => 60,
+                    count     => 0,
+                    epoch     => 31,
+                    quote     => 31,
+                    symbol    => 'XYZ',
+                },
+                '.. and the following tick is also correct'
+            );
+            is(scalar @$stuff, 12, 'Got our 12 aggregations...');
             $stuff = $at->retrieve({
                 underlying   => $test_symbol,
                 ending_epoch => $through + 2,
                 fill_cache   => 0
             });
-            is(scalar @$stuff, 61, 'Then plus another one..');
+            is(scalar @$stuff, 13, 'Then plus another one..');
             eq_or_diff(
                 $stuff->[-1],
                 {
                     count  => 1,
-                    epoch  => 901,
-                    quote  => 901,
+                    epoch  => $through+1,
+                    quote  => $through+1,
                     symbol => $test_symbol,
                 },
                 ' which is the latest tick '
