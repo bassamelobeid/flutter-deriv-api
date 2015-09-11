@@ -3,7 +3,6 @@ package BOM::WebSocketAPI::Websocket_v2;
 use Mojo::Base 'BOM::WebSocketAPI::v2::BaseController';
 
 use BOM::WebSocketAPI::v2::Symbols;
-use BOM::WebSocketAPI::v2::Offerings;
 use BOM::WebSocketAPI::v2::Authorize;
 use BOM::WebSocketAPI::v2::ContractDiscovery;
 use BOM::WebSocketAPI::v2::System;
@@ -103,8 +102,7 @@ sub __handle {
         ['payout_currencies',      \&BOM::WebSocketAPI::v2::ContractDiscovery::payout_currencies,        0],
         ['active_symbols',         \&BOM::WebSocketAPI::v2::Symbols::active_symbols,                     0],
         ['contracts_for',          \&BOM::WebSocketAPI::v2::ContractDiscovery::contracts_for,            0],
-        ['offerings',              \&BOM::WebSocketAPI::v2::Offerings::offerings,                        0],
-        ['trading_times',          \&BOM::WebSocketAPI::v2::Offerings::trading_times,                    0],
+        ['trading_times',          \&BOM::WebSocketAPI::v2::MarketDiscovery::trading_times,              0],
         ['buy',                    \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,                    1],
         ['sell',                   \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,                   1],
         ['portfolio',              \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio,              1],

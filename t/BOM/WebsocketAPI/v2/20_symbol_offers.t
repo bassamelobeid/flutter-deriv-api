@@ -92,17 +92,7 @@ my $contracts_for_japan = decode_json($t->message->[1]);
 ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for_japan);
-# test offerings
-$t = $t->send_ok({
-        json => {
-            offerings => 1,
-            'symbol'  => 'R_50'
-        }})->message_ok;
-my $offerings = decode_json($t->message->[1]);
-ok($offerings->{offerings});
-ok($offerings->{offerings}->{hit_count});
-test_schema('offerings', $offerings);
-# test offerings
+
 $t = $t->send_ok({json => {trading_times => Date::Utility->new->date_ddmmmyyyy}})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{trading_times});

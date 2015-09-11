@@ -10,6 +10,45 @@ use BOM::WebSocketAPI::v2::System;
 
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::Contract::Offerings;
+
+sub trading_times {
+    my ($c, $args) = @_;
+
+    my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
+    my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
+        markets     => {name => 'name'},
+        submarkets  => {name => 'name'},
+        underlyings => {
+            name   => 'name',
+            times  => 'times',
+            events => 'events'
+        });
+    my $trading_times = {};
+    for my $mkt (@$tree) {
+        my $market = {};
+        push @{$trading_times->{markets}}, $market;
+        $market->{name} = $mkt->{name};
+        for my $sbm (@{$mkt->{submarkets}}) {
+            my $submarket = {};
+            push @{$market->{submarkets}}, $submarket;
+            $submarket->{name} = $sbm->{name};
+            for my $ul (@{$sbm->{underlyings}}) {
+                push @{$submarket->{symbols}},
+                    {
+                    name       => $ul->{name},
+                    settlement => $ul->{settlement} || '',
+                    events     => $ul->{events},
+                    times      => $ul->{times},
+                    };
+            }
+        }
+    }
+    return {
+        msg_type      => 'trading_times',
+        trading_times => $trading_times,
+    };
+}
 
 sub ticks {
     my ($c, $args) = @_;
