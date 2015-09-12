@@ -17,9 +17,7 @@ sub forget_all {
 
     my @removed_ids;
 
-    if (my $id = $args->{id}) {
-        push @removed_ids, $id if _forget_one($c, $id);
-    } elsif (my $type = $args->{type}) {
+    if (my $type = $args->{forget_all}) {
         my $ws_id = $c->tx->connection;
         foreach my $id (keys %{$c->{ws}{$ws_id}}) {
             if ($c->{ws}{$ws_id}{$id}{type} eq $type) {

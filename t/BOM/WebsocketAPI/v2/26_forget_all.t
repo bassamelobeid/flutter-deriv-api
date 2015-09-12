@@ -40,8 +40,7 @@ is $now_timer_cnt, $first_timer_cnt + 10 + 1;    # 10 is ticks, 1 is proposal
 ## skip tick until we meet forget_all
 $t = $t->send_ok({
         json => {
-            forget_all => 1,
-            type       => 'ticks'
+            forget_all => 'ticks'
         }});
 while (1) {
     $t = $t->message_ok;
@@ -60,8 +59,7 @@ while (1) {
 
 $t = $t->send_ok({
         json => {
-            forget_all => 1,
-            id       => $proposal->{proposal}->{id}
+            forget_all => 'proposal'
         }});
 while (1) {
     $t = $t->message_ok;
