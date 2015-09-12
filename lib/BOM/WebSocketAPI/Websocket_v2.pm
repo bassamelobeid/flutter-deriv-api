@@ -15,6 +15,7 @@ use File::Slurp;
 use JSON;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
+use Time::HiRes;
 
 sub ok {
     my $c      = shift;
@@ -114,6 +115,7 @@ sub __handle {
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
+        my $t0        = [Time::HiRes::gettimeofday];
         my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v2/' . $dispatch->[0];
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
         if (not $validator->validate($p1)) {
@@ -144,7 +146,7 @@ sub __handle {
             $error .= " - $_" foreach $validation_errors->errors;
             die "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
         }
-
+        $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
