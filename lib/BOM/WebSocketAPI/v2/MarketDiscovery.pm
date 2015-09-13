@@ -37,6 +37,7 @@ sub trading_times {
                 push @{$submarket->{symbols}},
                     {
                     name       => $ul->{name},
+                    symbol     => $ul->{symbol},
                     settlement => $ul->{settlement} || '',
                     events     => $ul->{events},
                     times      => $ul->{times},
