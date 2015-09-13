@@ -79,7 +79,7 @@ sub new {    ## no critic RequireArgUnpack
             if @missing;
 
         my @tokens = BOM::System::Chronicle->_redis_read->keys('LOGIN_SESSION::*');
-        for my $token (@tokens){
+        for my $token (@tokens) {
             my $cookie = BOM::Platform::SessionCookie->new({token => $token});
             $cookie->end_session if $cookie->email eq $self->email;
         }
