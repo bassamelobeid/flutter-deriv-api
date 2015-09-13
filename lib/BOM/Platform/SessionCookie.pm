@@ -78,6 +78,11 @@ sub new {    ## no critic RequireArgUnpack
         croak "Error adding new session, missing: " . join(',', @missing)
             if @missing;
 
+        my @tokens = BOM::System::Chronicle->_redis_read->keys('LOGIN_SESSION::*');
+        for my $token (@tokens){
+            my $cookie = BOM::Platform::SessionCookie->new({token => $token});
+            $cookie->end_session if $cookie->email eq $self->email;
+        }
         # NOTE, we need to use the object interface here. Bytes::Random::Secure also offers a function interface
         # but that uses a RNG which is initialized only once. If we happen to generate a session cookie for
         # whatever reason before forking children, all children would then generate the same random sequence.
