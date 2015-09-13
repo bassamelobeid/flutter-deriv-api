@@ -10,7 +10,7 @@
     "forget": {
     	"type": "string",
     	"description": "Id of the stream to cancel",
-    	"pattern": "^[a-z0-9]{32}"
+    	"pattern": "^[a-z0-9]{32}$"
     		
     },
     "msg_type": {

@@ -10,7 +10,7 @@
     "ping": {
     	"type": "string",
     	"description": "Will return 'pong'",
-    	"pattern": "pong"
+    	"pattern": "^pong$"
     		
     },
     "msg_type": {
