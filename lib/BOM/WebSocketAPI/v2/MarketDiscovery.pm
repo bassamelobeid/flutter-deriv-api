@@ -22,7 +22,8 @@ sub trading_times {
         underlyings => {
             name   => 'name',
             times  => 'times',
-            events => 'events'
+            events => 'events',
+            symbol => sub { return $_->symbol },
         });
     my $trading_times = {};
     for my $mkt (@$tree) {
