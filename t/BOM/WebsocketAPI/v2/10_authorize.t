@@ -12,12 +12,20 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $t = build_mojo_test();
 
+## test those requires auth
+$t = $t->send_ok({json => {balance => 1}})->message_ok;
+my $balance = decode_json($t->message->[1]);
+is($balance->{error}->{code}, 'AuthorizationRequired');
+test_schema('balance', $balance);
+
+## test with faked token
 my $faked_token = 'ABC';
 $t = $t->send_ok({json => {authorize => $faked_token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{error}->{code}, 'InvalidToken';
 test_schema('authorize', $authorize);
 
+## test with good one
 my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
     loginid         => "CR2002",
@@ -31,6 +39,12 @@ $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'CR2002@binary.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 test_schema('authorize', $authorize);
+
+## it's ok after authorize
+$t = $t->send_ok({json => {balance => 1}})->message_ok;
+$balance = decode_json($t->message->[1]);
+ok($balance->{balance});
+test_schema('balance', $balance);
 
 $t->finish_ok;
 
