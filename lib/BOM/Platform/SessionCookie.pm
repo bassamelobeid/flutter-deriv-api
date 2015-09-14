@@ -74,7 +74,7 @@ sub new {    ## no critic RequireArgUnpack
     if ($self->{token}) {
         $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
-        my $email_cookie = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::BY_EMAIL::' . $self->{email}; }
+        my $email_cookie = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::BY_EMAIL::' . $self->{email}; };
         if ($email_cookie and $email_cookie->{token} ne $email_cookie->{token}){
             # ensures that once logging in, other session keys used are invalid.
             bless $self, $package;
