@@ -13,9 +13,10 @@ use BOM::Product::Transaction;
 sub buy {
     my ($c, $args) = @_;
 
-    my $id     = $args->{buy};
-    my $source = $c->stash('source');
-    my $ws_id  = $c->tx->connection;
+    my $purchase_date = time;                  # Purchase is considered to have happened at the point of request.
+    my $id            = $args->{buy};
+    my $source        = $c->stash('source');
+    my $ws_id         = $c->tx->connection;
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
@@ -34,10 +35,11 @@ sub buy {
             last;
         };
         my $trx = BOM::Product::Transaction->new({
-            client   => $client,
-            contract => $contract,
-            price    => ($args->{price} || 0),
-            source   => $source,
+            client        => $client,
+            contract      => $contract,
+            price         => ($args->{price} || 0),
+            purchase_date => $purchase_date,
+            source        => $source,
         });
         if (my $err = $trx->buy) {
             $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
