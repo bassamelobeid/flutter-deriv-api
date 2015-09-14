@@ -20,7 +20,7 @@ sub _build_skew {
     my $bet  = $self->bet;
     my $args = $bet->pricing_args;
 
-    my $skew = $bet->volsurface->get_strike_slope({
+    my $skew = $self->get_strike_slope({
         days   => $args->{t} * 365,
         strike => $args->{barrier1},
         spot   => $args->{spot},
@@ -36,6 +36,22 @@ sub _build_skew {
     });
 
     return $skew_adjustment;
+}
+
+sub get_strike_slope {
+    my ($self, $args) = @_;
+
+    my $volsurface = $self->bet->volsurface;
+    # Move by 0.5% of strike either way.
+    my $epsilon = $volsurface->underlying->pip_size;
+
+    $args->{strike} -= $epsilon;
+    my $down_vol = $volsurface->get_volatility($args);
+
+    $args->{strike} += 2 * $epsilon;
+    my $up_vol = $volsurface->get_volatility($args);
+
+    return ($up_vol - $down_vol) / (2 * $epsilon);
 }
 
 no Moose;
