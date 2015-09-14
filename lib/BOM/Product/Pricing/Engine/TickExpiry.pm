@@ -147,14 +147,13 @@ sub _get_proxy {
         $err       = 'Do not have enough ticks to calculate volatility';
     }
 
+    $trend_proxy = 0;
     if (not $err) {
         my $ma_step = 7;
         my $avg     = sum(map { $_->{quote} } @$ticks[-$ma_step .. -1]) / $ma_step;
         my $x       = ($ticks->[-1]{quote} - $avg) / $ticks->[-1]{quote};
         # it is quite impossible for vol_proxy to be 0. Let's not die if it is!
         $trend_proxy = $x / $vol_proxy if $vol_proxy != 0;
-    } else {
-        $trend_proxy = 0;
     }
 
     return ($vol_proxy, $trend_proxy, $err);
