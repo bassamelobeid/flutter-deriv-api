@@ -8,9 +8,9 @@
       "description": "Echo of the request made"
     },
     "forget": {
-    	"type": "string",
-    	"description": "Id of the stream to cancel",
-    	"pattern": "^[a-z0-9]{32}$"
+    	"type": "interger",
+    	"description": "If 1 stream existed and stop. If 0 stream did not exist.",
+    	"pattern": "^(1|0)$"
     		
     },
     "msg_type": {
