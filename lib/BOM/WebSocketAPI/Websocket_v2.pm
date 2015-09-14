@@ -141,7 +141,7 @@ sub __handle {
 
         $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
         if ($result and not $validator->validate($result)) {
-            my $validation_errors = $validator->validate($p1);
+            my $validation_errors = $validator->validate($result);
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
             die "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
