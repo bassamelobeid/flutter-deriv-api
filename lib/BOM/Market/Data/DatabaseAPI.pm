@@ -24,6 +24,7 @@ use BOM::Platform::Runtime;
 use BOM::Market::Data::OHLC;
 use BOM::Market::Data::Tick;
 use DateTime;
+use Date::Utility;
 use BOM::Database::FeedDB;
 
 has 'historical' => (
@@ -267,41 +268,6 @@ sub ticks_end_limit {
     return $self->_query_ticks($statement);
 }
 
-=head2 tick_at_or_before
-
-get a tick at time given or before a given time. Warning!!! The tick might no be valid. Accept argument
-    - end_time - Time at which we want the tick
-
-Returns
-     BOM::Market::Data::Tick
-
-=cut
-
-has '_tick_at_or_before_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__tick_at_or_before_statement {
-    my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM tick_at_or_before($1, $2)');
-}
-
-sub tick_at_or_before {
-    my $self = shift;
-    my $args = shift;
-
-    my $end_time;
-    $end_time = Date::Utility->new($args->{end_time})->datetime_yyyymmdd_hhmmss
-        if ($args->{end_time});
-
-    my $statement = $self->_tick_at_or_before_statement;
-    $statement->bind_param(1, $self->underlying);
-    $statement->bind_param(2, $end_time);
-
-    return $self->_query_single_tick($statement);
-}
-
 =head2 tick_at
 
 get a valid tick at time given or not a valid tick before a given time. Accept argument
@@ -313,40 +279,42 @@ Returns
 
 =cut
 
+has '_tick_at_statement' => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__tick_at_statement {
+    my $self = shift;
+
+    return $self->dbh->prepare(<<'SQL');
+SELECT * FROM last_tick_time($1), tick_at_or_before($1, $2::TIMESTAMP)
+SQL
+}
+
 sub tick_at {
     my $self = shift;
     my $args = shift;
-    my $tick_at;
+    my $tick;
 
     return unless ($args->{end_time});
+    my $end_time = Date::Utility->new($args->{end_time});
 
-    my $consistent_to;
+    my $statement = $self->_tick_at_statement;
+    $statement->execute($self->underlying, $end_time->db_timestamp,);
+    $tick = $statement->fetchall_arrayref({});
+    return unless $tick and $tick = $tick->[0] and $tick->{ts_epoch};
 
-    # Used to be explicit check for `1` now just truthy
-    if (not $args->{allow_inconsistent}) {
-        # Make these checks before the query, in case we need them.
-        # Worst case: we get an updated tick while we run and miss
-        # Best case: updated tick is on our second and we're fine, anyway
-        my $last_agg  = $self->last_aggregation_time;
-        my $last_tick = $self->last_tick_time;
+    my $last_tick_time = delete $tick->{last_tick_time};    # For our consistency check, not part of tick data.
+    $tick->{epoch} = delete $tick->{ts_epoch};
+    $tick = BOM::Market::Data::Tick->new($tick) or return;
+    $tick->invert_values if $self->invert_values;
 
-        $consistent_to = ($last_agg->is_after($last_tick)) ? $last_agg : $last_tick;
-    }
+    return $tick if $args->{allow_inconsistent};            # They will take any value.
 
-    if (my $uncertain_tick = $self->tick_at_or_before($args)) {
-        if (not $consistent_to) {
-            $tick_at = $uncertain_tick;
-        } else {
-            my $end_time = Date::Utility->new($args->{end_time});
-            if (   $end_time->epoch == $uncertain_tick->epoch
-                or $end_time->is_before($consistent_to))
-            {
-                $tick_at = $uncertain_tick;
-            }
-        }
-    }
+    return $tick unless $end_time->is_after(Date::Utility->new($last_tick_time));    # Inside the known consistency limit
 
-    return $tick_at;
+    return;
 }
 
 =head2 tick_after
@@ -668,72 +636,6 @@ sub ohlc_daily_until_now_for_charting {
     $query_ohlc->{start_time} = $now->ymd('-') . ' ' . $now->hms;
 
     return $self->ohlc_start_end_with_limit_for_charting($query_ohlc);
-}
-
-=head2 last_aggregation_time
-
-Gets the last aggregation time for the Underlying
-
-Returns
-     Date::Utility
-
-=cut
-
-has '_last_aggregation_time_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__last_aggregation_time_statement {
-    my $self = shift;
-    return $self->dbh->prepare('SELECT last_time FROM feed.ohlc_status where underlying = $1');
-}
-
-sub last_aggregation_time {
-    my $self = shift;
-
-    my $last_aggregation_time = 0;                                         # Last done in 1970!
-    my $statement             = $self->_last_aggregation_time_statement;
-    $statement->bind_param(1, $self->underlying);
-
-    if ($statement->execute()) {
-        $last_aggregation_time = $statement->fetchrow_array // 0;
-    }
-
-    return Date::Utility->new($last_aggregation_time);
-}
-
-=head2 last_tick_time
-
-Gets the last inserted tick time for the Underlying
-
-Returns
-     Date::Utility
-
-=cut
-
-has '_last_tick_time_statement' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__last_tick_time_statement {
-    my $self = shift;
-    return $self->dbh->prepare('SELECT * FROM last_tick_time($1)');
-}
-
-sub last_tick_time {
-    my $self = shift;
-
-    my $last_tick_time = 0;                                  # Last done in 1970!
-    my $statement      = $self->_last_tick_time_statement;
-    $statement->bind_param(1, $self->underlying);
-
-    if ($statement->execute()) {
-        $last_tick_time = $statement->fetchrow_array // 0;
-    }
-
-    return Date::Utility->new($last_tick_time);
 }
 
 sub _query_ticks {

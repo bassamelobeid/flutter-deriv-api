@@ -1531,7 +1531,10 @@ sub sell_expired_contracts {
     }
     for my $class (keys %stats_failure) {
         for my $reason (keys %{$stats_failure{$class}}) {
-            stats_count("transaction.sell.failure", $stats_failure{$class}{$reason}, {tags => [@tags, "contract_class:$class", "reason:$reason"]});
+            stats_count(
+                "transaction.sell.failure",
+                $stats_failure{$class}{$reason},
+                {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error($reason)]});
         }
     }
 
@@ -1563,7 +1566,8 @@ sub sell_expired_contracts {
             $missed{$bet->{bet_class}}++;
         }
         foreach my $class (keys %missed) {
-            stats_count("transaction.sell.failure", $missed{$class}, {tags => [@tags, "contract_class:$class", "reason:TransactionFailure"]});
+            stats_count("transaction.sell.failure", $missed{$class},
+                {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error("TransactionFailure")]});
         }
     }
 

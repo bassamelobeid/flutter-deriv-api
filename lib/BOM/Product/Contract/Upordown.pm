@@ -25,7 +25,7 @@ sub check_expiry_conditions {
     my $self = shift;
 
     my ($high, $low) = $self->get_high_low_for_contract_period();
-    my $expired = $self->is_after_expiry;
+    my $expired = $self->is_after_expiry and $self->exit_tick;    # Tick validation is in contract validation
     if (defined $high and defined $low) {
         my $value        = 0;
         my $high_barrier = $self->high_barrier->as_absolute;
