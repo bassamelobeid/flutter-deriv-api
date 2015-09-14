@@ -2,32 +2,32 @@
 definitions:
   - code:
       - MX
-    server: qa11
+    server: www
     landing_company: iom
-    transaction_db_cluster: qa11
+    transaction_db_cluster: www
   - code:
       - MF
-    server: qa11
+    server: www
     landing_company: maltainvest
-    transaction_db_cluster: qa11
+    transaction_db_cluster: www
   - code:
       - MLT
-    server: qa11
+    server: www
     landing_company: malta
-    transaction_db_cluster: qa11
+    transaction_db_cluster: www
   - code:
       - CR
-    server: qa11
+    server: www
     landing_company: costarica
-    transaction_db_cluster: qa11
+    transaction_db_cluster: www
   - code:
       - VRTC
-    server: qa11
+    server: www
     landing_company: fog
     is_virtual: 1
     transaction_db_cluster: vrclientdb
   - code:
       - FOG
-    server: qa11
+    server: www
     landing_company: fog
     transaction_db_cluster: fogclientdb
