@@ -508,12 +508,12 @@ sub _build_pricing_engine_name {
         $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope::Observed';
 
     if ($self->tick_expiry) {
-        my %compatible_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
             market            => 'forex',                # forex is the only financial market that offers tick expiry contracts for now.
             contract_category => 'callput',
             expiry_type       => 'tick',
         );
-        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry' if $compatible_symbols{$self->underlying->symbol};
+        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
     } elsif (
         $self->is_intraday and not $self->is_forward_starting and grep {
             $self->market->name eq $_
@@ -521,8 +521,8 @@ sub _build_pricing_engine_name {
         )
     {
         my $func = $self->market->name eq 'forex' ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
-        my %compatible_symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->$func;
-        if ($compatible_symbols{$self->underlying->symbol} and my $loc = $self->offering_specifics->{historical}) {
+        my @symbols = BOM::Market::UnderlyingDB->instance->$func;
+        if (_match_symbols(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
             my $duration = $self->remaining_time;
             my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
             $engine_name = 'BOM::Product::Pricing::Engine::Intraday::' . $name
@@ -533,6 +533,14 @@ sub _build_pricing_engine_name {
     }
 
     return $engine_name;
+}
+
+sub _match_symbol {
+    my ($lists, $symbol) = @_;
+    for (@$lists) {
+        return 1 if $_ eq $symbol;
+    }
+    return;
 }
 
 =item pricing_engine_parameters
