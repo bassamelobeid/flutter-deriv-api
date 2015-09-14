@@ -6,19 +6,46 @@ use warnings;
 sub forget {
     my ($c, $args) = @_;
 
-    my $id = $args->{forget};
+    return {
+        msg_type => 'forget',
+        forget => _forget_one($c, $args->{forget}) ? 1 : 0,
+    };
+}
+
+sub forget_all {
+    my ($c, $args) = @_;
+
+    my @removed_ids;
+
+    if (my $type = $args->{forget_all}) {
+        my $ws_id = $c->tx->connection;
+        foreach my $id (keys %{$c->{ws}{$ws_id}}) {
+            if ($c->{ws}{$ws_id}{$id}{type} eq $type) {
+                push @removed_ids, $id if _forget_one($c, $id);
+            }
+        }
+    }
+
+    return {
+        msg_type   => 'forget_all',
+        forget_all => \@removed_ids
+    };
+}
+
+sub _forget_one {
+    my ($c, $id) = @_;
 
     Mojo::IOLoop->remove($id);
 
     my $ws_id = $c->tx->connection;
-    if (my $fmb_id = eval { $c->{ws}{$ws_id}{$id}->{fmb}->id }) {
-        delete $c->{fmb_ids}{$ws_id}{$fmb_id};
+    my $v     = delete $c->{ws}{$ws_id}{$id};
+    return unless $v;
+
+    if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
+        delete $c->{fmb_ids}{$ws_id}{$v->{data}{fmb}->id};
     }
 
-    return {
-        msg_type => 'forget',
-        forget => delete $c->{ws}{$ws_id}{$id} ? 1 : 0,
-    };
+    return $v;
 }
 
 sub ping {

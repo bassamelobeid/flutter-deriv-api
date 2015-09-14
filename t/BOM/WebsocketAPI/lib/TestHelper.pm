@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data cleanup_build_test_R_50_data/;
+@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data/;
 
 my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
