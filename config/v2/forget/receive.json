@@ -8,7 +8,7 @@
       "description": "Echo of the request made"
     },
     "forget": {
-    	"type": "interger",
+    	"type": "integer",
     	"description": "If 1 stream existed and stop. If 0 stream did not exist.",
     	"pattern": "^(1|0)$"
     		
