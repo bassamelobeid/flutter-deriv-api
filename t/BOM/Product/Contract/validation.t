@@ -1225,8 +1225,7 @@ subtest 'intraday index missing pricing coefficient' => sub {
     my $mock = Test::MockModule->new('BOM::Product::Contract');
     $mock->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
     my $c = produce_contract($params);
-    my $expected_reasons =
-        [qr/Calibration coefficient missing/, qr/trying unauthorised/, qr/duration.*not acceptable/];
+    my $expected_reasons = [qr/Calibration coefficient missing/, qr/trying unauthorised/, qr/duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
 };
 

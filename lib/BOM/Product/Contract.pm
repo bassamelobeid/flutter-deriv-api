@@ -509,7 +509,7 @@ sub _build_pricing_engine_name {
 
     if ($self->tick_expiry) {
         my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
-            market            => 'forex',                # forex is the only financial market that offers tick expiry contracts for now.
+            market            => 'forex',     # forex is the only financial market that offers tick expiry contracts for now.
             contract_category => 'callput',
             expiry_type       => 'tick',
         );
