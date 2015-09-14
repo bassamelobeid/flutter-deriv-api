@@ -259,6 +259,7 @@ sub aggregate_for {
                 $tick_count = 0;
                 $next_agg += $ai->seconds;
             } elsif ($tick->{epoch} > $next_agg) {
+                $tick_count++ if $first_added;    # We count this tick, too unless we are just starting out.
                 while ($tick->{epoch} > $next_agg) {
                     $first_added ||= $next_agg;
                     $last_added             = $next_agg;
