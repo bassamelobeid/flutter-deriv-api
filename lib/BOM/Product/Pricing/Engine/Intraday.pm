@@ -22,17 +22,6 @@ use BOM::Platform::Context qw(request localize);
 use Format::Util::Numbers qw( roundnear );
 use Time::Duration::Concise;
 
-=head2 chunk_count
-
-How many sub-chunks to use for vol computation.
-
-=cut
-
-has chunk_count => (
-    is      => 'ro',
-    default => 1
-);
-
 =head2 tick_source
 
 The source of the ticks used for this pricing.  BOM::Market::AggTicks
