@@ -486,7 +486,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 
     my $bet = produce_contract($bet_params);
 
-    my $expected_reasons = [qr/stake.*is not within limits/, qr/Barrier is outside of range/];
+    my $expected_reasons = [qr/stake.*is not within limits/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount}  = 1e5;
@@ -577,12 +577,12 @@ subtest 'invalid barriers knocked down for great justice' => sub {
     $bet_params->{low_barrier}  = 0.50;
     $bet_params->{duration}     = '7d';
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/^Mixed.*barriers/, qr/stake.*same as.*payout/, qr/Lower barrier.*25%/];
+    $expected_reasons = [qr/^Mixed.*barriers/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{low_barrier} = 'S-100000P';    # Fine, we'll set our low barrier like you want.
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/^Non-positive barrier/, qr/stake.*same as.*payout/, qr/Lower barrier.*25%/];
+    $expected_reasons = [qr/^Non-positive barrier/, qr/stake.*same as.*payout/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{low_barrier} = 'S10P';         # Sigh, ok, then, what about this one?
@@ -836,7 +836,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration}     = '14d';
     $bet_params->{current_tick} = $tick;
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/Calibration fit outside acceptable range for IV/, qr/Barrier is outside of range/];
+    $expected_reasons = [qr/Calibration fit outside acceptable range for IV/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface("{}"),       'Set');
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface($orig_list), 'restored original list');
@@ -1111,7 +1111,7 @@ subtest '10% barrier check for double barrier contract' => sub {
         current_tick => $tick,
     };
     my $c                = produce_contract($bet_params);
-    my $expected_reasons = [qr/Lower barrier.*25%/];
+    my $expected_reasons = [qr/Barrier too far from spot/];
     test_error_list('buy', $c, $expected_reasons);
 };
 
