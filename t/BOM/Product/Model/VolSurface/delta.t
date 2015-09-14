@@ -219,18 +219,6 @@ subtest get_day_for_tenor => sub {
     is($day, 7, "returns the calculated day for tenor");
 };
 
-subtest get_strike_slope => sub {
-    plan tests => 1;
-
-    my $surface = _get_surface();
-
-    my $slope = $surface->get_strike_slope({
-        days   => 7,
-        strike => 25
-    });
-    ok(looks_like_number($slope), 'strike_slope returns a number.');
-};
-
 subtest get_market_rr_bf => sub {
     plan tests => 6;
     my $surface = _get_surface({
