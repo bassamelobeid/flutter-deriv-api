@@ -1225,9 +1225,8 @@ subtest 'intraday index missing pricing coefficient' => sub {
     my $mock = Test::MockModule->new('BOM::Product::Contract');
     $mock->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
     my $c = produce_contract($params);
-    # it kind of suck to have 4 errors. But we just want to see if calibration coefficient error works!
     my $expected_reasons =
-        [qr/Calibration coefficient missing/, qr/Too few periods for historical/, qr/trying unauthorised/, qr/duration.*not acceptable/];
+        [qr/Calibration coefficient missing/, qr/trying unauthorised/, qr/duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
 };
 
