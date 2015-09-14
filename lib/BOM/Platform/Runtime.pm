@@ -151,7 +151,7 @@ sub _build_countries {
 }
 
 sub _build_countries_list {
-    return YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
+    return YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 }
 
 sub country_has_financial {
