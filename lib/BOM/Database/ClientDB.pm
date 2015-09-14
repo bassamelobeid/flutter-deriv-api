@@ -48,9 +48,15 @@ sub BUILDARGS {
 
 sub _build_db {
     my $self = shift;
-    state $environement = YAML::XS::LoadFile('/etc/rmg/brokercode_db.yml');
+    state $environment = +{
+        map {
+            my ($bcodes, $landing_company) = @{$_}{qw/code landing_company/};
+            local $_;
+            map {$_ => $landing_company} @$bcodes;
+        } @{YAML::XS::LoadFile('/etc/rmg/broker_codes.yml')->{definitions}}
+    };
 
-    my $domain = $environement->{broker_code}->{$self->broker_code}->{landing_company_code};
+    my $domain = $environment->{$self->broker_code};
     my $type   = $self->operation;
 
     my @db_params = (
