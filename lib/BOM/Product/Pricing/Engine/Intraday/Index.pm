@@ -8,14 +8,6 @@ use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
 use BOM::Utility::ErrorStrings qw( format_error_string );
 
-sub BUILD {
-    my $self = shift;
-
-    is_compatible($self->bet);
-
-    return;
-}
-
 has pricing_vol => (
     is         => 'ro',
     lazy_build => 1,
@@ -61,14 +53,6 @@ sub _build__calibration_coefficient {
     }
 
     return \%ref;
-}
-
-sub is_compatible {
-    my $bet = shift;
-
-    my %ref = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_index;
-
-    return (defined $ref{$bet->underlying->symbol} and BOM::Product::Pricing::Engine::Intraday::is_compatible($bet));
 }
 
 sub _build_probability {

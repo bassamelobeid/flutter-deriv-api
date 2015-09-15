@@ -3,10 +3,12 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 8;
 use Test::NoWarnings;
 use Test::Exception;
 use Test::MockModule;
+
+use Scalar::Util qw(looks_like_number);
 
 use BOM::Product::Pricing::Engine::TickExpiry;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
@@ -15,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
 use Date::Utility;
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::Pricing::Engine::TickExpiry;
 
 my $now = Date::Utility->new('24-Dec-2014');
 
@@ -40,132 +42,185 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now,
     });
 
-my @ticks = map { {epoch => $now->epoch + $_, quote => 100} } (1 .. 20);
-my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::TickExpiry');
-$mocked->mock('_latest_ticks', sub { \@ticks });
-subtest 'tick expiry fx CALL' => sub {
-    my $c = produce_contract({
-        bet_type   => 'FLASHU',
-        underlying => 'frxGBPUSD',
-        date_start => $now,
-        duration   => '5t',
-        currency   => 'USD',
-        payout     => 10,
-        barrier    => 'S0P',
+my @ticks = map { {epoch => $now->epoch + $_, quote => rand(1)} } (-20 .. -1);
+subtest 'insufficient arguments' => sub {
+    my $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks
     });
-    is $c->pricing_engine->risk_markup->amount,       -0.1,  'tie adjustment floored at -0.1';
-    is $c->pricing_engine->probability->amount,       0.5,   'theo prob floored at 0.5 for CALL';
-    is $c->pricing_engine->commission_markup->amount, 0.025, 'commission is 2.5%';
+    like $ref->{error}, qr/Insufficient input to calculate probability/, 'error if insufficient arguments';
+    is $ref->{probability}, 1, 'probability is 1 if error';
+    is $ref->{markups}->{model_markup},      0, 'model_markup is 0 if error';
+    is $ref->{markups}->{risk_markup},       0, 'risk_markup is 0 if error';
+    is $ref->{markups}->{commission_markup}, 0, 'commission_markup is 0 if error';
+    ok !$ref->{debug_info}, 'debug information undef';
 };
 
-subtest 'tick expiry fx PUT' => sub {
-    my $c = produce_contract({
-        bet_type   => 'FLASHD',
-        underlying => 'frxGBPUSD',
-        date_start => $now,
-        duration   => '5t',
-        currency   => 'USD',
-        payout     => 10,
-        barrier    => 'S0P',
+subtest 'invalid contract type' => sub {
+    my $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
     });
-    is $c->pricing_engine->risk_markup->amount,       -0.1,  'tie adjustment floored at -0.1';
-    is $c->pricing_engine->probability->amount,       0.5,   'theo prob floored at 0.5 for PUT';
-    is $c->pricing_engine->commission_markup->amount, 0.025, 'commission is 2.5%';
+    ok !$ref->{error}, 'no error for CALL contract_type';
+    $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'PUT',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
+    });
+    ok !$ref->{error}, 'no error for PUT contract_type';
+    $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'EXPIRYMISS',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
+    });
+    like $ref->{error}, qr/Could not calculate probability for EXPIRYMISS/, 'error if invalid contract_type';
+    is $ref->{probability}, 1, 'probability is 1 if error';
+    is $ref->{markups}->{model_markup},      0, 'model_markup is 0 if error';
+    is $ref->{markups}->{risk_markup},       0, 'risk_markup is 0 if error';
+    is $ref->{markups}->{commission_markup}, 0, 'commission_markup is 0 if error';
+    ok !$ref->{debug_info}, 'debug information undef';
 };
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'WLDUSD',
-        recorded_date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'WLDUSD'});
-
-@ticks = map { {epoch => $now->epoch + $_, quote => 100 + rand(10)} } (1 .. 20);
-$mocked->mock('_latest_ticks', sub { \@ticks });
-
-my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'WLDUSD',
-        epoch      => '2014-12-24 00:00:00',
-    },
-);
-
-subtest 'tick expiry smart fx' => sub {
-    my $c = produce_contract({
-        bet_type   => 'FLASHU',
-        underlying => 'WLDUSD',
-        date_start => $now,
-        duration   => '5t',
-        currency   => 'USD',
-        payout     => 10,
-        barrier    => 'S0P',
-    });
-    cmp_ok $c->pricing_engine->risk_markup->amount, ">",  -0.1, 'tie adjustment floored at -0.1';
-    cmp_ok $c->pricing_engine->probability->amount, ">=", 0.5,  'theo prob floored at 0.5';
-    is $c->pricing_engine->commission_markup->amount, 0.02, 'commission is 2%';
+subtest 'ticks too old' => sub {
+    my $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+            contract_type     => 'CALL',
+            underlying_symbol => 'frxUSDJPY',
+            last_twenty_ticks => \@ticks,
+            economic_events   => [],
+            date_pricing      => $now->plus_time_interval('4m40s')});
+    like $ref->{error}, qr/Do not have enough ticks to calculate volatility/, 'error if we do not have recent ticks to calculate vol/trend proxy';
+    is $ref->{debug_info}->{base_vol_proxy}, 0.2, 'vol proxy set to 20% on error';
+    ok looks_like_number($ref->{probability}), 'still get a probability';
 };
 
-sub get_contract {
-    return produce_contract({
-        bet_type   => 'FLASHU',
-        underlying => 'WLDUSD',
-        date_start => $now,
-        duration   => '5t',
-        currency   => 'USD',
-        payout     => 10,
-        barrier    => 'S0P',
+subtest 'insufficient ticks to calculate probability' => sub {
+    my $shifted_tick = shift @ticks;
+    my $ref          = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
     });
-}
+    like $ref->{error}, qr/Do not have enough ticks to calculate volatility/, 'error if we do not have enough ticks to calculate vol/trend proxy';
+    is $ref->{debug_info}->{base_vol_proxy}, 0.2, 'vol proxy set to 20% on error';
+    ok looks_like_number($ref->{probability}), 'still get a probability';
+    unshift @ticks, $shifted_tick;
+};
 
-sub mock_value {
-    my ($name, $base_value) = @_;
+subtest 'coefficient sanity check' => sub {
+    my $module = Test::MockModule->new('BOM::Product::Pricing::Engine::TickExpiry');
+    my $coef   = {
+        frxUSDJPY => {
+            x_prime_min => -2.92896,
+            x_prime_max => 2.92352,
+            y_min       => 4.90366e-06,
+            y_max       => 3.35274e-05,
+            A           => -69175.5,
+            B           => 7.71357e+06,
+            C           => 163.199,
+            D           => 0.00185616,
+            tie_A       => -0.00048763,
+            tie_B       => 0.0684276,
+            tie_C       => 1926.39,
+        }};
+    $module->mock('_coefficients', sub { return $coef });
+    my $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
+    });
+    like $ref->{error}, qr/Invalid coefficients for probability calculation/, 'error if insufficient coefficients';
+    is $ref->{probability}, 1, 'default probability of 1 if error';
+    $coef->{frxUSDJPY}->{tie_D} = 'string';
+    $module->mock('_coefficients', sub { return $coef });
+    $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
+    });
+    like $ref->{error}, qr/Invalid coefficients for probability calculation/, 'error if insufficient coefficients';
+    is $ref->{probability}, 1, 'default probability of 1 if error';
+    $coef->{frxUSDJPY}->{tie_D} = -21.3305;
+    $module->mock('_coefficients', sub { return $coef });
+    $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
+    });
+    ok !$ref->{error}, 'no error';
+};
 
-    $mocked->mock(
-        $name,
-        sub {
-            my $self = shift;
-            Math::Util::CalculatedValue::Validatable->new({
-                name        => $name,
-                description => 'mocked value for $name',
-                set_by      => __PACKAGE__,
-                base_amount => $base_value,
-            });
+subtest 'add 3% to risk_markup if vol_proxy is outside benchmark' => sub {
+    # only testing for one hit condition, vol_proxy > y_max.
+    my $module = Test::MockModule->new('BOM::Product::Pricing::Engine::TickExpiry');
+    my $coef   = {
+        frxUSDJPY => {
+            x_prime_min => -2.92896,
+            x_prime_max => 2.92352,
+            y_min       => 4.90366e-06,
+            y_max       => 0.00001,
+            A           => -69175.5,
+            B           => 7.71357e+06,
+            C           => 163.199,
+            D           => 0.00185616,
+            tie_A       => -0.00048763,
+            tie_B       => 0.0684276,
+            tie_C       => 1926.39,
+            tie_D       => -21.23
+        }};
+    $module->mock('_coefficients', sub { return $coef });
+    $module->mock('_get_proxy', sub { return (0.0001, 0, undef) });
+    my $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
+    });
+    is $ref->{debug_info}->{base_vol_proxy}, 0.0001, '0.2 base vol_proxy';
+    is $ref->{debug_info}->{coefficients}->{y_max}, 1e-05, 'vol_proxy max is 0.9';
+    is $ref->{debug_info}->{vol_proxy},        0.00001,              'final vol_proxy set to max';
+    is $ref->{debug_info}->{base_risk_markup}, -0.00770862947798449, 'base risk markup';
+    is $ref->{debug_info}->{risk_markup},      0.0222913705220155,   'risk markup adjusted';
+    $module->unmock_all;
+};
+
+subtest 'tie factor' => sub {
+    my $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+        contract_type     => 'CALL',
+        underlying_symbol => 'frxUSDJPY',
+        last_twenty_ticks => \@ticks,
+        economic_events   => [],
+        date_pricing      => $now
+    });
+    is $ref->{debug_info}->{tie_factor}, 0.75, 'discount tie adjustment for 75% if no economic event';
+    $ref = BOM::Product::Pricing::Engine::TickExpiry::probability({
+            contract_type     => 'CALL',
+            underlying_symbol => 'frxUSDJPY',
+            last_twenty_ticks => \@ticks,
+            economic_events   => [{
+                    name         => 'test event',
+                    impact       => 5,
+                    release_date => $now,
+                    source       => 'forexfactory'
+                }
+            ],
+            date_pricing => $now
         });
-
-}
-subtest 'tick expiry markup adjustment' => sub {
-
-    $mocked->unmock_all();
-    my @ticks = map { {epoch => $now->epoch + $_, quote => 100 + ($_ / 1000)} } (1 .. 20);
-    $mocked->mock('_latest_ticks', sub { \@ticks });
-    my $coef = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml')->{'WLDUSD'};
-
-    mock_value 'vol_proxy', $coef->{y_max} + 0.00001;
-    my $c             = get_contract;
-    my $c_risk_markup = $c->pricing_engine->risk_markup->amount;
-    $mocked->unmock('vol_proxy');
-    my $c2 = get_contract;
-    is $c_risk_markup - $c2->pricing_engine->risk_markup->amount, 0.0325284449939016, 'risk markup adjustment applied correctly';
-
-    mock_value 'vol_proxy', 0.0000001;
-    my $c3             = get_contract;
-    my $c3_risk_markup = $c3->pricing_engine->risk_markup->amount;
-    $mocked->unmock('vol_proxy');
-    my $c4 = get_contract;
-    is $c3_risk_markup - $c4->pricing_engine->risk_markup->amount, 0.0138547785256561, 'risk markup adjustment applied correctly';
-
-    mock_value 'trend_proxy', 4.0;
-    my $c5             = get_contract;
-    my $c5_risk_markup = $c5->pricing_engine->risk_markup->amount;
-    $mocked->unmock('trend_proxy');
-    my $c6 = get_contract;
-    is $c5_risk_markup - $c6->pricing_engine->risk_markup->amount, 0.0309575476863407, 'risk markup adjustment applied correctly';
-
-    mock_value 'trend_proxy', -4.0;
-    my $c7             = get_contract;
-    my $c7_risk_markup = $c7->pricing_engine->risk_markup->amount;
-    $mocked->unmock('trend_proxy');
-    my $c8 = get_contract;
-    is $c7_risk_markup - $c8->pricing_engine->risk_markup->amount, 0.0309575476863407, 'risk markup adjustment applied correctly';
-    }
+    is $ref->{debug_info}->{tie_factor}, 0, 'do not discount if there is economic event';
+};

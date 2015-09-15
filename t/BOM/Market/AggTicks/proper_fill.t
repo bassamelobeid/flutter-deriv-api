@@ -154,8 +154,8 @@ subtest 'Sparse ticks' => sub {
                 $stuff->[-1],
                 {
                     count  => 1,
-                    epoch  => $through+1,
-                    quote  => $through+1,
+                    epoch  => $through + 1,
+                    quote  => $through + 1,
                     symbol => $test_symbol,
                 },
                 ' which is the latest tick '
