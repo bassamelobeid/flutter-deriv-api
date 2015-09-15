@@ -2,7 +2,6 @@ frxAUDJPY:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:25:52
-  ma_step: 7
   x_prime_min: -2.29506
   x_prime_max: 2.29228
   y_min: 1.20459e-05
@@ -21,7 +20,6 @@ frxAUDUSD:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:27:34
-  ma_step: 7
   x_prime_min: -2.44745
   x_prime_max: 2.45366
   y_min: 1.1519e-05
@@ -40,7 +38,6 @@ frxEURAUD:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:28:10
-  ma_step: 7
   x_prime_min: -2.28128
   x_prime_max: 2.28087
   y_min: 1.17821e-05
@@ -59,7 +56,6 @@ frxEURCAD:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:28:46
-  ma_step: 7
   x_prime_min: -2.23831
   x_prime_max: 2.23304
   y_min: 1.12426e-05
@@ -78,7 +74,6 @@ frxEURGBP:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015 00:00:01
   #calibrated data end: 11-Aug-2015 02:29:43
-  ma_step: 7
   x_prime_min: -2.22847
   x_prime_max: 2.24862
   y_min: 1.22857e-05
@@ -97,7 +92,6 @@ frxEURJPY:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:30:36
-  ma_step: 7
   x_prime_min: -2.41633
   x_prime_max: 2.44129
   y_min: 9.02042e-06
@@ -116,7 +110,6 @@ frxEURUSD:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:32:45
-  ma_step: 7
   x_prime_min: -2.48767
   x_prime_max: 2.49401
   y_min: 7.84908e-06
@@ -135,7 +128,6 @@ frxGBPAUD:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:33:27
-  ma_step: 7
   x_prime_min: -2.32916
   x_prime_max: 2.31402
   y_min: 1.09484e-05
@@ -154,7 +146,6 @@ frxGBPJPY:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:35:21
-  ma_step: 7
   x_prime_min: -2.40776
   x_prime_max: 2.41022
   y_min: 7.90745e-06
@@ -173,7 +164,6 @@ frxGBPUSD:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:37:17
-  ma_step: 7
   x_prime_min: -2.19254
   x_prime_max: 2.19321
   y_min: 1.25087e-10
@@ -192,7 +182,6 @@ frxUSDCAD:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:38:41
-  ma_step: 7
   x_prime_min: -2.48551
   x_prime_max: 2.49102
   y_min: 8.27007e-06
@@ -211,7 +200,6 @@ frxUSDJPY:
   #calibrated on: 18-Aug-2015
   #calibrated data start: 13-Feb-2015
   #calibrated data end: 11-Aug-2015 02:40:04
-  ma_step: 7
   x_prime_min: -2.48089
   x_prime_max: 2.48909
   y_min: 6.507e-06
@@ -230,7 +218,6 @@ WLDAUD:
   #calibrated on: 01-Sep-2015
   #calibrated data start: 16-Feb-2015 00:00:01
   #calibrated data end: 27-Aug-2015 03:23:09
-  ma_step: 7
   x_prime_min: -3.02135
   x_prime_max: 3.01595
   y_min: 5.23792e-06
@@ -249,7 +236,6 @@ WLDEUR:
   #calibrated on: 01-Sep-2015
   #calibrated data start: 16-Feb-2015 00:00:01
   #calibrated data end: 27-Aug-2015 03:23:37
-  ma_step: 7
   x_prime_min: -2.9258
   x_prime_max: 2.95879
   y_min: 4.45187e-06
@@ -268,7 +254,6 @@ WLDGBP:
   #calibrated on: 01-Sep-2015
   #calibrated data start: 16-Feb-2015 00:00:01
   #calibrated data end: 27-Aug-2015 03:24:01
-  ma_step: 7
   x_prime_min: -2.92896
   x_prime_max: 2.92352
   y_min: 4.90366e-06
@@ -287,7 +272,6 @@ WLDUSD:
   #calibrated on: 01-Sep-2015
   #calibrated data start: 16-Feb-2015 00:00:01
   #calibrated data end: 27-Aug-2015 03:24:28
-  ma_step: 7
   x_prime_min: -3.14028
   x_prime_max: 3.13153
   y_min: 4.23668e-06
