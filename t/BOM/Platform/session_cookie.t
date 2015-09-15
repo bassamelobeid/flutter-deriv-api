@@ -18,6 +18,9 @@ my $session_cookie2 = BOM::Platform::SessionCookie->new(
     email   => $email,
 );
 my $request2 = BOM::Platform::Context::Request->new(session_cookie => $session_cookie2);
+ok($session_cookie->loginid, 'Second login works');
+not_ok(BOM::Platform::SessionCookie->new(token => $session_cookie->token)->token, 'cannot re-use first session cookie token');
+
 
 throws_ok {
     my $lc = BOM::Platform::SessionCookie->new({
