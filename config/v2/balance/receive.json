@@ -20,18 +20,18 @@
           "balance": {
             "type": "number",
             "description": "Balance amount",
-            "pattern": "^[0-9]{1,}$"
+            "pattern": "^([0-9]{1,25})$"
           },
           "currency": {
             "type": "string",
             "description": "Currency Example: USD",
-            "pattern": "^[A-Z]{3}$"
+            "pattern": "^([A-Z]{3})$"
             	
           },
           "loginid": {
             "type": "string",
             "description": "Client loginid Example: CR000000",
-            "pattern": "^[A-Z0-9]{1,}$"
+            "pattern": "^([A-Z0-9]{1,25})$"
             	
           }
         }
