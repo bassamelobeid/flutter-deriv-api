@@ -4,7 +4,6 @@ use 5.010;
 use strict;
 use warnings;
 
-use BOM::Product::Pricing::Engine::Utils;
 use Scalar::Util qw(looks_like_number);
 use Cache::RedisDB;
 use List::Util qw(sum min max);
@@ -33,18 +32,32 @@ sub bs_probability {
     };
 }
 
+sub default_probability_reference {
+    my $err = shift;
+
+    return {
+        probability => 1,
+        debug_info  => undef,
+        markups     => {
+            model_markup      => 0,
+            commission_markup => 0,
+            risk_markup       => 0,
+        },
+        error => $err,
+    };
+}
 sub probability {
     my $args = shift;
 
     # input check
     my $required = REQUIRED_ARGS;
     if (grep { not defined $args->{$_} } @$required) {
-        return BOM::Product::Pricing::Engine::Utils::default_probability_reference('Insufficient input to calculate probability');
+        return default_probability_reference('Insufficient input to calculate probability');
     }
 
     my $allowed = ALLOWED_TYPES;
     if (not $allowed->{$args->{contract_type}}) {
-        return BOM::Product::Pricing::Engine::Utils::default_probability_reference("Could not calculate probability for $args->{contract_type}");
+        return default_probability_reference("Could not calculate probability for $args->{contract_type}");
     }
 
     my $err;
@@ -68,7 +81,7 @@ sub probability {
     # coefficient sanity check
     my @required_coef = qw(x_prime_min x_prime_max y_min y_max A B C D tie_A tie_B tie_C tie_D);
     if (grep { not defined $coef->{$_} or not looks_like_number($coef->{$_}) } @required_coef) {
-        return BOM::Product::Pricing::Engine::Utils::default_probability_reference('Invalid coefficients for probability calculation');
+        return default_probability_reference('Invalid coefficients for probability calculation');
     }
     $debug_information{coefficients} = $coef;
 
