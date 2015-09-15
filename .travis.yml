@@ -17,6 +17,7 @@ before_install:
     - sudo rm -f /tmp/unittest_*
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
@@ -34,6 +35,7 @@ install:
 
     - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom/t/config/log4perl.conf
     - export PAYMENTAPI_LOG_FILE=/tmp/paymentapi.log
+    - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
     - perl Makefile.PL && make test && cover -test -report coveralls
