@@ -23,8 +23,7 @@ before_install:
 
     - /tmp/travis-scripts/couchdb.sh
 
-    - . /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - echo $PERL5LIB
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
@@ -50,4 +49,4 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
 
 script:
-    - make $TEST_SUITE
+    - PERL5LIB="$PERL5LIB:/home/git/regentmarkets/bom-test/lib" make $TEST_SUITE
