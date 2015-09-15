@@ -2,6 +2,7 @@ use Test::Most;
 use Test::FailWarnings;
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context::Request;
+use Data::Dumper;
 
 my $loginid  = 'VRTC10001';
 my $password = 'abc123';
@@ -11,6 +12,7 @@ my $session_cookie = BOM::Platform::SessionCookie->new(
     loginid => $loginid,
     email   => $email,
 );
+
 my $request = BOM::Platform::Context::Request->new(session_cookie => $session_cookie);
 
 my $session_cookie2 = BOM::Platform::SessionCookie->new(
@@ -21,7 +23,6 @@ my $request2 = BOM::Platform::Context::Request->new(session_cookie => $session_c
 ok($session_cookie->loginid, 'Second login works');
 ok(! BOM::Platform::SessionCookie->new(token => $session_cookie->token)->token, 'cannot re-use first session cookie token');
 
-
 throws_ok {
     my $lc = BOM::Platform::SessionCookie->new({
         loginid => $loginid,
@@ -29,23 +30,23 @@ throws_ok {
 }
 qr/email /, 'email parameter is mandatory';
 
-my $value = $session_cookie->token;
+my $value = $session_cookie2->token;
 ok !BOM::Platform::SessionCookie->new(token => "${value}a")->token, "Couldn't create instance from invalid value";
-$session_cookie = BOM::Platform::SessionCookie->new(token => $value);
-ok $session_cookie->token,     "Created login cookie from value" or diag $value;
-isa_ok $session_cookie, 'BOM::Platform::SessionCookie';
+my $session_cookie3 = BOM::Platform::SessionCookie->new(token => $value);
+ok $session_cookie3->token,     "Created login cookie from value" or diag $value;
+isa_ok $session_cookie3, 'BOM::Platform::SessionCookie';
 
-$session_cookie = BOM::Platform::SessionCookie->new(token => $value);
-ok $session_cookie, "Created login cookie from value";
+my $session_cookie4 = BOM::Platform::SessionCookie->new(token => $value);
+ok $session_cookie4, "Created login cookie from value";
 cmp_deeply(
-    $session_cookie,
+    $session_cookie4,
     methods(
         loginid => $loginid,
-        token   => $session_cookie->token,
+        token   => $value,
         email   => $email,
     ),
     "Correct values for all attributes",
-);
+) or diag(Dumper($session_cookie4));
 
 subtest 'session generation is fork-safe', sub {
     my $c1 = BOM::Platform::SessionCookie->new(

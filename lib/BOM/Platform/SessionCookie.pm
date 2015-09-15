@@ -72,10 +72,10 @@ sub new {    ## no critic RequireArgUnpack
     local $@;
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::' . $self->{token})) } || {};
+        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_write->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
-        my $email_cookie = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::BY_EMAIL::' . $self->{email})); };
-        if ($email_cookie and $email_cookie->{token} ne $self->{token}) {
+        my $email_cookie = eval { JSON::from_json(BOM::System::Chronicle->_redis_write->get('LOGIN_SESSION::BY_EMAIL::' . $self->{email})); };
+        if ($email_cookie and ($email_cookie->{token} ne $self->{token})) {
             # ensures that once logging in, other session keys used are invalid.
             bless $self, $package;
             $self->end_session;
@@ -95,8 +95,9 @@ sub new {    ## no critic RequireArgUnpack
             Bits        => 160,
             NonBlocking => 1,
         )->string_from($STRING, $TOKEN_LENGTH);
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::BY_EMAIL' . $self->{email}, JSON::to_json($self));
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token},         JSON::to_json($self));
+        my $json = JSON::to_json($self);
+        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::BY_EMAIL::' . $self->{email}, $json);
+        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token},           $json);
     }
     $self->{expires_in} ||= $EXPIRES_IN;
     $self->{issued_at} = time;
