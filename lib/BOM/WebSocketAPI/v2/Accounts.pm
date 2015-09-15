@@ -65,7 +65,6 @@ sub get_transactions {
                 contract_id      => $trx->financial_market_bet_id,
                 transaction_time => $trx->transaction_time->epoch,
                 amount           => $trx->amount,
-                who              => $trx->staff_loginid,
                 action_type      => $trx->action_type,
                 balance_after    => $trx->balance_after,
                 transaction_id   => $trx->id,
