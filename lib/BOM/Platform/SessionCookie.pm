@@ -69,19 +69,10 @@ my $TOKEN_LENGTH = 48;
 
 sub new {    ## no critic RequireArgUnpack
     my ($package) = shift;
-    local $@;
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
         $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
-        my $email_cookie = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::BY_EMAIL::' . $self->{email})); };
-        if ($email_cookie and $email_cookie->{token} ne $email_cookie->{token}) {
-            # ensures that once logging in, other session keys used are invalid.
-            bless $self, $package;
-            $self->end_session;
-            return bless {}, $package;
-        }
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::BY_EMAIL::' . $self->{email}, JSON::to_json($self)) unless $email_cookie;
     } else {
         my @missing = grep { !$self->{$_} } @REQUIRED;
         croak "Error adding new session, missing: " . join(',', @missing)
@@ -95,13 +86,11 @@ sub new {    ## no critic RequireArgUnpack
             Bits        => 160,
             NonBlocking => 1,
         )->string_from($STRING, $TOKEN_LENGTH);
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::BY_EMAIL' . $self->{email}, JSON::to_json($self));
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token},         JSON::to_json($self));
+        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
     }
     $self->{expires_in} ||= $EXPIRES_IN;
     $self->{issued_at} = time;
-    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSION::BY_EMAIL::' . $self->{email}, $self->{expires_in});
-    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSION::' . $self->{token},           $self->{expires_in});
+    BOM::System::Chronicle->_redis_write->expire('LOGIN_SESSION::' . $self->{token}, $self->{expires_in});
     return bless $self, $package;
 }
 
