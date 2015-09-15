@@ -28,6 +28,7 @@ before_install:
     - /tmp/travis-scripts/couchdb.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
@@ -43,5 +44,6 @@ install:
     - /tmp/travis-scripts/setup_feeddb.sh
     - curl -L 'https://www.dropbox.com/s/ip98sdc84ud70jb/devbox_config.yml.tar.gz?dl=1' |sudo tar --gzip -x -C /
     - sudo ln -s /home/travis/build/regentmarkets/bom-quant-benchmark /home/git/regentmarkets/bom-quant-benchmark
+    - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
     - make $TEST_SUITE
