@@ -56,7 +56,7 @@ sub _requires_age_verified {
 sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
-    return if $self->landing_company->short eq 'maltainvest';
+    return if $client->landing_company->short eq 'maltainvest';
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.
