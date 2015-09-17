@@ -136,8 +136,7 @@ sub save {
 
     if ($self->{staff_name}) {
         $self->{STAFF_INFO}->{STAFF_NAME} = $self->{staff_name};
-    }
-    elsif (my $bo_cookie = BOM::Platform::Context::request()->bo_cookie) {
+    } elsif (my $bo_cookie = BOM::Platform::Context::request()->bo_cookie) {
         $self->{STAFF_INFO}->{STAFF_NAME} = $bo_cookie->clerk;
     } else {
         $self->{STAFF_INFO}->{STAFF_NAME} = BOM::Platform::Context::request()->loginid;
