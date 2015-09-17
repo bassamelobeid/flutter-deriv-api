@@ -330,7 +330,7 @@ sub calculate_expected_spot {
 
 sub _get_short_term_delta_correction {
     my $self = shift;
-    
+
     return $self->calculate_intraday_bounceback(min($self->bet->get_time_to_expiry->minutes, 15), "_st");
 }
 
@@ -342,27 +342,27 @@ sub _get_long_term_delta_correction {
     my $pricing_spot  = $args->{spot};
     my $duration_mins = $args->{t} * 365 * 24 * 60;
     $duration_mins = max($duration_mins, 15);
-    my $duration_t = $duration_mins / (365 * 24 * 60); #convert back to year's fraction
+    my $duration_t = $duration_mins / (365 * 24 * 60);                    #convert back to year's fraction
     my $expected_spot = $self->calculate_expected_spot($duration_mins);
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
     my $spot_tv =
-    $self->formula->($pricing_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+        $self->formula->($pricing_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
     my $spot_tv_cv = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'tv_priced_with_current_spot',
-            description => 'bs probability priced with current spot',
-            set_by      => __PACKAGE__,
-            base_amount => $spot_tv,
-        });
+        name        => 'tv_priced_with_current_spot',
+        description => 'bs probability priced with current spot',
+        set_by      => __PACKAGE__,
+        base_amount => $spot_tv,
+    });
     my $expected_spot_tv =
-    $self->formula->($expected_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+        $self->formula->($expected_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
 
     my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'intraday_bounceback',
-            description => 'Intraday bounceback based on historical data',
-            set_by      => __PACKAGE__,
-            base_amount => $expected_spot_tv,
-        });
+        name        => 'intraday_bounceback',
+        description => 'Intraday bounceback based on historical data',
+        set_by      => __PACKAGE__,
+        base_amount => $expected_spot_tv,
+    });
     $delta_cv->include_adjustment('subtract', $spot_tv_cv);
 
     return $delta_cv->amount;
@@ -380,35 +380,37 @@ sub _build_intraday_delta_correction {
         $delta_c = $self->_get_long_term_delta_correction;
     } else {
         my $t     = $self->bet->get_time_to_expiry->minutes;
-        my $alpha = ( 20 - $t ) / 10;
-        my $beta  = ( $t - 10 ) / 10;
+        my $alpha = (20 - $t) / 10;
+        my $beta  = ($t - 10) / 10;
 
         my $short_term = $self->_get_short_term_delta_correction;
-        my $long_term = $self->_get_long_term_delta_correction;
+        my $long_term  = $self->_get_long_term_delta_correction;
 
         $delta_c = ($alpha * $short_term) + ($beta * $long_term);
 
-        push @info_cv, Math::Util::CalculatedValue::Validatable->new({
-            name        => 'delta_correction_short_term_value',
-            description => 'delta_correction_short_term_value',
-            set_by      => __PACKAGE__,
-            base_amount => $short_term 
-        });
-
-        push @info_cv, Math::Util::CalculatedValue::Validatable->new({
-            name        => 'delta_correction_long_term_value',
-            description => 'delta_correction_long_term_value',
-            set_by      => __PACKAGE__,
-            base_amount => $long_term 
-        });
-    }
-    
-    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
-                name        => 'intraday_delta_correction',
-                description => 'Intraday delta correction based on historical data',
+        push @info_cv,
+            Math::Util::CalculatedValue::Validatable->new({
+                name        => 'delta_correction_short_term_value',
+                description => 'delta_correction_short_term_value',
                 set_by      => __PACKAGE__,
-                base_amount => $delta_c, 
+                base_amount => $short_term
             });
+
+        push @info_cv,
+            Math::Util::CalculatedValue::Validatable->new({
+                name        => 'delta_correction_long_term_value',
+                description => 'delta_correction_long_term_value',
+                set_by      => __PACKAGE__,
+                base_amount => $long_term
+            });
+    }
+
+    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_delta_correction',
+        description => 'Intraday delta correction based on historical data',
+        set_by      => __PACKAGE__,
+        base_amount => $delta_c,
+    });
 
     $delta_cv->include_adjustment('info', $_) for @info_cv;
 
@@ -427,22 +429,22 @@ sub _build_intraday_vanilla_delta {
     my $bet           = $self->bet;
     my $args          = $bet->pricing_args;
     my $barrier_delta = get_delta_for_strike({
-            strike           => $args->{barrier1},
-            atm_vol          => $args->{iv},
-            spot             => $args->{spot},
-            t                => $bet->timeinyears->amount,
-            r_rate           => 0,
-            q_rate           => 0,
-            premium_adjusted => $bet->underlying->market_convention->{delta_premium_adjusted},
-        });
+        strike           => $args->{barrier1},
+        atm_vol          => $args->{iv},
+        spot             => $args->{spot},
+        t                => $bet->timeinyears->amount,
+        r_rate           => 0,
+        q_rate           => 0,
+        premium_adjusted => $bet->underlying->market_convention->{delta_premium_adjusted},
+    });
 
     return Math::Util::CalculatedValue::Validatable->new({
-            language    => request()->language,
-            name        => 'intraday_vanilla_delta',
-            description => 'The delta of a vanilla call with the same parameters as this bet',
-            set_by      => __PACKAGE__,
-            base_amount => $barrier_delta,
-        });
+        language    => request()->language,
+        name        => 'intraday_vanilla_delta',
+        description => 'The delta of a vanilla call with the same parameters as this bet',
+        set_by      => __PACKAGE__,
+        base_amount => $barrier_delta,
+    });
 }
 
 =head1 commission_markup
@@ -456,53 +458,53 @@ sub _build_commission_markup {
 
     my $bet = $self->bet;
     my $comm_base_amount =
-    ($self->bet->built_with_bom_parameters)
-    ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
-    : 1;
+        ($self->bet->built_with_bom_parameters)
+        ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
+        : 1;
 
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_scaling_factor',
-            description => 'A scaling factor to control commission',
-            set_by      => __PACKAGE__,
-            base_amount => $comm_base_amount,
-        });
+        name        => 'commission_scaling_factor',
+        description => 'A scaling factor to control commission',
+        set_by      => __PACKAGE__,
+        base_amount => $comm_base_amount,
+    });
 
     my $comm_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'fixed commission markup',
-            set_by      => __PACKAGE__,
-        });
+        name        => 'commission_markup',
+        description => 'fixed commission markup',
+        set_by      => __PACKAGE__,
+    });
 
     my $fixed_comm = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'intraday_historical_fixed',
-            description => 'fixed commission markup for Intraday::Forex pricer',
-            set_by      => __PACKAGE__,
-            base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_fixed,
-        });
+        name        => 'intraday_historical_fixed',
+        description => 'fixed commission markup for Intraday::Forex pricer',
+        set_by      => __PACKAGE__,
+        base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->intraday->historical_fixed,
+    });
 
     $comm_markup->include_adjustment('info',  $comm_scale);
     $comm_markup->include_adjustment('reset', $fixed_comm);
 
     my $stitch = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'stitching_adjustment',
-            description => 'to smooth transitions when we change engines',
-            set_by      => __PACKAGE__,
-            minimum     => 0,
-            base_amount => 0,
-        });
+        name        => 'stitching_adjustment',
+        description => 'to smooth transitions when we change engines',
+        set_by      => __PACKAGE__,
+        minimum     => 0,
+        base_amount => 0,
+    });
     my $standard         = $self->digital_spread_markup;
     my $spread_to_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'spread_to_markup',
-            description => 'Apply half of spread to each side',
-            set_by      => __PACKAGE__,
-            base_amount => 2,
-        });
+        name        => 'spread_to_markup',
+        description => 'Apply half of spread to each side',
+        set_by      => __PACKAGE__,
+        base_amount => 2,
+    });
 
     $stitch->include_adjustment('reset',    $standard);
     $stitch->include_adjustment('divide',   $spread_to_markup);
     $stitch->include_adjustment('subtract', $fixed_comm);
     my $duration_factor = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'Factor to adjust for bet duration',
+        name        => 'Factor to adjust for bet duration',
         description => 'to smooth transition',
         set_by      => __PACKAGE__,
         base_amount => $bet->remaining_time->minutes / 400,
