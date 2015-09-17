@@ -23,35 +23,17 @@ BEGIN {
     my $tmp_dir = '/tmp';
     -d $tmp_dir or die "$tmp_dir does not exist!";
 
-    my $gif_dir      = '/home/website/www/temp';
-    my $tmp_gnu_plot = $tmp_dir . '/gnuplot';
-
     my ($uid, $gid) = (getpwnam "nobody")[2, 3];
-    foreach my $dir ($gif_dir, $tmp_gnu_plot) {
-        unless (-d $dir) {
-            File::Path::mkpath(
-                $dir,
-                {
-                    uid   => $uid,
-                    group => $gid
-                });
-            -d $dir or die "Error - $dir could not be created";
-        }
-    }
-    $tmp_gnu_plot .= '/gnuplot';
 
-    # Copy GNUPLOT to the tmp drive (normally a ram drive on live servers)
-    my $gnu_plot = '/usr/bin/gnuplot';
-    -f $gnu_plot
-        or die "GnuPlot does not exist at its required location [" . $gnu_plot . "]";
-
-    unless (-x $tmp_gnu_plot) {
-        File::Copy::copy($gnu_plot, $tmp_gnu_plot)
-            or die "Cannot copy GnuPlot from [$gnu_plot] to [$tmp_gnu_plot]";
-
-        # Make sure it's executable
-        chmod 0755, $tmp_gnu_plot
-            or die "Can't change permissions for [$tmp_gnu_plot] to [0755]";
+    my $gif_dir = '/home/website/www/temp';
+    unless (-d $gif_dir) {
+        File::Path::mkpath(
+            $gif_dir,
+            {
+                uid   => $uid,
+                group => $gid
+            });
+        -d $gif_dir or die "Error - $gif_dir could not be created";
     }
 }
 
