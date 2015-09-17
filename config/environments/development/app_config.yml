@@ -7,9 +7,6 @@ system:
     sysadmins: _DEVELOPER_
     email_subject_prefix: "[DEVELOPER PC _HOST_] "
   send_email_to_clients: 0
-  directory:
-    db: /db
-    feed: /feed
 price_streamer:
   workers: 2
 cgi:
