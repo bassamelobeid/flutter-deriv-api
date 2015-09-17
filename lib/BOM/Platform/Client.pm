@@ -134,11 +134,10 @@ sub save {
 
     $self->set_db('write');
 
-
     if (my $bo_cookie = BOM::Platform::Context::request()->bo_cookie) {
         $self->{STAFF_INFO}->{STAFF_NAME} = $bo_cookie->clerk;
     } else {
-        $self->{STAFF_INFO}->{STAFF_NAME} = BOM::Platform::Context::request()->loginid || 'bom-perl';
+        $self->{STAFF_INFO}->{STAFF_NAME} = BOM::Platform::Context::request()->loginid;
     }
     $self->{STAFF_INFO}->{STAFF_IP} = BOM::Platform::Context::request()->client_ip;
 

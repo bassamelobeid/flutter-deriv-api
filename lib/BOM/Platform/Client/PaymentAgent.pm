@@ -19,6 +19,14 @@ sub new {
 sub save {
     my ($self, %args) = @_;
     $self->set_db(delete($args{set_db}) || 'write');
+
+    if (my $bo_cookie = BOM::Platform::Context::request()->bo_cookie) {
+        $self->{STAFF_INFO}->{STAFF_NAME} = $bo_cookie->clerk;
+    } else {
+        $self->{STAFF_INFO}->{STAFF_NAME} = BOM::Platform::Context::request()->loginid;
+    }
+    $self->{STAFF_INFO}->{STAFF_IP} = BOM::Platform::Context::request()->client_ip;
+
     return $self->SUPER::save(%args);
 }
 
