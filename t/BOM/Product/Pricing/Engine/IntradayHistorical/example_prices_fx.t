@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most 0.22 (tests => 53);
+use Test::Most 0.22 (tests => 47);
 use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
