@@ -2,7 +2,6 @@ use Test::Most;
 use Test::FailWarnings;
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context::Request;
-use Data::Dumper;
 
 my $loginid  = 'VRTC10001';
 my $password = 'abc123';
@@ -46,7 +45,7 @@ cmp_deeply(
         email   => $email,
     ),
     "Correct values for all attributes",
-) or diag(Dumper($session_cookie4));
+) or diag Test::More::explain $session_cookie4;
 
 subtest 'session generation is fork-safe', sub {
     my $c1 = BOM::Platform::SessionCookie->new(

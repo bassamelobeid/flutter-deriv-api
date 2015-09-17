@@ -98,8 +98,10 @@ sub new {    ## no critic RequireArgUnpack
             NonBlocking => 1,
         )->string_from($STRING, $TOKEN_LENGTH);
         my $json = JSON::to_json($self);
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::BY_EMAIL::' . $self->{email}, $json);
-        BOM::System::Chronicle->_redis_write->set('LOGIN_SESSION::' . $self->{token},           $json);
+        BOM::System::Chronicle->_redis_write->mset(
+                 'LOGIN_SESSION::BY_EMAIL::' . $self->{email}, $json,
+                 'LOGIN_SESSION::' . $self->{token},           $json,
+        );
     }
     $self->{expires_in} ||= $EXPIRES_IN;
     $self->{issued_at} = time;
