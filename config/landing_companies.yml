@@ -133,3 +133,25 @@
       - spreads
     legal_allowed_currencies:
       - USD
+'Binary KK':
+    short: japan
+    address:
+      - Hiroo Miyata Bldg 3F
+      - 1-9-16 Hiroo
+      - Shibuya-ku
+      - Tokyo 150-0012
+      - Japan
+    fax: +
+    country: Japan
+    legal_allowed_currencies:
+      - USD
+    legal_allowed_markets:
+      - forex
+    legal_allowed_contract_categories:
+      - callput
+      - endsinout
+      - staysinout
+      - touchnotouch
+    legal_default_currency: USD
+    has_reality_check: 0
+
