@@ -1,287 +1,167 @@
 package BOM::Product::Pricing::Engine::TickExpiry;
 
 use 5.010;
-use Moose;
-extends 'BOM::Product::Pricing::Engine';
-with 'BOM::Product::Pricing::Engine::Role::StandardMarkup';
+use strict;
+use warnings;
 
-use BOM::Market::AggTicks;
-use Math::Util::CalculatedValue::Validatable;
-use List::Util qw(sum);
-use YAML::XS qw(Load);
-use YAML::CacheLoader;
+use BOM::Product::Pricing::Engine::Utils;
+use Scalar::Util qw(looks_like_number);
+use Cache::RedisDB;
+use List::Util qw(sum min max);
+use YAML::CacheLoader qw(LoadFile);
+use Date::Utility;
 
-has _supported_types => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    default => sub {
-        return {
-            CALL => 1,
-            PUT  => 1,
-        };
+use constant {
+    REQUIRED_ARGS => [qw(contract_type underlying_symbol last_twenty_ticks economic_events)],
+    ALLOWED_TYPES => {
+        CALL => 1,
+        PUT  => 1
     },
-);
+};
 
-has coeff => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_coeff {
-    my $self = shift;
-    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml')->{$self->bet->underlying->symbol};
+sub bs_probability {
+    # there's nothing much to be done here.
+    return {
+        probability => 0.5,
+        debug_info  => {},
+        markups     => {
+            model_markup      => 0,
+            commission_markup => 0,
+            risk_markup       => 0,
+        },
+        error => undef,
+    };
 }
 
-has _latest_ticks => (
-    is         => 'ro',
-    lazy_build => 1,
-);
+sub probability {
+    my $args = shift;
 
-has tick_source => (
-    is      => 'ro',
-    default => sub { BOM::Market::AggTicks->new; },
-);
-
-sub _build__latest_ticks {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    return $self->tick_source->retrieve({
-        underlying   => $bet->underlying,
-        tick_count   => 20,
-        ending_epoch => $bet->date_pricing->epoch
-    });
-}
-
-has [qw(model_markup commission_markup risk_markup tie_factor vol_proxy trend_proxy probability trend_adjustment)] => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_trend_adjustment {
-    my $self = shift;
-
-    #A,B,C,D are paramters that defines the pricing "surface."  The values are obtained emperically.
-    my $coeff = $self->coeff;
-    my $f1    = $coeff->{A} * sqrt($self->vol_proxy->amount) + $coeff->{B} * $self->vol_proxy->amount + $coeff->{C};
-    my $f2    = 1 + exp($coeff->{D} * $self->trend_proxy->amount);
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'trend_adjustment',
-        description => 'Trend adjustment for tick expiry contracts',
-        set_by      => __PACKAGE__,
-        base_amount => $f1 * (1 / $f2 - 0.5),
-    });
-}
-
-sub _build_probability {
-    my $self = shift;
-
-    my $prob_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'theo_probability',
-        description => 'Probability for tick expiry contracts based on the last 20 ticks',
-        set_by      => __PACKAGE__,
-        minimum     => 0.5,
-        maximum     => 1,
-        base_amount => 0.5,
-    });
-    if ($self->bet->pricing_code eq 'PUT') {
-        $prob_cv->include_adjustment('subtract', $self->trend_adjustment);
-    } else {
-        $prob_cv->include_adjustment('add', $self->trend_adjustment);
-    }
-    $prob_cv->include_adjustment('info', $self->vol_proxy);
-    $prob_cv->include_adjustment('info', $self->trend_proxy);
-
-    if (not defined $prob_cv->peek_amount('vol_proxy') or not defined $prob_cv->peek_amount('trend_proxy')) {
-        $prob_cv->add_errors({
-            message           => 'Insufficient market data to calculate price',
-            message_to_client => 'Insufficient market data to calculate price',
-        });
+    # input check
+    my $required = REQUIRED_ARGS;
+    if (grep { not defined $args->{$_} } @$required) {
+        return BOM::Product::Pricing::Engine::Utils::default_probability_reference('Insufficient input to calculate probability');
     }
 
-    return $prob_cv;
-}
-
-sub _build_vol_proxy {
-    my $self = shift;
-
-    my @latest = @{$self->_latest_ticks};
-    my $proxy;
-    if (@latest and @latest == 20 and abs($self->bet->date_start->epoch - $latest[0]->{epoch}) < 300) {
-        my $sum = 0;
-        for (1 .. 19) {
-            $sum += log($latest[$_]->{quote} / $latest[$_ - 1]->{quote})**2;
-        }
-        $proxy = sqrt($sum / 19);
-    }
-    my $proxy_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'vol_proxy',
-        description => 'volatility approximation base on last 20 ticks',
-        set_by      => __PACKAGE__,
-        minimum     => $self->coeff->{y_min},
-        maximum     => $self->coeff->{y_max},
-        defined $proxy ? (base_amount => $proxy) : (base_amount => 0.2),    # 20% vol if it ever goes wrong
-    });
-
-    if (not defined $proxy) {
-        $proxy_cv->add_errors({
-            message           => 'Do not have latest ticks to calculate volatility',
-            message_to_client => 'Insufficient market data to calculate price.',
-        });
+    my $allowed = ALLOWED_TYPES;
+    if (not $allowed->{$args->{contract_type}}) {
+        return BOM::Product::Pricing::Engine::Utils::default_probability_reference("Could not calculate probability for $args->{contract_type}");
     }
 
-    return $proxy_cv;
-}
+    my $err;
+    my ($contract_type, $ticks, $economic_events, $underlying_symbol) =
+        @{$args}{'contract_type', 'last_twenty_ticks', 'economic_events', 'underlying_symbol'};
 
-sub _build_trend_proxy {
-    my $self = shift;
+    # We allow date_pricing as a parameter for bpot
+    my $date_pricing = $args->{date_pricing} // Date::Utility->new;
+    my $affected_by_economic_events = @$economic_events ? 1 : 0;
+    my %debug_information = (
+        affected_by_economic_events => $affected_by_economic_events,
+    );
 
-    my $trend_proxy = 0;
-    my $coeff       = $self->coeff;
-    if ($self->vol_proxy->confirm_validity) {
-        my $latest        = $self->_latest_ticks;
-        my $ma_step       = $coeff->{ma_step};
-        my $previous_tick = -$ma_step;
-        my $avg           = sum(map { $_->{quote} } @$latest[$previous_tick .. -1]) / $ma_step;
-        my $x             = ($latest->[-1]{quote} - $avg) / $latest->[-1]{quote};
-        $trend_proxy = $x / $self->vol_proxy->amount;
+    my ($vol_proxy, $trend_proxy);
+    ($vol_proxy, $trend_proxy, $err) = _get_proxy($ticks, $date_pricing);
+    $debug_information{base_vol_proxy}   = $vol_proxy;
+    $debug_information{base_trend_proxy} = $trend_proxy;
+
+    my $coef = _coefficients()->{$underlying_symbol};
+
+    # coefficient sanity check
+    my @required_coef = qw(x_prime_min x_prime_max y_min y_max A B C D tie_A tie_B tie_C tie_D);
+    if (grep { not defined $coef->{$_} or not looks_like_number($coef->{$_}) } @required_coef) {
+        return BOM::Product::Pricing::Engine::Utils::default_probability_reference('Invalid coefficients for probability calculation');
     }
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'trend_proxy',
-        description => 'approximation for trend',
-        set_by      => __PACKAGE__,
-        minimum     => $coeff->{x_prime_min},
-        maximum     => $coeff->{x_prime_max},
-        base_amount => $trend_proxy,
-    });
-}
-
-sub _build_model_markup {
-    my $self = shift;
-
-    my $model_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'model_markup',
-        description => 'Model markup for Tick Expiry engine',
-        set_by      => __PACKAGE__,
-    });
-
-    $model_markup->include_adjustment('reset', $self->risk_markup);
-    $model_markup->include_adjustment('add',   $self->commission_markup);
-
-    return $model_markup;
-}
-
-sub _build_commission_markup {
-    my $self = shift;
-
-    my $base_amount    = 0.0;
-    my $ul             = $self->bet->underlying;
-    my $market_name    = $ul->market->name;
-    my $submarket_name = $ul->submarket->name;
-
-    if ($market_name eq 'forex') {
-        $base_amount = 0.025;
-    }
-    if ($submarket_name eq 'smart_fx') {
-        $base_amount = 0.02;
-    }
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        name        => 'commission_markup',
-        description => 'Commission markup for tick expiry contracts. This varies by underlying.',
-        set_by      => __PACKAGE__,
-        base_amount => $base_amount,
-    });
-}
-
-sub _build_risk_markup {
-    my $self = shift;
-
-    my $tie_adj = 0;
-    my $coef    = $self->coeff;
-    my $y       = $self->vol_proxy->amount;
-    my $x       = $self->trend_proxy->amount;
-    # we assume if you have one tie coefficent, you have all ties.
-    if ($coef and $coef->{tie_A}) {
-        $tie_adj = $coef->{tie_A} * $x**2 + $coef->{tie_B} + $coef->{tie_C} * $y + $coef->{tie_D} * sqrt($y);
-    }
-
-    my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'risk_markup',
-        description => 'A markup for the probability of a tie in entry and exit ticks',
-        set_by      => __PACKAGE__,
-        minimum     => -0.1,
-        # ties work in BOM's favor, so we are giving clients a slightly cheaper price.
-        base_amount => -$tie_adj / 2,
-    });
-
-    $risk_markup->include_adjustment('multiply', $self->tie_factor);
-
-    #add 3% to the markup in case the (x=trend,y=vol) is outside boundaries of the surface
-    my $x_base_amount = $self->trend_proxy->base_amount;
-    my $y_base_amount = $self->vol_proxy->base_amount;
+    $debug_information{coefficients} = $coef;
 
     my $x_min = $coef->{x_prime_min};
     my $x_max = $coef->{x_prime_max};
     my $y_min = $coef->{y_min};
     my $y_max = $coef->{y_max};
 
-    if (($x_base_amount > $x_max) or ($x_base_amount < $x_min) or ($y_base_amount > $y_max) or ($y_base_amount < $y_min)) {
-        my $risk_adj = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'risk_markup_adjustment',
-            description => 'A markup adjustment for the probability of extreme cases where trend/vol are outside pre-specified surface',
-            set_by      => __PACKAGE__,
-            minimum     => 0.03,
-            base_amount => 0.03,
-        });
+    $vol_proxy = min($y_max, max($y_min, $vol_proxy));
+    $debug_information{vol_proxy} = $vol_proxy;
+    $trend_proxy = min($x_max, max($x_min, $trend_proxy));
+    $debug_information{trend_proxy} = $trend_proxy;
 
-        $risk_markup->include_adjustment('add', $risk_adj);
+    # calculates trend adjustment
+    # A,B,C,D are paramters that defines the pricing "surface".  The values are obtained emperically.
+    my $f1               = $coef->{A} * sqrt($vol_proxy) + $coef->{B} * $vol_proxy + $coef->{C};
+    my $f2               = 1 + exp($coef->{D} * $trend_proxy);
+    my $trend_adjustment = $f1 * (1 / $f2 - 0.5);
+    $debug_information{trend_adjustment} = $trend_adjustment;
+
+    # probability
+    my $base_probability = bs_probability()->{probability};
+    my $probability = $contract_type eq 'PUT' ? $base_probability - $trend_adjustment : $base_probability + $trend_adjustment;
+    $probability = min(1, max(0.5, $probability));
+
+    # risk_markup
+    my $tie_adjustment = ($coef->{tie_A} * $trend_proxy**2 + $coef->{tie_B} + $coef->{tie_C} * $vol_proxy + $coef->{tie_D} * sqrt($vol_proxy)) / 2;
+    $debug_information{tie_adjustment} = $tie_adjustment;
+    # do not discount if the contract is affected by economic events.
+    my $tie_factor = $affected_by_economic_events ? 0 : 0.75;
+    $debug_information{tie_factor} = $tie_factor;
+    my $risk_markup = -$tie_adjustment * $tie_factor;
+    $debug_information{base_risk_markup} = $risk_markup;
+
+    if (   ($debug_information{base_trend_proxy} > $x_max)
+        or ($debug_information{base_trend_proxy} < $x_min)
+        or ($debug_information{base_vol_proxy} > $y_max)
+        or ($debug_information{base_vol_proxy} < $y_min))
+    {
+        $risk_markup += 0.03;
+    }
+    # maximum discount is 10%
+    $risk_markup = max(-0.1, $risk_markup);
+    $debug_information{risk_markup} = $risk_markup;
+
+    # commission_markup
+    my $commission_markup = 0.025;
+    $debug_information{commission_markup} = $commission_markup;
+
+    # model_markup
+    my $model_markup = $risk_markup + $commission_markup;
+    $debug_information{model_markup} = $model_markup;
+
+    return {
+        probability => $probability,
+        debug_info  => \%debug_information,
+        markups     => {
+            model_markup      => $model_markup,
+            commission_markup => $commission_markup,
+            risk_markup       => $risk_markup,
+        },
+        error => $err,
+    };
+}
+
+# Having this as a private subroutine for testability
+sub _get_proxy {
+    my ($ticks, $date_pricing) = @_;
+
+    my ($vol_proxy, $trend_proxy, $err);
+    if (@$ticks and @$ticks == 20 and abs($date_pricing->epoch - $ticks->[0]->{epoch}) < 300) {
+        my $sum = sum(map { log($ticks->[$_]->{quote} / $ticks->[$_ - 1]->{quote})**2 } (1 .. 19));
+        $vol_proxy = sqrt($sum / 19);
+    } else {
+        $vol_proxy = 0.20;                                                 # 20% volatility
+        $err       = 'Do not have enough ticks to calculate volatility';
     }
 
-    return $risk_markup;
+    $trend_proxy = 0;
+    if (not $err) {
+        my $ma_step = 7;
+        my $avg     = sum(map { $_->{quote} } @$ticks[-$ma_step .. -1]) / $ma_step;
+        my $x       = ($ticks->[-1]{quote} - $avg) / $ticks->[-1]{quote};
+        # it is quite impossible for vol_proxy to be 0. Let's not die if it is!
+        $trend_proxy = $x / $vol_proxy if $vol_proxy != 0;
+    }
+
+    return ($vol_proxy, $trend_proxy, $err);
 }
 
-sub _build_tie_factor {
-    my $self = shift;
-
-    my $ten_minutes_int = Time::Duration::Concise->new(interval => '10m');
-    my $contract_start  = $self->bet->effective_start;
-    my $start_period    = $contract_start->minus_time_interval($ten_minutes_int->seconds);
-    my $end_period      = $contract_start->plus_time_interval($ten_minutes_int->seconds);
-    my @economic_events = $self->get_applicable_economic_events($start_period, $end_period);
-    my $factor_base     = (@economic_events) ? 0 : 0.75;
-
-    return Math::Util::CalculatedValue::Validatable->new({
-        #This is the fraction of tie value that we return to clients.
-        name        => 'tie_factor',
-        description => 'A constant multiplier to ties coefficient',
-        set_by      => __PACKAGE__,
-        base_amount => $factor_base,
-    });
+sub _coefficients {
+    state $coef = LoadFile('/home/git/regentmarkets/bom/config/files/tick_trade_coefficients.yml');
+    return $coef;
 }
-
-sub is_compatible {
-    my $bet = shift;
-
-    my %supported_sentiment = (
-        up   => 1,
-        down => 1
-    );
-    return unless $supported_sentiment{$bet->sentiment};
-    my %symbols = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market            => ['forex'],
-        expiry_type       => 'tick',
-        contract_category => 'callput'
-    );
-    return unless $symbols{$bet->underlying->symbol};
-    return 1;
-}
-
-no Moose;
-
-__PACKAGE__->meta->make_immutable;
 
 1;

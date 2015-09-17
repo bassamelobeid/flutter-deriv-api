@@ -11,6 +11,7 @@ use List::Util qw(reduce);
 use base qw( Exporter );
 use BOM::Product::ContractFactory qw(produce_contract);
 our @EXPORT_OK = qw(available_contracts_for_symbol);
+use Math::CDF qw(qnorm);
 
 =head1 available_contracts_for_symbol
 
@@ -71,9 +72,11 @@ sub available_contracts_for_symbol {
 =head2 _predefined_trading_period
 
 We set the predefined trading periods based on Japan requirement:
-1) Start at 00:00GMT and expire with duration of 2,3,4 and 5 hours
-2) Start at closest even hour and expire with duration of 2,3,4,5 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT, 02-05GMT, 02-06GMT, 02-07GMT.
-3) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
+1) Start at 00:00GMT and expire with duration of 2, and 4 hours
+2) Start at closest even hour and expire with duration of 2,and 4 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT, 02-06GMT.
+3) Start at 01:00GMT and expire with duration of 3, and 5 hours
+4) Start at closest odd hour and expire with duration of 3,and 5 hours. Example: Current hour is 3GMT, you will have trading period of 03-06GMT, 03-08GMT.
+5) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
 
 =cut
 
@@ -84,18 +87,18 @@ sub _predefined_trading_period {
     my $args            = shift;
     my @offerings       = @{$args->{offerings}};
     my $exchange        = $args->{exchange};
-    my $period_length   = Time::Duration::Concise->new({interval => '2h'});              # Two hour intraday rolling periods.
     my $now             = $args->{date};
-    my $in_period       = $now->hour - ($now->hour % $period_length->hours);
-    my $trading_key     = join($cache_sep, $exchange->symbol, $now->date, $in_period);
-    my $today_close     = $exchange->closing_on($now);
+    my $now_hour        = $now->hour;
+    my $now_date        = $now->date;
+    my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
+    my $today_close     = $exchange->closing_on($now)->epoch;
     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
-        my $today        = $now->truncate_to_day;                                        # Start of the day object.
-        my $start_of_day = $today->datetime;                                             # As a string.
+        my $today        = $now->truncate_to_day;    # Start of the day object.
+        my $start_of_day = $today->datetime;         # As a string.
 
         # Starting at midnight, running through these times.
-        my @hourly_durations = qw(2h 3h 4h 5h);
+        my @even_hourly_durations = qw(2h 4h);
 
         $trading_periods = [
             map {
@@ -115,7 +118,7 @@ sub _predefined_trading_period {
                 $now->is_before($_)
                 } map {
                 $today->plus_time_interval($_)
-                } @hourly_durations
+                } @even_hourly_durations
         ];
 
         # Starting at midnight, running through these dates.
@@ -141,37 +144,39 @@ sub _predefined_trading_period {
                 duration => $actual_day_string,
                 };
         }
-        # Starting in the most recent even hour, running through those hours
-        my $period_start = $today->plus_time_interval($in_period . 'h');
-        push @$trading_periods, map {
-            +{
-                date_start => {
-                    date  => $period_start->datetime,
-                    epoch => $period_start->epoch,
-                },
-                date_expiry => {
-                    date  => $_->datetime,
-                    epoch => $_->epoch,
-                },
-                duration => ($_->hour - $period_start->hour) . 'h',
-                }
-            } grep {
-            $now->is_before($_) and $period_start->hour > 0 and $period_start->epoch < $today_close->epoch
-            } map {
-            $period_start->plus_time_interval($_)
-            } @hourly_durations;
-        # We will hold it for the duration of the period which is a little too long, but no big deal.
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $period_length->seconds);
+        if ($now_hour > 0) {
+            my $even_hour = $now_hour - ($now_hour % 2);
+            push @$trading_periods,
+                map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@even_hourly_durations}) }
+                grep { $_->is_after($today) }
+                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2);
+
+            my $odd_hour = $now_hour % 2 ? $now_hour : $now_hour - 1;
+            my @odd_hourly_durations = qw(3h 5h);
+            push @$trading_periods,
+                map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@odd_hourly_durations}) }
+                grep { $_->is_after($today) }
+                map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 2, $odd_hour - 4);
+
+        }
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, 3600);
     }
 
     my @new_offerings;
     foreach my $o (@offerings) {
-        my $minimum_contract_duration = Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds;
+        # we do not want to offer intraday contract on other contracts
+        my $minimum_contract_duration =
+            $o->{contract_category} eq 'callput' ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds : 86400;
         foreach my $trading_period (@$trading_periods) {
-            my $trading_duration = Time::Duration::Concise->new({interval => $trading_period->{duration}})->seconds;
+            my $date_expiry      = $trading_period->{date_expiry}->{epoch};
+            my $date_start       = $trading_period->{date_start}->{epoch};
+            my $trading_duration = $date_expiry - $date_start;
             if ($trading_duration < $minimum_contract_duration) {
                 next;
-            } elsif ($now->day_of_week == 5 and $trading_duration < 86400 and $trading_period->{date_expiry}->{epoch} > $today_close->epoch) {
+            } elsif ($now->day_of_week == 5
+                and $trading_duration < 86400
+                and ($date_expiry > $today_close or $date_start > $today_close))
+            {
                 next;
             } else {
                 push @new_offerings, {%{$o}, trading_period => $trading_period};
@@ -180,6 +185,41 @@ sub _predefined_trading_period {
     }
 
     return @new_offerings;
+}
+
+=head2 _get_combination_of_date_expiry_date_start
+
+To get the date_start and date_expiry for a give trading duration
+
+=cut
+
+sub _get_combination_of_date_expiry_date_start {
+    my $args       = shift;
+    my $date_start = $args->{date_start};
+    my @duration   = @{$args->{duration}};
+    my $now        = $args->{now};
+    my $start_date = {
+        date  => $date_start->datetime,
+        epoch => $date_start->epoch
+    };
+
+    return (
+        map {
+            +{
+                date_start  => $start_date,
+                date_expiry => {
+                    date  => $_->datetime,
+                    epoch => $_->epoch,
+                },
+                duration => ($_->hour - $date_start->hour) . 'h',
+                }
+            }
+            grep {
+            $now->is_before($_)
+            } map {
+            $date_start->plus_time_interval($_)
+            } @duration
+    );
 }
 
 =head2 _set_predefined_barriers
@@ -204,14 +244,11 @@ sub _set_predefined_barriers {
     if (not $available_barriers) {
         my $start_tick = $underlying->tick_at($date_start) // $current_tick;
         my @boundaries_barrier = map {
-            _get_barrier_by_probability({
-                underlying    => $underlying,
-                duration      => $duration,
-                contract_type => 'CALL',
-                start_tick    => $start_tick->quote,
-                atm_vol       => 0.1,
-                theo_prob     => $_,
-                date_start    => $date_start
+            _get_strike_from_call_bs_price({
+                call_price => $_,
+                timeinyear => ($date_expiry - $date_start) / (365 * 86400),
+                start_tick => $start_tick->quote,
+                vol        => 0.1,
             });
         } qw(0.05 0.95);
 
@@ -258,61 +295,24 @@ sub _split_boundaries_barriers {
     return map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
 }
 
-=head2 _get_barrier_by_probability
+=head2 _get_strike_from_call_bs_price
 
-To get the strike that associated with a given theo probability.
+To get the strike that associated with a given call bs price.
 
 =cut
 
-sub _get_barrier_by_probability {
+sub _get_strike_from_call_bs_price {
     my $args = shift;
 
-    my ($underlying, $duration, $contract_type, $start_tick, $atm_vol, $target_theo_prob, $date_start) =
-        @{$args}{'underlying', 'duration', 'contract_type', 'start_tick', 'atm_vol', 'theo_prob', 'date_start'};
+    my ($call_price, $T, $spot, $vol) =
+        @{$args}{'call_price', 'timeinyear', 'start_tick', 'vol'};
+    my $q  = 0;
+    my $r  = 0;
+    my $d2 = qnorm($call_price * exp($r * $T));
+    my $d1 = $d2 + $vol * sqrt($T);
 
-    my $bet;
-
-    my ($high, $low) = (1.5 * $start_tick, 0.5 * $start_tick);
-
-    my $pip_size   = $underlying->pip_size;
-    my $bet_params = {
-        underlying   => $underlying,
-        bet_type     => $contract_type,
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $date_start,
-        r_rate       => 0,
-        q_rate       => 0,
-        duration     => $duration,
-        pricing_vol  => $atm_vol,
-        date_pricing => $date_start,
-    };
-
-    for (my $iterations = 0; $iterations <= 20; $iterations++) {
-        $bet_params->{'barrier'} = ($high + $low) / 2;
-        $bet = produce_contract($bet_params);
-        my $bet_sentiment     = $bet->sentiment;
-        my $theo_prob         = $bet->theo_probability->amount;
-        my $barrier_direction = $bet_params->{'barrier'} > $start_tick ? 'up' : 'down';
-        if (abs($theo_prob - $target_theo_prob) < 0.01) {
-            last;
-        }
-
-        if ($bet_sentiment eq 'up' or $bet_sentiment eq 'high_vol' or ($contract_type eq 'NOTOUCH' and $barrier_direction eq 'down')) {
-            if ($theo_prob > $target_theo_prob) {
-                $low = ($low + $high) / 2;
-            } else {
-                $high = ($low + $high) / 2;
-            }
-        } elsif ($bet_sentiment eq 'down' or $bet_sentiment eq 'low_vol' or ($contract_type eq 'ONETOUCH' and $barrier_direction eq 'down')) {
-            if ($theo_prob > $target_theo_prob) {
-                $high = ($low + $high) / 2;
-            } else {
-                $low = ($low + $high) / 2;
-            }
-        }
-    }
-    return $bet->barrier->as_absolute;
+    my $strike = $spot / exp($d1 * $vol * sqrt($T) - ($r - $q + ($vol * $vol) / 2) * $T);
+    return $strike;
 }
 
 1;

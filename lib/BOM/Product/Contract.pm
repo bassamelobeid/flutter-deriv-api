@@ -9,6 +9,7 @@ use List::Util qw(min max first);
 use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
 
+use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -503,20 +504,43 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name;
-    if ($self->tick_expiry and BOM::Product::Pricing::Engine::TickExpiry::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry';
-    } elsif ($self->is_intraday and BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::Intraday::Forex';
-    } elsif ($self->is_intraday and BOM::Product::Pricing::Engine::Intraday::Index::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::Intraday::Index';
-    } elsif ($self->is_path_dependent) {
-        $engine_name = 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-    } else {
-        $engine_name = 'BOM::Product::Pricing::Engine::Slope::Observed';
+    my $engine_name =
+        $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope::Observed';
+
+    if ($self->tick_expiry) {
+        my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => 'forex',     # forex is the only financial market that offers tick expiry contracts for now.
+            contract_category => 'callput',
+            expiry_type       => 'tick',
+        );
+        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
+    } elsif (
+        $self->is_intraday and not $self->is_forward_starting and grep {
+            $self->market->name eq $_
+        } qw(forex indices)
+        )
+    {
+        my $func = $self->market->name eq 'forex' ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
+        my @symbols = BOM::Market::UnderlyingDB->instance->$func;
+        if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
+            my $duration = $self->remaining_time;
+            my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
+            $engine_name = 'BOM::Product::Pricing::Engine::Intraday::' . $name
+                if ((defined $loc->{min} and defined $loc->{max})
+                and $duration->seconds <= $loc->{max}->seconds
+                and $duration->seconds >= $loc->{min}->seconds);
+        }
     }
 
     return $engine_name;
+}
+
+sub _match_symbol {
+    my ($lists, $symbol) = @_;
+    for (@$lists) {
+        return 1 if $_ eq $symbol;
+    }
+    return;
 }
 
 =item pricing_engine_parameters
@@ -1080,11 +1104,15 @@ sub _build_payout {
 sub _build_theo_probability {
     my $self = shift;
 
+    return $self->_get_probability_reference('probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
+
     return $self->pricing_engine->probability;
 }
 
 sub _build_bs_probability {
     my $self = shift;
+
+    return $self->_get_probability_reference('bs_probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
 
     return $self->pricing_engine->bs_probability;
 }
@@ -1097,6 +1125,9 @@ sub _build_bs_price {
 
 sub _build_model_markup {
     my $self = shift;
+
+    # theo_probability markup will always be used.
+    return $self->_get_probability_reference('probability')->{markups}->{model_markup} if $self->new_interface_engine->{$self->pricing_engine_name};
 
     return $self->pricing_engine->model_markup;
 }
@@ -1230,7 +1261,7 @@ sub _build_pricing_vol {
             days  => $self->timeindays->amount,
             delta => 50
         });
-    } elsif (my ($which) = $pen =~ /Intraday::(Forex|Index)/) {
+    } elsif ($pen =~ /Intraday::Forex/) {
         my $volsurface = $self->empirical_volsurface;
         my $vol_args   = {
             fill_cache            => !$self->backtest,
@@ -1238,14 +1269,9 @@ sub _build_pricing_vol {
             seconds_to_expiration => $self->timeindays->amount * 86400,
         };
 
-        my $ref;
-        if (lc $which eq 'forex') {
-            $ref = $volsurface->get_seasonalized_volatility($vol_args);
-            $self->long_term_prediction($ref->{long_term_prediction});
-        } else {
-            $ref = $volsurface->get_volatility($vol_args);
-        }
+        my $ref = $volsurface->get_seasonalized_volatility($vol_args);
         $vol = $ref->{volatility};
+        $self->long_term_prediction($ref->{long_term_prediction});
         $self->average_tick_count($ref->{average_tick_count});
         if ($ref->{err}) {
             $self->add_errors({
@@ -1442,6 +1468,69 @@ has [qw(atm_vols rho)] => (
     isa        => 'HashRef',
     lazy_build => 1
 );
+
+# a hash reference for slow migration of pricing engine to the new interface.
+has new_interface_engine => (
+    is      => 'ro',
+    default => sub {
+        {
+            'BOM::Product::Pricing::Engine::TickExpiry' => 1,
+        };
+    },
+);
+
+sub _get_probability_reference {
+    my ($self, $probability_name) = @_;
+
+    my $prob_ref;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        my %pricing_parameters = map { my $method = '_' . $_; $_ => $self->$method } @{$self->pricing_engine_name->REQUIRED_ARGS};
+        # will make this more generic as we move more pricing engines to this interface
+        my $func_name = $self->pricing_engine_name . '::' . $probability_name;
+        my $subref    = \&$func_name;
+        $prob_ref = &$subref(\%pricing_parameters);
+    } else {
+        # shouldn't be calling this if it doesn't have the new interface
+        $prob_ref = {
+            error       => 'Invalid call to [' . $probability_name . '] for engine [' . $self->pricing_engine_name . ']',
+            probability => 1,
+            markups     => {
+                # avoid undefined markups
+                model_markup      => 0,
+                risk_markup       => 0,
+                commission_markup => 0,
+            },
+        };
+    }
+
+    # convert it to a CV.
+    $prob_ref->{probability} = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => '0.5 probability adjusted for trend',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $prob_ref->{probability},
+    });
+    # convert markups to CV
+    for my $markup_name (keys $prob_ref->{markups}) {
+        $prob_ref->{markups}->{$markup_name} = Math::Util::CalculatedValue::Validatable->new({
+            name        => $markup_name,
+            description => $markup_name,
+            set_by      => $self->pricing_engine_name,
+            base_amount => $prob_ref->{markups}->{$markup_name},
+        });
+    }
+    # We always get a value for probability.
+    # Here is where we decide whether it is a valid probability or not!
+    if ($prob_ref->{error}) {
+        $self->add_errors({
+            severity          => 100,
+            message           => 'Error in calculating probability [' . $prob_ref->{error} . ']',
+            message_to_client => localize("We could not price this contract now, please try again later."),
+        });
+    }
+
+    return $prob_ref;
+}
 
 sub _build_priced_with {
     my $self = shift;
@@ -1717,6 +1806,128 @@ sub barrier_display_info {
     }
 
     return (barriers => \%barriers);
+}
+
+has exit_tick => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_exit_tick {
+    my $self = shift;
+
+    my $underlying = $self->underlying;
+    my $exchange   = $self->exchange;
+
+    my $exit_tick;
+    if ($self->tick_expiry) {
+        my $tick_number       = $self->ticks_to_expiry;
+        my @ticks_since_start = @{
+            $underlying->ticks_in_between_start_limit({
+                    start_time => $self->date_start->epoch + 1,
+                    limit      => $tick_number,
+                })};
+        if (@ticks_since_start == $tick_number) {
+            $exit_tick = $ticks_since_start[-1];
+            $self->date_expiry(Date::Utility->new($exit_tick->epoch));
+        }
+    } elsif ($self->expiry_daily) {
+        # Expiration based on daily OHLC
+        $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
+    } else {
+        $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+    }
+
+    if ($exit_tick and my $entry_tick = $self->entry_tick) {
+        my ($first_date, $last_date) = map { Date::Utility->new($_) } ($entry_tick->epoch, $exit_tick->epoch);
+        my $max_delay = $underlying->max_suspend_trading_feed_delay;
+        # We should not have gotten here otherwise.
+        if (not $first_date->is_before($last_date)) {
+            $self->add_errors({
+                    severity => 100,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Start tick is not before expiry tick',
+                        symbol => $underlying->symbol,
+                        start  => $first_date->datetime,
+                        expiry => $last_date->datetime
+                    ),
+                    message_to_client => localize("Missing market data for contract period."),
+                });
+        }
+        my $end_delay = Time::Duration::Concise->new(interval => $self->date_expiry->epoch - $last_date->epoch);
+
+        if ($self->expiry_daily and not $underlying->use_official_ohlc) {
+            if (    not $self->is_path_dependent
+                and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
+            {
+                $self->add_errors({
+                        severity => 99,
+                        alert    => 1,
+                        message  => format_error_string(
+                            'Missing ticks at close',
+                            symbol => $underlying->symbol,
+                            expiry => $self->date_expiry->datetime
+                        ),
+                        message_to_client => localize("Missing market data for exit spot."),
+                    });
+            }
+        } elsif ($end_delay->seconds > $max_delay->seconds) {
+            $self->add_errors({
+                    severity => 99,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Exit tick too far away',
+                        symbol    => $underlying->symbol,
+                        delay     => $end_delay->as_concise_string,
+                        permitted => $max_delay->as_concise_string,
+                        expiry    => $self->date_expiry->datetime
+                    ),
+                    message_to_client => localize("Missing market data for exit spot."),
+                });
+        }
+        if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
+            $self->add_errors({
+                    severity => 99,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Exit tick date differs from entry tick date on intraday',
+                        symbol => $underlying->symbol,
+                        start  => $last_date->datetime,
+                        expiry => $first_date->datetime,
+                    ),
+                    message_to_client => localize("Intraday contracts may not cross market open."),
+                });
+        }
+        if ($self->tick_expiry) {
+            my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
+            if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
+                $self->add_errors({
+                        severity => 100,
+                        alert    => 1,
+                        message  => format_error_string(
+                            'Tick expiry duration exceeds permitted maximum',
+                            symbol    => $underlying->symbol,
+                            actual    => $actual_duration->as_concise_string,
+                            permitted => $self->max_tick_expiry_duration->as_concise_string
+                        ),
+                        message_to_client => localize("Missing market data for contract period."),
+                    });
+            }
+        }
+    }
+
+    return $exit_tick;
+}
+
+sub _has_ticks_before_close {
+    my ($self, $closing) = @_;
+
+    my $underlying = $self->underlying;
+
+    my $closing_tick = $underlying->tick_at($closing->epoch, {allow_inconsistent => 1});
+
+    return (defined $closing_tick and $closing->epoch - $closing_tick->epoch > $underlying->max_suspend_trading_feed_delay->seconds) ? 0 : 1;
 }
 
 # Validation methods.
@@ -2484,6 +2695,46 @@ sub _validate_volsurface {
     }
 
     return @errors;
+}
+
+## PRICING PARAMETERS CODE ##
+## This is a temporary place for this code.
+## It would be moved to the appropriate class when we have refactored all PE to the new interface
+
+sub _contract_type {
+    return shift->code;
+}
+
+sub _underlying_symbol {
+    return shift->underlying->symbol;
+}
+
+sub _economic_events {
+    my $self = shift;
+
+    my $underlying = $self->underlying;
+    my $from       = $self->effective_start->minus_time_interval('10m');
+    my $to         = $self->effective_start->plus_time_interval('10m');
+    my $eco_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+        from => $from,
+        to   => $to,
+    });
+    my @influential_currencies = qw(USD AUD CAD CNY NZD);
+    my %applicable_symbols = map { $_ => 1 } ($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
+    my @applicable_events =
+        map { $_->[1] } sort { $a->[1] <=> $b->[0] } map { [$_->release_date->epoch, $_] } grep { $applicable_symbols{$_->symbol} } @$eco_events;
+
+    return \@applicable_events;
+}
+
+sub _last_twenty_ticks {
+    my $self = shift;
+
+    return BOM::Market::AggTicks->new->retrieve({
+        underlying   => $self->underlying,
+        ending_epoch => $self->effective_start->epoch,
+        tick_count   => 20,
+    });
 }
 
 no Moose;

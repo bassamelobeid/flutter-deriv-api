@@ -1,3 +1,6 @@
+use strict;
+use warnings;
+
 use Test::Most;
 use Test::MockTime qw( :all );
 use Test::FailWarnings;
@@ -495,7 +498,7 @@ subtest 'tick_at scenarios' => sub {
             my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
             my $test_time = Date::Utility->new('2012-09-28 07:59:00');
 
-            is $underlying->tick_at($test_time->epoch)->quote, 6088.73, 'Since the ticks are already aggregated, we will not get any more ticks';
+            is $underlying->tick_at($test_time->epoch), undef, 'Aggregation does not make a tick visible.';
             is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6088.73,
                 'If we are ok with inconsistent price then get last available tick';
         };

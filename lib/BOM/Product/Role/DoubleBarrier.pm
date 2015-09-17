@@ -87,7 +87,7 @@ sub _validate_barrier {
         push @errors,
             {
             severity          => 100,
-            message           => 'At least of barrier is undefined on double barrier contract.',
+            message           => 'At least one barrier is undefined on double barrier contract.',
             message_to_client => localize('The barriers are improperly entered for this contract.'),
             };
     }
@@ -129,23 +129,30 @@ sub _validate_barrier {
                 };
         }
     }
-    if ($low_barrier->as_absolute > 2.5 * $current_spot or $low_barrier->as_absolute < 0.25 * $current_spot) {
-        push @errors,
-            {
-            message           => 'Lower barrier is outside of range of 25% to 250% of spot',
-            severity          => 91,
-            message_to_client => localize('Low barrier is out of acceptable range. Please adjust the low barrier.'),
-            };
-    }
-    if ($high_barrier->as_absolute > 2.5 * $current_spot or $high_barrier->as_absolute < 0.25 * $current_spot) {
-        push @errors,
-            {
-            message           => 'High barrier is outside of range of 25% to 250% of spot',
-            severity          => 91,
-            message_to_client => localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
-            };
+    my ($min_move, $max_move) = (0.25, 2.5);
+    foreach my $pair (['low' => $low_barrier], ['high' => $high_barrier]) {
+        my ($label, $barrier) = @$pair;
+        next unless $barrier;
+        my $abs_barrier = $barrier->as_absolute;
+        if ($abs_barrier > $max_move * $current_spot or $abs_barrier < $min_move * $current_spot) {
+            push @errors,
+                {
+                message => format_error_string(
+                    'Barrier too far from spot',
+                    move => $abs_barrier / $current_spot,
+                    min  => $min_move,
+                    max  => $max_move
+                ),
+                severity          => 91,
+                message_to_client => ($label eq 'low')
+                ? localize('Low barrier is out of acceptable range. Please adjust the low barrier.')
+                : localize('High barrier is out of acceptable range. Please adjust the high barrier.'),
+                ,
+                };
+        }
     }
 
     return @errors;
 }
+
 1;
