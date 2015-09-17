@@ -72,9 +72,11 @@ sub new {    ## no critic RequireArgUnpack
     local $@;
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_write->get('LOGIN_SESSION::' . $self->{token})) } || {};
+        $self = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
-        my $email_cookie = eval { JSON::from_json(BOM::System::Chronicle->_redis_write->get('LOGIN_SESSION::BY_EMAIL::' . $self->{email})); };
+        my $email_cookie = eval { JSON::from_json(BOM::System::Chronicle->_redis_read->get('LOGIN_SESSION::BY_EMAIL::' . $self->{email})); };
+        # the below handling upgrades tokens.
+        # In a few days we need to change it so it returns empty on a missing email cookie as well.
         if ($email_cookie and ($email_cookie->{token} ne $self->{token})) {
             # ensures that once logging in, other session keys used are invalid.
             bless $self, $package;
