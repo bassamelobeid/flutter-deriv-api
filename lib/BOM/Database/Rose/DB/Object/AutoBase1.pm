@@ -79,17 +79,9 @@ sub _set_staff {
     # db->type here is the "operation". We will not audit operation values such as 'collector'.
     if ($db->database eq 'regentmarkets' && $db->type eq 'write') {
         $self->{_staff} ||= do {
-            my ($staff, $ip);
-            if (my $request = BOM::Platform::Context::request) {
-                if (my $bo_cookie = $request->bo_cookie) {
-                    $staff = $bo_cookie->clerk;
-                } else {
-                    $staff = $request->loginid;
-                }
-                $ip = $request->client_ip;
-            }
-            $db->dbh->do('select audit.set_staff(?,?)', undef, ($staff || 'bom-perl'), $ip);
-            $staff;
+            return if not exists $self->{STAFF_INFO}
+            $db->dbh->do('select audit.set_staff(?,?)', undef, ($self->{STAFF_INFO}->{STAFF_NAME} || 'bom-perl'), $self->{STAFF_INFO}->{STAFF_IP});
+            return $self->{STAFF_INFO}->{STAFF_NAME};
         };
     }
     return;
