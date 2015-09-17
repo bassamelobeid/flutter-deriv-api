@@ -1,6 +1,0 @@
-global:
-  quants:
-    underlyings:
-      suspend_trades:
-        - ASX51
-        - frxUSDJPY
