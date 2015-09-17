@@ -25,10 +25,6 @@ cgi:
           description: "Cookie used to track client's affiliate token"
           isa: Str
           default: "affiliate_tracking"
-    maximum_duration_for_bet_visualization:
-      description: "What is the maximum duration (in mins) of contracts for which we should show visualization"
-      isa: Int
-      default: 15
     allowed_languages:
       description: "Allowed languages for this website"
       isa: ArrayRef
@@ -597,14 +593,6 @@ system:
           description: "Directory where our feed files are stored"
           isa: Str
           default: "/feed"
-        cgi:
-          description: "Directory where our cgi code is stored"
-          isa: Str
-          default: "/home/git/regentmarkets/bom/cgi"
-        www:
-          description: "Directory where www index is located"
-          isa: Str
-          default: "/home/website/www"
         tmp_gif:
           description: "Directory where we store temporary gif files"
           isa: Str
@@ -613,14 +601,6 @@ system:
           description: "Temp directory for website operation"
           isa: Str
           default: "/home/tmpramdrive"
-    bins:
-      description: "Path configuration for various executabes used by our system"
-      isa: section
-      contains:
-        gnuplot:
-          description: "Path to the gnuplot executable"
-          isa: Str
-          default: "/usr/bin/gnuplot"
     desk_com:
       description: "All configuration related to the Desk.com API"
       isa: section
