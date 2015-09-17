@@ -56,7 +56,7 @@ sub _requires_age_verified {
 sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
-    return if $client->broker eq 'MF';
+    return if $client->client_fully_authenticated;
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.
