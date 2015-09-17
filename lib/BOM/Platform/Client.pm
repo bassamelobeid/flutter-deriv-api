@@ -133,6 +133,16 @@ sub save {
     }
 
     $self->set_db('write');
+
+    if ($self->{staff_name}) {
+        $self->{STAFF_INFO}->{STAFF_NAME} = $self->{staff_name};
+    } elsif (my $bo_cookie = BOM::Platform::Context::request()->bo_cookie) {
+        $self->{STAFF_INFO}->{STAFF_NAME} = $bo_cookie->clerk;
+    } else {
+        $self->{STAFF_INFO}->{STAFF_NAME} = BOM::Platform::Context::request()->loginid;
+    }
+    $self->{STAFF_INFO}->{STAFF_IP} = BOM::Platform::Context::request()->client_ip;
+
     my $r = $self->SUPER::save(cascade => 1);    # Rose
     my $reset_statuses;
     for (values %{$self->{_clr_status}}) {       # see clr_status.
@@ -362,6 +372,7 @@ sub get_status {
 
 sub set_status {
     my ($self, $status_code, $staff_name, $reason) = @_;
+    $self->{staff_name} = $staff_name;
     unless ($self->get_db eq 'write') {
         $self->set_db('write');
         $self->client_status(undef);    # throw out my read-only versions..
