@@ -79,7 +79,7 @@ sub _set_staff {
     # db->type here is the "operation". We will not audit operation values such as 'collector'.
     if ($db->database eq 'regentmarkets' && $db->type eq 'write') {
         $self->{_staff} ||= do {
-            return if not exists $self->{STAFF_INFO}
+            return if not exists $self->{STAFF_INFO};
             $db->dbh->do('select audit.set_staff(?,?)', undef, ($self->{STAFF_INFO}->{STAFF_NAME} || 'bom-perl'), $self->{STAFF_INFO}->{STAFF_IP});
             return $self->{STAFF_INFO}->{STAFF_NAME};
         };
