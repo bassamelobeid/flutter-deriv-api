@@ -1,0 +1,680 @@
+---
+cgi:
+  description: |
+    This section contains various parameters that determine behavior of code in cgi.
+    DO NOT USE any of these parameters in the /lib modules!!!
+  isa: section
+  contains:
+    cookie_name:
+      description: "Cookie names used"
+      isa: section
+      contains:
+        settings:
+          description: "Contains all ui settings for the current session"
+          isa: Str
+          default: "settings"
+        login:
+          description: "Main login cookie"
+          isa: Str
+          default: "login"
+        login_bo:
+          description: "Backoffice login cookie"
+          isa: Str
+          default: "staff"
+        affiliate_tracking:
+          description: "Cookie used to track client's affiliate token"
+          isa: Str
+          default: "affiliate_tracking"
+    allowed_languages:
+      description: "Allowed languages for this website"
+      isa: ArrayRef
+      default:
+        - EN
+        - RU
+        - ID
+      global: 1
+    supported_languages:
+      description: "Contains all the languages supported, contains both disabled or enabled"
+      isa: ArrayRef
+      default:
+        - EN
+        - ID
+        - RU
+        - ES
+        - FR
+        - PT
+        - PL
+        - DE
+        - JA
+        - AR
+        - ZH_CN
+        - VI
+        - ZH_TW
+    rtl_languages:
+      description: "Contains languages that need right to left support"
+      isa: ArrayRef
+      default:
+        - AR
+    backoffice:
+      description: "Contains backoffice static url"
+      isa: section
+      contains:
+        static_url:
+          description: "Static url of backoffice statics"
+          isa: Str
+          default: "https://regentmarkets.github.io/binary-static-backoffice/"
+          global: 1
+    terms_conditions_version:
+      description: "Current version for terms and conditions. Use format - Version 35 2015-01-19"
+      isa: Str
+      default: ""
+      global: 1
+marketing:
+  description: "Marketing Settings"
+  isa: section
+  contains:
+    email:
+      description: "Email address for marketing group"
+      isa: Str
+      default: "x-marketing@binary.com"
+      global: 1
+    myaffiliates_email:
+      description: "Email address for myaffiliates group"
+      isa: Str
+      default: "affiliates@binary.com"
+      global: 1
+payments:
+  description: "Control parameters for cashier and other payment systems"
+  isa: section
+  contains:
+    email:
+      description: "Payment management email."
+      isa: Str
+      default: "payments@binary.com"
+      global: 1
+    payment_limits:
+      description: 'Staff limit for payment'
+      isa: json_string
+      default: '{"jy":"99999"}'
+      global: 1
+    withdrawal_limits:
+      description: "Withdrawal limits for various landing company"
+      isa: section
+      contains:
+        iom:
+          description: "withdrawal limits for iom"
+          isa: section
+          contains:
+            for_days:
+              description: 'period of days'
+              isa: Int
+              default: 30
+            limit_for_days:
+              description: 'limit for days'
+              isa: Int
+              default: 3000
+            lifetime_limit:
+              description: 'lifetime limit'
+              isa: Int
+              default: 99999999
+        malta:
+          description: "withdrawal limits for malta"
+          isa: section
+          contains:
+            for_days:
+              description: 'period of days'
+              isa: Int
+              default: 90
+            limit_for_days:
+              description: 'limit for days'
+              isa: Int
+              default: 2300
+            lifetime_limit:
+              description: 'lifetime limit'
+              isa: Int
+              default: 2300
+        maltainvest:
+          description: "withdrawal limits for malta"
+          isa: section
+          contains:
+            for_days:
+              description: 'period of days'
+              isa: Int
+              default: 90
+            limit_for_days:
+              description: 'limit for days'
+              isa: Int
+              default: 2300
+            lifetime_limit:
+              description: 'lifetime limit'
+              isa: Int
+              default: 2300
+        costarica:
+          description: "withdrawal limits for costarica"
+          isa: section
+          contains:
+            for_days:
+              description: 'period of days'
+              isa: Int
+              default: 30
+            limit_for_days:
+              description: 'limit for days'
+              isa: Int
+              default: 10000
+            lifetime_limit:
+              description: 'lifetime limit'
+              isa: Int
+              default: 10000
+    virtual:
+      description: "Control parameters for virtual"
+      isa: section
+      contains:
+        minimum_topup_balance:
+          description: 'Minimum balance after which virtual clients can topup'
+          isa: Int
+          default: 1000
+        topup_amount:
+          description: 'The amount by which we want to topup the virtual account'
+          isa: Int
+          default: 10000
+        maximum_balance:
+          description: 'The maximum allowed balance for virtual accounts'
+          isa: Int
+          default: 1000000
+price_streamer:
+  description: "Configuration for price streaming daemon"
+  isa: section
+  contains:
+    max_clients:
+      description: 'Maximum number of simultaneous clients per worker'
+      isa: Int
+      default: 8
+    workers:
+      description: 'Number of worker processes'
+      isa: Int
+      default: 36
+tick_streamer:
+  description: "Configuration for tick streaming daemon"
+  isa: section
+  contains:
+    max_clients:
+      description: 'Maximum number of clients per process'
+      isa: Int
+      default: 200
+    workers:
+      description: 'Number of worker processes'
+      isa: Int
+      default: 30
+quants:
+  description: "Various quants' parameters"
+  isa: section
+  contains:
+    commission:
+      description: "Tunable factors for commissions"
+      isa: section
+      contains:
+        resell_discount_factor:
+          description: "Discount factor for sell back (0 means best sell prices for clients)"
+          isa: Num
+          default: 0.5
+          global: 1
+        equality_discount_retained:
+          description: "Percentage of equality discount retained by us (so 1 means we keep 100% of the equal tick discount)"
+          isa: Num
+          default: 1
+          global: 1
+        deep_otm_threshold:
+          description: "Threshold for ask price value to which deep_otm contracts will be pushed, per market. For deep_itm contracts with ask price greater than 1 - deep_otm_threshold, it will be pushed to full payout"
+          isa: json_string
+          default: '{"random" : 1, "forex" : 2.5, "indices" : 5, "commodities" : 5 , "stocks" : 5, "sectors" : 5}'
+          global: 1
+        intraday:
+          description: "Tunable intraday factors"
+          isa: section
+          contains:
+            historical_fixed:
+              description: "Commission (percent of stake) for things priced with P::E:IH."
+              isa: Num
+              default: 0.0125
+              global: 1
+            historical_bounceback:
+              description: "Expected spot bounce back over duration as a percentage of recent trend."
+              isa: json_string
+              default: '{"client_favor" : { "euro" : 0.01, "path" : 0.00 },  "BOM_favor" : { "euro" : 0.10, "path" : 0.10 } }'
+              global: 1
+            historical_vol_meanrev:
+              description: "Expected vol bounce back over duration as a percentage of recent trend."
+              isa: Num
+              default: 0.10
+              global: 1
+            historical_iv_risk:
+              description: "Additional commission for IV-IH contracts.  Setting to 1 will add 1% to final price."
+              isa: Num
+              default: 0
+              global: 1
+        digital_spread:
+          description: "Base commission schedule"
+          isa: section
+          contains:
+            level_multiplier:
+              description: "The multiplier for each underlying commission level over 1"
+              isa: Num
+              default: 1.4
+              global: 1
+        minimum_total_markup:
+          description: "The minimum commission applied (percent of stake)"
+          isa: Num
+          default: 1
+          global: 1
+        maximum_total_markup:
+          description: "The maximum commission applied (percent of stake)"
+          isa: Num
+          default: 25
+          global: 1
+        adjustment:
+          description: "BOM specific adjustments to manage risk."
+          isa: section
+          contains:
+            minimum:
+              description: "Minimum adjustment (percent of commission)"
+              isa: Num
+              default: 1
+              global: 1
+            maximum:
+              description: "Maximum adjustment (percent of commission)"
+              isa: Num
+              default: 500
+              global: 1
+            bom_created_bet:
+              description: "Adjusment for contracts we created on behalf of clients (percent of commission)"
+              isa: Num
+              default: 100
+              global: 1
+            spread_multiplier:
+              description: "Spread adjustment."
+              isa: Num
+              default: 1
+              global: 1
+            global_scaling:
+              description: "The scaling factor for all commissions. (percent of commission)"
+              isa: Num
+              default: 100
+              global: 1
+            news_factor:
+              description: "Multiplicative factor for the worst impact by news (percent of news impact ranging 1,3,5)"
+              isa: Num
+              default: 1
+              global: 1
+            forward_start_factor:
+              description: "Discount factor for forward-starting contracts. (subtracted from spread)"
+              isa: Num
+              default: 2
+              global: 1
+            quanto_scale_factor:
+              description: "Multiplicative scaling for the quanto_spread portion of commission."
+              isa: Num
+              default: 1
+              global: 1
+    features:
+      description: "Toggles for various platform features"
+      isa: section
+      contains:
+        enable_portfolio_autosell:
+          description: "enable auto sell in portfolio"
+          isa: Bool
+          default: 0
+          global: 1
+        suspend_claim_types:
+          description: "Suspend trades only on these bet types (Flash, DoubleDown, DoubleUp, ..)"
+          isa: ArrayRef
+          default: []
+          global: 1
+        enable_pricedebug:
+          description: "Show the pricing debug pop-up to office IPs"
+          global: 1
+          isa: Bool
+          default: 0
+        enable_parameterized_surface:
+          description: "A switch to turn on/off parameterized surface for all underlyings"
+          isa: Bool
+          default: 1
+          global: 1
+    internal:
+      description: "Internal configuration, probably not exposed to dynamic setitngs directly."
+      isa: section
+      contains:
+        custom_client_limits:
+          description: "Custom per-market/per-category client turnover limits"
+          isa: HashRef
+          default: {}
+          global: 1
+    markets:
+      description: "Market-specific variables"
+      isa: section
+      contains:
+        disabled:
+          description: "Switch off a given market (random)"
+          isa: ArrayRef
+          default: []
+          global: 1
+        disable_iv:
+          description: "Disable buying of IV contracts on a particular underlying. Allow selling off these contracts.-"
+          isa: ArrayRef
+          default: []
+          global: 1
+    underlyings:
+      description: "Underlying-specific variables"
+      isa: section
+      contains:
+        disabled_due_to_corporate_actions:
+          description: "An array reference of disabled underlying(s) due to corporate actions, e.g.: UKAAL,UKHSBA"
+          isa: ArrayRef
+          default: []
+          global: 1
+        disable_autoupdate_vol:
+          description: "Disable autoupdate volatility for the following underlyings, eg: frxGBPUSD"
+          isa: ArrayRef
+          default: []
+          global: 1
+        price_with_parameterized_surface:
+          description: "A list of underlyings of which contracts are priced with parameterized surface"
+          isa: json_string
+          default: "{}"
+          global: 1
+        newly_added:
+          description: "Specify the new launched underlyings that need more closely monitoring, eg: KOSPI2, JCI, .."
+          isa: ArrayRef
+          default: []
+          global: 1
+        suspend_trades:
+          description: "A list of underlyings for which trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+        suspend_buy:
+          description: "A list of underlyings for which purchase trades should be suspended"
+          global: 1
+          isa: ArrayRef
+          default: []
+    bet_limits:
+      description: "Per bet limit"
+      isa: section
+      contains:
+        maximum_payout_on_new_markets:
+          description: "Maximum allowed payout for purchasing those new launched market, eg: 1000"
+          isa: Str
+          default: 1000
+          global: 1
+        maximum_payout:
+          description: "Maximum allowed payout, eg: 1000"
+          isa: Str
+          default: ""
+          global: 1
+        maximum_payout_on_less_than_7day_indices_call_put:
+          description: "Maximum allowed payout on less than 7 day call/put indiex contracts, eg: 1000"
+          isa: Num
+          default: 5000
+          global: 1
+        holiday_blackout_start:
+          description: "The day of the year on which the end of year holiday blackout period starts"
+          isa: Int
+          default: 345
+          global: 1
+        holiday_blackout_end:
+          description: "The day of the year on which the end of year holiday blackout period ends"
+          isa: Int
+          default: 5
+          global: 1
+        maximum_tick_trade_stake:
+          description: "The maximum permitted stake for tick trades"
+          isa: Int
+          default: 1000
+          dynamic: 1
+          global: 1
+    client_limits:
+      description: "Per client limits on turnover and payout"
+      isa: section
+      contains:
+        payout_per_symbol_and_bet_type_limit:
+          description: "Maximum potential payout for open contracts with same symbol and bet_type"
+          isa: Num
+          default: 200000
+          global: 1
+        spreads_daily_profit_limit:
+          description: "Daily profit limit for spreads per client"
+          isa: Num
+          default: 1000
+          global: 1
+        asian_turnover_limit:
+          description: "Daily turnover limit for asian per client"
+          isa: Num
+          default: 5000
+          global: 1
+        tick_expiry_turnover_limit:
+          description: "Daily tick expiry turnover limit per client"
+          isa: Num
+          default: 200000
+          global: 1
+        intraday_spot_index_turnover_limit:
+          description: "Daily intraday spot index turnover limit per client"
+          isa: Num
+          default: 30000
+          global: 1
+        tick_expiry_engine_turnover_limit:
+          description: "Daily turnover limit for tick expiry engine per client"
+          isa: Num
+          default: 5000
+          global: 1
+        smarties_turnover_limit:
+          description: "Daily smarties turnover limit per client"
+          isa: Num
+          default: 5000
+          global: 1
+        smart_index_turnover_limit:
+          description: "Daily smart index turnover limit per client"
+          isa: Num
+          default: 5000
+          global: 1
+        stocks_turnover_limit:
+          description: "Daily stocks turnover limit per client"
+          isa: Num
+          default: 5000
+          global: 1
+        digits_turnover_limit:
+          description: "Daily digits turnover limit per client"
+          isa: Num
+          default: 5000
+          global: 1
+        intraday_forex_iv:
+          description: "Limits on intraday client activity.  Set any sub-value to 0 to disable that limit"
+          isa: json_string
+          default: '{"turnover" : 20000, "realized_profit" : 10000, "potential_profit" : 25000 }'
+          global: 1
+    market_data:
+      description: "Tunable parameters for market data"
+      isa: section
+      contains:
+        volsurface_calibration_error_threshold:
+          description: "VolSurface calibration is bad if it exceeds this number"
+          isa: Num
+          default: 20
+          global: 1
+        interest_rates_source:
+          description: "Determine whether we use market rates or implied rates"
+          isa: Str
+          default: "market"
+          global: 1
+        economic_announcements_source:
+          description: "Determine the economic annoucements source to be used in bet pricing which is either forexfactory or bloomberg."
+          isa: Str
+          default: "forexfactory"
+          global: 1
+        extra_vol_diff_by_delta:
+          description: "Increase the maximum volatility differences between delta ,e.g. 0.1 means increase the maximum limit by 10%"
+          isa: Str
+          default: ""
+          global: 1
+    email_vol_autoupdate_report:
+      description: "Whether or not to email the vol autoupdate cron report to Quants on this system."
+      isa: Bool
+      default: 0
+system:
+  description: "Various parameters determining core application functionality"
+  isa: section
+  contains:
+    send_email_to_clients:
+      description: "Are we allowed to send email outside company domains?"
+      isa: Bool
+      default: 0
+    email:
+      description: "Dummy email address to indicate email sent from our system"
+      isa: Str
+      default: "system@binary.com"
+    on_production:
+      description: "Are we on Production?"
+      isa: Bool
+      default: 0
+    on_development:
+      description: "Are we on Development?"
+      isa: Bool
+      default: 0
+    on_qa:
+      description: "Are we on QA?"
+      isa: Bool
+      default: 0
+    suspend:
+      description: "Suspend one or more of our services"
+      isa: section
+      contains:
+        trading:
+          description: "Suspend buy or sell of all trades"
+          isa: Bool
+          default: 0
+          global: 1
+        payments:
+          description: "Suspend all payments (withdrawal and deposit), including payment agents"
+          isa: Bool
+          default: 0
+          global: 1
+        payment_agents:
+          description: "Suspend all payments agent transfers"
+          isa: Bool
+          default: 0
+          global: 1
+        new_accounts:
+          description: "Suspend opening new accounts"
+          isa: Bool
+          default: 0
+          global: 1
+        all_logins:
+          description: "Suspend all logins to the system"
+          isa: Bool
+          default: 0
+          global: 1
+        logins:
+          description: "Suspend logins for a broker code (ex. VRTC,MX,CR)"
+          isa: ArrayRef
+          default: []
+          global: 1
+        system:
+          description: "Suspend viewing any page in the system"
+          isa: Bool
+          default: 0
+          global: 1
+    directory:
+      description: "Configuration for system wide directories"
+      isa: section
+      contains:
+        db:
+          description: "Directory where we store legacy db stuff, primarily customer documents"
+          isa: Str
+          default: "/db"
+        feed:
+          description: "Directory where our feed files are stored"
+          isa: Str
+          default: "/feed"
+        tmp_gif:
+          description: "Directory where we store temporary gif files"
+          isa: Str
+          default: "/home/website/www/temp"
+        tmp:
+          description: "Temp directory for website operation"
+          isa: Str
+          default: "/home/tmpramdrive"
+    desk_com:
+      description: "All configuration related to the Desk.com API"
+      isa: section
+      contains:
+        desk_url:
+          description: "Desk.com URL to post info"
+          isa: Str
+          default: "https://binary.desk.com/api/v2/"
+        account_username:
+          description: "Username for Desk.com account"
+          isa: Str
+          default: joanna@regentmarkets.com
+        account_password:
+          description: "Password for Desk.com account"
+          isa: Str
+          default: R3kU3rsM5WH7
+    alerts:
+      description: |
+        Email addresses to which alerts should be sent. The string _DEVELOPER_
+        will be replaced with developer@regentmarkets.com if the machine name
+        looks like developerdev.regentmarkets.com, e.g. nickdev.regentmarkets.com
+      isa: section
+      contains:
+        default_recipient:
+          description: "The default recipient for all system alerts not otherwise described in this section"
+          isa: Str
+          default: x-sysadmin-alert@binary.com
+        email_subject_prefix:
+          description: |
+            Prefix that should be added to all e-mail messages sent from server.
+            _HOST_ in the value will be replaced with hostname.
+          isa: Str
+          default: ""
+        quants:
+          description: "The recipient for system alerts related to pricing and other quantitative analysis problems"
+          isa: Str
+          default: x-quants-alert@binary.com
+        sysadmins:
+          description: "The recipient for system alerts related to hardware, operating system, and other configuration problems"
+          isa: Str
+          default: x-sysadmin-alert@binary.com
+feed:
+  description: "All configurations related to the feed"
+  isa: section
+  contains:
+    db:
+      description: "All configurations related to the feed/OTN db"
+      isa: section
+      contains:
+        tick_history_duration:
+          description: "The duration(in months) for which the history is maintained"
+          isa: Int
+          default: 12
+compliance:
+  description: "Compliance related configuration"
+  isa: section
+  contains:
+    email:
+      description: "Email for compliance team"
+      isa: Str
+      default: "compliance@binary.com"
+accounting:
+  description: "Account team related configuration"
+  isa: section
+  contains:
+    email:
+      description: "Email for account team"
+      isa: Str
+      default: "x-acc@binary.com"
+tech:
+  description: "Technical team related configuration"
+  isa: section
+  contains:
+    email:
+      description: "Email for technical team"
+      isa: Str
+      default: "x-tech@binary.com"
