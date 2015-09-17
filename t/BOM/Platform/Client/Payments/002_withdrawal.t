@@ -90,21 +90,32 @@ subtest 'Client-specific' => sub {
     my $client = new_client('USD');
 
     $client->set_status('withdrawal_locked', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client withdrawals have been locked.';
+    $client->save;
+    throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client withdrawals have been locked 1.';
     $client->clr_status('withdrawal_locked');
+    $client->save;
 
     $client->clr_status('unwelcome');
+    $client->save;
+
     $client->set_status('disabled', 'a-payments-clerk', '..dont like you, sorry.');
     $client->save;
     throws_ok { $client->validate_payment(%withdrawal) } qr/disabled/, 'Client disabled.';
 
     $client->set_status('cashier_locked', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Client's cashier is locked/, 'Client withdrawals have been locked.';
+    $client->save;
+
+    throws_ok { $client->validate_payment(%withdrawal) } qr/Client's cashier is locked/, 'Client withdrawals have been locked2 .';
     $client->clr_status('cashier_locked');
+    $client->save;
+
 
     $client->set_status('disabled', 'calum', 'reason?');
-    throws_ok { $client->validate_payment(%withdrawal) } qr/Client is disabled/, 'Client withdrawals have been locked.';
+    $client->save;
+
+    throws_ok { $client->validate_payment(%withdrawal) } qr/Client is disabled/, 'Client withdrawals have been locked3 .';
     $client->clr_status('disabled');
+    $client->save;
 
     $client->cashier_setting_password('12345');
     throws_ok { $client->validate_payment(%withdrawal) } qr/Client has set the cashier password/, 'Client cashier is locked by himself.';
