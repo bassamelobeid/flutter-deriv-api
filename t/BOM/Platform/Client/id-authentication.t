@@ -188,7 +188,7 @@ subtest 'proveid' => sub {
         $v->run_authentication;
         my @notif = @{$v->notified};
         is @notif, 1, 'sent one notification';
-        like $notif[0][0], qr/PASSED BUT CLIENT FLAGGED/, 'notification is correct';
+        like $notif[0][0], qr/PASSED ONLY AGE VERIFICATION/, 'notification is correct';
         ok !$v->client->client_fully_authenticated, 'client not fully authenticated';
         ok $v->client->get_status('age_verification'), 'client is age verified';
         ok !$v->client->get_status('cashier_locked'), 'cashier not locked';
