@@ -12,6 +12,8 @@ use BOM::Database::Rose::DB;
 use BOM::Database::ClientDB;
 use Rose::DB::Object::Metadata::Relationship::OneToMany;
 
+use BOM::Platform::Context;
+
 # The default list of generated methods for one-many relationships does not include
 # 'count_' and 'iterator_' methods so add them now (before meta->setup calls in derived classes).
 Rose::DB::Object::Metadata::Relationship::OneToMany->default_auto_method_types(qw(find get_set_on_save add_on_save count iterator));
@@ -77,9 +79,17 @@ sub _set_staff {
     # db->type here is the "operation". We will not audit operation values such as 'collector'.
     if ($db->database eq 'regentmarkets' && $db->type eq 'write') {
         $self->{_staff} ||= do {
-            return if not exists $self->{STAFF_INFO};
-            $db->dbh->do('select audit.set_staff(?,?)', undef, ($self->{STAFF_INFO}->{STAFF_NAME} || 'bom-perl'), $self->{STAFF_INFO}->{STAFF_IP});
-            return $self->{STAFF_INFO}->{STAFF_NAME};
+            my ($staff, $ip);
+            if (my $request = BOM::Platform::Context::request) {
+                if (my $bo_cookie = $request->bo_cookie) {
+                    $staff = $bo_cookie->clerk;
+                } else {
+                    $staff = $request->loginid;
+                }
+                $ip = $request->client_ip;
+            }
+            $db->dbh->do('select audit.set_staff(?,?)', undef, ($staff || 'bom-perl'), $ip);
+            $staff;
         };
     }
     return;
