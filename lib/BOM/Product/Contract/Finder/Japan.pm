@@ -198,6 +198,7 @@ sub _get_combination_of_date_expiry_date_start {
     my $date_start = $args->{date_start};
     my @duration   = @{$args->{duration}};
     my $now        = $args->{now};
+    $date_start = $date_start->minus_time_interval('15m')
     my $start_date = {
         date  => $date_start->datetime,
         epoch => $date_start->epoch
@@ -292,6 +293,7 @@ sub _split_boundaries_barriers {
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
     my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
+    push @steps, $spot_at_start;
     return map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
 }
 
