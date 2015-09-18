@@ -165,7 +165,7 @@ subtest 'cookie preferred' => sub {
 
         my $lc2 = BOM::Platform::SessionCookie->new(
             loginid => 'CR1002',
-            email   => "2$email",
+            email   => $email,
         );
 
         my $request = BOM::Platform::Context::Request::from_mojo(
