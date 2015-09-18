@@ -97,21 +97,28 @@ sub _predefined_trading_period {
         my $today        = $now->truncate_to_day;    # Start of the day object.
         my $start_of_day = $today->datetime;         # As a string.
 
-        # First series, start at 00GMT, expires at 02:00
-        my $first_expiry =  $today->plus_time_interval('2h');
+        # Starting at midnight, running through these times.
+        my @even_hourly_durations = qw(2h 4h);
+
         $trading_periods = [
+            map {
                 +{
                     date_start => {
                         date  => $start_of_day,
                         epoch => $today->epoch
                     },
                     date_expiry => {
-                        date  => $first_expiry->datetime,
-                        epoch => $first_expiry->epoch
+                        date  => $_->datetime,
+                        epoch => $_->epoch
                     },
-                    duration => '2h'
+                    duration => ($_->hour - $today->hour) . 'h'
                     }
                 }
+                grep {
+                $now->is_before($_)
+                } map {
+                $today->plus_time_interval($_)
+                } @even_hourly_durations
         ];
 
         # Starting at midnight, running through these dates.
@@ -137,10 +144,8 @@ sub _predefined_trading_period {
                 duration => $actual_day_string,
                 };
         }
-
         if ($now_hour > 0) {
             my $even_hour = $now_hour - ($now_hour % 2);
-            my @even_hourly_durations = qw(2h 4h);
             push @$trading_periods,
                 map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@even_hourly_durations}) }
                 grep { $_->is_after($today) }
@@ -193,10 +198,6 @@ sub _get_combination_of_date_expiry_date_start {
     my $date_start = $args->{date_start};
     my @duration   = @{$args->{duration}};
     my $now        = $args->{now};
-
-    # We need to start at 15minutes before the closest hour.
-    # so that there is overlapping of period to solve the issue contract not available at last 15 minute
-    $date_start = $date_start->minus_time_interval('15m');
     my $start_date = {
         date  => $date_start->datetime,
         epoch => $date_start->epoch
