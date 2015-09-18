@@ -318,7 +318,7 @@ sub calculate_limits {
             };
     }
 
-    if ($contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::TickExpiry') {
+    if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],

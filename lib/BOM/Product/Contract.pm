@@ -31,7 +31,7 @@ require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::Slope::Observed;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-require BOM::Product::Pricing::Engine::TickExpiry;
+require Pricing::Engine::TickExpiry;
 
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
@@ -513,7 +513,7 @@ sub _build_pricing_engine_name {
             contract_category => 'callput',
             expiry_type       => 'tick',
         );
-        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
+        $engine_name = 'Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
     } elsif (
         $self->is_intraday and not $self->is_forward_starting and grep {
             $self->market->name eq $_
@@ -945,7 +945,7 @@ sub _build_ask_probability {
     # Eventually we'll return the actual object.
     # And start from an actual object.
     my $minimum;
-    if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::TickExpiry') {
+    if ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         $minimum = 0.4;
     } elsif ($self->tick_expiry and $self->category->code eq 'digits') {
         $minimum = ($self->sentiment eq 'match') ? 0.1 : 0.9;
@@ -1474,7 +1474,7 @@ has new_interface_engine => (
     is      => 'ro',
     default => sub {
         {
-            'BOM::Product::Pricing::Engine::TickExpiry' => 1,
+            'Pricing::Engine::TickExpiry' => 1,
         };
     },
 );
