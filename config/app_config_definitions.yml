@@ -642,18 +642,6 @@ system:
           description: "The recipient for system alerts related to hardware, operating system, and other configuration problems"
           isa: Str
           default: x-sysadmin-alert@binary.com
-feed:
-  description: "All configurations related to the feed"
-  isa: section
-  contains:
-    db:
-      description: "All configurations related to the feed/OTN db"
-      isa: section
-      contains:
-        tick_history_duration:
-          description: "The duration(in months) for which the history is maintained"
-          isa: Int
-          default: 12
 compliance:
   description: "Compliance related configuration"
   isa: section
