@@ -25,10 +25,6 @@
 "/cashier":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"bet_demo.cgi":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-  exclude_appcache: true
 "/trade/bet_explanation":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
