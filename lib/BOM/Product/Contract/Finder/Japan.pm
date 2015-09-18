@@ -198,7 +198,7 @@ sub _get_combination_of_date_expiry_date_start {
     my $date_start = $args->{date_start};
     my @duration   = @{$args->{duration}};
     my $now        = $args->{now};
-    $date_start = $date_start->minus_time_interval('15m')
+    $date_start = $date_start->minus_time_interval('15m');
     my $start_date = {
         date  => $date_start->datetime,
         epoch => $date_start->epoch
