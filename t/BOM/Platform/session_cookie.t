@@ -11,7 +11,6 @@ my $session_cookie = BOM::Platform::SessionCookie->new(
     loginid => $loginid,
     email   => $email,
 );
-
 my $request = BOM::Platform::Context::Request->new(session_cookie => $session_cookie);
 
 my $session_cookie2 = BOM::Platform::SessionCookie->new(
@@ -19,8 +18,6 @@ my $session_cookie2 = BOM::Platform::SessionCookie->new(
     email   => $email,
 );
 my $request2 = BOM::Platform::Context::Request->new(session_cookie => $session_cookie2);
-ok($session_cookie->loginid, 'Second login works');
-ok(! BOM::Platform::SessionCookie->new(token => $session_cookie->token)->token, 'cannot re-use first session cookie token');
 
 throws_ok {
     my $lc = BOM::Platform::SessionCookie->new({
@@ -29,23 +26,23 @@ throws_ok {
 }
 qr/email /, 'email parameter is mandatory';
 
-my $value = $session_cookie2->token;
+my $value = $session_cookie->token;
 ok !BOM::Platform::SessionCookie->new(token => "${value}a")->token, "Couldn't create instance from invalid value";
-my $session_cookie3 = BOM::Platform::SessionCookie->new(token => $value);
-ok $session_cookie3->token,     "Created login cookie from value" or diag $value;
-isa_ok $session_cookie3, 'BOM::Platform::SessionCookie';
+$session_cookie = BOM::Platform::SessionCookie->new(token => $value);
+ok $session_cookie->token,     "Created login cookie from value" or diag $value;
+isa_ok $session_cookie, 'BOM::Platform::SessionCookie';
 
-my $session_cookie4 = BOM::Platform::SessionCookie->new(token => $value);
-ok $session_cookie4, "Created login cookie from value";
+$session_cookie = BOM::Platform::SessionCookie->new(token => $value);
+ok $session_cookie, "Created login cookie from value";
 cmp_deeply(
-    $session_cookie4,
+    $session_cookie,
     methods(
         loginid => $loginid,
-        token   => $value,
+        token   => $session_cookie->token,
         email   => $email,
     ),
     "Correct values for all attributes",
-) or diag Test::More::explain $session_cookie4;
+);
 
 subtest 'session generation is fork-safe', sub {
     my $c1 = BOM::Platform::SessionCookie->new(
