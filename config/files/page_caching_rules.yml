@@ -40,10 +40,6 @@
 "/resources/contract_guide":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"helloworld.cgi":
-  header:
-    Cache-Control: "public, max-age=15, s-maxage=604800"
-  exclude_appcache: true
 "/charting/application":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -150,9 +146,6 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/why-us":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/responsible-trading":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/white-labels":
