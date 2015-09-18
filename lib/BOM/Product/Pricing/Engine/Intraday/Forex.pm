@@ -70,7 +70,7 @@ has _supported_types => (
 );
 
 has [
-    qw(coefficients probability intraday_delta_correction intraday_bounceback short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
+    qw(coefficients probability intraday_delta_correction short_term_prediction long_term_prediction economic_events_markup intraday_trend intraday_vanilla_delta commission_markup risk_markup)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -296,82 +296,123 @@ sub _build_more_than_short_term_cutoff {
     return ($self->bet->get_time_to_expiry->minutes >= 15) ? 1 : 0;
 }
 
-sub _build_intraday_bounceback {
-    my $self = shift;
+sub calculate_intraday_bounceback {
+    my ($self, $t_mins, $st_or_lt) = @_;
 
-    my $st_or_lt = $self->more_than_short_term_cutoff ? '_lt' : '_st';
     my @coef_name = map { $_ . $st_or_lt } qw(A B C D);
     my $calibration_coef = $self->coefficients->{$self->bet->underlying->symbol};
     my ($coef_A, $coef_B, $coef_C, $coef_D) = map { $calibration_coef->{$_} } @coef_name;
-    my $coef_D_multiplier = $self->more_than_short_term_cutoff ? 1 : 1 / $coef_D;
+    my $coef_D_multiplier = ($st_or_lt eq '_lt') ? 1 : 1 / $coef_D;
 
-    my $duration_in_secs = $self->bet->timeindays->amount * 86400;
+    my $duration_in_secs = $t_mins * 60;
     my $bounceback_base =
         $coef_A /
         ($coef_D * $coef_D_multiplier) *
         $duration_in_secs**$coef_B *
         (1 / (1 + exp($coef_C * $self->intraday_trend->amount * $coef_D)) - 0.5);
 
-    if ($self->bet->category->code eq 'callput' and not $self->more_than_short_term_cutoff) {
+    if ($self->bet->category->code eq 'callput' and $st_or_lt eq '_st') {
         $bounceback_base = ($self->bet->code eq 'CALL') ? $bounceback_base : $bounceback_base * -1;
     }
-    my $bb_cv = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'intraday_bounceback',
-        description => 'Intraday bounceback based on historical data',
-        set_by      => __PACKAGE__,
-        base_amount => $bounceback_base,
-    });
 
-    return $bb_cv;
+    return $bounceback_base;
 }
 
-has expected_spot => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_expected_spot {
-    my $self = shift;
+sub calculate_expected_spot {
+    my ($self, $t) = @_;
 
     my $bet = $self->bet;
     my $expected_spot =
-        $self->intraday_bounceback->amount * $self->intraday_trend->peek_amount('average_spot') * sqrt($bet->timeindays->amount * 86400) +
+        $self->calculate_intraday_bounceback($t, "_lt") * $self->intraday_trend->peek_amount('average_spot') * sqrt($t * 60) +
         $bet->pricing_args->{spot};
     return $expected_spot;
+}
+
+sub _get_short_term_delta_correction {
+    my $self = shift;
+
+    return $self->calculate_intraday_bounceback(min($self->bet->get_time_to_expiry->minutes, 15), "_st");
+}
+
+sub _get_long_term_delta_correction {
+    my $self = shift;
+
+    my $bet           = $self->bet;
+    my $args          = $bet->pricing_args;
+    my $pricing_spot  = $args->{spot};
+    my $duration_mins = $args->{t} * 365 * 24 * 60;
+    $duration_mins = max($duration_mins, 15);
+    my $duration_t = $duration_mins / (365 * 24 * 60);                    #convert back to year's fraction
+    my $expected_spot = $self->calculate_expected_spot($duration_mins);
+
+    my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
+    my $spot_tv =
+        $self->formula->($pricing_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+    my $spot_tv_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'tv_priced_with_current_spot',
+        description => 'bs probability priced with current spot',
+        set_by      => __PACKAGE__,
+        base_amount => $spot_tv,
+    });
+    my $expected_spot_tv =
+        $self->formula->($expected_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+
+    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_bounceback',
+        description => 'Intraday bounceback based on historical data',
+        set_by      => __PACKAGE__,
+        base_amount => $expected_spot_tv,
+    });
+    $delta_cv->include_adjustment('subtract', $spot_tv_cv);
+
+    return $delta_cv->amount;
 }
 
 sub _build_intraday_delta_correction {
     my $self = shift;
 
-    my $delta_cv;
-    if ($self->more_than_short_term_cutoff) {
-        my $bet           = $self->bet;
-        my $args          = $bet->pricing_args;
-        my $pricing_spot  = $args->{spot};
-        my $expected_spot = $self->expected_spot;
+    my $delta_c;
+    my @info_cv;
 
-        my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
-        my $spot_tv =
-            $self->formula->($pricing_spot, @barrier_args, $args->{t}, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
-        my $spot_tv_cv = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'tv_priced_with_current_spot',
-            description => 'bs probability priced with current spot',
-            set_by      => __PACKAGE__,
-            base_amount => $spot_tv,
-        });
-        my $expected_spot_tv =
-            $self->formula->($expected_spot, @barrier_args, $args->{t}, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
-
-        $delta_cv = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'intraday_bounceback',
-            description => 'Intraday bounceback based on historical data',
-            set_by      => __PACKAGE__,
-            base_amount => $expected_spot_tv,
-        });
-        $delta_cv->include_adjustment('subtract', $spot_tv_cv);
+    if ($self->bet->get_time_to_expiry->minutes < 10) {
+        $delta_c = $self->_get_short_term_delta_correction;
+    } elsif ($self->bet->get_time_to_expiry->minutes > 20) {
+        $delta_c = $self->_get_long_term_delta_correction;
     } else {
-        $delta_cv = $self->intraday_bounceback;
+        my $t     = $self->bet->get_time_to_expiry->minutes;
+        my $alpha = (20 - $t) / 10;
+        my $beta  = ($t - 10) / 10;
+
+        my $short_term = $self->_get_short_term_delta_correction;
+        my $long_term  = $self->_get_long_term_delta_correction;
+
+        $delta_c = ($alpha * $short_term) + ($beta * $long_term);
+
+        push @info_cv,
+            Math::Util::CalculatedValue::Validatable->new({
+                name        => 'delta_correction_short_term_value',
+                description => 'delta_correction_short_term_value',
+                set_by      => __PACKAGE__,
+                base_amount => $short_term
+            });
+
+        push @info_cv,
+            Math::Util::CalculatedValue::Validatable->new({
+                name        => 'delta_correction_long_term_value',
+                description => 'delta_correction_long_term_value',
+                set_by      => __PACKAGE__,
+                base_amount => $long_term
+            });
     }
+
+    my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'intraday_delta_correction',
+        description => 'Intraday delta correction based on historical data',
+        set_by      => __PACKAGE__,
+        base_amount => $delta_c,
+    });
+
+    $delta_cv->include_adjustment('info', $_) for @info_cv;
 
     return $delta_cv;
 }
