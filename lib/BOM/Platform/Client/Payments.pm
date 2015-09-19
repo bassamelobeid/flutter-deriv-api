@@ -365,7 +365,7 @@ sub payment_account_transfer {
         catch {
             $err = $_;
         };
-        print "error: $err";
+        print "error: $err\n";
         return ($fmTrx, $toTrx) unless $err;
         $db->rollback;
         die $err;
