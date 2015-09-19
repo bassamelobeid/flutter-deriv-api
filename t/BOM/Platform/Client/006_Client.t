@@ -19,6 +19,8 @@ use Test::MockTime;
 use Test::More qw(no_plan);
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use Crypt::NamedKeys;
+Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.conf');
 
 subtest 'Client getters, setters and create' => sub {
     my $login_id = 'CR0011';
