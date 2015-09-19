@@ -90,8 +90,8 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'mt');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name,             'Devbin';
-            is $request->broker->code,              'CR';
+            is $request->website->name, 'Devbin';
+            is $request->broker->code, 'CR';
             is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
             is $request->virtual_account_broker->code, 'VRTC';
@@ -101,8 +101,8 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'us');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name,             'Devbin';
-            is $request->broker->code,              'CR';
+            is $request->website->name, 'Devbin';
+            is $request->broker->code, 'CR';
             is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
             is $request->virtual_account_broker->code, 'VRTC';
@@ -111,10 +111,7 @@ subtest 'build' => sub {
 
     subtest 'with country code, loginid' => sub {
         subtest 'loginid => CR10001' => sub {
-            my $request = BOM::Platform::Context::Request->new(
-                loginid      => 'CR10001',
-                country_code => 'au'
-            );
+            my $request = BOM::Platform::Context::Request->new(loginid => 'CR10001', country_code => 'au');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
             is $request->website->name,                  'Devbin';
@@ -125,10 +122,7 @@ subtest 'build' => sub {
         };
 
         subtest 'loginid => MLT10001' => sub {
-            my $request = BOM::Platform::Context::Request->new(
-                loginid      => 'MLT10001',
-                country_code => 'nl'
-            );
+            my $request = BOM::Platform::Context::Request->new(loginid => 'MLT10001', country_code => 'nl');
             is $request->broker_code, 'MLT';
             is $request->language,    'EN';
             is $request->website->name,                  'Devbin';

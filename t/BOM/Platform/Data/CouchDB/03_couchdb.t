@@ -114,10 +114,7 @@ subtest 'postive' => sub {
 };
 
 subtest 'caching' => sub {
-    my $doc_name = Bytes::Random::Secure->new(
-        Bits        => 160,
-        NonBlocking => 1
-    )->string_from("TheCompleatWilliamShakespere", 12);
+    my $doc_name = Bytes::Random::Secure->new(Bits => 160, NonBlocking => 1)->string_from("TheCompleatWilliamShakespere", 12);
     subtest 'setup' => sub {
         my $couch = BOM::Platform::Data::CouchDB->new(
             replica_host => 'localhost',
