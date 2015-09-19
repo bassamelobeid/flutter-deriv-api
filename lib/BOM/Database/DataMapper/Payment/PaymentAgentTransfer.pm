@@ -23,8 +23,8 @@ has '_mapper_required_objects' => (
 sub get_today_client_payment_agent_transfer_total_amount {
     my $self = shift;
 
-		my $today = Date::Utility::today->date;
-    my $sql = q{
+    my $today = Date::Utility::today->date;
+    my $sql   = q{
         SELECT
             ROUND(SUM(ABS(p.amount)), 2) AS amount
         FROM
@@ -46,9 +46,9 @@ sub get_today_client_payment_agent_transfer_total_amount {
         $amount = $result->{amount} || 0;
     }
 
-		print "have result or not?\n";
+    print "have result or not?\n";
 
-		$sql = q{
+    $sql = q{
 select p.amount, p.payment_time 
         FROM
             payment.payment p,
@@ -58,15 +58,14 @@ select p.amount, p.payment_time
             AND a.client_loginid = ?
             AND a.is_default = 'TRUE'
             AND p.payment_gateway_code = 'payment_agent_transfer'
-            AND p.payment_time::DATE >= '$today';
 };
-		$sth = $dbh->prepare($sql);
+    $sth = $dbh->prepare($sql);
     $sth->execute($self->client_loginid);
-		use Data::Dumper;
-		while(my $row = $sth->fetchrow_hashref){
-			print Dumper($row);
-		}
-		print "print end!\n";
+    my $row;
+    if ($row = $sth->fetchrow_hashref) {
+        print Dumper($row);
+    }
+    print "print end!\n";
     return $amount;
 }
 
