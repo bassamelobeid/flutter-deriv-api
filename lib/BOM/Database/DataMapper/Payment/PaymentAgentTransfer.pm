@@ -62,6 +62,7 @@ select p.amount, p.payment_time
     $sth = $dbh->prepare($sql);
     $sth->execute($self->client_loginid);
     my $row;
+    use Data::Dumper;
     if ($row = $sth->fetchrow_hashref) {
         print Dumper($row);
     }
