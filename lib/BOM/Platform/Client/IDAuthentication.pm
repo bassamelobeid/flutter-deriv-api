@@ -89,14 +89,19 @@ sub _do_proveid {
 
     my $prove_id_result = $self->_fetch_proveid || {};
 
-    if ($prove_id_result->{age_verified}) {
+    if (    $prove_id_result->{deny}
+        and defined $prove_id_result->{matches}
+        and (scalar @{$prove_id_result->{matches}} > 0))
+    {
+        $client->set_status('unwelcome', 'system', 'Failed identity test via 192.com');
+        $client->save();
+        $self->_notify('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
+    } elsif ($prove_id_result->{age_verified}) {
         $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->save;
         $prove_id_result->{matches} ||= [];
 
-        if ($prove_id_result->{deny} or scalar @{$prove_id_result->{matches}}) {
-            $self->_notify('EXPERIAN PROVE ID KYC PASSED BUT CLIENT FLAGGED!', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
-        } elsif ($prove_id_result->{fully_authenticated}) {
+        if ($prove_id_result->{fully_authenticated}) {
             $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
             $client->set_authentication('ID_192')->status('pass');
             $client->save;
@@ -109,6 +114,7 @@ sub _do_proveid {
         $self->_notify('192_PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
         return $self->_request_id_authentication;
     }
+
     return;
 }
 

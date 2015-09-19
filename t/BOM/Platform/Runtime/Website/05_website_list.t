@@ -11,7 +11,7 @@ use BOM::Platform::Runtime;
 my $website_list;
 lives_ok {
     $website_list = BOM::Platform::Runtime::Website::List->new(
-        definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/websites.yml'),
+        definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
         broker_codes => BOM::Platform::Runtime->instance->broker_codes,
         localhost    => BOM::Platform::Runtime->instance->hosts->localhost,
     );
@@ -24,9 +24,19 @@ subtest 'defaults' => sub {
 
 subtest 'get' => sub {
     my $website = $website_list->get('Binary');
-    is $website->broker_for_new_account()->code, 'CR',   'New Broker Code - Binary';
     is $website->broker_for_new_virtual()->code, 'VRTC', 'New Virtual Broker Code - Binary';
 
+    is $website->broker_for_new_account('id')->code, 'CR', 'New Broker Code for Indonesia - Binary';
+    is $website->broker_for_new_financial('id')->code, 'CR', 'New financial Broker Code for Indonesia - Binary';
+
+    is $website->broker_for_new_account('gb')->code, 'MX', 'New Broker Code for UK - Binary';
+    is $website->broker_for_new_financial('gb')->code, 'MX', 'New financial Broker Code for UK - Binary';
+
+    is $website->broker_for_new_account('nl')->code, 'MLT', 'New Broker Code for Netherlands - Binary';
+    is $website->broker_for_new_financial('nl')->code, 'MF', 'New financial Broker Code for Netherlands - Binary';
+
+    is $website->broker_for_new_account('de')->code, 'MF', 'New Broker Code for Germany - Binary';
+    is $website->broker_for_new_financial('de')->code, 'MF', 'New financial Broker Code for Germany - Binary';
 };
 
 subtest 'get_by_broker_code' => sub {
@@ -54,7 +64,9 @@ subtest 'get_by_broker_code' => sub {
 cmp_deeply [sort map { $_->name } $website_list->all],
     [
     'BackOffice', 'Binary', 'Binary-beta', 'Binaryqa01', 'Binaryqa02', 'Binaryqa03', 'Binaryqa04', 'Binaryqa05', 'Binaryqa06',
-    'Binaryqa07', 'Binaryqa08', 'Binaryqa09', 'Binaryqa10', 'Binaryqa11', 'Binaryqa12', 'Devbin'
+    'Binaryqa07', 'Binaryqa08', 'Binaryqa09', 'Binaryqa10', 'Binaryqa11', 'Binaryqa12', 'Binaryqa13', 'Binaryqa14', 'Binaryqa15',
+    'Binaryqa16', 'Binaryqa17', 'Binaryqa18', 'Binaryqa19', 'Binaryqa20', 'Binaryqa21', 'Binaryqa22', 'Binaryqa23', 'Binaryqa24',
+    'Binaryqa25', 'Devbin'
     ],
     "A list of all known websites";
 

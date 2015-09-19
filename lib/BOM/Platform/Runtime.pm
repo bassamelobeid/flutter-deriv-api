@@ -119,11 +119,6 @@ has 'countries' => (
     lazy_build => 1,
 );
 
-has 'non_restricted_countries' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 has 'countries_list' => (
     is         => 'ro',
     lazy_build => 1,
@@ -155,23 +150,8 @@ sub _build_countries {
     return Locale::Country::Extra->new();
 }
 
-sub _build_non_restricted_countries {
-    my $self = shift;
-    my $bad  = $self->app_config->legal->countries_restricted;
-    my %bad  = map { $_ => 1 } @$bad;
-    my @good = grep { !$bad{$_} } $self->countries->all_country_names;
-    my $countries;
-    for my $country (@good) {
-        my $code = country2code($country);
-        if ($code) {
-            $countries->{$code} = $country;
-        }
-    }
-    return $countries;
-}
-
 sub _build_countries_list {
-    return YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/countries.yml');
+    return YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 }
 
 sub country_has_financial {
@@ -215,7 +195,7 @@ sub _build_website_list {
     my $self = shift;
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
-        definitions  => YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/websites.yml'),
+        definitions  => YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
         localhost    => $self->hosts->localhost,
     );
 }

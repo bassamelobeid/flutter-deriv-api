@@ -14,85 +14,103 @@ subtest 'Prepare Website' => sub {
     BAIL_OUT("Cannot Prepare website") unless ($bom);
 };
 
-subtest 'select_broker' => sub {
-    subtest 'Default Broker Matching' => sub {
+subtest 'broker_for_new_account' => sub {
+    subtest 'Australia' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->select_broker();
+        my $broker = $bom->broker_for_new_account('au');
 
         ok $broker, 'Now there is a broker';
         is $broker->code, 'CR', 'CR Broker is the right one';
     };
 
-    subtest 'Australian Broker Matching' => sub {
-        my $bom = prepare_website();
-        my $broker = $bom->select_broker({country => 'Australia'});
+    subtest 'UK' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_account('au');
 
         ok $broker, 'Now there is a broker';
         is $broker->code, 'CR', 'CR Broker is the right one';
     };
 
-    subtest 'French Broker Matching' => sub {
-        my $bom = prepare_website();
-        my $broker = $bom->select_broker({country => 'France'});
+    subtest 'Netherlands' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_account('nl');
 
         ok $broker, 'Now there is a broker';
         is $broker->code, 'MLT', 'MLT Broker is the right one';
     };
 
-    subtest 'Default Virtual Broker Matching' => sub {
-        my $bom = prepare_website();
-        my $broker = $bom->select_broker({virtual => 1});
+    subtest 'France' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_account('fr');
 
         ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
+        is $broker->code, 'MF', 'MF Broker is the right one';
     };
 
-    subtest 'Australian Virtual Broker Matching' => sub {
+    subtest 'Germany' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->select_broker({
-            country => 'Australia',
-            virtual => 1
-        });
+        my $broker = $bom->broker_for_new_account('de');
 
         ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
+        is $broker->code, 'MF', 'MF Broker is the right one';
     };
 
-    subtest 'French Virtual Broker Matching' => sub {
+    subtest 'Malaysia' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->select_broker({
-            country => 'France',
-            virtual => 1
-        });
+        my $broker = $bom->broker_for_new_account('my');
+        is $broker->code, 'CR', 'restricted countries [Malaysia], default to CR';
+    };
 
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
+    subtest 'Malta' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_account('mt');
+        is $broker->code, 'CR', 'restricted countries [Malta], default to CR';
     };
 };
 
-subtest 'broker_for_new_account' => sub {
-    subtest 'Default new broker code' => sub {
+subtest 'broker_for_new_financial' => sub {
+    subtest 'Australia' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_account();
+        my $broker = $bom->broker_for_new_financial('au');
 
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'CR', 'CR Broker is the right one';
+        ok $broker, 'broker ok';
+        is $broker->code, 'CR', 'CR ok';
     };
 
-    subtest 'Australian new broker code' => sub {
+    subtest 'UK' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_account('Australia');
+        my $broker = $bom->broker_for_new_financial('gb');
 
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'CR', 'CR Broker is the right one';
+        ok $broker, 'broker ok';
+        is $broker->code, 'MX', 'MX ok';
     };
 
-    subtest 'French new broker code' => sub {
+    subtest 'Netherlands' => sub {
         my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_account('France');
+        my $broker = $bom->broker_for_new_financial('nl');
 
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'MLT', 'MLT Broker is the right one';
+        ok $broker, 'broker ok';
+        is $broker->code, 'MF', 'MF ok';
+    };
+
+    subtest 'France' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_financial('fr');
+
+        ok $broker, 'broker ok';
+        is $broker->code, 'MF', 'MF ok';
+    };
+
+    subtest 'Malaysia' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_financial('my');
+        is $broker, undef, 'no broker';
+    };
+
+    subtest 'Malta' => sub {
+        my $bom    = prepare_website();
+        my $broker = $bom->broker_for_new_financial('mt');
+        is $broker, undef, 'no broker';
     };
 };
 
@@ -104,39 +122,22 @@ subtest 'broker_for_new_virtual' => sub {
         ok $broker, 'Now there is a broker';
         is $broker->code, 'VRTC', 'VRTC Broker is the right one';
     };
-
-    subtest 'Australian virtual broker code' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_virtual('Australia');
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
-    };
-
-    subtest 'French virtual broker code' => sub {
-        my $bom    = prepare_website();
-        my $broker = $bom->broker_for_new_virtual('France');
-
-        ok $broker, 'Now there is a broker';
-        is $broker->code, 'VRTC', 'VRTC Broker is the right one';
-    };
 };
 
 sub prepare_website {
-    my $iom = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'iom',
-        name             => 'Binary (IOM) Ltd',
+    my $costarica = BOM::Platform::Runtime::LandingCompany->new(
+        short            => 'costarica',
+        name             => 'Binary (C.R.) S.A.',
         address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
         fax              => '+44 207 6813557',
-        country          => 'Isle of Man',
-        counterparty_for => ['*',],
+        country          => 'Costa Rica',
     );
-    isa_ok $iom, 'BOM::Platform::Runtime::LandingCompany';
+    isa_ok $costarica, 'BOM::Platform::Runtime::LandingCompany';
 
     my $cr = BOM::Platform::Runtime::Broker->new(
         code                   => 'CR',
         server                 => 'localhost',
-        landing_company        => $iom,
+        landing_company        => $costarica,
         transaction_db_cluster => 'CR',
     );
     isa_ok $cr, 'BOM::Platform::Runtime::Broker';
@@ -144,7 +145,7 @@ sub prepare_website {
     my $ci = BOM::Platform::Runtime::Broker->new(
         code                   => 'CI',
         server                 => 'localhost',
-        landing_company        => $iom,
+        landing_company        => $costarica,
         transaction_db_cluster => 'CI',
     );
     isa_ok $ci, 'BOM::Platform::Runtime::Broker';
@@ -152,11 +153,45 @@ sub prepare_website {
     my $vrtc = BOM::Platform::Runtime::Broker->new(
         code                   => 'VRTC',
         server                 => 'localhost',
-        landing_company        => $iom,
+        landing_company        => $costarica,
         transaction_db_cluster => 'VRTC',
         is_virtual             => 1,
     );
     isa_ok $vrtc, 'BOM::Platform::Runtime::Broker';
+
+    my $iom = BOM::Platform::Runtime::LandingCompany->new(
+        short            => 'iom',
+        name             => 'Binary (IOM) Ltd',
+        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax              => '+44 207 6813557',
+        country          => 'Isle of Man',
+    );
+    isa_ok $iom, 'BOM::Platform::Runtime::LandingCompany';
+
+    my $mx = BOM::Platform::Runtime::Broker->new(
+        code                   => 'MX',
+        server                 => 'localhost',
+        landing_company        => $iom,
+        transaction_db_cluster => 'MX',
+    );
+    isa_ok $mx, 'BOM::Platform::Runtime::Broker';
+
+    my $maltainvest = BOM::Platform::Runtime::LandingCompany->new(
+        short            => 'maltainvest',
+        name             => 'Binary (Europe) Ltd',
+        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax              => '+44 207 6813557',
+        country          => 'Isle of Man',
+    );
+
+    isa_ok $maltainvest, 'BOM::Platform::Runtime::LandingCompany';
+    my $mf = BOM::Platform::Runtime::Broker->new(
+        code                   => 'MF',
+        server                 => 'localhost',
+        landing_company        => $maltainvest,
+        transaction_db_cluster => 'MLT',
+    );
+    isa_ok $mf, 'BOM::Platform::Runtime::Broker';
 
     my $malta = BOM::Platform::Runtime::LandingCompany->new(
         short            => 'malta',
@@ -164,7 +199,6 @@ sub prepare_website {
         address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
         fax              => '+44 207 6813557',
         country          => 'Isle of Man',
-        counterparty_for => ['FRANCE',],
     );
 
     isa_ok $malta, 'BOM::Platform::Runtime::LandingCompany';
@@ -179,7 +213,7 @@ sub prepare_website {
     my $bom = BOM::Platform::Runtime::Website->new(
         name         => 'Binary',
         primary_url  => 'www.binary.com',
-        broker_codes => [$cr, $mlt, $vrtc, $ci],
+        broker_codes => [$cr, $mx, $mlt, $mf, $vrtc, $ci],
         localhost    => BOM::Platform::Runtime->instance->hosts->localhost,
     );
 

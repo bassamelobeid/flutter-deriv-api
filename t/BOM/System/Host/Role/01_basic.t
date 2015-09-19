@@ -13,7 +13,7 @@ use BOM::System::Host::Role::Registry;
 use BOM::System::Host::Role;
 
 my $registry = BOM::System::Host::Role::Registry->new();
-is('/home/git/regentmarkets/bom/config/files/roles.yml', $registry->config_file, 'Correct default file');
+is('/home/git/regentmarkets/bom-platform/config/roles.yml', $registry->config_file, 'Correct default file');
 
 my $role;
 my $other_role;
