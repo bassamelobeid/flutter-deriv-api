@@ -20,10 +20,12 @@ sub trading_times {
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
         underlyings => {
-            name   => 'name',
-            times  => 'times',
-            events => 'events',
-            symbol => sub { return $_->symbol },
+            name         => 'name',
+            times        => 'times',
+            events       => 'events',
+            symbol       => sub { return $_->symbol },
+            feed_license => sub { return $_->feed_license },
+            delay_amount => sub { return $_->delay_amount },
         });
     my $trading_times = {};
     for my $mkt (@$tree) {
@@ -35,13 +37,16 @@ sub trading_times {
             push @{$market->{submarkets}}, $submarket;
             $submarket->{name} = $sbm->{name};
             for my $ul (@{$sbm->{underlyings}}) {
+                print STDERR $ul->{symbol} if $ul->{delay_amount} > 0;
                 push @{$submarket->{symbols}},
                     {
-                    name       => $ul->{name},
-                    symbol     => $ul->{symbol},
-                    settlement => $ul->{settlement} || '',
-                    events     => $ul->{events},
-                    times      => $ul->{times},
+                    name         => $ul->{name},
+                    symbol       => $ul->{symbol},
+                    settlement   => $ul->{settlement} || '',
+                    events       => $ul->{events},
+                    times        => $ul->{times},
+                    feed_license => $ul->{feed_license},
+                    delay_amount => $ul->{delay_amount},
                     };
             }
         }
