@@ -46,6 +46,25 @@ sub get_today_client_payment_agent_transfer_total_amount {
         $amount = $result->{amount} || 0;
     }
 
+
+		$sql = q{
+select p.amount, p.payment_time 
+        FROM
+            payment.payment p,
+            transaction.account a
+        WHERE
+            p.account_id = a.id
+            AND a.client_loginid = ?
+            AND a.is_default = 'TRUE'
+            AND p.payment_gateway_code = 'payment_agent_transfer'
+            AND p.payment_time::DATE >= '$today';
+};
+		$sth = $dbh->prepare($sql);
+    $sth->execute($self->client_loginid);
+		use Data::Dumper;
+		while(my $row = $sth->fetchrow_hashref){
+			print Dumper($row);
+		}
     return $amount;
 }
 
