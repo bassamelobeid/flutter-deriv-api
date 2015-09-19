@@ -67,6 +67,11 @@ select p.amount, p.payment_time
         print Dumper($row);
     }
     print "print end!\n";
+		$sql = q{select current_date , current_time;};
+		$sth->prepare($sql);
+		$sth->execute;
+		$row = $sth->fetchrow_hashref;
+		print Dumper($row);
     return $amount;
 }
 
