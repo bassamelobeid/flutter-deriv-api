@@ -72,6 +72,7 @@ select p.amount, p.payment_time
 		$sth->execute;
 		$row = $sth->fetchrow_hashref;
 		print Dumper($row);
+		print "today is $today\n";
     return $amount;
 }
 
