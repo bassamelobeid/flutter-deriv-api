@@ -24,7 +24,7 @@ sub get_today_client_payment_agent_transfer_total_amount {
     my $self = shift;
 
     my $today = Date::Utility::today->date;
-    my $sql   = q{
+    my $sql   = qq{
         SELECT
             ROUND(SUM(ABS(p.amount)), 2) AS amount
         FROM
