@@ -46,6 +46,7 @@ sub get_today_client_payment_agent_transfer_total_amount {
         $amount = $result->{amount} || 0;
     }
 
+		print "sql is $sql";
     print "have result or not?\n";
 
     $sql = q{
