@@ -46,6 +46,7 @@ sub get_today_client_payment_agent_transfer_total_amount {
         $amount = $result->{amount} || 0;
     }
 
+		print "have result or not?\n";
 
 		$sql = q{
 select p.amount, p.payment_time 
@@ -65,6 +66,7 @@ select p.amount, p.payment_time
 		while(my $row = $sth->fetchrow_hashref){
 			print Dumper($row);
 		}
+		print "print end!\n";
     return $amount;
 }
 
