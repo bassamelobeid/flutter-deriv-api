@@ -665,8 +665,10 @@ sub validate_agent_payment {
     my $payment_agent_transfer_datamapper =
         BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({client_loginid => $payment_agent->loginid});
     my $pa_total_amount = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_total_amount;
-    $pa_total_amount = amount_from_to_currency($pa_total_amount, $payment_agent->default_account->currency_code, 'USD');
-    if ($pa_total_amount + abs($amount) > 100_000) {
+    $pa_total_amount = amount_from_to_currency($pa_total_amount + abs($amount), $payment_agent->default_account->currency_code, 'USD');
+		print "time is: ". time() ."\n";
+		print "pa_tatal_amount $pa_total_amount\n";
+    if ($pa_total_amount > 100_000) {
         die "Payment agents can not exceed an aggregate value of 100,000 in a day\n";
     }
 
