@@ -648,11 +648,11 @@ sub validate_agent_payment {
     if (DateTime->now->day_of_week() > 5) {
         die "payments agents are unavailable at the weekend (UTC timezone)";
     }
-
+    my $today = Date::Utility::today->date;
     # Total transaction for the day
     my $query = [
         payment_gateway_code => 'payment_agent_transfer',
-        payment_time         => {gt => \'current_date'}];
+        payment_time         => {gt => $today}];
 
     my $total = $client->default_account->find_payment(
         query  => $query,
