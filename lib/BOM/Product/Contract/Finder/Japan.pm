@@ -91,7 +91,6 @@ sub _predefined_trading_period {
     my $now_hour        = $now->hour;
     my $now_minute      = $now->minute;
     my $now_date        = $now->date;
-    $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
     my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
     my $today_close     = $exchange->closing_on($now)->epoch;
     my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
@@ -147,6 +146,7 @@ sub _predefined_trading_period {
                 };
         }
         if ($now_hour > 0) {
+            $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
             my $even_hour = $now_hour - ($now_hour % 2);
             push @$trading_periods,
                 map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@even_hourly_durations}) }
@@ -161,7 +161,7 @@ sub _predefined_trading_period {
                 map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 2, $odd_hour - 4);
 
         }
-        my $key_expiry = Date::Utility->new($now_date.' '.$now_hour.':45:00')->epoch;
+        my $key_expiry = $now_minute < 45 ? Date::Utility->new($now_date.' '.$now_hour.':45:00')->epoch : Date::Utility->new($now_date.' '.$now_hour + 1.':00:00')->epoch;
         Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $key_expiry - $now->epoch);
     }
 
