@@ -1,0 +1,8 @@
+---
+quants:
+  features:
+    enable_pricedebug: 1
+cs:
+  email: "helptest@regentmarkets.com"
+marketing:
+  google_tag_manager: 'GTM-MZWFF7'
