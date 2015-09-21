@@ -2701,6 +2701,10 @@ sub _validate_volsurface {
 ## This is a temporary place for this code.
 ## It would be moved to the appropriate class when we have refactored all PE to the new interface
 
+sub _is_forward_starting {
+    return shift->is_forward_starting;
+}
+
 sub _contract_type {
     return shift->code;
 }
@@ -2735,6 +2739,30 @@ sub _last_twenty_ticks {
         ending_epoch => $self->effective_start->epoch,
         tick_count   => 20,
     });
+}
+
+sub _slope {
+    my $self = shift;
+
+    my $volsurface = $self->bet->volsurface;
+    # Move by 0.5% of strike either way.
+    my $epsilon = $volsurface->underlying->pip_size;
+
+    $args->{strike} -= $epsilon;
+    my $down_vol = $volsurface->get_volatility($args);
+
+    $args->{strike} += 2 * $epsilon;
+    my $up_vol = $volsurface->get_volatility($args);
+
+    return ($up_vol - $down_vol) / (2 * $epsilon);
+}
+
+sub _first_available_smile_term {
+    return shift->original_term_for_smile->[0];
+}
+
+sub _priced_with {
+    return shift->priced_with;
 }
 
 no Moose;

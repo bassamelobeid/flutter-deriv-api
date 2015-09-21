@@ -38,22 +38,6 @@ sub _build_skew {
     return $skew_adjustment;
 }
 
-sub get_strike_slope {
-    my ($self, $args) = @_;
-
-    my $volsurface = $self->bet->volsurface;
-    # Move by 0.5% of strike either way.
-    my $epsilon = $volsurface->underlying->pip_size;
-
-    $args->{strike} -= $epsilon;
-    my $down_vol = $volsurface->get_volatility($args);
-
-    $args->{strike} += 2 * $epsilon;
-    my $up_vol = $volsurface->get_volatility($args);
-
-    return ($up_vol - $down_vol) / (2 * $epsilon);
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
