@@ -161,8 +161,9 @@ sub _predefined_trading_period {
                 map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 2, $odd_hour - 4);
 
         }
-        my $key_expiry = $now_minute < 45 ? Date::Utility->new($now_date.' '.$now_hour.':45:00')->epoch : Date::Utility->new($now_date.' '.$now_hour + 1 .':00:00')->epoch;
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, $key_expiry - $now->epoch);
+        my $key_expiry = $now_minute < 45 ? $now_date.' '.$now_hour.':45:00': $now_date.' '.$now_hour + 1 .':00:00';
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, Date::Utility->new($key_expiry)->epoch - $now->epoch);
+
     }
 
     my @new_offerings;
