@@ -159,7 +159,7 @@ sub _predefined_trading_period {
                 map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 2, $odd_hour - 4);
 
         }
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, 3600);
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, 2700);
     }
 
     my @new_offerings;
@@ -198,10 +198,10 @@ sub _get_combination_of_date_expiry_date_start {
     my $date_start = $args->{date_start};
     my @duration   = @{$args->{duration}};
     my $now        = $args->{now};
-    $date_start = $date_start->minus_time_interval('15m');
+    my $early_date_start = $date_start->minus_time_interval('15m');
     my $start_date = {
-        date  => $date_start->datetime,
-        epoch => $date_start->epoch
+        date  => $early_date_start->datetime,
+        epoch => $early_date_start->epoch
     };
 
     return (
