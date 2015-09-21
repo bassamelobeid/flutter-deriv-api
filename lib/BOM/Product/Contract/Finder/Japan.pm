@@ -161,7 +161,7 @@ sub _predefined_trading_period {
                 map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 2, $odd_hour - 4);
 
         }
-        my $key_expiry = $now_minute < 45 ? $now_date.' '.$now_hour.':45:00': $now_date.' '. ($now_hour + 1) .':00:00';
+        my $key_expiry = $now_minute < 45 ? $now_date . ' ' . $now_hour . ':45:00' : $now_date . ' ' . ($now_hour + 1) . ':00:00';
         Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, Date::Utility->new($key_expiry)->epoch - $now->epoch);
 
     }
@@ -198,12 +198,12 @@ To get the date_start and date_expiry for a give trading duration
 =cut
 
 sub _get_combination_of_date_expiry_date_start {
-    my $args       = shift;
-    my $date_start = $args->{date_start};
-    my @duration   = @{$args->{duration}};
-    my $now        = $args->{now};
+    my $args             = shift;
+    my $date_start       = $args->{date_start};
+    my @duration         = @{$args->{duration}};
+    my $now              = $args->{now};
     my $early_date_start = $date_start->minus_time_interval('15m');
-    my $start_date = {
+    my $start_date       = {
         date  => $early_date_start->datetime,
         epoch => $early_date_start->epoch
     };
@@ -298,7 +298,7 @@ sub _split_boundaries_barriers {
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
     my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my @barriers = map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
+    my @barriers                    = map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
     push @barriers, $spot_at_start;
     return @barriers;
 }
