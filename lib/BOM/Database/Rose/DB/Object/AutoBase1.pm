@@ -80,14 +80,10 @@ sub _set_staff {
     if ($db->database eq 'regentmarkets' && $db->type eq 'write') {
         $self->{_staff} ||= do {
             my ($staff, $ip);
-            if (my $request = BOM::Platform::Context::request) {
-                if (my $bo_cookie = $request->bo_cookie) {
-                    $staff = $bo_cookie->clerk;
-                } else {
-                    $staff = $request->loginid;
-                }
-                $ip = $request->client_ip;
-            }
+
+            my $staff = $ENV{AUDIT_STAFF_NAME} || 'system';
+            my $ip    = $ENV{AUDIT_STAFF_IP} || '127.0.0.1';
+
             $db->dbh->do('select audit.set_staff(?,?)', undef, ($staff || 'bom-perl'), $ip);
             $staff;
         };
@@ -109,4 +105,3 @@ sub save {
 }
 
 1;
-
