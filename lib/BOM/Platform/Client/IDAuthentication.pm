@@ -56,12 +56,12 @@ sub _requires_age_verified {
 sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
-    
+
     # MF clients should already be fully_authenticated by the time this code runs following an intial deposit.
     # MF accounts are either set to "unwelcome" or "cashier lock" when they are first created.  Document
     # submission is REQUIRED before being enabled for cashier or trading
-    
-    return if $client->client_fully_authenticated || $client->broker eq 'MF' ;
+
+    return if $client->client_fully_authenticated || $client->broker eq 'MF';
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.
