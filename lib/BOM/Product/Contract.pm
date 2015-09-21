@@ -2744,7 +2744,14 @@ sub _last_twenty_ticks {
 sub _slope {
     my $self = shift;
 
-    my $volsurface = $self->bet->volsurface;
+    my $args = {
+        days   => $self->timeindays->amount,
+        strike => $self->_barriers_for_pricing->{barrier1},
+        spot   => $self->pricing_spot,
+        q_rate => $self->q_rate,
+        r_rate => $self->r_rate,
+    };
+    my $volsurface = $self->volsurface;
     # Move by 0.5% of strike either way.
     my $epsilon = $volsurface->underlying->pip_size;
 
