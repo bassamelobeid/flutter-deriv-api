@@ -79,8 +79,6 @@ sub _set_staff {
     # db->type here is the "operation". We will not audit operation values such as 'collector'.
     if ($db->database eq 'regentmarkets' && $db->type eq 'write') {
         $self->{_staff} ||= do {
-            my ($staff, $ip);
-
             my $staff = $ENV{AUDIT_STAFF_NAME} || 'system';
             my $ip    = $ENV{AUDIT_STAFF_IP} || '127.0.0.1';
 
