@@ -43,9 +43,18 @@ sub init {
         $http_handler->register_cleanup(
             sub {
                 delete $ENV{BOM_ACCOUNT};                           ## no critic
+                delete $ENV{AUDIT_STAFF_NAME};                      ## no critic
+                delete $ENV{AUDIT_STAFF_IP};                        ## no critic
                 BOM::Database::Rose::DB->db_cache->finish_request_cycle;
                 alarm 0;
             });
+
+        if (my $bo_cookie = request()->bo_cookie) {
+            $ENV{AUDIT_STAFF_NAME} = $bo_cookie->clerk;
+        } else {
+            $ENV{AUDIT_STAFF_NAME} = request()->loginid;
+        }
+        $ENV{AUDIT_STAFF_IP} = request()->client_ip;
 
         request()->http_handler($http_handler);
     } else {
