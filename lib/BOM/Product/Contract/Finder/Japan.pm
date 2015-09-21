@@ -151,7 +151,7 @@ sub _predefined_trading_period {
             push @$trading_periods,
                 map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@even_hourly_durations}) }
                 grep { $_->is_after($today) }
-                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2);
+                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2, $even_hour - 4);
 
             my $odd_hour = $now_hour % 2 ? $now_hour : $now_hour - 1;
             my @odd_hourly_durations = qw(3h 5h);
