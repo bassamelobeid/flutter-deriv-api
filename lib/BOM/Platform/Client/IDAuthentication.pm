@@ -183,7 +183,7 @@ EOM
 sub _notify {
     my ($self, $id, $msg) = @_;
 
-    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     my $client = $self->client;
     $client->add_note($id, $client->loginid . ' ' . $msg);
@@ -202,7 +202,7 @@ sub _premise {
 sub _fetch_proveid {
     my $self = shift;
 
-    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     return BOM::Platform::ProveID->new(
         client        => $self->client,
