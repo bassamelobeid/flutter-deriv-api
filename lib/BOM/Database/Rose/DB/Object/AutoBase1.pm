@@ -12,8 +12,6 @@ use BOM::Database::Rose::DB;
 use BOM::Database::ClientDB;
 use Rose::DB::Object::Metadata::Relationship::OneToMany;
 
-use BOM::Platform::Context;
-
 # The default list of generated methods for one-many relationships does not include
 # 'count_' and 'iterator_' methods so add them now (before meta->setup calls in derived classes).
 Rose::DB::Object::Metadata::Relationship::OneToMany->default_auto_method_types(qw(find get_set_on_save add_on_save count iterator));
