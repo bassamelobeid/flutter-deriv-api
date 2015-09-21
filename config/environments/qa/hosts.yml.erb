@@ -1,0 +1,41 @@
+---
+"www":
+  canonical_name: www
+  external_domain: <%= @external_domain %>
+  domain: regentmarkets.com
+  ip_address: <%= @ip %>
+  os_vendor: Debian
+  os_name: Linux
+  os_version: 7.0
+  os_architecture: x86_64
+  groups:
+    - bom
+  roles:
+    - dealing_server
+    - couchdb_server
+    - couchdb_master
+    - ui_server
+    - streaming_server
+    - webapi_server
+    - webapi_external_server
+    - primary_feed_server
+    - customer_database_server
+    - otn_master
+    - otn_query
+    - auth_master
+    - auth_query
+
+"<%= @hostname %>":
+  canonical_name: <%= @hostname %>
+  external_domain: <%= @external_domain %>
+  domain: regentmarkets.com
+  ip_address: <%= @ip %>
+  os_vendor: Debian
+  os_name: Linux
+  os_version: 7.0
+  os_architecture: x86_64
+  groups:
+    - bom
+  roles:
+    - master_live_server
+    - feed_distributor
