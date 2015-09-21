@@ -89,6 +89,7 @@ sub _predefined_trading_period {
     my $exchange        = $args->{exchange};
     my $now             = $args->{date};
     my $now_hour        = $now->hour;
+    my $now_minute      = $now->minute;
     my $now_date        = $now->date;
     my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
     my $today_close     = $exchange->closing_on($now)->epoch;
@@ -145,6 +146,7 @@ sub _predefined_trading_period {
                 };
         }
         if ($now_hour > 0) {
+            $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
             my $even_hour = $now_hour - ($now_hour % 2);
             push @$trading_periods,
                 map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@even_hourly_durations}) }
