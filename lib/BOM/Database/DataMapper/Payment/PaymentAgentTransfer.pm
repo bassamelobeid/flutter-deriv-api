@@ -46,34 +46,6 @@ sub get_today_client_payment_agent_transfer_total_amount {
         $amount = $result->{amount} || 0;
     }
 
-		print "sql is $sql";
-    print "have result or not?\n";
-
-    $sql = q{
-select p.amount, p.payment_time 
-        FROM
-            payment.payment p,
-            transaction.account a
-        WHERE
-            p.account_id = a.id
-            AND a.client_loginid = ?
-            AND a.is_default = 'TRUE'
-            AND p.payment_gateway_code = 'payment_agent_transfer'
-};
-    $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid);
-    my $row;
-    use Data::Dumper;
-    if ($row = $sth->fetchrow_hashref) {
-        print Dumper($row);
-    }
-    print "print end!\n";
-		$sql = q{select current_date , current_time;};
-		$sth = $dbh->prepare($sql);
-		$sth->execute;
-		$row = $sth->fetchrow_hashref;
-		print Dumper($row);
-		print "today is $today\n";
     return $amount;
 }
 
@@ -81,6 +53,8 @@ select p.amount, p.payment_time
 
 =cut
 
+# TODO This function should be fixed
+# 'today' in this function is illegal
 sub get_today_client_payment_agent_transfer_total_withdrawal {
     my $self = shift;
 
@@ -111,6 +85,8 @@ sub get_today_client_payment_agent_transfer_total_withdrawal {
     return $amount;
 }
 
+# TODO This function should be fixed
+# 'today' in this function is illegal
 sub get_today_client_payment_agent_transfer_withdrawal_count {
     my $self = shift;
 
@@ -141,7 +117,8 @@ sub get_today_client_payment_agent_transfer_withdrawal_count {
     return deposit count
 =back
 =cut
-
+# TODO This function should be fixed
+# 'today' in this function is illegal
 sub get_today_client_payment_agent_transfer_deposit_count {
     my $self = shift;
 
