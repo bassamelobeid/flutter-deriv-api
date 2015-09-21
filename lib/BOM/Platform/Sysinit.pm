@@ -54,7 +54,7 @@ sub init {
         } else {
             $ENV{AUDIT_STAFF_NAME} = request()->loginid; ## no critic
         }
-        $ENV{AUDIT_STAFF_IP} = request()->client_ip;
+        $ENV{AUDIT_STAFF_IP} = request()->client_ip; ## no critic
 
         request()->http_handler($http_handler);
     } else {
