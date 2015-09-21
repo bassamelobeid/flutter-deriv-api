@@ -73,10 +73,9 @@ sub available_contracts_for_symbol {
 
 We set the predefined trading periods based on Japan requirement:
 1) Start at 00:00GMT and expire with duration of 2, and 4 hours
-2) Start at closest even hour and expire with duration of 2,and 4 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT, 02-06GMT.
-3) Start at 01:00GMT and expire with duration of 3, and 5 hours
-4) Start at closest odd hour and expire with duration of 3,and 5 hours. Example: Current hour is 3GMT, you will have trading period of 03-06GMT, 03-08GMT.
-5) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
+2) Start at 15 min before closest even hour and expire with duration of 2,and 4 hours. Example: Current hour is 3GMT, you will have trading period of 0145-04GMT, 0045-0400GMT 0145-06GMT.
+3) Start at 15 min before closest odd hour and expire with duration of 3,and 5 hours. Example: Current hour is 3GMT, you will have trading period of 0045-04GMT, 0245-06GMT, 0045-06GMT,0245-08GMT.
+4) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
 
 =cut
 
