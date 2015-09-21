@@ -8,8 +8,3 @@ if (my $r = `git grep BOM::|egrep -v BOM::Utility|grep -v BOM::Test|egrep -v BOM
 } else {
     ok 1, "Strucutre dependency is OK";
 }
-
-
-
-
-
