@@ -198,7 +198,7 @@ subtest 'url_for' => sub {
     subtest 'simple' => sub {
         $request->website->config->set('static.url', 'https://static.devbin.io/');
         is $request->url_for('paymentagent_withdraw.cgi'), "https://www.devbin.io/d/paymentagent_withdraw.cgi?l=EN", "cgi";
-        is $request->url_for('helloworld.cgi'),            "https://www.devbin.io/c/helloworld.cgi?l=EN",            "cached cgi";
+        is $request->url_for('trade_livechart.cgi'),   "https://www.devbin.io/c/trade_livechart.cgi?l=EN",   "cached cgi";
         is $request->url_for('backoffice/my_account.cgi'), "https://deal01.devbin.io/d/backoffice/my_account.cgi",   "backoffice";
         is $request->url_for('/why-us'),                   "$domain/why-us?l=EN",                                    "frontend";
         is $request->url_for('images/pages/open_account/real-money-account.svg'),
