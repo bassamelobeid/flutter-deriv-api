@@ -26,7 +26,7 @@ sub new {
     my ($class, %args) = @_;
     my $client = $args{client} || die 'needs a client';
 
-    _throttle();
+    _throttle($args{client});
 
     my $obj = bless {client => $client}, $class;
     $obj->set($obj->defaults, %args);
