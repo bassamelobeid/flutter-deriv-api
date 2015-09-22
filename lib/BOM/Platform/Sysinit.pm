@@ -47,11 +47,11 @@ sub init {
             });
 
         if (my $bo_cookie = request()->bo_cookie) {
-            $ENV{AUDIT_STAFF_NAME} = $bo_cookie->clerk;             ## no critic
+            $ENV{AUDIT_STAFF_NAME} = $bo_cookie->clerk;                          ## no critic
         } else {
-            $ENV{AUDIT_STAFF_NAME} = request()->loginid;            ## no critic
+            $ENV{AUDIT_STAFF_NAME} = request()->loginid;                         ## no critic
         }
-        $ENV{AUDIT_STAFF_IP} = request()->client_ip;                ## no critic
+        $ENV{AUDIT_STAFF_IP} = request()->client_ip;                             ## no critic
 
         request()->http_handler($http_handler);
     } else {
