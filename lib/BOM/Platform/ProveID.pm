@@ -37,13 +37,13 @@ sub _throttle {
     my $client = shift;
     my $key    = 'PROVEID::THROTTLE::' . $client->loginid;
 
-    if (BOM::System::Chronicle->_redis_read->get($key)){
+    if (BOM::System::Chronicle->_redis_read->get($key)) {
         die 'Too many ProveID requests for ' . $client->loginid;
     }
 
     BOM::System::Chronicle->_redis_write->set($key, 1);
     BOM::System::Chronicle->_redis_write->expire($key, 3600);
- 
+
     return 1;
 }
 

@@ -139,7 +139,10 @@ sub send_email {
                     charset   => 'UTF-8',
                     encoding  => "quoted-printable",
                     on_errors => 'die',
-                })->Open({subject => $subject,})->SendEnc($mail_message)->Close();
+                }
+                )->Open({
+                    subject => $subject,
+                })->SendEnc($mail_message)->Close();
         }
         catch {
             $logger->warn("Error sending mail [$subject]: ", $Mail::Sender::Error // $_);
