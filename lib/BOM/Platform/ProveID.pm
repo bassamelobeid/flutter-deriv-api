@@ -49,7 +49,7 @@ sub _throttle {
 sub get_result {
     my $self = shift;
     _throttle($self->{client_id});
-    $self->SUPER::get_result();
+    return $self->SUPER::get_result();
 }
 
 sub defaults {
