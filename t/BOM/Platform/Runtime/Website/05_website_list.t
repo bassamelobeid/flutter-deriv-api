@@ -66,7 +66,7 @@ cmp_deeply [sort map { $_->name } $website_list->all],
     'BackOffice', 'Binary', 'Binary-beta', 'Binaryqa01', 'Binaryqa02', 'Binaryqa03', 'Binaryqa04', 'Binaryqa05', 'Binaryqa06',
     'Binaryqa07', 'Binaryqa08', 'Binaryqa09', 'Binaryqa10', 'Binaryqa11', 'Binaryqa12', 'Binaryqa13', 'Binaryqa14', 'Binaryqa15',
     'Binaryqa16', 'Binaryqa17', 'Binaryqa18', 'Binaryqa19', 'Binaryqa20', 'Binaryqa21', 'Binaryqa22', 'Binaryqa23', 'Binaryqa24',
-    'Binaryqa25', 'Devbin'
+    'Binaryqa25', 'Binaryqa26', 'Binaryqa27', 'Binaryqa28', 'Binaryqa29', 'Binaryqa30', 'Devbin'
     ],
     "A list of all known websites";
 
