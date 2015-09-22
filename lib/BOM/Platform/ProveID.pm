@@ -34,7 +34,7 @@ sub new {
 
 sub _throttle {
     my $loginid = shift;
-    my $key    = 'PROVEID::THROTTLE::' . $loginid;
+    my $key     = 'PROVEID::THROTTLE::' . $loginid;
 
     if (BOM::System::Chronicle->_redis_read->get($key)) {
         Carp::confess 'Too many ProveID requests for ' . $loginid;
