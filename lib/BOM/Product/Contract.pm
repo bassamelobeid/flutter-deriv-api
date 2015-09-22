@@ -2772,6 +2772,44 @@ sub _priced_with {
     return shift->priced_with;
 }
 
+sub _spot {
+    return shift->pricing_spot;
+}
+
+sub _strikes {
+    my $self = shift;
+    my @strikes = grep {$_} values %{$self->_barriers_for_pricing};
+    return \@strikes;
+}
+
+sub _timeinyears {
+    return shift->timeinyears->amount;
+}
+
+sub _quanto_rate {
+    return shift->quanto_rate;
+}
+
+sub _mu {
+    return shift->mu;
+}
+
+sub _iv {
+    return shift->pricing_vol;
+}
+
+sub _payouttime_code {
+    return shift->payouttime_code;
+}
+
+sub _q_rate {
+    return shift->q_rate;
+}
+
+sub _r_rate {
+    return shift->r_rate;
+}
+
 no Moose;
 
 __PACKAGE__->meta->make_immutable;

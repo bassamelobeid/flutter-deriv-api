@@ -10,7 +10,7 @@ use Math::Business::BlackScholes::Binaries::Greeks;
 
 use constant {
     REQUIRED_ARGS => [
-        qw(contract_type spot strikes tiy quanto_rate mu iv payouttime_code q_rate r_rate slope volatility_spread is_forward_starting first_available_smile_term priced_with)
+        qw(contract_type spot strikes timeinyears quanto_rate mu iv payouttime_code q_rate r_rate slope) #volatility_spread is_forward_starting first_available_smile_term priced_with)
     ],
     ALLOWED_TYPES => {
         CALL        => 1,
@@ -67,11 +67,11 @@ sub probability {
     if ($args->{contract_type} eq 'EXPIRYMISS') {
         $probability = _two_barrier_prob($args);
     } elsif ($args->{contract_type} eq 'EXPIRYRANGE') {
-        $probability = exp(-$args->{quanto_rate} * $args->{tiy}) - _two_barrier_prob($args);
+        $probability = exp(-$args->{quanto_rate} * $args->{timeinyears}) - _two_barrier_prob($args);
     } elsif ($args->{priced_with} ne 'base') {
         # TODO: min max for bs probability
         my @pricing_args =
-            ($args->{spot}, @{$args->{strikes}}, $args->{tiy}, $args->{quanto_rate}, $args->{mu}, $args->{iv}, $args->{payouttime_code});
+            ($args->{spot}, @{$args->{strikes}}, $args->{timeinyears}, $args->{quanto_rate}, $args->{mu}, $args->{iv}, $args->{payouttime_code});
         my $bs_probability  = $bs_formula->(@pricing_args);
         my $slope_base      = $args->{is_forwarding_starting} ? 0 : $args->{contract_type} eq 'CALL' ? -1 : 1;
         my $vanilla_vega    = Math::Business::BlackScholes::Binaries::Greeks::vega(@pricing_args);
@@ -79,7 +79,7 @@ sub probability {
         # If the first available smile term is more than 3 days away and the contract is intraday,
         # we cannot accurately calculate the intraday slope. Hence we cap and floor the skew adjustment to 3%.
         my $day_in_year = 0.00273972602;
-        $skew_adjustment = min(0.03, max($skew_adjustment, -0.03)) if ($args->{first_available_smile_term} > 3 and $args->{tiy} * 365 > $day_in_year);
+        $skew_adjustment = min(0.03, max($skew_adjustment, -0.03)) if ($args->{first_available_smile_term} > 3 and $args->{timeinyears} * 365 > $day_in_year);
         $probability = $bs_probability + $skew_adjustment;
     } elsif ($args->{priced_with} eq 'base') {
         my %cloned_args = %$args;
@@ -90,7 +90,7 @@ sub probability {
         my $numeraire_probability    = probability(\%cloned_args);
         my $base_vanilla_probability = $vanilla_formula->(
             $args->{spot}, @{$args->{strikes}},
-            $args->{tiy}, $args->{quanto_rate}, $args->{mu}, $args->{iv}, $args->{payouttime_code});
+            $args->{timeinyears}, $args->{quanto_rate}, $args->{mu}, $args->{iv}, $args->{payouttime_code});
         my $which_way = $args->{contract_type} eq 'CALL' ? 1 : -1;
         $probability = $numeraire_probability * $args->{strikes}->[0] + $base_vanilla_probability * $which_way / $args->{spot};
     }

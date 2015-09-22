@@ -20,7 +20,7 @@ sub _build_skew {
     my $bet  = $self->bet;
     my $args = $bet->pricing_args;
 
-    my $skew = $self->get_strike_slope({
+    my $skew = $bet->volsurface->get_strike_slope({
         days   => $args->{t} * 365,
         strike => $args->{barrier1},
         spot   => $args->{spot},

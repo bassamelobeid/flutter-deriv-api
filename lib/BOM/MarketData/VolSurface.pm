@@ -1524,6 +1524,21 @@ sub get_existing_surface {
         : $self;
 }
 
+sub get_strike_slope {
+    my ($self, $args) = @_;
+
+    # Move by 0.5% of strike either way.
+    my $epsilon = $self->underlying->pip_size;
+
+    $args->{strike} -= $epsilon;
+    my $down_vol = $self->get_volatility($args);
+
+    $args->{strike} += 2 * $epsilon;
+    my $up_vol = $self->get_volatility($args);
+
+    return ($up_vol - $down_vol) / (2 * $epsilon);
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
