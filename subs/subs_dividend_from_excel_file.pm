@@ -5,8 +5,8 @@ use Try::Tiny;
 use Spreadsheet::ParseExcel;
 use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
+use Finance::Asset;
 use BOM::Market::Underlying;
-use YAML::XS;
 
 sub process_dividend {
     my ($fh, $vendor) = @_;
@@ -200,7 +200,7 @@ sub is_dividend_in_bounds {
 sub convert_SD_symbol_to_BOM_symbol {
     my $sdcode = shift @_;
 
-    my $content = YAML::XS::LoadFile('/home/git/regentmarkets/bom/config/files/underlyings.yml');
+    my $content = Finance::Asset->instance->all_parameters;
     my %sd_bom  = map { $_ => $content->{$_}->{sd_symbol} } keys %$content;
     my %bom_sd  = reverse %sd_bom;
 

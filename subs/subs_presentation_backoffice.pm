@@ -12,6 +12,7 @@ use Mojo::URL;
 use BOM::View::JavascriptConfig;
 use BOM::Platform::Plack qw( AjaxSession );
 use BOM::Platform::Sysinit ();
+use BOM::Backoffice::Auth0;
 
 our ($vk_BarIsDoneOnce, $vk_didBOtopPRES,);
 
@@ -45,6 +46,27 @@ sub BrokerPresentation {
     print '<div class="EN" id="language_select" style="display:none"><span class="langsel">English</span></div>';
     print
         '<body class="BlueTopBack" marginheight="0" marginwidth="0" topmargin="0" bottommargin="0" leftmargin="0" rightmargin="0" style="margin:0px;">';
+
+    my $staff = BOM::Backoffice::Auth0::from_cookie() ? BOM::Backoffice::Auth0::from_cookie()->{nickname} : '';
+
+    print "
+
+        <script>
+            dataLayer = [{
+                'staff': '$staff'
+          }];
+        </script>
+
+        <!-- Google Tag Manager -->
+        <noscript><iframe src=\"//www.googletagmanager.com/ns.html?id=GTM-N4HNTG\"
+        height=\"0\" width=\"0\" style=\"display:none;visibility:hidden\"></iframe></noscript>
+        <script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+        new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+        j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+        '//www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+        })(window,document,'script','dataLayer','GTM-N4HNTG');</script>
+        <!-- End Google Tag Manager -->
+    ";
 
     if (not $noDisplayOfTopMenu) {
         vk_BOtopPRES();
