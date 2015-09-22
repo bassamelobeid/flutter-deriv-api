@@ -6,11 +6,11 @@ use warnings;
 
 use List::Util qw(min max);
 use Math::Business::BlackScholes::Binaries;
-use Math::Business::BlackScholes::Binaries::Greeks;
+use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 
 use constant {
     REQUIRED_ARGS => [
-        qw(contract_type spot strikes timeinyears quanto_rate mu iv payouttime_code q_rate r_rate slope) #volatility_spread is_forward_starting first_available_smile_term priced_with)
+        qw(contract_type spot strikes timeinyears quanto_rate mu iv payouttime_code q_rate r_rate slope priced_with is_forward_starting first_available_smile_term)
     ],
     ALLOWED_TYPES => {
         CALL        => 1,
@@ -60,10 +60,13 @@ sub probability {
         return default_probability_reference("Could not calculate probability for $args->{contract_type}");
     }
 
-    my ($bs_formula, $vanilla_formula) =
-        map { my $str = 'Math::Business::BlackScholes::Binaries::' . lc $_; \&$str; } ($args->{contract_type}, 'vanilla_' . $args->{contract_type});
+    my ($bs_formula, $vanilla_formula, $vanilla_vega_formula) = map { my $name = $_ . lc $args->{contract_type}; \&$name } (
+        'Math::Business::BlackScholes::Binaries::',
+        'Math::Business::BlackScholes::Binaries::vanilla_',
+        'Math::Business::BlackScholes::Binaries::Greeks::Vega::vanilla_'
+    );
 
-    my $probability;
+    my ($probability, %debug_information);
     if ($args->{contract_type} eq 'EXPIRYMISS') {
         $probability = _two_barrier_prob($args);
     } elsif ($args->{contract_type} eq 'EXPIRYRANGE') {
@@ -72,30 +75,38 @@ sub probability {
         # TODO: min max for bs probability
         my @pricing_args =
             ($args->{spot}, @{$args->{strikes}}, $args->{timeinyears}, $args->{quanto_rate}, $args->{mu}, $args->{iv}, $args->{payouttime_code});
-        my $bs_probability  = $bs_formula->(@pricing_args);
-        my $slope_base      = $args->{is_forwarding_starting} ? 0 : $args->{contract_type} eq 'CALL' ? -1 : 1;
-        my $vanilla_vega    = Math::Business::BlackScholes::Binaries::Greeks::vega(@pricing_args);
-        my $skew_adjustment = $slope_base * $args->{slope} * $vanilla_vega;
+        my $bs_probability = $debug_information{bs_probability} = $bs_formula->(@pricing_args);
+        my $slope_base = $args->{is_forwarding_starting} ? 0 : $args->{contract_type} eq 'CALL' ? -1 : 1;
+        my $vega = $debug_information{vanilla_vega} = $vanilla_vega_formula->(@pricing_args);
+        my $skew_adjustment = $slope_base * $args->{slope} * $vega;
+        $debug_information{base_skew_adjustment} = $skew_adjustment;
         # If the first available smile term is more than 3 days away and the contract is intraday,
         # we cannot accurately calculate the intraday slope. Hence we cap and floor the skew adjustment to 3%.
-        my $day_in_year = 0.00273972602;
-        $skew_adjustment = min(0.03, max($skew_adjustment, -0.03)) if ($args->{first_available_smile_term} > 3 and $args->{timeinyears} * 365 > $day_in_year);
+        $skew_adjustment = $debug_information{skew_adjustment} = min(0.03, max($skew_adjustment, -0.03))
+            if ($args->{first_available_smile_term} > 3 and $args->{timeinyears} * 365 * 86400 > 86400);
         $probability = $bs_probability + $skew_adjustment;
     } elsif ($args->{priced_with} eq 'base') {
         my %cloned_args = %$args;
-        # convert quanto_rate and mu to numeraire
+        # To price a base with Slope pricer, we need the numeraire probability.
+        # Convert quanto_rate and mu to numeraire. Not the most elegant solution.
         $cloned_args{quanto_rate} = $args->{r_rate};
         $cloned_args{mu}          = $args->{r_rate} - $args->{q_rate};
         $cloned_args{priced_with} = 'numeraire';
-        my $numeraire_probability    = probability(\%cloned_args);
-        my $base_vanilla_probability = $vanilla_formula->(
-            $args->{spot}, @{$args->{strikes}},
+        my $numeraire_prob_ref = probability(\%cloned_args);
+        my $numeraire_probability = $debug_information{numeraire_probability} = $numeraire_prob_ref->{probability};
+        $debug_information{$_} = $numeraire_prob_ref->{debug_info}->{$_} for keys %{$numeraire_prob_ref->{debug_info}};
+        my $strike                   = $args->{strikes}->[0];
+        my $base_vanilla_probability = $debug_information{vanilla_price} =
+            $vanilla_formula->($args->{spot}, $strike,
             $args->{timeinyears}, $args->{quanto_rate}, $args->{mu}, $args->{iv}, $args->{payouttime_code});
         my $which_way = $args->{contract_type} eq 'CALL' ? 1 : -1;
-        $probability = $numeraire_probability * $args->{strikes}->[0] + $base_vanilla_probability * $which_way / $args->{spot};
+        $probability = ($numeraire_probability * $strike + $base_vanilla_probability * $which_way) / $args->{spot};
     }
 
-    return $probability;
+    return {
+        probability => $probability,
+        debug_info  => \%debug_information,
+    };
 }
 
 sub _two_barrier_prob {

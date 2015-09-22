@@ -2765,7 +2765,7 @@ sub _slope {
 }
 
 sub _first_available_smile_term {
-    return shift->original_term_for_smile->[0];
+    return shift->volsurface->original_term_for_smile->[0];
 }
 
 sub _priced_with {
@@ -2778,7 +2778,7 @@ sub _spot {
 
 sub _strikes {
     my $self = shift;
-    my @strikes = grep {$_} values %{$self->_barriers_for_pricing};
+    my @strikes = grep { $_ } values %{$self->_barriers_for_pricing};
     return \@strikes;
 }
 
