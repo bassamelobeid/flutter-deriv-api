@@ -80,7 +80,7 @@ sub _set_staff {
             my $staff = $ENV{AUDIT_STAFF_NAME} || 'system';
             my $ip    = $ENV{AUDIT_STAFF_IP} || '127.0.0.1';
 
-            $db->dbh->do('select audit.set_staff(?,?)', undef, ($staff || 'bom-perl'), $ip);
+            $db->dbh->do('select audit.set_staff(?,?)', undef, $staff, $ip);
             $staff;
         };
     }
