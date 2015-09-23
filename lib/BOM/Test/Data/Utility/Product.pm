@@ -35,7 +35,7 @@ sub client_buy_bet {
 }
 
 sub buy_bet {
-    my ($sc, $curr, $client, $price, $start);
+    my ($sc, $curr, $client, $price, $start) = @_;
 
     local $ENV{REQUEST_STARTTIME} = $start;
     my $txn = BOM::Product::Transaction->new({
@@ -49,7 +49,8 @@ sub buy_bet {
 }
 
 sub sell_bet {
-    my ($sc, $curr, $client, $price, $txn_buy_contract_id)
+    my ($sc, $curr, $client, $price, $txn_buy_contract_id) = @_;
+
     my $txn = BOM::Product::Transaction->new({
         contract    => produce_contract($sc, $curr),
         client      => $client,
