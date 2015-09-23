@@ -76,7 +76,7 @@ sub probability {
         my @pricing_args =
             ($args->{spot}, @{$args->{strikes}}, $args->{timeinyears}, $args->{quanto_rate}, $args->{mu}, $args->{iv}, $args->{payouttime_code});
         my $bs_probability = $debug_information{bs_probability} = $bs_formula->(@pricing_args);
-        my $slope_base = $args->{is_forwarding_starting} ? 0 : $args->{contract_type} eq 'CALL' ? -1 : 1;
+        my $slope_base = $args->{is_forward_starting} ? 0 : $args->{contract_type} eq 'CALL' ? -1 : 1;
         my $vega = $debug_information{vanilla_vega} = $vanilla_vega_formula->(@pricing_args);
         my $skew_adjustment = $slope_base * $args->{slope} * $vega;
         $debug_information{base_skew_adjustment} = $skew_adjustment;
