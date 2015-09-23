@@ -476,7 +476,7 @@ sub _build_email {
         return $self->session_cookie->email;
     }
 
-    # not logged in
+/zzzz    # not logged in
     return;
 }
 
