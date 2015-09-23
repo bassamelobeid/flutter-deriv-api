@@ -32,8 +32,6 @@ sub client_buy_bet {
         staff    => 'system'
     });
     $txn->buy(skip_validation => 1);
-
-    is roundnear(0.01, $account->load->balance), roundnear(0.01, $pre_balance - $amount), 'balance check after bet has been bought';
 }
 
 1;
