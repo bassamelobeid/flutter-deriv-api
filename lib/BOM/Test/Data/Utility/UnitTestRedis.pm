@@ -246,7 +246,7 @@ sub get_test_realtime_ticks {
 ##################################################################################################
 sub update_combined_realtime {
     my %args              = @_;
-    my $args{underlying}  = BOM::Market::Underlying->new($args{underlying_symbol});
+    $args{underlying}  = BOM::Market::Underlying->new($args{underlying_symbol});
     my $underlying_symbol = $args{underlying}->symbol;
     my $unixtime          = $args{datetime}->epoch;
     my $marketitem        = $args{underlying}->market->name;
