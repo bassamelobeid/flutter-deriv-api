@@ -10,7 +10,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Market::Registry;
-use BOM::Platform::CustomClientLimits;
+use BOM::Prodcut::CustomClientLimits;
 use BOM::View::Controller::Bet;
 
 use Try::Tiny;
@@ -35,7 +35,7 @@ if (not $client) {
 }
 
 if (request()->param('update_limitlist')) {
-    my $limitlist = BOM::Platform::CustomClientLimits->new;
+    my $limitlist = BOM::Prodcut::CustomClientLimits->new;
     $limitlist->update({
         loginid       => $loginID,
         market        => request()->param('market'),
@@ -64,7 +64,7 @@ my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
     db             => $db,
 });
 
-my $limits         = BOM::Platform::CustomClientLimits->new->client_limit_list($client->loginid);
+my $limits         = BOM::Prodcut::CustomClientLimits->new->client_limit_list($client->loginid);
 my $sold_contracts = $fmb_dm->get_sold({
     after  => $startdate,
     before => $enddate,
