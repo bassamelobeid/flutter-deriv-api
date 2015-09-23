@@ -45,7 +45,7 @@ sub buy_bet {
         staff    => 'UnitTest',
     });
     $txn->buy(skip_validation => 1);
-    return $txn_buy->contract_id;
+    return $$txn->contract_id;
 }
 
 sub sell_bet {
