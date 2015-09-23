@@ -34,5 +34,31 @@ sub client_buy_bet {
     $txn->buy(skip_validation => 1);
 }
 
+sub buy_bet {
+    my ($sc, $curr, $client, $price, $start)
+
+    local $ENV{REQUEST_STARTTIME} = $start;
+    my $txn = BOM::Product::Transaction->new({
+        contract => produce_contract($sc, $curr),
+        client   => $client,
+        price    => $price,
+        staff    => 'UnitTest',
+    });
+    $txn->buy(skip_validation => 1);
+    return $txn_buy->contract_id;
+}
+
+sub sell_bet {
+    my ($sc, $curr, $client, $price, $txn_buy_contract_id)
+    my $txn = BOM::Product::Transaction->new({
+        contract    => produce_contract($sc, $curr),
+        client      => $client,
+        price       => $price,
+        staff       => 'UnitTest',
+        contract_id => $txn_buy_contract_id,
+    });
+    $txn->sell(skip_validation => 1);
+}
+
 1;
 
