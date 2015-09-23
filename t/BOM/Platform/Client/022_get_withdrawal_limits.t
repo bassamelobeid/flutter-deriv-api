@@ -106,7 +106,7 @@ subtest 'CR0012.' => sub {
 
     my $txn_buy_contract_id = BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 20, '2009-11-17 00:00:00');
 
-    BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 20, '2009-11-17 00:00:00', $txn_buy_contract_id);
+    BOM::Test::Data::Utility::Product::sell_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 40, '2009-11-17 00:00:00', $txn_buy_contract_id);
 
     my $balance = $account->load->balance;
     cmp_ok($balance, '==', 40, 'Balance is 40');
