@@ -68,7 +68,9 @@ sub url_for {
         }
 
         #Add Language to URL
-        if (not $domain_type->{no_lang}) {
+        if ($query->{l}) {
+            $url->query([l => $query->{l}]);
+        } elsif (not $domain_type->{no_lang}) {
             $url->query([l => $self->language]);
         }
     }
