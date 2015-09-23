@@ -16,6 +16,7 @@ use BOM::Utility::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use BOM::Test::Data::Utility::Product;
 
 initialize_realtime_ticks_db;
 my $recorded_date = Date::Utility->new;
