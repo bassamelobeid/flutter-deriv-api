@@ -322,6 +322,66 @@ Binaryqa25:
       - CR
       - FOG
   reality_check_interval: 60
+Binaryqa26:
+  primary_url: www.binaryqa26.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+  reality_check_interval: 60
+Binaryqa27:
+  primary_url: www.binaryqa27.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+  reality_check_interval: 60
+Binaryqa28:
+  primary_url: www.binaryqa28.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+  reality_check_interval: 60
+Binaryqa29:
+  primary_url: www.binaryqa29.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+  reality_check_interval: 60
+Binaryqa30:
+  primary_url: www.binaryqa30.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+  reality_check_interval: 60
 Devbin:
   primary_url: www.devbin.io
   default_language: EN
