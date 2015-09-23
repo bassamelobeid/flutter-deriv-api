@@ -14,11 +14,10 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use BOM::Platform::Client;
-use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
-use BOM::Product::Transaction;
 use BOM::Platform::Promocode;
 use BOM::Platform::Client::Utility;
+use BOM::Test::Data::Utility::Product;
 
 initialize_realtime_ticks_db();
 
@@ -55,32 +54,15 @@ subtest 'CR0029.' => sub {
     is($withdrawal_limits->{'frozen_free_gift'},         0, 'USD frozen_free_gift is 100');
     is($withdrawal_limits->{'free_gift_turnover_limit'}, 0, 'USD free_gift_turnover_limit is 2500');
 
-    {
-        local $ENV{REQUEST_STARTTIME} = '2009-11-17 00:00:00';
-        my $txn = BOM::Product::Transaction->new({
-            contract => produce_contract('CALL_FRXUSDJPY_2500_1258502400_1258588800_892700_0', 'USD'),
-            client   => $client,
-            price    => 1440.26,
-            staff    => 'UnitTest',
-        });
-        $txn->buy(skip_validation => 1);
-    }
+
+    BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_2500_1258502400_1258588800_892700_0', 'USD', $client, 1440.26, '2009-11-17 00:00:00');
 
     $withdrawal_limits = $client->get_withdrawal_limits();
 
     is($withdrawal_limits->{'frozen_free_gift'},         0, 'USD frozen_free_gift is 100');
     is($withdrawal_limits->{'free_gift_turnover_limit'}, 0, 'USD free_gift_turnover_limit is 2500');
 
-    {
-        local $ENV{REQUEST_STARTTIME} = '2009-11-17 00:00:00';
-        my $txn = BOM::Product::Transaction->new({
-            contract => produce_contract('CALL_FRXUSDJPY_3000_1258502400_1258588800_892100_0', 'USD'),
-            client   => $client,
-            price    => 1728.5,
-            staff    => 'UnitTest',
-        });
-        $txn->buy(skip_validation => 1);
-    }
+    BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_3000_1258502400_1258588800_892100_0', 'USD', $client, 1728.5, '2009-11-17 00:00:00');
 
     $withdrawal_limits = $client->get_withdrawal_limits();
 
@@ -121,26 +103,10 @@ subtest 'CR0012.' => sub {
     BOM::Platform::Promocode::process_promotional_code($client);
 
     cmp_ok($account->load->balance, '==', 20, 'Balance after being given promo bonus.');
-    my $txn_buy;
-    {
-        local $ENV{REQUEST_STARTTIME} = '2009-11-17 00:00:00';
-        $txn_buy = BOM::Product::Transaction->new({
-            contract => produce_contract('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD'),
-            client   => $client,
-            price    => 20,
-            staff    => 'UnitTest',
-        });
-        $txn_buy->buy(skip_validation => 1);
-    }
 
-    my $txn = BOM::Product::Transaction->new({
-        contract    => produce_contract('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD'),
-        client      => $client,
-        price       => 40,
-        staff       => 'UnitTest',
-        contract_id => $txn_buy->contract_id,
-    });
-    $txn->sell(skip_validation => 1);
+    my $txn_buy_contract_id = BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 20, '2009-11-17 00:00:00');
+
+    BOM::Test::Data::Utility::Product::sell_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 40, $txn_buy_contract_id);
 
     my $balance = $account->load->balance;
     cmp_ok($balance, '==', 40, 'Balance is 40');
