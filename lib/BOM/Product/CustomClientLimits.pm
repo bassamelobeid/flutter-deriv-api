@@ -1,8 +1,8 @@
-package BOM::Prodcut::CustomClientLimits;
+package BOM::Product::CustomClientLimits;
 
 =head1 DESCRIPTION
 
-BOM::Prodcut::CustomClientLimits
+BOM::Product::CustomClientLimits
 
 Customer-specific turnover limits against known exploitable conditions.
 

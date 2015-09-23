@@ -14,7 +14,7 @@ use BOM::Test::Runtime qw(:normal);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
-use BOM::Prodcut::CustomClientLimits;
+use BOM::Product::CustomClientLimits;
 
 my $now = time;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -51,7 +51,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 subtest test_everything => sub {
-    my $custom_list = new_ok('BOM::Prodcut::CustomClientLimits');
+    my $custom_list = new_ok('BOM::Product::CustomClientLimits');
     my $bad_dude    = 'CR1001';
     my $ok_dude     = 'MLT1001';
     is_deeply($custom_list->full_list, {}, 'Sweet, empty watch list at start');
