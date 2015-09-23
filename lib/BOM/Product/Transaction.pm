@@ -27,7 +27,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
-use BOM::Platform::CustomClientLimits;
+use BOM::Prodcut::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
 use Try::Tiny;
 use BOM::Utility::Log4perl qw/get_logger/;
@@ -1316,7 +1316,7 @@ sub _validate_payout_limit {
     my $contract = $self->contract;
     my $payout   = $self->payout;
 
-    my $custom_limit = BOM::Platform::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
+    my $custom_limit = BOM::Prodcut::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
 
     if (defined $custom_limit and $payout > $custom_limit) {
         return Error::Base->cuss(
