@@ -476,7 +476,7 @@ sub _build_email {
         return $self->session_cookie->email;
     }
 
-/zzzz    # not logged in
+    # not logged in
     return;
 }
 
@@ -488,9 +488,9 @@ sub _build_session_cookie {
     my $session_cookie;
     # if the user logged in.
     if (my $cookie = $self->cookie($cookie_name)) {
-        $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie, namespace => 'bom_website'});
+        $session_cookie = BOM::Platform::SessionCookie->new({token => $cookie});
     } elsif (my $as_param = $self->param('login')) {
-        $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param, namespace => 'bom_website'});
+        $session_cookie = BOM::Platform::SessionCookie->new({token => $as_param});
     }
     return $session_cookie;
 
