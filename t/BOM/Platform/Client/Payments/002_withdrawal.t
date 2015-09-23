@@ -10,11 +10,8 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Product::Transaction;
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
-use BOM::Market::Underlying;
-use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -234,7 +231,7 @@ subtest 'Frozen bonus.' => sub {
 
     # test turnover requirement:
     set_fixed_time('2009-09-01T15:05:00Z');
-    _buy_bet($client, 'USD', 100);
+    BOM::Test::Data::Utility::Product::client_buy_bet($client, 'USD', 100);
 
     throws_ok { $client->validate_payment(%withdrawal, amount => -$account->load->balance) } qr/includes frozen/,
         'client not allowed to withdraw frozen bonus while turnover insufficient';
@@ -243,7 +240,7 @@ subtest 'Frozen bonus.' => sub {
 
     $client->smart_payment(%deposit, amount => 300);
 
-    _buy_bet($client, 'USD', 401);    # pushes client over turnover threshold
+    BOM::Test::Data::Utility::Product::client_buy_bet($client, 'USD', 401);    # pushes client over turnover threshold
 
     ok $client->validate_payment(%withdrawal, amount => -$account->load->balance),
         'client is allowed to withdraw full amount after turnover requirements are met.';
@@ -271,36 +268,6 @@ subtest 'Frozen bonus.' => sub {
     $client->smart_payment(%deposit, amount => 3.2);
     ok $client->validate_payment(%withdrawal, amount => -3.2), 'Can withdraw an unfrozen amount that may raise a decimal arithmetic error';
 };
-
-sub _buy_bet {
-    my ($client, $currency, $amount) = @_;
-
-    my $now        = Date::Utility->new;
-    my $underlying = BOM::Market::Underlying->new('R_50');
-
-    my $account     = $client->default_account;
-    my $pre_balance = $account->load->balance;
-
-    my $contract = produce_contract({
-        underlying  => $underlying,
-        bet_type    => 'FLASHU',
-        currency    => $currency,
-        payout      => 2 * $amount,
-        date_start  => $now,
-        date_expiry => $now->epoch + 300,
-    });
-
-    local $ENV{REQUEST_STARTTIME} = $now;
-    my $txn = BOM::Product::Transaction->new({
-        client   => $client,
-        contract => $contract,
-        price    => $amount,
-        staff    => 'system'
-    });
-    $txn->buy(skip_validation => 1);
-
-    is roundnear(0.01, $account->load->balance), roundnear(0.01, $pre_balance - $amount), 'balance check after bet has been bought';
-}
 
 sub _apply_promo_amount {
     my $client    = shift;
