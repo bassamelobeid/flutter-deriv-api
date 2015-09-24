@@ -406,4 +406,6 @@ Binary:
       - MLT
       - CR
       - FOG
+      - JP
+      - VRTJ
   reality_check_interval: 60
