@@ -23,10 +23,10 @@ subtest 'valid broker codes' => sub {
     throws_ok { $broker_codes->get('TIMTY1122') } qr/Unknown broker code or loginid \[TIMTY\]/, "No Such Login TIMTY";
 
     my @brokers = sort map { $_->code } $broker_codes->all;
-    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG)], "Got correct list of brokers";
+    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG JP VRTJ)], "Got correct list of brokers";
 
     @brokers = sort $broker_codes->all_codes;
-    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG)], "Got correct list of brokers";
+    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG JP VRTJ)], "Got correct list of brokers";
 };
 
 subtest 'get_broker_on_server' => sub {
@@ -34,7 +34,7 @@ subtest 'get_broker_on_server' => sub {
     ok $broker_codes->get_brokers_on_server('deal01'), 'Got some brokers';
 
     my @br_on_cr = sort map { $_->code } $broker_codes->get_brokers_on_server('deal01');
-    eq_or_diff \@br_on_cr, [sort qw(CR FOG MLT MX MF VRTC)], "Correct list of brokers for deal01";
+    eq_or_diff \@br_on_cr, [sort qw(CR FOG MLT MX MF VRTC JP VRTJ)], "Correct list of brokers for deal01";
 };
 
 lives_ok {
