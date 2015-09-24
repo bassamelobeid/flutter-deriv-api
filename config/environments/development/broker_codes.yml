@@ -31,3 +31,14 @@ definitions:
     server: localhost
     landing_company: fog
     transaction_db_cluster: development
+  - code:
+      - VRTJ
+    server: localhost
+    landing_company: japan
+    is_virtual: 1
+    transaction_db_cluster: development
+  - code:
+      - JP
+    server: localhost
+    landing_company: japan
+    transaction_db_cluster: development

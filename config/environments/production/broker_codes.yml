@@ -31,3 +31,14 @@ definitions:
     server: collector01
     landing_company: fog
     transaction_db_cluster: FOG
+  - code:
+      - VRTJ
+    server: vr-deal01
+    landing_company: japan
+    is_virtual: 1
+    transaction_db_cluster: VRT
+  - code:
+      - JP
+    server: cr-deal01
+    landing_company: japan
+    transaction_db_cluster: JP
