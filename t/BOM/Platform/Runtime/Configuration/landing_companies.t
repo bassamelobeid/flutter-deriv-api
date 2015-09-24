@@ -36,6 +36,16 @@ subtest 'is_currency_legal' => sub {
         ok !$broker->is_currency_legal('AUD'), 'AUD';
         ok !$broker->is_currency_legal('ZWD'), 'ZWD';
     };
+
+    subtest 'jp' => sub {
+        my $broker = $lc_registry->get('japan');
+        ok $broker->is_currency_legal('USD'), 'USD';
+        ok $broker->is_currency_legal('JPY'), 'JPY';
+        ok !$broker->is_currency_legal('GBP'), 'GBP';
+        ok !$broker->is_currency_legal('EUR'), 'EUR';
+        ok !$broker->is_currency_legal('AUD'), 'AUD';
+        ok !$broker->is_currency_legal('ZWD'), 'ZWD';
+    };
 };
 
-cmp_deeply [sort $lc_registry->all_currencies], ['AUD', 'EUR', 'GBP', 'USD'];
+cmp_deeply [sort $lc_registry->all_currencies], ['AUD', 'EUR', 'GBP', 'JPY', 'USD'];
