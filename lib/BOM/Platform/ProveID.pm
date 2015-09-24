@@ -6,6 +6,8 @@ use warnings;
 use BOM::Utility::Log4perl;
 use BOM::Platform::Runtime;
 use BOM::System::Config;
+use BOM::System::Chronicle;
+use Carp;
 use base 'Experian::IDAuth';
 
 =head1 NOTES
@@ -24,9 +26,30 @@ But since we don't capture this data it won't work for us.
 sub new {
     my ($class, %args) = @_;
     my $client = $args{client} || die 'needs a client';
+
     my $obj = bless {client => $client}, $class;
     $obj->set($obj->defaults, %args);
     return $obj;
+}
+
+sub _throttle {
+    my $loginid = shift;
+    my $key     = 'PROVEID::THROTTLE::' . $loginid;
+
+    if (BOM::System::Chronicle->_redis_read->get($key)) {
+        Carp::confess 'Too many ProveID requests for ' . $loginid;
+    }
+
+    BOM::System::Chronicle->_redis_write->set($key, 1);
+    BOM::System::Chronicle->_redis_write->expire($key, 3600);
+
+    return 1;
+}
+
+sub get_result {
+    my $self = shift;
+    _throttle($self->{client_id});
+    return $self->SUPER::get_result();
 }
 
 sub defaults {

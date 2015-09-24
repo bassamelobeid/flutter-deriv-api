@@ -1,5 +1,5 @@
 #!/usr/bin/env perl
-package BOM::CouchDB::Maintenance::Replication;
+package BOM::Platform::CouchDB::Maintenance::Replication;
 
 use 5.010;
 use Moose;
