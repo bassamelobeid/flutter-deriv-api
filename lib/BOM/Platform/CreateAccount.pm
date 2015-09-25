@@ -248,7 +248,7 @@ sub register_real_acc {
     };
 }
 
-sub register_financial_acc {
+sub register_maltainvest_acc {
     my $args = shift;
     my $acc  = register_real_acc({
         user    => $args->{user},
@@ -257,7 +257,7 @@ sub register_financial_acc {
     return $acc if ($acc->{err});
 
     my $client               = $acc->{client};
-    my $financial_evaluation = $args->{financial_evaluation};
+    my $financial_evaluation = $args->{financial_assessment};
 
     $client->financial_assessment({
         data            => encode_json($financial_evaluation->{user_data}),
