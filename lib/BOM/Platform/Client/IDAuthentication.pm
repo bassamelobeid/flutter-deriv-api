@@ -10,6 +10,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
+use BOM::Utility::Log4perl qw( get_logger );
 
 has client => (
     is  => 'ro',
@@ -56,12 +57,19 @@ sub _requires_age_verified {
 sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
+    my $logger = get_logger();
 
     # MF clients should already be fully_authenticated by the time this code runs following an intial deposit.
-    # MF accounts are either set to "unwelcome" or "cashier lock" when they are first created.  Document
-    # submission is REQUIRED before being enabled for cashier or trading
+    # MF accounts are either set to "unwelcome" when they are first created.  Document
+    # submission is REQUIRED before the account is enabled for use
 
-    return if $client->client_fully_authenticated || $client->broker eq 'MF';
+    if ($client->client_fully_authenticated) {
+        $logger->warn("Client \"$client \" is already fully_authenticated.  Will not run IDAuthentication");
+        return;
+    } elsif ($client->{broker_code} eq 'MF') {
+        $logger->warn("Will not run IDAuthentication check for \"MF\" client : $client");
+        return;
+    }
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.
