@@ -172,7 +172,7 @@ sub real_acc_checks {
     };
 }
 
-sub financial_acc_checks {
+sub maltainvest_acc_checks {
     my $args  = shift;
     my $check = real_acc_checks($args);
     return $check if ($check->{err});
