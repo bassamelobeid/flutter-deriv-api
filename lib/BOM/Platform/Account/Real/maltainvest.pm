@@ -45,7 +45,7 @@ sub create_account {
                 [$client->loginid . ' scored ' . $financial_evaluation->{total_score} . ' and is therefore considered a professional trader.'],
         });
     }
-   return $acc;
+    return $acc;
 }
 
 1;
