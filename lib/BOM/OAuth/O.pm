@@ -4,6 +4,7 @@ use Mojo::Base 'Mojolicious::Controller';
 
 use BOM::Platform::Client;
 use Date::Utility;
+use Data::UUID;
 
 sub authorize {
     my $c = shift;
@@ -16,24 +17,53 @@ sub authorize {
     $client_id or return $c->__bad_request('the request was missing client_id');
 
     my $uri = Mojo::URL->new($redirect_uri);
-    my ($status, $error) = $c->__verify_client($client_id, @scopes);
+    my ($status, $error_or_application) = $c->__verify_client($client_id, @scopes);
     if (!$status) {
-        $error ||= 'server_error';
-        $uri->query->append(error => $error);
+        $error_or_application ||= 'server_error';
+        $uri->query->append(error => $error_or_application);
         $uri->query->append(state => $state) if defined($state);
         return $c->redirect_to($uri);
     }
 
     ## check user is logined
     my $client = $c->__get_client;
-    if (!$client) {
+    if (! $client) {
         # we need to redirect back to the /oauth/authorize route after
         # login (with the original params)
         my $uri = join('?', $c->url_for('current'), $c->url_with->query);
         $c->flash('redirect_after_login' => $uri);
-        $c->redirect_to('https://www.binary.com/login?redirect_uri=oauth');
+        return $c->redirect_to('https://www.binary.com/login?redirect_uri=oauth');
     }
 
+    my $loginid = $client->loginid;
+
+    ## confirm scopes (FIXME, csrf_token)
+    my $is_all_approved = 0;
+    if ($c->req->method eq 'POST' and $c->param('confirm_scopes')) {
+        $c->__confirm_scope($client_id, $loginid, @scopes);
+        $is_all_approved = 1;
+    }
+
+    ## check if it's confirmed
+    $is_all_approved ||= $c->__is_scope_confirmed($client_id, $loginid, @scopes);
+    unless ($is_all_approved) {
+        ## show scope confirms
+        return $self->render(
+            template => 'scope_confirms',
+            layout   => $self->layout,
+
+            application => $error_or_application,
+            client => $client,
+            scopes => \@scopes,
+
+        );
+    }
+
+    ## everything is good
+    my $expires_in = 3600; # default to 1 hour expires
+    my $auth_code = Data::UUID->new()->create_str();
+
+    $c->__store_auth_code($client_id, $loginid, $auth_code, $expires_in, @scopes);
 }
 
 sub __get_client {
@@ -60,19 +90,56 @@ sub __verify_client {
     my ($c, $client_id, @scopes) = @_;
 
     my $dbh = $c->rose_db->dbh;
-    my $client = $dbh->selectrow_hashref("SELECT secret FROM auth.oauth2_client WHERE id = ? AND active", undef, $client_id);
+    my $client = $dbh->selectrow_hashref("SELECT * FROM auth.oauth_client WHERE id = ? AND active", undef, $client_id);
     return (0, 'unauthorized_client') unless $client;
 
     foreach my $rqd_scope (@scopes) {
         my $scope = $dbh->selectrow_hashref("
-            SELECT cs.allowed FROM auth.oauth2_client_scope cs ON auth.oauth2_scope s ON cs.scope_id=s.id
+            SELECT cs.allowed FROM auth.oauth_client_scope cs ON auth.oauth_scope s ON cs.scope_id=s.id
             WHERE cs.client_id = ? AND s.scope = ?
         ", undef, $client_id, $rqd_scope);
         $scope            or return (0, 'invalid_scope');
         $scope->{allowed} or return (0, 'access_denied');
     }
 
-    return (1);
+    return (1, $client);
+}
+
+sub __is_scope_confirmed {
+    my ($client_id, $loginid, @scopes) = @_;
+
+    my $dbh = $c->rose_db->dbh;
+    my $sth = $dbh->prepare("
+        SELECT 1 FROM auth.oauth_scope_confirms JOIN auth.oauth_scope ON oauth_scope_confirms.scope_id=scope.id
+        WHERE client_id = ? AND loginid = ? AND scope.scope = ?
+    ");
+
+    foreach my $scope (@scopes) {
+        $sth->execute($client_id, $loginid, $scope);
+        my ($is_approved) = $sth->fetchrow_array;
+        return 0 unless $is_approved;
+    }
+
+    return 1;
+}
+
+sub __confirm_scope {
+    my ($client_id, $loginid, @scopes) = @_;
+
+    my $dbh = $c->rose_db->dbh;
+    my $get_scope_sth = $dbh->prepare("SELECT id FROM auth.oauth_scope WHERE scope = ?");
+    my $insert_sth = $dbh->prepare("
+       INSERT INTO auth.oauth_scope_confirms (client_id, loginid, scope_id) VALUES (?, ?, ?)
+    ");
+
+    foreach my $scope (@scopes) {
+        $get_scope_sth->execute($scope);
+        my ($scope_id) = $get_scope_sth->fetchrow_array;
+        next unless $scope_id;
+        $insert_sth->execute($client_id, $loginid, $scope_id);
+    }
+
+    return 1;
 }
 
 sub __bad_request {
