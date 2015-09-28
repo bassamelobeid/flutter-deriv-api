@@ -23,7 +23,8 @@ has '_mapper_required_objects' => (
 sub get_today_client_payment_agent_transfer_total_amount {
     my $self = shift;
 
-    my $sql = q{
+    my $today = Date::Utility::today->date;
+    my $sql   = qq{
         SELECT
             ROUND(SUM(ABS(p.amount)), 2) AS amount
         FROM
@@ -34,7 +35,7 @@ sub get_today_client_payment_agent_transfer_total_amount {
             AND a.client_loginid = ?
             AND a.is_default = 'TRUE'
             AND p.payment_gateway_code = 'payment_agent_transfer'
-            AND p.payment_time::DATE >= 'today'
+            AND p.payment_time::DATE >= '$today';
     };
 
     my $dbh = $self->db->dbh;
@@ -52,6 +53,8 @@ sub get_today_client_payment_agent_transfer_total_amount {
 
 =cut
 
+# TODO This function should be fixed
+# 'today' in this function is illegal
 sub get_today_client_payment_agent_transfer_total_withdrawal {
     my $self = shift;
 
@@ -82,6 +85,8 @@ sub get_today_client_payment_agent_transfer_total_withdrawal {
     return $amount;
 }
 
+# TODO This function should be fixed
+# 'today' in this function is illegal
 sub get_today_client_payment_agent_transfer_withdrawal_count {
     my $self = shift;
 
@@ -112,7 +117,8 @@ sub get_today_client_payment_agent_transfer_withdrawal_count {
     return deposit count
 =back
 =cut
-
+# TODO This function should be fixed
+# 'today' in this function is illegal
 sub get_today_client_payment_agent_transfer_deposit_count {
     my $self = shift;
 
