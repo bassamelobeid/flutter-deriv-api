@@ -402,7 +402,13 @@ sub _build_financial_account_broker {
 sub _build_language {
     my $self = shift;
 
-    my $language = $self->param('l');
+    my $language = '';
+    if ($self->param('l')) {
+        $language = $self->param('l');
+    } elsif ($self->cookie('language')) {
+        $language = $self->cookie('language');
+    }
+
     # while we have url ?l=EN and POST with l=EN, it goes to ARRAY
     $language = $language->[0] if ref($language) eq 'ARRAY';
 
