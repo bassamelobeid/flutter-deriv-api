@@ -142,6 +142,15 @@ sub __confirm_scope {
     return 1;
 }
 
+sub __store_auth_code {
+    my ($client_id, $loginid, $auth_code, $expires_in, @scopes) = @_;
+
+    my $dbh = $c->rose_db->dbh;
+    my $get_scope_sth = $dbh->prepare("SELECT id FROM auth.oauth_scope WHERE scope = ?");
+
+
+}
+
 sub __bad_request {
     my ($c, $error) = @_;
 
