@@ -95,8 +95,7 @@ sub create_virtual_acc {
         {
             verify_token => BOM::Platform::SessionCookie->new({
                     email      => $email,
-                    expires_in => 3600,
-                    namespace  => 'bom_website',
+                    expires_in => 3600
                 }
                 )->token,
             step => 'account'
