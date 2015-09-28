@@ -402,7 +402,7 @@ sub _build_financial_account_broker {
 sub _build_language {
     my $self = shift;
 
-    my $language = '';
+    my $language;
     if ($self->param('l')) {
         $language = $self->param('l');
     } elsif ($self->cookie('language')) {
