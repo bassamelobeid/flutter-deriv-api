@@ -73,10 +73,9 @@ sub available_contracts_for_symbol {
 
 We set the predefined trading periods based on Japan requirement:
 1) Start at 00:00GMT and expire with duration of 2, and 4 hours
-2) Start at closest even hour and expire with duration of 2,and 4 hours. Example: Current hour is 3GMT, you will have trading period of 02-04GMT, 02-06GMT.
-3) Start at 01:00GMT and expire with duration of 3, and 5 hours
-4) Start at closest odd hour and expire with duration of 3,and 5 hours. Example: Current hour is 3GMT, you will have trading period of 03-06GMT, 03-08GMT.
-5) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
+2) Start at 15 min before closest even hour and expire with duration of 2,and 4 hours. Example: Current hour is 3GMT, you will have trading period of 0145-04GMT, 0045-0400GMT 0145-06GMT.
+3) Start at 15 min before closest odd hour and expire with duration of 3,and 5 hours. Example: Current hour is 3GMT, you will have trading period of 0045-04GMT, 0245-06GMT, 0045-06GMT,0245-08GMT.
+4) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
 
 =cut
 
@@ -89,6 +88,7 @@ sub _predefined_trading_period {
     my $exchange        = $args->{exchange};
     my $now             = $args->{date};
     my $now_hour        = $now->hour;
+    my $now_minute      = $now->minute;
     my $now_date        = $now->date;
     my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
     my $today_close     = $exchange->closing_on($now)->epoch;
@@ -144,12 +144,14 @@ sub _predefined_trading_period {
                 duration => $actual_day_string,
                 };
         }
+
+        $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         if ($now_hour > 0) {
             my $even_hour = $now_hour - ($now_hour % 2);
             push @$trading_periods,
                 map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@even_hourly_durations}) }
                 grep { $_->is_after($today) }
-                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2);
+                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2, $even_hour - 4);
 
             my $odd_hour = $now_hour % 2 ? $now_hour : $now_hour - 1;
             my @odd_hourly_durations = qw(3h 5h);
@@ -159,7 +161,9 @@ sub _predefined_trading_period {
                 map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 2, $odd_hour - 4);
 
         }
-        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, 3600);
+        my $key_expiry = $now_minute < 45 ? $now_date . ' ' . $now_hour . ':45:00' : $now_date . ' ' . $now_hour . ':00:00';
+        Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, Date::Utility->new($key_expiry)->epoch - $now->epoch);
+
     }
 
     my @new_offerings;
@@ -194,13 +198,14 @@ To get the date_start and date_expiry for a give trading duration
 =cut
 
 sub _get_combination_of_date_expiry_date_start {
-    my $args       = shift;
-    my $date_start = $args->{date_start};
-    my @duration   = @{$args->{duration}};
-    my $now        = $args->{now};
-    my $start_date = {
-        date  => $date_start->datetime,
-        epoch => $date_start->epoch
+    my $args             = shift;
+    my $date_start       = $args->{date_start};
+    my @duration         = @{$args->{duration}};
+    my $now              = $args->{now};
+    my $early_date_start = $date_start->minus_time_interval('15m');
+    my $start_date       = {
+        date  => $early_date_start->datetime,
+        epoch => $early_date_start->epoch
     };
 
     return (
@@ -278,8 +283,9 @@ sub _set_predefined_barriers {
 =head2 _split_boundaries_barriers
 
 
-Split the boundaries barriers into 20 barriers.
+-Split the boundaries barriers into 20 barriers.
 The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
+- Included entry spot as well
 
 =cut
 
@@ -292,7 +298,9 @@ sub _split_boundaries_barriers {
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
     my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    return map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
+    my @barriers                    = map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
+    push @barriers, $spot_at_start;
+    return @barriers;
 }
 
 =head2 _get_strike_from_call_bs_price
