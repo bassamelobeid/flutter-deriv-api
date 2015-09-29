@@ -49,18 +49,17 @@ sub get_today_client_payment_agent_transfer_total_amount {
     return $amount;
 }
 
-=item get_today_payment_agent_transfer_total_withdrawal
+=item get_payment_agent_withdrawal_sum_count
 
 =cut
 
-# TODO This function should be fixed
-# 'today' in this function is illegal
-sub get_today_client_payment_agent_transfer_total_withdrawal {
+sub get_today_payment_agent_withdrawal_sum_count {
     my $self = shift;
 
     my $sql = q{
         SELECT
-            ROUND(SUM(-1 * p.amount), 2) AS amount
+            round(sum(-1 * p.amount), 2) as amount,
+            count(*) as count
         FROM
             payment.payment p,
             transaction.account a
@@ -78,38 +77,13 @@ sub get_today_client_payment_agent_transfer_total_withdrawal {
     $sth->execute($self->client_loginid);
 
     my $amount = 0;
+    my $count  = 0;
     if (my $result = $sth->fetchrow_hashref()) {
         $amount = $result->{amount};
+        $count  = $result->{count};
     }
 
-    return $amount;
-}
-
-# TODO This function should be fixed
-# 'today' in this function is illegal
-sub get_today_client_payment_agent_transfer_withdrawal_count {
-    my $self = shift;
-
-    my $sql = q{
-        SELECT count(*)
-        FROM
-            payment.payment p,
-            transaction.account a
-        WHERE
-            p.account_id = a.id
-            AND a.client_loginid = ?
-            AND a.is_default = 'TRUE'
-            AND p.payment_gateway_code = 'payment_agent_transfer'
-            AND p.amount < 0
-            AND p.payment_time::DATE >= 'today'
-    };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid);
-
-    my $result = $sth->fetchrow_hashref();
-    return $result->{count};
+    return ($amount, $count);
 }
 
 =item get_today_client_payment_agent_transfer_deposit_count
@@ -117,8 +91,7 @@ sub get_today_client_payment_agent_transfer_withdrawal_count {
     return deposit count
 =back
 =cut
-# TODO This function should be fixed
-# 'today' in this function is illegal
+
 sub get_today_client_payment_agent_transfer_deposit_count {
     my $self = shift;
 
