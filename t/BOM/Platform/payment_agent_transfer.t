@@ -73,8 +73,8 @@ subtest 'Initialization' => sub {
         });
     }
     'Successfully create new PaymentAgentTransfer object';
-    my $payments_record = $payment_agent_transfer_datamapper->get_payment_agent_withdrawal_txn_by_date(Date::Utility->new);
-    cmp_ok(scalar @{$payments_record}, '==', '0', 'client ' . $client_to->loginid . ' has no transaction for date: ' . Date::Utility->new->date);
+    my ($payment_sum, $payment_count) = $payment_agent_transfer_datamapper->get_today_payment_agent_withdrawal_sum_count();
+    cmp_ok($payment_count, '==', '0', 'client ' . $client_to->loginid . ' has no transaction for date: ' . Date::Utility->new->date);
 
     lives_ok {
         $payment_agent_transfer_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
@@ -84,9 +84,8 @@ subtest 'Initialization' => sub {
     }
     'Successfully create new PaymentAgentTransfer object';
 
-    $payments_record = $payment_agent_transfer_datamapper->get_payment_agent_withdrawal_txn_by_date(Date::Utility->new);
-    cmp_ok(scalar @{$payments_record}, '==', '1', 'one transaction for date: ' . Date::Utility->new->date);
-
+    ($payment_sum, $payment_count) = $payment_agent_transfer_datamapper->get_today_payment_agent_withdrawal_sum_count();
+    cmp_ok($payment_count, '==', '1', 'one transaction for date: ' . Date::Utility->new->date);
 };
 
 subtest 'method actual tests' => sub {
