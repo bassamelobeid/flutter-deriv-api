@@ -210,21 +210,21 @@ frxEURCAD:
   C_st: 11.2929
   D_st: 29729
 frxEURCHF:
-  #calib date: 14-Sep-2015
-  #calib start: 02-Jan-2015
-  #calib end: 01-Sep-2015 08:09:28
-  trend_min: -4.03563e-05
-  trend_max: 3.31881e-05
-  #adj r square lt: 0.956412
-  A_lt: 0.216821
-  B_lt: -0.135831
-  C_lt: 6.21995
-  D_lt: 30131.3
-  #adj r square st: 0.997544
-  A_st: 0.172051
-  B_st: -0.109086
-  C_st: 14.2973
-  D_st: 30131.3
+  #calib date: 25-Sep-2015
+  #calib start: 01-Mar-2015 18:04:22
+  #calib end: 21-Sep-2015 03:23:28
+  trend_min: -2.52633e-05
+  trend_max: 2.53344e-05
+  #adj r square lt: 0.996723
+  A_lt: 0.220151
+  B_lt: -4.37777e-14
+  C_lt: 2.09305
+  D_lt: 39472
+  #adj r square st: 0.99476
+  A_st: 0.101047
+  B_st: -0.0336733
+  C_st: 8.53481
+  D_st: 39472
 frxEURGBP:
   #calib date: 14-Sep-2015
   #calib start: 02-Jan-2015
@@ -322,21 +322,21 @@ frxGBPCAD:
   C_st: 8.87585
   D_st: 39967
 frxGBPCHF:
-  #calib date: 14-Sep-2015
-  #calib start: 02-Jan-2015
-  #calib end: 01-Sep-2015 08:11:26
-  trend_min: -4.79104e-05
-  trend_max: 3.64689e-05
-  #adj r square lt: 0.974214
-  A_lt: 0.0649885
-  B_lt: -4.05767e-14
-  C_lt: 12.1968
-  D_lt: 27420.6
-  #adj r square st: 0.995006
-  A_st: 0.13866
-  B_st: -0.0912675
-  C_st: 13.2991
-  D_st: 27420.6
+  #calib date: 25-Sep-2015
+  #calib start: 01-Mar-2015 18:03:22
+  #calib end: 21-Sep-2015 03:24:40
+  trend_min: -3.13564e-05
+  trend_max: 3.11868e-05
+  #adj r square lt: 0.984766
+  A_lt: 0.107247
+  B_lt: -0.0278787
+  C_lt: 5.66932
+  D_lt: 32064.8
+  #adj r square st: 0.993733
+  A_st: 0.068538
+  B_st: -2.2206e-14
+  C_st: 18.8288
+  D_st: 32064.8
 frxGBPJPY:
   #calib date: 14-Sep-2015
   #calib start: 02-Jan-2015
@@ -466,21 +466,21 @@ frxUSDCAD:
   C_st: 39.356
   D_st: 35790.5
 frxUSDCHF:
-  #calib date: 15-Sep-2015
-  #calib start: 02-Jan-2015
-  #calib end: 01-Sep-2015 08:13:09
-  trend_min: -5.17148e-05
-  trend_max: 3.90177e-05
-  #adj r square lt: 0.968575
-  A_lt: 0.0560002
-  B_lt: -2.40553e-14
-  C_lt: 12.9663
-  D_lt: 25629.4
-  #adj r square st: 0.992709
-  A_st: 0.150543
-  B_st: -0.168253
-  C_st: 14.992
-  D_st: 25629.4
+  #calib date: 25-Sep-2015
+  #calib start: 01-Mar-2015 18:00:42
+  #calib end: 21-Sep-2015 03:25:30
+  trend_min: -3.51316e-05
+  trend_max: 3.31894e-05
+  #adj r square lt: 0.973389
+  A_lt: 0.0692778
+  B_lt: -2.72709e-14
+  C_lt: 3.67508
+  D_lt: 30130.1
+  #adj r square st: 0.984781
+  A_st: 0.0452421
+  B_st: -2.22127e-14
+  C_st: 24.7321
+  D_st: 30130.1
 frxUSDJPY:
   #calib date: 14-Sep-2015
   #calib start: 02-Jan-2015
