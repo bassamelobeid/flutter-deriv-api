@@ -9,11 +9,14 @@ use BOM::Product::Transaction;
 
 sub statement {
     my ($c, $args) = @_;
+
     if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
         BOM::Product::Transaction::sell_expired_contracts({
             client => $c->stash('client'),
+            source => $c->stash('source')
         });
     }
+
     my $statement = get_transactions($c, $args);
     return {
         echo_req  => $args,
