@@ -90,23 +90,17 @@ subtest 'Initialization' => sub {
 };
 
 subtest 'method actual tests' => sub {
-    plan tests => 11;
-    my $total_withdrawal;
+    plan tests => 10;
+    my ($total_withdrawal, $withdrawal_count);
     lives_ok {
-        $total_withdrawal = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_total_withdrawal();
+        ($total_withdrawal, $withdrawal_count) = $payment_agent_transfer_datamapper->get_today_payment_agent_withdrawal_sum_count();
     }
-    'Expect to run get_today_client_payment_agent_transfer_total_withdrawal';
+    'Expect to run get_today_payment_agent_withdrawal_sum_count';
 
     ok(defined $total_withdrawal, "Got valid number [$total_withdrawal]");
     is($total_withdrawal, sprintf("%.2f", $transfer_amount), 'Got correct amount as it was expected');
     my $two_d_rounded = sprintf("%.2f", $total_withdrawal);
     ok($total_withdrawal eq $two_d_rounded, "Correctly rounded [$total_withdrawal]");
-
-    my $withdrawal_count;
-    lives_ok {
-        $withdrawal_count = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_withdrawal_count();
-    }
-    'Expect to run get_today_client_payment_agent_transfer_withdrawal_count';
 
     ok(defined $withdrawal_count, "Got valid number [$withdrawal_count]");
 
