@@ -9,6 +9,7 @@ use BOM::WebSocketAPI::v2::System;
 use Try::Tiny;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
+use BOM::Platform::Runtime;
 
 sub buy {
     my ($c, $args) = @_;
@@ -155,6 +156,13 @@ sub portfolio {
         client => $client,
         source => $source
     });
+
+    if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
+        BOM::Product::Transaction::sell_expired_contracts({
+            client => $client,
+            source => $source
+        });
+    }
 
     # TODO: run these under a separate event loop to avoid workload batching..
     my @fmbs = grep { !$c->{fmb_ids}{$ws_id}{$_->id} } $client->open_bets;
