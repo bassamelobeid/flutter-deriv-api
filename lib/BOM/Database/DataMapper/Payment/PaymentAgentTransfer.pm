@@ -58,7 +58,7 @@ sub get_today_payment_agent_withdrawal_sum_count {
 
     my $sql = q{
         SELECT
-            round(sum(-1 * p.amount), 2) as amount,
+            coalesce( round(sum(-1 * p.amount), 2), 0 ) as amount,
             count(*) as count
         FROM
             payment.payment p,
@@ -76,8 +76,7 @@ sub get_today_payment_agent_withdrawal_sum_count {
     my $sth = $dbh->prepare($sql);
     $sth->execute($self->client_loginid);
 
-    my $amount = 0;
-    my $count  = 0;
+    my ($amount, $count) = (0, 0);
     if (my $result = $sth->fetchrow_hashref()) {
         $amount = $result->{amount};
         $count  = $result->{count};
