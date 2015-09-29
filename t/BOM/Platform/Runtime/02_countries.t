@@ -30,8 +30,8 @@ subtest 'iom countries' => sub {
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
         is(BOM::Platform::Runtime->instance->random_restricted_country($c), !1, '! random_restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), !1, '! country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'iom', 'financial_company_for_country');
+        is(BOM::Platform::Runtime->instance->only_financial_company_for_country($c), undef, '! only_financial_company_for_country');
     }
 };
 
@@ -46,8 +46,8 @@ subtest 'EU countries' => sub {
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
         is(BOM::Platform::Runtime->instance->random_restricted_country($c), !1, '! random_restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), 1, 'country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
+        is(BOM::Platform::Runtime->instance->only_financial_company_for_country($c), undef, '! only_financial_company_for_country');
     }
 };
 
@@ -62,8 +62,8 @@ subtest 'EU countries, no Random' => sub {
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
         is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, 'random_restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), 1, 'country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), 1, 'financial_only_country');
+        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'maltainvest', 'financial_company_for_country');
+        is(BOM::Platform::Runtime->instance->only_financial_company_for_country($c), 'maltainvest', 'only_financial_company_for_country');
     }
 };
 
@@ -78,8 +78,8 @@ subtest 'restricted countries' => sub {
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), 1, 'restricted_country');
         is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, '! random_restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), !1, '! country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), undef, '! financial_company_for_country');
+        is(BOM::Platform::Runtime->instance->only_financial_company_for_country($c), undef, '! only_financial_company_for_country');
     }
 };
 
@@ -100,14 +100,15 @@ subtest 'CR countries' => sub {
         if ($c eq 'sg') {
             is($c_config->{gaming_company}, 'none', 'Sg no gaming company');
             is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, 'random_restricted_country');
+            is(BOM::Platform::Runtime->instance->only_financial_company_for_country($c), 'costarica', 'only_financial_company_for_country');
         } else {
             is($c_config->{gaming_company}, 'costarica', 'gaming company = costarica');
             is(BOM::Platform::Runtime->instance->random_restricted_country($c), !1, '! random_restricted_country');
+            is(BOM::Platform::Runtime->instance->only_financial_company_for_country($c), undef, '! only_financial_company_for_country');
         }
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
-        is(BOM::Platform::Runtime->instance->country_has_financial($c), !1, '! country_has_financial');
-        is(BOM::Platform::Runtime->instance->financial_only_country($c), !1, '! financial_only_country');
+        is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'costarica', 'financial_company_for_country');
     }
 };
 

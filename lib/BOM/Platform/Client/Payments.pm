@@ -12,6 +12,7 @@ use List::Util qw(min);
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency);
 use BOM::Platform::Client::IDAuthentication;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
+use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 
 # NOTE.. this is a 'mix-in' of extra subs for BOM::Platform::Client.  It is not a distinct Class.
 
@@ -54,7 +55,7 @@ sub validate_payment {
 
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
         die "Balance would exceed $max_balance limit\n"
-            if $amount + $accbal > $max_balance;
+            if in_USD($amount + $accbal, $acccur) > $max_balance;
     }
 
     if ($action_type eq 'withdrawal') {
@@ -647,11 +648,11 @@ sub validate_agent_payment {
     if (DateTime->now->day_of_week() > 5) {
         die "payments agents are unavailable at the weekend (UTC timezone)";
     }
-
+    my $today = Date::Utility::today->date;
     # Total transaction for the day
     my $query = [
         payment_gateway_code => 'payment_agent_transfer',
-        payment_time         => {gt => \'current_date'}];
+        payment_time         => {gt => $today}];
 
     my $total = $client->default_account->find_payment(
         query  => $query,
@@ -660,6 +661,15 @@ sub validate_agent_payment {
     my $count = $client->default_account->payment_count($query) || 0;
 
     my $total_amount = scalar @$total ? $total->[0]->amount || 0 : 0;
+
+    my $payment_agent_transfer_datamapper =
+        BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({client_loginid => $payment_agent->loginid});
+    my $pa_total_amount = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_total_amount;
+    $pa_total_amount = amount_from_to_currency($pa_total_amount + abs($amount), $payment_agent->default_account->currency_code, 'USD');
+
+    if ($pa_total_amount > 100_000) {
+        die "Payment agents can not exceed an aggregate value of 100,000 in a day\n";
+    }
 
     my $pa_transaction_count = $payment_agent->default_account->payment_count($query) || 0;
     ## Payment agents can have no more than 1000 transactions per day
