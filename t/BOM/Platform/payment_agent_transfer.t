@@ -16,10 +16,10 @@ my $client_from;
 my $client_to;
 
 my $transfer_amount = 2000.2525;
-my $payment_agent_transfer_datamapper;
+my $pa_datamapper;
 
 subtest 'Initialization' => sub {
-    plan tests => 6;
+    plan tests => 7;
     lives_ok {
         $connection_builder = BOM::Database::ClientDB->new({
             broker_code => 'CR',
@@ -67,37 +67,41 @@ subtest 'Initialization' => sub {
     'Expect to insert payment agent transfer transaction';
 
     lives_ok {
-        $payment_agent_transfer_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
+        $pa_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
             client_loginid => $client_to->loginid,
             currency_code  => 'USD',
         });
     }
-    'Successfully create new PaymentAgentTransfer object';
-    my ($payment_sum, $payment_count) = $payment_agent_transfer_datamapper->get_today_payment_agent_withdrawal_sum_count();
-    cmp_ok($payment_count, '==', '0', 'client ' . $client_to->loginid . ' has no transaction for date: ' . Date::Utility->new->date);
+    'DataMapper for PA';
+
+    my ($payment_sum, $payment_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
+    cmp_ok($payment_count, '==', '0', 'PA - ' . $client_to->loginid . ' no PA withdrawal count for today');
+    cmp_ok($payment_sum, '==', '0', 'PA - ' . $client_to->loginid . ' no PA withdrawal sum for today');
 
     lives_ok {
-        $payment_agent_transfer_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
+        $pa_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
             client_loginid => $client_from->loginid,
             currency_code  => 'USD',
         });
     }
-    'Successfully create new PaymentAgentTransfer object';
+    'DataMapper for client';
 
-    ($payment_sum, $payment_count) = $payment_agent_transfer_datamapper->get_today_payment_agent_withdrawal_sum_count();
-    cmp_ok($payment_count, '==', '1', 'one transaction for date: ' . Date::Utility->new->date);
+    ($payment_sum, $payment_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
+    cmp_ok($payment_count, '==', '1', 'Client - ' . $client_from->loginid . ' PA withdrawal count for today');
 };
 
 subtest 'method actual tests' => sub {
     plan tests => 10;
     my ($total_withdrawal, $withdrawal_count);
+
     lives_ok {
-        ($total_withdrawal, $withdrawal_count) = $payment_agent_transfer_datamapper->get_today_payment_agent_withdrawal_sum_count();
+        ($total_withdrawal, $withdrawal_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
     }
     'Expect to run get_today_payment_agent_withdrawal_sum_count';
 
     ok(defined $total_withdrawal, "Got valid number [$total_withdrawal]");
     is($total_withdrawal, sprintf("%.2f", $transfer_amount), 'Got correct amount as it was expected');
+
     my $two_d_rounded = sprintf("%.2f", $total_withdrawal);
     ok($total_withdrawal eq $two_d_rounded, "Correctly rounded [$total_withdrawal]");
 
@@ -110,7 +114,7 @@ subtest 'method actual tests' => sub {
     'payment agent makes deposit transaction';
 
     lives_ok {
-        $deposit_count = $payment_agent_transfer_datamapper->get_today_client_payment_agent_transfer_deposit_count();
+        $deposit_count = $pa_datamapper->get_today_client_payment_agent_transfer_deposit_count();
     }
     'Expect to run get_today_client_payment_agent_transfer_deposit_count';
 
