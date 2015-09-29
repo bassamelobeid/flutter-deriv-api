@@ -1,0 +1,7 @@
+BEGIN;
+
+DROP TABLE auth.authcode CASCADE;
+DROP TABLE auth.grants CASCADE;
+DROP TABLE auth.users CASCADE;
+
+COMMIT;
