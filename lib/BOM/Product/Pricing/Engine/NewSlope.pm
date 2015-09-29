@@ -117,12 +117,12 @@ sub _two_barrier_prob {
     my %call_args = (
         %$args,
         contract_type => 'CALL',
-        strikes       => $high_strike
+        strikes       => [$high_strike],
     );
     my %put_args = (
         %$args,
         contract_type => 'PUT',
-        strikes       => $low_strike
+        strikes       => [$low_strike],
     );
     my $probability = probability(\%call_args) + probability(\%put_args);
 
