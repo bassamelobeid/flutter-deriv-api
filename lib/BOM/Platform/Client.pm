@@ -484,6 +484,9 @@ sub set_payment_agent {
         return $obj;
     }
     # or make a new one
+    # currency must be USD
+    $self->set_default_account('USD') unless $self->default_account;
+    die "Payment Agent currency can only be in USD" unless $self->default_account->currency_code eq 'USD';
     my %args = (
         client_loginid => $self->loginid,
         db             => $self->db
