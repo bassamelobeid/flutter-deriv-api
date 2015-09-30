@@ -63,13 +63,7 @@ sub run_authentication {
     # MF accounts are either set to "unwelcome" when they are first created.  Document
     # submission is REQUIRED before the account is enabled for use
 
-    if ($client->client_fully_authenticated) {
-        $logger->warn("Client \"$client \" is already fully_authenticated.  Will not run IDAuthentication");
-        return;
-    } elsif ($client->{broker_code} eq 'MF') {
-        $logger->warn("Will not run IDAuthentication check for \"MF\" client : $client");
-        return;
-    }
+    return if $client->client_fully_authenticated || $client->{broker_code} eq 'MF';
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.
