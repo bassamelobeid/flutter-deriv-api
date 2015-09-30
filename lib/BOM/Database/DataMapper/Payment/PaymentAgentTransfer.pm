@@ -69,19 +69,14 @@ sub get_today_payment_agent_withdrawal_sum_count {
             AND a.is_default = 'TRUE'
             AND p.payment_gateway_code = 'payment_agent_transfer'
             AND p.amount < 0
-            AND p.payment_time::DATE >= 'today'
+            AND p.payment_time >= 'today'
     };
 
     my $dbh = $self->db->dbh;
     my $sth = $dbh->prepare($sql);
     $sth->execute($self->client_loginid);
 
-    my ($amount, $count) = (0, 0);
-    if (my $result = $sth->fetchrow_hashref()) {
-        $amount = $result->{amount};
-        $count  = $result->{count};
-    }
-
+    my ($amount, $count) = @{$sth->fetchrow_arrayref};
     return ($amount, $count);
 }
 
