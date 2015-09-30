@@ -88,7 +88,7 @@ subtest 'Client getters, setters and create' => sub {
     is(BOM::Platform::Client::Utility::decrypt_secret_answer($client->secret_answer), "São Paulo", "client secret answer is: São Paulo");
 
     Test::Exception::lives_ok {
-        $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer("ѦѧѨѩѪԱԲԳԴԵԶԷႤႥႦႧᚕᚖᚗᚘᚙᚚ"))
+        $client->secret_answer(BOM::Platform::Client::Utility::encrypt_secret_answer("ѦѧѨѩѪԱԲԳԴԵԶԷႤႥႦႧᚕᚖᚗᚘᚙᚚ"));
     }
     "set secret answer: Unicode test";
     is(
@@ -148,5 +148,7 @@ subtest 'Client getters, setters and create' => sub {
     is($client->last_name,  "mimi",                       "[save] client last_name is: mimi");
     is($client->email,      'shuwnyuan@betonmarkets.com', '[save] client email is: shuwnyuan@betonmarkets.com');
 
+    $client->set_default_account('EUR');
+    throws_ok { $client->set_payment_agent } qr/Payment Agent currency can only be in USD/, 'client with currency EUR cannot be paymentagent';
 };
 
