@@ -11,7 +11,6 @@ use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Client;
 use BOM::Platform::ProveID;
 
-
 has client => (
     is  => 'ro',
     isa => 'BOM::Platform::Client'
