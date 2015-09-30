@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 3;
+use Test::More tests => 4;
 use Test::NoWarnings;
 use Test::Exception;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -9,40 +9,37 @@ use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 use Test::MockModule;
 use DateTime;
 
-my $connection_builder;
-my $account_from;
-my $account_to;
-my $client_from;
-my $client_to;
+my ($client, $pa_client);
+my ($client_account, $pa_account);
+
+my ($client_datamapper, $pa_datamapper);
+my ($total_withdrawal, $withdrawal_count);
 
 my $transfer_amount = 2000.2525;
-my $pa_datamapper;
+my $transfer_amount_2dp = sprintf('%.2f', $transfer_amount);
 
 subtest 'Initialization' => sub {
-    plan tests => 7;
+    plan tests => 1;
+
     lives_ok {
-        $connection_builder = BOM::Database::ClientDB->new({
+        $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
+        $client_account = $client->set_default_account('USD');
 
-        $client_from = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-            broker_code => 'CR',
-        });
-        $account_from = $client_from->set_default_account('USD');
-
-        $client_from->payment_free_gift(
+        $client->payment_free_gift(
             currency => 'USD',
             amount   => 5000,
             remark   => 'free gift',
         );
 
-        $client_to = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+        $pa_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
             broker_code => 'CR',
         });
-        $account_to = $client_to->set_default_account('USD');
+        $pa_account = $pa_client->set_default_account('USD');
 
         # make him a payment agent, this will turn the transfer into a paymentagent transfer.
-        $client_to->payment_agent({
+        $pa_client->payment_agent({
             payment_agent_name    => 'Joe',
             url                   => '',
             email                 => '',
@@ -56,123 +53,125 @@ subtest 'Initialization' => sub {
             currency_code_2       => 'USD',
             target_country        => 'au',
         });
-        $client_to->save;
-
+        $pa_client->save;
     }
-    'Initial accounts to test payment_agent_transfer stuff';
-
-    lives_ok {
-        insert_payment_agent_transfer_transaction();
-    }
-    'Expect to insert payment agent transfer transaction';
-
-    lives_ok {
-        $pa_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
-            client_loginid => $client_to->loginid,
-            currency_code  => 'USD',
-        });
-    }
-    'DataMapper for PA';
-
-    my ($payment_sum, $payment_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
-    cmp_ok($payment_count, '==', '0', 'PA - ' . $client_to->loginid . ' no PA withdrawal count for today');
-    cmp_ok($payment_sum, '==', '0', 'PA - ' . $client_to->loginid . ' no PA withdrawal sum for today');
-
-    lives_ok {
-        $pa_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
-            client_loginid => $client_from->loginid,
-            currency_code  => 'USD',
-        });
-    }
-    'DataMapper for client';
-
-    ($payment_sum, $payment_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
-    cmp_ok($payment_count, '==', '1', 'Client - ' . $client_from->loginid . ' PA withdrawal count for today');
+    'Initial accounts to test deposit & withdrawal via PA';
 };
 
-subtest 'method actual tests' => sub {
-    plan tests => 10;
-    my ($total_withdrawal, $withdrawal_count);
+subtest 'Client withdraw money via payment agent' => sub {
+    plan tests => 7;
 
     lives_ok {
+        transfer_from_client_to_pa();
+    }
+    'Client withdrawal: client transfer money to payment agent';
+
+    lives_ok {
+        $pa_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
+            client_loginid => $pa_client->loginid,
+            currency_code  => 'USD',
+        });
+
         ($total_withdrawal, $withdrawal_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
     }
-    'Expect to run get_today_payment_agent_withdrawal_sum_count';
+    'PA get_today_payment_agent_withdrawal_sum_count';
 
-    ok(defined $total_withdrawal, "Got valid number [$total_withdrawal]");
-    is($total_withdrawal, sprintf("%.2f", $transfer_amount), 'Got correct amount as it was expected');
+    cmp_ok($total_withdrawal, '==', '0', 'PA withdrawal amount');
+    cmp_ok($withdrawal_count, '==', '0', 'PA withdrawal count');
 
-    my $two_d_rounded = sprintf("%.2f", $total_withdrawal);
-    ok($total_withdrawal eq $two_d_rounded, "Correctly rounded [$total_withdrawal]");
+    lives_ok {
+        $client_datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({
+            client_loginid => $client->loginid,
+            currency_code  => 'USD',
+        });
 
-    ok(defined $withdrawal_count, "Got valid number [$withdrawal_count]");
+        ($total_withdrawal, $withdrawal_count) = $client_datamapper->get_today_payment_agent_withdrawal_sum_count();
+    }
+    'Client get_today_payment_agent_withdrawal_sum_count';
+
+    cmp_ok($total_withdrawal, 'eq', $transfer_amount_2dp, 'Client withdrawal amount, 2 digits rounded');
+    cmp_ok($withdrawal_count, '==', 1, 'Client withdrawal count');
+};
+
+subtest 'Payment agent deposit money to client' => sub {
+    plan tests => 4;
 
     my $deposit_count;
     lives_ok {
-        deposit_transaction();
+        transfer_from_pa_to_client();
     }
-    'payment agent makes deposit transaction';
+    'Client deposit: payment agent transfer money to client';
 
-    lives_ok {
-        $deposit_count = $pa_datamapper->get_today_client_payment_agent_transfer_deposit_count();
-    }
-    'Expect to run get_today_client_payment_agent_transfer_deposit_count';
+    subtest 'check client deposit' => sub {
+        lives_ok {
+            $deposit_count = $client_datamapper->get_today_client_payment_agent_transfer_deposit_count();
+        }
+        'Client get_today_client_payment_agent_transfer_deposit_count';
 
-    ok(defined $deposit_count, "Got valid number [$deposit_count]");
+        cmp_ok($deposit_count, '==', 1, "Client deposit count");
+    };
 
-    throws_ok {
-        $transfer_amount = 2501;
-        # Should throw limit error
-        deposit_transaction();
-    }
-    qr/The maximum amount allowed for this transaction is USD 2500/;
+    subtest 'check PA withdrawal' => sub {
+        lives_ok {
+            ($total_withdrawal, $withdrawal_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
+        }
+        'PA get_today_payment_agent_withdrawal_sum_count';
 
-    ok(defined $deposit_count, "Got valid number [$deposit_count]");
+        cmp_ok($total_withdrawal, 'eq', $transfer_amount_2dp, 'PA withdrawal amount');
+        cmp_ok($withdrawal_count, '==', '1', 'PA withdrawal count');
+    };
 
+    subtest 'PA transfer to client - limit exceeded' => sub {
+        throws_ok {
+            $transfer_amount = 2501;
+            # Should throw limit error
+            transfer_from_pa_to_client();
+        }
+        qr/The maximum amount allowed for this transaction is USD 2500/;
+
+        lives_ok {
+            $deposit_count = $client_datamapper->get_today_client_payment_agent_transfer_deposit_count();
+        }
+        'Client get_today_client_payment_agent_transfer_deposit_count again, should have no added txn';
+
+        ok($deposit_count == 1, "Client - same deposit count");
+    };
 };
 
-sub insert_payment_agent_transfer_transaction {
-
-    bless $client_from, 'BOM::Platform::Client';
-    bless $client_to,   'BOM::Platform::Client';
-
+sub transfer_from_client_to_pa {
     # Always ensure that PAYMENT AGENT always available
     my $dt_mocked = Test::MockModule->new('DateTime');
     $dt_mocked->mock('day_of_week', sub { return 2 });
 
-    $client_to->validate_agent_payment(
+    $pa_client->validate_agent_payment(
         amount   => $transfer_amount,
-        currency => $account_from->currency_code,
-        toClient => $client_to,
+        currency => $client_account->currency_code,
+        toClient => $pa_client,
     );
 
-    $client_from->payment_account_transfer(
+    $client->payment_account_transfer(
         amount   => $transfer_amount,
-        currency => $account_from->currency_code,
-        toClient => $client_to,
+        currency => $client_account->currency_code,
+        toClient => $pa_client,
         remark   => 'Transfer from CR0010 to Payment Agent Paypal Transaction reference: #USD10#F72117379D1DD7B5# Timestamp: 22-Jul-11 08:36:49GMT',
     );
 }
 
-sub deposit_transaction {
-
-    bless $client_from, 'BOM::Platform::Client';
-    bless $client_to,   'BOM::Platform::Client';
-
+sub transfer_from_pa_to_client {
     # Always ensure that PAYMENT AGENT always available
     my $dt_mocked = Test::MockModule->new('DateTime');
     $dt_mocked->mock('day_of_week', sub { return 2 });
 
-    $client_to->validate_agent_payment(
+    $pa_client->validate_agent_payment(
         amount   => $transfer_amount,
-        currency => $account_from->currency_code,
-        toClient => $client_from,
+        currency => $client_account->currency_code,
+        toClient => $client,
     );
 
-    $client_to->payment_account_transfer(
+    $pa_client->payment_account_transfer(
         amount   => $transfer_amount,
-        currency => $account_from->currency_code,
-        toClient => $client_from,
+        currency => $client_account->currency_code,
+        toClient => $client,
         remark   => 'Transfer from Payment Agent to CR0010 Paypal Transaction reference: #USD10#F72117379D1DD7B5# Timestamp: 22-Jul-11 08:36:49GMT',
     );
 }
