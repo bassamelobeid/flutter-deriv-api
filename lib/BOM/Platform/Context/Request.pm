@@ -402,6 +402,8 @@ sub _build_financial_account_broker {
 sub _build_language {
     my $self = shift;
 
+    return 'EN' if $self->backoffice;
+
     my $language;
     if ($self->param('l')) {
         $language = $self->param('l');
