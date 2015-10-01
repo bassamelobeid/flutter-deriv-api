@@ -220,6 +220,7 @@ sub _get_forward_and_term_from_BB_ticker {
         }
     }
 
+    return;
 }
 
 no Moose;
