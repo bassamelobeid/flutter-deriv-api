@@ -7,6 +7,7 @@ use Mojo::Base 'BOM::WebSocketAPI::v2::BaseController';
 use Finance::Asset;
 
 use Date::Utility;
+use BOM::Platform::Context;
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
@@ -79,8 +80,14 @@ sub active_symbols {
     }
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
+    my $request = BOM::Platform::Context::request();
+    my $lang    = $request->language;
+
+    # we need put $lang as part of the key b/c market translated_display_name
+    my $cache_key = join('::', $landing_company_name, $return_type, $lang);
+
     my $result;
-    return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", $landing_company_name . '::' . $return_type);
+    return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", $cache_key);
 
     $result = {
         msg_type       => 'active_symbols',
@@ -95,7 +102,7 @@ sub active_symbols {
                 } get_offerings_with_filter('underlying_symbol')
         ],
     };
-    Cache::RedisDB->set("WS_ACTIVESYMBOL", $landing_company_name . '::' . $return_type, JSON::to_json($result), 300 - (time % 300) - 2);
+    Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300) - 2);
     return $result;
 }
 
