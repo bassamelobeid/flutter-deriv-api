@@ -11,6 +11,7 @@ use BOM::Market::Underlying;
 use Bloomberg::FileDownloader;
 use BOM::MarketData::ImpliedRate;
 use BOM::Platform::Runtime;
+use Bloomberg::UnderlyingConfig;
 
 has file => (
     is         => 'ro',
@@ -41,9 +42,7 @@ sub _get_forward_rates {
                 'implied interest rates[' . $item_rates . '] data from Bloomberg has error code[' . $error_code . '] for security[' . $item . ']';
             next;
         }
-
         my ($underlying, $term) = $self->_get_forward_and_term_from_BB_ticker($item);
-
         if (defined $underlying and defined $term) {
             $forward_rates->{$underlying}->{rates}->{$term} = $item_rates;
         } else {
@@ -64,13 +63,13 @@ sub run {
 
     UNDERLYING:
     foreach my $underlying_symbol (keys %$forward_rates) {
+
         my $underlying                    = BOM::Market::Underlying->new($underlying_symbol);
         my $spot                          = $forward_rates->{$underlying_symbol}->{rates}->{'SP'};
         my $currency_to_imply_symbol      = $underlying->rate_to_imply;
         my $currency_to_imply_from_symbol = $underlying->rate_to_imply_from;
         my $implied_symbol                = $currency_to_imply_symbol . '-' . $currency_to_imply_from_symbol;
         my $currency_to_imply             = BOM::Market::Currency->new($currency_to_imply_symbol);
-
         # According to Bloomberg,
         # a) Implied rate for asset currency:
         #    - For ON :
@@ -177,6 +176,7 @@ sub run {
             rates         => $implied_rates,
             recorded_date => Date::Utility->new,
         );
+
         $implied->save;
         $report->{$implied_symbol}->{success} = 1;
     }
@@ -211,14 +211,16 @@ sub _get_forward_and_term_from_BB_ticker {
     my ($self, $ticker) = @_;
     my ($underlying, $term);
 
-    if ($ticker =~ /(\w\w\w\w\w\w)(\w\w\w?) (BGN)?/) {
-        $underlying = 'frx' . $1;
-        $term       = $2;
-    } elsif ($ticker =~ /(\w\w\w\w\w\w) (BGN)?/) {
-        $underlying = 'frx' . $1;
-        $term       = 'SP';
+    my %tickerlist = Bloomberg::UnderlyingConfig::get_forward_tickers_list();
+    foreach my $underlying (keys %tickerlist) {
+        foreach my $term (keys %{$tickerlist{$underlying}}) {
+            if ($ticker eq $tickerlist{$underlying}{$term}) {
+                return ($underlying, $term);
+            }
+        }
     }
-    return ($underlying, $term);
+
+    return;
 }
 
 no Moose;
