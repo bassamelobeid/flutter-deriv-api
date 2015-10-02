@@ -17,9 +17,8 @@ use List::MoreUtils qw( all none );
 
 use BOM::Product::Contract::Offerings;
 
-
-my $expected_levels       = 4;
-my $offerings             = new_ok('BOM::Product::Contract::Offerings');
+my $expected_levels = 4;
+my $offerings       = new_ok('BOM::Product::Contract::Offerings');
 
 my $original_levels = $offerings->levels;
 subtest levels => sub {

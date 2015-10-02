@@ -17,6 +17,7 @@ use BOM::Platform::Client;
 use BOM::System::Config;
 use BOM::Product::ContractFactory qw( produce_contract make_similar_contract );
 use BOM::Utility::CurrencyConverter qw(in_USD amount_from_to_currency);
+use BOM::Utility::ErrorStrings qw( normalize_error_string );
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Database::DataMapper::Account;
@@ -26,7 +27,7 @@ use BOM::Database::ClientDB;
 use BOM::Database::Model::Account;
 use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
-use BOM::Platform::CustomClientLimits;
+use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
 use Try::Tiny;
 use BOM::Utility::Log4perl qw/get_logger/;
@@ -79,7 +80,7 @@ has payout => (
 
 sub _build_payout {
     my $self = shift;
-    return $self->contract->is_spread ? $self->contract->amount_per_point * $self->contract->stop_profit : $self->contract->payout;
+    return $self->contract->payout;
 }
 
 has amount_type => (
@@ -204,13 +205,26 @@ sub stats_validation_done {
     return;
 }
 
-# Given a generic error string, try to turn it into a GenericCamelCase string which
+# Given a generic error, try to turn it into a tag-friendly string which
 # might be the same across multiple failures.
-sub _normalize_error_string {
-    my $string = shift;
+sub _normalize_error {
+    my $error = shift;
 
-    $string =~ s/\[[^\]]+\]//g;    # Bits between [] are contract specific.
-    return join('', map { ucfirst lc $_ } split /\s+/, $string);
+    if (my $whatsit = blessed $error) {
+        if ($whatsit eq 'Error::Base') {
+            my $type = $error->get_type;    # These are nice short camelCase descriptions
+            $error = (
+                       $type eq 'InvalidtoBuy'
+                    or $type eq 'InvalidtoSell'
+            ) ? $error->get_mesg : $type;    # In these special cases, we'd like to get the underlying contract message, instead.
+        } elsif ($whatsit eq 'MooseX::Role::Validatable::Error') {
+            $error = $error->message;        # These should be sentence-like.
+        } else {
+            $error = "$error";               # Assume it's stringifiable.
+        }
+    }
+
+    return normalize_error_string($error);
 }
 
 sub stats_stop {
@@ -220,10 +234,7 @@ sub stats_stop {
     my $tags = $data->{tags};
 
     if ($error) {
-        my $whatsit = blessed $error;
-        # If we don't get Error::Base, assume it's a string or will stringify with some minor coercion.
-        my $why = _normalize_error_string(($whatsit and $whatsit eq 'Error::Base') ? $error->get_type : "$error");
-        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, "reason:$why",]});
+        stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, 'reason:' . _normalize_error($error),]});
     } else {
         my $now = [gettimeofday];
         stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
@@ -307,7 +318,7 @@ sub calculate_limits {
             };
     }
 
-    if ($contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::TickExpiry') {
+    if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
@@ -419,18 +430,16 @@ sub prepare_bet_data_for_buy {
         bet_class         => $bet_class,
         purchase_time     => scalar $self->purchase_date->db_timestamp,
         start_time        => scalar $contract->date_start->db_timestamp,
+        expiry_time       => scalar $contract->date_expiry->db_timestamp,
+        settlement_time   => scalar $contract->date_settlement->db_timestamp,
+        payout_price      => scalar $self->payout,
     };
 
-    if (!$contract->is_spread) {
-        $bet_params->{payout_price}    = scalar $self->payout;
-        $bet_params->{expiry_time}     = scalar $contract->date_expiry->db_timestamp;
-        $bet_params->{settlement_time} = scalar $contract->date_settlement->db_timestamp;
-        $bet_params->{expiry_daily}    = 1 if $contract->expiry_daily;
-        $bet_params->{fixed_expiry}    = 1 if $contract->fixed_expiry;
-        if ($contract->tick_expiry) {
-            $bet_params->{tick_expiry} = 1;
-            $bet_params->{tick_count}  = scalar $contract->tick_count;
-        }
+    $bet_params->{expiry_daily} = 1 if $contract->expiry_daily;
+    $bet_params->{fixed_expiry} = 1 if $contract->fixed_expiry;
+    if ($contract->tick_expiry) {
+        $bet_params->{tick_expiry} = 1;
+        $bet_params->{tick_count}  = scalar $contract->tick_count;
     }
 
     if ($bet_params->{bet_class} eq $BOM::Database::Model::Constants::BET_CLASS_SPREAD_BET) {
@@ -583,14 +592,6 @@ sub prepare_bet_data_for_sell {
         ? (absolute_barrier => scalar $contract->barrier->as_absolute)
         : (),
     };
-
-    if ($contract->is_spread) {
-        $bet_params->{expiry_time} = $bet_params->{settlement_time} = scalar $contract->date_pricing->db_timestamp;
-        # payout always equal to sell price for spreads
-        # pnl calculation involves buy price and sell price.
-        # The sell price here includes the premium paid to enter the contract.
-        $bet_params->{payout_price} = $bet_params->{sell_price};
-    }
 
     my $quants_bet_variables;
     if (my $comment = $self->comment) {
@@ -1313,9 +1314,9 @@ sub _validate_payout_limit {
 
     my $client   = $self->client;
     my $contract = $self->contract;
-    my $payout   = $contract->is_spread ? $contract->amount_per_point * $contract->stop_profit : $self->payout;
+    my $payout   = $self->payout;
 
-    my $custom_limit = BOM::Platform::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
+    my $custom_limit = BOM::Product::CustomClientLimits->new->client_payout_limit_for_contract($client->loginid, $contract);
 
     if (defined $custom_limit and $payout > $custom_limit) {
         return Error::Base->cuss(
@@ -1372,19 +1373,13 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if ($residence && $market_name eq 'random') {
-        foreach my $country_code (map { Locale::Country::country2code($_) }
-            @{BOM::Platform::Runtime->instance->app_config->legal->random_restricted_countries})
-        {
-            if ($residence =~ /$country_code/i) {
-                return Error::Base->cuss(
-                    -type => 'RandomRestrictedCountry',
-                    -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
-                    -message_to_client =>
-                        BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
-                );
-            }
-        }
+    if ($residence && $market_name eq 'random' && BOM::Platform::Runtime->instance->random_restricted_country($residence)) {
+        return Error::Base->cuss(
+            -type => 'RandomRestrictedCountry',
+            -mesg => 'Clients are not allowed to place Random contracts as their country is restricted.',
+            -message_to_client =>
+                BOM::Platform::Context::localize('Sorry, contracts on Random Indices are not available in your country of residence'),
+        );
     }
 
     return;
@@ -1510,7 +1505,7 @@ sub sell_expired_contracts {
                     staff_loginid => 'AUTOSELL',
                     source        => $source,
                     };
-            } elsif ($client->is_virtual and ($contract->is_spread or ($now->epoch >= $contract->date_settlement->epoch + 3600))) {
+            } elsif ($client->is_virtual and $now->epoch >= $contract->date_settlement->epoch + 3600) {
                 # for virtual, if can't settle bet due to missing market data, sell contract with buy price
                 @{$bet}{qw/sell_price sell_time/} = ($bet->{buy_price}, $now->db_timestamp);
                 push @bets_to_sell, $bet;
@@ -1520,8 +1515,7 @@ sub sell_expired_contracts {
                     source        => $source,
                     };
             } else {
-                my $reason = _normalize_error_string($contract->primary_validation_error->message);
-                $stats_failure{$logging_class}{$reason}++;
+                $stats_failure{$logging_class}{_normalize_error($contract->primary_validation_error)}++;
             }
         };
     }
@@ -1537,7 +1531,10 @@ sub sell_expired_contracts {
     }
     for my $class (keys %stats_failure) {
         for my $reason (keys %{$stats_failure{$class}}) {
-            stats_count("transaction.sell.failure", $stats_failure{$class}{$reason}, {tags => [@tags, "contract_class:$class", "reason:$reason"]});
+            stats_count(
+                "transaction.sell.failure",
+                $stats_failure{$class}{$reason},
+                {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error($reason)]});
         }
     }
 
@@ -1562,14 +1559,15 @@ sub sell_expired_contracts {
 
     if (not $sold or @bets_to_sell > @$sold) {
         # We missed some, let's figure out which ones they are.
-        my %sold_fmbs = map { $_->{fmb}->{id} } @{$sold // []};
+        my %sold_fmbs = map { $_->{fmb}->{id} => 1 } @{$sold // []};
         my %missed;
         foreach my $bet (@bets_to_sell) {
             next if $sold_fmbs{$bet->{id}};    # Was not missed.
             $missed{$bet->{bet_class}}++;
         }
         foreach my $class (keys %missed) {
-            stats_count("transaction.sell.failure", $missed{$class}, {tags => [@tags, "contract_class:$class", "reason:TransactionFailure"]});
+            stats_count("transaction.sell.failure", $missed{$class},
+                {tags => [@tags, "contract_class:$class", "reason:" . _normalize_error("TransactionFailure")]});
         }
     }
 

@@ -14,9 +14,9 @@ sub other_side_code { return 'ONETOUCH'; }
 
 sub localizable_description {
     return +{
-        daily                 => '[_1] <strong>[_2]</strong> payout if [_3] <strong>does not touch [_6]</strong> through [_5].',
-        intraday              => '[_1] <strong>[_2]</strong> payout if [_3] <strong>does not touch [_6]</strong> through [_5] after [_4].',
-        intraday_fixed_expiry => '[_1] <strong>[_2]</strong> payout if [_3] <strong>does not touch [_6]</strong> through [_5].',
+        daily                 => '[_1] [_2] payout if [_3] does not touch [_6] through [_5].',
+        intraday              => '[_1] [_2] payout if [_3] does not touch [_6] through [_5] after [_4].',
+        intraday_fixed_expiry => '[_1] [_2] payout if [_3] does not touch [_6] through [_5].',
     };
 }
 
@@ -24,7 +24,7 @@ sub check_expiry_conditions {
     my $self = shift;
 
     my ($high, $low) = $self->get_high_low_for_contract_period();
-    my $expired = $self->is_after_expiry;
+    my $expired = $self->is_after_expiry and $self->exit_tick;    # Tick validation is in contract validation
     if (defined $high and defined $low) {
         my $barrier = $self->barrier->as_absolute;
         my $value   = 0;

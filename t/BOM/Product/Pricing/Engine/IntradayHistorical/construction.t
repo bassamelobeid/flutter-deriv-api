@@ -72,7 +72,7 @@ $bet_params->{duration} = '1d';
 
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example DOUBLEDOWN bet';
 ok $bet->expiry_daily;
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'daily bet incompatible with IH engine';
+is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope::Observed', 'expiry_daily contract uses slope pricer';
 
 delete $bet_params->{date_start};
 $bet_params->{bet_type} = 'RANGE';
@@ -90,14 +90,14 @@ $bet_params->{date_pricing} = $now - 300;
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example INTRADD bet';
 ok !$bet->expiry_daily;
 ok $bet->is_forward_starting;
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'forward starting bet incompatible with IH';
+is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope::Observed', 'forward starting bet incompatible with IH';
 
 delete $bet_params->{date_start};
 $bet_params->{bet_type}   = 'FLASHU';
 $bet_params->{underlying} = 'N150';
 
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example N150 bet';
-ok !BOM::Product::Pricing::Engine::Intraday::Index::is_compatible($bet), 'unsupported symbol';
+is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope::Observed', 'unsupported symbol';
 
 delete $bet_params->{date_start};
 delete $bet_params->{date_pricing};
@@ -109,11 +109,11 @@ $bet_params->{underlying} = 'frxUSDJPY';
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example 14m59s bet';
 ok !$bet->is_forward_starting;
 ok !$bet->expiry_daily;
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'incompatible duration (14m59s)';
+is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope::Observed', 'slope pricer for duration (14m59s)';
 $bet_params->{duration} = '15m';
 $bet = produce_contract($bet_params);
-ok BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'incompatible duration (14m59s)';
+is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday historical forex pricer for duration (15m)';
 $bet_params->{duration} = '5h1s';
 $bet = produce_contract($bet_params);
-ok !BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($bet), 'incompatible duration (5h1s)';
+is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope::Observed', 'slope pricer for duration (5h1s)';
 done_testing;

@@ -5,7 +5,7 @@ use warnings;
 our $VERSION = 0.01;
 
 use MooseX::Singleton;
-extends 'BOM::Market::UnderlyingConfig';    # A temporary measure during the move.
+extends 'Finance::Asset';    # A temporary measure during the move.
 
 =head1 NAME
 
@@ -46,7 +46,7 @@ use BOM::Market::Underlying;
 
 has _file_content => (
     is      => 'ro',
-    default => sub { return BOM::Market::UnderlyingConfig->instance->all_parameters; },
+    default => sub { return Finance::Asset->instance->all_parameters; },
 );
 
 =head2 $self->symbols_for_intraday_fx
@@ -91,6 +91,19 @@ sub symbols_for_intraday_index {
         );
 
     return @symbols;
+}
+
+=head2 markets
+
+Return list of all markets
+
+=cut
+
+sub markets {
+    my $self = shift;
+    my @markets =
+        map { $_->name } BOM::Market::Registry->instance->display_markets;
+    return @markets;
 }
 
 sub get_markets_for {

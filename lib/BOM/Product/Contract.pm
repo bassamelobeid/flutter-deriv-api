@@ -9,6 +9,7 @@ use List::Util qw(min max first);
 use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
 
+use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -23,13 +24,14 @@ use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Offerings qw( get_contract_specifics );
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
 require BOM::Product::Pricing::Engine::Slope::Observed;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
-require BOM::Product::Pricing::Engine::TickExpiry;
+require Pricing::Engine::TickExpiry;
 
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
@@ -134,8 +136,8 @@ sub _build_basis_tick {
             symbol => $self->underlying->symbol,
         });
         $self->add_errors({
-            severity          => 110,
-            message           => 'Could not retrieve a quote for [' . $self->underlying->symbol . ']',
+            severity => 110,
+            message  => format_error_string('Could not retrieve a quote', symbol => $self->underlying->symbol),
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
         });
     }
@@ -204,11 +206,6 @@ sub _build_permitted_expiries {
     my $expiry_type = $self->expiry_type;
 
     my $expiries_ref = $self->offering_specifics->{permitted};
-
-    if ($expiries_ref and $expiry_type eq 'intraday' and my $limit = $underlying->limit_minimum_duration) {
-        $expiries_ref->{min} = $limit if $expiries_ref->{min}->seconds < $limit->seconds;
-    }
-
     return $expiries_ref;
 }
 
@@ -481,7 +478,7 @@ sub _build_date_settlement {
         } else {
             $self->add_errors({
                 severity          => 110,
-                message           => 'Exchange is closed on expiry date [' . $self->date_expiry->date . ']',
+                message           => format_error_string('Exchange is closed on expiry date', expiry => $self->date_expiry->date),
                 message_to_client => localize("The contract must expire on a trading day."),
             });
         }
@@ -507,20 +504,43 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name;
-    if ($self->tick_expiry and BOM::Product::Pricing::Engine::TickExpiry::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::TickExpiry';
-    } elsif ($self->is_intraday and BOM::Product::Pricing::Engine::Intraday::Forex::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::Intraday::Forex';
-    } elsif ($self->is_intraday and BOM::Product::Pricing::Engine::Intraday::Index::is_compatible($self)) {
-        $engine_name = 'BOM::Product::Pricing::Engine::Intraday::Index';
-    } elsif ($self->is_path_dependent) {
-        $engine_name = 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated';
-    } else {
-        $engine_name = 'BOM::Product::Pricing::Engine::Slope::Observed';
+    my $engine_name =
+        $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope::Observed';
+
+    if ($self->tick_expiry) {
+        my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => 'forex',     # forex is the only financial market that offers tick expiry contracts for now.
+            contract_category => 'callput',
+            expiry_type       => 'tick',
+        );
+        $engine_name = 'Pricing::Engine::TickExpiry' if _match_symbol(\@symbols, $self->underlying->symbol);
+    } elsif (
+        $self->is_intraday and not $self->is_forward_starting and grep {
+            $self->market->name eq $_
+        } qw(forex indices)
+        )
+    {
+        my $func = $self->market->name eq 'forex' ? 'symbols_for_intraday_fx' : 'symbols_for_intraday_index';
+        my @symbols = BOM::Market::UnderlyingDB->instance->$func;
+        if (_match_symbol(\@symbols, $self->underlying->symbol) and my $loc = $self->offering_specifics->{historical}) {
+            my $duration = $self->remaining_time;
+            my $name = $self->market->name eq 'indices' ? 'Index' : 'Forex';
+            $engine_name = 'BOM::Product::Pricing::Engine::Intraday::' . $name
+                if ((defined $loc->{min} and defined $loc->{max})
+                and $duration->seconds <= $loc->{max}->seconds
+                and $duration->seconds >= $loc->{min}->seconds);
+        }
     }
 
     return $engine_name;
+}
+
+sub _match_symbol {
+    my ($lists, $symbol) = @_;
+    for (@$lists) {
+        return 1 if $_ eq $symbol;
+    }
+    return;
 }
 
 =item pricing_engine_parameters
@@ -726,8 +746,7 @@ sub _build_volsurface {
 sub _build_pricing_mu {
     my $self = shift;
 
-    # This feels hacky because it kind of is.  Hopefully a better solution in the future.
-    return $self->theo_probability->peek_amount('intraday_mu') // $self->mu;
+    return $self->mu;
 }
 
 sub _build_longcode {
@@ -926,7 +945,7 @@ sub _build_ask_probability {
     # Eventually we'll return the actual object.
     # And start from an actual object.
     my $minimum;
-    if ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::TickExpiry') {
+    if ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         $minimum = 0.4;
     } elsif ($self->tick_expiry and $self->category->code eq 'digits') {
         $minimum = ($self->sentiment eq 'match') ? 0.1 : 0.9;
@@ -1049,7 +1068,7 @@ sub is_valid_to_sell {
         $self->add_errors({
             alert             => 1,
             severity          => 100,
-            message           => 'Contract is affected by corporate action.',
+            message           => 'affected by corporate action',
             message_to_client => localize("This contract is affected by corporate action."),
         });
     }
@@ -1085,11 +1104,15 @@ sub _build_payout {
 sub _build_theo_probability {
     my $self = shift;
 
+    return $self->_get_probability_reference('probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
+
     return $self->pricing_engine->probability;
 }
 
 sub _build_bs_probability {
     my $self = shift;
+
+    return $self->_get_probability_reference('bs_probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
 
     return $self->pricing_engine->bs_probability;
 }
@@ -1102,6 +1125,9 @@ sub _build_bs_price {
 
 sub _build_model_markup {
     my $self = shift;
+
+    # theo_probability markup will always be used.
+    return $self->_get_probability_reference('probability')->{markups}->{model_markup} if $self->new_interface_engine->{$self->pricing_engine_name};
 
     return $self->pricing_engine->model_markup;
 }
@@ -1154,29 +1180,30 @@ sub _build_entry_tick {
         my $start_delay = Time::Duration::Concise::Localize->new(interval => abs($when - $start->epoch));
         if ($start_delay->seconds > $max_delay->seconds) {
             $self->add_errors({
-                severity => 99,
-                alert    => 1,
-                message  => 'Entry tick too far away ['
-                    . $start_delay->as_concise_string
-                    . ', permitted: '
-                    . $max_delay->as_concise_string . '] on '
-                    . $self->underlying->symbol . ' at '
-                    . $start->iso8601,
-                message_to_client => localize("Missing market data for entry spot."),
-            });
+                    severity => 99,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Entry tick too far away',
+                        symbol    => $self->underlying->symbol,
+                        delay     => $start_delay->as_concise_string,
+                        permitted => $max_delay->as_concise_string,
+                        start     => $start->datetime,
+                    ),
+                    message_to_client => localize("Missing market data for entry spot."),
+                });
         }
     } elsif ($hold_seconds) {
         $self->add_errors({
-            severity => 99,
-            alert    => 1,
-            message  => 'No entry tick within ['
-                . $self->hold_for_entry_tick->as_string
-                . '] of ['
-                . $start->db_timestamp
-                . '] on ['
-                . $self->underlying->symbol . ']',
-            message_to_client => localize("Prevailing market price cannot be determined."),
-        });
+                severity => 99,
+                alert    => 1,
+                message  => format_error_string(
+                    'No entry tick within limit',
+                    limit  => $self->hold_for_entry_tick->as_string,
+                    start  => $start->datetime,
+                    symbol => $self->underlying->symbol,
+                ),
+                message_to_client => localize("Prevailing market price cannot be determined."),
+            });
     }
 
     return $entry_tick;
@@ -1234,33 +1261,29 @@ sub _build_pricing_vol {
             days  => $self->timeindays->amount,
             delta => 50
         });
-    } elsif (my ($which) = $pen =~ /Intraday::(Forex|Index)/) {
-        # not happy that I have to do it this way.
+    } elsif ($pen =~ /Intraday::Forex/) {
         my $volsurface = $self->empirical_volsurface;
         my $vol_args   = {
-            current_epoch         => $self->effective_start->epoch,
+            fill_cache            => !$self->backtest,
+            current_epoch         => $self->date_pricing->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
         };
 
-        my $ref;
-        if (lc $which eq 'forex') {
-            $ref = $volsurface->get_seasonalized_volatility($vol_args);
-            $self->long_term_prediction($ref->{long_term_prediction});
-        } else {
-            $ref = $volsurface->get_volatility($vol_args);
-        }
+        my $ref = $volsurface->get_seasonalized_volatility($vol_args);
         $vol = $ref->{volatility};
+        $self->long_term_prediction($ref->{long_term_prediction});
         $self->average_tick_count($ref->{average_tick_count});
         if ($ref->{err}) {
             $self->add_errors({
-                message => 'Too few periods for historical vol calculation [on '
-                    . $self->underlying->symbol
-                    . '] for duration ['
-                    . $self->timeindays->amount * 86400 . ']',
-                set_by => __PACKAGE__,
-                message_to_client =>
-                    localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
-            });
+                    message => format_error_string(
+                        'Too few periods for historical vol calculation',
+                        symbol   => $self->underlying->symbol,
+                        duration => $self->remaining_time->as_concise_string,
+                    ),
+                    set_by => __PACKAGE__,
+                    message_to_client =>
+                        localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name()),
+                });
         }
     } else {
         $vol = $self->vol_at_strike;
@@ -1322,10 +1345,14 @@ sub pricing_spot {
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
         $initial_spot //= $self->underlying->pip_size;
         $self->add_errors({
-            severity          => 100,
-            message           => 'Undefined spot at ' . $self->date_pricing->datetime . ' for [' . $self->code . ']',
-            message_to_client => localize('We could not process this contract at this time.'),
-        });
+                severity => 100,
+                message  => format_error_string(
+                    'Undefined spot',
+                    'date pricing' => $self->date_pricing->datetime,
+                    symbol         => $self->underlying->symbol
+                ),
+                message_to_client => localize('We could not process this contract at this time.'),
+            });
     }
 
     if ($self->underlying->market->prefer_discrete_dividend) {
@@ -1334,6 +1361,7 @@ sub pricing_spot {
 
     return $initial_spot;
 }
+
 has offering_specifics => (
     is         => 'ro',
     lazy_build => 1,
@@ -1401,17 +1429,13 @@ sub _build_staking_limits {
             max => $stake_max,
             err => ($self->built_with_bom_parameters)
             ? localize('Contract market price is too close to final payout.')
-            : localize(
-                'Stake must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
-                to_monetary_number_format($stake_min, 1),
-                to_monetary_number_format($stake_max, 1)
-            ),
+            : localize('Stake must be between [_1] and [_2].', to_monetary_number_format($stake_min, 1), to_monetary_number_format($stake_max, 1)),
         },
         payout => {
             min => $payout_min,
             max => $payout_max,
             err => localize(
-                'Payout must be between <strong>[_1]</strong> and <strong>[_2]</strong>.',
+                'Payout must be between [_1] and [_2].',
                 to_monetary_number_format($payout_min, 1),
                 to_monetary_number_format($payout_max, 1)
             ),
@@ -1444,6 +1468,69 @@ has [qw(atm_vols rho)] => (
     isa        => 'HashRef',
     lazy_build => 1
 );
+
+# a hash reference for slow migration of pricing engine to the new interface.
+has new_interface_engine => (
+    is      => 'ro',
+    default => sub {
+        {
+            'Pricing::Engine::TickExpiry' => 1,
+        };
+    },
+);
+
+sub _get_probability_reference {
+    my ($self, $probability_name) = @_;
+
+    my $prob_ref;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        my %pricing_parameters = map { my $method = '_' . $_; $_ => $self->$method } @{$self->pricing_engine_name->REQUIRED_ARGS};
+        # will make this more generic as we move more pricing engines to this interface
+        my $func_name = $self->pricing_engine_name . '::' . $probability_name;
+        my $subref    = \&$func_name;
+        $prob_ref = &$subref(\%pricing_parameters);
+    } else {
+        # shouldn't be calling this if it doesn't have the new interface
+        $prob_ref = {
+            error       => 'Invalid call to [' . $probability_name . '] for engine [' . $self->pricing_engine_name . ']',
+            probability => 1,
+            markups     => {
+                # avoid undefined markups
+                model_markup      => 0,
+                risk_markup       => 0,
+                commission_markup => 0,
+            },
+        };
+    }
+
+    # convert it to a CV.
+    $prob_ref->{probability} = Math::Util::CalculatedValue::Validatable->new({
+        name        => 'theo_probability',
+        description => '0.5 probability adjusted for trend',
+        set_by      => $self->pricing_engine_name,
+        base_amount => $prob_ref->{probability},
+    });
+    # convert markups to CV
+    for my $markup_name (keys $prob_ref->{markups}) {
+        $prob_ref->{markups}->{$markup_name} = Math::Util::CalculatedValue::Validatable->new({
+            name        => $markup_name,
+            description => $markup_name,
+            set_by      => $self->pricing_engine_name,
+            base_amount => $prob_ref->{markups}->{$markup_name},
+        });
+    }
+    # We always get a value for probability.
+    # Here is where we decide whether it is a valid probability or not!
+    if ($prob_ref->{error}) {
+        $self->add_errors({
+            severity          => 100,
+            message           => 'Error in calculating probability [' . $prob_ref->{error} . ']',
+            message_to_client => localize("We could not price this contract now, please try again later."),
+        });
+    }
+
+    return $prob_ref;
+}
 
 sub _build_priced_with {
     my $self = shift;
@@ -1721,6 +1808,128 @@ sub barrier_display_info {
     return (barriers => \%barriers);
 }
 
+has exit_tick => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_exit_tick {
+    my $self = shift;
+
+    my $underlying = $self->underlying;
+    my $exchange   = $self->exchange;
+
+    my $exit_tick;
+    if ($self->tick_expiry) {
+        my $tick_number       = $self->ticks_to_expiry;
+        my @ticks_since_start = @{
+            $underlying->ticks_in_between_start_limit({
+                    start_time => $self->date_start->epoch + 1,
+                    limit      => $tick_number,
+                })};
+        if (@ticks_since_start == $tick_number) {
+            $exit_tick = $ticks_since_start[-1];
+            $self->date_expiry(Date::Utility->new($exit_tick->epoch));
+        }
+    } elsif ($self->expiry_daily) {
+        # Expiration based on daily OHLC
+        $exit_tick = $underlying->closing_tick_on($self->date_expiry->date);
+    } else {
+        $exit_tick = $underlying->tick_at($self->date_expiry->epoch);
+    }
+
+    if ($exit_tick and my $entry_tick = $self->entry_tick) {
+        my ($first_date, $last_date) = map { Date::Utility->new($_) } ($entry_tick->epoch, $exit_tick->epoch);
+        my $max_delay = $underlying->max_suspend_trading_feed_delay;
+        # We should not have gotten here otherwise.
+        if (not $first_date->is_before($last_date)) {
+            $self->add_errors({
+                    severity => 100,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Start tick is not before expiry tick',
+                        symbol => $underlying->symbol,
+                        start  => $first_date->datetime,
+                        expiry => $last_date->datetime
+                    ),
+                    message_to_client => localize("Missing market data for contract period."),
+                });
+        }
+        my $end_delay = Time::Duration::Concise->new(interval => $self->date_expiry->epoch - $last_date->epoch);
+
+        if ($self->expiry_daily and not $underlying->use_official_ohlc) {
+            if (    not $self->is_path_dependent
+                and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
+            {
+                $self->add_errors({
+                        severity => 99,
+                        alert    => 1,
+                        message  => format_error_string(
+                            'Missing ticks at close',
+                            symbol => $underlying->symbol,
+                            expiry => $self->date_expiry->datetime
+                        ),
+                        message_to_client => localize("Missing market data for exit spot."),
+                    });
+            }
+        } elsif ($end_delay->seconds > $max_delay->seconds) {
+            $self->add_errors({
+                    severity => 99,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Exit tick too far away',
+                        symbol    => $underlying->symbol,
+                        delay     => $end_delay->as_concise_string,
+                        permitted => $max_delay->as_concise_string,
+                        expiry    => $self->date_expiry->datetime
+                    ),
+                    message_to_client => localize("Missing market data for exit spot."),
+                });
+        }
+        if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
+            $self->add_errors({
+                    severity => 99,
+                    alert    => 1,
+                    message  => format_error_string(
+                        'Exit tick date differs from entry tick date on intraday',
+                        symbol => $underlying->symbol,
+                        start  => $last_date->datetime,
+                        expiry => $first_date->datetime,
+                    ),
+                    message_to_client => localize("Intraday contracts may not cross market open."),
+                });
+        }
+        if ($self->tick_expiry) {
+            my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
+            if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
+                $self->add_errors({
+                        severity => 100,
+                        alert    => 1,
+                        message  => format_error_string(
+                            'Tick expiry duration exceeds permitted maximum',
+                            symbol    => $underlying->symbol,
+                            actual    => $actual_duration->as_concise_string,
+                            permitted => $self->max_tick_expiry_duration->as_concise_string
+                        ),
+                        message_to_client => localize("Missing market data for contract period."),
+                    });
+            }
+        }
+    }
+
+    return $exit_tick;
+}
+
+sub _has_ticks_before_close {
+    my ($self, $closing) = @_;
+
+    my $underlying = $self->underlying;
+
+    my $closing_tick = $underlying->tick_at($closing->epoch, {allow_inconsistent => 1});
+
+    return (defined $closing_tick and $closing->epoch - $closing_tick->epoch > $underlying->max_suspend_trading_feed_delay->seconds) ? 0 : 1;
+}
+
 # Validation methods.
 
 sub _validate_underlying {
@@ -1733,7 +1942,7 @@ sub _validate_underlying {
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         push @errors,
             {
-            message           => 'All trading suspended on system.',
+            message           => 'All trading suspended on system',
             severity          => 102,
             message_to_client => localize("Trading is suspended at the moment."),
             };
@@ -1741,8 +1950,8 @@ sub _validate_underlying {
     if ($underlying->is_trading_suspended) {
         push @errors,
             {
-            message           => 'Underlying [' . $underlying->symbol . '] trades suspended.',
-            severity          => 101,
+            message  => format_error_string('Underlying trades suspended', symbol => $underlying->symbol),
+            severity => 101,
             message_to_client => localize('Trading on [_1] is suspended at the moment.', $translated_name),
             };
     }
@@ -1750,8 +1959,8 @@ sub _validate_underlying {
     if (grep { $_ eq $underlying->symbol } @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions}) {
         push @errors,
             {
-            message           => 'Underlying [' . $underlying->symbol . '] trades suspended due to corporate actions.',
-            severity          => 101,
+            message  => format_error_string('Underlying trades suspended due to corporate actions', symbol => $underlying->symbol),
+            severity => 101,
             message_to_client => localize('Trading on [_1] is suspended at the moment.', $translated_name),
             };
     }
@@ -1761,8 +1970,8 @@ sub _validate_underlying {
         if (not $self->current_tick) {
             push @errors,
                 {
-                message           => 'No realtime data [' . $underlying->symbol . ']',
-                severity          => 98,
+                message  => format_error_string('No realtime data', symbol => $underlying->symbol),
+                severity => 98,
                 message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
                 };
         } elsif ($self->exchange->is_open_at($self->date_pricing)
@@ -1771,8 +1980,8 @@ sub _validate_underlying {
             # only throw errors for quote too old, if the exchange is open at pricing time
             push @errors,
                 {
-                message           => 'Quote too old [' . $underlying->symbol . ']',
-                severity          => 98,
+                message  => format_error_string('Quote too old', symbol => $underlying->symbol),
+                severity => 98,
                 message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $translated_name),
                 };
         }
@@ -1781,11 +1990,11 @@ sub _validate_underlying {
     if ($self->is_intraday and $underlying->deny_purchase_during($self->date_start, $self->date_expiry)) {
         push @errors,
             {
-            message           => 'Underlying [' . $underlying->symbol . '] buy trades suspended for period.',
-            severity          => 97,
+            message  => format_error_string('Underlying buy trades suspended for period', symbol => $underlying->symbol),
+            severity => 97,
             message_to_client => localize('Trading on [_1] is suspended at the moment.', $translated_name),
-            info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
-            info_text         => localize('Trading Times'),
+            info_link => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+            info_text => localize('Trading Times'),
             };
     }
 
@@ -1802,7 +2011,7 @@ sub _validate_contract {
     if ($suspend_claim_types and first { $contract_code eq $_ } @{$suspend_claim_types}) {
         push @errors,
             {
-            message           => 'Trading is suspended for bet type [' . $contract_code . ']',
+            message           => format_error_string('Trading suspended for contract type', code => $contract_code),
             severity          => 90,
             message_to_client => localize("Trading is suspended at the moment."),
             };
@@ -1815,8 +2024,13 @@ sub _validate_contract {
             : localize('This trade is not offered.');
         push @errors,
             {
-            message  => 'trying unauthorised ' . $expiry_type . ' contract[' . $self->code . '] for underlying[' . $self->underlying->symbol . ']',
-            severity => 100,
+            message => format_error_string(
+                'trying unauthorised combination',
+                underlying  => $self->underlying->symbol,
+                expiry_type => $expiry_type,
+                code        => $contract_code,
+            ),
+            severity          => 100,
             message_to_client => $message,
             };
     }
@@ -1842,7 +2056,7 @@ sub _validate_payout {
         push @errors,
             {
             severity          => 10,
-            message           => 'Bad payout currency ' . $payout_currency,
+            message           => format_error_string('Bad payout currency', currency => $payout_currency),
             message_to_client => localize('Invalid payout currency.'),
             };
     }
@@ -1851,7 +2065,12 @@ sub _validate_payout {
         push @errors,
             {
             severity => 91,
-            message  => 'payout amount outside acceptable range[' . $bet_payout . '] acceptable range [' . $payout_min . ' - ' . $payout_max . ']',
+            message  => format_error_string(
+                'payout amount outside acceptable range',
+                given => $bet_payout,
+                min   => $payout_min,
+                max   => $payout_max
+            ),
             message_to_client => $limits->{err},
             };
     }
@@ -1864,7 +2083,7 @@ sub _validate_payout {
         push @errors,
             {
             severity          => 10,
-            message           => 'payout amount has more than 2 decimal places[' . $bet_payout . ']',
+            message           => format_error_string('payout amount has more than 2 decimal places', payout => $bet_payout),
             message_to_client => localize('Payout may not have more than two decimal places.',),
             };
     }
@@ -1891,7 +2110,7 @@ sub _validate_stake {
             {
             alert             => 1,
             severity          => 100,
-            message           => 'Empty or zero stake [' . $contract_stake . ']',
+            message           => format_error_string('Empty or zero stake', stake => $contract_stake),
             message_to_client => localize("Invalid stake"),
             };
     }
@@ -1899,7 +2118,12 @@ sub _validate_stake {
     if ($contract_stake < $stake_minimum or $contract_stake > $stake_maximum) {
         push @errors,
             {
-            message           => 'stake [' . $contract_stake . '] is not within min[' . $stake_minimum . '] and max[' . $stake_maximum . ']',
+            message => format_error_string(
+                'stake is not within limits',
+                stake => $contract_stake,
+                min   => $stake_minimum,
+                max   => $stake_maximum
+            ),
             severity          => 90,
             message_to_client => $limits->{err},
             };
@@ -1910,7 +2134,7 @@ sub _validate_stake {
         my $message = ($self->built_with_bom_parameters) ? localize('Current market price is 0.') : localize('This contract offers no return.');
         push @errors,
             {
-            message           => 'stake [' . $contract_stake . '] is same as payout [' . $contract_payout . ']',
+            message           => 'stake same as payout',
             severity          => 90,
             message_to_client => $message,
             };
@@ -1952,7 +2176,11 @@ sub _validate_start_date {
             if ($held->seconds < $minimum_hold->seconds) {
                 push @errors, {
                     severity => 100,
-                    message  => 'Contract held for [' . $held->as_concise_string . ']; minimum required [' . $minimum_hold->as_concise_string . ']',
+                    message  => format_error_string(
+                        'Contract not held long enough',
+                        held => $held->as_concise_string,
+                        min  => $minimum_hold->as_concise_string,
+                    ),
                     message_to_client => localize('Contract must be held for [_1] before resale is offered.', $minimum_hold->as_string),
 
                 };
@@ -1974,7 +2202,7 @@ sub _validate_start_date {
             {
             alert             => 1,
             severity          => 50,
-            message           => 'Forward time for non-forward-starting bet type [' . $self->code . ']',
+            message           => format_error_string('Forward time for non-forward-starting contract type', code => $self->code),
             message_to_client => localize('Start time is invalid.'),
             };
     }
@@ -1984,7 +2212,7 @@ sub _validate_start_date {
             {
             alert             => 1,
             severity          => 100,
-            message           => 'cannot buy a bet starting in the past',
+            message           => 'starts in the past',
             message_to_client => localize("Start time is in the past"),
             };
     }
@@ -1995,13 +2223,13 @@ sub _validate_start_date {
         push @errors,
             {
             severity          => 120,
-            message           => 'underlying [' . $underlying->symbol . '] is closed',
+            message           => 'underlying is closed',
             message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
     } elsif (my $open_seconds = ($exchange->seconds_since_open_at($self->date_start) // 0) < $underlying->sod_blackout_start->seconds) {
         my $blackout_time = $underlying->sod_blackout_start->as_string;
         push @errors,
             {
-            message           => 'underlying [' . $underlying->symbol . '] is in first ' . $blackout_time,
+            message           => 'underlying [' . $underlying->symbol . '] is in starting blackout [' . $blackout_time . ']',
             severity          => 80,
             message_to_client => localize("Trading is available after the first [_1] of the session.", $blackout_time) . " "
                 . localize("Try out the Random Indices which are always open.")};
@@ -2010,7 +2238,7 @@ sub _validate_start_date {
         if ($epoch_start < $when->epoch + $forward_starting_blackout->seconds) {
             push @errors,
                 {
-                message  => 'cannot buy [' . $self->code . '] less than ' . $forward_starting_blackout->as_concise_string . ' before it starts',
+                message  => format_error_string('forward-starting blackout', 'blackout' => $forward_starting_blackout->as_concise_string),
                 severity => 80,
                 message_to_client =>
                     localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
@@ -2030,12 +2258,12 @@ sub _validate_start_date {
             );
             push @errors,
                 {
-                message => 'cannot buy bet on underlying['
-                    . $underlying->symbol
-                    . ']; start too close to close (trading left after start['
-                    . $sec_to_close
-                    . '] < min allowed['
-                    . $eod_blackout_start->as_concise_string . '])',
+                message => format_error_string(
+                    'end of day start blackout',
+                    symbol           => $underlying->symbol,
+                    min              => $eod_blackout_start->as_concise_string,
+                    'actual seconds' => $sec_to_close
+                ),
                 severity          => 80,
                 message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
                 info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
@@ -2046,11 +2274,11 @@ sub _validate_start_date {
         if ($start_date_sec_to_close < 3600) {
             push @errors,
                 {
-                message => 'cannot buy bet on underlying['
-                    . $underlying->symbol
-                    . ']; start too close to close (trading left after start['
-                    . $start_date_sec_to_close
-                    . '] < min allowed[1 h])',
+                message => format_error_string(
+                    'end of day start blackout',
+                    symbol           => $underlying->symbol,
+                    'actual seconds' => $start_date_sec_to_close
+                ),
                 severity          => 80,
                 message_to_client => localize("Trading on this contract type is suspended for the last one hour of the session."),
                 info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
@@ -2077,7 +2305,7 @@ sub _validate_expiry_date {
             {
             alert             => 1,
             severity          => 100,
-            message           => 'Can not purchase an already expired bet',
+            message           => 'already expired contract',
             message_to_client => localize("Contract has already expired."),
             };
     } elsif ($self->is_intraday) {
@@ -2085,7 +2313,7 @@ sub _validate_expiry_date {
             my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
             push @errors,
                 {
-                message           => 'underlying [' . $underlying->symbol . '] is closed at expiry',
+                message           => 'underlying closed at expiry',
                 severity          => 110,
                 message_to_client => localize("Contract must expire during trading hours."),
                 info_link         => $times_link,
@@ -2101,8 +2329,7 @@ sub _validate_expiry_date {
             if ($closing and $underlying->intradays_must_be_same_day and $closing->epoch < $self->date_expiry->epoch) {
                 push @errors,
                     {
-                    message => 'A bet with duration less than one day must expire within the same day on which it was purchased. ['
-                        . $underlying->symbol . ']',
+                    message           => format_error_string('Intraday duration must expire on same day', symbol => $underlying->symbol),
                     severity          => 80,
                     message_to_client => localize(
                         'Contracts on [_1] with durations under 24 hours must expire on the same trading day.',
@@ -2113,12 +2340,12 @@ sub _validate_expiry_date {
                 my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
                 push @errors,
                     {
-                    message => 'cannot buy bet on underlying['
-                        . $underlying->symbol
-                        . ']; expiry too close to close (trading left after expiry ['
-                        . $expiry_before_close->as_concise_string
-                        . '] < min allowed['
-                        . $eod_blackout_expiry->as_concise_string . '])',
+                    message => format_error_string(
+                        'end of day expiration blackout',
+                        symbol => $underlying->symbol,
+                        min    => $eod_blackout_expiry->as_concise_string,
+                        actual => $expiry_before_close->as_concise_string
+                    ),
                     severity          => 90,
                     message_to_client => localize("Contract may not expire within the last [_1] of trading.", $eod_blackout_expiry->as_string),
                     info_link         => $times_link,
@@ -2132,7 +2359,7 @@ sub _validate_expiry_date {
         if ($close and $close->epoch != $self->date_expiry->epoch) {
             push @errors,
                 {
-                message           => 'Trying an unauthorised expiry date',
+                message           => 'unauthorised expiry date',
                 severity          => 100,
                 message_to_client => localize(
                     'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
@@ -2167,8 +2394,13 @@ sub _subvalidate_lifetime_tick_expiry {
     if ($tick_count > $max_tick or $tick_count < $min_tick) {
         push @errors,
             {
-            severity          => 101,
-            message           => 'Invalid tick count[' . $tick_count . '] for tick expiry [min: ' . $min_tick . ' max: ' . $max_tick . ']',
+            severity => 101,
+            message  => format_error_string(
+                'Invalid tick count for tick expiry',
+                actual => $tick_count,
+                min    => $min_tick,
+                max    => $max_tick
+            ),
             message_to_client => localize('Number of ticks must be between [_1] and [_2]', $min_tick, $max_tick),
             };
     } elsif (my $entry = $self->entry_tick and my $exit = $self->exit_tick) {
@@ -2177,11 +2409,12 @@ sub _subvalidate_lifetime_tick_expiry {
             push @errors,
                 {
                 severity => 100,
-                message  => 'Tick expiry duration ['
-                    . $actual_duration->as_concise_string
-                    . '] exceeds permitted maximum ['
-                    . $self->max_tick_expiry_duration->as_concise_string . '] on '
-                    . $self->underlying->symbol,
+                message  => format_error_string(
+                    'Tick expiry duration exceeds permitted maximum',
+                    actual    => $actual_duration->as_concise_string,
+                    permitted => $self->max_tick_expiry_duration->as_concise_string,
+                    symbol    => $self->underlying->symbol
+                ),
                 message_to_client => localize("Missing market data for contract period."),
                 };
         }
@@ -2219,7 +2452,7 @@ sub _subvalidate_lifetime_intraday {
             push @errors,
                 {
                 severity          => 98,
-                message           => 'Intraday resale now too short',
+                message           => 'Intraday resale too short',
                 message_to_client => localize('Resale of this contract is not offered with less than [_1] remaining.', $shortest->as_string)};
         }
     } else {
@@ -2228,8 +2461,13 @@ sub _subvalidate_lifetime_intraday {
             my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
             push @errors,
                 {
-                severity          => 98,
-                message           => 'Intraday duration [' . $duration . '] not in list of acceptable durations.',
+                severity => 98,
+                message  => format_error_string(
+                    'Intraday duration not acceptable',
+                    'duration seconds' => $duration,
+                    symbol             => $self->underlying->symbol,
+                    code               => $self->code
+                ),
                 message_to_client => localize('Duration must be between [_1] and [_2].', $shortest->as_string, $longest->as_string),
                 info_link         => $asset_link,
                 info_text         => $asset_text,
@@ -2270,11 +2508,12 @@ sub _subvalidate_lifetime_days {
         my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
         push @errors,
             {
-            message => 'Daily duration ['
-                . $duration_days
-                . '] is outside acceptable range. [min: '
-                . $min->as_string . ' max:'
-                . $max->as_string . ']',
+            message => format_error_string(
+                'Daily duration is outside acceptable range',
+                actual => $duration_days,
+                min    => $min->as_concise_string,
+                max    => $max->as_concise_string
+            ),
             severity          => 100,
             message_to_client => $message,
             info_link         => $asset_link,
@@ -2298,7 +2537,7 @@ sub _subvalidate_lifetime_days {
             my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
             push @errors,
                 {
-                message           => 'underlying [' . $underlying->symbol . '] has holidays coming up.',
+                message           => format_error_string('underlying holidays in contract period', symbol => $self->underlying->symbol),
                 severity          => 1,
                 message_to_client => $message,
                 info_link         => $times_link,
@@ -2318,7 +2557,11 @@ sub _subvalidate_lifetime_days {
             my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
             push @errors,
                 {
-                message           => 'Not enough trading days [' . $trading_days . '] for calendar days [' . $calendar_days . ']',
+                message => format_error_string(
+                    'Not enough trading days for calendar days',
+                    trading  => $trading_days,
+                    calendar => $calendar_days,
+                ),
                 severity          => 1,
                 message_to_client => $message,
                 info_link         => $times_link,
@@ -2345,10 +2588,11 @@ sub _subvalidate_lifetime_days {
         push @errors,
             {
             severity => 5,
-            message  => 'Bet contained within holiday blackout period. Starts ['
-                . $date_start->datetime_iso8601
-                . '] ends ['
-                . $date_expiry->datetime_iso8601 . ']',
+            message  => format_error_string(
+                'contained within holiday blackout period',
+                'blackout start' => $date_start->datetime,
+                'blackout end'   => $date_expiry->datetime,
+            ),
             message_to_client => $message,
             };
     }
@@ -2367,7 +2611,7 @@ sub _validate_volsurface {
             {
             alert             => 1,
             severity          => 99,
-            message           => 'Contract has forced (not calculated) IV [' . $self->pricing_vol . ']',
+            message           => 'forced (not calculated) IV',
             message_to_client => localize("Prevailing market price cannot be determined."),
             };
     }
@@ -2398,7 +2642,7 @@ sub _validate_volsurface {
             {
             alert             => 1,
             severity          => 99,
-            message           => 'Intraday forex bet volsurface recorded_date greater than six hours old.',
+            message           => 'Intraday forex volsurface recorded_date greater than six hours old',
             message_to_client => $standard_message,
             };
     } elsif ($self->market->name eq 'indices' and $surface_age->hours > 24 and not $self->is_atm_bet) {
@@ -2407,10 +2651,11 @@ sub _validate_volsurface {
             alert    => 1,
             severity => 100,
             set_by   => __PACKAGE__,
-            message  => 'Index['
-                . $self->underlying->symbol
-                . '] volsurface recorded_date greater than four hours old. Current surface age ['
-                . roundnear(0.1, $surface_age->hours) . ']',
+            message  => format_error_string(
+                'Index volsurface recorded_date greater than four hours old',
+                symbol => $self->underlying->symbol,
+                age    => $surface_age->as_concise_string
+            ),
             message_to_client => $standard_message,
             };
     } elsif ($surface->recorded_date->days_between($self->exchange->trade_date_before($now)) < 0) {
@@ -2418,7 +2663,7 @@ sub _validate_volsurface {
             {
             alert             => 1,
             severity          => 99,
-            message           => 'Bet volsurface recorded_date earlier than trade date before today.',
+            message           => 'volsurface recorded_date earlier than trade date before today',
             message_to_client => $standard_message,
             };
     }
@@ -2430,21 +2675,19 @@ sub _validate_volsurface {
             if ($surface->calibration_error > $calibration_error_threshold * 5) {
                 push @errors,
                     {
-                    alert    => 1,
-                    severity => 100,
-                    set_by   => __PACKAGE__,
-                    message  => 'Calibration fit exceeds 5 times the acceptable calibration threshold. All contracts are disabled on this underlying['
-                        . $self->underlying->symbol . ']',
+                    alert             => 1,
+                    severity          => 100,
+                    set_by            => __PACKAGE__,
+                    message           => format_error_string('Calibration fit outside acceptable range', symbol => $self->underlying->symbol),
                     message_to_client => $standard_message,
                     };
             } elsif ($surface->calibration_error > $calibration_error_threshold and not $self->is_atm_bet) {
                 push @errors,
                     {
-                    alert    => 1,
-                    severity => 100,
-                    set_by   => __PACKAGE__,
-                    message  => 'Calibration fit exceeds the acceptable threshold. IV contracts are disabled on this underlying['
-                        . $self->underlying->symbol . ']',
+                    alert             => 1,
+                    severity          => 100,
+                    set_by            => __PACKAGE__,
+                    message           => format_error_string('Calibration fit outside acceptable range for IV', symbol => $self->underlying->symbol),
                     message_to_client => $standard_message,
                     };
             }
@@ -2452,6 +2695,46 @@ sub _validate_volsurface {
     }
 
     return @errors;
+}
+
+## PRICING PARAMETERS CODE ##
+## This is a temporary place for this code.
+## It would be moved to the appropriate class when we have refactored all PE to the new interface
+
+sub _contract_type {
+    return shift->code;
+}
+
+sub _underlying_symbol {
+    return shift->underlying->symbol;
+}
+
+sub _economic_events {
+    my $self = shift;
+
+    my $underlying = $self->underlying;
+    my $from       = $self->effective_start->minus_time_interval('10m');
+    my $to         = $self->effective_start->plus_time_interval('10m');
+    my $eco_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+        from => $from,
+        to   => $to,
+    });
+    my @influential_currencies = qw(USD AUD CAD CNY NZD);
+    my %applicable_symbols = map { $_ => 1 } ($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
+    my @applicable_events =
+        map { $_->[1] } sort { $a->[1] <=> $b->[0] } map { [$_->release_date->epoch, $_] } grep { $applicable_symbols{$_->symbol} } @$eco_events;
+
+    return \@applicable_events;
+}
+
+sub _last_twenty_ticks {
+    my $self = shift;
+
+    return BOM::Market::AggTicks->new->retrieve({
+        underlying   => $self->underlying,
+        ending_epoch => $self->effective_start->epoch,
+        tick_count   => 20,
+    });
 }
 
 no Moose;

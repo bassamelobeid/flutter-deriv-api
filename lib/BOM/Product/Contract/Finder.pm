@@ -1,5 +1,3 @@
-## no critic (ValuesAndExpressions::ProhibitCommaSeparatedStatements)
-
 package BOM::Product::Contract::Finder;
 
 use strict;
@@ -19,7 +17,8 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(available_contracts_for_symbol);
 
 sub available_contracts_for_symbol {
-    my $symbol = shift || die 'no symbol';
+    my $args = shift;
+    my $symbol = $args->{symbol} || die 'no symbol';
 
     my $now        = Date::Utility->new;
     my $underlying = BOM::Market::Underlying->new($symbol);
@@ -65,17 +64,25 @@ sub available_contracts_for_symbol {
             : die "don't know about contract category $cc";
 
         if ($o->{barriers}) {
-            my %args = (
-                underlying => $underlying,
-                duration   => $o->{min_contract_duration});
-
             if ($o->{barriers} == 1) {
-                $o->{barrier} = _default_barrier({%args, barrier_type => 'high'});
+                $o->{barrier} = _default_barrier({
+                    underlying   => $underlying,
+                    duration     => $o->{min_contract_duration},
+                    barrier_type => 'high'
+                });
             }
 
             if ($o->{barriers} == 2) {
-                $o->{high_barrier} = _default_barrier({%args, barrier_type => 'high'});
-                $o->{low_barrier}  = _default_barrier({%args, barrier_type => 'low'});
+                $o->{high_barrier} = _default_barrier({
+                    underlying   => $underlying,
+                    duration     => $o->{min_contract_duration},
+                    barrier_type => 'high'
+                });
+                $o->{low_barrier} = _default_barrier({
+                    underlying   => $underlying,
+                    duration     => $o->{min_contract_duration},
+                    barrier_type => 'low'
+                });
             }
         }
 

@@ -26,6 +26,7 @@ subtest 'get_offerings_flyby' => sub {
                 'underlying_symbol',              'min_contract_duration',
                 'max_contract_duration',          'payout_limit',
                 'min_historical_pricer_duration', 'max_historical_pricer_duration',
+                'contract_category_display'
             )
         ],
         'Matching key list'
@@ -140,12 +141,12 @@ subtest 'get_historical_pricer_durations' => sub {
     my $eu = BOM::Market::Underlying->new('frxEURUSD');
 
     ok exists $eu_tnt->{intraday}, 'EUR/USD touchnotouch has intraday durations';
-    ok !exists $eu_tnt->{daily},    '... but not daily';
-    ok !exists $eu_tnt->{tick},     '... nor tick';
+    ok !exists $eu_tnt->{daily},   '... but not daily';
+    ok !exists $eu_tnt->{tick},    '... nor tick';
     SKIP: {
         skip 'skip because of euro pairs offerings adjustment', 2 unless exists $eu_tnt->{intraday};
-        cmp_ok $eu_cp->{intraday}->{min}->seconds, '<', $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
-        cmp_ok $eu_cp->{intraday}->{max}->seconds, '<', $eu_tnt->{intraday}->{max}->seconds, '... but touchnotouch can run for longer';
+        cmp_ok $eu_cp->{intraday}->{min}->seconds, '<',  $eu_tnt->{intraday}->{min}->seconds, 'callputs have shorter minimums';
+        cmp_ok $eu_cp->{intraday}->{max}->seconds, '==', $eu_tnt->{intraday}->{max}->seconds, '... and run for the same maximum';
     }
 
     my $r100_digits_tick = get_permitted_expiries({

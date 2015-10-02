@@ -25,6 +25,7 @@ use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
 use BOM::Utility::Log4perl qw( get_logger );
 use Memoize;
+use Finance::Asset;
 
 use Cache::RedisDB;
 use Date::Utility;
@@ -38,7 +39,6 @@ use BOM::Market::Registry;
 use Format::Util::Numbers qw(roundnear);
 use Time::Duration::Concise;
 use BOM::Platform::Runtime;
-use BOM::Market::UnderlyingConfig;
 use BOM::Market::Data::DatabaseAPI;
 use BOM::MarketData::CorporateAction;
 use BOM::Platform::Context qw(request localize);
@@ -75,7 +75,7 @@ sub new {
     if (scalar keys %{$args} == 1) {
 
         # Symbol only requests can use cache.
-        my $cache = BOM::Market::UnderlyingConfig->instance->cached_underlyings;
+        my $cache = Finance::Asset->instance->cached_underlyings;
         if (not $cache->{$symbol}) {
             my $new_obj = $self->_new($args);
             $symbol = $new_obj->symbol;
@@ -318,19 +318,6 @@ sub _build_intradays_must_be_same_day {
     return $self->submarket->intradays_must_be_same_day;
 }
 
-=head2 limited_ultra_shortterm
-
-A hashref representing info about time-limited ultra shortterm contracts.
-
-=cut
-
-has limited_ultra_shortterm => (
-    is      => 'ro',
-    isa     => 'Maybe[HashRef]',
-    lazy    => 1,
-    default => sub { return shift->submarket->limited_ultra_shortterm; },
-);
-
 =head2 max_suspend_trading_feed_delay
 
 The maximum acceptable feed delay for an underlying.
@@ -423,7 +410,7 @@ around BUILDARGS => sub {
     # we have volatilities and etc, which shouldn't be here IMO, but
     # unfortunately they are
 
-    my $params = BOM::Market::UnderlyingConfig->instance->get_parameters_for($params_ref->{symbol});
+    my $params = Finance::Asset->instance->get_parameters_for($params_ref->{symbol});
     if ($params) {
         @$params_ref{keys %$params} = @$params{keys %$params};
     } elsif ($params_ref->{'symbol'} =~ /^frx/) {
@@ -435,7 +422,7 @@ around BUILDARGS => sub {
 
         my $inverted_symbol = 'frx' . $quoted . $asset;
 
-        $params = BOM::Market::UnderlyingConfig->instance->get_parameters_for($inverted_symbol);
+        $params = Finance::Asset->instance->get_parameters_for($inverted_symbol);
         if ($params) {
             @$params_ref{keys %$params} = @$params{keys %$params};
             $params_ref->{inverted} = 1;
@@ -2136,24 +2123,6 @@ sub _last_trading_day_tick {
     }
 
     return;
-}
-
-sub limit_minimum_duration {
-    my $self = shift;
-    my $limit;
-
-    if (my $limitations = $self->limited_ultra_shortterm) {
-        $limitations =
-            {map { $_ => Time::Duration::Concise->new(interval => $limitations->{$_},) } grep { !ref($limitations->{$_}) } keys %$limitations};
-        my $tod = Date::Utility->new->seconds_after_midnight;
-        if (   $tod < $limitations->{start}->seconds
-            || $tod > $limitations->{end}->seconds)
-        {
-            $limit = $limitations->{otherwise};
-        }
-    }
-
-    return $limit;
 }
 
 no Moose;

@@ -22,12 +22,12 @@ eq_or_diff [sort $udb->available_expiry_types], [sort qw(intraday daily tick)], 
 
 eq_or_diff [sort $udb->available_start_types], [sort qw(spot forward)], 'Correct list of available start types.';
 
-eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices random stocks )], "Correct list of markets";
+eq_or_diff [sort $udb->markets], [sort qw(commodities forex indices random stocks)], "Correct list of markets";
 
 eq_or_diff [sort $udb->symbols_for_intraday_fx], [
-    sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDPLN frxAUDUSD frxEURAUD frxEURCAD
-        frxEURGBP frxEURJPY frxEURNZD frxEURUSD frxGBPAUD frxGBPCAD
-        frxGBPJPY frxGBPNZD frxGBPUSD frxNZDUSD frxUSDCAD frxUSDJPY frxXAGUSD frxXAUUSD WLDAUD WLDEUR WLDGBP WLDUSD)
+    sort qw(frxAUDCAD frxAUDCHF frxAUDJPY frxAUDNZD frxAUDPLN frxAUDUSD frxEURAUD frxEURCAD frxEURCHF
+        frxEURGBP frxEURJPY frxEURNZD frxEURUSD frxGBPAUD frxGBPCAD frxGBPCHF
+        frxGBPJPY frxGBPNZD frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY frxXAGUSD frxXAUUSD WLDAUD WLDEUR WLDGBP WLDUSD)
     ],
     'Correct list of intraday historical symbols.';
 
@@ -55,8 +55,8 @@ cmp_bag [
     \@ul_indices_on_flash, "Correct list of flashes for indices on virtual accounts";
 
 my @ul_forex_on_endsinout = qw(
-    frxAUDJPY frxAUDUSD frxEURAUD frxEURCAD frxEURGBP frxEURJPY  frxEURUSD
-    frxGBPAUD frxGBPCAD frxGBPJPY frxGBPUSD frxNZDUSD frxUSDCAD frxUSDJPY);
+    frxAUDJPY frxAUDUSD frxEURAUD frxEURCAD frxEURCHF frxEURGBP frxEURJPY  frxEURUSD
+    frxGBPAUD frxGBPCAD frxGBPJPY frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY);
 
 eq_or_diff [
     sort $udb->get_symbols_for(
@@ -99,9 +99,9 @@ eq_or_diff [
 
 my @ul_forex_active = sort qw(
     WLDAUD    WLDEUR    WLDGBP    WLDUSD
-    frxAUDJPY frxAUDUSD frxEURAUD frxEURCAD frxEURGBP frxEURJPY
-    frxEURUSD frxGBPAUD frxGBPCAD frxGBPJPY frxGBPNOK frxGBPPLN
-    frxGBPUSD frxNZDUSD frxUSDCAD frxUSDJPY frxUSDNOK
+    frxAUDJPY frxAUDUSD frxEURAUD frxEURCAD frxEURCHF frxEURGBP frxEURJPY
+    frxEURUSD frxGBPAUD frxGBPCAD frxGBPCHF frxGBPJPY frxGBPNOK frxGBPPLN
+    frxGBPUSD frxNZDUSD frxUSDCAD frxUSDCHF frxUSDJPY frxUSDNOK
     frxUSDSEK frxEURNZD frxGBPNZD frxAUDCHF frxAUDCAD frxAUDNZD frxAUDPLN
     frxNZDJPY frxUSDMXN frxUSDPLN);
 eq_or_diff [

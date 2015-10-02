@@ -177,7 +177,7 @@ subtest 'IOM withdrawal limit' => sub {
 subtest 'custom client payout limit' => sub {
     plan tests => 7;
 
-    my $custom_list = BOM::Platform::CustomClientLimits->new;
+    my $custom_list = BOM::Product::CustomClientLimits->new;
     ok(
         $custom_list->update({
                 loginid       => $client->loginid,

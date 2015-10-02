@@ -15,9 +15,9 @@ use Module::Load::Conditional qw(can_load);
 use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::CacheLoader qw(LoadFile);
+use Finance::Asset;
 
 use BOM::Platform::Runtime;
-use BOM::Market::UnderlyingConfig;
 use BOM::Product::Contract::Category;
 
 my $cache_namespace = 'OFFERINGS';
@@ -56,10 +56,13 @@ sub _make_new_flyby {
         my %suspended_underlyings =
             map { $_ => 1 } (@{$runtime->app_config->quants->underlyings->suspend_trades}, @{$runtime->app_config->quants->underlyings->suspend_buy});
         $fb = FlyBy->new;
-        my $uc = BOM::Market::UnderlyingConfig->new;
+
         # TODO: Remove all these sorts.  They are only important for transition testing
         UL:
-        foreach my $ul (map { BOM::Market::Underlying->new($_->{symbol}) } sort { $a->{symbol} cmp $b->{symbol} } values %{$uc->all_parameters}) {
+        foreach my $ul (
+            map  { BOM::Market::Underlying->new($_->{symbol}) }
+            sort { $a->{symbol} cmp $b->{symbol} } values %{Finance::Asset->instance->all_parameters})
+        {
             next UL unless $ul->market->display_order and not $ul->quanto_only and not $suspended_underlyings{$ul->symbol};
             my %record = (
                 market            => $ul->market->name,
@@ -70,6 +73,7 @@ sub _make_new_flyby {
             foreach my $cc_code (sort keys %{$ul->contracts}) {
                 $record{contract_category} = $cc_code;
                 $category_cache{$cc_code} //= BOM::Product::Contract::Category->new($cc_code);
+                $record{contract_category_display} = $category_cache{$cc_code}->{display_name};
                 foreach my $expiry_type (sort keys %{$ul->contracts->{$cc_code}}) {
                     $record{expiry_type} = $expiry_type;
                     foreach my $start_type (sort keys %{$ul->contracts->{$cc_code}->{$expiry_type}}) {
