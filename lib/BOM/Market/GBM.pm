@@ -86,7 +86,7 @@ sub random_index_gbm {
 }
 
 sub crand {
-    my $rand = _redis()->rpop('BOM::Rand');
+    my $rand = _redis()->rpop('Feed::Rand');
     if (not defined $rand) {
         $rand = Math::Random::Secure::rand();
         Path::Tiny::path('/feed/rand/used_' . Date::Utility->today->date_yyyymmdd)->append("$rand l\n");
