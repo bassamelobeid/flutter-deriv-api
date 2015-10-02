@@ -57,11 +57,11 @@ sub run_authentication {
     my $self   = shift;
     my $client = $self->client;
 
-    # MF clients should already be fully_authenticated by the time this code runs following an intial deposit.
-    # MF accounts are either set to "unwelcome" when they are first created.  Document
+    # Binary Investment clients should already be fully_authenticated by the time this code runs following an intial deposit.
+    # Binary Investment accounts are set to "unwelcome" when they are first created.  Document
     # submission is REQUIRED before the account is enabled for use
 
-    return if $client->client_fully_authenticated || $client->{broker_code} eq 'MF';
+    return if $client->client_fully_authenticated || $client->landing_company->short eq 'maltainvest';
 
     # any of these callouts might invoke _request_id_authentication which
     # will return a structure suitable for passing to a mailer.
