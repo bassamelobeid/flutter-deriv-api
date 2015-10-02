@@ -33,8 +33,8 @@ sub available_contracts_for_symbol {
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
-        my $cc = $o->{contract_category};
-        my $bc = $o->{barrier_category};
+        my $cc  = $o->{contract_category};
+        my $bc  = $o->{barrier_category};
         my $cat = BOM::Product::Contract::Category->new($cc);
         $o->{contract_category_display} = $cat->display_name;
 
@@ -93,9 +93,9 @@ sub available_contracts_for_symbol {
 
         if ($cc eq 'spreads') {
             $o->{amount_per_point} = 1;
-            $o->{stop_type} = 'point';
-            $o->{stop_profit} = 10;
-            $o->{stop_loss} = 10;
+            $o->{stop_type}        = 'point';
+            $o->{stop_profit}      = 10;
+            $o->{stop_loss}        = 10;
         }
     }
 
