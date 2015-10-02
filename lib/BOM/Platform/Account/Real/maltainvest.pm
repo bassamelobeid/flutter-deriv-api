@@ -19,7 +19,7 @@ sub validate {
     return $check if ($company eq 'maltainvest');
 
     # also allow MLT UK client to open MF account
-    return $check if ( $from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta' );
+    return $check if ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta');
 
     return {err => 'Financial account opening unavailable'};
 }
