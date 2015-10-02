@@ -35,7 +35,7 @@ subtest 'iom countries' => sub {
     }
 };
 
-my @mlt_country = qw( at be bg cy cz dk ee fi hr hu lt lv nl pl pt ro se si sk );
+my @mlt_country = qw( at be bg cy cz dk ee fi hr hu ie lt lv nl pl pt ro se si sk );
 @countries = @mlt_country;
 subtest 'EU countries' => sub {
     foreach my $c (@countries) {
@@ -51,7 +51,7 @@ subtest 'EU countries' => sub {
     }
 };
 
-my @mf_only_country = qw( de es fr gr ie it lu );
+my @mf_only_country = qw( de es fr gr it lu );
 @countries = @mf_only_country;
 subtest 'EU countries, no Random' => sub {
     foreach my $c (@countries) {
