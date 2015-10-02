@@ -14,11 +14,12 @@ use Date::Utility;
 use BOM::Database::Helper::FinancialMarketBet;
 
 use BOM::Platform::Client::Utility;
-use BOM::Utility::Config;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'RANDOM'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
