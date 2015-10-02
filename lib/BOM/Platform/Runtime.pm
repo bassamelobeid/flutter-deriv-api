@@ -154,6 +154,14 @@ sub _build_countries_list {
     return YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/countries.yml');
 }
 
+sub gaming_company_for_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return if (not $config or $config->{gaming_company} eq 'none');
+
+    return $config->{gaming_company};
+}
+
 sub financial_company_for_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
