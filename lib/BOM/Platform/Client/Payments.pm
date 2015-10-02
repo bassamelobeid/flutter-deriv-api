@@ -628,11 +628,12 @@ sub validate_agent_payment {
     my $currency = delete $args{currency} || die "no currency";
     my $amount   = delete $args{amount}   || die "no amount";
 
-    # Default to not have any confusion
+    # Default: withdraw from PA acc = Deposit to client
     my $payment_agent = $fmClient;
     my $action_type   = 'withdraws';
     my $client        = $toClient;
 
+    # deposit into PA acc = Withdraw from client
     if ($toClient->payment_agent) {
         $payment_agent = $toClient;
         $client        = $fmClient;
