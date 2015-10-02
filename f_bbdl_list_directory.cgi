@@ -12,7 +12,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use Bloomberg::FileDownloader;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
-
+use BOM::Platform::Runtime;
 PrintContentType();
 BrokerPresentation('BBDL LIST DIRECTORY');
 
@@ -22,10 +22,15 @@ my $broker    = $cgi->param('broker');
 
 my $bbdl = Bloomberg::FileDownloader->new();
 $bbdl->sftp_server_ip($server_ip);
-my $sftp = $bbdl->login;
 
 Bar("BBDL Directory Listing $server_ip");
+#don't allow from devserver, to avoid uploading wrong files
+if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
+    print "<font color=red>Sorry, you cannot connect to Bloomberg's ftp from a development server. Please use a live server.</font>";
+    code_exit_BO();
+}
 
+my $sftp = $bbdl->login;
 my $ls = $sftp->ls('/') or die "unable to change cwd: " . $sftp->error;
 
 my @request_files  = grep { $_->{'filename'} =~ /\.req$/ } @{$ls};
