@@ -25,7 +25,7 @@ subtest 'CR' => sub {
     };
 
     subtest 'EUR countries' => sub {
-        foreach my $country_code (qw(at be cz dk fi nl pl se sk)) {
+        foreach my $country_code (qw(at be cz dk fi ie nl pl se sk)) {
             my $request = BOM::Platform::Context::Request->new(country_code => $country_code);
             note $country_code;
             is $request->broker->code, 'MLT', 'broker for ' . $country_code;
@@ -35,7 +35,7 @@ subtest 'CR' => sub {
     };
 
     subtest 'EUR countries, random restricted' => sub {
-        foreach my $country_code (qw(fr de gr ie it lu)) {
+        foreach my $country_code (qw(fr de gr it lu)) {
             my $request = BOM::Platform::Context::Request->new(country_code => $country_code);
             note $country_code;
             is $request->broker->code, 'MF', 'broker for ' . $country_code;
