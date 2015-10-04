@@ -194,9 +194,17 @@ sub _build_app_config {
 
 sub _build_website_list {
     my $self = shift;
+    my $def = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+    my $default = delete $def->{default};
+    while (my ($k, $v) = each %$def) {
+        for my $key (keys %$default) {
+            $v->{$key} = $default->{$key} unless exists $v->{$key};
+        }
+        $v->{primary_url} = lc "www.$k.com" unless exists $v->{primary_url};
+    }
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
-        definitions  => YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
+        definitions  => $def,
         localhost    => $self->hosts->localhost,
     );
 }
@@ -206,7 +214,7 @@ sub _build_broker_codes {
     return BOM::Platform::Runtime::Broker::Codes->new(
         hosts              => $self->hosts,
         landing_companies  => $self->landing_companies,
-        broker_definitions => YAML::CacheLoader::LoadFile('/etc/rmg/broker_codes.yml'));
+        broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
 
 sub _build_datasources {
