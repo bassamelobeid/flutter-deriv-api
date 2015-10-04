@@ -53,6 +53,41 @@ sub validate_payment {
             $self->{mlt_affiliate_first_deposit} = 1;
         }
 
+        if ($self->is_first_deposit_pending && $self->broker_code eq 'MX') {
+
+            # compliance check for PEP/OFAC/BOE
+            $self->add_note('Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
+               
+=pod
+            my $premise = $self->address_1;
+            if ($premise =~ /^(\d+)/) {
+                $premise = $1;
+            }
+
+            my $proveID = BOM::Platform::ProveID->new(
+                client        => $self,
+                premise       => $premise,
+                search_option => 'ProveID_KYC',
+            );
+            my $prove_id_result = $proveID->get_result || undef;
+
+            if (!$prove_id_result) {
+                # ProveID failed
+                die 'We\'re sorry, but our system has been unable to '
+                    .   'authenticate your ID online due to connection problem. '
+                    .   'Please try again later.';
+            } elsif ($prove_id_result->{deny} || scalar @{$prove_id_result->{matches}}) {
+                $self->set_status('unwelcome', 'system', 'Failed identity test via 192.com');
+                $self->save();
+
+                $self->add_note('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ',
+                    $self->loginid . ' ' . 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
+
+            }
+=cut
+
+        }
+
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
         die "Balance would exceed $max_balance limit\n"
             if in_USD($amount + $accbal, $acccur) > $max_balance;
