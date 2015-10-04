@@ -15,7 +15,6 @@ use BOM::Platform::Context;
 use BOM::System::Config;
 
 sub website_name () {
-    my $expected;
     for (BOM::System::Config::node->{node}->{environment}) {
         /^development$/ and return 'Devbin';
         /^production$/  and return 'Binary';
