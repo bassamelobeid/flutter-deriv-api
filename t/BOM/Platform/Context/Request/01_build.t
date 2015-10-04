@@ -16,12 +16,34 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Runtime;
 my $hostname = hostname();
 
+use BOM::System::Config;
+
+sub website_name () {
+    for (BOM::System::Config::node->{node}->{environment}) {
+        /^development$/ and return 'Devbin';
+        /^production$/  and return 'Binary';
+        /^qa\d+$/       and return 'Binary' . $_;
+    }
+
+    return 'Unexpected'
+}
+
+sub website_host () {
+    for (BOM::System::Config::node->{node}->{environment}) {
+        /^development$/ and return 'deal01.devbin.io';
+        /^production$/  and return 'www.inary.com';
+        /^qa\d+$/       and return $_ . '.binary' . $_ . '.com';
+    }
+
+    return 'Unexpected'
+}
+
 subtest 'build' => sub {
     subtest 'Defaults' => sub {
         my $request = BOM::Platform::Context::Request->new();
         is $request->broker_code, 'CR';
-        is $request->website->name, 'Devbin';
-        is $request->domain_name, 'deal01.devbin.io';
+        is $request->website->name, website_name;
+        is $request->domain_name, website_host;
         is $request->language,    'EN';
         is $request->broker->code,                   'CR';
         is $request->real_account_broker->code,      'CR';
@@ -35,7 +57,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'au');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
@@ -46,7 +68,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'id');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
@@ -57,7 +79,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'gb');
             is $request->broker_code, 'MX';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'MX';
             is $request->real_account_broker->code,      'MX';
             is $request->financial_account_broker->code, 'MX';
@@ -68,7 +90,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'nl');
             is $request->broker_code, 'MLT';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'MLT';
             is $request->real_account_broker->code,      'MLT';
             is $request->financial_account_broker->code, 'MF';
@@ -79,7 +101,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'fr');
             is $request->broker_code, 'MF';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'MF';
             is $request->real_account_broker->code,      'MF';
             is $request->financial_account_broker->code, 'MF';
@@ -90,7 +112,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'mt');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name, 'Devbin';
+            is $request->website->name, website_name;
             is $request->broker->code, 'CR';
             is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
@@ -101,7 +123,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'us');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name, 'Devbin';
+            is $request->website->name, website_name;
             is $request->broker->code, 'CR';
             is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
@@ -114,7 +136,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(loginid => 'CR10001', country_code => 'au');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
@@ -125,7 +147,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(loginid => 'MLT10001', country_code => 'nl');
             is $request->broker_code, 'MLT';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'MLT';
             is $request->real_account_broker->code,      'MLT';
             is $request->financial_account_broker->code, 'MF';
@@ -149,7 +171,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(domain_name => 'cr-deal01.devbin.io');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name,                  'Devbin';
+            is $request->website->name,                  website_name;
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
