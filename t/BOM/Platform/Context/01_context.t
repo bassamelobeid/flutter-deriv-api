@@ -12,6 +12,18 @@ use JSON qw(decode_json);
 use BOM::Test::Runtime qw(:normal);
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
+use BOM::System::Config;
+
+sub website_name () {
+    my $expected;
+    for (BOM::System::Config::node->{node}->{environment}) {
+        /^development$/ and return 'Devbin';
+        /^production$/  and return 'Binary';
+        /^qa\d+$/       and return 'Binary' . $_;
+    }
+
+    return 'Unexpected'
+}
 
 subtest 'request' => sub {
     ok(BOM::Platform::Context::request(), 'default');
@@ -45,7 +57,7 @@ subtest 'template' => sub {
         my $template = "[% website.name %]";
         ok(BOM::Platform::Context::template, 'default');
         BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin', 'correct default');
+        is($output, website_name, 'correct default');
 
         my $request = BOM::Platform::Context::Request->new(
             domain_name => 'www.binary.com',
@@ -61,7 +73,7 @@ subtest 'template' => sub {
 
         $output = '';
         BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin', 'back to default');
+        is($output, website_name, 'back to default');
     };
 
     subtest 'stash' => sub {
@@ -69,11 +81,11 @@ subtest 'template' => sub {
         my $template = "[% website.name %][% stashed_value %]";
         ok(BOM::Platform::Context::template, 'default');
         BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin', 'correct default');
+        is($output, website_name, 'correct default');
 
         $output = '';
         BOM::Platform::Context::template('stash')->update({stashed_value => 123});
         BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin123', 'correct default');
+        is($output, website_name . '123', 'correct default');
     };
 };
