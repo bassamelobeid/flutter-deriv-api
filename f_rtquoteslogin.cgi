@@ -10,6 +10,7 @@ use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
 use Proc::Killall;
 use BOM::Market::Registry;
+use BOM::Feed::Listener::Quote;
 use Feed::Listener::Quote;
 use Try::Tiny;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -95,7 +96,7 @@ foreach my $i (@instrumentlist) {
             $price     = $tick->{quote};
         } else {
             my $quote = try { Cache::RedisDB->get('PROVIDER_LAST_QUOTE', "$p/" . $underlying->symbol) };
-            ($timestamp, $price) = ($quote->epoch, $quote->price) if $quote and ref $quote eq 'Feed::Listener::Quote';
+            ($timestamp, $price) = ($quote->epoch, $quote->price) if $quote and ref $quote =~ /Feed::Listener::Quote/;
         }
         unless (defined $timestamp and defined $price) {
             print "<td bgcolor=#FFFFCE>&nbsp;</td>";
