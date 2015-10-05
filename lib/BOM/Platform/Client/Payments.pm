@@ -43,6 +43,10 @@ sub validate_payment {
         if $currency ne $acccur;
 
     if ($action_type eq 'deposit') {
+
+        # XXX debug
+        $self->add_note('Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
+
         die "Deposits blocked for this Client.\n"
             if $self->get_status('unwelcome');
 
@@ -53,12 +57,12 @@ sub validate_payment {
             $self->{mlt_affiliate_first_deposit} = 1;
         }
 
+=pod
         if ($self->is_first_deposit_pending && $self->broker_code eq 'MX') {
 
             # compliance check for PEP/OFAC/BOE
             $self->add_note('Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
                
-=pod
             my $premise = $self->address_1;
             if ($premise =~ /^(\d+)/) {
                 $premise = $1;
