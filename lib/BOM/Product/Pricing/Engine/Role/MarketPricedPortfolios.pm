@@ -258,7 +258,7 @@ sub portfolio_hedge {
     my $portfolio = $self->portfolios->{$portfolio_name};
 
     my $mu               = $bet->mu;
-    my $discount_rate      = $bet->discount_rate;
+    my $discount_rate    = $bet->discount_rate;
     my $hedge_tiy        = $self->hedge_tiy->amount;
     my $r_rate           = $bet->r_rate;
     my $q_rate           = $bet->q_rate;
@@ -307,7 +307,8 @@ sub portfolio_hedge {
 
         $values{cost} +=
             $option->{units} *
-            ($function->($S, $strike, $hedge_tiy, $discount_rate, $mu, $vv_vol) - $function->($S, $strike, $hedge_tiy, $discount_rate, $mu, $atm_vol));
+            (
+            $function->($S, $strike, $hedge_tiy, $discount_rate, $mu, $vv_vol) - $function->($S, $strike, $hedge_tiy, $discount_rate, $mu, $atm_vol));
 
         $values{spread} +=
             $option->{units} *
