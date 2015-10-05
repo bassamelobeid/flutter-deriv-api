@@ -122,7 +122,13 @@ sub __handle {
             my $result = $validator->validate($p1);
             my $error;
             $error .= " - $_" foreach $result->errors;
-            die "Invalid input parameter for [" . $dispatch->[0] . " $error]";
+            return {
+                msg_type => 'error',
+                error    => {
+                    message => "Input validation failed ". $error,
+                    code    => "InputValidationFailed"
+                }
+            }
         }
 
         my $tag = 'origin:';
@@ -144,7 +150,15 @@ sub __handle {
             my $validation_errors = $validator->validate($result);
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
-            die "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
+            warn "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
+            return {
+                msg_type => 'error',
+                error    => {
+                    message => "Output validation failed ". $error,
+                    code    => "OutputValidationFailed"
+                }
+            }
+
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
