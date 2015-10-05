@@ -10,11 +10,10 @@ RETURNS VOID
 AS $def$
 
 BEGIN
-    PERFORM *
+    PERFORM 1
        FROM pg_catalog.pg_class c
-       JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
       WHERE c.relname='audit_detail'
-        AND n.nspname LIKE 'pg_temp%';
+        AND c.relnamespace=pg_catalog.pg_my_temp_schema();
     IF NOT FOUND THEN
         CREATE TEMPORARY TABLE audit_detail (
             staff text not null,
