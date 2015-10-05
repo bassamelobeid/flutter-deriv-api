@@ -201,7 +201,7 @@ sub _get_csv_line_from_transaction {
         croak 'Could not extract month from transaction. Full transaction details: ' . Dumper($transaction);
     }
 
-    my $comment = 'Payment from RMG ' . $month_str;
+    my $comment = 'Payment from Binary Service Ltd ' . $month_str;
 
 # got everything, so lets make the CSV line:
     my $csv = Text::CSV->new;
