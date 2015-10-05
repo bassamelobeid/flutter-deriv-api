@@ -61,7 +61,7 @@ sub validate_payment {
         if ($self->is_first_deposit_pending && $self->broker_code eq 'MX') {
 
             # compliance check for PEP/OFAC/BOE
-            $self->add_note('Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
+            $self->add_note('Debug for PEP', 'Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
                
             my $premise = $self->address_1;
             if ($premise =~ /^(\d+)/) {
