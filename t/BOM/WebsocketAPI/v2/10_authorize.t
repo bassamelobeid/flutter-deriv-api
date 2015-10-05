@@ -19,7 +19,7 @@ is($balance->{error}->{code}, 'AuthorizationRequired');
 test_schema('balance', $balance);
 
 ## test with faked token
-my $faked_token = 'ABC';
+my $faked_token = 'ABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCDABCD';
 $t = $t->send_ok({json => {authorize => $faked_token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{error}->{code}, 'InvalidToken';
