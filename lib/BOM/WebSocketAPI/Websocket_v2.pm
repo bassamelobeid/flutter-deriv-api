@@ -125,10 +125,9 @@ sub __handle {
             return {
                 msg_type => 'error',
                 error    => {
-                    message => "Input validation failed ". $error,
+                    message => "Input validation failed " . $error,
                     code    => "InputValidationFailed"
-                }
-            }
+                }};
         }
 
         my $tag = 'origin:';
@@ -154,10 +153,9 @@ sub __handle {
             return {
                 msg_type => 'error',
                 error    => {
-                    message => "Output validation failed ". $error,
+                    message => "Output validation failed " . $error,
                     code    => "OutputValidationFailed"
-                }
-            }
+                }}
 
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
