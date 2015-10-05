@@ -103,7 +103,7 @@ sub access_token {
     my $loginid;
     my @scope_ids;
     if ($grant_type eq 'refresh_token') {
-        # TODO
+        ($status, $error, $loginid, @scope_ids) = $c->__verify_refresh_token($error_or_application, $refresh_token);
     } else {
         ## authorization_code
         ($status, $error, $loginid, @scope_ids) = $c->__verify_auth_code($error_or_application, $auth_code, $redirect_uri);
@@ -249,6 +249,30 @@ sub __verify_auth_code {
     }
 
     return (1, undef, $auth_row->{loginid}, @scope_ids);
+}
+
+sub __verify_refresh_token {
+    my ($c, $application, $refresh_token) = @_;
+
+    my $dbh = $c->rose_db->dbh;
+
+    my $refresh_token_row = $dbh->selectrow_hashref("
+        SELECT * FROM auth.oauth2_refresh_token WHERE refresh_token = ? AND client_id = ?
+    ", undef, $refresh_token, $application->{id});
+
+    return (0, 'invalid_grant') unless $refresh_token_row;
+
+    my @scope_ids;
+    my $sth = $dbh->prepare("SELECT scope_id FROM auth.oauth2_refresh_token_scope WHERE refresh_token = ?");
+    $sth->execute($refresh_token);
+    while (my ($sid) = $sth->fetchrow_array) {
+        push @scope_ids;
+    }
+
+    ## revoke old access_token
+    $dbh->do("DELETE FROM auth.oauth2_access_token WHERE access_token = ?", undef, $refresh_token_row->{access_token});
+
+    return (1, undef, $refresh_token_row->{loginid}, @scope_ids);
 }
 
 sub __store_access_token {
