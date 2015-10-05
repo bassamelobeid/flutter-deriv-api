@@ -77,7 +77,7 @@ sub session_validate_GET {
     }
 
     # This is where we should check to make sure that the token
-    # is a valid BOM::API::Session. For now we'll just check that
+    # is a valid session. For now we'll just check that
     # it is 32 hex characters :-/
     unless (exists $c->request_parameters->{token} and $c->request_parameters->{token} =~ /^[a-f0-9]{40}$/) {
         return $c->status_bad_request('Invalid or missing token in request');
