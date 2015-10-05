@@ -69,6 +69,28 @@
       "type": "number",
       "description":"Low barrier for the contract (for contracts with two barriers)",
       "sample": "900"
+    },
+
+    "amount_per_point": {
+      "type": "number",
+      "description":"[For spread contracts only] Amount per point",
+      "sample": "1"
+    },
+    "stop_type": {
+      "type": "string",
+      "description":"[For spread contracts only] Stop type (dollar or point)",
+      "pattern": "^(dollar|point)$",
+      "sample": "point"
+    },
+    "stop_profit": {
+      "type": "number",
+      "description":"[For spread contracts only] Stop profit amount",
+      "sample": "10"
+    },
+    "stop_loss": {
+      "type": "number",
+      "description":"[For spread contracts only] Stop loss amount",
+      "sample": "15"
     }
   },
   "additionalProperties": false,
