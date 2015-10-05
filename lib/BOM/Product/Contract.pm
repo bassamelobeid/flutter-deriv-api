@@ -3,6 +3,7 @@ package BOM::Product::Contract;
 use Moose;
 use Carp;
 
+use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time sleep);
 use List::Util qw(min max first);
@@ -1708,23 +1709,13 @@ sub _build_fordom {
 sub _build_quanto_rate {
     my $self = shift;
 
-    my $pricing_args = $self->pricing_args;
+    my %args = (
+        symbol => $self->currency,
+        $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
+    );
+    my $curr_obj = BOM::Market::Currency->new(%args);
 
-    my $rate = $pricing_args->{r_rate};
-
-    if ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities') {
-        if ($self->priced_with eq 'numeraire') {
-            $rate = $pricing_args->{'r_rate'};
-        } elsif ($self->priced_with eq 'base') {
-            $rate = $pricing_args->{'q_rate'};
-        } else {
-            $rate = $self->forqqq->{underlying}->quoted_currency->rate_for($pricing_args->{t});
-        }
-    } elsif ($self->underlying->market eq 'indices' and $self->priced_with eq 'quanto') {
-        $rate = $self->domqqq->{underlying}->interest_rate_for($pricing_args->{t});
-    }
-
-    return $rate;
+    return $curr_obj->rate_for($self->timeinyears->amount);
 }
 
 =head2 get_time_to_expiry
