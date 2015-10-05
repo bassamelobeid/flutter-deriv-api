@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 
-package BOM::Expiryd;
+package BOM::Product::Expiryd;
 
 use Moose;
 with 'App::Base::Daemon';
@@ -101,7 +101,7 @@ __PACKAGE__->meta->make_immutable;
 package main;
 use strict;
 
-exit BOM::Expiryd->new({
+exit BOM::Product::Expiryd->new({
         user  => 'nobody',
         group => 'nogroup',
     })->run;
