@@ -7,9 +7,7 @@ random_index:
       spreads:
         intraday:
           spot:
-            spreads:
-              min: 5
-              max: 10
+            spreads: {}
       asian:
         tick:
           spot:
