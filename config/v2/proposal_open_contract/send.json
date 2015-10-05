@@ -10,7 +10,7 @@
       "pattern": "^1$",
       "sample": "1"
     },
-    "fmd_id": {
+    "fmb_id": {
       "type": "integer",
       "description":"Open contract id received from a portfolio request",
       "sample": "1111111111"
