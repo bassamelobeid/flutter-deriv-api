@@ -27,7 +27,7 @@ sub authorize {
 
     ## check user is logined
     my $client = $c->__get_client;
-    if (! $client) {
+    if (!$client) {
         # we need to redirect back to the /oauth/authorize route after
         # login (with the original params)
         my $uri = join('?', $c->url_for('current'), $c->url_with->query);
@@ -53,17 +53,79 @@ sub authorize {
             layout   => $self->layout,
 
             application => $error_or_application,
-            client => $client,
-            scopes => \@scopes,
+            client      => $client,
+            scopes      => \@scopes,
 
         );
     }
 
     ## everything is good
-    my $expires_in = 3600; # default to 1 hour expires
-    my $auth_code = Data::UUID->new()->create_str();
+    my $expires_in = 600;
+    my $auth_code  = Data::UUID->new()->create_str();
 
-    $c->__store_auth_code($client_id, $loginid, $auth_code, $expires_in, @scopes);
+    $c->__store_auth_code($client_id, $loginid, $auth_code, $expires_in, $redirect_uri, @scopes);
+
+    $uri->query->append(code => $auth_code);
+    $uri->query->append(state => $state) if defined($state);
+
+    $c->redirect_to($uri);
+}
+
+sub access_token {
+    my $c = shift;
+
+    my ($client_id, $client_secret, $grant_type, $auth_code, $redirect_uri, $refresh_token) =
+        map { $self->param($_) // undef } qw/ client_id client_secret grant_type code redirect_uri refresh_token /;
+
+    $client_id or return $c->__bad_request('the request was missing client_id');
+
+    # grant_type=authorization_code, plus auth_code
+    # grant_type=refresh_token, plus refresh_token
+    (grep { $_ eq $grant_type } ('authorization_code', 'refresh_token'))
+        or return $c->__bad_request('the request was missing valid grant_type');
+    ($grant_type eq 'authorization_code' and not $auth_code)
+        or return $c->__bad_request('the request was missing code');
+    ($grant_type eq 'refresh_token' and not $auth_code)
+        or return $c->__bad_request('the request was missing refresh_token');
+
+    my $uri = Mojo::URL->new($redirect_uri);
+    my ($status, $error_or_application) = $c->__verify_client($client_id);
+    if ($status and $error_or_application->{client_secret} ne $client_secret) {
+        $status               = 0;
+        $error_or_application = 'unauthorized_client';
+    }
+    if (!$status) {
+        $error_or_application ||= 'server_error';
+        $uri->query->append(error => $error_or_application);
+        return $c->redirect_to($uri);
+    }
+
+    my $loginid;
+    my @scope_ids;
+    if ($grant_type eq 'refresh_token') {
+        # TODO
+    } else {
+        ## authorization_code
+        ($status, $error, $loginid, @scope_ids) = $c->__verify_auth_code($error_or_application, $auth_code, $redirect_uri);
+    }
+
+    if (!$status) {
+        return $c->__bad_request($error);    # FIXME
+    }
+
+    ## everything is good
+    my $expires_in    = 3600;
+    my $access_token  = Data::UUID->new()->create_str();
+    my $refresh_token = Data::UUID->new()->create_str();
+
+    $c->__store_access_token($client_id, $loginid, $access_token, $refresh_token, $expires_in, @scope_ids);
+    $c->render(
+        json => {
+            access_token  => $access_token,
+            token_type    => 'Bearer',
+            expires_in    => $expires_in,
+            refresh_token => $refresh_token,
+        });
 }
 
 sub __get_client {
@@ -126,9 +188,9 @@ sub __is_scope_confirmed {
 sub __confirm_scope {
     my ($client_id, $loginid, @scopes) = @_;
 
-    my $dbh = $c->rose_db->dbh;
+    my $dbh           = $c->rose_db->dbh;
     my $get_scope_sth = $dbh->prepare("SELECT id FROM auth.oauth_scope WHERE scope = ?");
-    my $insert_sth = $dbh->prepare("
+    my $insert_sth    = $dbh->prepare("
        INSERT INTO auth.oauth_scope_confirms (client_id, loginid, scope_id) VALUES (?, ?, ?)
     ");
 
@@ -143,12 +205,73 @@ sub __confirm_scope {
 }
 
 sub __store_auth_code {
-    my ($client_id, $loginid, $auth_code, $expires_in, @scopes) = @_;
+    my ($client_id, $loginid, $auth_code, $expires_in, $redirect_uri, @scopes) = @_;
 
     my $dbh = $c->rose_db->dbh;
-    my $get_scope_sth = $dbh->prepare("SELECT id FROM auth.oauth_scope WHERE scope = ?");
 
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
+    $dbh->do("INSERT INTO auth.oauth_auth_code (auth_code, client_id, loginid, expires, redirect_uri, verified) VALUES (?, ?, ?, ?, ?, false)",
+        undef, $auth_code, $client_id, $loginid, $expires_time, $redirect_uri);
 
+    my $get_scope_sth    = $dbh->prepare("SELECT id FROM auth.oauth_scope WHERE scope = ?");
+    my $insert_scope_sth = $dbh->prepare("INSERT INTO auth.oauth_auth_code_scope (auth_code, scope_id) VALUES (?, ?)");
+    foreach my $scope (@scopes) {
+        $get_scope_sth->execute($scope);
+        my ($scope_id) = $get_scope_sth->fetchrow_array;
+        next unless $scope_id;
+        $insert_scope_sth->execute($auth_code, $scope_id);
+    }
+
+    return;
+}
+
+sub __verify_auth_code {
+    my ($c, $application, $auth_code, $redirect_uri) = @_;
+
+    my $dbh = $c->rose_db->dbh;
+
+    my $auth_row = $dbh->selectrow_hashref("
+        SELECT * FROM auth.oauth_auth_code WHERE auth_code = ? AND client_id = ?
+    ", undef, $auth_code, $application->{id});
+
+    return (0, 'invalid_grant') unless $auth_row;
+    return (0, 'invalid_grant') if $auth_row->{verified};
+    return (0, 'invalid_grant') if $auth_row->{redirect_uri} ne $redirect_uri;
+    return (0, 'invalid_grant') unless Date::Utility->new->is_before(Date::Utility->new($auth_row->{expires}));
+
+    $dbh->do("UPDATE auth.oauth_auth_code SET verified=true WHERE auth_code = ?", undef, $auth_code);
+
+    my @scope_ids;
+    my $sth = $dbh->prepare("SELECT scope_id FROM auth.oauth_auth_code_scope WHERE auth_code = ?");
+    $sth->execute($auth_code);
+    while (my ($sid) = $sth->fetchrow_array) {
+        push @scope_ids;
+    }
+
+    return (1, undef, $auth_row->{loginid}, @scope_ids);
+}
+
+sub __store_access_token {
+    my ($c, $client_id, $loginid, $access_token, $refresh_token, $expires_in, @scope_ids) = @_;
+
+    my $dbh = $c->rose_db->dbh;
+
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
+    $dbh->do("INSERT INTO auth.oauth2_access_token (access_token, refresh_token, client_id, loginid, expires) VALUES (?, ?, ?, ?, ?)",
+        undef, $access_token, $refresh_token, $client_id, $loginid, $expires_time);
+
+    $dbh->do("INSERT INTO auth.oauth2_access_token (access_token, refresh_token, client_id, loginid, expires) VALUES (?, ?, ?, ?, ?)",
+        undef, $access_token, $refresh_token, $client_id, $loginid, $expires_time);
+
+    $dbh->do("INSERT INTO auth.oauth2_refresh_token (access_token, refresh_token, client_id, loginid) VALUES (?, ?, ?, ?, ?)",
+        undef, $access_token, $refresh_token, $client_id, $loginid);
+
+    foreach my $related ('access_token', 'refresh_token') {
+        my $insert_sth = $dbh->prepare("INSERT INTO auth.oauth2_${related}_scope ($related, scope_id) VALUES (?, ?)");
+        foreach my $scope_id (@scope_ids) {
+            $insert_sth->execute($related eq 'access_token' ? $access_token : $refresh_token, $scope_id);
+        }
+    }
 }
 
 sub __bad_request {
