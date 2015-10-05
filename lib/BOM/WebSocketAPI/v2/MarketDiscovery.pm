@@ -198,7 +198,7 @@ sub prepare_ask {
     if (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
-    } else {
+    } elsif ($p1->{contract_type} !~ /^SPREAD/) {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
     }
