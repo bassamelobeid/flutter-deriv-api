@@ -36,11 +36,12 @@ sub get_transactions {
 
     my $and_description = $args->{description};
 
+    $args->{sort_by}  = 'transaction_time desc';
     $args->{limit}  ||= 100;
     $args->{offset} ||= 0;
     my $dt_fm   = $args->{dt_fm};
     my $dt_to   = $args->{dt_to};
-    my $actions = $args->{action} || [];
+    my $actions = $args->{action_type} || [];
 
     for ($dt_fm, $dt_to) {
         next unless $_;
