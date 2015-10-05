@@ -65,8 +65,9 @@ sub _build_probability {
     } elsif ($bet->priced_with eq 'quanto') {
         # We don't handle quanto adjustment for third currency payout for Slope pricer.
         # Hence making rho=0, to ensure mu = r_rate - q_rate.
-        $numeraire_prob = BOM::Product::ContractFactory::make_similar_contract($bet, {rho => {fd_dq => 0}})->theo_probability;
-        $skew_prob->include_adjustment('reset', $numeraire_prob);
+        $numeraire_bs_prob = BOM::Product::ContractFactory::make_similar_contract($bet, {rho => {fd_dq => 0}})->bs_probability;
+        $skew_prob->include_adjustment('reset', $numeraire_bs_prob);
+        $skew_prob->include_adjustment('add', $self->skew_adjustment);
     } elsif ($bet->priced_with eq 'numeraire') {
         $numeraire_prob->include_adjustment('reset', $self->bs_probability);
         $numeraire_prob->include_adjustment('add',   $self->skew_adjustment);
