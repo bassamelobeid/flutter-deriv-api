@@ -30,7 +30,7 @@
     "currency": {
       "type": "string",
       "description":"This can only be the account-holder's currency",
-      "pattern": "^\\a{3}$",
+      "pattern": "^[A-Z]{3}$",
       "sample": "USD"
     },
     "date_start": {
