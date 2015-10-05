@@ -102,7 +102,7 @@ sub _build_bs_probability {
     my $args = $bet->pricing_args;
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
-    my $tv = $self->formula->($args->{spot}, @barrier_args, $args->{t}, $bet->quanto_rate, $bet->mu, $args->{iv}, $args->{payouttime_code});
+    my $tv = $self->formula->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv}, $args->{payouttime_code});
 
     my @max = ($bet->payout_type eq 'binary') ? (maximum => 1) : ();
     my $bs_prob = Math::Util::CalculatedValue::Validatable->new({
@@ -122,7 +122,7 @@ sub _build_d2 {
     my $bet  = $self->bet;
     my $args = $bet->pricing_args;
 
-    my $d2 = Math::Business::BlackScholes::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->quanto_rate, $bet->mu, $args->{iv});
+    my $d2 = Math::Business::BlackScholes::Binaries::d2($args->{spot}, $args->{barrier1}, $args->{t}, $bet->discount_rate, $bet->mu, $args->{iv});
 
     my $d2_ret = Math::Util::CalculatedValue::Validatable->new({
         name        => 'd2',

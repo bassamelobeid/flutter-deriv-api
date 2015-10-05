@@ -864,16 +864,16 @@ sub _build_discounted_probability {
     my $discount = Math::Util::CalculatedValue::Validatable->new({
         name        => 'discounted_probability',
         description => 'The discounted probability for both sides of this contract.  Time value.',
-        set_by      => 'BOM::Product::Contract quanto_rate and bet duration',
+        set_by      => 'BOM::Product::Contract discount_rate and bet duration',
         minimum     => 0,
         maximum     => 1,
     });
 
     my $quanto = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'quanto_rate',
+        name        => 'discount_rate',
         description => 'The rate for the payoff currency',
         set_by      => 'BOM::Product::Contract',
-        base_amount => $self->quanto_rate,
+        base_amount => $self->discount_rate,
     });
     my $discount_rate = Math::Util::CalculatedValue::Validatable->new({
         name        => 'discount_rate',
@@ -1446,7 +1446,7 @@ sub _build_staking_limits {
 
 # Rates calculation, including quanto effects.
 
-has [qw(mu quanto_rate)] => (
+has [qw(mu discount_rate)] => (
     is         => 'ro',
     isa        => 'Num',
     lazy_build => 1,
@@ -1706,7 +1706,7 @@ sub _build_fordom {
     };
 }
 
-sub _build_quanto_rate {
+sub _build_discount_rate {
     my $self = shift;
 
     my %args = (
