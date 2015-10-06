@@ -34,10 +34,20 @@ sub contracts_for {
     } else {
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
-    return {
-        msg_type      => 'contracts_for',
-        contracts_for => $contracts_for,
-    };
+    if ($contracts_for->{hit_count} == 0) {
+        return {
+            msg_type => 'error',
+            error    => {
+                message => 'Invalid symbol',
+                code    => 'InvalidSymbol'
+            }};
+
+    } else {
+        return {
+            msg_type      => 'contracts_for',
+            contracts_for => $contracts_for,
+        };
+    }
 }
 
 1;
