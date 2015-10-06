@@ -1587,8 +1587,8 @@ expected_result:
                 barrier2: 7000
                 spot: 9518.2
                 duration: 213d
-                ask_prob: 0.4566
-                theo_prob: 0.4102
+                ask_prob: 0.457
+                theo_prob: 0.4106
                 total_markup: 0.0464
                 commission_markup: 0.04
                 risk_markup: 0.0064
@@ -1599,7 +1599,7 @@ expected_result:
                 spot: 9518.2
                 duration: 120d
                 ask_prob: 0.7356
-                theo_prob: 0.7101
+                theo_prob: 0.7107
                 total_markup: 0.0249
                 commission_markup: 0.02
                 risk_markup: 0.0049
