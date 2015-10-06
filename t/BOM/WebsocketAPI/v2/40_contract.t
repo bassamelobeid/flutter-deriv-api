@@ -13,14 +13,14 @@ my $t = build_mojo_test();
 my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
     loginid         => "CR2002",
-    email           => 'CR2002@binary.com',
+    email           => 'sy@regentmarkets.com',
     expiration_time => time() + 600,
     scopes          => ['price', 'trade'],
 )->token;
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'CR2002@binary.com';
+is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
 $t = $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
