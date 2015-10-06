@@ -23,7 +23,7 @@ my $filename  = $cgi->param('filename');
 Bar("Download a file from BBDL $server_ip");
 
 #don't allow from devserver, to avoid uploading wrong files
-if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
+if (not BOM::Platform::Runtime->instance->app_config->system->on_production) {
     print "<font color=red>Sorry, you cannot upload files from a development server. Please use a live server.</font>";
     code_exit_BO();
 }
