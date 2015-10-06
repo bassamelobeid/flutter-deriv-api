@@ -88,9 +88,9 @@ sub validate_payment {
                     $self->loginid . ' ' . 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
 
             }
-=cut
 
         }
+=cut
 
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
         die "Balance would exceed $max_balance limit\n"
