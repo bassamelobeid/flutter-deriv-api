@@ -100,8 +100,7 @@ subtest 'validate legal allowed contract categories' => sub {
         client   => $mlt,
         contract => $c,
     });
-    my $error = $transaction->_validate_jurisdictional_restrictions;
-    is $error->{'-type'}, 'NotLegalContractCategory', 'error for MLT';
+    ok !$transaction->_validate_jurisdictional_restrictions, 'no error for MLT';
 
     my $mx = BOM::Test::Data::Utility::UnitTestDatabase::create_client({broker_code => 'MX'});
     $loginid     = $mx->loginid;
@@ -110,7 +109,7 @@ subtest 'validate legal allowed contract categories' => sub {
         client   => $mx,
         contract => $c,
     });
-    $error = $transaction->_validate_jurisdictional_restrictions;
+    my $error = $transaction->_validate_jurisdictional_restrictions;
     is $error->{'-type'}, 'NotLegalContractCategory', 'error for MX';
 };
 
