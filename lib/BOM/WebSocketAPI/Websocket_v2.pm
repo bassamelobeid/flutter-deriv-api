@@ -48,7 +48,15 @@ sub entry_point {
 
             my $data;
             if (ref($p1) eq 'HASH') {
-                $data = _sanity_failed($p1) || __handle($c, $p1);
+
+                my $tag = 'origin:';
+                if (my $origin = $c->req->headers->header("Origin")) {
+                    if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
+                        $tag = "origin:$1";
+                    }
+                }
+
+                $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
                 return unless $data;
 
                 $data->{echo_req} = $p1;
@@ -66,8 +74,15 @@ sub entry_point {
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                die "data too large [$l]";
+                $data = {
+                    echo_req => $p1,
+                    msg_type => 'error',
+                    error    => {
+                        message => "Response too large.",
+                        code    => "ResponseTooLarge"
+                    }};
             }
+            $log->info("Call from origin: $origin, " . JSON::to_json(($data->{error})? $data : $data->{echo_req}));
             $c->send({json => $data});
         });
 
@@ -87,7 +102,7 @@ sub entry_point {
 }
 
 sub __handle {
-    my ($c, $p1) = @_;
+    my ($c, $p1, $tag) = @_;
 
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
@@ -130,16 +145,8 @@ sub __handle {
                 }};
         }
 
-        my $tag = 'origin:';
-        if (my $origin = $c->req->headers->header("Origin")) {
-            if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
-                $tag = "origin:$1";
-            }
-        }
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',               {tags => [$tag]});
-
-        $log->info("Call from origin: $origin, " . JSON::to_json($p1));
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[0]);
