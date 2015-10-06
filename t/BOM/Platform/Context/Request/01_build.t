@@ -171,7 +171,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(domain_name => 'cr-deal01.devbin.io');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            is $request->website->name,                  website_name;
+            is $request->website->name,                  'Devbin';
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
