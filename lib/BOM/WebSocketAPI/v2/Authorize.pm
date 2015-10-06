@@ -21,8 +21,11 @@ sub authorize {
 
     my $loginid;
     if (length $token == 8) {    # access token
-        $loginid = BOM::Database::Model::AccessToken->new->get_loginid_by_token($token);
+        my $m = BOM::Database::Model::AccessToken->new;
+        $loginid = $m->get_loginid_by_token($token);
         return $err unless $loginid;
+
+        $m->update_last_used_by_token($token);
     } else {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         if (!$session || !$session->validate_session()) {
