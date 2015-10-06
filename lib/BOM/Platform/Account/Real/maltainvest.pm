@@ -14,8 +14,12 @@ sub validate {
     my $check = BOM::Platform::Account::Real::default::validate($args);
     return $check if ($check->{err});
 
-    my $company = BOM::Platform::Runtime->instance->financial_company_for_country($check->{from_client}->residence) // '';
+    my $from_client = $check->{from_client};
+    my $company = BOM::Platform::Runtime->instance->financial_company_for_country($from_client->residence) // '';
     return $check if ($company eq 'maltainvest');
+
+    # also allow MLT UK client to open MF account
+    return $check if ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta');
 
     return {err => 'Financial account opening unavailable'};
 }
