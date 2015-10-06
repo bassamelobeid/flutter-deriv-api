@@ -46,10 +46,10 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
+            my $tag = 'origin:';
             my $data;
             if (ref($p1) eq 'HASH') {
 
-                my $tag = 'origin:';
                 if (my $origin = $c->req->headers->header("Origin")) {
                     if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
                         $tag = "origin:$1";
