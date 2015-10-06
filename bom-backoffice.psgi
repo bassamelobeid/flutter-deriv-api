@@ -11,5 +11,7 @@ use lib qw!/etc/perl
            /home/git/regentmarkets/bom-backoffice/lib!;
 
 use BOM::System::Plack::App;
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 BOM::System::Plack::App::app("root"=>"/home/git/regentmarkets/bom-backoffice");

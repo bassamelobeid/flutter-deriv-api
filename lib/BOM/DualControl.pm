@@ -21,8 +21,8 @@ use Moose;
 use DateTime;
 use Error::Base;
 use Cache::RedisDB;
+use Crypt::NamedKeys;
 
-use BOM::Utility::Crypt;
 use BOM::Platform::Runtime;
 
 has staff => (
@@ -55,7 +55,7 @@ sub client_control_code {
     my $self  = shift;
     my $email = shift;
 
-    return BOM::Utility::Crypt->new(keyname => 'password_counter')
+    return Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $email . '_##_' . $self->_environment);
 }
 
@@ -65,7 +65,7 @@ sub payment_control_code {
     my $currency = shift;
     my $amount   = shift;
 
-    return BOM::Utility::Crypt->new(keyname => 'password_counter')
+    return Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => time . '_##_'
             . $self->staff . '_##_'
             . $self->transactiontype . '_##_'
@@ -79,7 +79,7 @@ sub batch_payment_control_code {
     my $self  = shift;
     my $lines = shift;
 
-    return BOM::Utility::Crypt->new(keyname => 'password_counter')
+    return Crypt::NamedKeys->new(keyname => 'password_counter')
         ->encrypt_payload(data => time . '_##_' . $self->staff . '_##_' . $self->transactiontype . '_##_' . $lines . '_##_' . $self->_environment);
 }
 
@@ -88,7 +88,7 @@ sub validate_client_control_code {
     my $incode = shift;
     my $email  = shift;
 
-    my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
@@ -116,7 +116,7 @@ sub validate_payment_control_code {
     my $currency = shift;
     my $amount   = shift;
 
-    my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
@@ -149,7 +149,7 @@ sub validate_batch_payment_control_code {
     my $incode = shift;
     my $lines  = shift;
 
-    my $code = BOM::Utility::Crypt->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
+    my $code = Crypt::NamedKeys->new(keyname => 'password_counter')->decrypt_payload(value => $incode);
 
     my $error_status = $self->_validate_empty_code($code);
     return $error_status if $error_status;
