@@ -31,8 +31,18 @@ sub website_name () {
 sub website_host () {
     for (BOM::System::Config::node->{node}->{environment}) {
         /^development$/ and return 'deal01.devbin.io';
-        /^production$/  and return 'www.inary.com';
+        /^production$/  and return 'www.binary.com';
         /^qa\d+$/       and return $_ . '.binary' . $_ . '.com';
+    }
+
+    return 'Unexpected'
+}
+
+sub website_url () {
+    for (BOM::System::Config::node->{node}->{environment}) {
+        /^development$/ and return 'www.devbin.io';
+        /^production$/  and return 'www.binary.com';
+        /^qa\d+$/       and return 'www.binary' . $_ . '.com';
     }
 
     return 'Unexpected'
@@ -214,19 +224,19 @@ subtest 'build' => sub {
 };
 
 subtest 'url_for' => sub {
-    my $domain        = "https://www.devbin.io";
+    my $domain        = "https://" . website_url;
     my $request       = BOM::Platform::Context::Request->new();
     my $bo_static_url = BOM::Platform::Runtime->instance->app_config->cgi->backoffice->static_url;
     subtest 'simple' => sub {
         $request->website->config->set('static.url', 'https://static.devbin.io/');
-        is $request->url_for('paymentagent_withdraw.cgi'), "https://www.devbin.io/d/paymentagent_withdraw.cgi?l=EN", "cgi";
-        is $request->url_for('trade_livechart.cgi'),   "https://www.devbin.io/c/trade_livechart.cgi?l=EN",   "cached cgi";
-        is $request->url_for('backoffice/my_account.cgi'), "https://deal01.devbin.io/d/backoffice/my_account.cgi",   "backoffice";
+        is $request->url_for('paymentagent_withdraw.cgi'), "https://" . website_url . "/d/paymentagent_withdraw.cgi?l=EN", "cgi";
+        is $request->url_for('trade_livechart.cgi'),   "https://" . website_url . "/c/trade_livechart.cgi?l=EN",   "cached cgi";
+        is $request->url_for('backoffice/my_account.cgi'), "https://" . website_host . "/d/backoffice/my_account.cgi",   "backoffice";
         is $request->url_for('/why-us'),                   "$domain/why-us?l=EN",                                    "frontend";
         is $request->url_for('images/pages/open_account/real-money-account.svg'),
             $request->website->config->get('static.url') . "images/pages/open_account/real-money-account.svg", "Static indexed image";
 
-        is $request->url_for('temp/tridey.jpg'),      "https://deal01.devbin.io/temp/tridey.jpg", "temp";
+        is $request->url_for('temp/tridey.jpg'),      "https://" . website_host . "/temp/tridey.jpg", "temp";
         is $request->url_for('errors/500.html'),      "$domain/errors/500.html",                  "errors";
         is $request->url_for('EN_appcache.appcache'), "$domain/EN_appcache.appcache",             "appcache";
         is $request->url_for('/'),                    "$domain/?l=EN",                            "frontend /";
@@ -240,16 +250,16 @@ subtest 'url_for' => sub {
     };
 
     subtest 'with domain_type' => sub {
-        is $request->url_for('my_account.cgi', undef, {bo => 1}), "https://deal01.devbin.io/d/backoffice/my_account.cgi", "backoffice";
+        is $request->url_for('my_account.cgi', undef, {bo => 1}), "https://" . website_host . "/d/backoffice/my_account.cgi", "backoffice";
 
         is $request->url_for('/why-us', undef, {static => 1}, {internal_static => 1}), $bo_static_url . "why-us", "Force Static image";
 
-        is $request->url_for('paymentagent_withdraw.cgi', undef, {dealing => 1}), "https://deal01.devbin.io/d/paymentagent_withdraw.cgi?l=EN",
+        is $request->url_for('paymentagent_withdraw.cgi', undef, {dealing => 1}), "https://" . website_url . "/d/paymentagent_withdraw.cgi?l=EN",
             "Dealing cgi";
-        is $request->url_for('why-us', undef, {dealing => 1}), "https://deal01.devbin.io/why-us?l=EN", "Dealing frontend";
+        is $request->url_for('why-us', undef, {dealing => 1}), "https://" . website_url . "/why-us?l=EN", "Dealing frontend";
 
-        is $request->url_for('/push/price/12345', undef, {no_lang => 1}), "https://www.devbin.io/push/price/12345", "Stream URL";
-        is $request->url_for('push/price/12345',  undef, {no_lang => 1}), "https://www.devbin.io/push/price/12345", "Stream URL";
+        is $request->url_for('/push/price/12345', undef, {no_lang => 1}), "https://" . website_url . "/push/price/12345", "Stream URL";
+        is $request->url_for('push/price/12345',  undef, {no_lang => 1}), "https://" . website_url . "/push/price/12345", "Stream URL";
     };
 
     subtest 'static urls' => sub {
