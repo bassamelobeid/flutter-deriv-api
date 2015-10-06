@@ -12,8 +12,9 @@
       "description": "Short symbol name"
     },
     "end": {
-      "type": "integer",
+      "type": "string",
       "sample": "1420070400",
+      "pattern": "^(latest|\\d+)$",
       "description": "Epoch value representing the end-datetime of the ticks. If non-numeric value (e.g. \"latest\", the end-datetime will be the latest available timestamp."
     },
     "start": {
