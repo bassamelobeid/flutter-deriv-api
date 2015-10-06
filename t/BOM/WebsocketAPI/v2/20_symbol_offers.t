@@ -93,7 +93,7 @@ ok($contracts_for_japan->{contracts_for});
 ok($contracts_for_japan->{contracts_for}->{available});
 test_schema('contracts_for', $contracts_for_japan);
 
-$t = $t->send_ok({json => {trading_times => Date::Utility->new->date_ddmmmyyyy}})->message_ok;
+$t = $t->send_ok({json => {trading_times => Date::Utility->new->date_yyyymmdd}})->message_ok;
 my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{trading_times});
 ok($trading_times->{trading_times}->{markets});
