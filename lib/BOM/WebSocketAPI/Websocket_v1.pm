@@ -89,8 +89,8 @@ sub __handle {
                 $tag = "origin:$1";
             }
         }
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',               {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.call.' . $dispatch->[0], {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.call.all',               {tags => [$tag]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
