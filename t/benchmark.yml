@@ -104,7 +104,7 @@ mini:
         BASE:
             NT:
                 avg: 0.0087
-                max: 0.1702
+                max: 0.1847
             Digital:
                 avg: 0.0059
                 max: 0.0471
@@ -120,7 +120,7 @@ mini:
         NUM:
             NT:
                 avg: 0.0078
-                max: 0.1415
+                max: 0.1421
             Digital:
                 avg: 0.0058
                 max: 0.0475
