@@ -45,7 +45,7 @@ sub validate_payment {
     if ($action_type eq 'deposit') {
 
         # XXX debug
-        $self->add_note('Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
+        $self->add_note('Experian test', 'Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
 
         die "Deposits blocked for this Client.\n"
             if $self->get_status('unwelcome');
