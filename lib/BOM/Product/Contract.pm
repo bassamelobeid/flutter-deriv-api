@@ -3,6 +3,7 @@ package BOM::Product::Contract;
 use Moose;
 use Carp;
 
+use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time sleep);
 use List::Util qw(min max first);
@@ -863,16 +864,16 @@ sub _build_discounted_probability {
     my $discount = Math::Util::CalculatedValue::Validatable->new({
         name        => 'discounted_probability',
         description => 'The discounted probability for both sides of this contract.  Time value.',
-        set_by      => 'BOM::Product::Contract quanto_rate and bet duration',
+        set_by      => 'BOM::Product::Contract discount_rate and bet duration',
         minimum     => 0,
         maximum     => 1,
     });
 
     my $quanto = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'quanto_rate',
+        name        => 'discount_rate',
         description => 'The rate for the payoff currency',
         set_by      => 'BOM::Product::Contract',
-        base_amount => $self->quanto_rate,
+        base_amount => $self->discount_rate,
     });
     my $discount_rate = Math::Util::CalculatedValue::Validatable->new({
         name        => 'discount_rate',
@@ -1447,7 +1448,7 @@ sub _build_staking_limits {
 
 # Rates calculation, including quanto effects.
 
-has [qw(mu quanto_rate)] => (
+has [qw(mu discount_rate)] => (
     is         => 'ro',
     isa        => 'Num',
     lazy_build => 1,
@@ -1706,25 +1707,16 @@ sub _build_fordom {
     };
 }
 
-sub _build_quanto_rate {
+sub _build_discount_rate {
     my $self = shift;
 
-    my $rate = $self->r_rate;
-    my $tiy  = $self->timeinyears->amount;
+    my %args = (
+        symbol => $self->currency,
+        $self->underlying->for_date ? (for_date => $self->underlying->for_date) : (),
+    );
+    my $curr_obj = BOM::Market::Currency->new(%args);
 
-    if ($self->underlying->market->name eq 'forex' or $self->underlying->market->name eq 'commodities') {
-        if ($self->priced_with eq 'numeraire') {
-            $rate = $self->r_rate;
-        } elsif ($self->priced_with eq 'base') {
-            $rate = $self->q_rate;
-        } else {
-            $rate = $self->forqqq->{underlying}->quoted_currency->rate_for($tiy);
-        }
-    } elsif ($self->underlying->market eq 'indices' and $self->priced_with eq 'quanto') {
-        $rate = $self->domqqq->{underlying}->interest_rate_for($tiy);
-    }
-
-    return $rate;
+    return $curr_obj->rate_for($self->timeinyears->amount);
 }
 
 =head2 get_time_to_expiry

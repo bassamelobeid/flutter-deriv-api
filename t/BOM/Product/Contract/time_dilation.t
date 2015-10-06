@@ -362,7 +362,7 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
         },
         AUD => {
             date  => $bet->forqqq->{underlying}->quoted_currency->interest->recorded_date->datetime_iso8601,
-            value => $bet->quanto_rate,
+            value => $bet->discount_rate,
         },
     );
 

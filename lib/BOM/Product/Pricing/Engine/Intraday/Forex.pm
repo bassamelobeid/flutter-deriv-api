@@ -347,7 +347,7 @@ sub _get_long_term_delta_correction {
 
     my @barrier_args = ($bet->two_barriers) ? ($args->{barrier1}, $args->{barrier2}) : ($args->{barrier1});
     my $spot_tv =
-        $self->formula->($pricing_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+        $self->formula->($pricing_spot, @barrier_args, $duration_t, $bet->discount_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
     my $spot_tv_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'tv_priced_with_current_spot',
         description => 'bs probability priced with current spot',
@@ -355,7 +355,7 @@ sub _get_long_term_delta_correction {
         base_amount => $spot_tv,
     });
     my $expected_spot_tv =
-        $self->formula->($expected_spot, @barrier_args, $duration_t, $bet->quanto_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
+        $self->formula->($expected_spot, @barrier_args, $duration_t, $bet->discount_rate, $bet->mu, $self->pricing_vol, $args->{payouttime_code});
 
     my $delta_cv = Math::Util::CalculatedValue::Validatable->new({
         name        => 'intraday_bounceback',
