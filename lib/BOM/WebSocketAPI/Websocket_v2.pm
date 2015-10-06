@@ -82,7 +82,7 @@ sub entry_point {
                         code    => "ResponseTooLarge"
                     }};
             }
-            $log->info("Call from origin: $origin, " . JSON::to_json(($data->{error})? $data : $data->{echo_req}));
+            $log->info("Call from origin: $origin, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
             $c->send({json => $data});
         });
 
