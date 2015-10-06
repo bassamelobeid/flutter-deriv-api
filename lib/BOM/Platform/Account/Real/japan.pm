@@ -16,7 +16,7 @@ sub validate {
 
     return $check if ($from_client->residence eq 'jp');
 
-    return {err => 'Financial account opening unavailable'};
+    return {err => 'Account opening unavailable'};
 }
 
 sub create_account {
