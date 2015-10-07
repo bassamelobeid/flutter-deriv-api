@@ -10,14 +10,14 @@
       "pattern": "^1$",
       "sample": "1"
     },
-    "amount_val": {
+    "amount": {
       "type": "number",
       "description":"Proposed payout or stake value",
       "sample": "10.0"
     },
     "basis": {
       "type": "string",
-      "description":"Indicate whether amount_val is 'payout' or 'stake'",
+      "description":"Indicate whether amount is 'payout' or 'stake'",
       "pattern": "^(payout|stake)$",
       "sample": "payout"
     },
