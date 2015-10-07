@@ -181,12 +181,7 @@ sub prepare_ask {
     # 1) apply default values inline to the given $p1,
     # 2) return a manipulated copy suitable for produce_contract
 
-    $p1->{contract_type} //= 'CALL';
-    $p1->{symbol}        //= 'R_100';
-    $p1->{basis}         //= 'payout';
-    $p1->{amount_val}    //= 10;
-    $p1->{currency}      //= 'USD';
-    $p1->{date_start}    //= 0;
+    $p1->{date_start} //= 0;
     if ($p1->{date_expiry}) {
         $p1->{fixed_expiry} //= 1;
     } else {
@@ -205,8 +200,7 @@ sub prepare_ask {
 
     $p2{underlying}  = delete $p2{symbol};
     $p2{bet_type}    = delete $p2{contract_type};
-    $p2{amount_type} = delete $p2{basis};
-    $p2{amount}      = delete $p2{amount_val};
+    $p2{amount_type} = delete $p2{basis} if exists $p2{basis};
     $p2{duration} .= delete $p2{duration_unit} unless $p2{date_expiry};
 
     return \%p2;
