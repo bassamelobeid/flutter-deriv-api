@@ -4,6 +4,7 @@ use Test::More;
 use BOM::Database::Model::AccessToken;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis;
 
 my $m = BOM::Database::Model::AccessToken->new;
 my $test_loginid = 'CR10002';
@@ -12,6 +13,8 @@ my $token = $m->create_token($test_loginid, 'Test Token');
 is length($token), 12;
 
 my $client_loginid = $m->get_loginid_by_token($token);
+is $client_loginid, $test_loginid;
+$client_loginid = $m->get_loginid_by_token($token); # again with redis
 is $client_loginid, $test_loginid;
 
 my $tokens = $m->get_tokens_by_loginid($test_loginid);
@@ -34,5 +37,8 @@ ok($tokens->[0]->{last_used});
 
 my $ok = $m->remove_by_token($token);
 ok $ok;
+
+$client_loginid = $m->get_loginid_by_token($token);
+is $client_loginid, undef; # it should be undef since removed
 
 done_testing();
