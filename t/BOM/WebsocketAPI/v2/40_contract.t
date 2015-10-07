@@ -80,7 +80,7 @@ $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
 my $portfolio = decode_json($t->message->[1]);
 ok $portfolio->{portfolio}->{contracts};
 ok $portfolio->{portfolio}->{contracts}->[0]->{fmb_id};
-# test_schema('portfolio', $portfolio); # FIXME
+test_schema('portfolio', $portfolio);
 
 ## test portfolio and sell
 $t = $t->send_ok({
