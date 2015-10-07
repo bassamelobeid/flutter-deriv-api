@@ -10,39 +10,13 @@ use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 
 use constant {
     REQUIRED_ARGS => [
-        qw(contract_type spot strikes timeinyears quanto_rate mu iv payouttime_code q_rate r_rate slope priced_with is_forward_starting first_available_smile_term)
+        qw(contract_type spot strikes timeinyears discount_rate mu iv payouttime_code q_rate r_rate slope priced_with is_forward_starting first_available_smile_term)
     ],
     ALLOWED_TYPES => {
         CALL        => 1,
         PUT         => 1,
         EXPIRYMISS  => 1,
         EXPIRYRANGE => 1
-    },
-    MARKUPS => {
-        commodities => {
-            apply_traded_markets_markup => 1,
-            digital_spread              => 4,
-        },
-        forex => {
-            apply_traded_markets_markup => 1,
-            apply_butterfly_markup      => 1,
-            digital_spread              => 3.5,
-        },
-        indices => {
-            apply_traded_markets_markup => 1,
-            digital_spread              => 4,
-        },
-        stocks => {
-            apply_traded_markets_markup => 1,
-            digital_spread              => 4,
-        },
-        sectors => {
-            apply_traded_markets_markup => 1,
-            digital_spread              => 4,
-        },
-        random => {
-            digital_spread => 3,
-        },
     },
 };
 
@@ -71,11 +45,11 @@ sub probability {
     } elsif ($priced_with eq 'base') {
         my $ct             = $args->{contract_type};
         my $mu             = $args->{r_rate} - $args->{q_rate};
-        my $quanto_rate    = $args->{r_rate};
+        my $discount_rate  = $args->{r_rate};
         my $numeraire_prob = _get_probability({
             %$args,
             mu          => $mu,
-            quanto_rate => $quanto_rate
+            discount_rate => $discount_rate,
         });
         my $base_vanilla_prob = _get_probability({%$args, contract_type => 'vanilla_' . lc $ct});
         my $which_way = $ct eq 'CALL' ? 1 : -1;
@@ -97,12 +71,12 @@ sub _get_probability {
     if ($ct eq 'EXPIRYMISS') {
         $prob = _two_barrier_prob($args);
     } elsif ($ct eq 'EXPIRYRANGE') {
-        my $discounted_probability = exp(-$args->{quanto_rate} * $args->{timeinyears});
+        my $discounted_probability = exp(-$args->{discount_rate} * $args->{timeinyears});
         $prob = $discounted_probability - _two_barrier_prob($args);
     } else {
         my ($bs_formula, $vanilla_vega_formula) = map { my $name = $_ . lc $ct; \&$name }
             ('Math::Business::BlackScholes::Binaries::', 'Math::Business::BlackScholes::Binaries::Greeks::Vega::vanilla_');
-        my @pricing_args    = map { ref $_ eq 'ARRAY' ? @{$args->{$_}} : $args->{$_} } qw(spot strikes timeinyears quanto_rate mu iv payouttime_code);
+        my @pricing_args    = map { ref $_ eq 'ARRAY' ? @{$args->{$_}} : $args->{$_} } qw(spot strikes timeinyears discount_rate mu iv payouttime_code);
         my $bs_probability  = $bs_formula->(@pricing_args);
         my $slope_base      = $args->{is_forward_starting} ? 0 : $args->{contract_type} eq 'CALL' ? -1 : 1;
         my $vega            = $vanilla_vega_formula->(@pricing_args);

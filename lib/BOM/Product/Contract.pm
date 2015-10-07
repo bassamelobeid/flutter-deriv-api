@@ -2778,8 +2778,8 @@ sub _timeinyears {
     return shift->timeinyears->amount;
 }
 
-sub _quanto_rate {
-    return shift->quanto_rate;
+sub _discount_rate {
+    return shift->discount_rate;
 }
 
 sub _mu {
