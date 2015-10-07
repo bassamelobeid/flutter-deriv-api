@@ -382,18 +382,6 @@ Binaryqa30:
       - CR
       - FOG
   reality_check_interval: 60
-Devbin:
-  primary_url: www.devbin.io
-  default_language: EN
-  resource_subdir: Binary
-  broker_codes:
-      - MX
-      - MF
-      - VRTC
-      - MLT
-      - CR
-      - FOG
-  reality_check_interval: 60
 Binary:
   primary_url: www.binary.com
   default_language: EN
