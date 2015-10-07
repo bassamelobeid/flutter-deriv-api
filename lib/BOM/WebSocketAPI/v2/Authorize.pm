@@ -20,7 +20,7 @@ sub authorize {
         }};
 
     my $loginid;
-    if (length $token == 8) {    # access token
+    if (length $token == 12) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
         $loginid = $m->get_loginid_by_token($token);
         return $err unless $loginid;
