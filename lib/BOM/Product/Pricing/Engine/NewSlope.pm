@@ -48,7 +48,7 @@ sub probability {
         my $discount_rate  = $args->{r_rate};
         my $numeraire_prob = _get_probability({
             %$args,
-            mu          => $mu,
+            mu            => $mu,
             discount_rate => $discount_rate,
         });
         my $base_vanilla_prob = _get_probability({%$args, contract_type => 'vanilla_' . lc $ct});
@@ -76,7 +76,7 @@ sub _get_probability {
     } else {
         my ($bs_formula, $vanilla_vega_formula) = map { my $name = $_ . lc $ct; \&$name }
             ('Math::Business::BlackScholes::Binaries::', 'Math::Business::BlackScholes::Binaries::Greeks::Vega::vanilla_');
-        my @pricing_args    = map { ref $_ eq 'ARRAY' ? @{$args->{$_}} : $args->{$_} } qw(spot strikes timeinyears discount_rate mu iv payouttime_code);
+        my @pricing_args = map { ref $_ eq 'ARRAY' ? @{$args->{$_}} : $args->{$_} } qw(spot strikes timeinyears discount_rate mu iv payouttime_code);
         my $bs_probability  = $bs_formula->(@pricing_args);
         my $slope_base      = $args->{is_forward_starting} ? 0 : $args->{contract_type} eq 'CALL' ? -1 : 1;
         my $vega            = $vanilla_vega_formula->(@pricing_args);

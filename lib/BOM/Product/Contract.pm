@@ -1232,7 +1232,7 @@ sub _build_pricing_args {
         barrier2        => $barriers_for_pricing->{barrier2},
         q_rate          => $self->q_rate,
         iv              => $self->pricing_vol,
-        discount_rate     => $self->discount_rate,
+        discount_rate   => $self->discount_rate,
         mu              => $self->mu,
         payouttime_code => $self->payouttime_code,
         starttime       => $start_date->epoch,
