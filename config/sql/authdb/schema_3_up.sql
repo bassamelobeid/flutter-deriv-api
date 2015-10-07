@@ -2,7 +2,7 @@ BEGIN;
 
 CREATE TABLE auth.access_token (
     token CHAR(12) NOT NULL PRIMARY KEY,
-    display_name VARCHAR(48) NOT NULL,
+    display_name VARCHAR(64) NOT NULL,
     client_loginid character varying(12) NOT NULL,
     last_used timestamp DEFAULT NULL
 );
