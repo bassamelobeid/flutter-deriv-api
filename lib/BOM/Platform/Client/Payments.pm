@@ -44,9 +44,6 @@ sub validate_payment {
 
     if ($action_type eq 'deposit') {
 
-        # XXX debug
-        $self->add_note('Experian test', 'Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
-
         die "Deposits blocked for this Client.\n"
             if $self->get_status('unwelcome');
 
@@ -57,12 +54,8 @@ sub validate_payment {
             $self->{mlt_affiliate_first_deposit} = 1;
         }
 
-=pod
         if ($self->is_first_deposit_pending && $self->broker_code eq 'MX') {
 
-            # compliance check for PEP/OFAC/BOE
-            $self->add_note('Debug for PEP', 'Client: ' . $self->loginid . 'First deposit: ' . ($self->is_first_deposit_pending ? 'Yes' : 'No'));
-               
             my $premise = $self->address_1;
             if ($premise =~ /^(\d+)/) {
                 $premise = $1;
@@ -78,8 +71,8 @@ sub validate_payment {
             if (!$prove_id_result) {
                 # ProveID failed
                 die 'We\'re sorry, but our system has been unable to '
-                    .   'authenticate your ID online due to connection problem. '
-                    .   'Please try again later.';
+                    . 'authenticate your ID online due to connection problem. '
+                    . 'Please try again later.';
             } elsif ($prove_id_result->{deny} || scalar @{$prove_id_result->{matches}}) {
                 $self->set_status('unwelcome', 'system', 'Failed identity test via 192.com');
                 $self->save();
@@ -90,7 +83,6 @@ sub validate_payment {
             }
 
         }
-=cut
 
         my $max_balance = $self->get_limit({'for' => 'account_balance'});
         die "Balance would exceed $max_balance limit\n"
