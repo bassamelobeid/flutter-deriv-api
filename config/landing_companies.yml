@@ -51,6 +51,7 @@
       - endsinout
       - staysinout
       - touchnotouch
+      - spreads
     legal_default_currency: EUR
     has_reality_check: 1
 'Binary Investments (Europe) Ltd':
