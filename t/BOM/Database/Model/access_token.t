@@ -32,13 +32,7 @@ is $tokens->[0]->{client_loginid}, $test_loginid;
 is $tokens->[0]->{display_name}, 'Test Token';
 ok($tokens->[0]->{last_used});
 
-my $new_token = $m->revoke_token($token);
-$client_loginid = $m->get_loginid_by_token($token);
-is $client_loginid, undef;
-$client_loginid = $m->get_loginid_by_token($new_token);
-is $client_loginid, $test_loginid;
-
-my $ok = $m->remove_by_token($new_token);
+my $ok = $m->remove_by_token($token);
 ok $ok;
 
 done_testing();

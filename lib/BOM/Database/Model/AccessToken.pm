@@ -57,16 +57,6 @@ sub remove_by_token {
     );
 }
 
-sub revoke_token {
-    my ($self, $old_token) = @_;
-
-    my $new_token = $self->generate_unused_token();
-    $self->dbh->do(
-        "UPDATE auth.access_token SET token = ? WHERE token = ?", undef, $new_token, $old_token
-    );
-    return $new_token;
-}
-
 sub generate_unused_token {
     my ($self) = @_;
 
