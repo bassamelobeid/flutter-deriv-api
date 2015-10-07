@@ -8,6 +8,8 @@ use File::Spec;
 use JSON qw(decode_json);
 use Test::MockModule;
 use Test::MockObject::Extends;
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use YAML::XS;
 use Cache::RedisDB;

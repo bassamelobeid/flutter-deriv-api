@@ -9,6 +9,7 @@ use Test::More tests => 24;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use Guard;
+use Crypt::NamedKeys;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
@@ -20,6 +21,8 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.t';
 
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
