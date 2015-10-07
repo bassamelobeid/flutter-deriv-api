@@ -62,8 +62,13 @@ sub _build_probability {
         # This needs to be broken into two individual contracts.
         # They will be automatically converted per the below
         $skew_prob = $self->euro_two_barrier_probability;
-    } elsif ($bet->priced_with ne 'base') {
-        # This is actually numeraire, but using for quanto as well now.
+    } elsif ($bet->priced_with eq 'quanto') {
+        # We don't handle quanto adjustment for third currency payout for Slope pricer.
+        # Hence making rho=0, to ensure mu = r_rate - q_rate.
+        my $numeraire_bs_prob = BOM::Product::ContractFactory::make_similar_contract($bet, {rho => {fd_dq => 0}})->bs_probability;
+        $skew_prob->include_adjustment('reset', $numeraire_bs_prob);
+        $skew_prob->include_adjustment('add',   $self->skew_adjustment);
+    } elsif ($bet->priced_with eq 'numeraire') {
         $numeraire_prob->include_adjustment('reset', $self->bs_probability);
         $numeraire_prob->include_adjustment('add',   $self->skew_adjustment);
         $skew_prob->include_adjustment('reset', $numeraire_prob);
