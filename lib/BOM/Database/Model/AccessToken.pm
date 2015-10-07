@@ -80,7 +80,7 @@ sub generate_unused_token {
 }
 
 sub generate_token {
-    return String::Random::random_regex('[a-zA-Z0-9]{8}');
+    return String::Random::random_regex('[a-zA-Z0-9]{12}');
 }
 
 no Moose;
