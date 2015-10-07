@@ -12,6 +12,8 @@ use Guard;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
