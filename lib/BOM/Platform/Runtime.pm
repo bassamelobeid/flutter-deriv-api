@@ -193,8 +193,8 @@ sub _build_app_config {
 }
 
 sub _build_website_list {
-    my $self = shift;
-    my $def = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
+    my $self    = shift;
+    my $def     = YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml');
     my $default = delete $def->{default};
     while (my ($k, $v) = each %$def) {
         for my $key (keys %$default) {
