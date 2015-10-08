@@ -17,7 +17,6 @@ before_install:
     - cd /tmp/travis-scripts; git checkout -t origin/kaveh/no_devbin; cd $TRAVIS_BUILD_DIR
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
-    - sudo /bin/hostname -f
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
     - /tmp/travis-scripts/couchdb.sh
@@ -50,4 +49,4 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - perl -MBOM::Platform::Context -e 'print "\n",BOM::Platform::Context::request()->website->name,"\n"';make $TEST_SUITE
+    - make $TEST_SUITE
