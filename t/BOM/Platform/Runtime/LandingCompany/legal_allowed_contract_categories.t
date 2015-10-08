@@ -27,11 +27,11 @@ my $no_spreads = [qw(
         touchnotouch
         )];
 subtest 'legal allowed contract categories' => sub {
-    for (qw(VRTC CR)) {
+    for (qw(VRTC CR MLT)) {
         my $cc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($_ . '123123')->legal_allowed_contract_categories;
         cmp_bag($cc, $all, $_ . ' has all contract categories');
     }
-    for (qw(MX MLT MF)) {
+    for (qw(MX MF)) {
         my $cc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($_ . '123123')->legal_allowed_contract_categories;
         cmp_bag($cc, $no_spreads, $_ . ' has contract categories except spreads');
     }

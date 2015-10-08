@@ -12,6 +12,7 @@ use BOM::Database::ClientDB;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
 use BOM::Database::Model::FinancialMarketBet::Factory;
+Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
 sub db {
     return BOM::Database::ClientDB->new({
