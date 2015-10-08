@@ -3,8 +3,8 @@ use Test::Exception;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::MyAffiliates::TrackingHandler;
 
-$lives = &lives_ok;
-$dies = &dies_ok;
+$lives = sub { lives_ok(@_) };
+$dies = sub { dies_ok(@_) };
 
 my @accounts = (
    {
