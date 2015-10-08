@@ -448,8 +448,8 @@ jo:
   financial_company: costarica
 jp:
   name: "Japan"
-  gaming_company: none
-  financial_company: none
+  gaming_company: japan
+  financial_company: japan
 ke:
   name: "Kenya"
   gaming_company: costarica

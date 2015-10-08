@@ -37,6 +37,9 @@ subtest 'get' => sub {
 
     is $website->broker_for_new_account('de')->code, 'MF', 'New Broker Code for Germany - Binary';
     is $website->broker_for_new_financial('de')->code, 'MF', 'New financial Broker Code for Germany - Binary';
+
+    is $website->broker_for_new_account('jp')->code, 'JP', 'New Broker Code for Japan - Binary';
+    is $website->broker_for_new_financial('jp')->code, 'JP', 'New financial Broker Code for Japan - Binary';
 };
 
 subtest 'get_by_broker_code' => sub {
@@ -51,6 +54,10 @@ subtest 'get_by_broker_code' => sub {
     $website = $website_list->get_by_broker_code("MX");
     ok $website, 'Got some website for MX';
     is $website->name, 'Binary', 'Binary is for MX';
+
+    $website = $website_list->get_by_broker_code("JP");
+    ok $website, 'Got some website for JP';
+    is $website->name, 'Binary', 'Binary is for JP';
 
     $website = $website_list->get_by_broker_code("VRTC");
     ok $website, 'Got some website for VRTC';
