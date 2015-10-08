@@ -46,11 +46,16 @@ my @accounts = (
      
 );
 
-$_->{expect}(sub {
-        ok(BOM::Platform::Account::Virtual::create_account({
+# $_->{expect}(sub {
+#        ok(BOM::Platform::Account::Virtual::create_account({
+#            %$_,
+#            aff_token => BOM::Platform::MyAffiliates::TrackingHandler->new->myaffiliates_token,
+#        }));
+#}) for @accounts;
+
+ok(BOM::Platform::Account::Virtual::create_account({
             %$_,
             aff_token => BOM::Platform::MyAffiliates::TrackingHandler->new->myaffiliates_token,
-        }));
-}) for @accounts;
+        }), "$_->{email} created") for @accounts;
 
 done_testing;
