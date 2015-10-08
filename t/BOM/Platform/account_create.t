@@ -17,12 +17,6 @@ my @accounts = (
      residence => 'United States',
    },
    {
-     expect    => 'dies', # duplicate
-     email     => 'foo@test.com',
-     password  => 'foobar',
-     residence => 'United States',
-   },
-   {
      expect    => 'lives',
      email     => 'foo2@binary.com',
      password  => 'foobar',
@@ -51,12 +45,13 @@ ok(BOM::Platform::Account::Virtual::create_account({
         }), "$_->{email} created") 
 }, "$_->{email} lives") for grep { $_->{expect} eq 'lives' } @accounts;
 
+
 dies_ok( sub {
 BOM::Platform::Account::Virtual::create_account({
             %$_,
             aff_token => BOM::Platform::MyAffiliates::TrackingHandler->new->myaffiliates_token,
             env => 'testing',
 })
-}, "$_->{email} lives") for grep { $_->{expect} eq 'dies' } @accounts;
+}, "$_->{email} dies") for grep { $_->{expect} eq 'dies' } @accounts;
 
 done_testing;
