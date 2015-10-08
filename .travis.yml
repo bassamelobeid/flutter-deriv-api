@@ -50,4 +50,4 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - make $TEST_SUITE
+    - perl -MBOM::Platform::Context -e 'print "\n",BOM::Platform::Context::request()->website->name,"\n"';make $TEST_SUITE
