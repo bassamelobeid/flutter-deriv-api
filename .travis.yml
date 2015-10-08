@@ -17,6 +17,7 @@ before_install:
     - cd /tmp/travis-scripts; git checkout -t origin/kaveh/no_devbin; cd $TRAVIS_BUILD_DIR
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
+    - hostname -f
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
 
     - /tmp/travis-scripts/couchdb.sh
