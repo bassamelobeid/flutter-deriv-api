@@ -47,16 +47,6 @@ subtest 'BackOffice' => sub {
     is $website->name, 'BackOffice', 'Correct BackOffice Website';
 };
 
-subtest 'Devbin' => sub {
-    my $website = $website_list->choose_website({domain_name => 'www.devbin.io'});
-    ok $website, 'Got some website';
-    is $website->name, 'Devbin', 'Correct Website for domain_name www.devbin.io';
-
-    $website = $website_list->choose_website({domain_name => 'devbin.io'});
-    ok $website, 'Got some website';
-    is $website->name, 'Devbin', 'Correct Website for domain_name www.devbin.io';
-};
-
 subtest 'Binaryqa01' => sub {
     my $website = $website_list->choose_website({domain_name => 'www.binaryqa01.com'});
     ok $website, 'Got some website';
