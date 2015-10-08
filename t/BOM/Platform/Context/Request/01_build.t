@@ -175,7 +175,7 @@ subtest 'url_for' => sub {
     subtest 'with domain_type' => sub {
         like $request->url_for('my_account.cgi', undef, {bo => 1}), '/binaryqa.*\.com\/d\/backoffice\/my_account\.cgi/', "backoffice";
 
-        like $request->url_for('paymentagent_withdraw.cgi', undef, {dealing => 1}), '/qa01.binaryqa\d+\.com\/d\/paymentagent_withdraw\.cgi\?l=EN/',
+        like $request->url_for('paymentagent_withdraw.cgi', undef, {dealing => 1}), '/www.binaryqa\d+\.com\/d\/paymentagent_withdraw\.cgi\?l=EN/',
             "Dealing cgi";
     };
 
