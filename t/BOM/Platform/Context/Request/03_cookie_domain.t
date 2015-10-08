@@ -5,9 +5,6 @@ use BOM::Platform::Context::Request;
 use Sys::Hostname;
 my $hostname = hostname();
 
-my $request = BOM::Platform::Context::Request->new;
-is($request->cookie_domain, ".devbin.io", 'Live site with "domain cookies" enabled.');
-
 $request = BOM::Platform::Context::Request->new(domain_name => 'www.example.com');
 is($request->cookie_domain, '.example.com', 'Live site with "domain cookies" enabled.');
 
