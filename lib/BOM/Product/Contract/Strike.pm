@@ -345,11 +345,7 @@ sub strike_string {
 
 sub _proper_value {
     my ($self, $value) = @_;
-
-    my $proper_val =
-        ($self->custom_pipsize) ? $self->underlying->pipsized_value($value, $self->custom_pipsize) : $self->underlying->pipsized_value($value);
-
-    return $proper_val;
+    return $self->underlying->pipsized_value($value, $self->custom_pipsize);
 }
 
 sub _forex_barrier_multiplier {
