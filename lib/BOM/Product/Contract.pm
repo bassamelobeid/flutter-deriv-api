@@ -2184,7 +2184,7 @@ sub _validate_start_date {
             {
             severity          => 100,
             message           => 'Start must be before expiry',
-            message_to_client => localize("Expiry time cannot be in past."),
+            message_to_client => localize("Expiry time cannot be in the past."),
             };
     }
 
