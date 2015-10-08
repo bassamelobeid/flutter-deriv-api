@@ -8,11 +8,6 @@ use BOM::Platform::Context qw(localize);
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use List::Util qw(max);
 
-has do_not_round_barrier => (
-    is      => 'ro',
-    default => 0,
-);
-
 sub make_barrier {
     my ($self, $supplied, $extra_params) = @_;
 
@@ -29,7 +24,6 @@ sub make_barrier {
 
     my $barrier = BOM::Product::Contract::Strike->new(
         underlying       => $self->underlying,
-        round_to_pipsize => !$self->do_not_round_barrier,
         basis_tick       => $self->basis_tick,
         supplied_barrier => $string_version,
         %$extra_params,,
