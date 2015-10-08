@@ -45,12 +45,6 @@ subtest 'BackOffice' => sub {
         backoffice  => 1
     });
     is $website->name, 'BackOffice', 'Correct BackOffice Website';
-
-    $website = $website_list->choose_website({
-        domain_name => 'www.devbin.io',
-        backoffice  => 1
-    });
-    is $website->name, 'BackOffice', 'Correct BackOffice Website';
 };
 
 subtest 'Devbin' => sub {
