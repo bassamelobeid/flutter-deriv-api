@@ -51,9 +51,18 @@ commodities:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
-            european: 4
-            single_barrier: 7
-            double_barrier: 10
+            CALL: 4
+            PUT: 4
+            EXPIRYMISS: 4
+            EXPIRYRANGE: 4
+            DIGITMATCH: 4
+            DIGITDIFF: 4
+            ASIANU: 4
+            ASIAND: 4
+            RANGE: 10
+            UPORDOWN: 10
+            ONETOUCH: 7
+            NOTOUCH: 7
 forex:
     volatility_surface_type: "delta"
     display_current_spot: 1
@@ -119,9 +128,18 @@ forex:
         apply_traded_markets_markup: 1
         apply_butterfly_markup: 1
         digital_spread:
-            european: 3.5
-            single_barrier: 4
-            double_barrier: 5
+            CALL: 3.5
+            PUT: 3.5
+            EXPIRYMISS: 3.5
+            EXPIRYRANGE: 3.5
+            DIGITMATCH: 3.5
+            DIGITDIFF: 3.5
+            ASIANU: 3.5
+            ASIAND: 3.5
+            RANGE: 5
+            UPORDOWN: 5
+            ONETOUCH: 4
+            NOTOUCH: 4
 futures:
     suspicious_move: 0.07
     outlier_tick: 0.10
@@ -138,9 +156,18 @@ futures:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
-            european: 4
-            single_barrier: 40
-            double_barrier: 40
+            CALL: 4
+            PUT: 4
+            EXPIRYMISS: 4
+            EXPIRYRANGE: 4
+            DIGITMATCH: 4
+            DIGITDIFF: 4
+            ASIANU: 4
+            ASIAND: 4
+            RANGE: 40
+            UPORDOWN: 40
+            ONETOUCH: 40
+            NOTOUCH: 40
 indices:
     volatility_surface_type: "moneyness"
     suspicious_move: 0.07
@@ -185,9 +212,18 @@ indices:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
-            european: 4
-            single_barrier: 6
-            double_barrier: 8
+            CALL: 4
+            PUT: 4
+            EXPIRYMISS: 4
+            EXPIRYRANGE: 4
+            DIGITMATCH: 4
+            DIGITDIFF: 4
+            ASIANU: 4
+            ASIAND: 4
+            RANGE: 8
+            UPORDOWN: 8
+            ONETOUCH: 6
+            NOTOUCH: 6
 stocks:
     suspicious_move: 0.25
     outlier_tick: 0.10
@@ -228,9 +264,18 @@ stocks:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
-            european: 4
-            single_barrier: 40
-            double_barrier: 40
+            CALL: 4
+            PUT: 4
+            EXPIRYMISS: 4
+            EXPIRYRANGE: 4
+            DIGITMATCH: 4
+            DIGITDIFF: 4
+            ASIANU: 4
+            ASIAND: 4
+            RANGE: 40
+            UPORDOWN: 40
+            ONETOUCH: 40
+            NOTOUCH: 40
 sectors:
     suspicious_move: 0.25
     outlier_tick: 0.10
@@ -255,9 +300,18 @@ sectors:
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
-            european: 4
-            single_barrier: 40
-            double_barrier: 40
+            CALL: 4
+            PUT: 4
+            EXPIRYMISS: 4
+            EXPIRYRANGE: 4
+            DIGITMATCH: 4
+            DIGITDIFF: 4
+            ASIANU: 4
+            ASIAND: 4
+            RANGE: 40
+            UPORDOWN: 40
+            ONETOUCH: 40
+            NOTOUCH: 40
 random:
     display_current_spot: 1
     suspicious_move: 0.5
@@ -311,9 +365,18 @@ random:
         - 'random'
     markups:
         digital_spread:
-            european: 3
-            single_barrier: 3
-            double_barrier: 3
+            CALL: 3
+            PUT: 3
+            EXPIRYMISS: 3
+            EXPIRYRANGE: 3
+            DIGITMATCH: 3
+            DIGITDIFF: 3
+            ASIANU: 3
+            ASIAND: 3
+            RANGE: 3
+            UPORDOWN: 3
+            ONETOUCH: 3
+            NOTOUCH: 3
 synthetic:
     volatility_surface_type: "flat"
     suspicious_move: 0.07

@@ -37,7 +37,7 @@ has [
     lazy_build => 1,
     );
 
-has [qw( commission_level commission_market commission_bet_type uses_dst_shifted_seasonality)] => (
+has [qw( commission_level uses_dst_shifted_seasonality)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
@@ -489,10 +489,8 @@ sub _build_digital_spread_markup {
         base_amount => 0,
     });
 
-    my $comm_market = $self->commission_market;
-    my $bet_type    = $self->commission_bet_type;
+    my $bet_type    = $bet->code;
     my $level       = $self->commission_level;
-    my $key         = join '.', ($comm_market, $bet_type);
     my $dsp_amount  = $self->bet->underlying->market->markups->digital_spread->{$bet_type} / 100;
     # this is added so that we match the commission of tick trades
     $dsp_amount /= 2 if $bet->timeinyears->amount * 86400 * 365 <= 20 and $bet->is_atm_bet;
@@ -528,42 +526,6 @@ sub _build_digital_spread_markup {
     $dsm->include_adjustment('multiply', $dsp_scaling);
 
     return $dsm;
-}
-
-=head2 commission_market
-
-Under which market do we look up commission values?
-
-=cut
-
-sub _build_commission_market {
-    my $self = shift;
-
-    my $market = $self->bet->underlying->market;
-
-    # Equities covers multiple markets.
-    my $commission_market = $self->bet->underlying->market->name;
-    $commission_market = 'equities'
-        if ($self->bet->underlying->market->equity);
-
-    return $commission_market;
-}
-
-=head2 commission_bet_type
-
-Under which bet type do we look up commission values?
-
-=cut
-
-sub _build_commission_bet_type {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    return
-          (not $bet->is_path_dependent) ? 'european'
-        : ($bet->two_barriers)          ? 'double_barrier'
-        :                                 'single_barrier';
 }
 
 =head2 commission_level
