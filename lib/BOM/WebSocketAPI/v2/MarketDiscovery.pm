@@ -241,7 +241,6 @@ sub get_ask {
         longcode   => Mojo::DOM->new->parse($contract->longcode)->all_text,
         payout     => $contract->payout,
         ask_price  => sprintf('%.2f', $contract->ask_price),
-        bid_price  => sprintf('%.2f', $contract->bid_price),
         spot       => $contract->current_spot,
         spot_time  => $contract->current_tick->epoch,
         date_start => $contract->date_start->epoch,
