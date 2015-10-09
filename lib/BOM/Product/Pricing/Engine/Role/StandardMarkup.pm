@@ -30,7 +30,7 @@ use BOM::MarketData::Fetcher::EconomicEvent;
 =cut
 
 has [
-    qw(model_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup  original_model_markup equal_tick_probability equal_tick_markup)
+    qw(model_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -64,79 +64,10 @@ sub _build_model_markup {
         set_by      => __PACKAGE__,
     });
 
-    $model_markup->include_adjustment('reset', $self->original_model_markup);
-
-    my $bet = $self->bet;
-    if (not $bet->is_forward_starting and $bet->is_atm_bet and $bet->underlying->market->name eq 'forex') {
-        my $equality_discount_retained       = BOM::Platform::Runtime->instance->app_config->quants->commission->equality_discount_retained;
-        my $equal_tick_adjusted_model_markup = Math::Util::CalculatedValue::Validatable->new({
-            name        => 'adjusted_model_markup',
-            description => 'Equal tick adjusted standard markup',
-            set_by      => __PACKAGE__,
-            base_amount => max((1 - $equality_discount_retained) * $self->equal_tick_markup->amount, $self->equal_tick_markup->amount),
-        });
-        $model_markup->include_adjustment('reset', $equal_tick_adjusted_model_markup);
-    }
-
-    return $model_markup;
-}
-
-sub _build_original_model_markup {
-    my $self = shift;
-
-    my $model_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'original_model_markup',
-        description => 'Untouched Standard markup',
-        set_by      => __PACKAGE__,
-        base_amount => 0,
-    });
-
     $model_markup->include_adjustment('reset', $self->commission_markup);
     $model_markup->include_adjustment('add',   $self->risk_markup);
 
     return $model_markup;
-}
-
-sub _build_equal_tick_markup {
-    my $self = shift;
-
-    my $adjustment_markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'equal_tick_markup',
-        description => 'markup added for equal tick event',
-        set_by      => __PACKAGE__,
-        base_amount => $self->original_model_markup->amount,
-    });
-
-    $adjustment_markup->include_adjustment('subtract', $self->equal_tick_probability);
-
-    return $adjustment_markup;
-}
-
-sub _build_equal_tick_probability {
-    my $self = shift;
-
-    my $bet     = $self->bet;
-    my $pipsize = $bet->underlying->pip_size;
-
-    my $ori_barrier = $bet->barrier->as_absolute;
-
-    my @prices = map {
-        BOM::Product::ContractFactory::make_similar_contract(
-            $bet,
-            {
-                for_eq_ticks => 1,
-                barrier      => $ori_barrier + $_ / 2
-            })->theo_probability->amount;
-    } ($pipsize, -$pipsize);
-
-    my $equal_tick_probability = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'equal_tick_probability',
-        description => 'The probability of the exit tick equal to the entry tick',
-        set_by      => __PACKAGE__,
-        base_amount => abs($prices[0] - $prices[1]) * 0.5,
-    });
-
-    return $equal_tick_probability;
 }
 
 sub _build_eod_market_risk_markup {

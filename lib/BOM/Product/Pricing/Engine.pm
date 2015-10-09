@@ -56,21 +56,6 @@ has [qw(model_markup bs_probability probability d2)] => (
     lazy_build => 1,
 );
 
-# A list of the attributes which can be safely reused when doing a check
-# for equal ticks probability.
-
-has _attrs_safe_for_eq_ticks_reuse => (
-    is         => 'ro',
-    isa        => 'ArrayRef',
-    init_arg   => undef,
-    lazy_build => 1,
-);
-
-sub _build__attrs_safe_for_eq_ticks_reuse {
-    # If the subclass does not override this, assume we need to recompute everything.
-    return [];
-}
-
 sub BUILD {
     my $self = shift;
 

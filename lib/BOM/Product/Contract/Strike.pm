@@ -29,12 +29,6 @@ has custom_pipsize => (
     default => undef,
 );
 
-has round_to_pipsize => (
-    is      => 'ro',
-    isa     => 'Bool',
-    default => 1,
-);
-
 has underlying => (
     is         => 'ro',
     isa        => 'bom_underlying_object',
@@ -351,14 +345,7 @@ sub strike_string {
 
 sub _proper_value {
     my ($self, $value) = @_;
-
-    my $proper_val = $value;
-    if ($self->round_to_pipsize) {
-        $proper_val =
-            ($self->custom_pipsize) ? $self->underlying->pipsized_value($value, $self->custom_pipsize) : $self->underlying->pipsized_value($value);
-    }
-
-    return $proper_val;
+    return $self->underlying->pipsized_value($value, $self->custom_pipsize);
 }
 
 sub _forex_barrier_multiplier {
