@@ -25,6 +25,8 @@ __PACKAGE__->meta->setup(
         max_7day_turnover      => { type => 'numeric' },
         max_7day_losses        => { type => 'numeric' },
         remote_addr            => { type => 'scalar' },
+        max_30day_turnover     => { type => 'numeric' },
+        max_30day_losses       => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'remote_addr' ],

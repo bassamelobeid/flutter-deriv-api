@@ -17,9 +17,10 @@ __PACKAGE__->meta->setup(
         client_loginid  => { type => 'varchar', length => 12 },
         data            => { type => 'scalar' },
         is_professional => { type => 'boolean' },
+        remote_addr     => { type => 'scalar' },
     ],
 
-    primary_key_columns => [ 'data' ],
+    primary_key_columns => [ 'remote_addr' ],
 );
 
 1;

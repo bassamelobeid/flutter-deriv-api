@@ -19,6 +19,8 @@ __PACKAGE__->meta->setup(
         max_losses             => { type => 'numeric' },
         max_7day_turnover      => { type => 'numeric' },
         max_7day_losses        => { type => 'numeric' },
+        max_30day_turnover     => { type => 'numeric' },
+        max_30day_losses       => { type => 'numeric' },
     ],
 
     primary_key_columns => [ 'client_loginid' ],
