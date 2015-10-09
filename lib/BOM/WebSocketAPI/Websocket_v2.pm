@@ -84,7 +84,9 @@ sub entry_point {
                     }};
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
-            if $send{$c->send({json => $data})} else {
+            if ($send) {
+                $c->send({json => $data});
+            } else {
                 return;
             }
         });
