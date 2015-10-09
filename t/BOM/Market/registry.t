@@ -31,7 +31,7 @@ subtest 'display_markets' => sub {
 
 subtest 'Market builds or configs test' => sub {
     subtest 'config' => sub {
-        plan tests => 17;
+        plan tests => 18;
         my $registry = BOM::Market::Registry->instance;
 
         my $config = $registry->get('config');
@@ -42,7 +42,8 @@ subtest 'Market builds or configs test' => sub {
         ok !$config->equity;
         ok !$config->disabled,                 'disabled';
         ok !$config->reduced_display_decimals, 'Reduced Display Decimals';
-        is $config->asset_type, 'asset';
+        is $config->asset_type,         'asset';
+        is $config->deep_otm_threshold, 0.10;
         ok !$config->markups->digital_spread,              'Digital Spread';
         ok !$config->markups->apply_butterfly_markup,      'Butterfly Markup';
         ok !$config->markups->apply_traded_markets_markup, 'Market Markup';
@@ -57,7 +58,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'forex' => sub {
-        plan tests => 17;
+        plan tests => 18;
         my $registry = BOM::Market::Registry->instance;
 
         my $forex = $registry->get('forex');
@@ -69,7 +70,8 @@ subtest 'Market builds or configs test' => sub {
         ok !$forex->equity;
         ok !$forex->disabled, 'But its not disabled';
         ok $forex->reduced_display_decimals;
-        is $forex->asset_type, 'currency';
+        is $forex->asset_type,         'currency';
+        is $forex->deep_otm_threshold, 0.05;
 
         cmp_deeply(
             $forex->markups->digital_spread,
@@ -92,7 +94,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'commodities' => sub {
-        plan tests => 17;
+        plan tests => 18;
         my $registry = BOM::Market::Registry->instance;
 
         my $commodities = $registry->get('commodities');
@@ -104,7 +106,8 @@ subtest 'Market builds or configs test' => sub {
         ok !$commodities->equity;
         ok !$commodities->disabled;
         ok $commodities->reduced_display_decimals;
-        is $commodities->asset_type, 'currency';
+        is $commodities->deep_otm_threshold, 0.10;
+        is $commodities->asset_type,         'currency';
 
         cmp_deeply(
             $commodities->markups->digital_spread,
@@ -128,7 +131,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'indices' => sub {
-        plan tests => 17;
+        plan tests => 18;
         my $registry = BOM::Market::Registry->instance;
 
         my $indices = $registry->get('indices');
@@ -140,7 +143,8 @@ subtest 'Market builds or configs test' => sub {
         ok $indices->equity;
         ok !$indices->disabled;
         ok !$indices->reduced_display_decimals;
-        is $indices->asset_type, 'index';
+        is $indices->deep_otm_threshold, 0.10;
+        is $indices->asset_type,         'index';
 
         cmp_deeply(
             $indices->markups->digital_spread,
@@ -164,7 +168,7 @@ subtest 'Market builds or configs test' => sub {
     };
 
     subtest 'random' => sub {
-        plan tests => 17;
+        plan tests => 18;
         my $registry = BOM::Market::Registry->instance;
 
         my $random = $registry->get('random');
@@ -176,7 +180,8 @@ subtest 'Market builds or configs test' => sub {
         ok !$random->equity;
         ok !$random->disabled;
         ok $random->reduced_display_decimals;
-        is $random->asset_type, 'synthetic';
+        is $random->deep_otm_threshold, 0.025;
+        is $random->asset_type,         'synthetic';
 
         cmp_deeply(
             $random->markups->digital_spread,
