@@ -192,7 +192,6 @@ sub get_settings_by_group {
                 quants.commission.intraday.historical_iv_risk
                 quants.commission.intraday.historical_fixed
                 quants.commission.intraday.historical_vol_meanrev
-                quants.commission.deep_otm_threshold
                 quants.commission.resell_discount_factor
                 quants.commission.equality_discount_retained
                 quants.commission.digital_spread.level_multiplier
