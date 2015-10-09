@@ -184,9 +184,6 @@ sub prepare_ask {
     $p1->{date_start} //= 0;
     if ($p1->{date_expiry}) {
         $p1->{fixed_expiry} //= 1;
-    } else {
-        $p1->{duration}      //= 15;
-        $p1->{duration_unit} //= 's';
     }
     my %p2 = %$p1;
 
@@ -201,7 +198,9 @@ sub prepare_ask {
     $p2{underlying}  = delete $p2{symbol};
     $p2{bet_type}    = delete $p2{contract_type};
     $p2{amount_type} = delete $p2{basis} if exists $p2{basis};
-    $p2{duration} .= delete $p2{duration_unit} unless $p2{date_expiry};
+    if ($p2{duration} and not exists $p2{date_expiry}) {
+        $p2{duration} .= delete $p2{duration_unit};
+    }
 
     return \%p2;
 }
@@ -238,11 +237,11 @@ sub get_ask {
                 code    => "ContractValidationError"
             }};
     }
+    my $display_price = $contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price);
     return {
         longcode   => Mojo::DOM->new->parse($contract->longcode)->all_text,
         payout     => $contract->payout,
-        ask_price  => sprintf('%.2f', $contract->ask_price),
-        bid_price  => sprintf('%.2f', $contract->bid_price),
+        ask_price  => $display_price,
         spot       => $contract->current_spot,
         spot_time  => $contract->current_tick->epoch,
         date_start => $contract->date_start->epoch,
