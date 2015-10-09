@@ -265,15 +265,18 @@ sub _object_expired {
     return shift->_build_time + 30 < time;
 }
 
-my %_cached_objects;
-
 sub new {
     my ($self, $symbol) = @_;
 
-    my $ex = $_cached_objects{$symbol};
+    state %cached_objects;
+
+    my $lang = BOM::Platform::Context::request()->language;
+    my $key = join('::', $symbol, $lang);
+
+    my $ex = $cached_objects{$key};
     if (not $ex or $ex->_object_expired) {
         $ex = $self->_new($symbol);
-        $_cached_objects{$symbol} = $ex;
+        $cached_objects{$key} = $ex;
     }
 
     return $ex;
