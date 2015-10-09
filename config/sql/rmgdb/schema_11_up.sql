@@ -36,6 +36,7 @@ DECLARE
     image      RECORD;
     my_staff   TEXT;
     my_ip_addr CIDR;
+    cols       TEXT;
     
 BEGIN
     -- 'strict' enforces exactly one staff-name has been declared.
@@ -60,20 +61,20 @@ BEGIN
     END IF;
 
     -- go dynamic here because target table name varies
+    SELECT INTO cols
+           string_agg(quote_ident(x), ', ')
+      FROM (SELECT attname
+              FROM pg_attribute
+             WHERE attrelid=TG_RELID
+               AND attnum>0
+               AND NOT attisdropped
+             ORDER BY attnum ASC) t(x);
+
     EXECUTE
         format('
-            INSERT into audit.%I
-            SELECT (json_populate_record(
-                        json_populate_record(
-                            NULL::audit.%I,
-                            row_to_json($7)
-                        ),
-                        row_to_json(x)
-                    )
-                   ).*
-              FROM (VALUES ($1, $2, $3, $4, $5, $6))
-                   x(operation, stamp, pg_userid, client_addr, client_port, remote_addr);
-        ', TG_TABLE_NAME, TG_TABLE_NAME)
+            INSERT into audit.%I (operation, stamp, pg_userid, client_addr, client_port, remote_addr, %s)
+            SELECT $1, $2, $3, $4, $5, $6, $7.*
+        ', TG_TABLE_NAME, cols)
         USING TG_OP, now(), my_staff, inet_client_addr(), inet_client_port(), my_ip_addr, image;
     
     RETURN NULL;
