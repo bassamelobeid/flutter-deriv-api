@@ -22,7 +22,7 @@
 
         <!-- batch_credit_affiliate_commission.cgi -->
         <param><key>confirm</key></param>
- 
+
         <!-- API calls with encrypted data -->
         <param><key>login</key></param>
 
@@ -33,10 +33,6 @@
         </param>
         <param>
                 <key>payments.payment_limits</key>
-                <encoding>json</encoding>
-        </param>
-        <param>
-                <key>quants.commission.deep_otm_threshold</key>
                 <encoding>json</encoding>
         </param>
         <param>
