@@ -60,7 +60,9 @@ sub entry_point {
                 $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
                 $send = undef unless $data;
 
-                $data->{echo_req} = $p1;
+                if ($data) {
+                    $data->{echo_req} = $p1;
+                }
             } else {
                 # for invalid call, eg: not json
                 $data = {
