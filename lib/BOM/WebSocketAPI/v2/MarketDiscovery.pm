@@ -184,9 +184,6 @@ sub prepare_ask {
     $p1->{date_start} //= 0;
     if ($p1->{date_expiry}) {
         $p1->{fixed_expiry} //= 1;
-    } else {
-        $p1->{duration}      //= 15;
-        $p1->{duration_unit} //= 's';
     }
     my %p2 = %$p1;
 
@@ -201,7 +198,9 @@ sub prepare_ask {
     $p2{underlying}  = delete $p2{symbol};
     $p2{bet_type}    = delete $p2{contract_type};
     $p2{amount_type} = delete $p2{basis} if exists $p2{basis};
-    $p2{duration} .= delete $p2{duration_unit} unless $p2{date_expiry};
+    if ($p2{duration} and not exists $p2{date_expiry}) {
+        $p2{duration} .= delete $p2{duration_unit};
+    }
 
     return \%p2;
 }
