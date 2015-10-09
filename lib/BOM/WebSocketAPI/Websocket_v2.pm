@@ -48,6 +48,7 @@ sub entry_point {
 
             my $tag = 'origin:';
             my $data;
+            my $send = 1;
             if (ref($p1) eq 'HASH') {
 
                 if (my $origin = $c->req->headers->header("Origin")) {
@@ -57,7 +58,7 @@ sub entry_point {
                 }
 
                 $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
-                return unless $data;
+                $send = undef unless $data;
 
                 $data->{echo_req} = $p1;
             } else {
@@ -83,7 +84,9 @@ sub entry_point {
                     }};
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
-            $c->send({json => $data});
+            if $send{$c->send({json => $data})} else {
+                return;
+            }
         });
 
     # stop all recurring
