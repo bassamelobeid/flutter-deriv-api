@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 5;
+use Test::Most tests => 4;
 use Test::Exception;
 use Test::FailWarnings;
 
@@ -37,20 +37,4 @@ subtest 'disable_iv' => sub {
 
     $bfm = new_ok('BOM::Market' => [{'name' => 'forex'}]);
     ok !$bfm->disable_iv;
-};
-
-subtest 'deep_otm_threshold' => sub {
-    my $forex = new_ok('BOM::Market' => [{'name' => 'forex'}]);
-    is $forex->deep_otm_threshold, 2.5;
-    my $commodities = new_ok('BOM::Market' => [{'name' => 'commodities'}]);
-    is $commodities->deep_otm_threshold, 5;
-
-    my $original_deep_otm_threshold = BOM::Platform::Runtime->instance->app_config->quants->commission->deep_otm_threshold;
-    BOM::Platform::Runtime->instance->app_config->quants->commission->deep_otm_threshold('{"forex" : 10 }');
-    $forex->clear_deep_otm_threshold;
-    is $forex->deep_otm_threshold, 10;
-    $commodities->clear_deep_otm_threshold;
-    ok !$commodities->deep_otm_threshold;
-
-    BOM::Platform::Runtime->instance->app_config->quants->commission->deep_otm_threshold($original_deep_otm_threshold);
 };

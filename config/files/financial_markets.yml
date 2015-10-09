@@ -60,6 +60,7 @@ forex:
     suspicious_move: 0.05
     outlier_tick: 0.01
     weekend_outlier_tick: 0.05
+    deep_otm_threshold: 0.05
     display_name: "Forex"
     display_order: 1
     contracts:
@@ -262,6 +263,7 @@ random:
     display_current_spot: 1
     suspicious_move: 0.5
     outlier_tick: 0.10
+    deep_otm_threshold: 0.025
     display_name: "Randoms"
     volatility_surface_type: "flat"
     eod_blackout_expiry: '0s'
