@@ -6,6 +6,9 @@ use warnings;
 
 use Storable qw(dclone);
 use List::Util qw(min max);
+use YAML::CacheLoader qw(LoadFile);
+use Finance::Asset;
+use Math::Function::Interpolator;
 use Math::Business::BlackScholes::Binaries;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 
@@ -58,15 +61,15 @@ sub probability {
         $probability = ($numeraire_prob * $strike + $base_vanilla_prob * $which_way) / $args->{spot};
     }
 
-    my ($risk_markup, $commission_markup) = (0) x 2;
+    my $is_atm_contract = $args->{spot} != $args->{strikes}->[0] ? 0 : 1;
+    my $is_intraday     = $args->{timeinyears} * 365 < 1         ? 1 : 0;
+
+    my $risk_markup = 0;
     if ($ref->{market_config}->apply_traded_markets_markup) {
         if ($args->{is_forward_starting}) {
-            # Forcing risk and commission markup to 3% due to complaints from Australian affiliates.
-            ($risk_markup, $commission_markup) = (0.03) x 2;
+            # Forcing risk markup to 3% due to complaints from Australian affiliates.
+            $risk_markup = 0.03;
         } else {
-            my $is_atm_contract = $args->{spot} != $args->{strikes}->[0] ? 0 : 1;
-            my $is_intraday     = $args->{timeinyears} * 365 < 1         ? 1 : 0;
-
             # 1. vol_spread_markup
             my $spread_type = $is_atm_contract ? 'atm' : 'max';
             my $vol_spread = $ref->{market_data}->{get_spread}->({
@@ -135,6 +138,33 @@ sub probability {
             # risk_markup divided equally on both sides.
             $risk_markup /= 2;
         }
+    }
+
+    # commission_markup
+    my $commission_markup = 0.03;
+    unless ($args->{is_forward_starting}) {
+        my $comm_file        = LoadFile('commission.yml');
+        my $commission_level = $comm_file->{commission_level}->{$args->{underlying_symbol}};
+        my $us_config        = Finance::Asset->instance->get_parameters_for($args->{underlying_symbol});
+        my $dsp_amount       = $comm_file->{digital_spread_base}->{$us_config->{$args->{underlying_symbol}}->{market}}->{$args->{contract_type}} // 0;
+        $dsp_amount /= 100;
+        # this is added so that we match the commission of tick trades
+        $dsp_amount /= 2 if $args->{timeinyears} * 86400 * 365 <= 20 and $is_atm_contract;
+        # 1.4 is hard-coded level multiplier
+        my $level_multiplier          = 1.4 * ($commission_level - 1);
+        my $digital_spread_percentage = $dsp_amount * $level_multiplier;
+        my $fixed_scaling             = $comm_file->{digital_spread_scaling}->{$args->{underlying_symbol}};
+        my $dsp_interp                = Math::Function::Interpolator->new(
+            points => {
+                0   => 1.5,
+                1   => 1.5,
+                10  => 1.2,
+                20  => 1,
+                365 => 1,
+            });
+        my $dsp_scaling = $fixed_scaling || $dsp_interp->linear($args->{timeinyears});
+        my $digital_spread_markup = $digital_spread_percentage * $dsp_scaling;
+        $commission_markup = $digital_spread_markup / 2;
     }
 
     return {
