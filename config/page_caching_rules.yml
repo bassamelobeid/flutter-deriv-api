@@ -36,9 +36,6 @@
 "/resources/contract_guide":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/charting/application":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/affiliate/signup":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -122,7 +119,7 @@
 "/get-started/what-is-binary-trading":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/get-started/spread-bets":
+"/get-started/spread":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/home":
@@ -150,3 +147,7 @@
 "/white-labels":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/payment-agent":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+

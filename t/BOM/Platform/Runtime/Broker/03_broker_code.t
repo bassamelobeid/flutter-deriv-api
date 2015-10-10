@@ -31,9 +31,9 @@ subtest 'valid broker codes' => sub {
 
 subtest 'get_broker_on_server' => sub {
     ok !$broker_codes->get_brokers_on_server('crow01'), 'No such server';
-    ok $broker_codes->get_brokers_on_server('deal01'), 'Got some brokers';
+    ok $broker_codes->get_brokers_on_server('www'), 'Got some brokers';
 
-    my @br_on_cr = sort map { $_->code } $broker_codes->get_brokers_on_server('deal01');
+    my @br_on_cr = sort map { $_->code } $broker_codes->get_brokers_on_server('www');
     eq_or_diff \@br_on_cr, [sort qw(CR FOG MLT MX MF VRTC)], "Correct list of brokers for deal01";
 };
 
@@ -49,7 +49,7 @@ qr/Unknown broker code or loginid \[RC\]/, 'Dies with the correct message';
 
 subtest 'Build quality' => sub {
     my $cr = BOM::Platform::Runtime->instance->broker_codes->get('CR');
-    is $cr->server->name,           'deal01',    'dealing server is deal01';
+    is $cr->server->name,           'www',    'dealing server is www';
     is $cr->landing_company->short, 'costarica', 'landing company is BOM CR';
 };
 
@@ -69,8 +69,8 @@ subtest 'landing_company_for' => sub {
 subtest 'dealing_server_for' => sub {
     my $broker_codes = BOM::Platform::Runtime->instance->broker_codes;
 
-    is $broker_codes->dealing_server_for('MX')->name,     'deal01', "Got correct dealing server for MX";
-    is $broker_codes->dealing_server_for('MX4321')->name, 'deal01', "Got correct dealing server for MX4321";
+    is $broker_codes->dealing_server_for('MX')->name,     'www', "Got correct dealing server for MX";
+    is $broker_codes->dealing_server_for('MX4321')->name, 'www', "Got correct dealing server for MX4321";
 
     throws_ok {
         $broker_codes->dealing_server_for('4321MX');

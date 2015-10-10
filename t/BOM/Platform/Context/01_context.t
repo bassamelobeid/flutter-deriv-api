@@ -45,7 +45,7 @@ subtest 'template' => sub {
         my $template = "[% website.name %]";
         ok(BOM::Platform::Context::template, 'default');
         BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin', 'correct default');
+        like( $output, '/^Binaryqa/', 'correct default');
 
         my $request = BOM::Platform::Context::Request->new(
             domain_name => 'www.binary.com',
@@ -61,7 +61,8 @@ subtest 'template' => sub {
 
         $output = '';
         BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin', 'back to default');
+        like( $output, '/^Binaryqa/', 'back to default');
+
     };
 
     subtest 'stash' => sub {
@@ -69,11 +70,6 @@ subtest 'template' => sub {
         my $template = "[% website.name %][% stashed_value %]";
         ok(BOM::Platform::Context::template, 'default');
         BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin', 'correct default');
-
-        $output = '';
-        BOM::Platform::Context::template('stash')->update({stashed_value => 123});
-        BOM::Platform::Context::template->process(\$template, {}, \$output);
-        is($output, 'Devbin123', 'correct default');
+        like( $output, '/^Binaryqa/', 'correct default');
     };
 };
