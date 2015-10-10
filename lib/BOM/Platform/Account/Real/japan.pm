@@ -14,7 +14,9 @@ sub validate {
     my $check = BOM::Platform::Account::Real::default::validate($args);
     return $check if ($check->{err});
 
-    return $check if ($from_client->residence eq 'jp');
+    #TODO: until we set JP <> restricted country
+    return $check;
+#    return $check if ($from_client->residence eq 'jp');
 
     return {err => 'Account opening unavailable'};
 }
