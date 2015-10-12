@@ -63,7 +63,11 @@ sub entry_point {
                     $data = {};
                 }
 
-                $data->{echo_req} = $p1;
+                if ($data->{error} and ($data->{error}->{code} eq 'SanityCheckFailed' or $data->{error}->{code} eq 'InputValidationFailed')) {
+                    $data->{echo_req} = {};
+                } else {
+                    $data->{echo_req} = $p1;
+                }
             } else {
                 # for invalid call, eg: not json
                 $data = {
@@ -225,7 +229,7 @@ sub _sanity_failed {
             msg_type => 'sanity_check',
             error    => {
                 message => "Parameters sanity check failed",
-                code    => "InvalidParameters"
+                code    => "SanityCheckFailed"
             }};
     }
     return;
