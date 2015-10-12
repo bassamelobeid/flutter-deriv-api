@@ -6,6 +6,7 @@ use warnings;
 use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
+use BOM::System::Password;
 
 sub statement {
     my ($c, $args) = @_;
@@ -117,6 +118,44 @@ sub balance {
     return {
         msg_type => 'balance',
         balance  => \@client_balances,
+    };
+}
+
+sub change_password {
+    my ($c, $args) = @_;
+
+    my $client_obj = $c->stash('client');
+    my $user = BOM::Platform::User->new({email => $client_obj->email});
+
+    my $err = sub {
+        my ($message) = @_;
+        return {
+            msg_type => 'change_password',
+            error    => {message => $message code => "ChangePasswordError"}};
+    };
+
+    ## args validation is done with JSON::Schema in entry_point
+
+    ## YYY?? localize
+    return $err->("The two passwords that you entered do not match.")
+        unless $args->{new_password} eq $args->{confirm_password};
+    return $err->('New password is same as old password.')
+        if $args->{new_password} eq $args->{old_password};
+    return $err->("Old password is wrong.")
+        unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
+
+    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    $user->password($new_password);
+    $user->save;
+
+    foreach my $client ($client_obj->siblings) {
+        $client->password($new_password);
+        $client->save;
+    }
+
+    return {
+        msg_type        => 'change_password',
+        change_password => 1
     };
 }
 
