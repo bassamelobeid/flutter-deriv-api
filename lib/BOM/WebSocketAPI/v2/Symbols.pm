@@ -102,7 +102,7 @@ sub active_symbols {
                 } get_offerings_with_filter('underlying_symbol')
         ],
     };
-    Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300) - 2);
+    Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300));
     return $result;
 }
 
