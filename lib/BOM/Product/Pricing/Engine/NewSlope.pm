@@ -13,9 +13,7 @@ use Math::Business::BlackScholes::Binaries;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 
 use constant {
-    REQUIRED_ARGS => [
-        qw(contract_type spot strikes timeinyears discount_rate mu iv payouttime_code q_rate r_rate slope priced_with is_forward_starting first_available_smile_term)
-    ],
+    REQUIRED_ARGS => [qw(contract_type spot strikes date_start date_expiry discount_rate mu iv payouttime_code q_rate r_rate slope priced_with)],
     ALLOWED_TYPES => {
         CALL        => 1,
         PUT         => 1,
@@ -38,9 +36,20 @@ sub probability {
         return default_probability_reference("Could not calculate probability for $args->{contract_type}");
     }
 
-    my $ct = lc $args->{contract_type};
-    my $probability;
+    my $underlying_config = Finance::Asset->instance->get_parameters_for($args->{underlying_symbol});
+    my $market            = $underlying_config->{$args->{underlying_symbol}}->{market};
+    if ($market eq 'forex') {
+        $args->{timeinyears} = $ref->{market_convention}->{calculate_expiry}->($args->{date_start}, $args->{date_expiry});
+    } else {
+        $args->{timeinyears} = ($args->{date_expiry}->epoch - $args->{date_start}->epoch) / (86400 * 365);
+    }
+
+    $args->{timeindays} = $args->{timeinyears} * 365;
+    $args->{is_forward_starting} = (time > $args->{date_start}->epoch) ? 1 : 0;
+
+    my $ct          = lc $args->{contract_type};
     my $priced_with = $args->{priced_with};
+    my $probability;
 
     if ($priced_with eq 'numeraire') {
         $probability = _get_probability($args);
@@ -61,11 +70,12 @@ sub probability {
         $probability = ($numeraire_prob * $strike + $base_vanilla_prob * $which_way) / $args->{spot};
     }
 
+    my $markup_config   = LoadFile('markup_config.yml')->{$args->{market}};
     my $is_atm_contract = $args->{spot} != $args->{strikes}->[0] ? 0 : 1;
-    my $is_intraday     = $args->{timeinyears} * 365 < 1         ? 1 : 0;
+    my $is_intraday     = $args->{timeindays} < 1 ? 1 : 0;
 
     my $risk_markup = 0;
-    if ($ref->{market_config}->apply_traded_markets_markup) {
+    if ($markup_config->{'traded_market_markup'}) {
         if ($args->{is_forward_starting}) {
             # Forcing risk markup to 3% due to complaints from Australian affiliates.
             $risk_markup = 0.03;
@@ -74,7 +84,7 @@ sub probability {
             my $spread_type = $is_atm_contract ? 'atm' : 'max';
             my $vol_spread = $ref->{market_data}->{get_spread}->({
                 sought_point => $spread_type,
-                day          => $args->{timeinyears} * 365
+                day          => $args->{timeindays},
             });
             my $bs_vega_formula = 'Math::Business::BlackScholes::Binaries::Greeks::Vega::' . $ct;
             $bs_vega_formula = \&$bs_vega_formula;
@@ -83,8 +93,9 @@ sub probability {
             $risk_markup += $vol_spread_markup;
 
             # spot_spread_markup
-            unless ($is_intraday) {
-                my $spot_spread_base = $ref->{market_data}->{get_spot_spread};
+            if (not $is_intraday) {
+                my $spot_spread_size = $underlying_config->{spot_spread_size} // 50;
+                my $spot_spread_base = $spot_spread_size * $underlying_config->{pip_size};
                 my $bs_delta_formula = 'Math::Business::BlackScholes::Binaries::Greeks::Delta::' . $ct;
                 $bs_delta_formula = \&$bs_delta_formula;
                 my $bs_delta           = $bs_delta_formula->(_get_pricing_args(%$args));
@@ -94,7 +105,7 @@ sub probability {
 
             # economic_events_markup
             # if forex or commodities and $is_intraday
-            if ($ref->{market_config}->apply_economic_events_markup and $is_intraday) {
+            if ($markup_config->{'economic_event_markup'} and $is_intraday) {
                 my $eco_events_spot_risk_markup = $ref->{market_data}->{get_economic_events_impact};
                 $risk_markup += $eco_events_spot_risk_markup;
             }
@@ -104,35 +115,40 @@ sub probability {
             # The rollover time for volsurface is set at NY 1700. However, we are not sure when the actual rollover
             # will happen. Hence we add a 5% markup to the price.
             # if forex or commodities and duration <= 3
-            if ($ref->{market_config}->apply_end_of_day_markup) {
-                my $eod_market_risk_markup = 0.05;    # flat 5%
-                $risk_markup += $eod_market_risk_markup;
+            if ($markup_config->{'end_of_day_markup'} and $args->{timeindays} <= 3) {
+                my $ny_1600 = $ref->{market_convention}->{get_rollover_time}->($args->{date_start})->minus_time_interval('1h');
+                if ($ny_1600->is_before($args->{date_start}) or ($is_intraday and $ny_1600->is_before($args->{date_expiry}))) {
+                    my $eod_market_risk_markup = 0.05;    # flat 5%
+                    $risk_markup += $eod_market_risk_markup;
+                }
             }
 
             # This is added for the high butterfly condition where the butterfly is higher than threshold (0.01),
             # then we add the difference between then original probability and adjusted butterfly probability as markup.
-            if ($ref->{market_config}->apply_butterfly_markup) {
+            if ($markup_config->{'butterfly_markup'} and $args->{timeindays} <= 7) {
                 my $butterfly_cutoff = 0.01;
                 my $original_surface = $ref->{market_data}->{get_volsurface}->($args->{underlying_symbol});
                 my $first_term       = (sort { $a <=> $b } keys %$original_surface)[0];
                 my $market_rr_bf     = $ref->{market_data}->{get_market_rr_bf}->($first_term);
-                my $original_bf      = $market_rr_bf->{BF_25};
-                my $original_rr      = $market_rr_bf->{RR_25};
-                my ($atm, $c25, $c75) = map { $original_surface->{$first_term}{smile}{$_} } qw(50 25 75);
-                my $c25_mod             = $butterfly_cutoff + $atm + 0.5 * $original_rr;
-                my $c75_mod             = $c25 - $original_rr;
-                my $cloned_surface_data = dclone($original_surface);
-                $cloned_surface_data->{$first_term}{smile}{25} = $c25_mod;
-                $cloned_surface_data->{$first_term}{smile}{75} = $c75_mod;
-                my $vol_after_butterfly_adjustment = $ref->{market_data}->{get_volatility}->({
-                        strike => $args->{strikes}->[0],
-                        days   => $args->{timeinyears} * 365
-                    },
-                    $cloned_surface_data
-                );
-                my $butterfly_adjusted_prob = _get_probability({%$args, iv => $vol_after_butterfly_adjustment});
-                my $butterfly_markup = abs($probability - $butterfly_adjusted_prob);
-                $risk_markup += $butterfly_markup;
+                if ($ref->{market_data}->{has_overnight_vol} and $market_rr_bf->{BF_25} > $butterfly_cutoff) {
+                    my $original_bf = $market_rr_bf->{BF_25};
+                    my $original_rr = $market_rr_bf->{RR_25};
+                    my ($atm, $c25, $c75) = map { $original_surface->{$first_term}{smile}{$_} } qw(50 25 75);
+                    my $c25_mod             = $butterfly_cutoff + $atm + 0.5 * $original_rr;
+                    my $c75_mod             = $c25 - $original_rr;
+                    my $cloned_surface_data = dclone($original_surface);
+                    $cloned_surface_data->{$first_term}{smile}{25} = $c25_mod;
+                    $cloned_surface_data->{$first_term}{smile}{75} = $c75_mod;
+                    my $vol_after_butterfly_adjustment = $ref->{market_data}->{get_volatility}->({
+                            strike => $args->{strikes}->[0],
+                            days   => $args->{timeindays},
+                        },
+                        $cloned_surface_data
+                    );
+                    my $butterfly_adjusted_prob = _get_probability({%$args, iv => $vol_after_butterfly_adjustment});
+                    my $butterfly_markup = abs($probability - $butterfly_adjusted_prob);
+                    $risk_markup += $butterfly_markup;
+                }
             }
 
             # risk_markup divided equally on both sides.
@@ -145,11 +161,11 @@ sub probability {
     unless ($args->{is_forward_starting}) {
         my $comm_file        = LoadFile('commission.yml');
         my $commission_level = $comm_file->{commission_level}->{$args->{underlying_symbol}};
-        my $us_config        = Finance::Asset->instance->get_parameters_for($args->{underlying_symbol});
-        my $dsp_amount       = $comm_file->{digital_spread_base}->{$us_config->{$args->{underlying_symbol}}->{market}}->{$args->{contract_type}} // 0;
+        my $dsp_amount = $comm_file->{digital_spread_base}->{$underlying_config->{$args->{underlying_symbol}}->{market}}->{$args->{contract_type}}
+            // 0;
         $dsp_amount /= 100;
         # this is added so that we match the commission of tick trades
-        $dsp_amount /= 2 if $args->{timeinyears} * 86400 * 365 <= 20 and $is_atm_contract;
+        $dsp_amount /= 2 if $args->{timeindays} * 86400 <= 20 and $is_atm_contract;
         # 1.4 is hard-coded level multiplier
         my $level_multiplier          = 1.4 * ($commission_level - 1);
         my $digital_spread_percentage = $dsp_amount * $level_multiplier;
@@ -168,7 +184,9 @@ sub probability {
     }
 
     return {
-        probability => $probability,
+        probability       => $probability,
+        commission_markup => $commission_markup,
+        risk_markup       => $risk_markup,
     };
 }
 
@@ -194,7 +212,7 @@ sub _get_probability {
         # If the first available smile term is more than 3 days away and the contract is intraday,
         # we cannot accurately calculate the intraday slope. Hence we cap and floor the skew adjustment to 3%.
         $skew_adjustment = min(0.03, max($skew_adjustment, -0.03))
-            if ($args->{first_available_smile_term} > 3 and $args->{timeinyears} * 365 < 1);
+            if ($args->{first_available_smile_term} > 3 and $args->{timeindays} < 1);
         $prob = $bs_probability + $skew_adjustment;
     }
 

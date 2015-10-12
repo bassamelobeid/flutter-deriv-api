@@ -1,0 +1,18 @@
+---
+forex:
+  - traded_market_markup
+  - economic_event_markup
+  - end_of_day_markup
+  - butterfly_markup
+commodities:
+  - traded_market_markup
+  - economic_event_markup
+  - end_of_day_markup
+stocks:
+  - traded_market_markup
+indices:
+  - traded_market_markup
+futures:
+  - traded_market_markup
+sectors:
+  - traded_market_markup
