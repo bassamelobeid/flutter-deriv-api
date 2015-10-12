@@ -128,6 +128,7 @@ sub __handle {
         ['active_symbols',         \&BOM::WebSocketAPI::v2::Symbols::active_symbols,                     0],
         ['contracts_for',          \&BOM::WebSocketAPI::v2::ContractDiscovery::contracts_for,            0],
         ['trading_times',          \&BOM::WebSocketAPI::v2::MarketDiscovery::trading_times,              0],
+        ['asset_index',            \&BOM::WebSocketAPI::v2::MarketDiscovery::asset_index,                0],
         ['buy',                    \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,                    1],
         ['sell',                   \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,                   1],
         ['portfolio',              \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio,              1],
