@@ -1,5 +1,0 @@
-global:
-  quants:
-    markets:
-        disable_iv:
-            - 'stocks'
