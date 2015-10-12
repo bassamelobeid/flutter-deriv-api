@@ -193,7 +193,7 @@ sub __authorize_error {
     return {
         msg_type => $msg_type,
         'error'  => {
-            message  => "Must authorize first",
+            message  => "Please log in",
             msg_type => $msg_type,
             code     => "AuthorizationRequired"
         }};
