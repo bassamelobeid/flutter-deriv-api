@@ -138,6 +138,7 @@ sub __handle {
         ['proposal_open_contract', \&BOM::WebSocketAPI::v2::PortfolioManagement::proposal_open_contract, 1],
         ['balance',                \&BOM::WebSocketAPI::v2::Accounts::balance,                           1],
         ['statement',              \&BOM::WebSocketAPI::v2::Accounts::statement,                         1],
+        ['change_password',        \&BOM::WebSocketAPI::v2::Accounts::change_password,                   1],
     );
 
     foreach my $dispatch (@dispatch) {
