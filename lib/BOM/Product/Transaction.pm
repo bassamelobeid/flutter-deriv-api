@@ -235,7 +235,6 @@ sub stats_stop {
 
     if ($error) {
         stats_inc("transaction.$what.failure", {tags => [@{$tags->{tags}}, 'reason:' . _normalize_error($error),]});
-        warn "transaction.$what.failure: ", _normalize_error($error), " client:", $self->client;
     } else {
         my $now = [gettimeofday];
         stats_timing("transaction.$what.elapsed_time", 1000 * tv_interval($data->{start},           $now), $tags);
