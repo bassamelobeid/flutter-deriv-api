@@ -70,11 +70,19 @@ sub _build_symbols_to_update {
 
     my @symbols_to_update;
     if ($market eq 'indices') {
-        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(market =>'indices', contract_category => 'ANY', exclude_disabled => 1);
+        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => 'indices',
+            contract_category => 'ANY',
+            exclude_disabled  => 1
+        );
         # forcing it here since we don't have offerings for the index.
         push @symbols_to_update, 'FTSE';
     } else {
-        @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(market =>'stocks', contract_category => 'ANY', exclude_disabled => 1, submarket => ['france', 'belgium', 'amsterdam'])
+        @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => 'stocks',
+            contract_category => 'ANY',
+            exclude_disabled  => 1,
+            submarket         => ['france', 'belgium', 'amsterdam']);
     }
     return \@symbols_to_update;
 }
@@ -93,7 +101,11 @@ sub run {
     my $self = shift;
     $self->_logger->debug(ref($self) . ' starting update.');
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %valid_synthetic = map { $_ => 1 } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_index'});
+    my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        market            => 'smart_index',
+        contract_category => 'ANY',
+        exclude_disabled  => 1
+    );
     foreach my $symbol (@{$self->symbols_to_update}) {
         if (not $valid_synthetic{$symbol} and not $surfaces_from_file->{$symbol}) {
             $self->report->{$symbol} = {
