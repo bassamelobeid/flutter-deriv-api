@@ -246,7 +246,7 @@ sub get_ask {
         spot_time  => $contract->current_tick->epoch,
         date_start => $contract->date_start->epoch
     };
-    $response->{spread} = $contract->spread if $contrac->is_spread;
+    $response->{spread} = $contract->spread if $contract->is_spread;
 
     return $response;
 }
