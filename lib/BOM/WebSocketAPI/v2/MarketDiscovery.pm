@@ -69,30 +69,27 @@ sub asset_index {
             name => sub { return $_->translated_display_name }
         },
         submarkets => {
+            code => sub {
+                $_->name;
+            },
             name => sub {
                 return $_->translated_display_name;
             }
         },
         underlyings => {
+            code => sub {
+                $_->symbol;
+            },
             name => sub {
                 return $_->translated_display_name;
-            },
+            }
         },
         contract_categories => {
+            code => sub {
+                $_->code;
+            },
             name => sub {
                 return $_->translated_display_name;
-            },
-            place => sub {
-                return $_->display_order;
-            },
-            link_params => sub {
-                my $parent = shift;
-                return {
-                    market            => $parent->market->name,
-                    submarket         => $parent->submarket->name,
-                    underlying_symbol => $parent->system_symbol,
-                    form_name         => $_->code
-                };
             },
             expiries => sub {
                 my $underlying = shift;
