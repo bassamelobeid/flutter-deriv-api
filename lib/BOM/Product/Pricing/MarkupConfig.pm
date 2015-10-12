@@ -13,21 +13,28 @@ has [qw(underlying date_start date_expiry)] => (
     required => 1,
 );
 
-sub coef {
-    state $coef = LoadFile('markup_config.yml');
-    return $coef;
+has config => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_config',
+);
+
+sub _build_config {
+    my $config = LoadFile('markup_config.yml');
+    my %hash_it = map { $_ => 1 } @$config;
+    return \%hash_it;
 }
 
 sub traded_market_markup {
     my $self = shift;
 
-    return $self->coef->{traded_market}->{$self->underlying->market->name} // 0;
+    return $self->config->{traded_market}->{$self->underlying->market->name} // 0;
 }
 
 sub economic_events_markup {
     my $self = shift;
 
-    return if not $self->coef->{affected_by_economic_event}->{$self->underlying->market->name};
+    return if not $self->config->{affected_by_economic_event}->{$self->underlying->market->name};
     return if ($self->date_expiry->epoch - $self->date_start->epoch) > 86400;
     return 1;
 }
@@ -35,7 +42,7 @@ sub economic_events_markup {
 sub end_of_day_markup {
     my $self = shift;
 
-    return if not $self->coef->{affected_by_eod_risk}->{$self->underlying->market->name};
+    return if not $self->config->{affected_by_eod_risk}->{$self->underlying->market->name};
     my $contract_duration = ($self->date_expiry->epoch - $self->date_start->epoch) / 86400;
     return if $contract_duration > 3;
     my $ny_1600 = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start)->minus_time_interval('1h');
@@ -46,7 +53,7 @@ sub end_of_day_markup {
 sub butterfly_markup {
     my $self = shift;
 
-    return if not $self->coef->{affected_by_butterfly_risk}->{$self->underlying->market->name};
+    return if not $self->config->{affected_by_butterfly_risk}->{$self->underlying->market->name};
     return if (($self->date_expiry->epoch - $self->date_start->epoch) / 86400 > 7);
     my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $self->underlying});
     my $first_term = $volsurface->original_term_for_smile->[0];

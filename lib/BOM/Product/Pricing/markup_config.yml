@@ -1,0 +1,17 @@
+---
+traded_market:
+  - forex
+  - commodities
+  - stocks
+  - indices
+  - futures
+  - sectors
+affected_by_economic_event:
+  - forex
+  - commodities
+affected_by_eod_risk:
+  - forex
+  - commodities
+affected_by_butterfly_risk:
+  - forex
+
