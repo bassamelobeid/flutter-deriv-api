@@ -7,7 +7,10 @@ use Try::Tiny;
 use Mojo::DOM;
 use BOM::WebSocketAPI::v2::Symbols;
 use BOM::WebSocketAPI::v2::System;
+use Cache::RedisDB;
+use JSON;
 
+use BOM::Platform::Context;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -26,9 +29,9 @@ sub trading_times {
             name         => 'name',
             times        => 'times',
             events       => 'events',
-            symbol       => sub { return $_->symbol },
-            feed_license => sub { return $_->feed_license },
-            delay_amount => sub { return $_->delay_amount },
+            symbol       => sub { $_->symbol },
+            feed_license => sub { $_->feed_license },
+            delay_amount => sub { $_->delay_amount },
         });
     my $trading_times = {};
     for my $mkt (@$tree) {
@@ -63,17 +66,27 @@ sub trading_times {
 sub asset_index {
     my ($c, $args) = @_;
 
+    my $request = BOM::Platform::Context::request();
+    my $lang    = $request->language;
+
+    if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
+        return {
+            msg_type    => 'asset_index',
+            asset_index => JSON::from_json($r),
+        };
+    }
+
     my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
         markets => {
             code => sub { $_->name },
-            name => sub { return $_->translated_display_name }
+            name => sub { $_->translated_display_name }
         },
         submarkets => {
             code => sub {
                 $_->name;
             },
             name => sub {
-                return $_->translated_display_name;
+                $_->translated_display_name;
             }
         },
         underlyings => {
@@ -81,7 +94,7 @@ sub asset_index {
                 $_->symbol;
             },
             name => sub {
-                return $_->translated_display_name;
+                $_->translated_display_name;
             }
         },
         contract_categories => {
@@ -89,7 +102,7 @@ sub asset_index {
                 $_->code;
             },
             name => sub {
-                return $_->translated_display_name;
+                $_->translated_display_name;
             },
             expiries => sub {
                 my $underlying = shift;
@@ -140,6 +153,9 @@ sub asset_index {
             }
         }
     }
+
+    # set cache
+    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json($asset_index), 300 - (time % 300));
 
     return {
         msg_type    => 'asset_index',
