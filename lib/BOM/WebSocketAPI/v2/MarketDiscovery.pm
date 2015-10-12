@@ -238,14 +238,17 @@ sub get_ask {
             }};
     }
     my $display_price = $contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price);
-    return {
+    my $response = {
         longcode   => Mojo::DOM->new->parse($contract->longcode)->all_text,
         payout     => $contract->payout,
         ask_price  => $display_price,
         spot       => $contract->current_spot,
         spot_time  => $contract->current_tick->epoch,
-        date_start => $contract->date_start->epoch,
+        date_start => $contract->date_start->epoch
     };
+    $response->{spread} = $contract->spread if $contract->is_spread;
+
+    return $response;
 }
 
 sub send_ask {
