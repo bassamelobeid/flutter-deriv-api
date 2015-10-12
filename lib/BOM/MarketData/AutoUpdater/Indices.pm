@@ -15,7 +15,7 @@ extends 'BOM::MarketData::AutoUpdater';
 
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
-use BOM::Market::UnderlyingDB
+use BOM::Market::UnderlyingDB;
 use SuperDerivatives::VolSurface;
 use Try::Tiny;
 use File::Temp;
