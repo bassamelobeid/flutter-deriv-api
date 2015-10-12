@@ -5,8 +5,7 @@ env:
     - TEST_SUITE=unit_test_product_contract
     - TEST_SUITE=unit_test_product_all
     - TEST_SUITE=syntax_lib
-    - TEST_SUITE=unit_test_marketdata
-    - TEST_SUITE=unit_test_market
+
 services:
     - redis-server
 addons:
@@ -30,6 +29,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
 
     - /tmp/travis-scripts/postgres_restart.sh

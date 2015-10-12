@@ -1,6 +1,4 @@
-TESTS=unit_test_market \
-      unit_test_marketdata \
-      unit_test_product_contract \
+TESTS=unit_test_product_contract \
       unit_test_product_all \
 
 M=rm -f /tmp/l4p.log && [ -t 1 ] && echo 'making \033[01;33m$@\033[00m' || echo 'making $@'
@@ -21,12 +19,6 @@ critique:
 test: $(TESTS)
 
 test_all: test unit_test_myaffiliates_extended
-
-unit_test_market:
-	@$(PROVE) -r t/BOM/Market/
-
-unit_test_marketdata:
-	@$(PROVE) -r t/BOM/MarketData/
 
 unit_test_product_contract:
 	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFactory/
