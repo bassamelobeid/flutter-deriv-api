@@ -8,9 +8,12 @@ use Mojo::DOM;
 use BOM::WebSocketAPI::v2::Symbols;
 use BOM::WebSocketAPI::v2::System;
 
+use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
+use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use BOM::Product::Contract::Category;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -54,6 +57,96 @@ sub trading_times {
     return {
         msg_type      => 'trading_times',
         trading_times => $trading_times,
+    };
+}
+
+sub asset_index {
+    my ($c, $args) = @_;
+
+    my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
+        markets => {
+            code => sub { $_->name },
+            name => sub { return $_->translated_display_name }
+        },
+        submarkets => {
+            name => sub {
+                return $_->translated_display_name;
+            }
+        },
+        underlyings => {
+            name => sub {
+                return $_->translated_display_name;
+            },
+        },
+        contract_categories => {
+            name => sub {
+                return $_->translated_display_name;
+            },
+            place => sub {
+                return $_->display_order;
+            },
+            link_params => sub {
+                my $parent = shift;
+                return {
+                    market            => $parent->market->name,
+                    submarket         => $parent->submarket->name,
+                    underlying_symbol => $parent->system_symbol,
+                    form_name         => $_->code
+                };
+            },
+            expiries => sub {
+                my $underlying = shift;
+                my %offered    = %{
+                    get_permitted_expiries({
+                            underlying_symbol => $underlying->symbol,
+                            contract_category => $_->code,
+                        })};
+
+                my @times;
+                foreach my $expiry (qw(intraday daily tick)) {
+                    if (my $included = $offered{$expiry}) {
+                        foreach my $key (qw(min max)) {
+                            if ($expiry eq 'tick') {
+                                # some tick is set to seconds somehow in this code.
+                                # don't want to waste time to figure out how it is set
+                                my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
+                                push @times, [$tick_count, $tick_count . 't'];
+                            } else {
+                                $included->{$key} = Time::Duration::Concise::Localize->new(
+                                    interval => $included->{$key},
+                                    locale   => BOM::Platform::Context::request()->language
+                                ) unless (ref $included->{$key});
+                                push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
+                            }
+                        }
+                    }
+                }
+                @times = sort { $a->[0] <=> $b->[0] } @times;
+                return +{
+                    min => $times[0][1],
+                    max => $times[-1][1],
+                };
+            },
+        },
+    );
+
+    ## remove obj for json encode
+    for my $market (@$asset_index) {
+        delete $market->{$_} for (qw/obj children/);
+        for my $submarket (@{$market->{submarkets}}) {
+            delete $submarket->{$_} for (qw/obj parent_obj children parent/);
+            for my $ul (@{$submarket->{underlyings}}) {
+                delete $ul->{$_} for (qw/obj parent_obj children parent/);
+                for my $category (@{$ul->{contract_categories}}) {
+                    delete $category->{$_} for (qw/obj parent_obj children parent/);
+                }
+            }
+        }
+    }
+
+    return {
+        msg_type    => 'asset_index',
+        asset_index => $asset_index,
     };
 }
 
