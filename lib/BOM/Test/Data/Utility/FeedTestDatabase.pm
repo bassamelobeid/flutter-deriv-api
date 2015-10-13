@@ -53,8 +53,7 @@ sub truncate_tables {
 
 sub setup_ticks {
     my $file      = shift;
-    my $feed_dir  = BOM::Platform::Runtime->instance->app_config->system->directory->feed;
-    my $feed_file = $feed_dir . '/combined/' . $file;
+    my $feed_file = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
 
     my $command;
     $command = "PGPASSWORD=letmein";
