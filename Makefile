@@ -7,12 +7,6 @@ P=prove --timer -I$D/lib -I$D -I$D/t  -I/home/git/regentmarkets/bom-postgres/lib
 L=|| { [ -t 1 -a "$$TRAVIS" != true ] && echo '\033[01;31msee also /tmp/l4p.log\033[00m' || cat /tmp/l4p.log; false; }
 PROVE=p () { $M; echo '$P' "$$@"; BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom-test/data/config/log4perl.conf $P "$$@" $L; }; p
 
-default:
-	@echo "You must specify target. The following targets available:"
-	@echo "  i18n         - extract translatable strings from the code"
-	@echo "  test         - Run lib tests"
-	@echo "  tidy         - Run perltidy"
-
 
 test: $(TESTS)
 
@@ -26,7 +20,3 @@ tidy:
 	find . -name '*.p?.bak' -delete
 	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
-
-syntax_lib:
-	SYNTAX_CHUNK_NAME=lib prove -I./lib t/BOM/002_autosyntax.t
-	prove -l t/BOM/003_yaml_correctness.t
