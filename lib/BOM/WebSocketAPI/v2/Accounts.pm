@@ -141,9 +141,9 @@ sub change_password {
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    return $err->( localize('New password is same as old password.') )
+    return $err->(localize('New password is same as old password.'))
         if $args->{new_password} eq $args->{old_password};
-    return $err->( localize("Old password is wrong.") )
+    return $err->(localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
