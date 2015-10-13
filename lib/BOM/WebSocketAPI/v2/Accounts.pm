@@ -131,7 +131,11 @@ sub change_password {
         my ($message) = @_;
         return {
             msg_type => 'change_password',
-            error    => {message => $message code => "ChangePasswordError"}};
+            error    => {
+                message => $message,
+                code    => "ChangePasswordError"
+            },
+        };
     };
 
     ## args validation is done with JSON::Schema in entry_point
@@ -148,7 +152,7 @@ sub change_password {
     $user->password($new_password);
     $user->save;
 
-    foreach my $client ($client_obj->siblings) {
+    foreach my $client ($user->clients) {
         $client->password($new_password);
         $client->save;
     }
