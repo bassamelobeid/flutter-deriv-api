@@ -7,7 +7,7 @@ D=$(CURDIR)
 I=-I$D/lib -I$D -I/home/git/regentmarkets/bom/t -I/home/git/regentmarkets/bom-postgres/lib -I/home/git/regentmarkets/bom/lib
 P=prove --timer $I
 L=|| { [ -t 1 -a "$$TRAVIS" != true ] && echo '\033[01;31msee also /tmp/l4p.log\033[00m' || cat /tmp/l4p.log; false; }
-PROVE=p () { $M; echo '$P' "$$@"; BOM_LOG4PERLCONFIG=$D/t/config/log4perl.conf $P "$$@" $L; }; p
+PROVE=p () { $M; echo '$P' "$$@"; BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom-test/data/config/log4perl.conf $P "$$@" $L; }; p
 
 default:
 	@echo "You must specify target. The following targets available:"
@@ -34,7 +34,7 @@ unit_test_system:
 unit_test_bdd:
 	@$M
 	(cd /home/git/regentmarkets/bdd && \
-         BOM_LOG4PERLCONFIG=$D/t/config/log4perl.conf \
+         BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom-test/data/config/log4perl.conf \
          PERL5OPT="$I -I/home/git/regentmarkets/bdd/lib -MTest::MockTime::HiRes" \
          pherkin -l)
 
