@@ -2,8 +2,6 @@ language: perl
 perl:
     - "5.14.2"
 env:
-    - TEST_SUITE=syntax_lib
-    - TEST_SUITE=unit_test_marketdata
     - TEST_SUITE=unit_test_market
 services:
     - redis-server
@@ -22,7 +20,6 @@ before_install:
     - /tmp/travis-scripts/couchdb.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
