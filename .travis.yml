@@ -39,7 +39,6 @@ install:
     - /tmp/travis-scripts/devbox.sh *.yml
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
-    - /tmp/travis-scripts/setup_clientdb.sh
     - /tmp/travis-scripts/setup_feeddb.sh
 
     - /tmp/travis-scripts/setup_logs.sh
