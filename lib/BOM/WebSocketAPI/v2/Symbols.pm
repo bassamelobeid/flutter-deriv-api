@@ -198,6 +198,11 @@ sub ticks {
 
 sub candles {
     my ($c, $args) = @_;
+    my $interval_map = {
+        M => 60,
+        H => 3600,
+        D => 86400,
+    };
 
     $args = _validate_start_end($c, $args);
 
@@ -208,13 +213,10 @@ sub candles {
     my $granularity = uc($args->{granularity} || 'M1');
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
-    $c->stash->{feeder} ||= BOM::Feed::Data::AnyEvent->new;
-    my $w = $c->stash->{feeder}->get_ohlc(
-        underlying => $ul->symbol,
-        start_time => $start,
-        end_time   => $end,
-        interval   => $size . lc $unit,
-        on_result  => $args->{sender},
+    my $w = $ul->ohlc_start_end(
+        start_time         => $start,
+        end_time           => $end,
+        aggregation_period => $unit * $interval_map->{$size},
     );
     return $w;
 
