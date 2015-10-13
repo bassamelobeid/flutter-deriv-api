@@ -20,7 +20,7 @@ unit_test_product_contract:
 	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFactory/
 
 unit_test_product_all:
-	@$(PROVE) -r $$(ls -1d t/BOM/Product/* | grep -v -e /Contract)
+	@$(PROVE) -r $$(ls -1d t/BOM/* | grep -v -e Product/Contract)
 
 tidy:
 	find . -name '*.p?.bak' -delete
