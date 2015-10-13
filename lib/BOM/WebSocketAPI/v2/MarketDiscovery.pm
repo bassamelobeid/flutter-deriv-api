@@ -155,7 +155,7 @@ sub asset_index {
     }
 
     # set cache
-    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json($asset_index), 300 - (time % 300));
+    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json($asset_index), 3600);
 
     return {
         msg_type    => 'asset_index',
