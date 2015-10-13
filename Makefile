@@ -13,12 +13,8 @@ default:
 	@echo "  test         - Run lib tests"
 	@echo "  tidy         - Run perltidy"
 
-critique:
-	prove -l t/BOM/002_autosyntax.t
 
 test: $(TESTS)
-
-test_all: test unit_test_myaffiliates_extended
 
 unit_test_product_contract:
 	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFactory/
@@ -31,13 +27,6 @@ tidy:
 	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
 	find . -name '*.tidyup' -delete
 
-compile:
-	prove -v -l t/BOM/002_autosyntax.t
-
 syntax_lib:
 	SYNTAX_CHUNK_NAME=lib prove -I./lib -I/home/git/regentmarkets/bom-postgres/lib t/BOM/002_autosyntax.t
 	prove -l t/BOM/003_yaml_correctness.t
-
-syntax_cgi:
-	SYNTAX_CHUNK_NAME=cgi prove -I./lib -I/home/git/regentmarkets/bom-postgres/lib t/BOM/002_autosyntax.t
-
