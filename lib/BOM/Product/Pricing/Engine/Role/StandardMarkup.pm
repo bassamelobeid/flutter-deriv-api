@@ -250,7 +250,7 @@ sub _build_butterfly_markup {
     if (
             $bet->market->markups->apply_butterfly_markup
         and $bet->timeindays->amount < 7
-        and $surface->original_term_for_smile->[0] == $surface->_ON_day    # does the surface have an ON tenor?
+        and $surface->has_overnight_tenor # does the surface have an ON tenor?
         and $surface->get_market_rr_bf($surface->original_term_for_smile->[0])->{BF_25} > $butterfly_cutoff
         )
     {
