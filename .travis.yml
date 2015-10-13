@@ -27,6 +27,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
 
 
     - /tmp/travis-scripts/postgres_restart.sh
