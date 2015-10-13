@@ -3,7 +3,6 @@ perl:
     - "5.14.2"
 env:
     - TEST_SUITE=syntax_lib
-    - TEST_SUITE=unit_test_marketdata
     - TEST_SUITE=unit_test_market
 services:
     - redis-server
