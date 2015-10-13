@@ -19,11 +19,6 @@
       "pattern": "^.{5,25}$",
       "description": "new password"
     },
-    "confirm_password": {
-      "type": "string",
-      "pattern": "^.{5,25}$",
-      "description": "confirm password"
-    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
@@ -33,7 +28,6 @@
   "required": [
     "change_password",
     "old_password",
-    "new_password",
-    "confirm_password"
+    "new_password"
   ]
 }
