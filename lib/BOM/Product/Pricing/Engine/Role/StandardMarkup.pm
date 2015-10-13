@@ -489,9 +489,9 @@ sub _build_digital_spread_markup {
         base_amount => 0,
     });
 
-    my $bet_type    = $bet->code;
-    my $level       = $self->commission_level;
-    my $dsp_amount  = $self->bet->underlying->market->markups->digital_spread->{$bet_type} / 100;
+    my $bet_type   = $bet->code;
+    my $level      = $self->commission_level;
+    my $dsp_amount = $self->bet->underlying->market->markups->digital_spread->{$bet_type} / 100;
     # this is added so that we match the commission of tick trades
     $dsp_amount /= 2 if $bet->timeinyears->amount * 86400 * 365 <= 20 and $bet->is_atm_bet;
 
@@ -642,7 +642,7 @@ sub _build_economic_events_spot_risk_markup {
         foreach my $event (@economic_events) {
             my $end_of_effect = $event->release_date->plus_time_interval('20m');
             my @triangle;
-            my $scale = $event->get_scaling_factor($bet->underlying, 'spot');
+            my $scale = $event->get_scaling_factor($bet->underlying->symbol, 'spot');
             next if not defined $scale;
             my $x1                   = $event->release_date->epoch;
             my $x2                   = $end_of_effect->epoch;

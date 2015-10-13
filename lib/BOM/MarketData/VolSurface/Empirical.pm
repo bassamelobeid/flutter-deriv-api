@@ -202,7 +202,7 @@ sub _get_economic_event_seasonality_areas {
 
     foreach my $event (@economic_events) {
         my $end_of_effect = $event->release_date->plus_time_interval('1h');
-        my $scale = $event->get_scaling_factor($self->underlying, 'vol');
+        my $scale = $event->get_scaling_factor($self->underlying->symbol, 'vol');
         next if not defined $scale;
         my $x1             = $event->release_date->epoch;
         my $x2             = $end_of_effect->epoch;

@@ -7,7 +7,7 @@ use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time sleep);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(none uniq);
 use Scalar::Util qw(looks_like_number);
 
 use BOM::Market::UnderlyingDB;
@@ -24,6 +24,7 @@ use BOM::MarketData::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
+use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 
@@ -1482,12 +1483,104 @@ has new_interface_engine => (
     },
 );
 
+sub _pricing_parameters {
+    my $self = shift;
+
+    return {
+        first_available_smile_term => $self->volsurface->original_term_for_smile->[0],
+        priced_with                => $self->priced_with,
+        spot                       => $self->pricing_spot,
+        strikes                    => [grep { $_ } values %{$self->_barriers_for_pricing}],
+        date_start                 => $self->effective_start,
+        date_expiry                => $self->date_expiry,
+        discount_rate              => $self->discount_rate,
+        q_rate                     => $self->q_rate,
+        r_rate                     => $self->r_rate,
+        mu                         => $self->mu,
+        vol                        => $self->pricing_vol,
+        payouttime_code            => $self->payouttime_code,
+        contract_type              => $self->code,
+        underlying_symbol          => $self->underlying->symbol,
+    };
+}
+
+sub _market_convention {
+    my $self = shift;
+
+    return {
+        calculate_expiry => sub {
+            my ($start, $expiry) = @_;
+            my $utils = BOM::MarketData::VolSurface::Utils->new;
+            return $utils->effective_date_for($expiry)->days_between($utils->effective_date_for($start));
+        },
+        get_rollover_time => sub {
+            my $when = shift;
+            return BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($when);
+        },
+    };
+}
+
+sub _market_data {
+    my $self = shift;
+
+    my $volsurface = $self->volsurface;
+    return {
+        get_vol_spread => sub {
+            my ($type, $timeindays) = @_;
+            return $volsurface->get_spread({
+                sought_point => $type,
+                day          => $timeindays
+            });
+        },
+        get_volsurface_data => sub {
+            return $volsurface->surface;
+        },
+        get_market_rr_bf => sub {
+            my $timeindays = shift;
+            return $volsurface->get_market_rr_bf($timeindays);
+        },
+        get_volatility => sub {
+            my $args = shift;
+            return $volsurface->get_volatility($args);
+        },
+        get_economic_event => sub {
+            my ($underlying_symbol, $from, $to) = @_;
+            my $underlying         = BOM::Market::Underlying->new($underlying_symbol);
+            my %applicable_symbols = (
+                USD                                 => 1,
+                AUD                                 => 1,
+                CAD                                 => 1,
+                CNY                                 => 1,
+                NZD                                 => 1,
+                $underlying->quoted_currency_symbol => 1,
+                $underlying->asset_symbol           => 1,
+            );
+
+            my $ee = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+                from => $from,
+                to   => $to
+            });
+            my @applicable_news =
+                map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [$_->release_date->epoch, $_] } grep { $applicable_symbols{$_->symbol} } @$ee;
+
+            return @applicable_news;
+        },
+        get_ticks => sub {
+            my $args = shift;
+            $args->{underlying} = BOM::Market::Underlying->new($args->{underlying}) if ref $args->{underlying} ne 'BOM::Market::Underlying';
+            return BOM::Market::AggTicks->new->retrieve($args);
+        }
+    };
+}
+
 sub _get_probability_reference {
     my ($self, $probability_name) = @_;
 
     my $prob_ref;
     if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        my %pricing_parameters = map { my $method = '_' . $_; $_ => $self->$method } @{$self->pricing_engine_name->REQUIRED_ARGS};
+        my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->REQUIRED_ARGS};
+        $pricing_parameters{market_data}       = $self->_market_data();
+        $pricing_parameters{market_convention} = $self->_market_convention();
         # will make this more generic as we move more pricing engines to this interface
         my $func_name = $self->pricing_engine_name . '::' . $probability_name;
         my $subref    = \&$func_name;
@@ -2687,119 +2780,6 @@ sub _validate_volsurface {
     }
 
     return @errors;
-}
-
-## PRICING PARAMETERS CODE ##
-## This is a temporary place for this code.
-## It would be moved to the appropriate class when we have refactored all PE to the new interface
-
-sub _is_forward_starting {
-    return shift->is_forward_starting;
-}
-
-sub _contract_type {
-    return shift->code;
-}
-
-sub _underlying_symbol {
-    return shift->underlying->symbol;
-}
-
-sub _economic_events {
-    my $self = shift;
-
-    my $underlying = $self->underlying;
-    my $from       = $self->effective_start->minus_time_interval('10m');
-    my $to         = $self->effective_start->plus_time_interval('10m');
-    my $eco_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-        from => $from,
-        to   => $to,
-    });
-    my @influential_currencies = qw(USD AUD CAD CNY NZD);
-    my %applicable_symbols = map { $_ => 1 } ($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
-    my @applicable_events =
-        map { $_->[1] } sort { $a->[1] <=> $b->[0] } map { [$_->release_date->epoch, $_] } grep { $applicable_symbols{$_->symbol} } @$eco_events;
-
-    return \@applicable_events;
-}
-
-sub _last_twenty_ticks {
-    my $self = shift;
-
-    return BOM::Market::AggTicks->new->retrieve({
-        underlying   => $self->underlying,
-        ending_epoch => $self->effective_start->epoch,
-        tick_count   => 20,
-    });
-}
-
-sub _slope {
-    my $self = shift;
-
-    my $args = {
-        days   => $self->timeindays->amount,
-        strike => $self->_barriers_for_pricing->{barrier1},
-        spot   => $self->pricing_spot,
-        q_rate => $self->q_rate,
-        r_rate => $self->r_rate,
-    };
-    my $volsurface = $self->volsurface;
-    # Move by 0.5% of strike either way.
-    my $epsilon = $volsurface->underlying->pip_size;
-
-    $args->{strike} -= $epsilon;
-    my $down_vol = $volsurface->get_volatility($args);
-
-    $args->{strike} += 2 * $epsilon;
-    my $up_vol = $volsurface->get_volatility($args);
-
-    return ($up_vol - $down_vol) / (2 * $epsilon);
-}
-
-sub _first_available_smile_term {
-    return shift->volsurface->original_term_for_smile->[0];
-}
-
-sub _priced_with {
-    return shift->priced_with;
-}
-
-sub _spot {
-    return shift->pricing_spot;
-}
-
-sub _strikes {
-    my $self = shift;
-    my @strikes = grep { $_ } values %{$self->_barriers_for_pricing};
-    return \@strikes;
-}
-
-sub _timeinyears {
-    return shift->timeinyears->amount;
-}
-
-sub _discount_rate {
-    return shift->discount_rate;
-}
-
-sub _mu {
-    return shift->mu;
-}
-
-sub _iv {
-    return shift->pricing_vol;
-}
-
-sub _payouttime_code {
-    return shift->payouttime_code;
-}
-
-sub _q_rate {
-    return shift->q_rate;
-}
-
-sub _r_rate {
-    return shift->r_rate;
 }
 
 no Moose;
