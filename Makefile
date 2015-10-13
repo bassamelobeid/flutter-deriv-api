@@ -28,5 +28,5 @@ tidy:
 	find . -name '*.tidyup' -delete
 
 syntax_lib:
-	SYNTAX_CHUNK_NAME=lib prove -I./lib -I/home/git/regentmarkets/bom-postgres/lib t/BOM/002_autosyntax.t
+	SYNTAX_CHUNK_NAME=lib prove -I./lib t/BOM/002_autosyntax.t
 	prove -l t/BOM/003_yaml_correctness.t
