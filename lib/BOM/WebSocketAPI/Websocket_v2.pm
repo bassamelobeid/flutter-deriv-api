@@ -46,12 +46,28 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
+            my $tag = 'origin:';
             my $data;
+            my $send = 1;
             if (ref($p1) eq 'HASH') {
-                $data = _sanity_failed($p1) || __handle($c, $p1);
-                return unless $data;
 
-                $data->{echo_req} = $p1;
+                if (my $origin = $c->req->headers->header("Origin")) {
+                    if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
+                        $tag = "origin:$1";
+                    }
+                }
+
+                $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
+                if (not $data) {
+                    $send = undef;
+                    $data = {};
+                }
+
+                if ($data->{error} and ($data->{error}->{code} eq 'SanityCheckFailed' or $data->{error}->{code} eq 'InputValidationFailed')) {
+                    $data->{echo_req} = {};
+                } else {
+                    $data->{echo_req} = $p1;
+                }
             } else {
                 # for invalid call, eg: not json
                 $data = {
@@ -66,9 +82,20 @@ sub entry_point {
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                die "data too large [$l]";
+                $data = {
+                    echo_req => $p1,
+                    msg_type => 'error',
+                    error    => {
+                        message => "Response too large.",
+                        code    => "ResponseTooLarge"
+                    }};
             }
-            $c->send({json => $data});
+            $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
+            if ($send) {
+                $c->send({json => $data});
+            } else {
+                return;
+            }
         });
 
     # stop all recurring
@@ -87,7 +114,7 @@ sub entry_point {
 }
 
 sub __handle {
-    my ($c, $p1) = @_;
+    my ($c, $p1, $tag) = @_;
 
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
@@ -130,12 +157,6 @@ sub __handle {
                 }};
         }
 
-        my $tag = 'origin:';
-        if (my $origin = $c->req->headers->header("Origin")) {
-            if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
-                $tag = "origin:$1";
-            }
-        }
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',               {tags => [$tag]});
 
@@ -176,7 +197,7 @@ sub __authorize_error {
     return {
         msg_type => $msg_type,
         'error'  => {
-            message  => "Must authorize first",
+            message  => "Please log in",
             msg_type => $msg_type,
             code     => "AuthorizationRequired"
         }};
@@ -208,7 +229,7 @@ sub _sanity_failed {
             msg_type => 'sanity_check',
             error    => {
                 message => "Parameters sanity check failed",
-                code    => "InvalidParameters"
+                code    => "SanityCheckFailed"
             }};
     }
     return;

@@ -39,9 +39,8 @@ sub get_transactions {
     $args->{sort_by} = 'transaction_time desc';
     $args->{limit}  ||= 100;
     $args->{offset} ||= 0;
-    my $dt_fm   = $args->{dt_fm};
-    my $dt_to   = $args->{dt_to};
-    my $actions = $args->{action_type} || [];
+    my $dt_fm = $args->{dt_fm};
+    my $dt_to = $args->{dt_to};
 
     for ($dt_fm, $dt_to) {
         next unless $_;
@@ -51,7 +50,7 @@ sub get_transactions {
     }
 
     my $query = [];
-    push @$query, action_type => $actions if @$actions;
+    push @$query, action_type => $args->{action_type} if $args->{action_type};
     push @$query, transaction_time => {ge => $dt_fm} if $dt_fm;
     push @$query, transaction_time => {lt => $dt_to} if $dt_to;
     $args->{query} = $query if @$query;

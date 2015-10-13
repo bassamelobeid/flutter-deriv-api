@@ -58,6 +58,7 @@ sub buy {
             buy_price     => $fmb->buy_price,
             start_time    => $fmb->start_time->epoch,
             longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
+            shortcode     => $fmb->short_code,
         };
     }
 

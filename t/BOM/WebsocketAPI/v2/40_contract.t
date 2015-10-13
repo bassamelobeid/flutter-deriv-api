@@ -39,7 +39,7 @@ test_schema('forget', $forget);
 $t = $t->send_ok({
         json => {
             "proposal"      => 1,
-            "amount_val"    => "10",
+            "amount"        => "10",
             "basis"         => "payout",
             "contract_type" => "CALL",
             "currency"      => "USD",
