@@ -8,7 +8,7 @@ use Finance::Asset;
 use BOM::Database::ClientDB;
 
 my $u_file = Finance::Asset->instance->all_parameters;
-my $u_subm = LoadFile('/home/git/regentmarkets/bom/config/files/submarkets.yml');
+my $u_subm = LoadFile('/home/git/regentmarkets/bom-market/config/files/submarkets.yml');
 
 my $dbh = BOM::Database::ClientDB->new({
         broker_code => 'FOG',
