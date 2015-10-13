@@ -143,7 +143,7 @@ has _coefficients => (
 );
 
 sub _build__coefficients {
-    return LoadFile('/home/git/regentmarkets/bom/config/files/news_impact_coefficients.yml');
+    return LoadFile('/home/git/regentmarkets/bom-market/config/files/news_impact_coefficients.yml');
 }
 
 sub get_scaling_factor {

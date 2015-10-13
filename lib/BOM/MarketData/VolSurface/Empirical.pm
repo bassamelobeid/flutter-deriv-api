@@ -325,7 +325,7 @@ has _coefficients => (
 sub _build__coefficients {
     my $self = shift;
 
-    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/volatility_calibration_coefficients.yml');
+    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
 }
 
 has long_term_vol => (

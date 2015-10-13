@@ -37,7 +37,7 @@ has fx_corr => (
 );
 
 sub _build_fx_corr {
-    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/forex_correlation_matrices.yml');
+    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/forex_correlation_matrices.yml');
 }
 
 has world_symbols => (
