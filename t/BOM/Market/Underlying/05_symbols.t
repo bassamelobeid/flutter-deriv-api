@@ -9,10 +9,6 @@ use lib "$FindBin::Bin/../..";    #cgi
 use Test::More qw(no_plan);
 
 package t::feeds::markets;
-##############################################
-# SET UP TEST FIXTURE
-##############################################
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Market::Underlying;
 
 my @symbols = ('frxUSDJPY', 'FRXEURUSD', 'frXAUDJPY');
