@@ -16,8 +16,6 @@ use BOM::Platform::Runtime;
 
 use BOM::Market::AggTicks;
 
-BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
