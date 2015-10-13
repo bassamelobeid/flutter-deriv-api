@@ -21,13 +21,12 @@ before_install:
     - sudo cp -a $HOME/build/regentmarkets/bom-postgres /home/git/regentmarkets/
 
     - /tmp/travis-scripts/couchdb.sh
-    
+
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
@@ -37,6 +36,7 @@ before_install:
 
 
 install:
+    - sudo ln -s $PWD /home/git/regentmarkets/bom-postgres
     - source /tmp/travis-scripts/devbox_path.sh
     - /tmp/travis-scripts/devbox.sh *.yml
 
@@ -45,7 +45,7 @@ install:
     - /tmp/travis-scripts/setup_feeddb.sh
     - /tmp/travis-scripts/setup_authdb.sh
     - /tmp/travis-scripts/setup_usersdb.sh
-    
+
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
