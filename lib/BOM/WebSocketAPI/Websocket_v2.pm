@@ -30,6 +30,7 @@ sub entry_point {
     my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
     if ($request) {
         BOM::Platform::Context::request($request);
+        $c->stash(r => $request);
     }
 
     my $log = $c->app->log;
