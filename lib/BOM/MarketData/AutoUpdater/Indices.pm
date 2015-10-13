@@ -70,11 +70,19 @@ sub _build_symbols_to_update {
 
     my @symbols_to_update;
     if ($market eq 'indices') {
-        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(market =>'indices', contract_category => 'ANY', exclude_disabled => 1);
+        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => 'indices',
+            contract_category => 'ANY',
+            exclude_disabled  => 1
+        );
         # forcing it here since we don't have offerings for the index.
         push @symbols_to_update, 'FTSE';
     } else {
-        @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(market =>'stocks', contract_category => 'ANY', exclude_disabled => 1, submarket => ['france', 'belgium', 'amsterdam'])
+        @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => 'stocks',
+            contract_category => 'ANY',
+            exclude_disabled  => 1,
+            submarket         => ['france', 'belgium', 'amsterdam']);
     }
     return \@symbols_to_update;
 }
