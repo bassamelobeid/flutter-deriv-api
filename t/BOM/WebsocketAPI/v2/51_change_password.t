@@ -64,10 +64,9 @@ my $new_hash_pwd = BOM::System::Password::hashpw($new_password);
 # change password wrongly
 $t = $t->send_ok({
         json => {
-            change_password  => 1,
-            old_password     => 'letmein',
-            new_password     => $new_password,
-            confirm_password => $new_password
+            change_password => 1,
+            old_password    => 'letmein',
+            new_password    => $new_password
         }})->message_ok;
 my $change_password = decode_json($t->message->[1]);
 is $change_password->{error}->{code}, 'ChangePasswordError';
@@ -76,10 +75,9 @@ test_schema('change_password', $change_password);
 
 $t = $t->send_ok({
         json => {
-            change_password  => 1,
-            old_password     => $password,
-            new_password     => 'a',
-            confirm_password => 'a'
+            change_password => 1,
+            old_password    => $password,
+            new_password    => 'a'
         }})->message_ok;
 $change_password = decode_json($t->message->[1]);
 is $change_password->{error}->{code}, 'InputValidationFailed';
@@ -87,10 +85,9 @@ test_schema('change_password', $change_password);
 
 $t = $t->send_ok({
         json => {
-            change_password  => 1,
-            old_password     => $password,
-            new_password     => $password,
-            confirm_password => $password
+            change_password => 1,
+            old_password    => $password,
+            new_password    => $password
         }})->message_ok;
 $change_password = decode_json($t->message->[1]);
 is $change_password->{error}->{code}, 'ChangePasswordError';
@@ -100,10 +97,9 @@ test_schema('change_password', $change_password);
 # change password
 $t = $t->send_ok({
         json => {
-            change_password  => 1,
-            old_password     => $password,
-            new_password     => $new_password,
-            confirm_password => $new_password
+            change_password => 1,
+            old_password    => $password,
+            new_password    => $new_password
         }})->message_ok;
 $change_password = decode_json($t->message->[1]);
 ok($change_password->{change_password});

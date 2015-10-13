@@ -3,7 +3,8 @@ use strict;
 use warnings;
 
 if (my $r =
-    `git grep BOM::|grep -v BOM::Test|grep -v BOM::Platform|grep -v BOM::System|grep -v BOM::Feed|grep -v BOM::Market|grep -v BOM::Product|grep -v BOM::WebSocketAPI`)
+    `git grep BOM::|grep -v BOM::Test|grep -v BOM::Platform|grep -v BOM::System|grep -v BOM::Feed|grep -v BOM::Market|grep -v BOM::Product|grep -v BOM::WebSocketAPI`
+    )
 {
     print $r;
     ok 0, "Wrong strucutre dependency $r";

@@ -141,8 +141,6 @@ sub change_password {
     ## args validation is done with JSON::Schema in entry_point
 
     ## YYY?? localize
-    return $err->("The two passwords that you entered do not match.")
-        unless $args->{new_password} eq $args->{confirm_password};
     return $err->('New password is same as old password.')
         if $args->{new_password} eq $args->{old_password};
     return $err->("Old password is wrong.")
