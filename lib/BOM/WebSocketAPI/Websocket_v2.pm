@@ -63,7 +63,11 @@ sub entry_point {
                     $data = {};
                 }
 
-                $data->{echo_req} = $p1;
+                if ($data->{error} and ($data->{error}->{code} eq 'SanityCheckFailed' or $data->{error}->{code} eq 'InputValidationFailed')) {
+                    $data->{echo_req} = {};
+                } else {
+                    $data->{echo_req} = $p1;
+                }
             } else {
                 # for invalid call, eg: not json
                 $data = {
@@ -194,7 +198,7 @@ sub __authorize_error {
     return {
         msg_type => $msg_type,
         'error'  => {
-            message  => "Must authorize first",
+            message  => "Please log in",
             msg_type => $msg_type,
             code     => "AuthorizationRequired"
         }};
@@ -226,7 +230,7 @@ sub _sanity_failed {
             msg_type => 'sanity_check',
             error    => {
                 message => "Parameters sanity check failed",
-                code    => "InvalidParameters"
+                code    => "SanityCheckFailed"
             }};
     }
     return;
