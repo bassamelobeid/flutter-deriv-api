@@ -1127,9 +1127,6 @@ sub _validate_trade_pricing_adjustment {
     # spreads price doesn't jump
     return if $self->contract->is_spread;
 
-    my $stats_name        = 'transaction.buy.';
-    my $stats_name_broker = 'transaction.' . lc($self->client->broker) . '.buy.';
-
     my $amount_type = $self->amount_type;
     my $contract    = $self->contract;
     my $currency    = $contract->currency;
@@ -1146,8 +1143,6 @@ sub _validate_trade_pricing_adjustment {
     my ($amount, $recomputed_amount) = $amount_type eq 'payout' ? ($self->price, $contract->ask_price) : ($self->payout, $contract->payout);
 
     if ($move != 0) {
-        stats_inc($stats_name . 'price_moved');
-        stats_inc($stats_name_broker . 'price_moved');
         my $final_value;
         if ($contract->is_expired) {
             return Error::Base->cuss(
@@ -1158,8 +1153,6 @@ sub _validate_trade_pricing_adjustment {
         } elsif ($allowed_move == 0) {
             $final_value = $recomputed_amount;
         } elsif ($move < -$allowed_move) {
-            stats_inc($stats_name . 'price_moved_failure');
-            stats_inc($stats_name_broker . 'price_moved_failure');
             my $what_changed = $amount_type eq 'payout' ? 'price' : 'payout';
             my $market_moved = BOM::Platform::Context::localize('The underlying market has moved too much since you priced the contract. ');
             $market_moved .= BOM::Platform::Context::localize(
@@ -1179,15 +1172,10 @@ sub _validate_trade_pricing_adjustment {
         } else {
             if ($move <= $allowed_move and $move >= -$allowed_move) {
                 $final_value = $amount;
-                stats_inc($stats_name . 'absorb_price_move');
-                stats_inc($stats_name_broker . 'absorb_price_move');
             } elsif ($move > $allowed_move) {
                 $self->execute_at_better_price(1);
                 $final_value = $recomputed_amount;
-                stats_inc($stats_name . 'better_price_execute');
-                stats_inc($stats_name_broker . 'better_price_execute');
             }
-
         }
 
         # adjust the value here
