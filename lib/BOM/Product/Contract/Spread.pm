@@ -20,9 +20,15 @@ use BOM::Utility::ErrorStrings qw( format_error_string );
 
 with 'MooseX::Role::Validatable';
 
+# Actual methods for introspection purposes.
+sub is_spread           { return 1 }
+sub is_atm_bet          { return 0 }
+sub is_intraday         { return 0 }
+sub is_forward_starting { return 0 }
+
+with 'BOM::Product::Role::Reportable';
+
 use constant {    # added for CustomClientLimits & Transaction
-    is_spread           => 1,
-    is_atm_bet          => 0,
     expiry_daily        => 0,
     fixed_expiry        => 0,
     tick_expiry         => 0,
@@ -271,12 +277,12 @@ has [qw(is_valid_to_buy is_valid_to_sell may_settle_automatically)] => (
 
 sub _build_is_valid_to_buy {
     my $self = shift;
-    return $self->confirm_validity;
+    return $self->_report_validation_stats('buy', $self->confirm_validity);
 }
 
 sub _build_is_valid_to_sell {
     my $self = shift;
-    return $self->confirm_validity;
+    return $self->_report_validation_stats('sell', $self->confirm_validity);
 }
 
 sub _build_may_settle_automatically {
@@ -521,6 +527,7 @@ sub _get_min_max_unit {
 
     return (roundnear(0.01, $min), roundnear(0.01, $max), $unit);
 }
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;

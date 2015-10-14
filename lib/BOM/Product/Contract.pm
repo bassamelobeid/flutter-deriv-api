@@ -5,13 +5,11 @@ use Carp;
 
 use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
-use DataDog::DogStatsd::Helper qw(stats_inc);
 use Time::HiRes qw(time sleep);
 use List::Util qw(min max first);
 use List::MoreUtils qw(none);
 use Scalar::Util qw(looks_like_number);
 
-use BOM::Database::Model::Constants;
 use BOM::Market::UnderlyingDB;
 use Math::Util::CalculatedValue::Validatable;
 use Date::Utility;
@@ -27,8 +25,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Offerings qw( get_contract_specifics );
-use BOM::System::Config;
-use BOM::Utility::ErrorStrings qw( format_error_string normalize_error_string );
+use BOM::Utility::ErrorStrings qw( format_error_string );
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -1057,7 +1054,7 @@ sub is_valid_to_buy {
 
     my $valid = $self->confirm_validity;
 
-    return ($self->built_with_bom_parameters) ? $valid : $self->_report_stats('buy', $valid);
+    return ($self->built_with_bom_parameters) ? $valid : $self->_report_validation_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
@@ -1077,7 +1074,7 @@ sub is_valid_to_sell {
         });
     }
 
-    return $self->_report_stats('sell', $self->passes_validation);
+    return $self->_report_validation_stats('sell', $self->passes_validation);
 }
 
 # PRIVATE method.
@@ -2691,33 +2688,6 @@ sub _validate_volsurface {
     return @errors;
 }
 
-sub _report_stats {
-    my ($self, $which, $valid) = @_;
-
-    # This should all be fast, since everything should have been pre-computed.
-
-    my $stats_name = 'pricing_validation.' . $which . '.';
-    # These attempt to be close to the Transaction stats without compromising their value.
-    # It may be worth adding a free-form 'source' identification, but I don't want to go
-    # down that road just yet.
-    my $tags = {
-        tags => [
-            'rmgenv:' . BOM::System::Config::env,
-            'contract_class:' . $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$self->code},
-            map { substr($_, 3) . ':' . ($self->$_ ? 'yes' : 'no') } (qw(is_intraday is_forward_starting is_atm_bet))]};
-
-    stats_inc($stats_name . 'attempt', $tags);
-    if ($valid) {
-        stats_inc($stats_name . 'success', $tags);
-    } else {
-        # We can be a tiny bit slower here as we're already reporting an error
-        push @{$tags->{tags}}, 'reason:' . normalize_error_string($self->primary_validation_error->message);
-        stats_inc($stats_name . 'failure', $tags);
-    }
-
-    return $valid;
-}
-
 ## PRICING PARAMETERS CODE ##
 ## This is a temporary place for this code.
 ## It would be moved to the appropriate class when we have refactored all PE to the new interface
@@ -2757,6 +2727,9 @@ sub _last_twenty_ticks {
         tick_count   => 20,
     });
 }
+
+# Don't mind me, I just need to make sure my attibutes are available.
+with 'BOM::Product::Role::Reportable';
 
 no Moose;
 
