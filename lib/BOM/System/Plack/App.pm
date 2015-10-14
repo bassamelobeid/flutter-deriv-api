@@ -13,7 +13,7 @@ use BOM::Utility::Log4perl qw/get_logger/;
 
 BEGIN {
     $ENV{ERROR_LOG} ||= 'error_log';
-    open STDERR, '>>', $ENV{ERROR_LOG} or die "Cannot open $ENV{ERROR_LOG}: $!";
+    #open STDERR, '>>', $ENV{ERROR_LOG} or die "Cannot open $ENV{ERROR_LOG}: $!";
     select +(select(STDERR), $| = 1)[0];    ## no critic
 
     my $t = Time::HiRes::time;
