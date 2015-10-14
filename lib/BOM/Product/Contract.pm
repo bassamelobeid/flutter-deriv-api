@@ -1055,7 +1055,9 @@ sub _build_commission_adjustment {
 sub is_valid_to_buy {
     my $self = shift;
 
-    return $self->_report_stats('buy', $self->confirm_validity);
+    my $valid = $self->confirm_validity;
+
+    return ($self->built_with_bom_parameters) ? $valid : $self->_report_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
