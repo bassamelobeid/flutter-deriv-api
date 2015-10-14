@@ -29,12 +29,14 @@ sub create_account {
     });
     return $acc if ($acc->{err});
 
-    my $client               = $acc->{client};
-    my $financial_evaluation = $args->{financial_assessment};
+    my $client         = $acc->{client};
+    my $financial_data = $args->{financial_data};
 
     $client->financial_assessment({
-        data            => encode_json($financial_evaluation->{user_data}),
-        is_professional => $financial_evaluation->{total_score} < 60 ? 0 : 1,
+        data                        => encode_json($financial_data->{data}),
+        total_score                 => $financial_data->{total_score},
+        income_asset_score          => $financial_data->{total_score},
+        trading_experience_score     => $financial_data->{total_score},
     });
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     $client->save;
