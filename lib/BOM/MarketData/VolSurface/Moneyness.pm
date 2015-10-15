@@ -453,8 +453,13 @@ sub clone {
         if (not exists $clone_args{underlying});
     $clone_args{cutoff} = $self->cutoff
         if (not exists $clone_args{cutoff});
-    $clone_args{surface} = dclone($self->surface)
-        if (not exists $clone_args{surface});
+
+    if (not exists $clone_args{surface}) {
+        my $orig_surface = dclone($self->surface);
+        my %surface_to_clone = map { $_ => $orig_surface->{$_} } @{$self->original_term_for_smile};
+        $clone_args{surface} = \%surface_to_clone;
+    }
+
     $clone_args{recorded_date} = $self->recorded_date
         if (not exists $clone_args{recorded_date});
     $clone_args{print_precision} = $self->print_precision
