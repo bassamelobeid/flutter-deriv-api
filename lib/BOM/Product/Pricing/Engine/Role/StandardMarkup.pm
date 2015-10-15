@@ -30,7 +30,7 @@ use BOM::MarketData::Fetcher::EconomicEvent;
 =cut
 
 has [
-    qw(model_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup)
+    qw(model_markup smile_uncertainty_markup butterfly_markup vol_spread_markup spot_spread_markup risk_markup commission_markup digital_spread_markup forward_starting_markup economic_events_markup eod_market_risk_markup economic_events_spot_risk_markup)
     ] => (
     is         => 'ro',
     isa        => 'Math::Util::CalculatedValue::Validatable',
@@ -341,6 +341,10 @@ sub _build_risk_markup {
         $risk_markup->include_adjustment('add',      $self->vol_spread_markup);
         $risk_markup->include_adjustment('add',      $self->spot_spread_markup) if (not $self->bet->is_intraday);
         $risk_markup->include_adjustment('subtract', $self->forward_starting_markup);
+
+        if (grep {$self->bet->market->name eq $_} qw(forex stocks) and $self->bet->timeindays->amount < 7) {
+            $risk_markup->include_adjustment('add', $self->smile_uncertainty_markup);
+        }
 
         if (grep { $self->bet->market->name eq $_ } qw(forex commodities) and $self->bet->is_intraday) {
             $risk_markup->include_adjustment('add', $self->economic_events_markup);
@@ -661,6 +665,19 @@ sub _build_economic_events_spot_risk_markup {
     });
 
     return $spot_risk_markup;
+}
+
+# Generally for indices and stocks the minimum available tenor for smile is 30 days.
+# We use this to price short term contracts, so adding a 5% markup for the volatility uncertainty.
+sub _build_smile_uncertainty_markup {
+    my $self = shift;
+
+    return Math::Util::CalculatedValue::Validatable->new({
+        name        => 'smile_uncertainty_markup',
+        description => 'markup to account for volatility uncertainty for short term contracts on indices and stocks',
+        set_by      => __PACKAGE__,
+        base_amount => 0.05,
+    });
 }
 
 1;
