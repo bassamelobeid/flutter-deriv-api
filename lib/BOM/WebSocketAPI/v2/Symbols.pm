@@ -202,6 +202,7 @@ sub candles {
         M => 60,
         H => 3600,
         D => 86400,
+        S => 1,
     };
 
     $args = _validate_start_end($c, $args);
@@ -213,7 +214,12 @@ sub candles {
     my $granularity = uc($args->{granularity} || 'M1');
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
-    my $ohlc = $ul->feed_api->ohlc_start_end({
+    # For the underlying nocturne, for daily ohlc, the date start need to be date
+    if ($ul->submarket eq 'random_nightly' and $unit eq 'D'){
+        $start = Date::Utility->new($start)->truncate_to_day;
+    }
+
+     my $ohlc = $ul->feed_api->ohlc_start_end({
         start_time         => $start,
         end_time           => $end,
         aggregation_period => $size * $interval_map->{$unit},
