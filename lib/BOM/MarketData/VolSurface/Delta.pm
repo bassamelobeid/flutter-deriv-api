@@ -377,7 +377,7 @@ sub clone {
 
     if (not exists $clone_args->{surface}) {
         my $orig_surface = dclone($self->surface);
-        my \%surface_to_clone = map { $_ => $orig_surface->{$_} } @{$self->original_term_for_smile};
+        my %surface_to_clone = map { $_ => $orig_surface->{$_} } @{$self->original_term_for_smile};
         $clone_args->{surface} = \%surface_to_clone;
     }
 
