@@ -127,7 +127,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
     my $p0 = {%$args};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id  = '';
+            my $id = '';
             $args->{fmb} = $fmb;
             my $p2 = prepare_bid($c, $args);
             $p2->{fmb_id} = $fmb->id;
