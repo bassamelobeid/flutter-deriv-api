@@ -61,7 +61,7 @@ my $c = produce_contract({
     date_pricing => $now,
     bet_type     => 'FLASHU'
 });
-is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope::Observed', 'correct pricing engine';
+is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope', 'correct pricing engine';
 is roundnear(0.0001, $c->bs_probability->amount), 0.4994, 'bs probability is 0.5002';
 is $c->total_markup->amount, 0.0075, 'total markup is 0.0075';
 
@@ -71,7 +71,7 @@ $c = produce_contract({
     date_pricing => $now,
     bet_type     => 'FLASHD',
 });
-is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope::Observed', 'correct pricing engine';
+is $c->pricing_engine_name, 'BOM::Product::Pricing::Engine::Slope', 'correct pricing engine';
 is roundnear(0.0001, $c->bs_probability->amount), 0.5006, 'bs probability is 0.4998';
 is $c->total_markup->amount, 0.0075, 'total markup is 0.0075';
 

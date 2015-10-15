@@ -31,7 +31,7 @@ use BOM::Utility::ErrorStrings qw( format_error_string );
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
-require BOM::Product::Pricing::Engine::Slope::Observed;
+require BOM::Product::Pricing::Engine::Slope;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
 require Pricing::Engine::TickExpiry;
 
@@ -507,7 +507,7 @@ sub _build_pricing_engine_name {
     my $self = shift;
 
     my $engine_name =
-        $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope::Observed';
+        $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope';
 
     if ($self->tick_expiry) {
         my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(

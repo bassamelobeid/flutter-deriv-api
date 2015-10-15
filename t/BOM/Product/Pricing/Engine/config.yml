@@ -1442,7 +1442,7 @@ expected_result:
                 total_markup: 0.0288
                 commission_markup: 0.0228
                 risk_markup: 0.0061
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed                                                                                                                      
+                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                      
             NOTOUCH:
                 barrier: 103
                 spot: 102.454
@@ -1474,7 +1474,7 @@ expected_result:
                 total_markup: 0.0489
                 commission_markup: 0.0216
                 risk_markup: 0.0273
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed   
+                price_engine: BOM::Product::Pricing::Engine::Slope   
     frxEURUSD:
             CALL:
                 barrier: 1.383
@@ -1485,7 +1485,7 @@ expected_result:
                 total_markup: 0.0291
                 commission_markup: 0.0216
                 risk_markup: 0.0075  
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed                                                                                                                 
+                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                 
             NOTOUCH:
                 barrier: 1.388
                 spot: 1.3803
@@ -1517,7 +1517,7 @@ expected_result:
                 total_markup: 0.0284
                 commission_markup: 0.0175
                 risk_markup: 0.0109
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed   
+                price_engine: BOM::Product::Pricing::Engine::Slope   
     FTSE:
             CALL:
                 barrier: 6688.86
@@ -1528,7 +1528,7 @@ expected_result:
                 total_markup: 0.0327
                 commission_markup: 0.0251
                 risk_markup: 0.0077
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed                                                                                                                        
+                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                        
             NOTOUCH:
                 barrier: 6776.72
                 spot: 6685.31
@@ -1560,7 +1560,7 @@ expected_result:
                 total_markup: 0.0281
                 commission_markup: 0.02
                 risk_markup: 0.0081
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed 
+                price_engine: BOM::Product::Pricing::Engine::Slope 
     GDAXI:
             CALL:
                 barrier: 9516.05
@@ -1571,7 +1571,7 @@ expected_result:
                 total_markup: 0.0245
                 commission_markup: 0.0231
                 risk_markup: 0.0014
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed                                                                                                                  
+                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                  
             NOTOUCH:
                 barrier: 9736.84
                 spot: 9518.2
@@ -1603,7 +1603,7 @@ expected_result:
                 total_markup: 0.0249
                 commission_markup: 0.02
                 risk_markup: 0.0049
-                price_engine: BOM::Product::Pricing::Engine::Slope::Observed
+                price_engine: BOM::Product::Pricing::Engine::Slope
             DIGITMATCH:
                 barrier: 1
                 spot: 9518.2

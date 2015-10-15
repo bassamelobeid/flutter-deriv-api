@@ -81,7 +81,7 @@ subtest 'call variations' => sub {
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope';
 
         $args->{duration}     = '10m';
         $args->{date_pricing} = $now->plus_time_interval('10m');
@@ -89,7 +89,7 @@ subtest 'call variations' => sub {
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
         ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine,  'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine,  'BOM::Product::Pricing::Engine::Slope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;
@@ -102,7 +102,7 @@ subtest 'call variations' => sub {
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope';
     }
     'pricing engine selection';
 };
