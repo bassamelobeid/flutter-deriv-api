@@ -30,6 +30,7 @@ sub entry_point {
     my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
     if ($request) {
         BOM::Platform::Context::request($request);
+        $c->stash(r => $request);
     }
 
     my $log = $c->app->log;
@@ -132,12 +133,14 @@ sub __handle {
         ['active_symbols',         \&BOM::WebSocketAPI::v2::Symbols::active_symbols,                     0],
         ['contracts_for',          \&BOM::WebSocketAPI::v2::ContractDiscovery::contracts_for,            0],
         ['trading_times',          \&BOM::WebSocketAPI::v2::MarketDiscovery::trading_times,              0],
+        ['asset_index',            \&BOM::WebSocketAPI::v2::MarketDiscovery::asset_index,                0],
         ['buy',                    \&BOM::WebSocketAPI::v2::PortfolioManagement::buy,                    1],
         ['sell',                   \&BOM::WebSocketAPI::v2::PortfolioManagement::sell,                   1],
         ['portfolio',              \&BOM::WebSocketAPI::v2::PortfolioManagement::portfolio,              1],
         ['proposal_open_contract', \&BOM::WebSocketAPI::v2::PortfolioManagement::proposal_open_contract, 1],
         ['balance',                \&BOM::WebSocketAPI::v2::Accounts::balance,                           1],
         ['statement',              \&BOM::WebSocketAPI::v2::Accounts::statement,                         1],
+        ['change_password',        \&BOM::WebSocketAPI::v2::Accounts::change_password,                   1],
     );
 
     foreach my $dispatch (@dispatch) {
