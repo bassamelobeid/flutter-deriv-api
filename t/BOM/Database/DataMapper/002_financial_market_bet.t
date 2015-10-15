@@ -347,18 +347,18 @@ subtest 'digits' => sub {
     }
 };
 
-## test get_closed_bets_of_account
-subtest 'get_closed_bets_of_account' => sub {
-    my $data = $fmb_mapper->get_closed_bets_of_account();
+## test get_sold_bets_of_account
+subtest 'get_sold_bets_of_account' => sub {
+    my $data = $fmb_mapper->get_sold_bets_of_account();
     ok $data->{total} > 0;
     ok $data->{rows};
 
-    my $bets = $fmb_mapper->get_closed_bets_of_account({limit => 1});
+    my $bets = $fmb_mapper->get_sold_bets_of_account({limit => 1});
     is $data->{total}, $bets->{total}, 'total is the same regardless limit';
     is_deeply $data->{row}->[0], $bets->{row}->[0], 'first row is the same';
     is scalar(@{$bets->{rows}}), 1;
 
-    $bets = $fmb_mapper->get_closed_bets_of_account({
+    $bets = $fmb_mapper->get_sold_bets_of_account({
         limit  => 2,
         offset => 1
     });
@@ -367,7 +367,7 @@ subtest 'get_closed_bets_of_account' => sub {
     is_deeply $data->{row}->[2], $bets->{row}->[1], 'second row is the same';
     is scalar(@{$bets->{rows}}), 2;
 
-    $bets = $fmb_mapper->get_closed_bets_of_account({
+    $bets = $fmb_mapper->get_sold_bets_of_account({
         limit  => 1,
         offset => 1,
         sort   => 'ASC'
@@ -377,14 +377,14 @@ subtest 'get_closed_bets_of_account' => sub {
     is scalar(@{$bets->{rows}}), 1;
 
     # old database rows
-    $bets = $fmb_mapper->get_closed_bets_of_account({
+    $bets = $fmb_mapper->get_sold_bets_of_account({
         limit  => 1,
         offset => 1,
         before => '2005-09-21 06:18:00'
     });
     is $bets->{total}, 2, 'sold rows == 2 before 2005-09-21 06:18:00';
 
-    $bets = $fmb_mapper->get_closed_bets_of_account({
+    $bets = $fmb_mapper->get_sold_bets_of_account({
         limit  => 1,
         offset => 1,
         after  => '2011-07-25 14:29:16'

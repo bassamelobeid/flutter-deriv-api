@@ -102,7 +102,7 @@ sub get_open_bets_of_account {
     return $sth->fetchall_arrayref({});
 }
 
-sub get_closed_bets_of_account {
+sub get_sold_bets_of_account {
     my ($self, $args) = @_;
 
     my $limit  = int($args->{limit}  // 50);
