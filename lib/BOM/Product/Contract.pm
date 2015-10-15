@@ -561,9 +561,17 @@ has pricing_engine_parameters => (
 sub _build_pricing_engine {
     my $self = shift;
 
-    return $self->pricing_engine_name->new({
-            bet => $self,
-            %{$self->pricing_engine_parameters}});
+    my $pricing_engine;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
+        $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
+    } else {
+        $pricing_engine = $self->pricing_engine_name->new({
+                bet => $self,
+                %{$self->pricing_engine_parameters}});
+    }
+
+    return $pricing_engine;
 }
 
 has remaining_time => (
@@ -1106,17 +1114,39 @@ sub _build_payout {
 sub _build_theo_probability {
     my $self = shift;
 
-    return $self->_get_probability_reference('probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
+    my $theo;
+    # Have to keep it this way until we remove CalculatedValue in Contract.
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        $theo = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'theo_probability',
+            description => 'theorectical value of a contract',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->probability,
+        });
+    } else {
+        $theo = $self->pricing_engine->probability;
+    }
 
-    return $self->pricing_engine->probability;
+    return $theo;
 }
 
 sub _build_bs_probability {
     my $self = shift;
 
-    return $self->_get_probability_reference('bs_probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
+    my $bs_prob;
+    # Have to keep it this way until we remove CalculatedValue in Contract.
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        $bs_prob = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'bs_probability',
+            description => 'BlackScholes value of a contract',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->bs_probability,
+        });
+    } else {
+        $bs_prob = $self->pricing_engine->bs_probability;
+    }
 
-    return $self->pricing_engine->bs_probability;
+    return $bs_prob;
 }
 
 sub _build_bs_price {
@@ -1128,10 +1158,25 @@ sub _build_bs_price {
 sub _build_model_markup {
     my $self = shift;
 
-    # theo_probability markup will always be used.
-    return $self->_get_probability_reference('probability')->{markups}->{model_markup} if $self->new_interface_engine->{$self->pricing_engine_name};
+    my $model_markup;
+    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+        my $risk_markup       = $self->pricing_engine->risk_markup;
+        my $commission_markup = $self->pricing_engine->commission_markup;
+        if ($self->built_with_bom_parameters) {
+            my $sell_discount = BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor;
+            $commission_markup *= $sell_discount;
+        }
+        $model_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'model_markup',
+            description => 'Risk and commission markup for a pricing model',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $risk_markup + $commission_markup,
+        });
+    } else {
+        $model_markup = $self->pricing_engine->model_markup;
+    }
 
-    return $self->pricing_engine->model_markup;
+    return $model_markup;
 }
 
 sub _build_theo_price {
@@ -1501,6 +1546,8 @@ sub _pricing_parameters {
         payouttime_code            => $self->payouttime_code,
         contract_type              => $self->code,
         underlying_symbol          => $self->underlying->symbol,
+        market_data                => $self->_market_data,
+        market_convention          => $self->_market_convention,
     };
 }
 
@@ -1540,7 +1587,22 @@ sub _market_data {
             return $volsurface->get_market_rr_bf($timeindays);
         },
         get_volatility => sub {
-            my $args = shift;
+            my ($args, $surface_data) = @_;
+            # if there's new surface data, calculate vol from that.
+            my $vol;
+            if ($surface_data) {
+                my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
+                $vol = $new_volsurface_obj->get_volatility($args);
+            } else {
+                $vol = $volsurface->get_volatility($args);
+            }
+
+            return $vol;
+        },
+        get_atm_volatility => sub {
+            my $args      = shift;
+            my $atm_point = $volsurface->atm_spread_point;
+            $args->{$volsurface->type} = $atm_point;
             return $volsurface->get_volatility($args);
         },
         get_economic_event => sub {
@@ -1569,63 +1631,11 @@ sub _market_data {
             my $args = shift;
             $args->{underlying} = BOM::Market::Underlying->new($args->{underlying}) if ref $args->{underlying} ne 'BOM::Market::Underlying';
             return BOM::Market::AggTicks->new->retrieve($args);
-        }
+        },
+        get_overnight_days => sub {
+            return $volsurface->_ON_day;
+        },
     };
-}
-
-sub _get_probability_reference {
-    my ($self, $probability_name) = @_;
-
-    my $prob_ref;
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->REQUIRED_ARGS};
-        $pricing_parameters{market_data}       = $self->_market_data();
-        $pricing_parameters{market_convention} = $self->_market_convention();
-        # will make this more generic as we move more pricing engines to this interface
-        my $func_name = $self->pricing_engine_name . '::' . $probability_name;
-        my $subref    = \&$func_name;
-        $prob_ref = &$subref(\%pricing_parameters);
-    } else {
-        # shouldn't be calling this if it doesn't have the new interface
-        $prob_ref = {
-            error       => 'Invalid call to [' . $probability_name . '] for engine [' . $self->pricing_engine_name . ']',
-            probability => 1,
-            markups     => {
-                # avoid undefined markups
-                model_markup      => 0,
-                risk_markup       => 0,
-                commission_markup => 0,
-            },
-        };
-    }
-
-    # convert it to a CV.
-    $prob_ref->{probability} = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'theo_probability',
-        description => '0.5 probability adjusted for trend',
-        set_by      => $self->pricing_engine_name,
-        base_amount => $prob_ref->{probability},
-    });
-    # convert markups to CV
-    for my $markup_name (keys $prob_ref->{markups}) {
-        $prob_ref->{markups}->{$markup_name} = Math::Util::CalculatedValue::Validatable->new({
-            name        => $markup_name,
-            description => $markup_name,
-            set_by      => $self->pricing_engine_name,
-            base_amount => $prob_ref->{markups}->{$markup_name},
-        });
-    }
-    # We always get a value for probability.
-    # Here is where we decide whether it is a valid probability or not!
-    if ($prob_ref->{error}) {
-        $self->add_errors({
-            severity          => 100,
-            message           => 'Error in calculating probability [' . $prob_ref->{error} . ']',
-            message_to_client => localize("We could not price this contract now, please try again later."),
-        });
-    }
-
-    return $prob_ref;
 }
 
 sub _build_priced_with {

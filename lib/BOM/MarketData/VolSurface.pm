@@ -1539,10 +1539,6 @@ sub get_strike_slope {
     return ($up_vol - $down_vol) / (2 * $epsilon);
 }
 
-sub has_overnight_tenor {
-    my $self = shift;
-    return ($self->original_term_from_smile->[0] == $self->_ON_day) ? 1 : 0;
-}
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
