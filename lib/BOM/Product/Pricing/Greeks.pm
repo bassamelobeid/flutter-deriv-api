@@ -162,9 +162,10 @@ sub get_greek {
     my @barrier_args = ($args->{barrier1});
     push @barrier_args, $args->{barrier2} if ($bet->two_barriers);
 
-    my $vol_to_use = ($bet->category eq 'vanilla') ? $bet->vol_at_strike : $bet->atm_vols->{fordom};
+    my $vol_to_use = ($bet->category_code eq 'vanilla') ? $bet->vol_at_strike : $bet->atm_vols->{fordom};
 
-    return $self->formulae->{$greek}->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $vol_to_use, $args->{payout_time});
+    return $self->formulae->{$greek}
+        ->($args->{spot}, @barrier_args, $args->{t}, $bet->discount_rate, $bet->mu, $vol_to_use, $args->{payouttime_code});
 }
 
 no Moose;

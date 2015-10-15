@@ -1469,8 +1469,8 @@ expected_result:
                 barrier2: 101.338
                 spot: 102.454
                 duration: 8d
-                ask_prob: 0.5767
-                theo_prob: 0.5278
+                ask_prob: 0.577
+                theo_prob: 0.5282
                 total_markup: 0.0489
                 commission_markup: 0.0216
                 risk_markup: 0.0273
@@ -1512,8 +1512,8 @@ expected_result:
                 barrier2: 1.3210
                 spot: 1.3803
                 duration: 120d
-                ask_prob: 0.8001
-                theo_prob: 0.7717
+                ask_prob: 0.8056
+                theo_prob: 0.7772
                 total_markup: 0.0284
                 commission_markup: 0.0175
                 risk_markup: 0.0109
@@ -1523,8 +1523,8 @@ expected_result:
                 barrier: 6688.86
                 spot: 6685.31
                 duration: 8d
-                ask_prob: 0.5585
-                theo_prob: 0.5257
+                ask_prob: 0.5589
+                theo_prob: 0.5261
                 total_markup: 0.0327
                 commission_markup: 0.0251
                 risk_markup: 0.0077
@@ -1555,8 +1555,8 @@ expected_result:
                 barrier2: 6069.76
                 spot: 6688.93
                 duration: 120d
-                ask_prob: 0.7336
-                theo_prob: 0.7055
+                ask_prob: 0.7825
+                theo_prob: 0.7545
                 total_markup: 0.0281
                 commission_markup: 0.02
                 risk_markup: 0.0081
@@ -1598,8 +1598,8 @@ expected_result:
                 barrier2: 8642.2
                 spot: 9518.2
                 duration: 120d
-                ask_prob: 0.7356
-                theo_prob: 0.7107
+                ask_prob: 0.7654
+                theo_prob: 0.7405
                 total_markup: 0.0249
                 commission_markup: 0.02
                 risk_markup: 0.0049
