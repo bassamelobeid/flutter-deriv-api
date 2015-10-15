@@ -426,8 +426,8 @@ subtest 'invalid bet payout hobbling around' => sub {
     ok($bet->primary_validation_error->message =~ $expected_reasons->[1], '..and the primary one is the most severe.');
 
     $bet_params->{amount} = 12.345;
-    $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/stake.*is not within limits/, qr/more than 2 decimal places/];
+    $bet                  = produce_contract($bet_params);
+    $expected_reasons     = [qr/more than 2 decimal places/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount}   = 1e5;

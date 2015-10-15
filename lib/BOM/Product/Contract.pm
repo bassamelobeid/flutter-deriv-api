@@ -979,9 +979,7 @@ sub _build_ask_probability {
     $marked_up->include_adjustment('add', $self->total_markup);
 
     my $min_allowed_ask_prob = $self->market->deep_otm_threshold;
-    croak 'Missing deep_otm_threshold for market[' . $self->market->name . "]"
-        if (not defined $min_allowed_ask_prob);
-    $min_allowed_ask_prob /= 100;
+
     if ($marked_up->amount < $min_allowed_ask_prob) {
         my $deep_otm_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'deep_otm_markup',
@@ -1062,7 +1060,9 @@ sub _build_commission_adjustment {
 sub is_valid_to_buy {
     my $self = shift;
 
-    return $self->confirm_validity;
+    my $valid = $self->confirm_validity;
+
+    return ($self->built_with_bom_parameters) ? $valid : $self->_report_validation_stats('buy', $valid);
 }
 
 sub is_valid_to_sell {
@@ -1082,7 +1082,7 @@ sub is_valid_to_sell {
         });
     }
 
-    return $self->passes_validation;
+    return $self->_report_validation_stats('sell', $self->passes_validation);
 }
 
 # PRIVATE method.
@@ -2288,7 +2288,7 @@ sub _validate_start_date {
             {
             severity          => 100,
             message           => 'Start must be before expiry',
-            message_to_client => localize("Start time must be before expiry time."),
+            message_to_client => localize("Expiry time cannot be in the past."),
             };
     }
 
@@ -2791,6 +2791,9 @@ sub _validate_volsurface {
 
     return @errors;
 }
+
+# Don't mind me, I just need to make sure my attibutes are available.
+with 'BOM::Product::Role::Reportable';
 
 no Moose;
 

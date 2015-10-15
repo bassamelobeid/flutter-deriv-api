@@ -298,7 +298,6 @@ The changes should be in a hashref as the second argument.
 
 Set 'as_new' to create a similar contract which starts "now"
 Set 'for_sale' to convert an extant contract for sale at market.
-Set 'for_eq_ticks' if it will be used for an equal ticks detemrination.
 Set 'priced_at' to move to a particular point in the contract lifetime. 'now' and 'start' are short-cuts.
 Otherwise, the changes should be attribute to fill on the contract as with produce_contract
 =cut
@@ -325,12 +324,6 @@ sub make_similar_contract {
         $build_parameters{require_entry_tick_for_sale} = 1;
     }
     delete $changes->{for_sale};
-    if ($changes->{for_eq_ticks}) {
-        $build_parameters{do_not_round_barrier} = 1;
-        my $pe = $orig_contract->pricing_engine;
-        $build_parameters{pricing_engine_parameters} = {map { $_ => $pe->$_ } (@{$pe->_attrs_safe_for_eq_ticks_reuse})};
-    }
-    delete $changes->{for_eq_ticks};
     if (my $when = $changes->{priced_at}) {
         if ($when eq 'now') {
             delete $build_parameters{date_pricing};

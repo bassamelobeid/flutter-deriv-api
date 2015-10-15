@@ -145,8 +145,8 @@ $c = produce_contract({
 });
 is $c->bs_probability->amount, 0.503170070758588, 'correct bs probability';
 is roundnear(0.0001, $c->pricing_engine->skew_adjustment->amount), 0.0333, 'correct skew adjustment';
-is roundnear(0.0001, $c->total_markup->amount),    0.0242, 'correct total markup';
-is roundnear(0.0001, $c->ask_probability->amount), 0.5608, 'correct ask probability';
+is roundnear(0.0001, $c->total_markup->amount),    0.0243, 'correct total markup';
+is roundnear(0.0001, $c->ask_probability->amount), 0.5609, 'correct ask probability';
 
 done_testing();
 

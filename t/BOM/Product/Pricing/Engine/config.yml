@@ -101,7 +101,7 @@ volsurface:
                   '50': 0.0033
                   '75': 0.004195
     frxEURUSD:
-        surfaces: 
+        surfaces:
               '1':
                 smile:
                   '25': 0.072763
@@ -312,7 +312,7 @@ volsurface:
                 vol_spread:
                   '25': 0.003765
                   '50': 0.003
-                  '75': 0.003765                          
+                  '75': 0.003765
     GDAXI:
         parameterization:
           values:
@@ -329,8 +329,8 @@ volsurface:
              skewshort:      -0.0348330192855386
              skewwingL:      7.62591079701648
              skewwingR:      0.280362812771711
-          calibration_error: 58.9875269922372 
-        surfaces: 
+          calibration_error: 58.9875269922372
+        surfaces:
               '183':
                 smile:
                   '100': 0.11027416
@@ -521,7 +521,7 @@ volsurface:
               skewlong: -0.190490510836894
               skewshort: 0.00787071245035347
               skewwingL: 7.29342025965918
-              skewwingR: 19.9808227296178        
+              skewwingR: 19.9808227296178
           calibration_error: 58.9875269922372
         surfaces:
               '183':
@@ -698,7 +698,7 @@ volsurface:
                   '96': 0.11703829
                   '98': 0.0955082
                 vol_spread:
-                  '100': 0.0039984375 
+                  '100': 0.0039984375
 exchange:
     FSE:
         holidays:
@@ -988,7 +988,7 @@ currency:
            91: 0.0277
            183: 0.0248
            275: 0.0068
-           365: -0.0034          
+           365: -0.0034
     USD:
         rates:
            1: 0.091
@@ -1032,7 +1032,7 @@ currency:
            91: 0.3084
            183: 0.291
            275: 0.2869
-           365: 0.2848             
+           365: 0.2848
     GBP:
         rates:
            1: 0.463
@@ -1059,7 +1059,7 @@ currency:
            91: 0.4691
            183: 0.5388
            275: 0.5798
-           365: 0.6435,   
+           365: 0.6435,
 index:
     FTSE:
         rates:
@@ -1427,7 +1427,7 @@ index:
            362: 3.52
            363: 3.53
            364: 3.52
-           365: 3.51        
+           365: 3.51
     GDAXI:
         rates:
            365: 0
@@ -1442,7 +1442,7 @@ expected_result:
                 total_markup: 0.0288
                 commission_markup: 0.0228
                 risk_markup: 0.0061
-                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                      
+                price_engine: BOM::Product::Pricing::Engine::Slope
             NOTOUCH:
                 barrier: 103
                 spot: 102.454
@@ -1469,12 +1469,12 @@ expected_result:
                 barrier2: 101.338
                 spot: 102.454
                 duration: 8d
-                ask_prob: 0.5767
-                theo_prob: 0.5278
+                ask_prob: 0.577
+                theo_prob: 0.5282
                 total_markup: 0.0489
                 commission_markup: 0.0216
                 risk_markup: 0.0273
-                price_engine: BOM::Product::Pricing::Engine::Slope   
+                price_engine: BOM::Product::Pricing::Engine::Slope
     frxEURUSD:
             CALL:
                 barrier: 1.383
@@ -1484,8 +1484,8 @@ expected_result:
                 theo_prob: 0.4164
                 total_markup: 0.0291
                 commission_markup: 0.0216
-                risk_markup: 0.0075  
-                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                 
+                risk_markup: 0.0075
+                price_engine: BOM::Product::Pricing::Engine::Slope
             NOTOUCH:
                 barrier: 1.388
                 spot: 1.3803
@@ -1512,23 +1512,23 @@ expected_result:
                 barrier2: 1.3210
                 spot: 1.3803
                 duration: 120d
-                ask_prob: 0.8001
-                theo_prob: 0.7717
+                ask_prob: 0.8056
+                theo_prob: 0.7772
                 total_markup: 0.0284
                 commission_markup: 0.0175
                 risk_markup: 0.0109
-                price_engine: BOM::Product::Pricing::Engine::Slope   
+                price_engine: BOM::Product::Pricing::Engine::Slope
     FTSE:
             CALL:
                 barrier: 6688.86
                 spot: 6685.31
                 duration: 8d
-                ask_prob: 0.5585
-                theo_prob: 0.5257
+                ask_prob: 0.5589
+                theo_prob: 0.5261
                 total_markup: 0.0327
                 commission_markup: 0.0251
                 risk_markup: 0.0077
-                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                        
+                price_engine: BOM::Product::Pricing::Engine::Slope
             NOTOUCH:
                 barrier: 6776.72
                 spot: 6685.31
@@ -1544,7 +1544,7 @@ expected_result:
                 barrier2: 6500
                 spot: 6688.93
                 duration: 300d
-                ask_prob: 0.05
+                ask_prob: 0.1
                 theo_prob: 0
                 total_markup: 0.04
                 commission_markup: 0.04
@@ -1555,12 +1555,12 @@ expected_result:
                 barrier2: 6069.76
                 spot: 6688.93
                 duration: 120d
-                ask_prob: 0.7336
-                theo_prob: 0.7055
+                ask_prob: 0.7825
+                theo_prob: 0.7545
                 total_markup: 0.0281
                 commission_markup: 0.02
                 risk_markup: 0.0081
-                price_engine: BOM::Product::Pricing::Engine::Slope 
+                price_engine: BOM::Product::Pricing::Engine::Slope
     GDAXI:
             CALL:
                 barrier: 9516.05
@@ -1571,7 +1571,7 @@ expected_result:
                 total_markup: 0.0245
                 commission_markup: 0.0231
                 risk_markup: 0.0014
-                price_engine: BOM::Product::Pricing::Engine::Slope                                                                                                                  
+                price_engine: BOM::Product::Pricing::Engine::Slope
             NOTOUCH:
                 barrier: 9736.84
                 spot: 9518.2
@@ -1598,8 +1598,8 @@ expected_result:
                 barrier2: 8642.2
                 spot: 9518.2
                 duration: 120d
-                ask_prob: 0.7356
-                theo_prob: 0.7107
+                ask_prob: 0.7654
+                theo_prob: 0.7405
                 total_markup: 0.0249
                 commission_markup: 0.02
                 risk_markup: 0.0049
