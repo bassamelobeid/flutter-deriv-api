@@ -7,10 +7,16 @@ use Try::Tiny;
 use Mojo::DOM;
 use BOM::WebSocketAPI::v2::Symbols;
 use BOM::WebSocketAPI::v2::System;
+use Cache::RedisDB;
+use JSON;
 
+use BOM::Platform::Context;
+use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
+use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use BOM::Product::Contract::Category;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -23,9 +29,9 @@ sub trading_times {
             name         => 'name',
             times        => 'times',
             events       => 'events',
-            symbol       => sub { return $_->symbol },
-            feed_license => sub { return $_->feed_license },
-            delay_amount => sub { return $_->delay_amount },
+            symbol       => sub { $_->symbol },
+            feed_license => sub { $_->feed_license },
+            delay_amount => sub { $_->delay_amount },
         });
     my $trading_times = {};
     for my $mkt (@$tree) {
@@ -54,6 +60,109 @@ sub trading_times {
     return {
         msg_type      => 'trading_times',
         trading_times => $trading_times,
+    };
+}
+
+sub asset_index {
+    my ($c, $args) = @_;
+
+    my $request = BOM::Platform::Context::request();
+    my $lang    = $request->language;
+
+    if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
+        return {
+            msg_type    => 'asset_index',
+            asset_index => JSON::from_json($r),
+        };
+    }
+
+    my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
+        markets => {
+            code => sub { $_->name },
+            name => sub { $_->translated_display_name }
+        },
+        submarkets => {
+            code => sub {
+                $_->name;
+            },
+            name => sub {
+                $_->translated_display_name;
+            }
+        },
+        underlyings => {
+            code => sub {
+                $_->symbol;
+            },
+            name => sub {
+                $_->translated_display_name;
+            }
+        },
+        contract_categories => {
+            code => sub {
+                $_->code;
+            },
+            name => sub {
+                $_->translated_display_name;
+            },
+            expiries => sub {
+                my $underlying = shift;
+                my %offered    = %{
+                    get_permitted_expiries({
+                            underlying_symbol => $underlying->symbol,
+                            contract_category => $_->code,
+                        })};
+
+                my @times;
+                foreach my $expiry (qw(intraday daily tick)) {
+                    if (my $included = $offered{$expiry}) {
+                        foreach my $key (qw(min max)) {
+                            if ($expiry eq 'tick') {
+                                # some tick is set to seconds somehow in this code.
+                                # don't want to waste time to figure out how it is set
+                                my $tick_count = (ref $included->{$key}) ? $included->{$key}->seconds : $included->{$key};
+                                push @times, [$tick_count, $tick_count . 't'];
+                            } else {
+                                $included->{$key} = Time::Duration::Concise::Localize->new(
+                                    interval => $included->{$key},
+                                    locale   => BOM::Platform::Context::request()->language
+                                ) unless (ref $included->{$key});
+                                push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
+                            }
+                        }
+                    }
+                }
+                @times = sort { $a->[0] <=> $b->[0] } @times;
+                return +{
+                    min => $times[0][1],
+                    max => $times[-1][1],
+                };
+            },
+        },
+    );
+
+    ## remove obj for json encode
+    my @data;
+    for my $market (@$asset_index) {
+        delete $market->{$_} for (qw/obj children/);
+        for my $submarket (@{$market->{submarkets}}) {
+            delete $submarket->{$_} for (qw/obj parent_obj children parent/);
+            for my $ul (@{$submarket->{underlyings}}) {
+                delete $ul->{$_} for (qw/obj parent_obj children parent/);
+                for (@{$ul->{contract_categories}}) {
+                    $_ = [$_->{code}, $_->{name}, $_->{expiries}->{min}, $_->{expiries}->{max}];
+                }
+                my $x = [$ul->{code}, $ul->{name}, $ul->{contract_categories}];
+                push @data, $x;
+            }
+        }
+    }
+
+    # set cache
+    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json([@data]), 3600);
+
+    return {
+        msg_type    => 'asset_index',
+        asset_index => [@data],
     };
 }
 
