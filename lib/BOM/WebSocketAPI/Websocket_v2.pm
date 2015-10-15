@@ -13,8 +13,10 @@ use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
 use JSON;
+use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
+use BOM::Product::Transaction;
 use Time::HiRes;
 
 sub ok {
@@ -140,6 +142,7 @@ sub __handle {
         ['proposal_open_contract', \&BOM::WebSocketAPI::v2::PortfolioManagement::proposal_open_contract, 1],
         ['balance',                \&BOM::WebSocketAPI::v2::Accounts::balance,                           1],
         ['statement',              \&BOM::WebSocketAPI::v2::Accounts::statement,                         1],
+        ['profit_table',           \&BOM::WebSocketAPI::v2::Accounts::profit_table,                      1],
         ['change_password',        \&BOM::WebSocketAPI::v2::Accounts::change_password,                   1],
     );
 
@@ -166,6 +169,17 @@ sub __handle {
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[0]);
         }
+
+        ## sell expired
+        if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {
+            if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
+                BOM::Product::Transaction::sell_expired_contracts({
+                    client => $c->stash('client'),
+                    source => $c->stash('source'),
+                });
+            }
+        }
+
         my $result = $dispatch->[1]->($c, $p1);
 
         $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));

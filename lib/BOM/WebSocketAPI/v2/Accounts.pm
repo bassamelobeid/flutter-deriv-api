@@ -9,16 +9,12 @@ use BOM::Product::Transaction;
 use BOM::System::Password;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Email qw(send_email);
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
+use Try::Tiny;
 
 sub statement {
     my ($c, $args) = @_;
-
-    if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-        BOM::Product::Transaction::sell_expired_contracts({
-            client => $c->stash('client'),
-            source => $c->stash('source'),
-        });
-    }
 
     my $statement = get_transactions($c, $args);
     return {
@@ -69,11 +65,11 @@ sub get_transactions {
 
     my $trxs = [
         map {
-            my $trx    = $_;
-            my $source = 'default';
-            if (my $app_id = $trx->source) {
-                $source = $APPS_BY_DBID->{$app_id};
-            }
+            my $trx = $_;
+            # my $source = 'default';
+            # if (my $app_id = $trx->source) {
+            #     $source = $APPS_BY_DBID->{$app_id};
+            # }
             my $struct = {
                 contract_id      => $trx->financial_market_bet_id,
                 transaction_time => $trx->transaction_time->epoch,
@@ -98,6 +94,55 @@ sub get_transactions {
         transactions => $trxs,
         count        => $count
     };
+}
+
+sub profit_table {
+    my ($c, $args) = @_;
+
+    my $profit_table = __get_sold($c, $args);
+    return {
+        echo_req     => $args,
+        msg_type     => 'profit_table',
+        profit_table => $profit_table,
+    };
+}
+
+sub __get_sold {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+    my $acc    = $c->stash('account');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $client->loginid,
+            currency_code  => $client->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $client->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+
+    $args->{after}  = $args->{dt_fm} if $args->{dt_fm};
+    $args->{before} = $args->{dt_to} if $args->{dt_to};
+    my $data = $fmb_dm->get_sold_bets_of_account($args);
+
+    ## remove useless and plus new
+    my $and_description = $args->{description};
+    foreach my $row (@{delete $data->{rows}}) {
+        my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price purchase_time sell_time/);
+        $trx{contract_id}    = $row->{id};
+        $trx{transaction_id} = $row->{txn_id};
+        if ($and_description) {
+            $trx{description} = '';
+            if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
+                $trx{description} = $con->longcode;
+            }
+        }
+        push @{$data->{transactions}}, \%trx;
+    }
+
+    return $data;
 }
 
 sub balance {
