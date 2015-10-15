@@ -218,10 +218,7 @@ sub candles {
         end_time           => $end,
         aggregation_period => $size * $interval_map->{$unit},
     });
-
-    return [map { {epoch => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @ohlc];
-
-    return $ohlc;
+    return [map { {epoch => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @$ohlc];
 
 }
 1;
