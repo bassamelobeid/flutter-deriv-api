@@ -23,33 +23,23 @@ sub validate {
 
 sub create_account {
     my $args = shift;
+    my ($user, $details, $financial_data) = @{$args}{'user', 'details', 'financial_data'};
+
+    my $daily_loss_limit = delete $details->{daily_loss_limit};
+
     my $acc  = BOM::Platform::Account::Real::default::create_account({
-        user    => $args->{user},
-        details => $args->{details},
+        user    => $user,
+        details => $details,
     });
     return $acc if ($acc->{err});
 
-    my $client         = $acc->{client};
-    my $financial_data = $args->{financial_data};
-
+    my $client = $acc->{client};
     $client->financial_assessment({
-        data                        => encode_json($financial_data->{data}),
-        total_score                 => $financial_data->{total_score},
-        income_asset_score          => $financial_data->{total_score},
-        trading_experience_score     => $financial_data->{total_score},
+        data => encode_json($financial_data),
     });
-    $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
+    $client->set_exclusion->max_losses($daily_loss_limit);
     $client->save;
 
-    if ($financial_evaluation->{total_score} > 59) {
-        send_email({
-            from    => request()->website->config->get('customer_support.email'),
-            to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
-            subject => $client->loginid . ' considered as professional trader',
-            message =>
-                [$client->loginid . ' scored ' . $financial_evaluation->{total_score} . ' and is therefore considered a professional trader.'],
-        });
-    }
     return $acc;
 }
 
