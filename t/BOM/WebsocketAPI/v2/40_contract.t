@@ -88,19 +88,15 @@ $t = $t->send_ok({
             proposal_open_contract => 1,
             fmb_id                 => $portfolio->{portfolio}->{contracts}->[0]->{fmb_id},
         }});
+sleep 2;
 while (1) {
     $t = $t->message_ok;
     my $res = decode_json($t->message->[1]);
-    # diag Dumper(\$res);
 
     if (exists $res->{proposal_open_contract}) {
         ok $res->{proposal_open_contract}->{id};
-        ok $res->{proposal_open_contract}->{ask_price};
+        ok $res->{proposal_open_contract}->{fmb_id};
         test_schema('proposal_open_contract', $res);
-
-        $t = $t->send_ok({json => {forget => $res->{proposal_open_contract}->{id}}})->message_ok;
-        $forget = decode_json($t->message->[1]);
-        ok $forget->{forget};
 
         ## FIXME, not working now
         last;
