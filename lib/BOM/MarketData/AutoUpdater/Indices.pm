@@ -102,7 +102,8 @@ sub run {
     $self->_logger->debug(ref($self) . ' starting update.');
     my $surfaces_from_file = $self->surfaces_from_file;
     my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
-        market            => 'smart_index',
+        market            => 'indices',
+        submarket         => 'smart_index',
         contract_category => 'ANY',
         exclude_disabled  => 1
     );
