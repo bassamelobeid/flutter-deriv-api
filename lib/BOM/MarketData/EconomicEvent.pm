@@ -147,11 +147,10 @@ sub _build__coefficients {
 }
 
 sub get_scaling_factor {
-    my ($self, $underlying, $risk_type) = @_;
+    my ($self, $underlying_symbol, $risk_type) = @_;
 
-    my $impact            = $self->impact;
-    my $event_symbol      = $self->symbol;
-    my $underlying_symbol = $underlying->symbol;
+    my $impact       = $self->impact;
+    my $event_symbol = $self->symbol;
 
     my $scaling_factor;
     if ($risk_type eq 'spot') {
