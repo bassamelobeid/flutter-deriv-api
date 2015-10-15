@@ -117,24 +117,30 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
     my $source = $c->stash('source');
     my $ws_id  = $c->tx->connection;
 
-    my @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
+    my @fmbs = ();
+    if ($args->{fmb_id}) {
+        @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
+    } else {
+        @fmbs = $client->open_bets;
+    }
+
     my $p0 = {%$args};
     if (scalar @fmbs > 0) {
-        my $fmb = $fmbs[0];
-        my $id  = '';
-        $args->{fmb} = $fmb;
-        my $p2 = prepare_bid($c, $args);
-        $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
+        foreach $fmb (@fmbs) {
+            my $id  = '';
+            $args->{fmb} = $fmb;
+            my $p2 = prepare_bid($c, $args);
+            $p2->{fmb_id} = $fmb->id;
+            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
 
-        $c->{ws}{$ws_id}{$id} = {
-            started => time(),
-            type    => 'proposal_open_contract',
-            data    => {%$p2},
-        };
-        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
-
-        $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
-        send_bid($c, $id, $p0, $args, $p2);
+            $c->{ws}{$ws_id}{$id} = {
+                started => time(),
+                type    => 'proposal_open_contract',
+                data    => {%$p2},
+            };
+            BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+            $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
+        }
     } else {
         return {
             echo_req => $args,
@@ -172,23 +178,6 @@ sub portfolio {
     my $count = 0;
     my $p0    = {%$args};
     for my $fmb (@fmbs) {
-        my $id = '';
-
-        if (($args->{spawn} // '') eq '1') {
-            $args->{fmb} = $fmb;
-            my $p2 = prepare_bid($c, $args);
-            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, {}, $p2) });
-
-            $c->{ws}{$ws_id}{$id} = {
-                started => time(),
-                type    => 'portfolio',
-                data    => {%$p2}};
-            BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
-
-            $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
-            send_bid($c, $id, $p0, $args, $p2);
-        }
-
         push @{$portfolio->{contracts}},
             {
             fmb_id        => $fmb->id,
@@ -268,7 +257,7 @@ sub get_bid {
 }
 
 sub send_bid {
-    my ($c, $id, $p0, $p1, $p2) = @_;
+    my ($c, $id, $p0, $p1) = @_;
     my $latest = get_bid($c, $p2);
 
     my $response = {
@@ -286,7 +275,7 @@ sub send_bid {
                     %$response,
                     proposal_open_contract => {
                         id => $id,
-                        %$p1,
+                        %$p0,
                     },
                     %$latest,
                 }});
