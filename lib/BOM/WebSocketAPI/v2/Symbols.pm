@@ -213,11 +213,13 @@ sub candles {
     my $granularity = uc($args->{granularity} || 'M1');
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
-    my $ohlc = $ul->ohlc_between_start_end({
+    my $ohlc = $ul->feed_api->ohlc_start_end({
         start_time         => $start,
         end_time           => $end,
         aggregation_period => $size * $interval_map->{$unit},
     });
+
+    return [map { {epoch => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @ohlc];
 
     return $ohlc;
 

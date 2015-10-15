@@ -82,14 +82,12 @@ sub ticks {
                 history  => $history
             };
         } elsif ($style eq 'candles') {
-            my $candles = $c->BOM::WebSocketAPI::v2::Symbols::candles({%$args, ul => $ul});    ## no critic
-            my @labeled_candles =
-                map { {'epoch' => $_->[0], 'open' => $_->[1], 'high' => $_->[2], 'low' => $_->[3], 'close' => $_->[4],} } @$candles;
-            if (@labeled_candles) {
+            my @candles = @{$c->BOM::WebSocketAPI::v2::Symbols::candles({%$args, ul => $ul})};    ## no critic
+            if (@candles) {
 
                 return {
                     msg_type => 'candles',
-                    candles  => \@labeled_candles,
+                    candles  => \@candles,
                 };
             } else {
 
