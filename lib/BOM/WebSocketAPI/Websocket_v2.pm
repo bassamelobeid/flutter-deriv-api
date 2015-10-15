@@ -30,6 +30,7 @@ sub entry_point {
     my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
     if ($request) {
         BOM::Platform::Context::request($request);
+        $c->stash(r => $request);
     }
 
     my $log = $c->app->log;
@@ -139,6 +140,7 @@ sub __handle {
         ['proposal_open_contract', \&BOM::WebSocketAPI::v2::PortfolioManagement::proposal_open_contract, 1],
         ['balance',                \&BOM::WebSocketAPI::v2::Accounts::balance,                           1],
         ['statement',              \&BOM::WebSocketAPI::v2::Accounts::statement,                         1],
+        ['change_password',        \&BOM::WebSocketAPI::v2::Accounts::change_password,                   1],
     );
 
     foreach my $dispatch (@dispatch) {

@@ -6,6 +6,9 @@ use warnings;
 use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
+use BOM::System::Password;
+use BOM::Platform::Context qw(localize);
+use BOM::Platform::Email qw(send_email);
 
 sub statement {
     my ($c, $args) = @_;
@@ -117,6 +120,60 @@ sub balance {
     return {
         msg_type => 'balance',
         balance  => \@client_balances,
+    };
+}
+
+sub change_password {
+    my ($c, $args) = @_;
+
+    my $client_obj = $c->stash('client');
+    my $user = BOM::Platform::User->new({email => $client_obj->email});
+
+    my $err = sub {
+        my ($message) = @_;
+        return {
+            msg_type => 'change_password',
+            error    => {
+                message => $message,
+                code    => "ChangePasswordError"
+            },
+        };
+    };
+
+    ## args validation is done with JSON::Schema in entry_point, here we do others
+    return $err->(localize('New password is same as old password.'))
+        if $args->{new_password} eq $args->{old_password};
+    return $err->(localize("Old password is wrong."))
+        unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
+
+    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    $user->password($new_password);
+    $user->save;
+
+    foreach my $client ($user->clients) {
+        $client->password($new_password);
+        $client->save;
+    }
+
+    my $r = $c->stash('r');
+    BOM::System::AuditLog::log('password has been changed', $client_obj->email);
+    send_email({
+            from    => $r->website->config->get('customer_support.email'),
+            to      => $client_obj->email,
+            subject => localize('Your password has been changed.'),
+            message => [
+                localize(
+                    'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
+                    $client_obj->email,
+                    $r->client_ip
+                )
+            ],
+            use_email_template => 1,
+        });
+
+    return {
+        msg_type        => 'change_password',
+        change_password => 1
     };
 }
 
