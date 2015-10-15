@@ -58,10 +58,10 @@ has _supported_types => (
     isa     => 'HashRef',
     default => sub {
         return {
-            CALL        => 1,
-            PUT         => 1,
-            ONETOUCH    => 1,
-            NOTOUCH     => 1,
+            CALL     => 1,
+            PUT      => 1,
+            ONETOUCH => 1,
+            NOTOUCH  => 1,
         };
     },
 );

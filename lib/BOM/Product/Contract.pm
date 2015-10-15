@@ -506,8 +506,7 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name =
-        $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope';
+    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope';
 
     if ($self->tick_expiry) {
         my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
