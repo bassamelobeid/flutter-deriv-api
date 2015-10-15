@@ -147,8 +147,8 @@ sub asset_index {
             delete $submarket->{$_} for (qw/obj parent_obj children parent/);
             for my $ul (@{$submarket->{underlyings}}) {
                 delete $ul->{$_} for (qw/obj parent_obj children parent/);
-                for my $category (@{$ul->{contract_categories}}) {
-                    delete $category->{$_} for (qw/obj parent_obj children parent/);
+                for (@{$ul->{contract_categories}}) {
+                    $_ = [$_->{code}, $_->{name}, $_->{expiries}->{min}, $_->{expiries}->{max}];
                 }
             }
         }
