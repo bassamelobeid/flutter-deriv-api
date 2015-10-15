@@ -141,6 +141,7 @@ sub asset_index {
     );
 
     ## remove obj for json encode
+    my @data;
     for my $market (@$asset_index) {
         delete $market->{$_} for (qw/obj children/);
         for my $submarket (@{$market->{submarkets}}) {
@@ -150,16 +151,18 @@ sub asset_index {
                 for (@{$ul->{contract_categories}}) {
                     $_ = [$_->{code}, $_->{name}, $_->{expiries}->{min}, $_->{expiries}->{max}];
                 }
+                my $x = [$ul->{code}, $ul->{name}, $ul->{contract_categories}];
+                push @data, $x;
             }
         }
     }
 
     # set cache
-    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json($asset_index), 3600);
+    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json([@data]), 3600);
 
     return {
         msg_type    => 'asset_index',
-        asset_index => $asset_index,
+        asset_index => [@data],
     };
 }
 
