@@ -258,7 +258,7 @@ sub get_bid {
 
 sub send_bid {
     my ($c, $id, $p0, $p1) = @_;
-    my $latest = get_bid($c, $p2);
+    my $latest = get_bid($c, $p1);
 
     my $response = {
         msg_type => 'proposal_open_contract',
@@ -269,7 +269,7 @@ sub send_bid {
         Mojo::IOLoop->remove($id);
         my $ws_id = $c->tx->connection;
         delete $c->{ws}{$ws_id}{$id};
-        delete $c->{fmb_ids}{$ws_id}{$p2->{fmb}->id};
+        delete $c->{fmb_ids}{$ws_id}{$p1->{fmb}->id};
         $c->send({
                 json => {
                     %$response,
