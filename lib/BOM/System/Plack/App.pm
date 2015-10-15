@@ -17,7 +17,7 @@ BEGIN {
         open STDERR, '>>', $ENV{ERROR_LOG} or die "Cannot open $ENV{ERROR_LOG}: $!";
     }
     select +(select(STDERR), $| = 1)[0];    ## no critic
-abcd;
+
     my $t = Time::HiRes::time;
     require CGI;
     CGI->compile(qw/:cgi :cgi-lib/);
@@ -27,7 +27,7 @@ abcd;
 
     my ($uid, $gid) = (getpwnam "nobody")[2, 3];
 
-    my $gif_dir = '/home/website/www/temp';
+    my $gif_dir = '/home/website/www/temp2';
     unless (-d $gif_dir) {
         File::Path::mkpath(
             $gif_dir,
