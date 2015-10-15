@@ -2,7 +2,6 @@ package BOM::Product::Pricing::Engine::Intraday::Forex;
 
 use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
-with 'BOM::Product::Pricing::Engine::Role::EuroTwoBarrier';
 
 use JSON qw(from_json);
 use List::Util qw(max min sum);
@@ -61,8 +60,6 @@ has _supported_types => (
         return {
             CALL        => 1,
             PUT         => 1,
-            EXPIRYMISS  => 1,
-            EXPIRYRANGE => 1,
             ONETOUCH    => 1,
             NOTOUCH     => 1,
         };
@@ -98,37 +95,18 @@ sub _build_probability {
     my $bet  = $self->bet;
     my $args = $bet->pricing_args;
 
-    my $ifx_prob;
-    if ($bet->two_barriers and not $bet->is_path_dependent) {
-        $ifx_prob = $self->euro_two_barrier_probability;
+    my $ifx_prob = Math::Util::CalculatedValue::Validatable->new({
+        name        => lc($bet->code) . '_theoretical_probability',
+        description => 'BS pricing based on realized vols',
+        set_by      => __PACKAGE__,
+        minimum     => 0,
+        maximum     => 1,
+        base_amount => $self->formula->($self->_formula_args),
+    });
 
-        my @ordered_from_atm =
-            sort { abs(0.5 - $b) <=> abs(0.5 - $a) }
-            map  { $_->peek_amount('intraday_vanilla_delta') }
-            map  { $ifx_prob->peek($_ . '_theoretical_probability') } qw(call put);
-
-        my $dbe_delta = Math::Util::CalculatedValue::Validatable->new({
-            language    => request()->language,
-            name        => 'intraday_vanilla_delta',
-            description => 'A replaced value for the two barrier bet, representing the furthest from ATM for the two barriers',
-            set_by      => __PACKAGE__,
-            base_amount => $ordered_from_atm[0],
-        });
-        $ifx_prob->replace_adjustment($dbe_delta);
-    } else {
-        $ifx_prob = Math::Util::CalculatedValue::Validatable->new({
-            name        => lc($bet->code) . '_theoretical_probability',
-            description => 'BS pricing based on realized vols',
-            set_by      => __PACKAGE__,
-            minimum     => 0,
-            maximum     => 1,
-            base_amount => $self->formula->($self->_formula_args),
-        });
-
-        $ifx_prob->include_adjustment('add',  $self->intraday_delta_correction);
-        $ifx_prob->include_adjustment('add',  $self->intraday_vega_correction);
-        $ifx_prob->include_adjustment('info', $self->intraday_vanilla_delta);
-    }
+    $ifx_prob->include_adjustment('add',  $self->intraday_delta_correction);
+    $ifx_prob->include_adjustment('add',  $self->intraday_vega_correction);
+    $ifx_prob->include_adjustment('info', $self->intraday_vanilla_delta);
 
     my $min_prob = 0.1;
     if ($ifx_prob->amount < $min_prob) {
