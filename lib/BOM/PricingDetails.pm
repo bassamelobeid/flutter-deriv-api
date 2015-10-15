@@ -613,7 +613,7 @@ sub _get_overview {
         },
         {
             label => 'Quanto rate (of payout currency)',
-            value => sprintf($number_format, $bet->quanto_rate * 100) . '%',
+            value => sprintf($number_format, $bet->discount_rate * 100) . '%',
         },
         {
             label => 'Spot',
