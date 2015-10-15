@@ -579,8 +579,7 @@ sub detect_param_attacks {
         }
 
         my $ip = $self->client_ip;
-        die "";
-        #get_logger()->logcroak("[$ip] Detected IDS attacks on page " . $self->http_path . $attacks_descriptions);
+        get_logger()->logcroak("[$ip] Detected IDS attacks on page " . $self->http_path . $attacks_descriptions);
     }
 
     return;
