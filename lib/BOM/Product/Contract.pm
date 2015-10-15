@@ -1524,6 +1524,7 @@ has new_interface_engine => (
     default => sub {
         {
             'Pricing::Engine::TickExpiry' => 1,
+            'Pricing::Engine::Slope'      => 1,
         };
     },
 );
