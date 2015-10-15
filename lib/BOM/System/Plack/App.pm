@@ -27,7 +27,7 @@ BEGIN {
 
     my ($uid, $gid) = (getpwnam "nobody")[2, 3];
 
-    my $gif_dir = '/home/website/www/temp2';
+    my $gif_dir = '/home/website/www/temp';
     unless (-d $gif_dir) {
         File::Path::mkpath(
             $gif_dir,
