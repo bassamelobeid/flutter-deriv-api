@@ -16,12 +16,10 @@ sub _validate {
         return $error;
     }
 
+    # also allow MLT UK client to open MF account
     my $from_client = $args->{from_client};
     my $company = BOM::Platform::Runtime->instance->financial_company_for_country($from_client->residence) // '';
-    return if ($company eq 'maltainvest');
-
-    # also allow MLT UK client to open MF account
-    return if ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta');
+    return if ($company eq 'maltainvest' or ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta'));
 
     get_logger()->warn("maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
     return { error => 'invalid' };
@@ -34,7 +32,6 @@ sub create_account {
     if (my $error = _validate($args)) {
         return $error;
     }
-
     my $register = BOM::Platform::Account::Real::default::_register_client($details);
     return $register if ($register->{error});
 

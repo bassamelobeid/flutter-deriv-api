@@ -29,53 +29,49 @@ sub _validate {
 
     my $logger = get_logger();
     my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
-    VALIDATE: {
-        if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-            $logger->warn($msg . 'new account opening suspended');
-            last;
-        }
-        if (BOM::Platform::Client::check_country_restricted($country)) {
-            $logger->warn($msg . "restricted IP country [$country]");
-            last;
-        }
-        unless ($user->email_verified) {
-            return { error => 'email unverified' };
-        }
-        unless ($from_client->residence) {
-            return { error => 'no residence' };
-        }
 
-        if ($details) {
-            if (BOM::Platform::Client::check_country_restricted($residence)) {
-                $logger->warn($msg . "restricted residence [$residence]");
-                last;
-            }
-            if ($from_client->residence ne $residence) {
-                $logger->warn($msg . "Invalid residence, residence[$residence], from_client: " . $from_client->residence);
-                last;
-            }
-            if ( any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid) ) {
-                return { error => 'duplicate email' };
-            }
-            if (BOM::Database::DataMapper::Client->new({ broker_code => $broker })->get_duplicate_client($details)) {
-                return { error => 'duplicate name DOB' };
-            }
-
-            # mininum age check: Estonia = 21, others = 18
-            my $dob_date   = Date::Utility->new($details->{date_of_birth});
-            my $minimumAge = ($residence eq 'ee') ? 21 : 18;
-            my $now        = Date::Utility->new;
-            my $mmyy       = $now->months_ahead(-12 * $minimumAge);
-            my $cutoff     = Date::Utility->new($now->day_of_month . '-' . $mmyy);
-            if ($dob_date->is_after($cutoff)) {
-                return { error => 'too young' };
-            }
-        }
-
-        # pass all validation
-        return;
+    if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
+        $logger->warn($msg . 'new account opening suspended');
+        return { error => 'invalid' };
     }
-    return { error => 'invalid' };
+    if (BOM::Platform::Client::check_country_restricted($country)) {
+        $logger->warn($msg . "restricted IP country [$country]");
+        return { error => 'invalid' };
+    }
+    unless ($user->email_verified) {
+        return { error => 'email unverified' };
+    }
+    unless ($from_client->residence) {
+        return { error => 'no residence' };
+    }
+
+    if ($details) {
+        if (BOM::Platform::Client::check_country_restricted($residence)) {
+            $logger->warn($msg . "restricted residence [$residence]");
+            return { error => 'invalid' };
+        }
+        if ($from_client->residence ne $residence) {
+            $logger->warn($msg . "Invalid residence, residence[$residence], from_client: " . $from_client->residence);
+            return { error => 'invalid' };
+        }
+        if ( any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid) ) {
+            return { error => 'duplicate email' };
+        }
+        if (BOM::Database::DataMapper::Client->new({ broker_code => $broker })->get_duplicate_client($details)) {
+            return { error => 'duplicate name DOB' };
+        }
+
+        # mininum age check: Estonia = 21, others = 18
+        my $dob_date   = Date::Utility->new($details->{date_of_birth});
+        my $minimumAge = ($residence eq 'ee') ? 21 : 18;
+        my $now        = Date::Utility->new;
+        my $mmyy       = $now->months_ahead(-12 * $minimumAge);
+        my $cutoff     = Date::Utility->new($now->day_of_month . '-' . $mmyy);
+        if ($dob_date->is_after($cutoff)) {
+            return { error => 'too young' };
+        }
+    }
+    return;
 }
 
 sub create_account {
@@ -85,7 +81,6 @@ sub create_account {
     if (my $error = _validate($args)) {
         return $error;
     }
-
     my $register = _register_client($details);
     return $register if ($register->{error});
 
@@ -96,10 +91,10 @@ sub create_account {
 }
 
 sub _register_client {
-    my $args = shift;
+    my $details = shift;
 
     my ($client, $error);
-    try { $client = BOM::Platform::Client->register_and_return_new_client($args->{details}); }
+    try { $client = BOM::Platform::Client->register_and_return_new_client($details); }
     catch {
         $error = $_;
     };
