@@ -20,6 +20,7 @@ sub create_account {
         @{$args->{details}}{'email', 'password', 'residence', 'source', 'env', 'aff_token'};
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
+    $env //= '';
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
@@ -53,7 +54,7 @@ sub create_account {
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
             source                        => $source,
-            latest_environment            => $env // ''
+            latest_environment            => $env,
         });
     }
     catch {
