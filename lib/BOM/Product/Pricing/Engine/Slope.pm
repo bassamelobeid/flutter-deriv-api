@@ -1,4 +1,4 @@
-package BOM::Product::Pricing::Engine::NewSlope;
+package BOM::Product::Pricing::Engine::Slope;
 
 use 5.010;
 use Moose;
@@ -22,6 +22,11 @@ has [qw(contract_type spot strikes date_start date_expiry discount_rate mu vol p
 has [qw(market_data market_convention)] => (
     is       => 'ro',
     required => 1,
+);
+
+has debug_information => (
+    is      => 'rw',
+    default => sub { {} },
 );
 
 has supported_contract_types => (
@@ -151,22 +156,36 @@ sub probability {
         my $params      = $self->_pricing_args;
         $params->{$_} = $modified->{$_} foreach keys %$modified;
 
+        my (%debug_information, $calc_parameters);
         if ($priced_with eq 'numeraire') {
-            $probability = $self->_calculate($contract_type, $params);
+            ($probability, $calc_parameters) = $self->_calculate($contract_type, $params);
+            $debug_information{theo_probability}{amount}     = $probability;
+            $debug_information{theo_probability}{parameters} = $calc_parameters;
         } elsif ($priced_with eq 'quanto') {
             $params->{mu} = $self->r_rate - $self->q_rate;
-            $probability = $self->_calculate($contract_type, $params);
+            ($probability, $calc_parameters) = $self->_calculate($contract_type, $params);
+            $debug_information{theo_probability}{amount}     = $probability;
+            $debug_information{theo_probability}{parameters} = $calc_parameters;
         } elsif ($priced_with eq 'base') {
             my %cloned_params = %$params;
             $cloned_params{mu}            = $self->r_rate - $self->q_rate;
             $cloned_params{discount_rate} = $self->r_rate;
-            my $numeraire_prob           = $self->_calculate($contract_type, \%cloned_params);
+            my $numeraire_prob;
+            ($numeraire_prob, $calc_parameters) = $self->_calculate($contract_type, \%cloned_params);
+            $debug_information{theo_probability}{parameters}{numeraire_probability}{amount}     = $numeraire_prob;
+            $debug_information{theo_probability}{parameters}{numeraire_probability}{parameters} = $calc_parameters;
             my $vanilla_formula          = _bs_formula_for('vanilla_' . $contract_type);
             my $base_vanilla_probability = $vanilla_formula->($self->_to_array($params));
-            my $which_way                = $contract_type eq 'CALL' ? 1 : -1;
-            my $strike                   = $params->{strikes}->[0];
+            $debug_information{theo_probability}{parameters}{base_vanilla_probability}{amount}     = $base_vanilla_probability;
+            $debug_information{theo_probability}{parameters}{base_vanilla_probability}{parameters} = $params;
+            my $which_way = $contract_type eq 'CALL' ? 1 : -1;
+            my $strike = $params->{strikes}->[0];
+            $debug_information{theo_probability}{parameters}{spot}{amount}   = $self->spot;
+            $debug_information{theo_probability}{parameters}{strike}{amount} = $strike;
             $probability = ($numeraire_prob * $strike + $base_vanilla_probability * $which_way) / $self->spot;
+            $debug_information{theo_probability}{amount} = $probability;
         }
+        $self->debug_information->{$contract_type} = \%debug_information;
     }
 
     return $probability;
@@ -274,7 +293,7 @@ sub risk_markup {
         # then we add the difference between then original probability and adjusted butterfly probability as markup.
         if ($markup_config->{'butterfly_markup'} and $self->timeindays == $self->market_data->{get_overnight_days}) {
             my $butterfly_cutoff = 0.01;
-            my $original_surface = $self->market_data->{get_volsurface}->($self->underlying_symbol);
+            my $original_surface = $self->market_data->{get_volsurface_data}->($self->underlying_symbol);
             my $first_term       = (sort { $a <=> $b } keys %$original_surface)[0];
             my $market_rr_bf     = $self->market_data->{get_market_rr_bf}->($first_term);
             if ($first_term == $self->market_data->{get_overnight_days} and $market_rr_bf->{BF_25} > $butterfly_cutoff) {
@@ -366,28 +385,46 @@ sub _two_barrier_probability {
 sub _calculate {
     my ($self, $contract_type, $params) = @_;
 
+    my %debug_information;
     my $bs_formula     = _bs_formula_for($contract_type);
     my @pricing_args   = $self->_to_array($params);
     my $bs_probability = $bs_formula->(@pricing_args);
+    $debug_information{bs_probability}{amount}     = $bs_probability;
+    $debug_information{bs_probability}{parameters} = $params;
 
     my $slope_adjustment = 0;
     unless ($self->is_forward_starting) {
         my $vanilla_vega_formula = _greek_formula_for('vega', 'vanilla_' . $contract_type);
-        my $vanilla_vega         = $vanilla_vega_formula->(@pricing_args);
-        my $strike               = $params->{strikes}->[0];
-        my $vol_args             = {days => $self->timeindays};
-        my $pip_size             = $self->underlying_config->{pip_size};
+        my $vanilla_vega = $vanilla_vega_formula->(@pricing_args);
+        $debug_information{slope_adjustment}{parameters}{vanilla_vega}{amount}     = $vanilla_vega;
+        $debug_information{slope_adjustment}{parameters}{vanilla_vega}{parameters} = $params;
+        my $strike   = $params->{strikes}->[0];
+        my $vol_args = $self->underlying_config->{market} eq 'forex' ? {expiry_date => $self->date_expiry} : {days => $self->timeindays};
+        my $pip_size = $self->underlying_config->{pip_size};
         # Move by pip size either way.
         $vol_args->{strike} = $strike - $pip_size;
         my $down_vol = $self->market_data->{get_volatility}->($vol_args);
         $vol_args->{strike} = $strike + $pip_size;
-        my $up_vol      = $self->market_data->{get_volatility}->($vol_args);
-        my $slope       = ($up_vol - $down_vol) / (2 * $pip_size);
+        my $up_vol = $self->market_data->{get_volatility}->($vol_args);
+        my $slope = ($up_vol - $down_vol) / (2 * $pip_size);
+        $debug_information{slope_adjustment}{parameters}{slope}{amount}     = $slope;
+        $debug_information{slope_adjustment}{parameters}{slope}{parameters} = {
+            strike   => $strike,
+            high_vol => $up_vol,
+            low_vol  => $down_vol
+        };
         my $base_amount = $contract_type eq 'CALL' ? -1 : 1;
         $slope_adjustment = $base_amount * $vanilla_vega * $slope;
+
+        if ($self->_get_first_tenor_on_surface() > 7 and $self->is_intraday) {
+            $slope_adjustment = max(-0.03, min(0.03, $slope_adjustment));
+        }
+        $debug_information{slope_adjustment}{amount} = $slope_adjustment;
     }
 
-    return $bs_probability + $slope_adjustment;
+    my $prob = $bs_probability + $slope_adjustment;
+
+    return ($prob, \%debug_information);
 }
 
 sub _bs_formula_for {
@@ -429,6 +466,14 @@ sub _markup_config {
     my $markups = $config->{$market} // [];
 
     return {map { $_ => 1 } @$markups};
+}
+
+sub _get_first_tenor_on_surface {
+    my $self = shift;
+
+    my $original_surface = $self->market_data->{get_volsurface_data}->($self->underlying_symbol);
+    my $first_term = (sort { $a <=> $b } keys %$original_surface)[0];
+    return $first_term;
 }
 
 no Moose;

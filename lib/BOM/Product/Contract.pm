@@ -1522,8 +1522,8 @@ has new_interface_engine => (
     is      => 'ro',
     default => sub {
         {
-            'Pricing::Engine::TickExpiry' => 1,
-            'Pricing::Engine::Slope'      => 1,
+            'Pricing::Engine::TickExpiry'          => 1,
+            'BOM::Product::Pricing::Engine::Slope' => 1,
         };
     },
 );
@@ -1532,22 +1532,21 @@ sub _pricing_parameters {
     my $self = shift;
 
     return {
-        first_available_smile_term => $self->volsurface->original_term_for_smile->[0],
-        priced_with                => $self->priced_with,
-        spot                       => $self->pricing_spot,
-        strikes                    => [grep { $_ } values %{$self->_barriers_for_pricing}],
-        date_start                 => $self->effective_start,
-        date_expiry                => $self->date_expiry,
-        discount_rate              => $self->discount_rate,
-        q_rate                     => $self->q_rate,
-        r_rate                     => $self->r_rate,
-        mu                         => $self->mu,
-        vol                        => $self->pricing_vol,
-        payouttime_code            => $self->payouttime_code,
-        contract_type              => $self->code,
-        underlying_symbol          => $self->underlying->symbol,
-        market_data                => $self->_market_data,
-        market_convention          => $self->_market_convention,
+        priced_with       => $self->priced_with,
+        spot              => $self->pricing_spot,
+        strikes           => [grep { $_ } values %{$self->_barriers_for_pricing}],
+        date_start        => $self->effective_start,
+        date_expiry       => $self->date_expiry,
+        discount_rate     => $self->discount_rate,
+        q_rate            => $self->q_rate,
+        r_rate            => $self->r_rate,
+        mu                => $self->mu,
+        vol               => $self->pricing_vol,
+        payouttime_code   => $self->payouttime_code,
+        contract_type     => $self->code,
+        underlying_symbol => $self->underlying->symbol,
+        market_data       => $self->_market_data,
+        market_convention => $self->_market_convention,
     };
 }
 
