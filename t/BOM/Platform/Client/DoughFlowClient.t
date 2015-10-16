@@ -146,6 +146,7 @@ subtest 'Profile mapped correctly to DF levels' => sub {
 subtest 'handling client data that require munging' => sub {
     local $client_details1->{'first_name'};
 
+    $user_detail1->{'email'}     = 'shuwnyuan@binary.com';
     $user_detail1->{'residence'} = 'af';
 
     $client_details1->{'first_name'}       = 'a';
@@ -177,7 +178,7 @@ subtest 'handling client data that require munging' => sub {
     is($df_client->Country,  'AF',                      'Country correct');
     is($df_client->PCode,    'T5T-0M2',                 'PCode correct');
     is($df_client->Phone,    '21345678',                'Phone correct');
-    is($df_client->Email,    'felix@regentmarkets.com', 'Email correct');
+    is($df_client->Email,    'shuwnyuan@binary.com',    'Email correct');
     is($df_client->DOB,      '1951-01-01',              'DOB correct');
     is($df_client->Gender,   'M',                       'Gender correct');
     is($df_client->Profile,  1,                         'Profile correct');
