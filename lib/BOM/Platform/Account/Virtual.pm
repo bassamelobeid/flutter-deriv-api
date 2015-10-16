@@ -16,7 +16,8 @@ use BOM::Platform::SessionCookie;
 
 sub create_account {
     my $args = shift;
-    my ($email, $password, $residence, $source, $env, $aff_token) = @{$args->{details}}{'email', 'password', 'residence', 'source', 'env', 'aff_token'};
+    my ($email, $password, $residence, $source, $env, $aff_token) =
+        @{$args->{details}}{'email', 'password', 'residence', 'source', 'env', 'aff_token'};
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
 
