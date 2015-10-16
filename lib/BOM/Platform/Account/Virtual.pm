@@ -21,19 +21,14 @@ sub create_account {
     $email    = lc $email;
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        return {err => 'Sorry, new account opening is suspended for the time being.'};
-    }
-    if (BOM::Platform::User->new({email => $email})) {
-        return {
-            err_type => 'duplicate account',
-            err      => 'Your provided email address is already in use by another Login ID'
-        };
-    }
-    if (BOM::Platform::Client::check_country_restricted($residence)) {
-        return {err => 'Sorry, our service is not available for your country of residence'};
+        return { error => 'invalid' };
+    } elsif (BOM::Platform::User->new({email => $email})) {
+        return { error => 'duplicate email' };
+    } elsif (BOM::Platform::Client::check_country_restricted($residence)) {
+        return { error => 'invalid' };
     }
 
-    my ($client, $register_err);
+    my ($client, $error);
     try {
         $client = BOM::Platform::Client->register_and_return_new_client({
             broker_code                   => request()->virtual_account_broker->code,
@@ -61,12 +56,12 @@ sub create_account {
         });
     }
     catch {
-        $register_err = $_;
+        $error = $_;
     };
-    return {
-        err_type => 'register',
-        err      => $register_err
-    } if ($register_err);
+    if ($error) {
+        get_logger()->warn("Virtual: register_and_return_new_client err [$error]");
+        return { error => 'invalid' };
+    }
 
     my $user = BOM::Platform::User->create(
         email    => $email,
@@ -104,16 +99,10 @@ sub create_account {
     });
     stats_inc("business.new_account.virtual");
 
-    my $login = $client->login();
-    return {
-        err_type => 'login',
-        err      => $login->{error},
-    } if ($login->{error});
-
     return {
         client => $client,
         user   => $user,
-        token  => $login->{token},
+        token  => $client->login()->{token},
     };
 }
 

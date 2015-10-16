@@ -17,65 +17,101 @@ use BOM::Platform::Context qw(request);
 use BOM::Platform::Client;
 use BOM::Platform::User;
 
-sub validate {
+sub _validate {
     my $args = shift;
-    my ($from_loginid, $broker, $country, $residence) = @{$args}{'from_loginid', 'broker', 'country', 'residence'};
+    my ($from_client, $user, $country) = @{$args}{'from_client', 'user', 'country'};
 
-    if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        return {err => 'Sorry, new account opening is suspended for the time being.'};
-    }
-    if (BOM::Platform::Client::check_country_restricted($country)) {
-        return {err => 'Sorry, our service is not available for your country of residence'};
-    }
-
-    my ($user, $from_client);
-    unless ($from_client = BOM::Platform::Client->new({loginid => $from_loginid})
-        and $user = BOM::Platform::User->new({email => $from_client->email}))
-    {
-        return {err => 'Sorry, an error occurred. Please contact customer support if this problem persists.'};
+    my $details;
+    my ($broker, $residence) = ('', '');
+    if ($details = $args->{details}) {
+        ($broker, $residence) = @{$details}{'broker_code', 'residence'};
     }
 
-    if ($broker and any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
-        return {
-            err_type => 'duplicate account',
-            err      => 'Your provided email address is already in use by another Login ID'
-        };
-    }
-    unless ($user->email_verified) {
-        return {
-            err_type => 'email unverified',
-            err      => 'Your email address is unverified'
-        };
-    }
-    unless ($from_client->residence) {
-        return {
-            err_type => 'no residence',
-            err      => 'Your account has no country of residence'
-        };
-    }
-    if ($residence and $from_client->residence ne $residence) {
-        return {err => 'Your country of residence is invalid'};
-    }
+    my $logger = get_logger();
+    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
+    VALIDATE: {
+        if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
+            $logger->warn($msg . 'new account opening suspended');
+            last;
+        }
+        if (BOM::Platform::Client::check_country_restricted($country)) {
+            $logger->warn($msg . "restricted IP country [$country]");
+            last;
+        }
+        unless ($user->email_verified) {
+            return { error => 'email unverified' };
+        }
+        unless ($from_client->residence) {
+            return { error => 'no residence' };
+        }
 
-    return {
-        user        => $user,
-        from_client => $from_client,
-    };
+        if ($details) {
+            if (BOM::Platform::Client::check_country_restricted($residence)) {
+                $logger->warn($msg . "restricted residence [$residence]");
+                last;
+            }
+            if ($from_client->residence ne $residence) {
+                $logger->warn($msg . "Invalid residence, residence[$residence], from_client: " . $from_client->residence);
+                last;
+            }
+            if ( any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid) ) {
+                return { error => 'duplicate email' };
+            }
+            if (BOM::Database::DataMapper::Client->new({ broker_code => $broker })->get_duplicate_client($details)) {
+                return { error => 'duplicate name DOB' };
+            }
+
+            # mininum age check: Estonia = 21, others = 18
+            my $dob_date   = Date::Utility->new($details->{date_of_birth});
+            my $minimumAge = ($residence eq 'ee') ? 21 : 18;
+            my $now        = Date::Utility->new;
+            my $mmyy       = $now->months_ahead(-12 * $minimumAge);
+            my $cutoff     = Date::Utility->new($now->day_of_month . '-' . $mmyy);
+            if ($dob_date->is_after($cutoff)) {
+                return { error => 'too young' };
+            }
+        }
+
+        # pass all validation
+        return;
+    }
+    return { error => 'invalid' };
 }
 
 sub create_account {
     my $args = shift;
-    my ($user, $details) = @{$args}{'user', 'details'};
+    my ($from_client, $user, $details) = @{$args}{'from_client', 'user', 'details'};
 
-    my ($client, $register_err);
-    try { $client = BOM::Platform::Client->register_and_return_new_client($details); }
+    if (my $error = _validate($args)) {
+        return $error;
+    }
+
+    my $register = _register_client($details);
+    return $register if ($register->{error});
+
+    return _after_register_client({
+        client => $register->{client},
+        user   => $user,
+    });
+}
+
+sub _register_client {
+    my $args = shift;
+
+    my ($client, $error);
+    try { $client = BOM::Platform::Client->register_and_return_new_client($args->{details}); }
     catch {
-        $register_err = $_;
+        $error = $_;
     };
-    return {
-        err_type => 'register',
-        err      => $register_err
-    } if ($register_err);
+    if ($error) {
+        get_logger()->warn("Real: register_and_return_new_client err [$error]");
+        return { error => 'invalid' };
+    }
+    return { client => $client };
+}
+
+sub _after_register_client {
+    my ($client, $user) = @{$args}{'client', 'user'};
 
     if (any { $client->landing_company->short eq $_ } qw(malta maltainvest iom)) {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);
@@ -118,11 +154,6 @@ sub create_account {
     stats_inc("business.new_account.real." . $client->broker);
 
     my $login = $client->login();
-    return {
-        err_type => 'login',
-        err      => $login->{error},
-    } if ($login->{error});
-
     return {
         client => $client,
         user   => $user,
