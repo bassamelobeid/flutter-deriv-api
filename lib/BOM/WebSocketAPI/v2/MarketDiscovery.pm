@@ -247,7 +247,7 @@ sub proposal {
     # p2 is a manipulated copy of p1 suitable for produce_contract.
     my $p2 = prepare_ask($c, $args);
     my $id;
-    $id = Mojo::IOLoop->recurring(1 => sub { send_ask($c, $id, {}, $p2) });
+    $id = Mojo::IOLoop->recurring(1 => sub { send_ask($c, $id, $args, $p2) });
 
     my $ws_id = $c->tx->connection;
     $c->{ws}{$ws_id}{$id} = {
