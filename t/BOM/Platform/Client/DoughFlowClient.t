@@ -47,7 +47,7 @@ my $user_detail2 = {
 };
 my $client_details2 = {
     'email'           => $user_detail2->{email},
-    'residence'       => $user_details2->{residence},
+    'residence'       => $user_detail2->{residence},
     'broker_code'     => 'CR',
     'allow_login'     => 1,
     'last_name'       => 'Dennis',
