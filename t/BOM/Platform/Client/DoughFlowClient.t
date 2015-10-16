@@ -149,6 +149,7 @@ subtest 'handling client data that require munging' => sub {
     $user_detail1->{'email'}     = 'shuwnyuan@binary.com';
     $user_detail1->{'residence'} = 'af';
 
+    $client_details1->{'residence'}        = 'af';
     $client_details1->{'first_name'}       = 'a';
     $client_details1->{'last_name'}        = 'a';
     $client_details1->{'address_line_1'}   = '';
