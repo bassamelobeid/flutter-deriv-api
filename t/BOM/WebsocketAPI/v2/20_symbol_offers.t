@@ -58,6 +58,7 @@ my $f = available_contracts_for_symbol({
 });
 
 my $t = build_mojo_test();
+
 # test payout_currencies
 $t = $t->send_ok({json => {payout_currencies => 1}})->message_ok;
 my $payout_currencies = decode_json($t->message->[1]);
@@ -98,6 +99,11 @@ my $trading_times = decode_json($t->message->[1]);
 ok($trading_times->{trading_times});
 ok($trading_times->{trading_times}->{markets});
 test_schema('trading_times', $trading_times);
+
+$t = $t->send_ok({json => {asset_index => 1}})->message_ok;
+my $asset_index = decode_json($t->message->[1]);
+ok($asset_index->{asset_index});
+test_schema('asset_index', $asset_index);
 
 $t->finish_ok;
 

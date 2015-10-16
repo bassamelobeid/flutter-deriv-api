@@ -6,16 +6,15 @@ use warnings;
 use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
+use BOM::System::Password;
+use BOM::Platform::Context qw(localize);
+use BOM::Platform::Email qw(send_email);
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
+use Try::Tiny;
 
 sub statement {
     my ($c, $args) = @_;
-
-    if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-        BOM::Product::Transaction::sell_expired_contracts({
-            client => $c->stash('client'),
-            source => $c->stash('source'),
-        });
-    }
 
     my $statement = get_transactions($c, $args);
     return {
@@ -28,9 +27,8 @@ sub statement {
 sub get_transactions {
     my ($c, $args) = @_;
 
-    my $log          = $c->app->log;
-    my $acc          = $c->stash('account');
-    my $APPS_BY_DBID = $c->config('APPS_BY_DBID') || {};
+    my $log = $c->app->log;
+    my $acc = $c->stash('account');
 
     # note, there seems to be a big performance penalty associated with the 'description' option..
 
@@ -67,10 +65,6 @@ sub get_transactions {
     my $trxs = [
         map {
             my $trx    = $_;
-            my $source = 'default';
-            if (my $app_id = $trx->source) {
-                $source = $APPS_BY_DBID->{$app_id};
-            }
             my $struct = {
                 contract_id      => $trx->financial_market_bet_id,
                 transaction_time => $trx->transaction_time->epoch,
@@ -97,6 +91,55 @@ sub get_transactions {
     };
 }
 
+sub profit_table {
+    my ($c, $args) = @_;
+
+    my $profit_table = __get_sold($c, $args);
+    return {
+        echo_req     => $args,
+        msg_type     => 'profit_table',
+        profit_table => $profit_table,
+    };
+}
+
+sub __get_sold {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+    my $acc    = $c->stash('account');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $client->loginid,
+            currency_code  => $client->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $client->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+
+    $args->{after}  = $args->{dt_fm} if $args->{dt_fm};
+    $args->{before} = $args->{dt_to} if $args->{dt_to};
+    my $data = $fmb_dm->get_sold_bets_of_account($args);
+
+    ## remove useless and plus new
+    my $and_description = $args->{description};
+    foreach my $row (@{delete $data->{rows}}) {
+        my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price purchase_time sell_time/);
+        $trx{contract_id}    = $row->{id};
+        $trx{transaction_id} = $row->{txn_id};
+        if ($and_description) {
+            $trx{description} = '';
+            if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
+                $trx{description} = $con->longcode;
+            }
+        }
+        push @{$data->{transactions}}, \%trx;
+    }
+
+    return $data;
+}
+
 sub balance {
     my ($c, $args) = @_;
 
@@ -117,6 +160,60 @@ sub balance {
     return {
         msg_type => 'balance',
         balance  => \@client_balances,
+    };
+}
+
+sub change_password {
+    my ($c, $args) = @_;
+
+    my $client_obj = $c->stash('client');
+    my $user = BOM::Platform::User->new({email => $client_obj->email});
+
+    my $err = sub {
+        my ($message) = @_;
+        return {
+            msg_type => 'change_password',
+            error    => {
+                message => $message,
+                code    => "ChangePasswordError"
+            },
+        };
+    };
+
+    ## args validation is done with JSON::Schema in entry_point, here we do others
+    return $err->(localize('New password is same as old password.'))
+        if $args->{new_password} eq $args->{old_password};
+    return $err->(localize("Old password is wrong."))
+        unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
+
+    my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    $user->password($new_password);
+    $user->save;
+
+    foreach my $client ($user->clients) {
+        $client->password($new_password);
+        $client->save;
+    }
+
+    my $r = $c->stash('r');
+    BOM::System::AuditLog::log('password has been changed', $client_obj->email);
+    send_email({
+            from    => $r->website->config->get('customer_support.email'),
+            to      => $client_obj->email,
+            subject => localize('Your password has been changed.'),
+            message => [
+                localize(
+                    'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
+                    $client_obj->email,
+                    $r->client_ip
+                )
+            ],
+            use_email_template => 1,
+        });
+
+    return {
+        msg_type        => 'change_password',
+        change_password => 1
     };
 }
 
