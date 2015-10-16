@@ -34,24 +34,25 @@ my @accounts = (
      password  => 'foobar',
      residence => 'Antarctica',
    },
-     
 );
 
 lives_ok( sub {
 ok(BOM::Platform::Account::Virtual::create_account({
+        details => {
             %$_,
             aff_token => BOM::Platform::MyAffiliates::TrackingHandler->new->myaffiliates_token,
             env => 'testing',
-        }), "$_->{email} created") 
+        }}), "$_->{email} created") 
 }, "$_->{email} lives") for grep { $_->{expect} eq 'lives' } @accounts;
 
 
 dies_ok( sub {
 BOM::Platform::Account::Virtual::create_account({
+        details => {
             %$_,
             aff_token => BOM::Platform::MyAffiliates::TrackingHandler->new->myaffiliates_token,
             env => 'testing',
-})
+        }})
 }, "$_->{email} dies") for grep { $_->{expect} eq 'dies' } @accounts;
 
 done_testing;
