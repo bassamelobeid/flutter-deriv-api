@@ -12,6 +12,8 @@ use BOM::System::Password;
 use Format::Util::Strings qw( defang );
 use BOM::Platform::Client;
 use BOM::Platform::Client::Utility;
+use BOM::Platform::Account::Virtual;
+use BOM::Platform::Account::Real::default;
 
 use FindBin;
 use lib "$FindBin::Bin/../../..";    #cgi
