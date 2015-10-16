@@ -29,8 +29,8 @@ sub _validate {
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $country, $details, $financial_evaluation) =
-        @{$args}{'from_client', 'user', 'country', 'details', 'financial_evaluation'};
+    my ($from_client, $user, $country, $details, $financial_assessment) =
+        @{$args}{'from_client', 'user', 'country', 'details', 'financial_assessment'};
 
     if (my $error = _validate($args)) {
         return $error;
@@ -40,8 +40,8 @@ sub create_account {
 
     my $client = $register->{client};
     $client->financial_assessment({
-        data            => encode_json($financial_evaluation->{user_data}),
-        is_professional => $financial_evaluation->{total_score} < 60 ? 0 : 1,
+        data            => encode_json($financial_assessment->{user_data}),
+        is_professional => $financial_assessment->{total_score} < 60 ? 0 : 1,
     });
     $client->set_status('unwelcome', 'SYSTEM', 'Trading disabled for investment Europe ltd');
     $client->save;
@@ -52,13 +52,13 @@ sub create_account {
         details => $details,
     });
 
-    if ($financial_evaluation->{total_score} > 59) {
+    if ($financial_assessment->{total_score} > 59) {
         send_email({
             from    => request()->website->config->get('customer_support.email'),
             to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
             subject => $client->loginid . ' considered as professional trader',
             message =>
-                [$client->loginid . ' scored ' . $financial_evaluation->{total_score} . ' and is therefore considered a professional trader.'],
+                [$client->loginid . ' scored ' . $financial_assessment->{total_score} . ' and is therefore considered a professional trader.'],
         });
     }
     return $status;
