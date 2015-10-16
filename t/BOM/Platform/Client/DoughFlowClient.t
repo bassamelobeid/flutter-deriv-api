@@ -146,10 +146,9 @@ subtest 'Profile mapped correctly to DF levels' => sub {
 subtest 'handling client data that require munging' => sub {
     local $client_details1->{'first_name'};
 
-    $user_detail1->{'email'}     = 'shuwnyuan@binary.com';
-    $user_detail1->{'residence'} = 'af';
+    $user_detail1->{residence} = $client_details1->{residence} = 'af';
+    $user_detail1->{email} = $client_details1->{email} = 'shuwnyuan@binary.com';
 
-    $client_details1->{'residence'}        = 'af';
     $client_details1->{'first_name'}       = 'a';
     $client_details1->{'last_name'}        = 'a';
     $client_details1->{'address_line_1'}   = '';
