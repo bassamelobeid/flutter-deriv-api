@@ -85,8 +85,9 @@ sub create_account {
     return $register if ($register->{error});
 
     return _after_register_client({
-        client => $register->{client},
-        user   => $user,
+        client  => $register->{client},
+        user    => $user,
+        details => $details,
     });
 }
 
@@ -107,7 +108,7 @@ sub _register_client {
 
 sub _after_register_client {
     my $args = shift;
-    my ($client, $user) = @{$args}{'client', 'user'};
+    my ($client, $user, $details) = @{$args}{'client', 'user', 'details'};
 
     if (any { $client->landing_company->short eq $_ } qw(malta maltainvest iom)) {
         $client->set_status('tnc_approval', 'system', BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version);

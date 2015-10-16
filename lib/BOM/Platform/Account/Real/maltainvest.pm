@@ -47,8 +47,9 @@ sub create_account {
     $client->save;
 
     my $status = BOM::Platform::Account::Real::default::_after_register_client({
-        client => $client,
-        user   => $user,
+        client  => $client,
+        user    => $user,
+        details => $details,
     });
 
     if ($financial_evaluation->{total_score} > 59) {
