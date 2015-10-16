@@ -65,7 +65,22 @@ sub _build_probability {
     } elsif ($bet->priced_with eq 'quanto') {
         # We don't handle quanto adjustment for third currency payout for Slope pricer.
         # Hence making rho=0, to ensure mu = r_rate - q_rate.
+        # discount_rate is the payout currency rate.
         my $numeraire_bs_prob = BOM::Product::ContractFactory::make_similar_contract($bet, {rho => {fd_dq => 0}})->bs_probability;
+        my $numeraire_vanilla_option = BOM::Product::ContractFactory::make_similar_contract(
+            $bet,
+            {
+                rho        => {fd_dq => 0},
+                bet_type   => 'VANILLA_' . uc $bet->pricing_code,
+                volsurface => $bet->volsurface
+            });
+        my $numeraire_vega = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'vega',
+            description => 'Vanilla vega',
+            set_by      => 'BOM::Product::Pricing::Engine::Slope',
+            base_amount => $numeraire_vanilla_option->vega,
+        });
+        $self->skew_adjustment->replace_adjustment($numeraire_vega);
         $skew_prob->include_adjustment('reset', $numeraire_bs_prob);
         $skew_prob->include_adjustment('add',   $self->skew_adjustment);
     } elsif ($bet->priced_with eq 'numeraire') {
