@@ -11,7 +11,7 @@ use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
 
 sub _validate {
-    my $args  = shift;
+    my $args = shift;
     if (my $error = BOM::Platform::Account::Real::default::_validate($args)) {
         return $error;
     }
@@ -21,13 +21,16 @@ sub _validate {
     my $company = BOM::Platform::Runtime->instance->financial_company_for_country($from_client->residence) // '';
     return if ($company eq 'maltainvest' or ($from_client->residence eq 'gb' and $from_client->landing_company->short eq 'malta'));
 
-    get_logger()->warn("maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
-    return { error => 'invalid' };
+    get_logger()
+        ->warn(
+        "maltainvest acc opening err: loginid:" . $from_client->loginid . " residence:" . $from_client->residence . " financial_company:$company");
+    return {error => 'invalid'};
 }
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $country, $details, $financial_evaluation) = @{$args}{'from_client', 'user', 'country', 'details', 'financial_evaluation'};
+    my ($from_client, $user, $country, $details, $financial_evaluation) =
+        @{$args}{'from_client', 'user', 'country', 'details', 'financial_evaluation'};
 
     if (my $error = _validate($args)) {
         return $error;

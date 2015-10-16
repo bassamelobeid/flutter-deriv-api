@@ -21,11 +21,11 @@ sub create_account {
     $email    = lc $email;
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        return { error => 'invalid' };
+        return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
-        return { error => 'duplicate email' };
+        return {error => 'duplicate email'};
     } elsif (BOM::Platform::Client::check_country_restricted($residence)) {
-        return { error => 'invalid' };
+        return {error => 'invalid'};
     }
 
     my ($client, $error);
@@ -60,7 +60,7 @@ sub create_account {
     };
     if ($error) {
         get_logger()->warn("Virtual: register_and_return_new_client err [$error]");
-        return { error => 'invalid' };
+        return {error => 'invalid'};
     }
 
     my $user = BOM::Platform::User->create(

@@ -28,37 +28,37 @@ sub _validate {
     }
 
     my $logger = get_logger();
-    my $msg = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
+    my $msg    = "acc opening err: from_loginid[" . $from_client->loginid . "], broker[$broker], country[$country], residence[$residence], error: ";
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         $logger->warn($msg . 'new account opening suspended');
-        return { error => 'invalid' };
+        return {error => 'invalid'};
     }
     if (BOM::Platform::Client::check_country_restricted($country)) {
         $logger->warn($msg . "restricted IP country [$country]");
-        return { error => 'invalid' };
+        return {error => 'invalid'};
     }
     unless ($user->email_verified) {
-        return { error => 'email unverified' };
+        return {error => 'email unverified'};
     }
     unless ($from_client->residence) {
-        return { error => 'no residence' };
+        return {error => 'no residence'};
     }
 
     if ($details) {
         if (BOM::Platform::Client::check_country_restricted($residence)) {
             $logger->warn($msg . "restricted residence [$residence]");
-            return { error => 'invalid' };
+            return {error => 'invalid'};
         }
         if ($from_client->residence ne $residence) {
             $logger->warn($msg . "Invalid residence, residence[$residence], from_client: " . $from_client->residence);
-            return { error => 'invalid' };
+            return {error => 'invalid'};
         }
-        if ( any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid) ) {
-            return { error => 'duplicate email' };
+        if (any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
+            return {error => 'duplicate email'};
         }
-        if (BOM::Database::DataMapper::Client->new({ broker_code => $broker })->get_duplicate_client($details)) {
-            return { error => 'duplicate name DOB' };
+        if (BOM::Database::DataMapper::Client->new({broker_code => $broker})->get_duplicate_client($details)) {
+            return {error => 'duplicate name DOB'};
         }
 
         # mininum age check: Estonia = 21, others = 18
@@ -68,7 +68,7 @@ sub _validate {
         my $mmyy       = $now->months_ahead(-12 * $minimumAge);
         my $cutoff     = Date::Utility->new($now->day_of_month . '-' . $mmyy);
         if ($dob_date->is_after($cutoff)) {
-            return { error => 'too young' };
+            return {error => 'too young'};
         }
     }
     return;
@@ -100,9 +100,9 @@ sub _register_client {
     };
     if ($error) {
         get_logger()->warn("Real: register_and_return_new_client err [$error]");
-        return { error => 'invalid' };
+        return {error => 'invalid'};
     }
-    return { client => $client };
+    return {client => $client};
 }
 
 sub _after_register_client {
