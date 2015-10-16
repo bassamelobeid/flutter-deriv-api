@@ -40,6 +40,19 @@ ok($balance->{balance});
 test_schema('balance', $balance);
 # diag Dumper(\$balance);
 
+$t = $t->send_ok({
+        json => {
+            profit_table => 1,
+            limit        => 1,
+        }})->message_ok;
+my $profit_table = decode_json($t->message->[1]);
+ok($profit_table->{profit_table});
+ok($profit_table->{profit_table}->{total});
+my $trx = $profit_table->{profit_table}->{transactions}->[0];
+ok($trx);
+ok($trx->{$_}, "got $_") foreach (qw/sell_price buy_price purchase_time contract_id transaction_id/);
+test_schema('profit_table', $profit_table);
+
 $t->finish_ok;
 
 done_testing();

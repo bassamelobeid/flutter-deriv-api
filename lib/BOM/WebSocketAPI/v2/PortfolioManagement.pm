@@ -157,20 +157,7 @@ sub portfolio {
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
-    my $source = $c->stash('source');
     my $ws_id  = $c->tx->connection;
-
-    BOM::Product::Transaction::sell_expired_contracts({
-        client => $client,
-        source => $source
-    });
-
-    if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-        BOM::Product::Transaction::sell_expired_contracts({
-            client => $client,
-            source => $source
-        });
-    }
 
     # TODO: run these under a separate event loop to avoid workload batching..
     my @fmbs = grep { !$c->{fmb_ids}{$ws_id}{$_->id} } $client->open_bets;
