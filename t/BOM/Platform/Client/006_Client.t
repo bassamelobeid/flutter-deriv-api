@@ -119,7 +119,7 @@ subtest 'Client getters, setters and create' => sub {
         }});
     my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
 
-    my $real_acc_details = {
+    my $cr_details = {
         email                         => $vr_client->email,
         client_password               => $vr_client->password,
         residence                     => $vr_client->residence,
@@ -146,7 +146,7 @@ subtest 'Client getters, setters and create' => sub {
         from_client => $vr_client,
         user        => $user,
         country     => 'au',
-        details     => $details,
+        details     => $cr_details,
     });
     $client = $cr_acc->{client};
     is($client->broker, 'CR', 'create new CR client success');
@@ -155,7 +155,7 @@ subtest 'Client getters, setters and create' => sub {
         from_client => $vr_client,
         user        => $user,
         country     => 'au',
-        details     => $details,
+        details     => $cr_details,
     });
     my $error = $cr_acc->{error};
     is($error, 'duplicate email', 'client duplicates accounts not allowed');
