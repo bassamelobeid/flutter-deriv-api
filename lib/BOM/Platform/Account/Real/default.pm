@@ -106,6 +106,7 @@ sub _register_client {
 }
 
 sub _after_register_client {
+    my $args = shift;
     my ($client, $user) = @{$args}{'client', 'user'};
 
     if (any { $client->landing_company->short eq $_ } qw(malta maltainvest iom)) {
