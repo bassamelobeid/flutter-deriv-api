@@ -2,7 +2,7 @@
   "$schema":"http://json-schema.org/draft-04/schema#",
   "type":"object",
   "title":"Profit Table Receive",
-  "description":"A summary of account profile table is received",
+  "description":"A summary of account profit table is received",
   "properties":{
     "echo_req":{
       "title":"Echo request",

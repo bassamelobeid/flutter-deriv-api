@@ -27,9 +27,8 @@ sub statement {
 sub get_transactions {
     my ($c, $args) = @_;
 
-    my $log          = $c->app->log;
-    my $acc          = $c->stash('account');
-    my $APPS_BY_DBID = $c->config('APPS_BY_DBID') || {};
+    my $log = $c->app->log;
+    my $acc = $c->stash('account');
 
     # note, there seems to be a big performance penalty associated with the 'description' option..
 
@@ -65,11 +64,7 @@ sub get_transactions {
 
     my $trxs = [
         map {
-            my $trx = $_;
-            # my $source = 'default';
-            # if (my $app_id = $trx->source) {
-            #     $source = $APPS_BY_DBID->{$app_id};
-            # }
+            my $trx    = $_;
             my $struct = {
                 contract_id      => $trx->financial_market_bet_id,
                 transaction_time => $trx->transaction_time->epoch,
