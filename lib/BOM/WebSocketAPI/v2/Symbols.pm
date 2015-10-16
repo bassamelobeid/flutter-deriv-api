@@ -198,6 +198,12 @@ sub ticks {
 
 sub candles {
     my ($c, $args) = @_;
+    my $interval_map = {
+        M => 60,
+        H => 3600,
+        D => 86400,
+        S => 1,
+    };
 
     $args = _validate_start_end($c, $args);
 
@@ -208,15 +214,32 @@ sub candles {
     my $granularity = uc($args->{granularity} || 'M1');
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
-    $c->stash->{feeder} ||= BOM::Feed::Data::AnyEvent->new;
-    my $w = $c->stash->{feeder}->get_ohlc(
-        underlying => $ul->symbol,
-        start_time => $start,
-        end_time   => $end,
-        interval   => $size . lc $unit,
-        on_result  => $args->{sender},
-    );
-    return $w;
+    my @all_ohlc;
+    if ($unit eq 'D') {
+        # For the underlying nocturne, for daily ohlc, the date need to be date
+        if ($ul->ohlc_daily_open) {
+            $start = Date::Utility->new($start)->truncate_to_day;
+            $end   = Date::Utility->new($end)->truncate_to_day;
+
+        } else {
+
+            # for those underlying that are not having open and close cross GMT day, we can include today ohlc data
+            my $today_ohlc = $ul->feed_api->ohlc_daily_list({
+                    start_time => Date::Utility->today->epoch,
+                    end_time   => time,
+                },
+            );
+            push @all_ohlc, $today_ohlc->[0] if @$today_ohlc;
+        }
+    }
+    my $ohlc = $ul->feed_api->ohlc_start_end({
+        start_time         => $start,
+        end_time           => $end,
+        aggregation_period => $size * $interval_map->{$unit},
+    });
+
+    push @all_ohlc, @$ohlc;
+    return [map { {epoch => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } reverse @all_ohlc];
 
 }
 1;
