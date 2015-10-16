@@ -314,49 +314,33 @@ subtest 'next_tick_after' => sub {
 
 subtest 'tick_at' => sub {
 
-    my $test_time = Date::Utility->new('2012-09-28 20:59:59');
+    my $test_time           = Date::Utility->new('2012-09-28 20:59:59');
+    my $underlying          = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDJPY'}]);
+    my $inverted_underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYAUD'}]);
+
     subtest 'call with no data' => sub {
-        subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDJPY'}]);
-
-            ok !$underlying->tick_at($test_time->epoch), 'Got Nothing';
-        };
-
-        subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYAUD'}]);
-
-            ok !$underlying->tick_at($test_time->epoch), 'Got Nothing';
-        };
+        ok !$underlying->tick_at($test_time),          'Standard got nothing';
+        ok !$inverted_underlying->tick_at($test_time), '... and so did inverted';
     };
 
     subtest 'Adding tick for t - 20 mins' => sub {
-        my $tick_date = Date::Utility->new('2012-09-28 20:39:59');
-        my $tick      = {
-            epoch      => $tick_date->epoch,
+        my $tick = {
+            epoch      => $test_time->minus_time_interval('20m')->epoch,
             quote      => 80.33,
             bid        => 80.845,
             ask        => 80.895,
-            underlying => 'frxAUDJPY'
+            underlying => $underlying->symbol,
         };
 
         lives_ok {
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick($tick);
         }
-        'Tick - Last tick for the day';
+        'Tick added.';
     };
 
-    subtest 'call with data at t - 20 mins' => sub {
-        subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDJPY'}]);
-
-            ok !$underlying->tick_at($test_time->epoch), 'Got Nothing';
-        };
-
-        subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYAUD'}]);
-
-            ok !$underlying->tick_at($test_time->epoch), 'Got Nothing';
-        };
+    subtest 'call for t with data at t - 20 mins' => sub {
+        ok !$underlying->tick_at($test_time),          'Standard got nothing';
+        ok !$inverted_underlying->tick_at($test_time), '... and so did inverted';
     };
 
     subtest 'Adding tick for t' => sub {
@@ -365,160 +349,104 @@ subtest 'tick_at' => sub {
             quote      => 80.88,
             bid        => 80.845,
             ask        => 80.895,
-            underlying => 'frxAUDJPY'
+            underlying => $underlying->symbol,
         };
 
         lives_ok {
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick($tick);
         }
-        'Tick - Last tick for the day';
+        'Tick added';
     };
 
-    subtest 'call with data at t' => sub {
-        subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDJPY'}]);
-
-            my $tick = $underlying->tick_at($test_time->epoch);
-            is $tick->quote, 80.88, 'Got the right price';
-        };
-
-        subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYAUD'}]);
-
-            my $tick = $underlying->tick_at($test_time->epoch);
-            is $tick->quote, 1 / 80.88, 'Got the right price';
-        };
+    subtest 'call for t with data at t' => sub {
+        is $underlying->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
+        is $inverted_underlying->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
     };
 
-    subtest 'Adding tick for t + 5' => sub {
-        my $tick_date = Date::Utility->new('2012-09-28 21:05:00');
-        my $tick      = {
-            epoch      => $tick_date->epoch,
+    subtest 'Adding tick for t + 5 minutes, 1 second' => sub {
+        my $tick = {
+            epoch      => $test_time->plus_time_interval('5m1s')->epoch,
             quote      => 80.73,
             bid        => 80.845,
             ask        => 80.895,
-            underlying => 'frxAUDJPY'
+            underlying => $underlying->symbol,
         };
 
         lives_ok {
             BOM::Test::Data::Utility::FeedTestDatabase::create_tick($tick);
         }
-        'Tick - Last tick for the day';
+        'Tick added';
     };
 
-    subtest 'call with data at t + 5' => sub {
-        subtest 'Direct' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxAUDJPY'}]);
-
-            my $tick = $underlying->tick_at($test_time->epoch);
-            is $tick->quote, 80.88, 'Got the right price';
-        };
-
-        subtest 'Inverted' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxJPYAUD'}]);
-
-            my $tick = $underlying->tick_at($test_time->epoch);
-            is $tick->quote, 1 / 80.88, 'Got the right price';
-        };
+    subtest 'call for t with data at t + 5 minutes, 1 second' => sub {
+        is $underlying->tick_at($test_time)->quote, 80.88, 'Standard got correct quote';
+        is $inverted_underlying->tick_at($test_time)->quote, 1 / 80.88, '... and so did inverted';
     };
 };
 
 subtest 'tick_at scenarios' => sub {
+    my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
+    my $first_tick_date = Date::Utility->new('2012-09-28 07:55:00');
     subtest 'one more tick to succeed' => sub {
-        my $tick_date = Date::Utility->new('2012-09-28 07:55:00');
-        my $tick      = {
-            epoch      => $tick_date->epoch,
-            quote      => 6080.73,
-            underlying => 'frxEURGBP'
-        };
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick($tick);
+        lives_ok {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick(
 
-        subtest 'Tick not available' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
-            my $test_time = Date::Utility->new('2012-09-28 07:57:00');
+                {
+                    epoch      => $first_tick_date->epoch,
+                    quote      => 6080.73,
+                    underlying => $underlying->symbol,
+                }
 
-            ok !$underlying->tick_at($test_time->epoch), 'No price as we are not sure if there is another tick coming';
-            is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73,
-                'If we are ok with inconsistent price then get last available tick';
-        };
+                )
+        }
+        'Added first tick';
 
-        subtest 'tick at exact time' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
-            my $test_time = Date::Utility->new('2012-09-28 07:55:00');
-            is $underlying->tick_at($test_time->epoch)->quote, 6080.73, 'Since you are asking for the exact time. We have it';
-        };
+        subtest 'Request for 2 minutes after first tick' => sub {
+            my $test_time = $first_tick_date->plus_time_interval('2m');
 
-        $tick_date = Date::Utility->new('2012-09-28 07:58:00');
-        $tick      = {
-            epoch      => $tick_date->epoch,
-            quote      => 6088.73,
-            underlying => 'frxEURGBP'
-        };
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick($tick);
-
-        subtest 'Tick now available' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
-            my $test_time = Date::Utility->new('2012-09-28 07:57:00');
-
-            is $underlying->tick_at($test_time->epoch)->quote, 6080.73, 'Since we have atleast one more tick we are ok to give last available tick';
-            is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73,
-                'If we are ok with inconsistent price then get last available tick';
-        };
-    };
-
-    subtest 'forced ohlc aggregation to succeed' => sub {
-        subtest 'OHLC not aggregated' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
-            my $test_time = Date::Utility->new('2012-09-28 07:59:00');
-
-            ok !$underlying->tick_at($test_time->epoch), 'No price as we are not sure if there is another tick coming';
-            is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6088.73,
-                'If we are ok with inconsistent price then get last available tick';
+            ok !$underlying->tick_at($test_time), 'No price as we are not sure if there is another tick coming';
+            is $underlying->tick_at($test_time, {allow_inconsistent => 1})->quote, 6080.73, 'If we are ok with inconsistent price then get our tick';
         };
 
         subtest 'tick at exact time' => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
-            my $test_time = Date::Utility->new('2012-09-28 07:58:00');
-            is $underlying->tick_at($test_time->epoch)->quote, 6088.73, 'Since you are asking for the exact time. We have it';
+            is $underlying->tick_at($first_tick_date)->quote, 6080.73, 'Since you are asking for the exact time. We have it';
         };
 
-        subtest 'force Ohlc aggregation' => sub {
-            my $dbh = BOM::Database::FeedDB::write_dbh;
-            $dbh->{PrintError} = 0;
-            $dbh->{RaiseError} = 1;
-            my $query     = qq{UPDATE feed.ohlc_status set last_time = ? where underlying = 'frxEURGBP'};
-            my $statement = $dbh->prepare($query);
+        lives_ok {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                    epoch      => $first_tick_date->plus_time_interval('3m')->epoch,
+                    quote      => 6088.73,
+                    underlying => $underlying->symbol,
+                })
+        }
+        'Add tick 3 minutes after first';
 
-            ok $statement, 'Statement Prepared';
-            $statement->bind_param(1, "2012/09/28 08:00:00");
-            ok $statement->execute, 'Able to Update';
-        };
+        subtest 'Request again for 2 minutes after first tick' => sub {
+            my $test_time = $first_tick_date->plus_time_interval('2m');
 
-        subtest "OHLC aggregated" => sub {
-            my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
-            my $test_time = Date::Utility->new('2012-09-28 07:59:00');
-
-            is $underlying->tick_at($test_time->epoch), undef, 'Aggregation does not make a tick visible.';
-            is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6088.73,
-                'If we are ok with inconsistent price then get last available tick';
+            is $underlying->tick_at($test_time)->quote, 6080.73, 'Get our first added tick';
+            is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6080.73, '... and possibly inconsistent is the same';
         };
     };
 
     subtest 'next day tick' => sub {
-        my $tick_date = Date::Utility->new('2012-10-01 03:20:00');
-        my $tick      = {
-            epoch      => $tick_date->epoch,
-            quote      => 6077.22,
-            underlying => 'frxEURGBP'
-        };
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick($tick);
+        lives_ok {
+            BOM::Test::Data::Utility::FeedTestDatabase::create_tick(
 
-        my $underlying = new_ok('BOM::Market::Underlying' => [{symbol => 'frxEURGBP'}]);
-        my $test_time = Date::Utility->new('2012-10-01 03:10:00');
+                {
+                    epoch      => $first_tick_date->plus_time_interval('1d')->epoch,
+                    quote      => 6077.22,
+                    underlying => $underlying->symbol,
+                }
 
-        is $underlying->tick_at($test_time->epoch)->quote, 6088.73, 'The last available tick is from previous day';
-        is $underlying->tick_at($test_time->epoch, {allow_inconsistent => 1})->quote, 6088.73,
-            'If we are ok with inconsistent price then get last available tick';
+                )
+        }
+        'Add tick at same time the next day';
+
+        my $an_hour_before = $first_tick_date->plus_time_interval('23h')->epoch;
+
+        is $underlying->tick_at($an_hour_before)->quote, 6088.73, 'The lastest available tick is found from previous day';
+        is $underlying->tick_at($an_hour_before, {allow_inconsistent => 1})->quote, 6088.73, '... and possibly inconsistent is the same';
     };
 };
 
