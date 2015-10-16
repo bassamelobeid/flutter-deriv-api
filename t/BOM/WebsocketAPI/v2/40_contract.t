@@ -88,36 +88,14 @@ $t = $t->send_ok({
             proposal_open_contract => 1,
             fmb_id                 => $portfolio->{portfolio}->{contracts}->[0]->{fmb_id},
         }});
-sleep 2;
-while (1) {
-    $t = $t->message_ok;
-    my $res = decode_json($t->message->[1]);
+ 
+$t = $t->message_ok;
+my $res = decode_json($t->message->[1]);
 
-    if (exists $res->{proposal_open_contract}) {
-        ok $res->{proposal_open_contract}->{id};
-        ok $res->{proposal_open_contract}->{fmb_id};
-        test_schema('proposal_open_contract', $res);
-
-        ## FIXME, not working now
-        last;
-
-        ## try sell
-        $t = $t->send_ok({
-                json => {
-                    sell  => $res->{proposal_open_contract}->{id},
-                    price => $res->{proposal_open_contract}->{ask_price}}});
-
-    } else {
-        ok $res->{sell};
-
-        ## FIXME
-        ## not OK to sell: Contract must be held for 1 minute before resale is offered.
-        test_schema('sell', $res);
-
-        last;
-    }
+if (exists $res->{proposal_open_contract}) {
+    ok $res->{proposal_open_contract}->{id};
+    test_schema('proposal_open_contract', $res);
 }
-
 $t->finish_ok;
 
 done_testing();

@@ -139,6 +139,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
                 data    => {%$p2},
             };
             BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+
             $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
         }
     } else {
@@ -240,12 +241,12 @@ sub get_bid {
         bid_price => sprintf('%.2f', $contract->bid_price),
         spot      => $contract->current_spot,
         spot_time => $contract->current_tick->epoch,
-    };
+        fmb_id    => $p2->{fmb_id}};
 }
 
 sub send_bid {
-    my ($c, $id, $p0, $p1) = @_;
-    my $latest = get_bid($c, $p1);
+    my ($c, $id, $p0, $p2) = @_;
+    my $latest = get_bid($c, $p2);
 
     my $response = {
         msg_type => 'proposal_open_contract',
@@ -256,13 +257,12 @@ sub send_bid {
         Mojo::IOLoop->remove($id);
         my $ws_id = $c->tx->connection;
         delete $c->{ws}{$ws_id}{$id};
-        delete $c->{fmb_ids}{$ws_id}{$p1->{fmb}->id};
+        delete $c->{fmb_ids}{$ws_id}{$p2->{fmb}->id};
         $c->send({
                 json => {
                     %$response,
                     proposal_open_contract => {
                         id => $id,
-                        %$p0,
                     },
                     %$latest,
                 }});
@@ -272,7 +272,6 @@ sub send_bid {
                     %$response,
                     proposal_open_contract => {
                         id => $id,
-                        %$p1,
                         %$latest
                     }}});
     }
