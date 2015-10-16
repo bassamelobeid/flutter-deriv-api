@@ -5,6 +5,8 @@ use Test::More qw(no_plan);
 use Test::MockObject::Extends;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Client::DoughFlowClient;
+use BOM::Platform::Account::Virtual;
+use BOM::Platform::Account::Real::default;
 use Date::Utility;
 use DateTime;
 
