@@ -111,7 +111,18 @@ subtest 'Client getters, setters and create' => sub {
 
     Test::Exception::lives_ok { $client->save({'log' => 0, 'clerk' => 'shuwnyuan'}); } "Can save all the changes back to the client";
 
-    my $open_account_details = {
+    my $vr_acc  = BOM::Platform::Account::Virtual::create_account({
+        details => {
+            email     => 'shuwnyuan@regentmarkets.com',
+            password  => '123456',
+            residence => 'au',
+        }});
+    my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+
+    my $real_acc_details = {
+        email                         => $vr_client->email,
+        client_password               => $vr_client->password,
+        residence                     => $vr_client->residence,
         broker_code                   => 'CR',
         salutation                    => 'Ms',
         last_name                     => 'shuwnyuan',
@@ -119,8 +130,6 @@ subtest 'Client getters, setters and create' => sub {
         myaffiliates_token            => '',
         date_of_birth                 => '1979-01-01',
         citizen                       => 'au',
-        residence                     => 'au',
-        email                         => 'shuwnyuan@regentmarkets.com',
         address_line_1                => 'ADDR 1',
         address_line_2                => 'ADDR 2',
         address_city                  => 'Segamat',
@@ -133,10 +142,24 @@ subtest 'Client getters, setters and create' => sub {
         checked_affiliate_exposures   => 0,
     };
 
-    $open_account_details->{'client_password'} = BOM::System::Password::hashpw('123456');
+    my $cr_acc = BOM::Platform::Account::Real::default::create_account({
+        from_client => $vr_client,
+        user        => $user,
+        country     => 'au',
+        details     => $details,
+    });
+    $client = $cr_acc->{client};
+    is($client->broker, 'CR', 'create new CR client success');
 
-    Test::Exception::lives_ok { $client = BOM::Platform::Client->register_and_return_new_client($open_account_details) } "create new client success";
-    dies_ok { BOM::Platform::Client->register_and_return_new_client($open_account_details) } 'client duplicates accounts not allowed';
+    $cr_acc = BOM::Platform::Account::Real::default::create_account({
+        from_client => $vr_client,
+        user        => $user,
+        country     => 'au',
+        details     => $details,
+    });
+    my $error = $cr_acc->{error};
+    is($error, 'duplicate email', 'client duplicates accounts not allowed');
+
     my $new_loginid = $client->loginid;
 
     # Test save method
