@@ -1533,11 +1533,11 @@ expected_result:
                 barrier: 6776.72
                 spot: 6685.31
                 duration: 4d
-                ask_prob: 0.8409
+                ask_prob: 0.8659
                 theo_prob: 0.719
-                total_markup: 0.1219
+                total_markup: 0.1469
                 commission_markup: 0.0416
-                risk_markup: 0.0803
+                risk_markup: 0.1053
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             RANGE:
                 barrier: 6750

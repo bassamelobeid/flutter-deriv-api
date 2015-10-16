@@ -696,13 +696,13 @@ subtest 'invalid start times' => sub {
         date_start   => $starting,
         date_pricing => $starting - 300,
         duration     => '3d',
-        barrier      => 'S200P',
+        barrier      => 'S500P',
         current_tick => $tick,
     };
 
     my $bet = produce_contract($bet_params);
 
-    my $expected_reasons = [qr/^Forward time for non-forward-starting/];
+    my $expected_reasons = [qr/^Forward time for non-forward-starting/,];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_pricing} = $starting;
