@@ -114,8 +114,7 @@ subtest 'Profile mapped correctly to DF levels' => sub {
             country     => 'au',
             details     => $client_details2,
         });
-    my $loginid = $acc->{client}->loginid;
-    $df_client = BOM::Platform::Client::DoughFlowClient->new({ loginid => $acc->{client}->loginid });
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({ loginid => $acc->{client}->loginid });
 
     my $mock_client = Test::MockObject::Extends->new($df_client);
 
@@ -167,8 +166,7 @@ subtest 'handling client data that require munging' => sub {
             country     => 'au',
             details     => $client_details1,
         });
-    my $loginid = $acc->{client}->loginid;
-    $df_client = BOM::Platform::Client::DoughFlowClient->new({ loginid => $acc->{client}->loginid });
+    my $df_client = BOM::Platform::Client::DoughFlowClient->new({ loginid => $acc->{client}->loginid });
 
     is($df_client->CustName, 'a aX',                    'munged CustName correct');
     is($df_client->Street,   'X',                       'munged Street correct');
