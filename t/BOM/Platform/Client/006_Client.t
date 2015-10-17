@@ -12,8 +12,6 @@ use BOM::System::Password;
 use Format::Util::Strings qw( defang );
 use BOM::Platform::Client;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Account::Virtual;
-use BOM::Platform::Account::Real::default;
 
 use FindBin;
 use lib "$FindBin::Bin/../../..";    #cgi
@@ -113,60 +111,32 @@ subtest 'Client getters, setters and create' => sub {
 
     Test::Exception::lives_ok { $client->save({'log' => 0, 'clerk' => 'shuwnyuan'}); } "Can save all the changes back to the client";
 
-    my $new_loginid;
-    subtest 'create new CR client' => sub {
-        my $vr_acc  = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email     => 'shuwnyuan@regentmarkets.com',
-                password  => '123456',
-                residence => 'au',
-            }});
-        my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-        $user->email_verified(1);
-        $user->save;
-
-        my $cr_details = {
-            email                         => $vr_client->email,
-            client_password               => $vr_client->password,
-            residence                     => $vr_client->residence,
-            broker_code                   => 'CR',
-            salutation                    => 'Ms',
-            last_name                     => 'shuwnyuan',
-            first_name                    => 'tee',
-            myaffiliates_token            => '',
-            date_of_birth                 => '1979-01-01',
-            citizen                       => 'au',
-            address_line_1                => 'ADDR 1',
-            address_line_2                => 'ADDR 2',
-            address_city                  => 'Segamat',
-            address_state                 => 'State',
-            address_postcode              => '85010',
-            phone                         => '+60123456789',
-            secret_question               => "Mother's maiden name",
-            secret_answer                 => BOM::Platform::Client::Utility::encrypt_secret_answer('mei mei'),
-            myaffiliates_token_registered => 0,
-            checked_affiliate_exposures   => 0,
-        };
-
-        my $cr_acc = BOM::Platform::Account::Real::default::create_account({
-            from_client => $vr_client,
-            user        => $user,
-            country     => 'au',
-            details     => $cr_details,
-        });
-        $client = $cr_acc->{client};
-        is($client->broker, 'CR', 'create new CR client success');
-        $new_loginid = $client->loginid;
-
-        $cr_acc = BOM::Platform::Account::Real::default::create_account({
-            from_client => $vr_client,
-            user        => $user,
-            country     => 'au',
-            details     => $cr_details,
-        });
-        my $error = $cr_acc->{error};
-        is($error, 'duplicate email', 'client duplicates accounts not allowed');
+    my $open_account_details = {
+        broker_code                   => 'CR',
+        salutation                    => 'Ms',
+        last_name                     => 'shuwnyuan',
+        first_name                    => 'tee',
+        myaffiliates_token            => '',
+        date_of_birth                 => '1979-01-01',
+        citizen                       => 'au',
+        residence                     => 'au',
+        email                         => 'shuwnyuan@regentmarkets.com',
+        address_line_1                => 'ADDR 1',
+        address_line_2                => 'ADDR 2',
+        address_city                  => 'Segamat',
+        address_state                 => 'State',
+        address_postcode              => '85010',
+        phone                         => '+60123456789',
+        secret_question               => "Mother's maiden name",
+        secret_answer                 => BOM::Platform::Client::Utility::encrypt_secret_answer('mei mei'),
+        myaffiliates_token_registered => 0,
+        checked_affiliate_exposures   => 0,
     };
+
+    $open_account_details->{'client_password'} = BOM::System::Password::hashpw('123456');
+
+    Test::Exception::lives_ok { $client = BOM::Platform::Client->register_and_return_new_client($open_account_details) } "create new client success";
+    my $new_loginid = $client->loginid;
 
     # Test save method
     $client = BOM::Platform::Client::get_instance({'loginid' => $new_loginid});
