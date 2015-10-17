@@ -3,6 +3,7 @@ use warnings;
 
 use Test::More qw(no_plan);
 use Test::Exception;
+use Test::MockModule;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
@@ -23,6 +24,9 @@ lives_ok {
 is($vr_acc->{error}, 'invalid', 'create VR acc failed: restricted country');
 
 BOM::Platform::Runtime->instance->app_config->system->on_production(0);
+
+my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+$client_mocked->mock('add_note', sub { return 1 });
 
 my $vr_details = {
     CR => {
