@@ -12,12 +12,17 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 BOM::Platform::Runtime->instance->app_config->system->on_production(1);
 
-my $vr_acc = BOM::Platform::Account::Virtual::create_account({ details => {
-    email           => 'foo+us@binary.com',
-    client_password => 'foobar',
-    residence       => 'us',     # US
-}});
+my $vr_acc;
+lives_ok {
+    $vr_acc = create_vr_acc({
+        email           => 'foo+us@binary.com',
+        client_password => 'foobar',
+        residence       => 'us',     # US
+    });
+} 'create VR acc';
 is($vr_acc->{error}, 'invalid', 'create VR acc failed: restricted country');
+
+BOM::Platform::Runtime->instance->app_config->system->on_production(0);
 
 my $vr_details = {
     CR => {
@@ -77,29 +82,29 @@ my %financial_data = (
 foreach my $broker (keys %$vr_details) {
     my ($real_acc, $vr_client, $real_client, $user);
     lives_ok {
-        my $vr_acc = BOM::Platform::Account::Virtual::create_account({ details => $vr_details->{$broker} });
+        my $vr_acc = create_vr_acc($vr_details->{$broker});
         ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
     } 'create VR acc';
 
-    # create real failed
+    # real acc failed
     lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "create $broker acc";
     is($real_acc->{error}, 'email unverified', "create $broker acc failed: email verification required");
 
     $user->email_verified(1);
     $user->save;
 
-    # create real
+    # real acc
     lives_ok {
         $real_acc = create_real_acc($vr_client, $user, $broker);
         ($real_client, $user) = @{$real_acc}{'client', 'user'};
     } "create $broker acc OK, after verify email";
     is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
 
-    # create duplicate
+    # duplicate acc
     lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "Try create duplicate $broker acc";
     is($real_acc->{error}, 'duplicate email', "Create duplicate $broker acc failed");
 
-    # create MF
+    # MF acc
     lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
     if ($broker eq 'MLT') {
         is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
@@ -108,7 +113,14 @@ foreach my $broker (keys %$vr_details) {
     }
 }
 
-BOM::Platform::Runtime->instance->app_config->system->on_production(0);
+sub create_vr_acc {
+    my $args = shift;
+    return BOM::Platform::Account::Virtual::create_account({ details => {
+        email               => $args->{email},
+        client_password     => $args->{client_password},
+        residence           => $args->{residence},
+    }});
+}
 
 sub create_real_acc {
     my ($vr_client, $user, $broker) = @_;
