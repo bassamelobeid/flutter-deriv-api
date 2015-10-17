@@ -5,26 +5,21 @@ use Test::More qw(no_plan);
 use Test::MockObject::Extends;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Client::DoughFlowClient;
-use BOM::Platform::Account::Virtual;
-use BOM::Platform::Account::Real::default;
 use Date::Utility;
 use DateTime;
 
-my $user_detail1 = {
-    email      => 'felix@regentmarkets.com',
-    password   => 'abc123',
-    residence  => 'au',
-};
 my $client_details1 = {
-    'email'           => $user_detail1->{email},
-    'residence'       => $user_detail1->{residence},
+    'loginid'         => 'CR5089',
+    'email'           => 'felix@regentmarkets.com',
+    'client_password' => '960f984285701c6d8dba5dc71c35c55c0397ff276b06423146dde88741ddf1af',
     'broker_code'     => 'CR',
     'allow_login'     => 1,
     'last_name'       => 'The cat',
     'first_name'      => 'Felix',
     'date_of_birth'   => '1951-01-01',
     'secret_question' => 'Name of your pet',
-    'date_joined'     => Date::Utility->new->date_yyyymmdd,
+    'date_joined'     => Date::Utility->new->date_yyyymmdd,                                    # User joined today!
+    'email'           => 'felix@regentmarkets.com',
     'latest_environment' =>
         '31-May-10 02h09GMT 99.99.99.63 Mozilla 5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko 20100401 Firefox 3.6.3 LANG=EN SKIN=',
     'cashier_setting_password' => '',
@@ -33,30 +28,31 @@ my $client_details1 = {
     'address_city'             => 'Sydney',
     'address_postcode'         => '2000',
     'address_state'            => 'NSW',
+    'residence'                => 'au',
     'secret_answer'            => '::ecp::52616e646f6d495633363368676674792dd36b78f1d98017',
     'restricted_ip_address'    => '',
+    'loginid'                  => 'CR5089',
     'salutation'               => 'Mr',
+    'last_name'                => 'The cat',
     'gender'                   => 'm',
     'phone'                    => '21345678',
     'comment'                  => '',
-    'citizen'                  => 'au',
+    'first_name'               => 'Felix',
+    'citizen'                  => 'Brazil'
 };
 
-my $user_detail2 = {
-    email      => 'felix@binary.com',
-    password   => 'abc123',
-    residence  => 'au',
-};
 my $client_details2 = {
-    'email'           => $user_detail2->{email},
-    'residence'       => $user_detail2->{residence},
+    'loginid'         => 'CR5089',
+    'email'           => 'felix@regentmarkets.com',
+    'client_password' => '960f984285701c6d8dba5dc71c35c55c0397ff276b06423146dde88741ddf1af',
     'broker_code'     => 'CR',
     'allow_login'     => 1,
     'last_name'       => 'Dennis',
     'first_name'      => 'Felix',
     'date_of_birth'   => '1951-01-01',
     'secret_question' => 'Name of your pet',
-    'date_joined'     => Date::Utility->new->date_yyyymmdd,
+    'date_joined'     => Date::Utility->new->date_yyyymmdd,                                    # User joined today!
+    'email'           => 'felix@regentmarkets.com',
     'latest_environment' =>
         '31-May-10 02h09GMT 99.99.99.63 Mozilla 5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko 20100401 Firefox 3.6.3 LANG=EN SKIN=',
     'cashier_setting_password' => '',
@@ -65,29 +61,23 @@ my $client_details2 = {
     'address_city'             => 'Sydney',
     'address_postcode'         => '2000',
     'address_state'            => 'NSW',
+    'residence'                => 'au',
     'secret_answer'            => '::ecp::52616e646f6d495633363368676674792dd36b78f1d98017',
     'restricted_ip_address'    => '',
+    'loginid'                  => 'CR5089',
     'salutation'               => 'Mr',
+    'last_name'                => 'Dennis',
     'gender'                   => 'm',
     'phone'                    => '21345678',
     'comment'                  => '',
-    'citizen'                  => 'au'
+    'first_name'               => 'Felix',
+    'citizen'                  => 'Brazil'
 };
 
-subtest 'creating a DF client' => sub {
-    my $vr_acc  = BOM::Platform::Account::Virtual::create_account({ details => $user_detail1 });
-    my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-    $user->email_verified(1);
-    $user->save;
+my $df_client;
 
-    $client_details1->{client_password} = $vr_client->password;
-    my $acc = BOM::Platform::Account::Real::default::create_account({
-            from_client => $vr_client,
-            user        => $user,
-            country     => 'au',
-            details     => $client_details1,
-        });
-    my $df_client = BOM::Platform::Client::DoughFlowClient->new({ loginid => $acc->{client}->loginid });
+subtest 'creating a DF client' => sub {
+    $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details1);
 
     is($df_client->CustName, 'Felix The cat',           'CustName correct');
     is($df_client->Street,   '11 Bligh St',             'Street correct');
@@ -104,19 +94,7 @@ subtest 'creating a DF client' => sub {
 };
 
 subtest 'Profile mapped correctly to DF levels' => sub {
-    my $vr_acc  = BOM::Platform::Account::Virtual::create_account({ details => $user_detail2 });
-    my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-    $user->email_verified(1);
-    $user->save;
-
-    $client_details2->{client_password} = $vr_client->password;
-    my $acc = BOM::Platform::Account::Real::default::create_account({
-            from_client => $vr_client,
-            user        => $user,
-            country     => 'au',
-            details     => $client_details2,
-        });
-    my $df_client = BOM::Platform::Client::DoughFlowClient->new({ loginid => $acc->{client}->loginid });
+    $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details2);
 
     my $mock_client = Test::MockObject::Extends->new($df_client);
 
@@ -146,30 +124,16 @@ subtest 'Profile mapped correctly to DF levels' => sub {
 subtest 'handling client data that require munging' => sub {
     local $client_details1->{'first_name'};
 
-    $user_detail1->{residence} = $client_details1->{residence} = 'af';
-    $user_detail1->{email} = $client_details1->{email} = 'shuwnyuan@binary.com';
-
     $client_details1->{'first_name'}       = 'a';
     $client_details1->{'last_name'}        = 'a';
     $client_details1->{'address_line_1'}   = '';
     $client_details1->{'address_line_2'}   = 'a';
     $client_details1->{'address_city'}     = 'a';
     $client_details1->{'address_state'}    = '';
+    $client_details1->{'residence'}        = 'af';
     $client_details1->{'address_postcode'} = 'T5T-0M2';
 
-    my $vr_acc  = BOM::Platform::Account::Virtual::create_account({ details => $user_detail1 });
-    my ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-    $user->email_verified(1);
-    $user->save;
-
-    $client_details1->{client_password} = $vr_client->password;
-    my $acc = BOM::Platform::Account::Real::default::create_account({
-            from_client => $vr_client,
-            user        => $user,
-            country     => 'au',
-            details     => $client_details1,
-        });
-    my $df_client = BOM::Platform::Client::DoughFlowClient->new({ loginid => $acc->{client}->loginid });
+    $df_client = BOM::Platform::Client::DoughFlowClient->register_and_return_new_client($client_details1);
 
     is($df_client->CustName, 'a aX',                    'munged CustName correct');
     is($df_client->Street,   'X',                       'munged Street correct');
@@ -178,7 +142,7 @@ subtest 'handling client data that require munging' => sub {
     is($df_client->Country,  'AF',                      'Country correct');
     is($df_client->PCode,    'T5T-0M2',                 'PCode correct');
     is($df_client->Phone,    '21345678',                'Phone correct');
-    is($df_client->Email,    'shuwnyuan@binary.com',    'Email correct');
+    is($df_client->Email,    'felix@regentmarkets.com', 'Email correct');
     is($df_client->DOB,      '1951-01-01',              'DOB correct');
     is($df_client->Gender,   'M',                       'Gender correct');
     is($df_client->Profile,  1,                         'Profile correct');
