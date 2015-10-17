@@ -6,6 +6,7 @@ use warnings;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
+use BOM::Utility::Log4perl qw(get_logger);
 use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
