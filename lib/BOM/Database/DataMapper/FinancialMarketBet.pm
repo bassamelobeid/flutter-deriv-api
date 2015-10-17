@@ -102,10 +102,55 @@ sub get_open_bets_of_account {
     return $sth->fetchall_arrayref({});
 }
 
+sub get_sold_bets_of_account {
+    my ($self, $args) = @_;
+
+    my $limit  = int($args->{limit}  // 50);
+    my $offset = int($args->{offset} // 0);
+    my $sort_dir = (($args->{sort} // '') eq 'ASC') ? 'ASC' : 'DESC';
+    my $before   = $args->{before};
+    my $after    = $args->{after};
+
+    my $sql = q{
+        FROM
+            bet.financial_market_bet fmb
+            JOIN transaction.transaction t on (action_type='buy' and t.financial_market_bet_id=fmb.id)
+        WHERE
+            fmb.account_id = ?
+            AND is_sold = true
+    };
+    my @binds = ($self->account->id);
+    if ($before and $before = try { Date::Utility->new($before) }) {
+        $sql .= ' AND purchase_time < ?';
+        # when it only pass date without time for before, plus 1d
+        $before = $before->plus_time_interval('1d') if $before->time_hhmmss eq '00:00:00';
+        push @binds, $before->datetime_yyyymmdd_hhmmss;
+    }
+    if ($after and $after = try { Date::Utility->new($after) }) {
+        $sql .= ' AND purchase_time >= ?';
+        push @binds, $after->datetime_yyyymmdd_hhmmss;
+    }
+
+    my $dbh = $self->db->dbh;
+    my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $sql", undef, @binds);
+
+    my $sth = $self->db->dbh->prepare("
+        SELECT fmb.*, t.id txn_id
+        $sql
+        ORDER BY fmb.purchase_time $sort_dir
+        LIMIT $limit OFFSET $offset
+    ");
+    $sth->execute(@binds);
+
+    return {
+        total => $total,
+        rows  => $sth->fetchall_arrayref({}),
+    };
+}
+
 sub get_fmbs_by_loginid_and_currency {
     my $self = shift;
     my $args = shift;
-
 
     my $sql = <<'SQL';
 SELECT b.*
