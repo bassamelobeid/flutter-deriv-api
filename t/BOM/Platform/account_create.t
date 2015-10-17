@@ -135,13 +135,13 @@ sub create_mf_acc {
     $details{first_name}        = 'MF_' . $from_client->broker;
     $details{client_password}   = $from_client->password;
 
-    my %mf_params = (
-        from_client => $from_client,
-        user        => $user,
-        details     => \%details,
-        country     => $from_client->residence,
-    );
-    $mf_params{financial_assessment} = BOM::Platform::Account::Real::maltainvest::get_financial_assessment_score(\%financial_data);
-    return BOM::Platform::Account::Real::maltainvest::create_account(\%mf_params);
+    return BOM::Platform::Account::Real::maltainvest::create_account({
+        from_client     => $from_client,
+        user            => $user,
+        details         => \%details,
+        country         => $from_client->residence,
+        financial_data  => \%financial_data,
+        accept_risk     => 1,
+    });
 }
 

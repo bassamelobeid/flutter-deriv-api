@@ -29,12 +29,18 @@ sub _validate {
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $country, $details, $financial_assessment) =
-        @{$args}{'from_client', 'user', 'country', 'details', 'financial_assessment'};
+    my ($from_client, $user, $country, $details, $financial_data, $accept_risk) =
+        @{$args}{'from_client', 'user', 'country', 'details', 'financial_data', 'accept_risk'};
 
     if (my $error = _validate($args)) {
         return $error;
     }
+
+    my $financial_assessment = get_financial_assessment_score($financial_data);
+    if (not $accept_risk and $financial_assessment->{total_score} < 60) {
+        return {error => 'show risk disclaimer'};
+    }
+
     my $register = BOM::Platform::Account::Real::default::_register_client($details);
     return $register if ($register->{error});
 
