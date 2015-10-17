@@ -15,12 +15,11 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::SessionCookie;
 
 sub create_account {
-    my $args = shift;
-    my ($email, $password, $residence, $source, $env, $aff_token) =
-        @{$args->{details}}{'email', 'password', 'residence', 'source', 'env', 'aff_token'};
+    my $args    = shift;
+    my $details = $args->{details};
+    my ($email, $password, $residence) = @{$details}{'email', 'client_password', 'residence'};
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
-    $env //= '';
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
@@ -38,7 +37,7 @@ sub create_account {
             salutation                    => '',
             last_name                     => '',
             first_name                    => '',
-            myaffiliates_token            => $aff_token,
+            myaffiliates_token            => $details->{myaffiliates_token} // '',
             date_of_birth                 => undef,
             citizen                       => '',
             residence                     => $residence,
@@ -53,8 +52,8 @@ sub create_account {
             secret_answer                 => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
-            source                        => $source,
-            latest_environment            => $env,
+            source                        => $details->{source} // '',
+            latest_environment            => $details->{latest_environment} // '',
         });
     }
     catch {
@@ -71,7 +70,7 @@ sub create_account {
     );
     $user->add_loginid({loginid => $client->loginid});
     $user->add_login_history({
-        environment => $env,
+        environment => $details->{latest_environment} // '',
         successful  => 't',
         action      => 'login'
     });
