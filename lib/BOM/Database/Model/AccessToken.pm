@@ -3,7 +3,6 @@ package BOM::Database::Model::AccessToken;
 use Moose;
 use BOM::Database::AuthDB;
 use Cache::RedisDB;
-use String::Random ();
 
 has 'dbh' => (
     is         => 'ro',
@@ -17,12 +16,7 @@ sub _build_dbh {
 sub create_token {
     my ($self, $loginid, $display_name) = @_;
 
-    my $token = $self->generate_unused_token();
-    $self->dbh->do(
-        "INSERT INTO auth.access_token (token, display_name, client_loginid) VALUES (?, ?, ?)",
-        undef, $token, $display_name, $loginid
-    );
-    return $token;
+    return $self->dbh->selectrow_array("SELECT auth.create_token(40, ?, ?)", undef, $loginid, $display_name);
 }
 
 sub get_loginid_by_token {
@@ -67,22 +61,6 @@ sub remove_by_token {
     return $self->dbh->do(
         "DELETE FROM auth.access_token WHERE token = ?", undef, $token
     );
-}
-
-sub generate_unused_token {
-    my ($self) = @_;
-
-    my $sth = $self->dbh->prepare("SELECT 1 FROM auth.access_token WHERE token = ?");
-    while (1) {
-        my $token = generate_token();
-        $sth->execute($token);
-        my ($is_used) = $sth->fetchrow_array;
-        return $token unless $is_used;
-    }
-}
-
-sub generate_token {
-    return String::Random::random_regex('[a-zA-Z0-9]{12}');
 }
 
 no Moose;
