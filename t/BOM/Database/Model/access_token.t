@@ -3,6 +3,13 @@ use warnings;
 use Test::More;
 use BOM::Database::Model::AccessToken;
 
+# mockup for BOM::Test::Data::Utility::UnitTestRedis
+# since bom-postgres do not rely on bom-market
+BEGIN {
+    $INC{'BOM/Market/Underlying.pm'} = 1;
+    $INC{'BOM/Market/AggTicks.pm'} = 1;
+}
+
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 
