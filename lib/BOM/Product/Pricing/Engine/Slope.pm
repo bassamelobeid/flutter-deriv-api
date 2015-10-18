@@ -4,7 +4,7 @@ use 5.010;
 use Moose;
 
 use Storable qw(dclone);
-use List::Util qw(min max);
+use List::Util qw(min max sum);
 use YAML::CacheLoader qw(LoadFile);
 use Finance::Asset;
 use Math::Function::Interpolator;
@@ -12,10 +12,12 @@ use Math::Business::BlackScholes::Binaries;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 
-has [qw(contract_type spot strikes date_start date_expiry discount_rate mu vol payouttime_code q_rate r_rate priced_with underlying_symbol)] => (
+has [
+    qw(contract_type spot strikes date_start date_pricing date_expiry discount_rate mu vol payouttime_code q_rate r_rate priced_with underlying_symbol)
+    ] => (
     is       => 'ro',
     required => 1,
-);
+    );
 
 # required for now since market data and convention are still
 # very much intact to BOM code
@@ -63,6 +65,10 @@ sub BUILD {
         $self->error($err) if @strikes != 1;
     }
 
+    if ($self->date_expiry->is_before($self->date_start)) {
+        $self->error('Date expiry is before date start');
+    }
+
     return;
 }
 
@@ -77,13 +83,6 @@ sub _build_underlying_config {
     return Finance::Asset->instance->get_parameters_for($self->underlying_symbol);
 }
 
-has date_pricing => (
-    is      => 'ro',
-    default => sub {
-        return Date::Utility->new;
-    },
-);
-
 has timeindays => (
     is      => 'ro',
     lazy    => 1,
@@ -93,7 +92,8 @@ has timeindays => (
 sub _build_timeindays {
     my $self = shift;
 
-    return $self->market_convention->{calculate_expiry}->($self->date_start, $self->date_expiry) if $self->underlying_config->{market} eq 'forex';
+    return max(1, $self->market_convention->{calculate_expiry}->($self->date_start, $self->date_expiry))
+        if $self->underlying_config->{market} eq 'forex';
     return ($self->date_expiry->epoch - $self->date_start->epoch) / 86400;
 }
 
@@ -161,7 +161,7 @@ has _formula_args => (
 
 sub required_args {
     return [
-        qw(contract_type spot strikes date_start date_expiry discount_rate mu vol payouttime_code q_rate r_rate priced_with underlying_symbol market_data market_convention)
+        qw(contract_type spot strikes date_start date_pricing date_expiry discount_rate mu vol payouttime_code q_rate r_rate priced_with underlying_symbol market_data market_convention)
     ];
 }
 
@@ -203,6 +203,7 @@ sub risk_markup {
         my $bs_vega           = abs($bs_vega_formula->($self->_to_array(\%greek_params)));
         my $vol_spread_markup = max($vol_spread * $bs_vega, 0.07);
         $risk_markup += $vol_spread_markup;
+        $self->debug_information->{risk_markup}{vol_spread_markup} = $vol_spread_markup;
 
         # spot_spread_markup
         if (not $is_intraday) {
@@ -212,6 +213,7 @@ sub risk_markup {
             my $bs_delta           = abs($bs_delta_formula->($self->_to_array(\%greek_params)));
             my $spot_spread_markup = max($spot_spread_base * $bs_delta, 0.01);
             $risk_markup += $spot_spread_markup;
+            $self->debug_information->{risk_markup}{spot_spread_markup} = $spot_spread_markup;
         }
 
         # economic_events_markup
@@ -264,6 +266,7 @@ sub risk_markup {
 
             my $eco_events_spot_risk_markup = sum(@triangle_sum) / $step_size;
             $risk_markup += $eco_events_spot_risk_markup;
+            $self->debug_information->{risk_markup}{economic_event_markup} = $eco_events_spot_risk_markup;
         }
 
         # end of day market risk markup
@@ -276,17 +279,18 @@ sub risk_markup {
             if ($ny_1600->is_before($self->date_start) or ($is_intraday and $ny_1600->is_before($self->date_expiry))) {
                 my $eod_market_risk_markup = 0.05;    # flat 5%
                 $risk_markup += $eod_market_risk_markup;
+                $self->debug_information->{risk_markup}{eod_market_risk_markup} = $eod_market_risk_markup;
             }
         }
 
         # This is added for the high butterfly condition where the butterfly is higher than threshold (0.01),
         # then we add the difference between then original probability and adjusted butterfly probability as markup.
-        if ($markup_config->{'butterfly_markup'} and $self->timeindays == $self->market_data->{get_overnight_days}) {
+        if ($markup_config->{'butterfly_markup'} and $self->timeindays == $self->market_data->{get_overnight_days}->()) {
             my $butterfly_cutoff = 0.01;
             my $original_surface = $self->market_data->{get_volsurface_data}->($self->underlying_symbol);
             my $first_term       = (sort { $a <=> $b } keys %$original_surface)[0];
             my $market_rr_bf     = $self->market_data->{get_market_rr_bf}->($first_term);
-            if ($first_term == $self->market_data->{get_overnight_days} and $market_rr_bf->{BF_25} > $butterfly_cutoff) {
+            if ($first_term == $self->market_data->{get_overnight_days}->() and $market_rr_bf->{BF_25} > $butterfly_cutoff) {
                 my $original_bf = $market_rr_bf->{BF_25};
                 my $original_rr = $market_rr_bf->{RR_25};
                 my ($atm, $c25, $c75) = map { $original_surface->{$first_term}{smile}{$_} } qw(50 25 75);
@@ -303,6 +307,7 @@ sub risk_markup {
                 my $butterfly_adjusted_prob = $self->_calculate_probability({vol => $vol_after_butterfly_adjustment});
                 my $butterfly_markup = abs($self->probability - $butterfly_adjusted_prob);
                 $risk_markup += $butterfly_markup;
+                $self->debug_information->{risk_markup}{butterfly_markup} = $butterfly_markup;
             }
         }
 
@@ -319,16 +324,16 @@ sub commission_markup {
     return 0    if $self->error;
     return 0.03 if $self->is_forward_starting;
 
-    my $comm_file        = LoadFile('commission.yml');
+    my $comm_file        = LoadFile('/home/git/regentmarkets/bom/lib/BOM/Product/Pricing/Engine/commission.yml');
     my $commission_level = $comm_file->{commission_level}->{$self->underlying_symbol};
     my $dsp_amount       = $comm_file->{digital_spread_base}->{$self->underlying_config->{market}}->{$self->contract_type} // 0;
     $dsp_amount /= 100;
     # this is added so that we match the commission of tick trades
     $dsp_amount /= 2 if $self->timeindays * 86400 <= 20 and $self->is_atm_contract;
     # 1.4 is the hard-coded level multiplier
-    my $level_multiplier          = 1.4 * ($commission_level - 1);
+    my $level_multiplier          = 1.4**($commission_level - 1);
     my $digital_spread_percentage = $dsp_amount * $level_multiplier;
-    my $fixed_scaling             = $comm_file->{digital_spread_scaling}->{$self->underlying_symbol};
+    my $fixed_scaling             = $comm_file->{digital_scaling_factor}->{$self->underlying_symbol};
     my $dsp_interp                = Math::Function::Interpolator->new(
         points => {
             0   => 1.5,
@@ -444,7 +449,11 @@ sub _calculate {
         $debug_information{slope_adjustment}{parameters}{vanilla_vega}{amount}     = $vanilla_vega;
         $debug_information{slope_adjustment}{parameters}{vanilla_vega}{parameters} = $params;
         my $strike   = $params->{strikes}->[0];
-        my $vol_args = $self->_get_vol_expiry;
+        my $vol_args = {
+            spot   => $self->spot,
+            q_rate => $self->q_rate,
+            r_rate => $self->r_rate,
+            %{$self->_get_vol_expiry}};
         my $pip_size = $self->underlying_config->{pip_size};
         # Move by pip size either way.
         $vol_args->{strike} = $strike - $pip_size;

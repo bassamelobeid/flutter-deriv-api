@@ -126,6 +126,12 @@ subtest 'expiry range' => sub {
             date   => Date::Utility->new
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol => 'R_100',
+            date   => Date::Utility->new
+        });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
         {
             symbol => 'USD',

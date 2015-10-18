@@ -2,7 +2,9 @@
 
 use strict;
 use warnings;
-use Test::More;
+use Test::More tests => 10;
+use Test::Exception;
+use Test::NoWarnings;
 
 use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
@@ -78,50 +80,15 @@ my $params = {
     payout       => 100,
 };
 
-my $c = produce_contract($params);
-is $c->bs_probability->amount, 0.500099930268069, 'correct bs probability';
-is roundnear(0.0001, $c->pricing_engine->skew_adjustment->amount), 0.0035, 'correct skew adjustment';
-is roundnear(0.0001, $c->total_markup->amount),    0.0163, 'correct total markup';
-is roundnear(0.0001, $c->ask_probability->amount), 0.5199, 'correct ask probability';
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'EURONEXT',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol => 'AEX',
-        date   => $now,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency',
-    {
-        symbol => 'EUR',
-        date   => $now,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_moneyness',
-    {
-        symbol        => 'AEX',
-        recorded_date => $now,
-    });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'AEX',
-    epoch      => $now->epoch - 3600,
-    quote      => 100
-});
-
-$c = produce_contract({
-    %$params,
-    underlying => 'AEX',
-    currency   => 'EUR',
-});
-is $c->bs_probability->amount, 0.499086543543306, 'correct bs probability';
-is $c->pricing_engine->skew_adjustment->amount, 0, 'zero skew adjustment';
-is $c->total_markup->amount, 0.03, 'total markup is 3%';
+lives_ok {
+    my $c  = produce_contract($params);
+    my $pe = $c->pricing_engine;
+    is $pe->bs_probability, 0.500945676374959, 'correct bs probability';
+    is $pe->probability,    0.5009578548037,   'correct theo probability';
+    ok !exists $pe->debug_information->{CALL}{theo_probability}{parameters}{numeraire_probability}{parameters}{slope_adjustment},
+        'did not apply slope adjustment for forward starting';
+}
+'forward starting slope';
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
@@ -135,19 +102,22 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     quote      => 100
 });
+
 delete $params->{date_pricing};
-$c = produce_contract({
-    %$params,
-    underlying   => 'frxUSDJPY',
-    date_pricing => $now,
-    bet_type     => 'CALL',
-    duration     => '10d',
-});
-is $c->bs_probability->amount, 0.503170070758588, 'correct bs probability';
-is roundnear(0.0001, $c->pricing_engine->skew_adjustment->amount), 0.0333, 'correct skew adjustment';
-is roundnear(0.0001, $c->total_markup->amount),    0.0243, 'correct total markup';
-is roundnear(0.0001, $c->ask_probability->amount), 0.5609, 'correct ask probability';
-
-done_testing();
-
-1;
+lives_ok {
+    my $c = produce_contract({
+        %$params,
+        underlying   => 'frxUSDJPY',
+        date_pricing => $now,
+        bet_type     => 'CALL',
+        duration     => '10d',
+    });
+    my $pe = $c->pricing_engine;
+    is $pe->bs_probability, 0.503170070758588, 'correct bs probability';
+    is $pe->probability,    0.536635601062016, 'correct theo probability';
+    ok exists $pe->debug_information->{CALL}{theo_probability}{parameters}{numeraire_probability}{parameters}{slope_adjustment},
+        'did not apply slope adjustment for forward starting';
+    is roundnear(0.0001, $pe->debug_information->{CALL}{theo_probability}{parameters}{numeraire_probability}{parameters}{slope_adjustment}{amount}),
+        0.0333, 'correct slope adjustment';
+}
+'now starting slope';

@@ -65,7 +65,7 @@ my $spot = 79.08;
 
 # Strategy: Test that the butterfly_markup is correctly computed only for surfaces where the ON BF is greater than the butterfly_cutoff,
 subtest 'ON 25D BF > 1.' => sub {
-    plan tests => 6;
+    plan tests => 9;
 
     my $surface = _sample_surface(
         25 => 0.10,
@@ -78,15 +78,12 @@ subtest 'ON 25D BF > 1.' => sub {
         barrier     => 'S0P',
         bet_type    => 'FLASHU',
     );
-    my $longterm_bet = _sample_bet(
-        date_expiry => $longterm_expiry->date,
-        volsurface  => $surface,
-    );
 
-    my $ask_small_bf = $shortterm_bet->ask_probability;
-    is($ask_small_bf->peek_amount('butterfly_greater_than_cutoff'),
-        0, 'Test short term bet with ON 25D BF < 1: butterfly is not greater than the cutoff');
-    is($ask_small_bf->peek_amount('butterfly_markup'), 0, 'Test short term bet with ON 25D BF < 1: butterfly_markup is indeed 0');
+    lives_ok {
+        my $pe = $shortterm_bet->pricing_engine;
+        ok $pe->risk_markup, 'call risk_markup';
+        ok !exists $pe->debug_information->{risk_markup}{butterfly_markup}, 'did not apply butterfly markup';
+    }
 
     $surface = _sample_surface(
         25 => 0.12,
@@ -99,16 +96,13 @@ subtest 'ON 25D BF > 1.' => sub {
         barrier     => 'S0P',
         bet_type    => 'FLASHU',
     );
-    $longterm_bet = _sample_bet(
-        date_expiry => $longterm_expiry->date,
-        volsurface  => $surface,
-    );
 
-    my $ask_large_bf = $shortterm_bet->ask_probability;
-    is($ask_large_bf->peek_amount('butterfly_greater_than_cutoff'), 1,
-        'Test short term bet with ON 25D BF > 1: butterfly is greater than the cutoff');
-    cmp_ok($ask_large_bf->peek_amount('butterfly_markup'),
-        '>', 0, 'Test short term bet with ON 25D BF > 1: butterfly_markup is indeed greater than 0');
+    lives_ok {
+        my $pe = $shortterm_bet->pricing_engine;
+        ok $pe->risk_markup, 'call risk_markup';
+        ok exists $pe->debug_information->{risk_markup}{butterfly_markup}, 'apply butterfly markup';
+        ok $pe->debug_information->{risk_markup}{butterfly_markup} > 0, 'butterfly markup > 0';
+    }
 
     my $surface_original  = $shortterm_bet->volsurface;
     my $surface_copy_data = $surface_original->surface;

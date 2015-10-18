@@ -714,7 +714,13 @@ subtest 'invalid start times' => sub {
 
     $bet = produce_contract($bet_params);
 
-    $expected_reasons = [qr/^Start must be before expiry/, qr/Intraday duration.*not acceptable/, qr/Missing settlement/, qr/already expired/];
+    $expected_reasons = [
+        qr/stake same as payout/,
+        qr/^Start must be before expiry/,
+        qr/Intraday duration.*not acceptable/,
+        qr/Missing settlement/,
+        qr/already expired/
+    ];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '6d';

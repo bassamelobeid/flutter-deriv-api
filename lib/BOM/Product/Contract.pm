@@ -1536,6 +1536,7 @@ sub _pricing_parameters {
         strikes           => [grep { $_ } values %{$self->_barriers_for_pricing}],
         date_start        => $self->effective_start,
         date_expiry       => $self->date_expiry,
+        date_pricing      => $self->date_pricing,
         discount_rate     => $self->discount_rate,
         q_rate            => $self->q_rate,
         r_rate            => $self->r_rate,

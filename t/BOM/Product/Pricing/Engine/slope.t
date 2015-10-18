@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 7;
+use Test::More tests => 8;
 use Test::NoWarnings;
 use Test::Exception;
 
@@ -309,4 +309,18 @@ subtest 'barrier error' => sub {
         is $slope->commission_markup, 0, 'commission_markup is zero';
     }
     'doesn\'t die if strikes are undefined';
+};
+
+subtest 'expiry before start' => sub {
+    lives_ok {
+        my $pp = _get_params('CALL', 'numeraire');
+        $pp->{date_expiry} = Date::Utility->new('1999-01-02');
+        my $slope = BOM::Product::Pricing::Engine::Slope->new($pp);
+        ok $slope->error,             'has error';
+        like $slope->error,           qr/Date expiry is before date start/, 'correct error message';
+        is $slope->probability,       1, 'probabilility is 1';
+        is $slope->bs_probability,    1, 'probabilility is 1';
+        is $slope->risk_markup,       0, 'risk_markup is zero';
+        is $slope->commission_markup, 0, 'commission_markup is zero';
+    };
 };
