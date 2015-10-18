@@ -29,6 +29,12 @@ has debug_information => (
     default => sub { {} },
 );
 
+has error => (
+    is       => 'rw',
+    init_arg => undef,
+    default  => '',
+);
+
 has supported_contract_types => (
     is      => 'ro',
     default => sub {
@@ -40,6 +46,25 @@ has supported_contract_types => (
         };
     },
 );
+
+sub BUILD {
+    my $self = shift;
+
+    my $contract_type = $self->contract_type;
+    unless ($self->supported_contract_types->{$contract_type}) {
+        $self->error('Unsupported contract type [' . $contract_type . '] for ' . __PACKAGE__);
+    }
+
+    my @strikes = @{$self->strikes};
+    my $err     = 'Barrier error for contract type [' . $contract_type . ']';
+    if ($self->two_barriers) {
+        $self->error($err) if @strikes != 2;
+    } else {
+        $self->error($err) if @strikes != 1;
+    }
+
+    return;
+}
 
 has underlying_config => (
     is      => 'ro',
@@ -68,7 +93,7 @@ has timeindays => (
 sub _build_timeindays {
     my $self = shift;
 
-    return $self->market_convention->{calculate_expiry}->($self->date_start, $self->date_expiry) if ($self->underlying_config->{market} eq 'forex');
+    return $self->market_convention->{calculate_expiry}->($self->date_start, $self->date_expiry) if $self->underlying_config->{market} eq 'forex';
     return ($self->date_expiry->epoch - $self->date_start->epoch) / 86400;
 }
 
@@ -96,7 +121,7 @@ sub _build_is_forward_starting {
     return ($self->date_start->epoch - $self->date_pricing->epoch > 5) ? 1 : 0;
 }
 
-has two_barriers => (
+has _two_barriers => (
     is      => 'ro',
     lazy    => 1,
     builder => '_build_two_barriers',
@@ -104,7 +129,7 @@ has two_barriers => (
 
 sub _build_two_barriers {
     my $self = shift;
-    return (scalar @{$self->strikes} > 1) ? 1 : 0;
+    return (grep { $self->contract_type eq $_ } qw(EXPIRYMISS EXPIRYRANGE)) ? 1 : 0;
 }
 
 has is_intraday => (
@@ -126,7 +151,7 @@ has is_atm_contract => (
 
 sub _build_is_atm_contract {
     my $self = shift;
-    return ($self->two_barriers or $self->spot != $self->strikes->[0]) ? 0 : 1;
+    return ($self->_two_barriers or $self->spot != $self->strikes->[0]) ? 0 : 1;
 }
 
 has _formula_args => (
@@ -141,58 +166,16 @@ sub required_args {
 }
 
 sub probability {
-    my ($self, $modified) = @_;
+    my $self = shift;
 
-    my $contract_type = $modified->{contract_type} ? $modified->{contract_type} : $self->contract_type;
-
-    my $probability;
-    if ($contract_type eq 'EXPIRYMISS') {
-        $probability = $self->_two_barrier_probability($modified);
-    } elsif ($contract_type eq 'EXPIRYRANGE') {
-        my $discounted_probability = exp(-$self->discount_rate * $self->timeinyears);
-        $probability = $discounted_probability - $self->_two_barrier_probability($modified);
-    } else {
-        my $priced_with = $self->priced_with;
-        my $params      = $self->_pricing_args;
-        $params->{$_} = $modified->{$_} foreach keys %$modified;
-
-        my (%debug_information, $calc_parameters);
-        if ($priced_with eq 'numeraire') {
-            ($probability, $calc_parameters) = $self->_calculate($contract_type, $params);
-            $debug_information{theo_probability}{amount}     = $probability;
-            $debug_information{theo_probability}{parameters} = $calc_parameters;
-        } elsif ($priced_with eq 'quanto') {
-            $params->{mu} = $self->r_rate - $self->q_rate;
-            ($probability, $calc_parameters) = $self->_calculate($contract_type, $params);
-            $debug_information{theo_probability}{amount}     = $probability;
-            $debug_information{theo_probability}{parameters} = $calc_parameters;
-        } elsif ($priced_with eq 'base') {
-            my %cloned_params = %$params;
-            $cloned_params{mu}            = $self->r_rate - $self->q_rate;
-            $cloned_params{discount_rate} = $self->r_rate;
-            my $numeraire_prob;
-            ($numeraire_prob, $calc_parameters) = $self->_calculate($contract_type, \%cloned_params);
-            $debug_information{theo_probability}{parameters}{numeraire_probability}{amount}     = $numeraire_prob;
-            $debug_information{theo_probability}{parameters}{numeraire_probability}{parameters} = $calc_parameters;
-            my $vanilla_formula          = _bs_formula_for('vanilla_' . $contract_type);
-            my $base_vanilla_probability = $vanilla_formula->($self->_to_array($params));
-            $debug_information{theo_probability}{parameters}{base_vanilla_probability}{amount}     = $base_vanilla_probability;
-            $debug_information{theo_probability}{parameters}{base_vanilla_probability}{parameters} = $params;
-            my $which_way = $contract_type eq 'CALL' ? 1 : -1;
-            my $strike = $params->{strikes}->[0];
-            $debug_information{theo_probability}{parameters}{spot}{amount}   = $self->spot;
-            $debug_information{theo_probability}{parameters}{strike}{amount} = $strike;
-            $probability = ($numeraire_prob * $strike + $base_vanilla_probability * $which_way) / $self->spot;
-            $debug_information{theo_probability}{amount} = $probability;
-        }
-        $self->debug_information->{$contract_type} = \%debug_information;
-    }
-
-    return $probability;
+    return 1 if $self->error;
+    return $self->_calculate_probability;
 }
 
 sub risk_markup {
     my $self = shift;
+
+    return 0 if $self->error;
 
     my $market        = $self->underlying_config->{market};
     my $markup_config = _markup_config($market);
@@ -204,8 +187,7 @@ sub risk_markup {
         return $risk_markup if ($self->is_forward_starting);
 
         my %greek_params = %{$self->_pricing_args};
-        my $vol_expiry = $self->underlying_config->{market} eq 'forex' ? {expiry_date => $self->date_expiry} : {days => $self->timeindays};
-        $greek_params{vol} = $self->market_data->{get_atm_volatility}->($vol_expiry);
+        $greek_params{vol} = $self->market_data->{get_atm_volatility}->($self->_get_vol_expiry);
         # vol_spread_markup
         my $spread_type = $self->is_atm_contract ? 'atm' : 'max';
         my $vol_spread = $self->market_data->{get_vol_spread}->($spread_type, $self->timeindays);
@@ -305,11 +287,12 @@ sub risk_markup {
                 my $cloned_surface_data = dclone($original_surface);
                 $cloned_surface_data->{$first_term}{smile}{25} = $c25_mod;
                 $cloned_surface_data->{$first_term}{smile}{75} = $c75_mod;
-                my %what_vol = $self->two_barriers ? (strike => $self->spot) : (strike => $self->strikes->[0]);
-                # Should revisit this when refactoring volatilty. Seems to be a weird logic.
-                my %what_expiry = ($market eq 'forex') ? (expiry_date => $self->date_expiry) : (days => $self->timeindays);
-                my $vol_after_butterfly_adjustment = $self->market_data->{get_volatility}->({%what_vol, %what_expiry}, $cloned_surface_data);
-                my $butterfly_adjusted_prob = $self->probability({vol => $vol_after_butterfly_adjustment});
+                my $vol_args = {
+                    strike => $self->_two_barriers ? $self->spot : $self->strikes->[0],
+                    %{$self->_get_vol_expiry},
+                };
+                my $vol_after_butterfly_adjustment = $self->market_data->{get_volatility}->($vol_args, $cloned_surface_data);
+                my $butterfly_adjusted_prob = $self->_calculate_probability({vol => $vol_after_butterfly_adjustment});
                 my $butterfly_markup = abs($self->probability - $butterfly_adjusted_prob);
                 $risk_markup += $butterfly_markup;
             }
@@ -325,6 +308,7 @@ sub risk_markup {
 sub commission_markup {
     my $self = shift;
 
+    return 0    if $self->error;
     return 0.03 if $self->is_forward_starting;
 
     my $comm_file        = LoadFile('commission.yml');
@@ -352,27 +336,80 @@ sub commission_markup {
     return $commission_markup;
 }
 
+sub _calculate_probability {
+    my ($self, $modified) = @_;
+
+    my $contract_type = delete $modified->{contract_type} || $self->contract_type;
+
+    my $probability;
+    if ($contract_type eq 'EXPIRYMISS') {
+        $probability = $self->_two_barrier_probability($modified);
+    } elsif ($contract_type eq 'EXPIRYRANGE') {
+        my $discounted_probability = exp(-$self->discount_rate * $self->timeinyears);
+        $self->debug_information->{discounted_probability} = $discounted_probability;
+        $probability = $discounted_probability - $self->_two_barrier_probability($modified);
+    } else {
+        my $priced_with = $self->priced_with;
+        my $params      = $self->_pricing_args;
+        $params->{$_} = $modified->{$_} foreach keys %$modified;
+
+        my (%debug_information, $calc_parameters);
+        if ($priced_with eq 'numeraire') {
+            ($probability, $calc_parameters) = $self->_calculate($contract_type, $params);
+            $debug_information{theo_probability}{amount}     = $probability;
+            $debug_information{theo_probability}{parameters} = $calc_parameters;
+        } elsif ($priced_with eq 'quanto') {
+            $params->{mu} = $self->r_rate - $self->q_rate;
+            ($probability, $calc_parameters) = $self->_calculate($contract_type, $params);
+            $debug_information{theo_probability}{amount}     = $probability;
+            $debug_information{theo_probability}{parameters} = $calc_parameters;
+        } elsif ($priced_with eq 'base') {
+            my %cloned_params = %$params;
+            $cloned_params{mu}            = $self->r_rate - $self->q_rate;
+            $cloned_params{discount_rate} = $self->r_rate;
+            my $numeraire_prob;
+            ($numeraire_prob, $calc_parameters) = $self->_calculate($contract_type, \%cloned_params);
+            $debug_information{theo_probability}{parameters}{numeraire_probability}{amount}     = $numeraire_prob;
+            $debug_information{theo_probability}{parameters}{numeraire_probability}{parameters} = $calc_parameters;
+            my $vanilla_formula          = _bs_formula_for('vanilla_' . $contract_type);
+            my $base_vanilla_probability = $vanilla_formula->($self->_to_array($params));
+            $debug_information{theo_probability}{parameters}{base_vanilla_probability}{amount}     = $base_vanilla_probability;
+            $debug_information{theo_probability}{parameters}{base_vanilla_probability}{parameters} = $params;
+            my $which_way = $contract_type eq 'CALL' ? 1 : -1;
+            my $strike = $params->{strikes}->[0];
+            $debug_information{theo_probability}{parameters}{spot}{amount}   = $self->spot;
+            $debug_information{theo_probability}{parameters}{strike}{amount} = $strike;
+            $probability = ($numeraire_prob * $strike + $base_vanilla_probability * $which_way) / $self->spot;
+            $debug_information{theo_probability}{amount} = $probability;
+        } else {
+            $self->error('Unrecognized priced_with[' . $priced_with . ']');
+            $probability = 1;
+        }
+
+        $self->debug_information->{$contract_type} = \%debug_information;
+    }
+
+    return $probability;
+}
+
 sub _two_barrier_probability {
     my ($self, $modified) = @_;
 
     my ($low_strike, $high_strike) = sort { $a <=> $b } @{$self->strikes};
-    # vol_expiry here needs to be revisit when we refactor volsurface.
-    my %vol_expiry = $self->underlying_config->{market} eq 'forex' ? (expiry_date => $self->date_expiry) : (days => $self->timeindays);
-    my $high_vol = $self->market_data->{get_volatility}->({
-        strike => $high_strike,
-        %vol_expiry
-    });
-    my $call_prob = $self->probability({
+
+    my $vol_args = $self->_get_vol_expiry;
+    $vol_args->{strike} = $high_strike;
+    my $high_vol  = $self->market_data->{get_volatility}->($vol_args);
+    my $call_prob = $self->_calculate_probability({
         contract_type => 'CALL',
         strikes       => [$high_strike],
         vol           => $high_vol,
         %$modified
     });
-    my $low_vol = $self->market_data->{get_volatility}->({
-        strike => $low_strike,
-        %vol_expiry
-    });
-    my $put_prob = $self->probability({
+
+    $vol_args->{strike} = $low_strike;
+    my $low_vol  = $self->market_data->{get_volatility}->($vol_args);
+    my $put_prob = $self->_calculate_probability({
         contract_type => 'PUT',
         strikes       => [$low_strike],
         vol           => $low_vol,
@@ -399,7 +436,7 @@ sub _calculate {
         $debug_information{slope_adjustment}{parameters}{vanilla_vega}{amount}     = $vanilla_vega;
         $debug_information{slope_adjustment}{parameters}{vanilla_vega}{parameters} = $params;
         my $strike   = $params->{strikes}->[0];
-        my $vol_args = $self->underlying_config->{market} eq 'forex' ? {expiry_date => $self->date_expiry} : {days => $self->timeindays};
+        my $vol_args = $self->_get_vol_expiry;
         my $pip_size = $self->underlying_config->{pip_size};
         # Move by pip size either way.
         $vol_args->{strike} = $strike - $pip_size;
@@ -407,12 +444,7 @@ sub _calculate {
         $vol_args->{strike} = $strike + $pip_size;
         my $up_vol = $self->market_data->{get_volatility}->($vol_args);
         my $slope = ($up_vol - $down_vol) / (2 * $pip_size);
-        $debug_information{slope_adjustment}{parameters}{slope}{amount}     = $slope;
-        $debug_information{slope_adjustment}{parameters}{slope}{parameters} = {
-            strike   => $strike,
-            high_vol => $up_vol,
-            low_vol  => $down_vol
-        };
+        $debug_information{slope_adjustment}{parameters}{slope} = $slope;
         my $base_amount = $contract_type eq 'CALL' ? -1 : 1;
         $slope_adjustment = $base_amount * $vanilla_vega * $slope;
 
@@ -455,8 +487,8 @@ sub _markup_config {
     my $market = shift;
 
     my $config = {
-        forex       => [qw( traded_market_markup economic_event_markup end_of_day_markup butterfly_markup )],
-        commodities => [qw( traded_market_markup economic_event_markup end_of_day_markup)],
+        forex       => [qw(traded_market_markup economic_event_markup end_of_day_markup butterfly_markup)],
+        commodities => [qw(traded_market_markup economic_event_markup end_of_day_markup)],
         stocks      => [qw(traded_market_markup)],
         indices     => [qw(traded_market_markup)],
         futures     => [qw(traded_market_markup)],
@@ -474,6 +506,13 @@ sub _get_first_tenor_on_surface {
     my $original_surface = $self->market_data->{get_volsurface_data}->($self->underlying_symbol);
     my $first_term = (sort { $a <=> $b } keys %$original_surface)[0];
     return $first_term;
+}
+
+sub _get_vol_expiry {
+    my $self = shift;
+
+    return {expiry_date => $self->date_expiry} if $self->underlying_config->{market} eq 'forex';
+    return {days => $self->timeindays};
 }
 
 no Moose;
