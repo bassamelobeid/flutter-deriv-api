@@ -57,7 +57,7 @@ sub BUILD {
 
     my @strikes = @{$self->strikes};
     my $err     = 'Barrier error for contract type [' . $contract_type . ']';
-    if ($self->two_barriers) {
+    if ($self->_two_barriers) {
         $self->error($err) if @strikes != 2;
     } else {
         $self->error($err) if @strikes != 1;
