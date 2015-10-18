@@ -165,6 +165,14 @@ sub required_args {
     ];
 }
 
+sub bs_probability {
+    my $self = shift;
+
+    return 1 if $self->error;
+    my $bs_formula = _bs_formula_for($self->contract_type);
+    return $bs_formula->($self->_to_array($self->_pricing_args));
+}
+
 sub probability {
     my $self = shift;
 

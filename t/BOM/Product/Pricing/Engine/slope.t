@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 
-use Test::More tests => 4;
+use Test::More tests => 7;
 use Test::NoWarnings;
 use Test::Exception;
 
@@ -259,6 +259,7 @@ subtest 'unsupported contract_type' => sub {
         $pp->{strikes} = [100];
         my $slope = BOM::Product::Pricing::Engine::Slope->new($pp);
         is $slope->probability,       1,                             'probabilility is 1';
+        is $slope->bs_probability,    1,                             'probabilility is 1';
         ok $slope->error,             'has error';
         like $slope->error,           qr/Unsupported contract type/, 'correct error message';
         is $slope->risk_markup,       0,                             'risk_markup is zero';
@@ -273,6 +274,7 @@ subtest 'unregconized priced_with' => sub {
         $pp->{discount_rate} = 0.01;
         my $slope = BOM::Product::Pricing::Engine::Slope->new($pp);
         is $slope->probability,       1,                            'probabilility is 1';
+        is $slope->bs_probability,    1,                            'probabilility is 1';
         is $slope->risk_markup,       0,                            'risk_markup is zero';
         is $slope->commission_markup, 0,                            'commission_markup is zero';
         ok $slope->error,             'has error';
@@ -289,6 +291,7 @@ subtest 'barrier error' => sub {
         ok $slope->error,             'has error';
         like $slope->error,           qr/Barrier error for/, 'correct error message';
         is $slope->probability,       1, 'probabilility is 1';
+        is $slope->bs_probability,    1, 'probabilility is 1';
         is $slope->risk_markup,       0, 'risk_markup is zero';
         is $slope->commission_markup, 0, 'commission_markup is zero';
     }
@@ -301,6 +304,7 @@ subtest 'barrier error' => sub {
         ok $slope->error,             'has error';
         like $slope->error,           qr/Barrier error for/, 'correct error message';
         is $slope->probability,       1, 'probabilility is 1';
+        is $slope->bs_probability,    1, 'probabilility is 1';
         is $slope->risk_markup,       0, 'risk_markup is zero';
         is $slope->commission_markup, 0, 'commission_markup is zero';
     }
