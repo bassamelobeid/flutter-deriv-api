@@ -219,7 +219,6 @@ has [qw( pricing_engine_name )] => (
 
 has pricing_engine => (
     is         => 'ro',
-    isa        => 'BOM::Product::Pricing::Engine',
     lazy_build => 1,
 );
 
