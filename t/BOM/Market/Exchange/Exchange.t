@@ -339,7 +339,7 @@ subtest "Holiday on weekends" => sub {
 };
 
 subtest 'Whole bunch of stuff.' => sub {
-    plan tests => 116;
+    plan tests => 104;
 
     is($LSE->weight_on(Date::Utility->new('2-Apr-13')), 1.0, 'open weight');
     is($LSE->weight_on(Date::Utility->new('1-Apr-13')), 0.0, 'holiday weight');

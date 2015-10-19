@@ -997,25 +997,6 @@ sub _build_rate_to_imply_from {
         : $self->quoted_currency_symbol;
 }
 
-=head2 forward_price_for
-
-The forward price of a given underlying at a particular time
-
-    my $tiy = 7 / 365;
-    $underlying->forward_price_for($tiy);
-
-=cut
-
-sub forward_price_for {
-    my ($self, $tiy) = @_;
-
-    my $dom_rate = $self->interest_rate_for($tiy);
-    my $for_rate = $self->dividend_rate_for($tiy);
-    my $spot     = $self->spot;
-
-    return $spot * exp(($dom_rate - $for_rate) * $tiy);
-}
-
 =head2 interest_rate_for
 
 Get the interest rate for this underlying over a given time period (expressed in timeinyears.)
