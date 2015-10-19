@@ -73,7 +73,7 @@ Creates a new session and stores it in redis.
 =cut
 
 # default token parameters
-my $STRING       = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
+my $STRING       = join '', 'a'..'z', 'A'..'Z', '0'..'9';
 my @REQUIRED     = qw(email);
 my $EXPIRES_IN   = 3600 * 24;
 my $TOKEN_LENGTH = 48;
@@ -107,8 +107,8 @@ sub new {    ## no critic RequireArgUnpack
             Bits        => 160,
             NonBlocking => 1,
         )->string_from($STRING, $TOKEN_LENGTH);
-        $self->{loginat} = time;
-        $self->save;
+        $self->{loginat} ||= time;
+        rw->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
     }
     $self->{expires_in} ||= $EXPIRES_IN;
     $self->{issued_at} = time;
@@ -140,13 +140,6 @@ sub end_session {    ## no critic
     my $self = shift;
     return unless $self->{token};
     rw->del('LOGIN_SESSION::' . $self->{token});
-}
-
-sub save {
-    my $self = shift;
-
-    return unless $self->{token};
-    rw->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
 }
 
 1;
