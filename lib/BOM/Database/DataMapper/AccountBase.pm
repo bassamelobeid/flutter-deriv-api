@@ -12,31 +12,6 @@ has 'account' => (
     builder   => '_build_account',
 );
 
-has 'does_account_exist' => (
-    is      => 'rw',
-    isa     => 'Bool',
-    lazy    => 1,
-    builder => '_build_does_account_exist',
-);
-
-sub _build_does_account_exist {
-    my $self = shift;
-
-    my $account = BOM::Database::Model::Account->new({
-            'data_object_params' => {
-                'client_loginid' => $self->client_loginid,
-                'currency_code'  => $self->currency_code
-            },
-            db => $self->db,
-        });
-
-    if ($account->load({'load_params' => {speculative => 1}})) {
-        return 1;
-    }
-
-    return 0;
-}
-
 sub _build_account {
     my $self = shift;
 
