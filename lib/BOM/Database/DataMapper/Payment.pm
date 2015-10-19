@@ -453,39 +453,6 @@ sub get_transaction_id_of_account_by_comment {
     return;
 }
 
-=item get_client_aggregate_deposit_withdrawal
-
-Get the aggreagrte of client deposit withdrawal, returns hash of currency_code => aggregate
-
-=cut
-
-sub get_client_aggregate_deposit_withdrawal {
-    my $self    = shift;
-    my $loginid = shift;
-
-    my $sql = q{
-        SELECT
-            a.currency_code, round(SUM(CASE WHEN p.amount > 0 THEN p.amount ELSE 0 END) - ABS(SUM(CASE WHEN p.amount < 0 THEN p.amount ELSE 0 END)::numeric), 2) as total
-        FROM
-            transaction.account a, payment.payment p
-        WHERE
-            a.client_loginid = ?
-            AND a.id = p.account_id
-            AND is_default = TRUE
-        GROUP BY a.id;
-    };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($loginid);
-
-    my %aggr_deposit_withdrawal;
-    while (my $row = $sth->fetchrow_arrayref) {
-        $aggr_deposit_withdrawal{$row->[0]} = $row->[1];
-    }
-    return %aggr_deposit_withdrawal ? \%aggr_deposit_withdrawal : ();
-}
-
 =item is_duplicate_payment_by_remark
 
 Check the remark (comment) of payments to find duplicate
