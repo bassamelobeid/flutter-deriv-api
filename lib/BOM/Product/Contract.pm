@@ -1635,7 +1635,8 @@ sub _market_data {
         },
         get_ticks => sub {
             my $args = shift;
-            $args->{underlying} = BOM::Market::Underlying->new($args->{underlying}) if ref $args->{underlying} ne 'BOM::Market::Underlying';
+            my $us   = delete $args->{underlying_symbol};
+            $args->{underlying} = BOM::Market::Underlying->new($us);
             return BOM::Market::AggTicks->new->retrieve($args);
         },
         get_overnight_days => sub {
