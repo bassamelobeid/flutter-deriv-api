@@ -2,7 +2,7 @@ use Test::More tests => 1;
 use strict;
 use warnings;
 
-if (my $r = `git grep BOM::|egrep -v BOM::Utility|grep -v BOM::Test|egrep -v BOM::Database|egrep -v BOM::System`) {
+if (my $r = `git grep BOM:: | grep -v -e BOM::Utility -e BOM::Test -e BOM::Database -e BOM::System'`) {
 	print $r;
     ok 0, "Wrong strucutre dependency $r";
 } else {
