@@ -14,7 +14,7 @@ use BOM::MarketData::Fetcher::EconomicEvent;
 use String::Random;
 
 subtest create_doc => sub {
-    plan tests => 4;
+    plan tests => 2;
     my $eco = BOM::MarketData::Fetcher::EconomicEvent->new();
     can_ok($eco, 'create_doc');
     my %test_data = (
