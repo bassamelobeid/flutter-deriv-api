@@ -231,27 +231,6 @@ subtest 'get total credit card deposit' => sub {
     'Expect to initialize the object';
 };
 
-subtest 'first funded' => sub {
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR0026',
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_first_funded_currency_of_client(), 'eq', 'USD', 'Get the first funded currency of clients');
-
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR0026',
-            'currency_code'  => 'USD',
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_first_funded_amount_of_account(), '==', 100, 'Get the first funded amount of client account');
-};
-
 subtest 'total free gift deposit' => sub {
     lives_ok {
         $payment_mapper = BOM::Database::DataMapper::Payment->new({
