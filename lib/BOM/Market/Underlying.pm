@@ -2109,22 +2109,6 @@ sub get_applicable_corporate_actions_for_period {
     return @valid_actions;
 }
 
-sub _last_trading_day_tick {
-    my $self                = shift;
-    my $last_trading_period = $self->exchange->last_trading_period;
-
-    my $tick = $self->feed_api->combined_realtime_tick({
-        start_time => $last_trading_period->{begin},
-        end_time   => $last_trading_period->{end},
-    });
-
-    if ($tick) {
-        return $tick;
-    }
-
-    return;
-}
-
 no Moose;
 
 __PACKAGE__->meta->make_immutable(
