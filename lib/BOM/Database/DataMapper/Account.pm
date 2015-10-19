@@ -54,38 +54,6 @@ sub get_balance {
     return sprintf '%.2f', roundnear .01, $account_record->[0]->balance;
 }
 
-=item get_seconds_from_last_modified
-
-    get last transaction date of account
-
-=cut
-
-sub get_seconds_from_last_modified {
-    my $self = shift;
-
-    my $dbh = $self->db->dbh;
-
-    my $sql = q{
-        SELECT
-            EXTRACT ('epoch' from NOW()) - EXTRACT ('epoch' from last_modified) as last_transaction_time_gap
-        FROM
-            transaction.account
-        WHERE
-            client_loginid = ?
-            AND currency_code = ?
-    };
-
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid, $self->currency_code);
-
-    my $result;
-    if ($result = $sth->fetchrow_hashref) {
-        return $result->{'last_transaction_time_gap'};
-    }
-
-    return;
-}
-
 sub last_modified {
     my $self = shift;
 
