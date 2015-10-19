@@ -28,7 +28,7 @@ sub get_loginid_by_token {
     }
 
     my ($client_loginid) = $self->dbh->selectrow_array(
-        "SELECT client_loginid FROM auth.access_token WHERE token = ? ORDER BY display_name", undef, $token
+        "SELECT client_loginid FROM auth.access_token WHERE token = ?", undef, $token
     );
     return unless $client_loginid;
 
@@ -42,7 +42,15 @@ sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
     return $self->dbh->selectall_arrayref(
-        "SELECT * FROM auth.access_token WHERE client_loginid = ?", { Slice => {} }, $loginid
+        "SELECT * FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name", { Slice => {} }, $loginid
+    );
+}
+
+sub get_token_count_by_loginid {
+    my ($self, $loginid) = @_;
+
+    return $self->dbh->selectrow_array(
+        "SELECT COUNT(*) FROM auth.access_token WHERE client_loginid = ?", undef, $loginid
     );
 }
 

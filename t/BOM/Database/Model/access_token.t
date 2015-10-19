@@ -30,6 +30,8 @@ is $tokens->[0]->{token}, $token;
 is $tokens->[0]->{client_loginid}, $test_loginid;
 is $tokens->[0]->{display_name}, 'Test Token';
 is $tokens->[0]->{last_used}, undef;
+my $token_cnt = $m->get_token_count_by_loginid($test_loginid);
+is $token_cnt, 1;
 
 $m->update_last_used_by_token($token);
 $tokens = $m->get_tokens_by_loginid($test_loginid);
