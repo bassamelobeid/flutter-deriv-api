@@ -123,18 +123,3 @@ subtest "making new transaction" => sub {
     'use the payment handler to handle the payment';
 };
 
-subtest "get_seconds_from_last_modified" => sub {
-    lives_ok {
-        $acc_data_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => 'CR0008',
-            'currency_code'  => 'USD'
-        });
-    }
-    'Expect to initialize the account data mapper for CR0008';
-    cmp_ok($acc_data_mapper->get_seconds_from_last_modified,
-        '<=', 2, 'Check if last modified time of the account is set correctly after modification made on transaction table.');
-    sleep(2);
-    cmp_ok($acc_data_mapper->get_seconds_from_last_modified,
-        '>=', 2, 'Check if last modified time of the account is set correctly after 2 seconds sleep.');
-};
-
