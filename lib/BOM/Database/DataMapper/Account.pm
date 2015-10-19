@@ -54,31 +54,6 @@ sub get_balance {
     return sprintf '%.2f', roundnear .01, $account_record->[0]->balance;
 }
 
-sub last_modified {
-    my $self = shift;
-
-    my $dbh = $self->db->dbh;
-
-    my $sql = q{
-        SELECT
-            max(EXTRACT ('epoch' from last_modified)::BIGINT) as last_modified
-        FROM
-            transaction.account
-        WHERE
-            client_loginid = ?
-    };
-
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid);
-
-    my $result;
-    if ($result = $sth->fetchrow_hashref) {
-        return $result->{'last_modified'};
-    }
-
-    return;
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
