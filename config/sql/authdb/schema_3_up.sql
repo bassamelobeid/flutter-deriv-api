@@ -30,14 +30,10 @@ arr(chrs) AS (
 ),
 ac(c) AS (SELECT chrs||chrs||chrs||chrs||chrs FROM arr)
 
-SELECT array_to_string(
-           ARRAY(
-               SELECT ac.c[1 + get_byte(r.r,i.i)]
-                 FROM ac
-                CROSS JOIN gen_random_bytes(p_len) r(r)
-                CROSS JOIN generate_series(0,p_len-1) i(i)
-           ), ''
-       )
+SELECT string_agg(ac.c[1 + get_byte(r.r,i.i)], '')
+  FROM ac
+ CROSS JOIN gen_random_bytes(p_len) r(r)
+ CROSS JOIN generate_series(0,p_len-1) i(i)
 
 $$ LANGUAGE sql VOLATILE;
 
