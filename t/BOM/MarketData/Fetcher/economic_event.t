@@ -24,7 +24,6 @@ subtest create_doc => sub {
     my $doc_id;
     ok($doc_id = $eco->create_doc(\%test_data), 'create_doc lives');
     my $saved_doc;
-    ok($saved_doc = $eco->retrieve_doc_with_id($doc_id), 'doc is saved on couch');
     is($saved_doc->{release_date}, $test_data{release_date}, 'data saved successful');
 };
 
