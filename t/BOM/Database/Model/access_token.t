@@ -17,7 +17,7 @@ my $m = BOM::Database::Model::AccessToken->new;
 my $test_loginid = 'CR10002';
 
 my $token = $m->create_token($test_loginid, 'Test Token');
-is length($token), 12;
+is length($token), 15;
 
 my $client_loginid = $m->get_loginid_by_token($token);
 is $client_loginid, $test_loginid;
