@@ -97,20 +97,6 @@ sub _build_eod_market_risk_markup {
         base_amount => $eod_base,
     });
 
-    # Only allow sale with this commission in the ATM case.
-    if ($eod_base and not $bet->is_atm_bet) {
-        my $message =
-            ($bet->built_with_bom_parameters)
-            ? localize('Resale of this contract is not offered.')
-            : localize('The contract is not available after [_1] GMT.', $ny_1600->time_hhmm);
-        $eod_market_risk_markup->add_errors({
-            message           => 'Underlying buying suspended between NY1600 and GMT0000',
-            message_to_client => $message . ' ',
-            info_link         => request()->url_for('/resources/asset_index'),
-            info_text         => localize('View Asset Index'),
-        });
-    }
-
     return $eod_market_risk_markup;
 }
 

@@ -2791,6 +2791,39 @@ sub _validate_volsurface {
     return @errors;
 }
 
+sub _validate_eod_market_risk {
+    my $self = shift;
+
+    my @errors;
+    my $ny_1700 = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
+    my $ny_1600 = $ny_1700->minus_time_interval('1h');
+
+    if (
+        first { $self->market->name eq $_ } (qw(forex commodities))
+            and $self->timeindays->amount <= 3
+        and (
+            $ny_1600->is_before($self->date_start)
+            or (    $self->is_intraday
+                and $ny_1600->is_before($self->date_expiry)))
+        and not $self->is_atm_bet
+        )
+    {
+        my $message =
+            ($self->built_with_bom_parameters)
+            ? localize('Resale of this contract is not offered.')
+            : localize('The contract is not available after [_1] GMT.', $ny_1600->time_hhmm);
+        push @errors,
+            {
+            message           => 'Underlying buying suspended between NY1600 and GMT0000',
+            message_to_client => $message . ' ',
+            info_link         => request()->url_for('/resources/asset_index'),
+            info_text         => localize('View Asset Index'),
+            };
+    }
+
+    return @errors;
+}
+
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';
 
