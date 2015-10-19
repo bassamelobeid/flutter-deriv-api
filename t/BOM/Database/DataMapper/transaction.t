@@ -146,38 +146,6 @@ foreach my $bet_info (@bet_infos) {
     'Buy a FLASHU bet and sell it';
 }
 
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => $client->loginid,
-        currency_code  => 'USD'
-    });
-}
-'create txn data mapper for account [' . $client->loginid . ', USD]';
-
-cmp_ok($txn_data_mapper->get_today_buy_turnover_of_account, '==', 33.50, 'today buy turnover: 33.50');
-
-# test for account that don't have txn today
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        'client_loginid' => 'CR0015',
-        'currency_code'  => 'GBP'
-    });
-}
-'create txn data mapper for account [CR0015, GBP] - do not have txn today';
-
-cmp_ok($txn_data_mapper->get_today_buy_turnover_of_account, '==', 0, 'today buy turnover: 0');
-
-# test with account that doesn't exist
-lives_ok {
-    $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
-        client_loginid => 'CR999977',
-        currency_code  => 'GBP'
-    });
-}
-'create txn data mapper for account [CR999977, GBP] - acc not exist';
-
-cmp_ok($txn_data_mapper->get_today_buy_turnover_of_account, '==', 0, 'today buy turnover: 0');
-
 my $bets;
 lives_ok {
     $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({broker_code => 'CR'});

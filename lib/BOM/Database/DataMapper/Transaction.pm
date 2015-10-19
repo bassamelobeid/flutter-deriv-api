@@ -265,43 +265,6 @@ sub get_turnover_of_account {
     return 0;
 }
 
-=head2 get_today_buy_turnover_of_account
-
-    my $buy_turnover = $mapper->get_today_buy_turnover_of_account();
-
-=cut
-
-sub get_today_buy_turnover_of_account {
-    my $self = shift;
-    my $date = Date::Utility->new->date_ddmmmyy;
-    my $dbh  = $self->db->dbh;
-
-    my $sql = q{
-        SELECT
-            account_id,
-            SUM(-1 * amount) AS turnover
-        FROM
-            transaction.transaction
-        WHERE
-            account_id = ?
-            AND transaction_time::date = ?
-            AND action_type = 'buy'
-        GROUP BY
-            account_id
-    };
-
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->account->id, $date);
-
-    my $turnover = 0;
-    my $result   = $sth->fetchrow_hashref;
-    if ($result) {
-        $turnover = ($result->{'turnover'}) ? $result->{'turnover'} : 0;
-    }
-
-    return $turnover;
-}
-
 =head2 get_reality_check_data_of_account
 
     my $start_time = Date::Utility->new;
