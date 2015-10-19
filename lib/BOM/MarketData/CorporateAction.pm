@@ -140,20 +140,6 @@ sub _build_cancelled_actions {
     return \%cancelled;
 }
 
-sub _prune {
-    my ($self, $doc) = @_;
-    my $pruned = {id => $self->symbol};
-    my $actions = $doc->{actions};
-    $pruned = {
-        %$pruned,
-        actions => {
-            map { $_ => $actions->{$_} }
-                grep { !$actions->{$_}->{monitor} }
-                keys %$actions
-        }};
-    return $pruned;
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
