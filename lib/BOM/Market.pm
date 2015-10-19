@@ -455,19 +455,6 @@ sub default_underlying {
     return ($underlying) ? $underlying->symbol : $symbols[0];
 }
 
-=head2 available_categories
-
-Returns an array of contract category names available for this market
-Sadly this can't returns category objects because of dependency
-
-=cut
-
-sub available_categories {
-    my $self = shift;
-
-    return (keys %{$self->contracts});
-}
-
 =head2 providers
 
 A list of feed providers for this market in the order of priority.
