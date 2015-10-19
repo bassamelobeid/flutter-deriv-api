@@ -93,51 +93,6 @@ subtest 'Client withdraw money via payment agent' => sub {
     cmp_ok($withdrawal_count, '==', 1, 'Client withdrawal count');
 };
 
-subtest 'Payment agent deposit money to client' => sub {
-    plan tests => 4;
-
-    my $deposit_count;
-    lives_ok {
-        transfer_from_pa_to_client();
-    }
-    'Client deposit: payment agent transfer money to client';
-
-    subtest 'check client deposit' => sub {
-        lives_ok {
-            $deposit_count = $client_datamapper->get_today_client_payment_agent_transfer_deposit_count();
-        }
-        'Client get_today_client_payment_agent_transfer_deposit_count';
-
-        cmp_ok($deposit_count, '==', 1, "Client deposit count");
-    };
-
-    subtest 'check PA withdrawal' => sub {
-        lives_ok {
-            ($total_withdrawal, $withdrawal_count) = $pa_datamapper->get_today_payment_agent_withdrawal_sum_count();
-        }
-        'PA get_today_payment_agent_withdrawal_sum_count';
-
-        cmp_ok($total_withdrawal, 'eq', $transfer_amount_2dp, 'PA withdrawal amount');
-        cmp_ok($withdrawal_count, '==', '1', 'PA withdrawal count');
-    };
-
-    subtest 'PA transfer to client - limit exceeded' => sub {
-        throws_ok {
-            $transfer_amount = 2501;
-            # Should throw limit error
-            transfer_from_pa_to_client();
-        }
-        qr/The maximum amount allowed for this transaction is USD 2500/;
-
-        lives_ok {
-            $deposit_count = $client_datamapper->get_today_client_payment_agent_transfer_deposit_count();
-        }
-        'Client get_today_client_payment_agent_transfer_deposit_count again, should have no added txn';
-
-        ok($deposit_count == 1, "Client - same deposit count");
-    };
-};
-
 sub transfer_from_client_to_pa {
     # Always ensure that PAYMENT AGENT always available
     my $dt_mocked = Test::MockModule->new('DateTime');
