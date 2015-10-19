@@ -156,10 +156,6 @@ lives_ok {
 
 cmp_ok($txn_data_mapper->get_today_buy_turnover_of_account, '==', 33.50, 'today buy turnover: 33.50');
 
-my $turnovers = $txn_data_mapper->get_today_buy_sell_turnover_of_account;
-cmp_ok($turnovers->{buy_turnover},  '==', 33.50, 'today buy turnover: 33.30');
-cmp_ok($turnovers->{sell_turnover}, '==', 40,    'today sell turnover: 40');
-
 # test for account that don't have txn today
 lives_ok {
     $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
@@ -171,10 +167,6 @@ lives_ok {
 
 cmp_ok($txn_data_mapper->get_today_buy_turnover_of_account, '==', 0, 'today buy turnover: 0');
 
-$turnovers = $txn_data_mapper->get_today_buy_sell_turnover_of_account;
-cmp_ok($turnovers->{buy_turnover},  '==', 0, 'today buy turnover: 0');
-cmp_ok($turnovers->{sell_turnover}, '==', 0, 'today sell turnover: 0');
-
 # test with account that doesn't exist
 lives_ok {
     $txn_data_mapper = BOM::Database::DataMapper::Transaction->new({
@@ -185,10 +177,6 @@ lives_ok {
 'create txn data mapper for account [CR999977, GBP] - acc not exist';
 
 cmp_ok($txn_data_mapper->get_today_buy_turnover_of_account, '==', 0, 'today buy turnover: 0');
-
-$turnovers = $txn_data_mapper->get_today_buy_sell_turnover_of_account;
-cmp_ok($turnovers->{buy_turnover},  '==', 0, 'today buy turnover: 0');
-cmp_ok($turnovers->{sell_turnover}, '==', 0, 'today sell turnover: 0');
 
 my $bets;
 lives_ok {

@@ -302,50 +302,6 @@ sub get_today_buy_turnover_of_account {
     return $turnover;
 }
 
-=head2 get_today_buy_sell_turnover_of_account
-
-    my $result = $mapper->get_today_buy_turnover_of_account();
-    my $buy_turnover = $result->{'buy_turnover'};
-    my $sell_turnover = $result->{'sell_turnover'};
-
-=cut
-
-sub get_today_buy_sell_turnover_of_account {
-    my $self = shift;
-    my $date = Date::Utility->new->date_ddmmmyy;
-    my $dbh  = $self->db->dbh;
-
-    my $sql = q{
-        SELECT
-            account_id,
-            SUM(CASE WHEN action_type = 'buy' THEN -1 * amount ELSE 0 END) AS buy_turnover,
-            SUM(CASE WHEN action_type = 'sell' THEN amount ELSE 0 END) AS sell_turnover
-        FROM
-            transaction.transaction
-        WHERE
-            account_id = ?
-            AND transaction_time::date = ?
-            AND (action_type = 'buy' OR action_type = 'sell')
-        GROUP BY
-            account_id
-    };
-
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->account->id, $date);
-
-    my $turnover = {
-        'buy_turnover'  => 0,
-        'sell_turnover' => 0
-    };
-    my $result = $sth->fetchrow_hashref;
-    if ($result) {
-        $turnover->{'buy_turnover'}  = ($result->{'buy_turnover'})  ? $result->{'buy_turnover'}  : 0;
-        $turnover->{'sell_turnover'} = ($result->{'sell_turnover'}) ? $result->{'sell_turnover'} : 0;
-    }
-
-    return $turnover;
-}
-
 =head2 get_reality_check_data_of_account
 
     my $start_time = Date::Utility->new;
