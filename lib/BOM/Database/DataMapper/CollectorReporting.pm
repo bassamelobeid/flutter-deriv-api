@@ -22,28 +22,6 @@ extends 'BOM::Database::DataMapper::AccountBase';
 
 =over
 
-=item get_list_of_active_real_client_loginids_during
-
-get accounts which are active (means having transaction happen) within specify date range. Accept args: start_time, end_time
-
-=cut
-
-sub get_list_of_active_real_client_loginids_during {
-    my $self = shift;
-    my $args = shift;
-
-    my $start_time = $args->{'start_time'};
-    my $end_time   = $args->{'end_time'};
-
-    my $sql = q{ SELECT * FROM get_active_accounts_during(?, ?) };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($start_time->datetime_yyyymmdd_hhmmss, $end_time->datetime_yyyymmdd_hhmmss);
-
-    return $sth->fetchall_hashref('id');
-}
-
 =item get_open_bet_overviews($at_date)
 
 Get partial information about all open bets at a given time.
