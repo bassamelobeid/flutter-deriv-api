@@ -23,8 +23,6 @@ subtest create_doc => sub {
     );
     my $doc_id;
     ok($doc_id = $eco->create_doc(\%test_data), 'create_doc lives');
-    my $saved_doc;
-    is($saved_doc->{release_date}, $test_data{release_date}, 'data saved successful');
 };
 
 subtest retrieve_doc_with_view => sub {
