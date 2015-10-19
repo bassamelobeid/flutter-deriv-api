@@ -98,6 +98,7 @@ sub _get_params {
         spot              => 100,
         strikes           => $strikes{$ct},
         date_start        => $now,
+        date_pricing      => $now,
         date_expiry       => $now->plus_time_interval('10d'),
         discount_rate     => $discount_rate{$priced_with},
         q_rate            => 0.002,
