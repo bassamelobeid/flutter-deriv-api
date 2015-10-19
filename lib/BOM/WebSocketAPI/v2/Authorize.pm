@@ -24,8 +24,6 @@ sub authorize {
         my $m = BOM::Database::Model::AccessToken->new;
         $loginid = $m->get_loginid_by_token($token);
         return $err unless $loginid;
-
-        $m->update_last_used_by_token($token);
     } else {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         if (!$session || !$session->validate_session()) {
