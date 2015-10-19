@@ -351,50 +351,6 @@ sub _fmb_rose_to_fmb_model {
     return $model_class->new($param);
 }
 
-sub get_bet_turnover_and_payout_for_all_currencies {
-    my $self = shift;
-    my $args = shift;
-
-    if (not $args or not $args->{'bet_type'} or not $args->{'days_ago'}) {
-        Carp::croak("get_bet_turnover_and_payout_for_all_currencies - must pass in bet_type and days_ago ");
-    }
-
-    # get the sum of buy price for all bets bought
-    my $sql = q{
-    SELECT
-    SUM(data_collection.exchangetousd(buy_price, currency_code, purchase_time)) as turnover,
-    SUM(data_collection.exchangetousd(payout_price, currency_code, purchase_time)) as payout
-    FROM
-    bet.financial_market_bet b,
-    transaction.account a
-    WHERE
-    b.account_id = a.id
-        AND bet_type = ?
-        AND purchase_time > NOW() - ?::interval
-        AND client_loginid = ?
-    };
-    my @sql_bind = ($args->{'bet_type'}, $args->{'days_ago'} . ' day', $self->client_loginid);
-
-    if ($args->{'underlying_symbol'}) {
-        $sql .= ' AND underlying_symbol= ? ';
-        push @sql_bind, $args->{'underlying_symbol'};
-    }
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute(@sql_bind);
-
-    my $result;
-    $result = $sth->fetchrow_hashref;
-    my $turnover = $result->{'turnover'} || 0;
-    my $payout   = $result->{'payout'}   || 0;
-    return {
-        turnover => $turnover,
-        payout   => $payout,
-    };
-
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
