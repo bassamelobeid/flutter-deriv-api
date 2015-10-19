@@ -92,9 +92,17 @@ has timeindays => (
 sub _build_timeindays {
     my $self = shift;
 
-    return max(1, $self->market_convention->{calculate_expiry}->($self->date_start, $self->date_expiry))
-        if $self->underlying_config->{market} eq 'forex';
-    return ($self->date_expiry->epoch - $self->date_start->epoch) / 86400;
+    # The FX convention for duration and volatility is to use integer number of days.
+    # We are following this convention partially, < 1 day uses decimal number of days, > 1 uses integer number of days.
+    # We will fix this as we refacter the volsurface.
+    my $ind;
+    if ($self->underlying_config->{market} eq 'forex') {
+        $ind = $self->market_convention->{calculate_expiry}->($self->date_start, $self->date_expiry);
+    }
+
+    $ind ||= ($self->date_expiry->epoch - $self->date_start->epoch) / 86400;
+
+    return $ind;
 }
 
 has timeinyears => (
