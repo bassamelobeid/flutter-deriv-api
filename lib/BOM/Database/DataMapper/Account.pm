@@ -54,36 +54,6 @@ sub get_balance {
     return sprintf '%.2f', roundnear .01, $account_record->[0]->balance;
 }
 
-=item C<get_currency>
-
-    return currency for client
-
-=cut
-
-sub get_currency {
-    my $self = shift;
-
-    my $sql = q{
-        SELECT
-            currency_code
-        FROM
-            transaction.account
-        WHERE
-            client_loginid = ?
-            AND is_default = TRUE
-    };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid);
-
-    my @result = $sth->fetchrow_array;
-    if (@result) {
-        return $result[0];
-    }
-    return;
-}
-
 =item get_seconds_from_last_modified
 
     get last transaction date of account
