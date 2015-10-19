@@ -1,5 +1,5 @@
 use 5.010;
-use Test::Most 0.22 (tests => 3);
+use Test::Most 0.22 (tests => 2);
 use Test::NoWarnings;
 use Test::Exception;
 
