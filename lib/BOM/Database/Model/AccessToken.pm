@@ -2,7 +2,7 @@ package BOM::Database::Model::AccessToken;
 
 use Moose;
 use BOM::Database::AuthDB;
-use Cache::RedisDB;
+use BOM::System::Chronicle;
 
 has 'dbh' => (
     is         => 'ro',
@@ -23,7 +23,7 @@ sub get_loginid_by_token {
     my ($self, $token) = @_;
 
     ## try redis first
-    if ( my $client_loginid = Cache::RedisDB->get("API_ACCESSTOKEN", $token) ) {
+    if ( my $client_loginid = BOM::System::Chronicle->_redis_read->get('API_ACCESSTOKEN::' . $token) ) {
         return $client_loginid;
     }
 
@@ -32,7 +32,8 @@ sub get_loginid_by_token {
     );
     return unless $client_loginid;
 
-    Cache::RedisDB->set("API_ACCESSTOKEN", $token, $client_loginid, 3600);
+    BOM::System::Chronicle->_redis_write->set('API_ACCESSTOKEN::' . $token, $client_loginid);
+    BOM::System::Chronicle->_redis_write->expire('API_ACCESSTOKEN::' . $token, 3600);
 
     return $client_loginid;
 }
@@ -56,7 +57,7 @@ sub update_last_used_by_token {
 sub remove_by_token {
     my ($self, $token) = @_;
 
-    Cache::RedisDB->del("API_ACCESSTOKEN", $token);
+    BOM::System::Chronicle->_redis_write->del('API_ACCESSTOKEN::' . $token);
 
     return $self->dbh->do(
         "DELETE FROM auth.access_token WHERE token = ?", undef, $token
