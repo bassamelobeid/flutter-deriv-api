@@ -27,7 +27,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use lib qw(/home/git/regentmarkets/bom/cgi);
 
 subtest 'client Balance' => sub {
-    plan tests => 16;
+    plan tests => 14;
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
