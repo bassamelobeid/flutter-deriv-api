@@ -226,27 +226,26 @@ sub candles {
                     aggregation_period => $interval,
                 })};
 
-#   }elsif ($unit eq 'D' and $ul->ohlc_daily_open) {
-#        # For the underlying nocturne, for daily ohlc, the date need to be date
-#        $start_time = Date::Utility->new($start_time)->truncate_to_day;
-#        $end_time   = Date::Utility->new($end_time)->truncate_to_day;
-#        push @all_ohlc,
-#            @{
-#            $ul->feed_api->ohlc_start_end({
-#                    start_time         => $start_time,
-#                    end_time           => $end_time,
-#                    aggregation_period => $interval,
-#                })};
+   }elsif ($unit eq 'D' and $ul->ohlc_daily_open) {
+        # For the underlying nocturne, for daily ohlc, the date need to be date
+        $start_time = Date::Utility->new($start_time)->truncate_to_day;
+        $end_time   = Date::Utility->new($end_time)->truncate_to_day;
+        push @all_ohlc,
+            @{
+            $ul->feed_api->ohlc_start_end({
+                    start_time         => $start_time,
+                    end_time           => $end_time,
+                    aggregation_period => $interval,
+                })};
 
     } else {
         my $first_stop = $start_time + ($interval - $start_time % $interval);
         my $last_stop = $first_stop + $interval * int(($end_time - $first_stop) / $interval);
         push @all_ohlc,
             @{
-            $ul->feed_api->ohlc_start_end({
+            $ul->feed_api->ohlc_daily_list({
                     start_time         => $start_time,
                     end_time           => $first_stop - 1,
-                    aggregation_period => $start_time - $first_stop - 1,
                 })};
 
         push @all_ohlc,
@@ -259,10 +258,9 @@ sub candles {
 
         push @all_ohlc,
             @{
-            $ul->feed_api->ohlc_start_end({
+            $ul->feed_api->ohlc_daily_list({
                     start_time         => $last_stop,
                     end_time           => $end_time,
-                    aggregation_period => $end_time - $last_stop,
                 })};
 
     }
