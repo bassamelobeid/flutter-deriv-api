@@ -52,62 +52,6 @@ subtest "get_balance" => sub {
     cmp_ok($balance, '==', 274.34, 'Check balance for account CR0016, USD');
 };
 
-subtest "does_account_exist" => sub {
-    lives_ok {
-        $acc_data_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => 'CR00009',
-            'currency_code'  => 'USD'
-        });
-    }
-    'Expect to initialize the account data mapper for CR00009';
-    cmp_ok($acc_data_mapper->does_account_exist, '==', 0, 'Check account not exists - CR00009, USD');
-
-    lives_ok {
-        $acc_data_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => 'CR0016',
-            'currency_code'  => 'GBP'
-        });
-    }
-    'Expect to initialize the account data mapper for CR0016';
-    cmp_ok($acc_data_mapper->does_account_exist, '==', 0, 'Check account exists - CR0016, GBP');
-
-    lives_ok {
-        $acc_data_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => 'MLT0016',
-            'currency_code'  => 'GBP'
-        });
-    }
-    'Expect to initialize the account data mapper for MLT0016';
-    cmp_ok($acc_data_mapper->does_account_exist, '==', 1, 'Check account exists - MLT0016, GBP');
-
-    lives_ok {
-        $acc_data_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => 'MLT0016',
-            'currency_code'  => 'USD'
-        });
-    }
-    'Expect to initialize the account data mapper for MLT0016';
-    cmp_ok($acc_data_mapper->does_account_exist, '==', 0, 'Check account exists - MLT0016, USD');
-
-    lives_ok {
-        $acc_data_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => 'MLT0016',
-            'currency_code'  => 'AUD'
-        });
-    }
-    'Expect to initialize the account data mapper for MLT0016';
-    cmp_ok($acc_data_mapper->does_account_exist, '==', 0, 'Check account not exists - MLT0016, AUD');
-
-    lives_ok {
-        $acc_data_mapper = BOM::Database::DataMapper::Account->new({
-            'client_loginid' => 'MLT0016',
-            'currency_code'  => 'EUR'
-        });
-    }
-    'Expect to initialize the account data mapper for MLT0016';
-    cmp_ok($acc_data_mapper->does_account_exist, '==', 0, 'Check account not exists - MLT0016, EUR');
-};
-
 subtest "making new transaction" => sub {
     lives_ok {
 
