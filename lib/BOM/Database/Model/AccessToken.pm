@@ -54,6 +54,14 @@ sub get_token_count_by_loginid {
     );
 }
 
+sub is_name_taken {
+    my ($self, $loginid, $display_name) = @_;
+
+    return $self->dbh->selectrow_array(
+        "SELECT 1 FROM auth.access_token WHERE client_loginid = ? AND display_name = ?", undef, $loginid, $display_name
+    );
+}
+
 sub update_last_used_by_token {
     my ($self, $token) = @_;
 

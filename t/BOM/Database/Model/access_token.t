@@ -16,8 +16,10 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 my $m = BOM::Database::Model::AccessToken->new;
 my $test_loginid = 'CR10002';
 
+ok not $m->is_name_taken($test_loginid, 'Test Token');
 my $token = $m->create_token($test_loginid, 'Test Token');
 is length($token), 15;
+ok $m->is_name_taken($test_loginid, 'Test Token'), 'name is taken after create';
 
 my $client_loginid = $m->get_loginid_by_token($token);
 is $client_loginid, $test_loginid;
