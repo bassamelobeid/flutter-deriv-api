@@ -80,37 +80,6 @@ sub get_today_payment_agent_withdrawal_sum_count {
     return ($amount, $count);
 }
 
-=item get_today_client_payment_agent_transfer_deposit_count
-    it count number of deposit for the day via payment agent.
-    return deposit count
-=back
-=cut
-
-sub get_today_client_payment_agent_transfer_deposit_count {
-    my $self = shift;
-
-    my $sql = q{
-        SELECT count(*)
-        FROM
-            payment.payment p,
-            transaction.account a
-        WHERE
-            p.account_id = a.id
-            AND a.client_loginid = ?
-            AND a.is_default = 'TRUE'
-            AND p.payment_gateway_code = 'payment_agent_transfer'
-            AND p.amount > 0
-            AND p.payment_time::DATE >= 'today'
-    };
-
-    my $dbh = $self->db->dbh;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($self->client_loginid);
-
-    my $result = $sth->fetchrow_hashref();
-    return $result->{count};
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
