@@ -16,7 +16,7 @@ sub _build_dbh {
 sub create_token {
     my ($self, $loginid, $display_name) = @_;
 
-    return $self->dbh->selectrow_array("SELECT auth.create_token(40, ?, ?)", undef, $loginid, $display_name);
+    return $self->dbh->selectrow_array("SELECT auth.create_token(12, ?, ?)", undef, $loginid, $display_name);
 }
 
 sub get_loginid_by_token {
