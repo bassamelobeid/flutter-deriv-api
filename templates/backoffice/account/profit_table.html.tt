@@ -9,27 +9,27 @@
 [%- MACRO sale_price(contract) IF contract.is_sold -%][% contract.sell_price %][% ELSE %][% contract.info.indicative_price %][% END %]
 
 [%- MACRO display_contract(contract) BLOCK -%]
+    [% IF contract.is_sold %]
+        [% ident = contract.txn_id %]
+    [% ELSE %]
+        [% ident = contract.buy_id %]
+    [% END %]
     <div class="grd-parent grd-grid-12 table-body table-body-lines grd-row-padding">
         <div class="grd-grid-2">[% contract.purchase_date.datetime %]</div>
         <div class="grd-grid-1">
-            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code }) %]">
-                [% IF contract.is_sold %]
-                    [% contract.txn_id %]
-                [% ELSE %]
-                    [% contract.buy_id %]
-                [% END %]
-            </a>
+            <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code }) %]">[% ident %]</a>
+            <br/><label class="investigate"><input type="checkbox" name="investigate_list" value='{"ref":"[% ident %]","desc":"[% contract.info.description FILTER truncate(70) %]","bought":"[% contract.purchase_date.datetime %]"}'>QQ</label>
         </div>
         <div class="grd-grid-3">[% contract.info.description %]</div>
         <div class="grd-grid-1 right-aligned">
-                [% currency %] [% to_monetary_number_format(contract.buy_price) %]
+            [% to_monetary_number_format(contract.buy_price) %]
         </div>
         <div class="grd-grid-2">[% contract.sale_date.datetime %]</div>
         <div class="grd-grid-1 right-aligned">
-            [% currency %] [% to_monetary_number_format(sale_price(contract)) %]
+            [% to_monetary_number_format(sale_price(contract)) %]
         </div>
         <div class="grd-grid-1 right-aligned">
-            [% currency %] [% display_amount(sale_price(contract) - contract.buy_price) %]
+            [% display_amount(sale_price(contract) - contract.buy_price) %]
         </div>
         <div class="grd-grid-1 right-aligned">
                 [% display_amount(contract.cumulative_pl) %]
@@ -96,6 +96,7 @@
 #limit_entry th { font-size: small; }
 #limit_entry td { text-align: center; padding: 5px;}
 #limit_entry caption { caption-side: bottom; font-size: small;  }
+.investigate { background-color: #ffa; font-weight: bold; }
 </style>
 <FORM ACTION="[% request.url_for('backoffice/f_profit_table.cgi') %]" METHOD="POST">
         Sold Contracts Between <INPUT name=startdate type=text size=20 value="[% startdate %]" />
@@ -131,11 +132,16 @@
         <div class="grd-grid-1 right-aligned"></div>
     </div>
 
-    [% FOREACH contract IN sold_contracts %]
-        [%
-                display_contract(contract);
-        %]
-    [% END %]
+    <form action="[% request.url_for('backoffice/f_quant_query.cgi') %]" method="post">
+        [% FOREACH contract IN sold_contracts %]
+            [%
+                    display_contract(contract);
+            %]
+        [% END %]
+        <input type="hidden" name="loginID" value="[% loginid %]"/>
+        <input type=hidden name="broker" value="[% request.broker.code %]" />
+        <input type="submit" name="QQ" value="Quant Query" class="investigate">
+    </form>
     [% navigator %]
 [% END %]
 
@@ -158,12 +164,16 @@ END %]
         <div class="grd-grid-1 right-aligned">Profit/Loss</div>
         <div class="grd-grid-1 right-aligned"></div>
     </div>
-
-[% FOREACH contract IN open_contracts %]
-    [%
-        display_contract(contract);
-    %]
-[% END %]
+    <form action="[% request.url_for('backoffice/f_quant_query.cgi') %]" method="post">
+        [% FOREACH contract IN open_contracts %]
+            [%
+                display_contract(contract);
+            %]
+        [% END %]
+        <input type="hidden" name="loginID" value="[% loginid %]"/>
+        <input type=hidden name="broker" value="[% request.broker.code %]" />
+        <input type="submit" name="QQ" value="Quant Query" class="investigate">
+    </form>
 <div>
 <div class="grd-parent grd-grid-12 table-header grd-row-padding">
         <b>Client Limits</b>

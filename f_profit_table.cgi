@@ -4,6 +4,7 @@ use strict 'vars';
 
 use Date::Utility;
 use Format::Util::Numbers qw(roundnear);
+
 use BOM::Platform::Client;
 use BOM::Database::ClientDB;
 use BOM::Database::DataMapper::FinancialMarketBet;
@@ -13,7 +14,6 @@ use BOM::Market::Registry;
 use BOM::Product::CustomClientLimits;
 use BOM::View::Controller::Bet;
 
-use Try::Tiny;
 use f_brokerincludeall;
 BOM::Platform::Sysinit::init();
 
