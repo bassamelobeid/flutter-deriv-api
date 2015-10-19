@@ -683,39 +683,6 @@ sub get_bet_transactions_for_broker {
     return $result;
 }
 
-=head2 get_bet_buy_transaction_id
-
-Return the id of the transaction that purchased a financial market bet.
-
-=cut
-
-sub get_financial_market_bet_buy_transaction_id {
-    my $self = shift;
-    my $args = shift;
-
-    my $fmb_id = $args->{financial_market_bet_id} || die("Can not query buy transactions without a financial market bet id");
-    my $dbh = $self->db->dbh;
-
-    my $sql = q{
-        SELECT id
-        FROM transaction.transaction
-        WHERE
-            financial_market_bet_id = ?
-            AND action_type = 'buy'
-    };
-
-    my $id;
-    my $sth = $dbh->prepare($sql);
-    $sth->execute($fmb_id);
-
-    my $result;
-    if ($result = $sth->fetchrow_hashref) {
-        $id = $result->{'id'};
-    }
-
-    return $id;
-}
-
 sub get_profit_for_days {
     my ($self, $args) = @_;
 
