@@ -21,12 +21,9 @@ sub create_token {
 sub get_loginid_by_token {
     my ($self, $token) = @_;
 
-    my ($client_loginid) = $self->dbh->selectrow_array(
+    return $self->dbh->selectrow_array(
         "UPDATE auth.access_token SET last_used=NOW() WHERE token = ? RETURNING client_loginid", undef, $token
     );
-    return unless $client_loginid;
-
-    return $client_loginid;
 }
 
 sub get_tokens_by_loginid {
