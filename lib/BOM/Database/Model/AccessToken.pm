@@ -28,7 +28,7 @@ sub get_loginid_by_token {
     }
 
     my ($client_loginid) = $self->dbh->selectrow_array(
-        "SELECT client_loginid FROM auth.access_token WHERE token = ?", undef, $token
+        "SELECT client_loginid FROM auth.access_token WHERE token = ? ORDER BY display_name", undef, $token
     );
     return unless $client_loginid;
 
