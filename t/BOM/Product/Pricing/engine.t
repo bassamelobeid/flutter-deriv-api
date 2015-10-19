@@ -198,7 +198,7 @@ subtest 'Intraday::Forex' => sub {
 subtest 'Slope' => sub {
     plan tests => 6;
 
-    my %params = map {$_ => $expiry_range->_pricing_parameters->{$_}} @{BOM::Product::Pricing::Engine::Slope->required_args};
+    my %params = map { $_ => $expiry_range->_pricing_parameters->{$_} } @{BOM::Product::Pricing::Engine::Slope->required_args};
     my $engine = BOM::Product::Pricing::Engine::Slope->new(%params);
 
     ok $engine->probability > 0, 'probability > 0';

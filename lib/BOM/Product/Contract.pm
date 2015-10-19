@@ -560,7 +560,7 @@ sub _build_pricing_engine {
     my $self = shift;
 
     my $pricing_engine;
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+    if ($self->new_interface_engine) {
         my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
         $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
     } else {
@@ -1114,7 +1114,7 @@ sub _build_theo_probability {
 
     my $theo;
     # Have to keep it this way until we remove CalculatedValue in Contract.
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+    if ($self->new_interface_engine) {
         $theo = Math::Util::CalculatedValue::Validatable->new({
             name        => 'theo_probability',
             description => 'theorectical value of a contract',
@@ -1133,7 +1133,7 @@ sub _build_bs_probability {
 
     my $bs_prob;
     # Have to keep it this way until we remove CalculatedValue in Contract.
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+    if ($self->new_interface_engine) {
         $bs_prob = Math::Util::CalculatedValue::Validatable->new({
             name        => 'bs_probability',
             description => 'BlackScholes value of a contract',
@@ -1157,7 +1157,7 @@ sub _build_model_markup {
     my $self = shift;
 
     my $model_markup;
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
+    if ($self->new_interface_engine) {
         my $risk_markup       = $self->pricing_engine->risk_markup;
         my $commission_markup = $self->pricing_engine->commission_markup;
         if ($self->built_with_bom_parameters) {
@@ -1519,13 +1519,20 @@ has [qw(atm_vols rho)] => (
 # a hash reference for slow migration of pricing engine to the new interface.
 has new_interface_engine => (
     is      => 'ro',
-    default => sub {
-        {
-            'Pricing::Engine::TickExpiry'          => 1,
-            'BOM::Product::Pricing::Engine::Slope' => 1,
-        };
-    },
+    lazy    => 1,
+    builder => '_build_new_interface_engine',
 );
+
+sub _build_new_interface_engine {
+    my $self = shift;
+
+    my %engines = (
+        'Pricing::Engine::TickExpiry'          => 1,
+        'BOM::Product::Pricing::Engine::Slope' => 1,
+    );
+
+    return $engines{$self->pricing_engine_name} // 0;
+}
 
 sub _pricing_parameters {
     my $self = shift;
