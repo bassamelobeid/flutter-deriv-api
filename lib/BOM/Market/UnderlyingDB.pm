@@ -106,28 +106,6 @@ sub markets {
     return @markets;
 }
 
-sub get_markets_for {
-    my ($self, %args) = @_;
-
-    $args{contract_category} =
-        (ref $args{contract_category})
-        ? $args{contract_category}->code
-        : $args{contract_category};
-    my @cat =
-          ($args{contract_category})
-        ? ($args{contract_category})
-        : $self->available_contract_categories;
-    my @valid_markets_for_cat;
-
-    for my $market (BOM::Market::Registry->display_markets) {
-        my $avail_cat = $market->contracts;
-        push @valid_markets_for_cat, $market
-            if first { exists $avail_cat->{$_} } @cat;
-    }
-
-    return @valid_markets_for_cat;
-}
-
 =head2 $self->get_symbols_for(%filter_args)
 
 Return list of symbols satisfying given conditions. You can specify following I<%filter_args>:
