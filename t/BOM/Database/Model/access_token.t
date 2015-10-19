@@ -23,25 +23,15 @@ ok $m->is_name_taken($test_loginid, 'Test Token'), 'name is taken after create';
 
 my $client_loginid = $m->get_loginid_by_token($token);
 is $client_loginid, $test_loginid;
-$client_loginid = $m->get_loginid_by_token($token); # again with redis
-is $client_loginid, $test_loginid;
 
 my $tokens = $m->get_tokens_by_loginid($test_loginid);
 is scalar @$tokens, 1;
 is $tokens->[0]->{token}, $token;
 is $tokens->[0]->{client_loginid}, $test_loginid;
 is $tokens->[0]->{display_name}, 'Test Token';
-is $tokens->[0]->{last_used}, undef;
+ok $tokens->[0]->{last_used}; # update on get_loginid_by_token
 my $token_cnt = $m->get_token_count_by_loginid($test_loginid);
 is $token_cnt, 1;
-
-$m->update_last_used_by_token($token);
-$tokens = $m->get_tokens_by_loginid($test_loginid);
-is scalar @$tokens, 1;
-is $tokens->[0]->{token}, $token;
-is $tokens->[0]->{client_loginid}, $test_loginid;
-is $tokens->[0]->{display_name}, 'Test Token';
-ok($tokens->[0]->{last_used});
 
 my $ok = $m->remove_by_token($token);
 ok $ok;
