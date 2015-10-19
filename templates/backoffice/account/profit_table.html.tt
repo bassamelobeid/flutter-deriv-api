@@ -6,7 +6,7 @@
         [% END %]
 [%- END -%]
 
-[%- MACRO sale_price(contract) IF contract.is_sold -%][% contract.sell_price %][% ELSE %][% contract.info.indicative_price %][% END %]
+[%- MACRO sale_price(contract) IF contract.is_sold -%][% contract.sell_price %][% ELSIF contract.info.indicative_price %][% contract.info.indicative_price %][% ELSE %]0[% END %]
 
 [%- MACRO display_contract(contract) BLOCK -%]
     [% IF contract.is_sold %]
