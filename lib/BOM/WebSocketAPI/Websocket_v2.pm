@@ -66,7 +66,7 @@ sub entry_point {
                     $data = {};
                 }
 
-                if ($data->{error} and ($data->{error}->{code} eq 'SanityCheckFailed' or $data->{error}->{code} eq 'InputValidationFailed')) {
+                if ($data->{error} and $data->{error}->{code} eq 'SanityCheckFailed') {
                     $data->{echo_req} = {};
                 } else {
                     $data->{echo_req} = $p1;
