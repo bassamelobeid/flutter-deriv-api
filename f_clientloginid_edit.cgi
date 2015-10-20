@@ -36,7 +36,6 @@ PrintContentType();
 my $language  = $input{l};
 my $dbloc     = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $logger    = get_logger();
-my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mixed case!)';
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
 my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
 
@@ -619,6 +618,7 @@ print qq{
 	<input type=hidden name=broker value=$broker>
 	<input type=hidden name=loginID value=$loginid>
 	<input type=hidden name=l value=$language>
+	Expiraton date:<input type="text" size=10 name="expiration_date"><i>format YYYY-MM-DD</i>
 	<input type=submit value="Upload new ID doc.">
 </form>
 };
