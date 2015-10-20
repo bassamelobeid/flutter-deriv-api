@@ -90,22 +90,6 @@ sub client_payout_limit_for_contract {
     return $limited;
 }
 
-=head2 remove_loginid
-
-Removes the given loginid from the custom client limits list
-
-=cut
-
-sub remove_loginid {
-    my ($self, $loginid) = @_;
-    my $current = $self->full_list;
-
-    delete $current->{$loginid};
-
-    BOM::Platform::Runtime->instance->app_config->quants->internal->custom_client_limits($current);
-    return BOM::Platform::Runtime->instance->app_config->save_dynamic;
-}
-
 =head2 update
 
 Add an entry to the watch list.  It is expected to be a hashref with
