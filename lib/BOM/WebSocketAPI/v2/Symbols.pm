@@ -223,7 +223,7 @@ sub candles {
                 end_time   => $end_time,
             })->[0];
         $ohlc->{epoch} = $start_time;
-        push @all_ohlc, @{$ohlc};
+        push @all_ohlc, $ohlc;
     } elsif ($unit eq 'D' and $ul->ohlc_daily_open) {
         # For the underlying nocturne, for daily ohlc, the date need to be date
         $start_time = Date::Utility->new($start_time)->truncate_to_day;
@@ -245,7 +245,7 @@ sub candles {
                 start_time => $start_time,
                 end_time   => ($first_stop - 1)})->[0];
         $first_ohlc->{epoch} = $start_time;
-        push @all_ohlc, @{$first_ohlc};
+        push @all_ohlc, $first_ohlc;
 
         push @all_ohlc,
             (
@@ -260,7 +260,7 @@ sub candles {
                 end_time   => $end_time
             })->[0];
         $last_ohlc->{epoch} = $last_stop;
-        push @all_ohlc, @{$last_ohlc};
+        push @all_ohlc, $last_ohlc;
 
     }
 
