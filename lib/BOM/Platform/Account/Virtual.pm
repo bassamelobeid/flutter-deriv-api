@@ -6,6 +6,7 @@ use warnings;
 use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc);
 
+use BOM::Utility::Log4perl qw(get_logger);
 use BOM::System::Password;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
@@ -15,25 +16,21 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::SessionCookie;
 
 sub create_account {
-    my $args = shift;
-    my ($email, $password, $residence, $source, $env, $aff_token) = @{$args}{'email', 'password', 'residence', 'source', 'env', 'aff_token'};
+    my $args    = shift;
+    my $details = $args->{details};
+    my ($email, $password, $residence) = @{$details}{'email', 'client_password', 'residence'};
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
-        return {err => 'Sorry, new account opening is suspended for the time being.'};
-    }
-    if (BOM::Platform::User->new({email => $email})) {
-        return {
-            err_type => 'duplicate account',
-            err      => 'Your provided email address is already in use by another Login ID'
-        };
-    }
-    if (BOM::Platform::Client::check_country_restricted($residence)) {
-        return {err => 'Sorry, our service is not available for your country of residence'};
+        return {error => 'invalid'};
+    } elsif (BOM::Platform::User->new({email => $email})) {
+        return {error => 'duplicate email'};
+    } elsif (BOM::Platform::Client::check_country_restricted($residence)) {
+        return {error => 'invalid'};
     }
 
-    my ($client, $register_err);
+    my ($client, $error);
     try {
         $client = BOM::Platform::Client->register_and_return_new_client({
             broker_code                   => request()->virtual_account_broker->code,
@@ -41,7 +38,7 @@ sub create_account {
             salutation                    => '',
             last_name                     => '',
             first_name                    => '',
-            myaffiliates_token            => $aff_token,
+            myaffiliates_token            => $details->{myaffiliates_token} // '',
             date_of_birth                 => undef,
             citizen                       => '',
             residence                     => $residence,
@@ -56,17 +53,17 @@ sub create_account {
             secret_answer                 => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
-            source                        => $source,
-            latest_environment            => $env
+            source                        => $details->{source} // '',
+            latest_environment            => $details->{latest_environment} // '',
         });
     }
     catch {
-        $register_err = $_;
+        $error = $_;
     };
-    return {
-        err_type => 'register',
-        err      => $register_err
-    } if ($register_err);
+    if ($error) {
+        get_logger()->warn("Virtual: register_and_return_new_client err [$error]");
+        return {error => 'invalid'};
+    }
 
     my $user = BOM::Platform::User->create(
         email    => $email,
@@ -74,7 +71,7 @@ sub create_account {
     );
     $user->add_loginid({loginid => $client->loginid});
     $user->add_login_history({
-        environment => $env,
+        environment => $details->{latest_environment} // '',
         successful  => 't',
         action      => 'login'
     });
@@ -104,16 +101,10 @@ sub create_account {
     });
     stats_inc("business.new_account.virtual");
 
-    my $login = $client->login();
-    return {
-        err_type => 'login',
-        err      => $login->{error},
-    } if ($login->{error});
-
     return {
         client => $client,
         user   => $user,
-        token  => $login->{token},
+        token  => $client->login()->{token},
     };
 }
 
