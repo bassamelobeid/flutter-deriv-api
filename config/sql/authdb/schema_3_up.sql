@@ -5,6 +5,7 @@ CREATE TABLE auth.access_token (
     token           TEXT NOT NULL PRIMARY KEY,
     display_name    TEXT NOT NULL,
     client_loginid  TEXT NOT NULL,
+    creation_time   TIMESTAMP NOT NULL DEFAULT now(),
     last_used       TIMESTAMP DEFAULT NULL
 );
 CREATE INDEX idx_access_token_client_loginid ON auth.access_token
