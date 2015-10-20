@@ -4,43 +4,125 @@ use strict;
 use warnings;
 
 use JSON qw(encode_json);
+use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Email qw(send_email);
 
-sub validate {
-    my $args  = shift;
-    my $check = BOM::Platform::Account::Real::default::validate($args);
-    return $check if ($check->{err});
+sub _validate {
+    my $args = shift;
+    if (my $error = BOM::Platform::Account::Real::default::_validate($args)) {
+        return $error;
+    }
 
+    my $from_client = $args->{from_client};
     #TODO: until we set JP <> restricted country
-    return $check;
-#    return $check if ($from_client->residence eq 'jp');
+    return;
+#    return if ($from_client->residence eq 'jp');
 
-    return {err => 'Account opening unavailable'};
+    get_logger()->warn("japan acc opening err: loginid:" . $from_client->loginid . " wrong residence:" . $from_client->residence);
+    return {err => 'invalid'};
 }
 
 sub create_account {
     my $args = shift;
-    my ($user, $details, $financial_data) = @{$args}{'user', 'details', 'financial_data'};
+    my ($from_client, $user, $country, $details, $financial_data) =
+        @{$args}{'from_client', 'user', 'country', 'details', 'financial_data'};
 
     my $daily_loss_limit = delete $details->{daily_loss_limit};
 
-    my $acc  = BOM::Platform::Account::Real::default::create_account({
-        user    => $user,
-        details => $details,
-    });
-    return $acc if ($acc->{err});
+    if (my $error = _validate($args)) {
+        return $error;
+    }
 
-    my $client = $acc->{client};
+    my $financial_assessment = get_financial_assessment_score($financial_data);
+    if ($financial_assessment->{income_asset_score} < 3 or $financial_assessment->{trading_experience_score} < 10) {
+        return {error => 'insufficient score'};
+    }
+
+    my $register = BOM::Platform::Account::Real::default::_register_client($details);
+    return $register if ($register->{error});
+
+    my $client = $register->{client};
     $client->financial_assessment({
-        data => encode_json($financial_data),
+        data => encode_json($financial_assessment),
     });
+
     $client->set_exclusion->max_losses($daily_loss_limit);
     $client->save;
 
-    return $acc;
+    return BOM::Platform::Account::Real::default::_after_register_client({
+        client  => $client,
+        user    => $user,
+        details => $details,
+    });
+}
+
+sub _get_input_to_category_mapping {
+    return {
+        annual_income            => 'income_asset_score',
+        financial_asset          => 'income_asset_score',
+        equities                 => 'trading_experience_score',
+        commodities              => 'trading_experience_score',
+        foreign_currency_deposit => 'trading_experience_score',
+        margin_fx                => 'trading_experience_score',
+        investment_trust         => 'trading_experience_score',
+        public_bond              => 'trading_experience_score',
+        option_trading           => 'trading_experience_score',
+    };
+}
+
+sub get_financial_input_mapping {
+    my $scores = {
+        income_asset_score => {
+            'Less than 1 million JPY' => 1,
+            '1-3 million JPY'         => 2,
+            '3-5 million JPY'         => 3,
+            '5-10 million JPY'        => 4,
+            '10-30 million JPY'       => 5,
+            '30-50 million JPY'       => 6,
+            '50-100 million JPY'      => 7,
+            'Over 100 million JPY'    => 8,
+        },
+        trading_experience_score => {
+            'No experience'      => 1,
+            'Less than 6 months' => 2,
+            '6 months to 1 year' => 3,
+            '1-3 years'          => 4,
+            '3-5 years'          => 5,
+            'Over 5 years'       => 6,
+        },
+    };
+    my $input_to_category = _get_input_to_category_mapping();
+
+    my $score_map;
+    foreach (keys %$input_to_category) {
+        $score_map->{$_} = $scores->{$input_to_category->{$_}};
+    }
+    return $score_map;
+}
+
+sub get_financial_assessment_score {
+    my $details           = shift;
+    my $score_map         = get_financial_input_mapping();
+    my $input_to_category = _get_input_to_category_mapping();
+
+    my $data;
+    foreach my $key (keys %$score_map) {
+        if (my $answer = $details->{$key}) {
+            my $score = $score_map->{$key}->{$answer};
+
+            $data->{$key} = {
+                answer => $answer,
+                score  => $score,
+            };
+            # categorize scores into: income_asset_score, trading_experience_score
+            $data->{$input_to_category->{$key}} += $score;
+            $data->{total_score} += $score;
+        }
+    }
+    return $data;
 }
 
 1;
