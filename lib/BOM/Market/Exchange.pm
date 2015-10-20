@@ -565,17 +565,6 @@ sub will_open_after {
     return;
 }
 
-=head2 seconds_until_open_at
-
-    my $seconds = $self->seconds_until_open_at($epoch);
-
-=cut
-
-sub seconds_until_open_at {
-    my ($self, $epoch) = @_;
-    return $self->_market_opens($epoch)->{'opens'};
-}
-
 =head2 seconds_since_open_at
 
     my $seconds = $self->seconds_since_open_at($epoch);
@@ -585,17 +574,6 @@ sub seconds_until_open_at {
 sub seconds_since_open_at {
     my ($self, $epoch) = @_;
     return $self->_market_opens($epoch)->{'opened'};
-}
-
-=head2 seconds_until_close_at
-
-    my $seconds = $self->seconds_until_close_at($epoch);
-
-=cut
-
-sub seconds_until_close_at {
-    my ($self, $epoch) = @_;
-    return $self->_market_opens($epoch)->{'closes'};
 }
 
 =head2 seconds_since_close_at

@@ -145,19 +145,4 @@ subtest 'closing_tick_on - unofficial OHLC' => sub {
     };
 };
 
-subtest forward_rates => sub {
-    plan tests => 1;
-
-    initialize_realtime_ticks_db();
-
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'currency',
-        {
-            symbol => $_,
-            date   => Date::Utility->new,
-        }) for (qw/JPY USD/);
-
-    lives_ok { BOM::Market::Underlying->new('frxUSDJPY')->forward_price_for(7 / 365) } 'gets forward price for 7-day';
-};
-
 done_testing;
