@@ -1458,30 +1458,6 @@ sub fetch_historical_surface_date {
     return \@dates;
 }
 
-sub fetch_historical_surface_date_for_period {
-    my ($self, $args) = @_;
-
-    my $sd =
-        (ref $args->{start_date} eq 'Date::Utility')
-        ? $args->{start_date}
-        : Date::Utility->new($args->{start_date});
-    my $ed =
-        (ref $args->{end_date} eq 'Date::Utility')
-        ? $args->{end_date}
-        : Date::Utility->new($args->{end_date});
-
-    my %params = (
-        startkey => [$self->symbol, $sd->datetime_iso8601],
-        endkey   => [$self->symbol, $ed->datetime_iso8601],
-    );
-
-    my $result = $self->_design_doc->queryView('by_date', %params);
-
-    my @dates = map { $_->{value}->{date} } @{$result->{rows}};
-
-    return \@dates;
-}
-
 sub is_valid {
     my $self = shift;
 

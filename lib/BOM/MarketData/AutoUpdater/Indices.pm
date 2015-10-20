@@ -121,10 +121,10 @@ sub run {
             $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
         }
         my $volsurface = BOM::MarketData::VolSurface::Moneyness->new({
-            underlying    => $underlying,
-            recorded_date => $raw_volsurface->{recorded_date},
-            spot_refence  => $raw_volsurface->{spot_reference},
-            surface       => $raw_volsurface->{surface},
+            underlying     => $underlying,
+            recorded_date  => $raw_volsurface->{recorded_date},
+            spot_reference => $raw_volsurface->{spot_reference},
+            surface        => $raw_volsurface->{surface},
         });
         if ($volsurface->is_valid) {
             if (exists $valid_synthetic{'SYN' . $volsurface->underlying->symbol}) {

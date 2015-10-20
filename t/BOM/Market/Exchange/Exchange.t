@@ -339,7 +339,7 @@ subtest "Holiday on weekends" => sub {
 };
 
 subtest 'Whole bunch of stuff.' => sub {
-    plan tests => 116;
+    plan tests => 104;
 
     is($LSE->weight_on(Date::Utility->new('2-Apr-13')), 1.0, 'open weight');
     is($LSE->weight_on(Date::Utility->new('1-Apr-13')), 0.0, 'holiday weight');
@@ -380,12 +380,8 @@ subtest 'Whole bunch of stuff.' => sub {
     is($LSE->is_open_at($six_am_epoch),             undef,         'LSE not open at 6am');
     is($LSE->will_open_after($six_am),              1,             'LSE will open on this day after 6am');
     is($LSE->will_open_after($six_am_epoch),        1,             'LSE will open on this day after 6am');
-    is($LSE->seconds_until_open_at($six_am),        60 * 60,       'at 6am, LSE is 1 hour from opening');
-    is($LSE->seconds_until_open_at($six_am_epoch),  60 * 60,       'at 6am, LSE is 1 hour from opening');
     is($LSE->seconds_since_open_at($six_am),        undef,         'at 6am, LSE not open yet');
     is($LSE->seconds_since_open_at($six_am_epoch),  undef,         'at 6am, LSE not open yet');
-    is($LSE->seconds_until_close_at($six_am),       9.5 * 60 * 60, 'at 6am, 9.5 hours until LSE closes');
-    is($LSE->seconds_until_close_at($six_am_epoch), 9.5 * 60 * 60, 'at 6am, 9.5 hours until LSE closes');
     is($LSE->seconds_since_close_at($six_am),       undef,         'at 6am, LSE hasn\'t closed yet');
     is($LSE->seconds_since_close_at($six_am_epoch), undef,         'at 6am, LSE hasn\'t closed yet');
 
@@ -396,12 +392,8 @@ subtest 'Whole bunch of stuff.' => sub {
     is($LSE->is_open_at($six_pm_epoch),             undef,         'LSE not open at 6pm.');
     is($LSE->will_open_after($six_pm),              undef,         'LSE will not open on this day after 6pm.');
     is($LSE->will_open_after($six_pm_epoch),        undef,         'LSE will not open on this day after 6pm.');
-    is($LSE->seconds_until_open_at($six_pm),        undef,         'at 6pm, LSE has already been open.');
-    is($LSE->seconds_until_open_at($six_pm_epoch),  undef,         'at 6pm, LSE has already been open.');
     is($LSE->seconds_since_open_at($six_pm),        11 * 60 * 60,  'at 6pm, LSE opening was 11 hours ago.');
     is($LSE->seconds_since_open_at($six_pm_epoch),  11 * 60 * 60,  'at 6pm, LSE opening was 11 hours ago.');
-    is($LSE->seconds_until_close_at($six_pm),       undef,         'at 6pm, LSE has closed.');
-    is($LSE->seconds_until_close_at($six_pm_epoch), undef,         'at 6pm, LSE has closed.');
     is($LSE->seconds_since_close_at($six_pm),       2.5 * 60 * 60, 'at 6pm, LSE has been closed for 2.5 hours.');
     is($LSE->seconds_since_close_at($six_pm_epoch), 2.5 * 60 * 60, 'at 6pm, LSE has been closed for 2.5 hours.');
 
@@ -409,13 +401,7 @@ subtest 'Whole bunch of stuff.' => sub {
     my $lse_holiday_epoch = Date::Utility->new('6-May-13 12:00:00')->epoch;
     is($LSE->is_open_at($lse_holiday_epoch),      undef, 'is_open_at LSE not open today at all.');
     is($LSE->will_open_after($lse_holiday_epoch), undef, 'will_open_after LSE not open today at all.');
-    is(
-        $LSE->seconds_until_open_at($lse_holiday_epoch),
-        19 * 60 * 60,
-        'LSE not open today so seconds_until_open_at is based on opening time of the next trading day.'
-    );
     is($LSE->seconds_since_open_at($lse_holiday_epoch),  undef, 'seconds_since_open_at LSE not open today at all.');
-    is($LSE->seconds_until_close_at($lse_holiday_epoch), undef, 'seconds_until_close_at LSE not open today at all.');
     is($LSE->seconds_since_close_at($lse_holiday_epoch), undef, 'seconds_since_close_at LSE not open today at all.');
 
     # Two session trading stuff:
@@ -424,9 +410,7 @@ subtest 'Whole bunch of stuff.' => sub {
     my $lunchbreak_epoch = Date::Utility->new('3-May-13 04:30:00')->epoch;
     is($HKSE->is_open_at($lunchbreak_epoch),            undef,   'HKSE closed for lunch!');
     is($HKSE->will_open_after($lunchbreak_epoch),       1,       'HKSE will open for the afternoon session.');
-    is($HKSE->seconds_until_open_at($lunchbreak_epoch), 30 * 60, 'mid lunchbreak, HKSE opens in 1 hour.');
     is($HKSE->seconds_since_open_at($lunchbreak_epoch),  undef, 'seconds since open is undef if market is closed (which includes closed for lunch).');
-    is($HKSE->seconds_until_close_at($lunchbreak_epoch), 11400, 'mid lunch, HKSE will close in 3 hours 10 minutes.');
     is($HKSE->seconds_since_close_at($lunchbreak_epoch), 31 * 60, '1 hour into lunch, HKSE closed 31 minutes ago.');
 
     my $HKSE_close_epoch = Date::Utility->new('3-May-13 07:40:00')->epoch;

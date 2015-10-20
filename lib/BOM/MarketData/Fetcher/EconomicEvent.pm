@@ -103,19 +103,6 @@ sub retrieve_doc_with_view {
     return @docs;
 }
 
-=head2 retrieve_doc_with_id
-
-Returns a couch doc given its ID
-
-=cut
-
-sub retrieve_doc_with_id {
-    my ($self, $doc_id) = @_;
-    croak 'Doc id is not true' unless $doc_id;
-
-    return $self->_couchdb->document($doc_id);
-}
-
 =head2 get_latest_events_for_period
 
 Returns all events that will happen on a pre-specified period.
@@ -243,15 +230,6 @@ sub _get_events {
     }
 
     return \@event_objs;
-}
-
-sub update_event {
-    my $self       = shift;
-    my $event_data = shift;
-
-    $self->_clear_event_cache;
-
-    return $self->_couchdb->document($event_data->{_id}, $event_data);
 }
 
 sub _clear_event_cache {
