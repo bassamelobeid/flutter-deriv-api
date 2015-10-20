@@ -217,21 +217,20 @@ sub candles {
     my @all_ohlc;
 
     if ($end_time - $start_time <= $interval) {
-        $interval = $end_time - $start_time;
         push @all_ohlc,
-            @{
-            $ul->feed_api->ohlc_start_end({
+            (
+            reverse $ul->feed_api->ohlc_start_end({
                     start_time         => $start_time,
                     end_time           => $end_time,
-                    aggregation_period => $interval,
-                })};
+                    aggregation_period => ($end_time - $start_time),
+                }))[0];
 
     } elsif ($unit eq 'D' and $ul->ohlc_daily_open) {
         # For the underlying nocturne, for daily ohlc, the date need to be date
         $start_time = Date::Utility->new($start_time)->truncate_to_day;
         $end_time   = Date::Utility->new($end_time)->truncate_to_day;
         push @all_ohlc,
-            @{
+            reverse @{
             $ul->feed_api->ohlc_start_end({
                     start_time         => $start_time,
                     end_time           => $end_time,
@@ -240,28 +239,30 @@ sub candles {
 
     } else {
         my $first_stop = $start_time + ($interval - $start_time % $interval);
-        my $last_stop  = $first_stop + $interval * int(($end_time - $first_stop) / $interval);
-        my $first_ohlc = $ul->feed_api->ohlc_daily_list({
-            start_time => $start_time,
-            end_time   => $first_stop - 1,
-        });
-        $first_ohlc->[0]->{epoch} = $start_time;
-        push @all_ohlc, @{$first_ohlc};
+        my $last_stop = $first_stop + $interval * int(($end_time - $first_stop) / $interval);
+        push @all_ohlc,
+            (
+            reverse $ul->feed_api->ohlc_start_end({
+                    start_time         => $start_time,
+                    end_time           => $first_stop,
+                    aggregation_period => ($first_stop - $start_time),
+                }))[0];
 
         push @all_ohlc,
-            @{
+            reverse @{
             $ul->feed_api->ohlc_start_end({
                     start_time         => $first_stop,
                     end_time           => $last_stop,
                     aggregation_period => $interval,
                 })};
+        push @all_ohlc,
+            (
+            reverse $ul->feed_api->ohlc_start_end({
+                    start_time         => $last_stop,
+                    end_time           => $end_time,
+                    aggregation_period => ($end_time - $last_stop),
+                }))[0];
 
-        my $last_ohlc = $ul->feed_api->ohlc_daily_list({
-            start_time => $last_stop,
-            end_time   => $end_time,
-        });
-        $last_ohlc->[0]->{epoch} = $last_stop;
-        push @all_ohlc, @{$last_ohlc};
     }
 
     return [map { {epoch => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
