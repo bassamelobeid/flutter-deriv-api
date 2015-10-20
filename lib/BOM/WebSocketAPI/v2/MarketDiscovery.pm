@@ -263,7 +263,18 @@ sub proposal {
     # p2 is a manipulated copy of p1 suitable for produce_contract.
     my $p2 = prepare_ask($c, $args);
     my $id;
-    $id = Mojo::IOLoop->recurring(1 => sub { send_ask($c, $id, $args, $p2) });
+    $id = Mojo::IOLoop->recurring(
+        1 => sub {
+
+            if ($c->stash('language')) {
+                $c->req->param('l' => $c->stash('language'));
+            }
+            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+            if ($request) {
+                BOM::Platform::Context::request($request);
+            }
+            send_ask($c, $id, $args, $p2);
+        });
 
     my $ws_id = $c->tx->connection;
     $c->{ws}{$ws_id}{$id} = {
@@ -346,14 +357,18 @@ sub get_ask {
                 code    => "ContractValidationError"
             }};
     }
-    my $display_price = $contract->is_spread ? $contract->buy_level : sprintf('%.2f', $contract->ask_price);
+
+    my $ask_price = sprintf('%.2f', $contract->ask_price);
+    my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
+
     my $response = {
-        longcode   => Mojo::DOM->new->parse($contract->longcode)->all_text,
-        payout     => $contract->payout,
-        ask_price  => $display_price,
-        spot       => $contract->current_spot,
-        spot_time  => $contract->current_tick->epoch,
-        date_start => $contract->date_start->epoch
+        longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
+        payout        => $contract->payout,
+        ask_price     => $ask_price,
+        display_value => $display_value,
+        spot          => $contract->current_spot,
+        spot_time     => $contract->current_tick->epoch,
+        date_start    => $contract->date_start->epoch
     };
     $response->{spread} = $contract->spread if $contract->is_spread;
 
