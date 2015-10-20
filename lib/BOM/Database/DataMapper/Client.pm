@@ -148,21 +148,6 @@ sub locked_client_list {
     return $sth->fetchall_hashref('client_loginid');
 }
 
-sub get_client_status_with_status_code {
-    my $self        = shift;
-    my $status_code = shift;
-
-    my $sth = $self->db->dbh->prepare(
-'SELECT * FROM betonmarkets.client_status WHERE client_loginid LIKE $2 AND status_code = $1'
-    );
-    $sth->bind_param( 1, $status_code );
-
-    my $broker = $self->broker_code;
-    $sth->bind_param( 2, "$broker%" );
-
-    $sth->execute();
-    return $sth->fetchall_arrayref( {} );
-}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
