@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 14;
+use Test::More tests => 12;
 use Test::NoWarnings;
 use Test::Exception;
 
@@ -175,81 +175,6 @@ subtest 'affiliate reward' => sub {
         my $affiliate_reward_payment_id = $trx->payment->id;
     }
     'expect to create affiliate reward payment for account [CR0031, USD]';
-};
-
-subtest 'get total credit card deposit' => sub {
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'MX0016',
-            'currency_code'  => 'GBP'
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_total_credit_card_deposit(), '==', 10000, 'Get the client credit card deposit amount, for GBP');
-
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR2002',
-            'currency_code'  => 'USD'
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_total_credit_card_deposit(),
-        '==', 0, 'Get the client credit card deposit amount as zero for an account with no creditcard deposit');
-
-# Non existing account
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR2002',
-            'currency_code'  => 'GBP'
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_total_credit_card_deposit(), '==', 0,
-        'Get the client credit card deposit amount as zero for an non existing account');
-
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR0030',
-            'currency_code'  => 'GBP'
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_total_credit_card_deposit(),
-        '==', 1135, 'Get the client credit card deposit amount for an account with several credit card deposit');
-
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR3003',
-            'currency_code'  => 'USD'
-        });
-    }
-    'Expect to initialize the object';
-};
-
-subtest 'first funded' => sub {
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR0026',
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_first_funded_currency_of_client(), 'eq', 'USD', 'Get the first funded currency of clients');
-
-    lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'CR0026',
-            'currency_code'  => 'USD',
-        });
-    }
-    'Expect to initialize the object';
-
-    cmp_ok($payment_mapper->get_first_funded_amount_of_account(), '==', 100, 'Get the first funded amount of client account');
 };
 
 subtest 'total free gift deposit' => sub {
