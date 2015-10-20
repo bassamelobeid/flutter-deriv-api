@@ -29,7 +29,9 @@ sub ok {
 sub entry_point {
     my $c = shift;
 
-    if (not $c->req->param('l') and $c->stash('language')) {
+    if ($c->req->param('l')) {
+        $c->stash(language => $c->req->param('l'));
+    } elsif ($c->stash('language')) {
         $c->req->param('l' => $c->stash('language'));
     }
     my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
