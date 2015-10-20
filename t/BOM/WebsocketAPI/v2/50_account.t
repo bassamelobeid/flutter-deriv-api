@@ -15,12 +15,12 @@ my $t = build_mojo_test();
 
 my $token = BOM::Platform::SessionCookie->new(
     loginid => "CR0021",
-    email   => 'cr0021@binary.com',
+    email   => 'shuwnyuan@regentmarkets.com',
 )->token;
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'cr0021@binary.com';
+is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR0021';
 
 $t = $t->send_ok({
