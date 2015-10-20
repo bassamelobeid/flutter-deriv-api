@@ -1,4 +1,4 @@
-use Test::Most 0.22 (tests => 9);
+use Test::Most 0.22 (tests => 8);
 use Test::NoWarnings;
 
 use BOM::Platform::Runtime;
