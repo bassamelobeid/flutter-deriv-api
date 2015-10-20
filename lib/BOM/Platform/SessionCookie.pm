@@ -73,7 +73,7 @@ Creates a new session and stores it in redis.
 =cut
 
 # default token parameters
-my $STRING       = join '', 'a'..'z', 'A'..'Z', '0'..'9';
+my $STRING       = join '', 'a' .. 'z', 'A' .. 'Z', '0' .. '9';
 my @REQUIRED     = qw(email);
 my $EXPIRES_IN   = 3600 * 24;
 my $TOKEN_LENGTH = 48;
