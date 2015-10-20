@@ -193,14 +193,6 @@ has 'http_modified' => (
     is => 'ro',
 );
 
-sub currency_available {
-    my $self     = shift;
-    my $currency = shift;
-
-    return unless $currency;
-    return grep { $currency eq $_ } @{$self->available_currencies};
-}
-
 sub cookie {
     my $self = shift;
     my $name = shift;

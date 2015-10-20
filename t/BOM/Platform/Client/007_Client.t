@@ -27,7 +27,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use lib qw(/home/git/regentmarkets/bom/cgi);
 
 subtest 'client Balance' => sub {
-    plan tests => 16;
+    plan tests => 14;
     my $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'CR',
     });
@@ -86,8 +86,6 @@ subtest 'client Balance' => sub {
     is($aggregate_deposit,             '2468.50', 'check aggregate deposit');
     is($aggregate_withdrawal,          1468.49,   'check aggregate withdrawal');
     is($aggregate_deposit_withdrawal,  1000.01,   'check aggredate deposit & withdrawal');
-    is($payment_mapper_client->get_client_aggregate_deposit_withdrawal($account->client_loginid)->{'GBP'},
-        '1000.01', 'check aggredate deposit & withdrawal, should calculate same as above test');
 
     lives_ok {
         $account_mapper = BOM::Database::DataMapper::Account->new({
@@ -113,8 +111,6 @@ subtest 'client Balance' => sub {
     cmp_ok($aggregate_deposit,             '==', 20,   'check aggregate deposit');
     cmp_ok($aggregate_withdrawal,          '==', 0,    'no withdrawal has been made');
     cmp_ok($aggregate_deposit_withdrawal,  '==', 20,   'check aggredate deposit & withdrawal');
-    cmp_ok($payment_mapper_client->get_client_aggregate_deposit_withdrawal('MX0013')->{'USD'},
-        '==', 20, 'check aggredate deposit & withdrawal, should calculate same as above test');
 
     lives_ok {
         $account_mapper = BOM::Database::DataMapper::Account->new({
