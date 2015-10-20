@@ -62,9 +62,9 @@ sub buy {
         };
 
         if ($contract->is_spread) {
-            $response->{stop_loss}        = $contract->stop_loss_level;
-            $response->{stop_profit}      = $contract->stop_profit_level;
-            $response->{amount_per_point} = $contract->amount_per_point;
+            $response->{stop_loss_level}   = $contract->stop_loss_level;
+            $response->{stop_profit_level} = $contract->stop_profit_level;
+            $response->{amount_per_point}  = $contract->amount_per_point;
         }
 
         $json->{buy} = $response;

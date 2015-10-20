@@ -50,14 +50,14 @@
           "description":"[For spread contracts only] Amount per point",
           "sample": "1"
         },
-        "stop_profit": {
+        "stop_profit_level": {
           "type": "number",
-          "description":"[For spread contracts only] Stop profit amount",
+          "description":"[For spread contracts only] Stop profit level (spot plus stop profit amount)",
           "sample": "10"
         },
-        "stop_loss": {
+        "stop_loss_level": {
           "type": "number",
-          "description":"[For spread contracts only] Stop loss amount",
+          "description":"[For spread contracts only] Stop loss level (spot minus stop loss amount)",
           "sample": "15"
         }
       }
