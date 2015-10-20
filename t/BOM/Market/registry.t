@@ -76,9 +76,18 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $forex->markups->digital_spread,
             {
-                european       => 3.5,
-                single_barrier => 4,
-                double_barrier => 5,
+                'ASIAND'      => 3.5,
+                'ASIANU'      => 3.5,
+                'CALL'        => 3.5,
+                'DIGITDIFF'   => 3.5,
+                'DIGITMATCH'  => 3.5,
+                'EXPIRYMISS'  => 3.5,
+                'EXPIRYRANGE' => 3.5,
+                'NOTOUCH'     => 4,
+                'ONETOUCH'    => 4,
+                'PUT'         => 3.5,
+                'RANGE'       => 5,
+                'UPORDOWN'    => 5,
             },
         );
         ok $forex->markups->apply_butterfly_markup,      'Butterfly Markup';
@@ -112,9 +121,18 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $commodities->markups->digital_spread,
             {
-                european       => 4,
-                single_barrier => 7,
-                double_barrier => 10,
+                'ASIAND'      => 4,
+                'ASIANU'      => 4,
+                'CALL'        => 4,
+                'DIGITDIFF'   => 4,
+                'DIGITMATCH'  => 4,
+                'EXPIRYMISS'  => 4,
+                'EXPIRYRANGE' => 4,
+                'NOTOUCH'     => 7,
+                'ONETOUCH'    => 7,
+                'PUT'         => 4,
+                'RANGE'       => 10,
+                'UPORDOWN'    => 10,
             },
         );
 
@@ -149,9 +167,18 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $indices->markups->digital_spread,
             {
-                european       => 4,
-                single_barrier => 6,
-                double_barrier => 8,
+                'ASIAND'      => 4,
+                'ASIANU'      => 4,
+                'CALL'        => 4,
+                'DIGITDIFF'   => 4,
+                'DIGITMATCH'  => 4,
+                'EXPIRYMISS'  => 4,
+                'EXPIRYRANGE' => 4,
+                'NOTOUCH'     => 6,
+                'ONETOUCH'    => 6,
+                'PUT'         => 4,
+                'RANGE'       => 8,
+                'UPORDOWN'    => 8,
             },
         );
 
@@ -186,9 +213,18 @@ subtest 'Market builds or configs test' => sub {
         cmp_deeply(
             $random->markups->digital_spread,
             {
-                european       => 3,
-                single_barrier => 3,
-                double_barrier => 3,
+                'ASIAND'      => 3,
+                'ASIANU'      => 3,
+                'CALL'        => 3,
+                'DIGITDIFF'   => 3,
+                'DIGITMATCH'  => 3,
+                'EXPIRYMISS'  => 3,
+                'EXPIRYRANGE' => 3,
+                'NOTOUCH'     => 3,
+                'ONETOUCH'    => 3,
+                'PUT'         => 3,
+                'RANGE'       => 3,
+                'UPORDOWN'    => 3,
             },
         );
         ok !$random->markups->apply_butterfly_markup,      'Butterfly Markup';
