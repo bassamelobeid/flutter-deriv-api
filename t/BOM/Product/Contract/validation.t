@@ -276,8 +276,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
-        symbol        => 'GDAXI',
-        recorded_date => $an_hour_earlier,
+        symbol         => 'GDAXI',
+        recorded_date  => $an_hour_earlier,
+        spot_reference => $tick->quote,
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -654,8 +655,9 @@ subtest 'volsurfaces become old and invalid' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'GDAXI',
-            recorded_date => Date::Utility->new('2013-03-27 06:00:34'),
+            symbol         => 'GDAXI',
+            recorded_date  => Date::Utility->new('2013-03-27 06:00:34'),
+            spot_reference => $tick->quote,
         });
 
     my $gdaxi = BOM::Market::Underlying->new('GDAXI');
@@ -755,8 +757,9 @@ subtest 'invalid start times' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'GDAXI',
-            recorded_date => Date::Utility->new('2013-03-30 15:00:34'),
+            symbol         => 'GDAXI',
+            recorded_date  => Date::Utility->new('2013-03-30 15:00:34'),
+            spot_reference => $tick->quote,
         });
 
     $bet_params->{volsurface}   = $volsurface;
@@ -772,8 +775,9 @@ subtest 'invalid start times' => sub {
     $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'GDAXI',
-            recorded_date => Date::Utility->new('2013-03-30 11:00:34'),
+            symbol         => 'GDAXI',
+            recorded_date  => Date::Utility->new('2013-03-30 11:00:34'),
+            spot_reference => $tick->quote,
         });
 
     $bet_params->{date_start}   = Date::Utility->new('2013-03-30 12:34:56');    # It's a Saturday!
@@ -795,6 +799,7 @@ subtest 'invalid start times' => sub {
             symbol            => 'GDAXI',
             recorded_date     => Date::Utility->new('2013-03-28 09:00:34'),
             calibration_error => 110,
+            spot_reference    => $tick->quote,
         });
 
     $bet_params->{duration}     = '5d';
@@ -811,6 +816,7 @@ subtest 'invalid start times' => sub {
             symbol            => 'GDAXI',
             recorded_date     => Date::Utility->new('2013-03-28 09:00:34'),
             calibration_error => 99,
+            spot_reference    => $tick->quote,
         });
 
     $bet_params->{volsurface} = $volsurface_with_acceptable_error;
@@ -823,6 +829,7 @@ subtest 'invalid start times' => sub {
             symbol            => 'GDAXI',
             recorded_date     => Date::Utility->new('2013-03-28 09:00:34'),
             calibration_error => 21,
+            spot_reference    => $tick->quote,
         });
 
     $bet_params->{duration}   = '0d';
@@ -885,8 +892,9 @@ subtest 'invalid expiry times' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'GDAXI',
-            recorded_date => Date::Utility->new('2013-03-28 15:00:34'),
+            symbol         => 'GDAXI',
+            recorded_date  => Date::Utility->new('2013-03-28 15:00:34'),
+            spot_reference => $tick->quote,
         });
 
     $bet_params->{volsurface}   = $volsurface;
@@ -986,8 +994,9 @@ subtest 'invalid lifetimes.. how rude' => sub {
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'GDAXI',
-            recorded_date => Date::Utility->new('2013-03-28 06:00:34'),
+            symbol         => 'GDAXI',
+            recorded_date  => Date::Utility->new('2013-03-28 06:00:34'),
+            spot_reference => $tick->quote,
         });
 
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('28-Mar-13'))->plus_time_interval('15m');
@@ -1043,8 +1052,9 @@ subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'FPFP',
-            recorded_date => Date::Utility->new,
+            symbol         => 'FPFP',
+            recorded_date  => Date::Utility->new,
+            spot_reference => $tick->quote,
         });
 
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
@@ -1127,8 +1137,9 @@ subtest 'intraday indices duration test' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'AS51',
-            recorded_date => $now
+            symbol         => 'AS51',
+            recorded_date  => $now,
+            spot_reference => $tick->quote,
         });
 
     my $tick_params = {
@@ -1191,8 +1202,9 @@ subtest 'intraday indices duration test' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
-            symbol        => 'FTSE',
-            recorded_date => $now
+            symbol         => 'FTSE',
+            recorded_date  => $now,
+            spot_reference => $tick->quote,
         });
 
     $params->{underlying} = 'FTSE';
@@ -1253,6 +1265,40 @@ subtest 'expiry_daily expiration time' => sub {
     my $err = ($c->_validate_expiry_date)[0]->{message_to_client};
     is $err, 'Contracts on Australian Index with durations under 24 hours must expire on the same trading day.', 'correct message';
 
+};
+
+subtest 'spot reference check' => sub {
+
+    my $now        = Date::Utility->new('2015-10-20 10:00');
+    my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'FTSE',
+            recorded_date  => $now,
+            spot_reference => 94.9,
+        });
+    my $tick_params = {
+        symbol => 'FTSE',
+        epoch  => $now->epoch,
+        quote  => 100
+    };
+
+    my $tick       = BOM::Market::Data::Tick->new($tick_params);
+    my $bet_params = {
+        underlying   => 'FTSE',
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '3d',
+        barrier      => 'S0P',
+        current_tick => $tick,
+        volsurface   => $volsurface,
+    };
+    my $c                = produce_contract($bet_params);
+    my $expected_reasons = [qr/spot reference/];
+    test_error_list('buy', $c, $expected_reasons);
 };
 
 # Let's not surprise anyone else
