@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Client;
+use BOM::Database::Model::AccessToken;
 
 sub authorize {
     my ($c, $args) = @_;
@@ -18,16 +19,24 @@ sub authorize {
             code    => "InvalidToken"
         }};
 
-    my $session = BOM::Platform::SessionCookie->new(token => $token);
-    if (!$session || !$session->validate_session()) {
-        return $err;
+    my $loginid;
+    if (length $token == 15) {    # access token
+        my $m = BOM::Database::Model::AccessToken->new;
+        $loginid = $m->get_loginid_by_token($token);
+        return $err unless $loginid;
+    } else {
+        my $session = BOM::Platform::SessionCookie->new(token => $token);
+        if (!$session || !$session->validate_session()) {
+            return $err;
+        }
+
+        $loginid = $session->loginid;
     }
 
-    my $loginid = $session->loginid;
     my $client = BOM::Platform::Client->new({loginid => $loginid});
     return $err unless $client;
 
-    my $email   = $session->email;
+    my $email   = $client->email;
     my $account = $client->default_account;
 
     $c->stash(

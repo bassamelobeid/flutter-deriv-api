@@ -13,14 +13,14 @@ my $t = build_mojo_test();
 my $token = BOM::Platform::SessionCookie->new(
     client_id       => 1,
     loginid         => "CR2002",
-    email           => 'CR2002@binary.com',
+    email           => 'sy@regentmarkets.com',
     expiration_time => time() + 600,
     scopes          => ['price', 'trade'],
 )->token;
 
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
-is $authorize->{authorize}->{email},   'CR2002@binary.com';
+is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
 $t = $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
@@ -80,7 +80,7 @@ $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
 my $portfolio = decode_json($t->message->[1]);
 ok $portfolio->{portfolio}->{contracts};
 ok $portfolio->{portfolio}->{contracts}->[0]->{fmb_id};
-# test_schema('portfolio', $portfolio); # FIXME
+test_schema('portfolio', $portfolio);
 
 ## test portfolio and sell
 $t = $t->send_ok({
@@ -88,7 +88,6 @@ $t = $t->send_ok({
             proposal_open_contract => 1,
             fmb_id                 => $portfolio->{portfolio}->{contracts}->[0]->{fmb_id},
         }});
- 
 $t = $t->message_ok;
 my $res = decode_json($t->message->[1]);
 
