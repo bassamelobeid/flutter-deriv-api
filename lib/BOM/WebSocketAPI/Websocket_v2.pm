@@ -29,14 +29,8 @@ sub ok {
 sub entry_point {
     my $c = shift;
 
-    if (not $c->req->param('l') and $c->stash('language')) {
-        $c->req->param('l' => $c->stash('language'));
-    }
-    my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-    if ($request) {
-        BOM::Platform::Context::request($request);
-        $c->stash(r        => $request);
-        $c->stash(language => uc $c->stash('r')->language);
+    if ($c->req->param('l')) {
+        $c->stash(language => $c->req->param('l'));
     }
 
     my $log = $c->app->log;
@@ -52,6 +46,16 @@ sub entry_point {
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
+
+            if ($c->stash('language')) {
+                $c->req->param('l' => $c->stash('language'));
+            }
+            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+            if ($request) {
+                BOM::Platform::Context::request($request);
+                $c->stash(r        => $request);
+                $c->stash(language => uc $c->stash('r')->language);
+            }
 
             my $tag = 'origin:';
             my $data;
