@@ -2683,6 +2683,18 @@ sub _validate_volsurface {
                     };
             }
         }
+
+        if (abs($surface->spot_reference - $self->current_spot) / $self->current_spot * 100 > 5) {
+            push @errors,
+                {
+                alert    => 1,
+                severity => 100,
+                set_by   => __PACKAGE__,
+                message =>
+                    format_error_string('spot reference[' . $surface->spot_reference . '] too far from current spot[' . $self->current_spot . ']'),
+                message_to_client => $standard_message,
+                };
+        }
     }
 
     return @errors;
