@@ -66,11 +66,6 @@ sub is_subordinate_affiliate {
     return;
 }
 
-sub is_subordinate_promocode {
-    my ($self, $promocode) = @_;
-    return $self->is_subordinate_affiliate($self->get_myaffiliates_id_for_promo_code($promocode));
-}
-
 =item get_myaffiliates_id_for_promo_code
 
 Given a BOM promo code, will check if there's an affiliate

@@ -29,14 +29,6 @@ subtest 'valid broker codes' => sub {
     eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG)], "Got correct list of brokers";
 };
 
-subtest 'get_broker_on_server' => sub {
-    ok !$broker_codes->get_brokers_on_server('crow01'), 'No such server';
-    ok $broker_codes->get_brokers_on_server('www'), 'Got some brokers';
-
-    my @br_on_cr = sort map { $_->code } $broker_codes->get_brokers_on_server('www');
-    eq_or_diff \@br_on_cr, [sort qw(CR FOG MLT MX MF VRTC)], "Correct list of brokers for deal01";
-};
-
 lives_ok {
     BOM::Platform::Runtime->instance->broker_codes;
 }
