@@ -269,8 +269,10 @@ sub proposal {
             if ($c->stash('language')) {
                 $c->req->param('l' => $c->stash('language'));
             }
-            BOM::Platform::Context::request(BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req}));
-
+            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+            if ($request) {
+                BOM::Platform::Context::request($request);
+            }
             send_ask($c, $id, $args, $p2);
         });
 
