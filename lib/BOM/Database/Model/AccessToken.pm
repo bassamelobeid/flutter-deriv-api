@@ -29,9 +29,11 @@ sub get_loginid_by_token {
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    return $self->dbh->selectall_arrayref(
-        "SELECT * FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name", { Slice => {} }, $loginid
-    );
+    return $self->dbh->selectall_arrayref("
+        SELECT
+            token, display_name, last_used::timestamp(0)
+        FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name
+    ", { Slice => {} }, $loginid);
 }
 
 sub get_token_count_by_loginid {
