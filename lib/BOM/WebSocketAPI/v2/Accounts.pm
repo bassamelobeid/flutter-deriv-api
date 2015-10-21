@@ -76,10 +76,11 @@ sub get_transactions {
                 transaction_id   => $trx->id,
             };
             if ($and_description) {
-                $struct->{description} = '';
+                $struct->{longcode} = '';
                 if (my $fmb = $trx->financial_market_bet) {
                     if (my $con = eval { BOM::Product::ContractFactory::produce_contract($fmb->short_code, $acc->currency_code) }) {
-                        $struct->{description} = $con->longcode;
+                        $struct->{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
+                        $struct->{shortcode} = $con->shortcode;
                     }
                 }
             }
