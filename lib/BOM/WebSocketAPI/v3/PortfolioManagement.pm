@@ -1,10 +1,10 @@
-package BOM::WebSocketAPI::v2::PortfolioManagement;
+package BOM::WebSocketAPI::v3::PortfolioManagement;
 
 use strict;
 use warnings;
 
 use Mojo::DOM;
-use BOM::WebSocketAPI::v2::System;
+use BOM::WebSocketAPI::v3::System;
 
 use Try::Tiny;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
@@ -146,7 +146,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
                 type    => 'proposal_open_contract',
                 data    => {%$p2},
             };
-            BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+            BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
 
             $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
         }

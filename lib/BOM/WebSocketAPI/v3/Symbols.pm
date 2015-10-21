@@ -1,9 +1,9 @@
-package BOM::WebSocketAPI::v2::Symbols;
+package BOM::WebSocketAPI::v3::Symbols;
 
 use strict;
 use warnings;
 
-use Mojo::Base 'BOM::WebSocketAPI::v2::BaseController';
+use Mojo::Base 'BOM::WebSocketAPI::v3::BaseController';
 use Finance::Asset;
 
 use Date::Utility;
