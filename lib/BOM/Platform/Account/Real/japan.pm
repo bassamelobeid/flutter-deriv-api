@@ -21,8 +21,8 @@ sub _validate {
     return;
 #    return if ($from_client->residence eq 'jp');
 
-    get_logger()->warn("japan acc opening err: loginid:" . $from_client->loginid . " wrong residence:" . $from_client->residence);  ## no critic
-    return {err => 'invalid'};                                                                                                      ## no critic
+    get_logger()->warn("japan acc opening err: loginid:" . $from_client->loginid . " wrong residence:" . $from_client->residence);    ## no critic
+    return {err => 'invalid'};                                                                                                        ## no critic
 }
 
 sub create_account {
