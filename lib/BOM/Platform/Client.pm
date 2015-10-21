@@ -791,19 +791,17 @@ sub siblings {
     return $user->clients;
 }
 
-sub login {
-    my ($client, %args) = @_;
+sub validate_login {
+    my $client = shift;
     my $error;
     if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
         $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif ($client->get_status('disabled')) {
         $error = localize('This account is unavailable. For any questions please contact Customer Support.');
-    } else {
-        # critic incorrectly flags the below line
-        return BOM::Platform::Client::Login::Msg->new({%args, success => 1});    ## no critic
     }
 
-    return BOM::Platform::Client::Login::Msg->new({error => $error});
+    return {error => $error} if ($error);
+    return;
 }
 
 1;
