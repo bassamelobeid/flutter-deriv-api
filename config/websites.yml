@@ -10,18 +10,6 @@ BackOffice:
       - MLT
       - CR
       - FOG
-Binary-beta:
-  primary_url: www.binary-beta.com
-  default_language: EN
-  resource_subdir: Binary
-  broker_codes:
-      - MX
-      - MF
-      - VRTC
-      - MLT
-      - CR
-      - FOG
-  reality_check_interval: 60
 Binaryqa01:
   primary_url: www.binaryqa01.com
   default_language: EN
