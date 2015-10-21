@@ -185,6 +185,7 @@ sub portfolio {
             expiry_time   => $fmb->expiry_time->epoch,
             contract_type => $fmb->bet_type,
             currency      => $fmb->account->currency_code,
+            shortcode     => $fmb->short_code,
             longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
             };
     }
