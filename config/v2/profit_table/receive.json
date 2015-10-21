@@ -46,9 +46,13 @@
               		  "type":"number",
               		  "description":"sold price"
               	  },
-                  "description":{
+                  "longcode":{
                     "type":"string",
                     "description":"contract description"
+                  },
+                  "shortcode": {
+                    "type": "string",
+                    "description": "Compact description of the contract purchased"
                   }
                 }
               },
