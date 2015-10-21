@@ -790,16 +790,14 @@ sub siblings {
     return $user->clients;
 }
 
-sub validate_login {
+sub login_error {
     my $client = shift;
-    my $error;
-    if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
-        $error = localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
-    } elsif ($client->get_status('disabled')) {
-        $error = localize('This account is unavailable. For any questions please contact Customer Support.');
-    }
 
-    return {error => $error} if ($error);
+    if (grep { $client->loginid =~ /^$_/ } @{BOM::Platform::Runtime->instance->app_config->system->suspend->logins}) {
+        return localize('Login to this account has been temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+    } elsif ($client->get_status('disabled')) {
+        return localize('This account is unavailable. For any questions please contact Customer Support.');
+    }
     return;
 }
 
