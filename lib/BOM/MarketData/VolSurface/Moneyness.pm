@@ -67,19 +67,28 @@ sub _build_parameterization {
 
 with 'BOM::MarketData::Role::VersionedSymbolData';
 
-sub compute_parameterization {
-    my $calibrator = VolSurface::Calibration::Equities->new(
-        surface => $self->surface,
-        term_by_day => $self->term_by_day,
-        smile_points => $self->smile_points,
-        parameterization => $self->parameterization);
+sub _get_calibrator {
+    my $self = shift;
 
-    my $new_params = $calibrator->compute_parameterization;
+    my $calibrator = VolSurface::Calibration::Equities->new(
+        surface          => $self->surface,
+        term_by_day      => $self->term_by_day,
+        smile_points     => $self->smile_points,
+        parameterization => $self->parameterization
+    );
+
+    return $calibrator;
+}
+
+sub compute_parameterization {
+    my $self = shift;
+
+    my $new_params = $self->_get_calibrator->compute_parameterization;
     $self->parameterization($new_params);
     $self->clear_calibration_error;
 
     return $new_params;
-};
+}
 
 =head2 type
 
@@ -174,13 +183,7 @@ has calibrated_surface => (
 sub _build_calibrated_surface {
     my $self = shift;
 
-    my $calibrator = VolSurface::Calibration::Equities->new(
-        surface => $self->surface,
-        term_by_day => $self->term_by_day,
-        smile_points => $self->smile_points,
-        parameterization => $self->parameterization);
-
-    return $calibrator->get_calibrated_surface;
+    return $self->_get_calibrator->get_calibrated_surface;
 }
 
 =head2 calibration_error
@@ -255,15 +258,8 @@ sub get_volatility {
 sub _calculate_calibrated_vol {
     my ($self, $days, $sought_point) = @_;
 
-    my $calibrator = VolSurface::Calibration::Equities->new(
-        surface => $self->surface,
-        term_by_day => $self->term_by_day,
-        smile_points => $self->smile_points,
-        parameterization => $self->parameterization);
-
-    return $calibrator->_calculate_calibrated_vol($days, $sought_point);
+    return $self->_get_calibrator->_calculate_calibrated_vol($days, $sought_point);
 }
-
 
 =head2 price_with_parameterized_surface
 
