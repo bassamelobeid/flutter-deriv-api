@@ -1,31 +1,29 @@
 package BOM::MarketData::CorporateAction;
 
+use BOM::System::Chronicle;
+
 =head1 NAME
 
 BOM::MarketData::CorporateAction
 
 =head1 DESCRIPTION
 
-Represents the corporate actions data of an underlying from couch database
+Represents the corporate actions data of an underlying from chronicle
 $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
 
 =cut
 
 use Moose;
-extends 'BOM::MarketData';
 
 =head2 symbol
+
 Represents underlying symbol
+
 =cut
 
 has symbol => (
     is       => 'ro',
     required => 1,
-);
-
-has _data_location => (
-    is      => 'ro',
-    default => 'corporate_actions'
 );
 
 has _existing_actions => (
@@ -36,11 +34,10 @@ has _existing_actions => (
 sub _build__existing_actions {
     my $self = shift;
 
-    return ($self->document->{actions}) ? $self->document->{actions} : {};
+    return ($self->actions) ? $self->actions : {};
 }
 
-around _document_content => sub {
-    my $orig = shift;
+sub save {
     my $self = shift;
 
     my %new              = %{$self->new_actions};
@@ -65,13 +62,8 @@ around _document_content => sub {
         delete $all_actions{$cancel_id};
     }
 
-    return {
-        %{$self->$orig},
-        actions => \%all_actions,
-    };
-};
-
-with 'BOM::MarketData::Role::VersionedSymbolData';
+    BOM::System::Chronicle->add('corporate_actions', $self->symbol, %all_actions);
+}
 
 =head2 actions
 
@@ -87,26 +79,10 @@ has actions => (
 sub _build_actions {
     my $self = shift;
 
-    return $self->_couchdb->document_present($self->current_document_id) ? $self->document->{actions} : {};
+    return BOM::System::Chronicle->get("corporate_actions", $self->symbol) // {};
 }
 
-=head2 action_exists
-Boolean. Returns true if action exists, false otherwise.
-=cut
-
-sub action_exists {
-    my ($self, $id) = @_;
-
-    return $self->_existing_actions->{$id} ? 1 : 0;
-}
-
-has [qw(new_actions cancelled_actions)] => (
-    is         => 'ro',
-    init_arg   => undef,
-    lazy_build => 1,
-);
-
-sub _build_new_actions {
+sub new_actions {
     my $self = shift;
 
     my %new;
@@ -124,7 +100,7 @@ sub _build_new_actions {
     return \%new;
 }
 
-sub _build_cancelled_actions {
+sub cancelled_actions {
     my $self = shift;
 
     my %cancelled;
