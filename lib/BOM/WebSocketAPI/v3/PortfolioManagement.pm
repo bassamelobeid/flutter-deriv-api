@@ -126,8 +126,8 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
     my $ws_id  = $c->tx->connection;
 
     my @fmbs = ();
-    if ($args->{fmb_id}) {
-        @fmbs = grep { $args->{fmb_id} eq $_->id } $client->open_bets;
+    if ($args->{contract_id}) {
+        @fmbs = grep { $args->{contract_id} eq $_->id } $client->open_bets;
     } else {
         @fmbs = $client->open_bets;
     }
@@ -138,7 +138,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             my $id = '';
             $args->{fmb} = $fmb;
             my $p2 = prepare_bid($c, $args);
-            $p2->{fmb_id} = $fmb->id;
+            $p2->{contract_id} = $fmb->id;
             $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
 
             $c->{ws}{$ws_id}{$id} = {
@@ -176,7 +176,7 @@ sub portfolio {
     for my $fmb (@fmbs) {
         push @{$portfolio->{contracts}},
             {
-            fmb_id        => $fmb->id,
+            contract_id   => $fmb->id,
             purchase_time => $fmb->purchase_time->epoch,
             symbol        => $fmb->underlying_symbol,
             payout        => $fmb->payout_price,
@@ -204,7 +204,7 @@ sub prepare_bid {
     my $currency = $fmb->account->currency_code;
     my $contract = produce_contract($fmb->short_code, $currency);
     %$p1 = (
-        fmb_id        => $fmb->id,
+        contract_id   => $fmb->id,
         purchase_time => $fmb->purchase_time->epoch,
         symbol        => $fmb->underlying_symbol,
         payout        => $fmb->payout_price,
@@ -246,11 +246,11 @@ sub get_bid {
     }
 
     return {
-        ask_price => sprintf('%.2f', $contract->ask_price),
-        bid_price => sprintf('%.2f', $contract->bid_price),
-        spot      => $contract->current_spot,
-        spot_time => $contract->current_tick->epoch,
-        fmb_id    => $p2->{fmb_id}};
+        ask_price   => sprintf('%.2f', $contract->ask_price),
+        bid_price   => sprintf('%.2f', $contract->bid_price),
+        spot        => $contract->current_spot,
+        spot_time   => $contract->current_tick->epoch,
+        contract_id => $p2->{contract_id}};
 }
 
 sub send_bid {
