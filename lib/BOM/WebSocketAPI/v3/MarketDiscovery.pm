@@ -43,16 +43,15 @@ sub trading_times {
             push @{$market->{submarkets}}, $submarket;
             $submarket->{name} = $sbm->{name};
             for my $ul (@{$sbm->{underlyings}}) {
-                print STDERR $ul->{symbol} if $ul->{delay_amount} > 0;
                 push @{$submarket->{symbols}},
                     {
-                    name         => $ul->{name},
-                    symbol       => $ul->{symbol},
-                    settlement   => $ul->{settlement} || '',
-                    events       => $ul->{events},
-                    times        => $ul->{times},
-                    feed_license => $ul->{feed_license},
-                    delay_amount => $ul->{delay_amount},
+                    name       => $ul->{name},
+                    symbol     => $ul->{symbol},
+                    settlement => $ul->{settlement} || '',
+                    events     => $ul->{events},
+                    times      => $ul->{times},
+                    ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
+                    ($ul->{delay_amount} > 0)           ? (delay_amount => $ul->{delay_amount}) : (),
                     };
             }
         }
