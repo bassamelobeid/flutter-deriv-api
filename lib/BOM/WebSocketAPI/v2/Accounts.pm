@@ -3,6 +3,9 @@ package BOM::WebSocketAPI::v2::Accounts;
 use strict;
 use warnings;
 
+use Try::Tiny;
+use Mojo::DOM;
+
 use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
@@ -11,7 +14,6 @@ use BOM::Platform::Context qw(localize);
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
-use Try::Tiny;
 
 sub statement {
     my ($c, $args) = @_;
@@ -74,10 +76,11 @@ sub get_transactions {
                 transaction_id   => $trx->id,
             };
             if ($and_description) {
-                $struct->{description} = '';
+                $struct->{longcode} = '';
                 if (my $fmb = $trx->financial_market_bet) {
                     if (my $con = eval { BOM::Product::ContractFactory::produce_contract($fmb->short_code, $acc->currency_code) }) {
-                        $struct->{description} = $con->longcode;
+                        $struct->{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
+                        $struct->{shortcode} = $con->shortcode;
                     }
                 }
             }
@@ -129,9 +132,10 @@ sub __get_sold {
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
         if ($and_description) {
-            $trx{description} = '';
+            $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
-                $trx{description} = $con->longcode;
+                $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
+                $trx{shortcode} = $con->shortcode;
             }
         }
         push @{$data->{transactions}}, \%trx;

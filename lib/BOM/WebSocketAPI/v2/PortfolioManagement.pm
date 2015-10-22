@@ -49,8 +49,8 @@ sub buy {
             last;
         }
         $trx = $trx->transaction_record;
-        my $fmb = $trx->financial_market_bet;
-        $json->{buy} = {
+        my $fmb      = $trx->financial_market_bet;
+        my $response = {
             trx_id        => $trx->id,
             fmb_id        => $fmb->id,
             balance_after => $trx->balance_after,
@@ -60,6 +60,14 @@ sub buy {
             longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
             shortcode     => $fmb->short_code,
         };
+
+        if ($contract->is_spread) {
+            $response->{stop_loss_level}   = $contract->stop_loss_level;
+            $response->{stop_profit_level} = $contract->stop_profit_level;
+            $response->{amount_per_point}  = $contract->amount_per_point;
+        }
+
+        $json->{buy} = $response;
     }
 
     return $json;
@@ -177,6 +185,7 @@ sub portfolio {
             expiry_time   => $fmb->expiry_time->epoch,
             contract_type => $fmb->bet_type,
             currency      => $fmb->account->currency_code,
+            shortcode     => $fmb->short_code,
             longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
             };
     }
