@@ -51,14 +51,14 @@ sub buy {
         $trx = $trx->transaction_record;
         my $fmb      = $trx->financial_market_bet;
         my $response = {
-            trx_id        => $trx->id,
-            contract_id   => $fmb->id,
-            balance_after => $trx->balance_after,
-            purchase_time => $fmb->purchase_time->epoch,
-            buy_price     => $fmb->buy_price,
-            start_time    => $fmb->start_time->epoch,
-            longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
-            shortcode     => $fmb->short_code,
+            transaction_id => $trx->id,
+            contract_id    => $fmb->id,
+            balance_after  => $trx->balance_after,
+            purchase_time  => $fmb->purchase_time->epoch,
+            buy_price      => $fmb->buy_price,
+            start_time     => $fmb->start_time->epoch,
+            longcode       => Mojo::DOM->new->parse($contract->longcode)->all_text,
+            shortcode      => $fmb->short_code,
         };
 
         if ($contract->is_spread) {
@@ -108,10 +108,10 @@ sub sell {
         $trx          = $trx->transaction_record;
         $fmb          = $trx->financial_market_bet;
         $json->{sell} = {
-            trx_id        => $trx->id,
-            contract_id   => $fmb->id,
-            balance_after => $trx->balance_after,
-            sold_for      => abs($trx->amount),
+            transaction_id => $trx->id,
+            contract_id    => $fmb->id,
+            balance_after  => $trx->balance_after,
+            sold_for       => abs($trx->amount),
         };
     }
 

@@ -41,7 +41,7 @@
           "type": "integer",
           "description":"Epoch value of the transaction purchase time"
         },
-        "trx_id": {
+        "transaction_id": {
           "type": "integer",
           "description":"Internal transaction identifier"
         },

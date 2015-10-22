@@ -25,7 +25,7 @@
           "type": "number",
           "description": "Actual effected sale price"
         },
-        "trx_id": {
+        "transaction_id": {
           "type": "integer",
           "description":"Internal transaction identifier for the sale transaction"
         }
