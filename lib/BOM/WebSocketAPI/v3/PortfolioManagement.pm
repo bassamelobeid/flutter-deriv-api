@@ -52,7 +52,7 @@ sub buy {
         my $fmb      = $trx->financial_market_bet;
         my $response = {
             trx_id        => $trx->id,
-            fmb_id        => $fmb->id,
+            contract_id   => $fmb->id,
             balance_after => $trx->balance_after,
             purchase_time => $fmb->purchase_time->epoch,
             buy_price     => $fmb->buy_price,
@@ -109,7 +109,7 @@ sub sell {
         $fmb          = $trx->financial_market_bet;
         $json->{sell} = {
             trx_id        => $trx->id,
-            fmb_id        => $fmb->id,
+            contract_id   => $fmb->id,
             balance_after => $trx->balance_after,
             sold_for      => abs($trx->amount),
         };

@@ -17,7 +17,7 @@
           "type": "number",
           "description":"New account balance after completion of the sale"
         },
-        "fmb_id": {
+        "contract_id": {
           "type": "integer",
           "description":"Internal contract identifier for the sold contract"
         },
