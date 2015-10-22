@@ -65,7 +65,7 @@ while (1) {
     next if $res->{msg_type} eq 'proposal';
 
     ok $res->{buy};
-    ok $res->{buy}->{fmb_id};
+    ok $res->{buy}->{contract_id};
     ok $res->{buy}->{purchase_time};
 
     test_schema('buy', $res);
@@ -79,14 +79,14 @@ ok $forget->{forget};
 $t = $t->send_ok({json => {portfolio => 1}})->message_ok;
 my $portfolio = decode_json($t->message->[1]);
 ok $portfolio->{portfolio}->{contracts};
-ok $portfolio->{portfolio}->{contracts}->[0]->{fmb_id};
+ok $portfolio->{portfolio}->{contracts}->[0]->{contract_id};
 test_schema('portfolio', $portfolio);
 
 ## test portfolio and sell
 $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,
-            fmb_id                 => $portfolio->{portfolio}->{contracts}->[0]->{fmb_id},
+            contract_id            => $portfolio->{portfolio}->{contracts}->[0]->{contract_id},
         }});
 $t = $t->message_ok;
 my $res = decode_json($t->message->[1]);
