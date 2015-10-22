@@ -132,7 +132,7 @@ sub __get_sold {
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
         if ($and_description) {
-            $trx{description} = '';
+            $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
                 $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
                 $trx{shortcode} = $con->shortcode;
