@@ -16,6 +16,8 @@ sub add {
     my $name     = shift;
     my $value    = shift;
 
+    $value = JSON::to_json($value);
+
     my $key = $category . '::' . $name;
     _redis_write()->set($key, $value);
     _archive($category, $name, $value) if _dbh();
@@ -29,15 +31,19 @@ sub get {
     my $key         = $category . '::' . $name;
     my $cached_data = _redis_read()->get($key);
 
-    return $cached_data if defined $cached_data;
+    if ($cached_data) {
+        return JSON::from_json($cached_data);
+    }
 
     my $db_data = get_for($category, $name, DateTime::Format::Pg->format_timestamp(DateTime->now()));
 
     if (defined $db_data) {
         my $id_value = (sort keys %{$db_data})[0];
-        _redis_write()->set($key, $db_data->{$id_value}->{value});
+        my $db_value = $db_data->{$id_value}->{value};
 
-        return $db_data->{$id_value}->{value};
+        _redis_write()->set($key, $db_value);
+
+        return JSON::from_json($db_value);
     }
 }
 
