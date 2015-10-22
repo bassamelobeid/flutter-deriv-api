@@ -66,28 +66,6 @@ sub is_subordinate_affiliate {
     return;
 }
 
-sub is_subordinate_promocode {
-    my ($self, $promocode) = @_;
-    return $self->is_subordinate_affiliate($self->get_myaffiliates_id_for_promo_code($promocode));
-}
-
-=item get_myaffiliates_id_from_bom_loginid
-
-Given an Affiliate instance, will query MyAffiliates and return
-the affiliate's myaffiliates id.
-
-If it can't get the affiliate id for any reason at all, it
-returns false. If/when we get an actual API for searching over
-affiliate info, we'll be able to make this more informative.
-
-=cut
-
-sub get_myaffiliates_id_from_bom_loginid {
-    my ($self, $bom_loginid) = @_;
-
-    return $self->_find_affiliate_by_variable('betonmarkets_client_loginid' => $bom_loginid);
-}
-
 =item get_myaffiliates_id_for_promo_code
 
 Given a BOM promo code, will check if there's an affiliate

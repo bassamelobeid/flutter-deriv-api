@@ -22,16 +22,12 @@ subtest "Sanity check" => sub {
     # non subordinate affiliates and tokens:
     is(BOM::Platform::MyAffiliates->new->is_subordinate_affiliate(2),                                     undef, "Affiliate 2 is NOT subordinate");
     is(BOM::Platform::MyAffiliates->new->get_affiliate_id_from_token('PQ4YXsO2q5nKto_EPcZApGNd7ZgqdRLk'), 2,     "Affiliate 2 token");
-    is(BOM::Platform::MyAffiliates->new->is_subordinate_promocode('BOM2009'),
-        undef, "Promocode BOM2009 belongs to affiliate 2 which is a NOT a subordinate affiliate");
 
     is(BOM::Platform::MyAffiliates->new->is_subordinate_affiliate(6),                                     undef, "Affiliate 6 is NOT subordinate");
     is(BOM::Platform::MyAffiliates->new->get_affiliate_id_from_token('jGZUKO3JWgyVAv0U_Fv2nVOqZLGcUW5p'), 6,     "Affiliate 6 token");
 
     # subordinate affiliates and tokens
     is(BOM::Platform::MyAffiliates->new->is_subordinate_affiliate(13), 1, "Affiliate 13 is subordinate");
-    is(BOM::Platform::MyAffiliates->new->is_subordinate_promocode('0013F10'),
-        1, "Promocode 0013F10 belongs to affiliate 13 which is a subordinate affiliate");
     is(BOM::Platform::MyAffiliates->new->get_affiliate_id_from_token('k7a3BtGf-EjKto_EPcZApGNd7ZgqdRLk'), 13, "Affiliate 13 token");
 
     is(BOM::Platform::MyAffiliates->new->is_subordinate_affiliate(274),                                   1,   "Affiliate 274 is subordinate");
