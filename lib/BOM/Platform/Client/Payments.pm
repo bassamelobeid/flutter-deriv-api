@@ -43,7 +43,6 @@ sub validate_payment {
         if $currency ne $acccur;
 
     if ($action_type eq 'deposit') {
-
         die "Deposits blocked for this Client.\n"
             if $self->get_status('unwelcome');
 
