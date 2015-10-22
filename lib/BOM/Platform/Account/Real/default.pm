@@ -150,11 +150,9 @@ sub _after_register_client {
     stats_inc("business.new_account.real");
     stats_inc("business.new_account.real." . $client->broker);
 
-    my $login = $client->login();
     return {
         client => $client,
         user   => $user,
-        token  => $login->{token},
     };
 }
 
