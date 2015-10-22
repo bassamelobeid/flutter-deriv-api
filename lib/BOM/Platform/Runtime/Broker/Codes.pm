@@ -94,21 +94,6 @@ sub dealing_server_for {
     return;
 }
 
-=head2 $self->get_brokers_on_server($server)
-
-Return list of all brokers, for which I<$server> is dealing server.
-I<$server> may be server name, or BOM::System::Runtime::Server object.
-
-=cut
-
-sub get_brokers_on_server {
-    my ($self, $server) = @_;
-    $server = $server->name if ref $server;
-    return $self->all if (ref $server and $server->is_collector);
-    return unless exists $self->_brokers_on_servers->{$server};
-    return @{$self->_brokers_on_servers->{$server}};
-}
-
 has 'broker_definitions' => (
     is       => 'ro',
     required => 1,

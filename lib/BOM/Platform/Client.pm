@@ -150,46 +150,6 @@ sub check_country_restricted {
             and BOM::Platform::Runtime->instance->restricted_country($country_code));
 }
 
-sub _validate_new_account {
-    my $self = shift;
-    my $args = shift;
-
-    my $broker = $args->{'broker'} || "";
-    my $dob = $args->{'date_of_birth'};    #it has YYYY-MM-DD format
-
-    if ($broker eq BOM::Platform::Context::request()->virtual_account_broker->code
-        or not $dob)
-    {
-        #virtual accounts do not need validation for customer age or country
-        return (undef, undef);
-    }
-
-    if (not $dob) {
-        return ("errordob", localize('Please input a valid date.'));
-    }
-
-    my $country = $args->{'residence'} || '';
-
-    # for Estonia: 21 years old
-    my $minimumAge = ($country eq 'ee') ? 21 : 18;
-    my $now        = Date::Utility->new;
-    my $mmyy       = $now->months_ahead(-12 * $minimumAge);
-    my $cutoff     = Date::Utility->new($now->day_of_month . '-' . $mmyy);
-    my $dob_date   = Date::Utility->new($dob);
-
-    if ($dob_date->year < 1915) {
-        return ("errordob", localize('Please input a valid date.'));
-    } elsif ($dob_date->is_after($cutoff)) {
-        return ("errordob", localize('Sorry, you are too young to open an account!'));
-    }
-
-    if (check_country_restricted($country)) {
-        return ('residence', localize('Sorry, our service is not available for your country of residence'));
-    }
-
-    return (undef, undef);
-}
-
 sub register_and_return_new_client {
     my $class = shift;
     my $args  = shift;
@@ -197,14 +157,6 @@ sub register_and_return_new_client {
     my $broker = $args->{broker_code} || die "can't register a new client without a broker_code";
     # assert broker before setting other properties so that correct write-handle will be cascaded!
     my $self = $class->rnew(broker => $broker);
-
-    my ($err_type, $err_msg) = $self->_validate_new_account($args);
-    if ($err_type) {
-        die +{
-            "err_type" => $err_type,
-            "err_msg"  => $err_msg
-        };
-    }
 
     $self->set_db('write');
     while (my ($key, $val) = each %$args) {
@@ -214,14 +166,6 @@ sub register_and_return_new_client {
     # special cases.. force empty string if necessary in these not-nullable cols.  They oughta be nullable in the db!
     for (qw(citizen address_2 state postcode)) {
         $self->$_ || $self->$_('');
-    }
-
-    if ($self->_duplicate_exists($args)) {
-        die +{
-            "err_type" => "submit",
-            "err_msg"  => localize(
-                'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person. If you don\'t remember your account with us, please <a href="[_1]">contact us</a>.',
-                request()->url_for('contact'))};
     }
 
     my $sql = "SELECT nextval('sequences.loginid_sequence_$broker')";
@@ -836,15 +780,6 @@ sub allow_paymentagent_withdrawal {
     return 1 if $expiry_date->is_after(Date::Utility->new);
 
     return;
-}
-
-sub _duplicate_exists {
-    my $self = shift;
-    my $args = shift;
-
-    my $duplicate = BOM::Database::DataMapper::Client->new({broker_code => $self->{broker_code}});
-
-    return $duplicate->get_duplicate_client($args);
 }
 
 # Get my siblings, in loginid order but with reals up first.  Use the replica db for speed.

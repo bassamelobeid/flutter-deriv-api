@@ -96,21 +96,6 @@ sub choose_website {
     return $result;
 }
 
-sub domain_configurations {
-    my $self           = shift;
-    my $server         = shift;
-    my $configurations = {};
-
-    foreach my $website (values %{$self->_websites}) {
-        $configurations->{$website->name} = {
-            domain => $website->domain,
-            fqdn   => $server->name . '.' . $website->domain,
-        };
-    }
-
-    return $configurations;
-}
-
 #
 #Build functions
 #
