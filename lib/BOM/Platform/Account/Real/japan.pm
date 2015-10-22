@@ -61,15 +61,15 @@ sub create_account {
 
 sub _get_input_to_category_mapping {
     return {
-        annual_income            => 'income_asset_score',
-        financial_asset          => 'income_asset_score',
-        equities                 => 'trading_experience_score',
-        commodities              => 'trading_experience_score',
-        foreign_currency_deposit => 'trading_experience_score',
-        margin_fx                => 'trading_experience_score',
-        investment_trust         => 'trading_experience_score',
-        public_bond              => 'trading_experience_score',
-        option_trading           => 'trading_experience_score',
+        annual_income                               => 'income_asset_score',
+        financial_asset                             => 'income_asset_score',
+        trading_experience_equities                 => 'trading_experience_score',
+        trading_experience_commodities              => 'trading_experience_score',
+        trading_experience_foreign_currency_deposit => 'trading_experience_score',
+        trading_experience_margin_fx                => 'trading_experience_score',
+        trading_experience_investment_trust         => 'trading_experience_score',
+        trading_experience_public_bond              => 'trading_experience_score',
+        trading_experience_option_trading           => 'trading_experience_score',
     };
 }
 
