@@ -249,7 +249,7 @@ sub get_volatility {
             : $args->{moneyness};
 
         if ($self->price_with_parameterized_surface) {
-            $vol = $self->_calculate_calibrated_vol($args->{days}, $sought_point);
+            $vol = $self->_get_calibrator->_calculate_calibrated_vol($args->{days}, $sought_point);
         } else {
             my $calc_args = {
                 sought_point => $sought_point,
@@ -259,12 +259,6 @@ sub get_volatility {
     }
 
     return $vol;
-}
-
-sub _calculate_calibrated_vol {
-    my ($self, $days, $sought_point) = @_;
-
-    return $self->_get_calibrator->_calculate_calibrated_vol($days, $sought_point);
 }
 
 =head2 price_with_parameterized_surface
