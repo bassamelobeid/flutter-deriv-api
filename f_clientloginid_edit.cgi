@@ -36,6 +36,7 @@ PrintContentType();
 my $language  = $input{l};
 my $dbloc     = BOM::Platform::Runtime->instance->app_config->system->directory->db;
 my $logger    = get_logger();
+my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mixed case!)';
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
 my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
 
@@ -148,11 +149,17 @@ if ($input{whattodo} eq 'uploadID') {
     my $doctype      = $cgi->param('doctype');
     my $filetoupload = $cgi->param('FILE');
     my $docformat    = $cgi->param('docformat');
+    my $expiration_date = $cgi->param('expiration_date');
 
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
         code_exit_BO();
     }
+    
+    #if ($cgi->param('docformat')=='passport' && $expiration_date~=\d{4}-\d{2}-\d{2}) {
+    #    print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered</p><br />";
+    #    code_exit_BO();
+    #}
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
 
@@ -241,7 +248,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
-    $client->payment_agent_withdrawal_expiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
+    $client->payment_agent_withdrawal_expiraexpiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
 
     CLIENT_KEY:
     foreach my $key (keys %input) {
