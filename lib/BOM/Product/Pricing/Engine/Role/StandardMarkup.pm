@@ -346,10 +346,6 @@ sub _build_risk_markup {
             $risk_markup->include_adjustment('add', $self->smile_uncertainty_markup);
         }
 
-        if (grep { $self->bet->market->name eq $_ } qw(forex commodities) and $self->bet->is_intraday) {
-            $risk_markup->include_adjustment('add', $self->economic_events_markup);
-        }
-
         $risk_markup->include_adjustment('add', $self->eod_market_risk_markup);
     }
 
