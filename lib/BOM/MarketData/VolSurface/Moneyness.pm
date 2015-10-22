@@ -80,6 +80,12 @@ sub _get_calibrator {
     return $calibrator;
 }
 
+sub function_to_optimize {
+    my ($self, $params) = @_;
+
+    return $self->_get_calibrator->function_to_optimize($params);
+}
+
 sub compute_parameterization {
     my $self = shift;
 
