@@ -87,7 +87,7 @@ sub entry_point {
                         code    => "BadRequest"
                     }};
             }
-            $data->{version} = 2;
+            $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
