@@ -144,7 +144,7 @@ sub _build_moneynesses {
 
 has calibration_param_names => (
     is      => 'ro',
-    isa     => 'ArrayRef'
+    isa     => 'ArrayRef',
     default => sub {
         return \@VolSurface::Calibration::Equities::calibration_param_names;
     }
