@@ -126,6 +126,7 @@ sub __get_sold {
     my $data = $fmb_dm->get_sold_bets_of_account($args);
 
     ## remove useless and plus new
+    $data->{transactions} = [];
     my $and_description = $args->{description};
     foreach my $row (@{delete $data->{rows}}) {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price purchase_time sell_time/);
