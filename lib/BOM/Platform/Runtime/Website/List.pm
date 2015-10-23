@@ -123,17 +123,8 @@ has '_websites' => (
 sub _build__websites {
     my $self = shift;
 
-    my $def     = $self->definitions;
-    my $default = delete $def->{_default};
-    while (my ($k, $v) = each %$def) {
-        for my $key (keys %$default) {
-            $v->{$key} = $default->{$key} unless exists $v->{$key};
-        }
-        $v->{primary_url} = lc "www.$k.com" unless exists $v->{primary_url};
-    }
-
     my $websites = {};
-    for my $website (keys %$def) {
+    for my $website (keys %{$self->definitions}) {
         next if ($website eq 'version');
 
         my $website_definition = $self->definitions->{$website};
