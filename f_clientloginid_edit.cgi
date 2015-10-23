@@ -156,10 +156,10 @@ if ($input{whattodo} eq 'uploadID') {
         code_exit_BO();
     }
     
-    #if ($cgi->param('docformat')=='passport' && $expiration_date~=\d{4}-\d{2}-\d{2}) {
-    #    print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered</p><br />";
-    #    code_exit_BO();
-    #}
+    if ($doctype =='passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && $cgi->param('broker')=='MF') {
+        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered</p><br />";
+        code_exit_BO();
+    }
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
 
@@ -625,7 +625,7 @@ print qq{
 	<input type=hidden name=broker value=$broker>
 	<input type=hidden name=loginID value=$loginid>
 	<input type=hidden name=l value=$language>
-	Expiraton date:<input type="text" size=10 name="expiration_date"><i>format YYYY-MM-DD</i>
+	Expiraton date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
 	<input type=submit value="Upload new ID doc.">
 </form>
 };
