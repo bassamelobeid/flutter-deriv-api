@@ -284,6 +284,10 @@ sub calculate_limits {
         and $self->limits->{max_7day_turnover} = $lim;
     defined($lim = $client->get_limit_for_7day_losses)
         and $self->limits->{max_7day_losses} = $lim;
+    defined($lim = $client->get_limit_for_30day_turnover)
+        and $self->limits->{max_30day_turnover} = $lim;
+    defined($lim = $client->get_limit_for_30day_losses)
+        and $self->limits->{max_30day_losses} = $lim;
 
     if ($client->loginid !~ /^VRT/ and $contract->market->name eq 'forex' and $contract->is_intraday and not $contract->is_atm_bet) {
         $lim = $self->limits->{intraday_forex_iv_action} = from_json($ql->intraday_forex_iv);
@@ -986,6 +990,40 @@ my %known_errors = (
             -type              => 'SpreadDailyProfitLimitExceeded',
             -mesg              => 'Exceeds profit limit on spread',
             -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
+        );
+    },
+    BI016 => sub {
+        my $self = shift;
+
+        my $client   = $self->client;
+        my $currency = $self->contract->currency;
+        my $limit =
+            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_turnover, USD => $currency)), 1);
+
+        my $error_message =
+            BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 30-day turnover limit of [_1][_2].',
+            $currency, $limit);
+
+        return Error::Base->cuss(
+            -type              => '30DayTurnoverLimitExceeded',
+            -mesg              => "Client has exceeded a 30-day turnover of $currency$limit",
+            -message_to_client => $error_message,
+        );
+    },
+    BI017 => sub {
+        my $self = shift;
+
+        my $client   = $self->client;
+        my $currency = $self->contract->currency;
+        my $limit =
+            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_losses, USD => $currency)), 1);
+
+        my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
+
+        return Error::Base->cuss(
+            -type              => '30DayLossLimitExceeded',
+            -mesg              => "Client has exceeded his 30-day loss limit of $currency$limit",
+            -message_to_client => $error_message,
         );
     },
 );
