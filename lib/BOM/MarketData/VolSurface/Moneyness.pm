@@ -147,8 +147,7 @@ has calibration_param_names => (
     isa     => 'ArrayRef',
     default => sub {
         return \@VolSurface::Calibration::Equities::calibration_param_names;
-    }
-);
+    });
 
 =head2 corresponding_deltas
 
