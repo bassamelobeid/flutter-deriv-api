@@ -123,6 +123,11 @@ sub _do_proveid {
         and defined $prove_id_result->{matches}
         and (scalar @{$prove_id_result->{matches}} > 0))
     {
+        # check for PEP
+        if (grep { /PEP/ } @{$prove_id_result->{matches}}) {
+
+        }
+
         $client->set_status('unwelcome', 'system', 'Failed identity test via Experian');
         $client->save();
 
