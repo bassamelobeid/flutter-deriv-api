@@ -49,16 +49,15 @@ sub buy {
             last;
         }
         $trx = $trx->transaction_record;
-        my $fmb      = $trx->financial_market_bet;
         my $response = {
             transaction_id => $trx->id,
-            contract_id    => $fmb->id,
+            contract_id    => $trx->contract_id,
             balance_after  => $trx->balance_after,
-            purchase_time  => $fmb->purchase_time->epoch,
-            buy_price      => $fmb->buy_price,
-            start_time     => $fmb->start_time->epoch,
+            purchase_time  => $trx->purchase_date->epoch,
+            buy_price      => $trx->price,
+            start_time     => $contract->date_start->epoch,
             longcode       => Mojo::DOM->new->parse($contract->longcode)->all_text,
-            shortcode      => $fmb->short_code,
+            shortcode      => $contract->shortcode,
         };
 
         if ($contract->is_spread) {
