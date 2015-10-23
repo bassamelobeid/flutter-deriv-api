@@ -142,10 +142,18 @@ sub _build_moneynesses {
     return $self->smile_points;
 }
 
+has calibration_param_names => (
+    is      => 'ro',
+    isa     => 'ArrayRef'
+    default => sub {
+        return \@VolSurface::Calibration::Equities::calibration_param_names;
+    }
+);
+
 =head2 corresponding_deltas
 
 Stores the corresponding moneyness smile in terms on delta.
-This is aimed to reduced computation time
+This is aimed to reduced computation time.
 
 =cut
 
