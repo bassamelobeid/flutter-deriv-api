@@ -224,11 +224,6 @@ quants:
           isa: Num
           default: 1
           global: 1
-        deep_otm_threshold:
-          description: "Threshold for ask price value to which deep_otm contracts will be pushed, per market. For deep_itm contracts with ask price greater than 1 - deep_otm_threshold, it will be pushed to full payout"
-          isa: json_string
-          default: '{"random" : 1, "forex" : 2.5, "indices" : 5, "commodities" : 5 , "stocks" : 5, "sectors" : 5}'
-          global: 1
         intraday:
           description: "Tunable intraday factors"
           isa: section

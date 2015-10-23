@@ -136,7 +136,6 @@ subtest 'Client getters, setters and create' => sub {
     $open_account_details->{'client_password'} = BOM::System::Password::hashpw('123456');
 
     Test::Exception::lives_ok { $client = BOM::Platform::Client->register_and_return_new_client($open_account_details) } "create new client success";
-    dies_ok { BOM::Platform::Client->register_and_return_new_client($open_account_details) } 'client duplicates accounts not allowed';
     my $new_loginid = $client->loginid;
 
     # Test save method

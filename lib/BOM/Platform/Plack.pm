@@ -28,7 +28,6 @@ use base qw( Exporter );
 our @EXPORT_OK = qw(
     http_redirect
     PrintContentType
-    PrintContentType_PDF
     PrintContentType_XSendfile
     PrintContentType_XML
     PrintContentType_excel
@@ -178,18 +177,6 @@ sub PrintContentType_XSendfile {
     $http_handler->print_header('Cache-control'       => "private, no-cache, must-revalidate");
 
     $http_handler->print_header('X-Accel-Redirect' => '/-/download' . $filename);
-    $http_handler->status(200);
-    return;
-}
-
-sub PrintContentType_PDF {
-    my $filename = shift;
-    local $\ = '';
-
-    my $http_handler = request()->http_handler;
-    $http_handler->print_content_type("application/pdf");
-    $http_handler->print_header('Content-Disposition' => 'inline; filename=' . $filename) if $filename;
-    $http_handler->print_header('Cache-control' => "private, no-cache, must-revalidate");
     $http_handler->status(200);
     return;
 }
