@@ -145,6 +145,7 @@
     fax: +81 3 4333 0208
     country: Japan
     legal_allowed_currencies:
+      - JPY
       - USD
     legal_allowed_markets:
       - forex
@@ -153,6 +154,6 @@
       - endsinout
       - staysinout
       - touchnotouch
-    legal_default_currency: USD
+    legal_default_currency: JPY
     has_reality_check: 0
 
