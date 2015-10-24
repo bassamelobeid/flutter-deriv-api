@@ -175,6 +175,7 @@ if ($input{whattodo} eq 'uploadID') {
         document_format            => $docformat,
         document_path              => $newfilename,
         authentication_method_code => 'ID_DOCUMENT',
+        expiration_date            => $expiration_date,
     });
 
     $client->save;
