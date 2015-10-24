@@ -33,7 +33,7 @@ sub create_account {
     my ($client, $error);
     try {
         $client = BOM::Platform::Client->register_and_return_new_client({
-            broker_code                   => request()->virtual_account_broker->code,
+            broker_code                   => BOM::Platform::Context::Request->new(country_code => $residence)->virtual_account_broker->code,
             client_password               => $password,
             salutation                    => '',
             last_name                     => '',
