@@ -179,15 +179,6 @@ sub virtual_company_for_country {
     return $company;
 }
 
-sub only_financial_company_for_country {
-    my ($self, $country) = @_;
-    my $config = $self->countries_list->{$country};
-    return unless ($config);
-
-    return $config->{financial_company} if ($config->{gaming_company} eq 'none' and $config->{financial_company} ne 'none');
-    return;
-}
-
 sub restricted_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
