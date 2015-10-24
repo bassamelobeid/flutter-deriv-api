@@ -145,7 +145,6 @@
     fax: +81 3 4333 0208
     country: Japan
     legal_allowed_currencies:
-      - JPY
       - USD
     legal_allowed_markets:
       - forex
@@ -154,6 +153,19 @@
       - endsinout
       - staysinout
       - touchnotouch
-    legal_default_currency: JPY
+    legal_default_currency: USD
     has_reality_check: 0
-
+'Binary Ltd Japan':
+    short: japan-virtual
+    fax: +61 2 94751035
+    country: Bahamas
+    legal_allowed_currencies:
+      - USD
+    legal_allowed_markets:
+      - forex
+    legal_allowed_contract_categories:
+      - callput
+      - endsinout
+      - staysinout
+      - touchnotouch
+    legal_default_currency: USD

@@ -34,7 +34,7 @@ definitions:
   - code:
       - VRTJ
     server: vr-deal01
-    landing_company: japan
+    landing_company: japan-virtual
     is_virtual: 1
     transaction_db_cluster: VRT
   - code:
