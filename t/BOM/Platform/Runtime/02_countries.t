@@ -81,7 +81,7 @@ subtest 'restricted countries' => sub {
 
         is(BOM::Platform::Runtime->instance->restricted_country($c), 1, 'restricted_country');
         is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, '! random_restricted_country');
-        is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   undef, '! virtual_company_for_country');
+        is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'fog', 'virtual_company_for_country');
         is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef, '! gaming_company_for_country');
         is(BOM::Platform::Runtime->instance->financial_company_for_country($c), undef, '! financial_company_for_country');
     }

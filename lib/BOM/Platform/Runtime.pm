@@ -173,7 +173,7 @@ sub gaming_company_for_country {
 sub virtual_company_for_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
-    return if (not $config or $self->restricted_country($country));
+    return unless $config;
 
     my $company = ($config->{virtual_company}) ? $config->{virtual_company} : 'fog';
     return $company;
