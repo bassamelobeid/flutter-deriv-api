@@ -626,7 +626,7 @@ print qq{
 	<input type=hidden name=broker value=$broker>
 	<input type=hidden name=loginID value=$loginid>
 	<input type=hidden name=l value=$language>
-	Expiraton date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
+	Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
 	<input type=submit value="Upload new ID doc.">
 </form>
 };
