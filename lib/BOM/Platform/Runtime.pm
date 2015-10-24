@@ -162,6 +162,23 @@ sub financial_company_for_country {
     return $config->{financial_company};
 }
 
+sub gaming_company_for_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return if (not $config or $config->{gaming_company} eq 'none');
+
+    return $config->{gaming_company};
+}
+
+sub virtual_company_for_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return unless $config;
+
+    my $company = ($config->{virtual_company}) ? $config->{virtual_company} : 'fog';
+    return $company;
+}
+
 sub only_financial_company_for_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
