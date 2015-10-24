@@ -70,6 +70,11 @@ sub _validate {
         if ($dob_date->is_after($cutoff)) {
             return {error => 'too young'};
         }
+
+        # to be removed later
+        if ($residence eq 'jp' and $from_client->email !~ /@binary\.com$/) {
+            die "NO JAPAN REAL a/c opening: $residence " . $from_client->loginid . ' ' . $from_client->email;
+        }
     }
     return;
 }
