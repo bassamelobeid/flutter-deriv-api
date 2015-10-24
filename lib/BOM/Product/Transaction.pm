@@ -170,17 +170,21 @@ sub stats_start {
     my $self = shift;
     my $what = shift;
 
-    my $broker    = lc($self->client->broker_code);
-    my $virtual   = $self->client->is_virtual ? 'yes' : 'no';
+    my $client   = $self->client;
+    my $contract = $self->contract;
+
+    my $loginid   = lc($client->loginid);
+    my $broker    = lc($client->broker_code);
+    my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
-    my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$self->contract->code};
-    my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
+    my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+    my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class", "client:$loginid",]};
 
     if ($what eq 'buy') {
         if ($self->contract->is_spread) {
-            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->stop_type);
+            push @{$tags->{tags}}, "stop_type:" . lc($contract->stop_type);
         } else {
-            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
+            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($contract->fixed_expiry ? 'fixed' : 'duration');
         }
     } elsif ($what eq 'sell') {
         push @{$tags->{tags}}, "sell_type:manual";
@@ -1550,7 +1554,7 @@ sub sell_expired_contracts {
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
-    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
+    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type", "client:" . lc($loginid));
 
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
