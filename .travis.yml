@@ -35,7 +35,6 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
-    - ls -l /etc/rmg /etc/chronicle.yml
     - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/bom-platform
     - /tmp/travis-scripts/devbox.sh *.yml
