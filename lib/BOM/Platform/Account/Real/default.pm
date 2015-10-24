@@ -72,7 +72,7 @@ sub _validate {
         }
 
         # to be removed later
-        if ($residence eq 'jp' and $from_client->email !~ /@binary\.com$/) {
+        if ($residence eq 'jp' and $from_client->email !~ /\@binary\.com$/) {
             die "NO JAPAN REAL a/c opening: $residence " . $from_client->loginid . ' ' . $from_client->email;
         }
     }

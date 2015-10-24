@@ -24,7 +24,7 @@ sub create_account {
     $email    = lc $email;
 
     # to be removed later
-    if ($residence eq 'jp' and $email !~ /@binary\.com$/) {
+    if ($residence eq 'jp' and $email !~ /\@binary\.com$/) {
         die "NO JAPAN Virtual a/c opening: $email, $residence";
     }
 
