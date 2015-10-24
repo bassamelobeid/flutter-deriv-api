@@ -249,7 +249,7 @@ if ($input{edit_client_loginid} =~ /^\D+\d+$/) {
         }
     }
 
-    $client->payment_agent_withdrawal_expiraexpiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
+    $client->payment_agent_withdrawal_expiration_date($input{payment_agent_withdrawal_expiration_date} || undef);
 
     CLIENT_KEY:
     foreach my $key (keys %input) {
