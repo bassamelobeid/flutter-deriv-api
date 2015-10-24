@@ -216,7 +216,7 @@ sub broker_for_new_financial {
 
     my $broker;
     if (my $company = BOM::Platform::Runtime->instance->financial_company_for_country($country_code)) {
-        $broker = first { $_->landing_company->short eq $config->{financial_company} } @{$self->broker_codes};
+        $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
     }
     return $broker;
 }
