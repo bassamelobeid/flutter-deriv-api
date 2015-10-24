@@ -9,6 +9,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::Utility::Log4perl qw(get_logger);
 use BOM::System::Password;
 use BOM::Platform::Runtime;
+use BOM::Platform::Context::Request;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
