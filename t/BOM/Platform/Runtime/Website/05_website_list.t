@@ -24,7 +24,10 @@ subtest 'defaults' => sub {
 
 subtest 'get' => sub {
     my $website = $website_list->get('Binary');
-    is $website->broker_for_new_virtual()->code, 'VRTC', 'New Virtual Broker Code - Binary';
+    is $website->broker_for_new_virtual('id')->code, 'VRTC', 'New Virtual Broker Code for Indonesia - Binary';
+    is $website->broker_for_new_virtual('gb')->code, 'VRTC', 'New Virtual Broker Code for UK - Binary';
+    is $website->broker_for_new_virtual('nl')->code, 'VRTC', 'New Virtual Broker Code for Netherlands - Binary';
+    is $website->broker_for_new_virtual('jp')->code, 'VRTJ', 'New Virtual Broker Code for Japan - Binary';
 
     is $website->broker_for_new_account('id')->code, 'CR', 'New Broker Code for Indonesia - Binary';
     is $website->broker_for_new_financial('id')->code, 'CR', 'New financial Broker Code for Indonesia - Binary';
