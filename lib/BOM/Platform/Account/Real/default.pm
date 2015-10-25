@@ -16,6 +16,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Client;
 use BOM::Platform::User;
+use BOM::Platform::Account;
 
 sub _validate {
     my $args = shift;
@@ -71,10 +72,8 @@ sub _validate {
             return {error => 'too young'};
         }
 
-        # to be removed later
-        if ($residence eq 'jp' and $from_client->email !~ /\@binary\.com$/) {
-            die "NO JAPAN REAL a/c opening: $residence " . $from_client->loginid . ' ' . $from_client->email;
-        }
+        # TODO: to be removed later
+        BOM::Platform::Account::invalid_japan_access_check($residence, $from_client->email);
     }
     return;
 }

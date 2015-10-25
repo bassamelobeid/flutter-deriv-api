@@ -23,10 +23,8 @@ sub create_account {
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
 
-    # to be removed later
-    if ($residence eq 'jp' and $email !~ /\@binary\.com$/) {
-        die "NO JAPAN Virtual a/c opening: $email, $residence";
-    }
+    # TODO: to be removed later
+    BOM::Platform::Account::invalid_japan_access_check($residence, $email);
 
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
