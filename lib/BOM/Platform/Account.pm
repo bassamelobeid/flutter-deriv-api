@@ -14,7 +14,10 @@ sub get_real_acc_opening_type {
 
     if ($from_client->is_virtual) {
         if ($gaming_company) {
-            return $gaming_company if ($gaming_company eq 'japan');
+
+            # temporarily comment out the below line, until Japan a/c opening stuff live
+            # return $gaming_company if ($gaming_company eq 'japan');
+
             return 'real';
         } elsif ($financial_company) {
             # Eg: Germany
