@@ -43,5 +43,4 @@ sub invalid_japan_access_check {
     }
 }
 
-
 1;
