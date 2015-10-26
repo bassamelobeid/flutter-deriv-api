@@ -187,10 +187,9 @@ sub __get_open {
             )->db,
         });
 
-    my $data = $fmb_dm->get_open_bets_of_account();
-    $data->{contracts} = [];
+    my $result = {contracts => []};
 
-    foreach my $row (@{delete $data->{rows}}) {
+    foreach my $row (@{$fmb_dm->get_open_bets_of_account()}) {
         my %trx = (
             contract_id    => $row->{id},
             transaction_id => $row->{buy_id},
@@ -206,10 +205,10 @@ sub __get_open {
             longcode =>
                 Mojo::DOM->new->parse(BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code)->longcode)->all_text
         );
-        push @{$data->{contracts}}, \%trx;
+        push $result->{contracts}, \%trx;
     }
 
-    return $data;
+    return $result;
 }
 
 sub prepare_bid {
