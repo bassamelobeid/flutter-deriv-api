@@ -13,8 +13,9 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Client;
 
 ## do not send email
-use lib "$Bin/../../..";
-use mock;
+use Test::MockModule;
+my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
+$client_mocked->mock('add_note', sub { return 1 });
 
 my $t = build_mojo_test();
 
