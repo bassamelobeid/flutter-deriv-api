@@ -1,0 +1,20 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "States List Send",
+  "description":"States List based on country",
+  "properties": {
+    "states_list": {
+      "type":"string",
+      "pattern": "^\\w+$"
+    },
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "states_list"
+  ]
+}

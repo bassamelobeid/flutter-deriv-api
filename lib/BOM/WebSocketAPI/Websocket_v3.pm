@@ -9,6 +9,7 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
+use BOM::WebSocketAPI::v3::Static;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
@@ -130,30 +131,31 @@ sub __handle {
 
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
-        ['authorize',              \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
-        ['ticks',                  \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
-        ['proposal',               \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
-        ['forget',                 \&BOM::WebSocketAPI::v3::System::forget,                              0],
-        ['forget_all',             \&BOM::WebSocketAPI::v3::System::forget_all,                          0],
-        ['ping',                   \&BOM::WebSocketAPI::v3::System::ping,                                0],
-        ['time',                   \&BOM::WebSocketAPI::v3::System::server_time,                         0],
-        ['payout_currencies',      \&BOM::WebSocketAPI::v3::ContractDiscovery::payout_currencies,        0],
-        ['active_symbols',         \&BOM::WebSocketAPI::v3::Symbols::active_symbols,                     0],
-        ['contracts_for',          \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
-        ['trading_times',          \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
-        ['asset_index',            \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
-        ['landing_company',        \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
-        ['landing_company_details',        \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,                   0],
-        ['buy',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
-        ['sell',                   \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
-        ['portfolio',              \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
-        ['proposal_open_contract', \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract, 1],
-        ['balance',                \&BOM::WebSocketAPI::v3::Accounts::balance,                           1],
-        ['statement',              \&BOM::WebSocketAPI::v3::Accounts::statement,                         1],
-        ['profit_table',           \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
-        ['change_password',        \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
-        ['get_settings',           \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
-        ['set_settings',           \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
+        ['authorize',               \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
+        ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
+        ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
+        ['forget',                  \&BOM::WebSocketAPI::v3::System::forget,                              0],
+        ['forget_all',              \&BOM::WebSocketAPI::v3::System::forget_all,                          0],
+        ['ping',                    \&BOM::WebSocketAPI::v3::System::ping,                                0],
+        ['time',                    \&BOM::WebSocketAPI::v3::System::server_time,                         0],
+        ['payout_currencies',       \&BOM::WebSocketAPI::v3::ContractDiscovery::payout_currencies,        0],
+        ['active_symbols',          \&BOM::WebSocketAPI::v3::Symbols::active_symbols,                     0],
+        ['contracts_for',           \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
+        ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
+        ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
+        ['states_list',             \&BOM::WebSocketAPI::v3::Static::states_list,                         0],
+        ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
+        ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
+        ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
+        ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
+        ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
+        ['proposal_open_contract',  \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract, 1],
+        ['balance',                 \&BOM::WebSocketAPI::v3::Accounts::balance,                           1],
+        ['statement',               \&BOM::WebSocketAPI::v3::Accounts::statement,                         1],
+        ['profit_table',            \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
+        ['change_password',         \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
+        ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
+        ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
     );
 
     foreach my $dispatch (@dispatch) {

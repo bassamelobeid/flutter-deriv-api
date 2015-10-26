@@ -34,18 +34,32 @@ ok $res->{landing_company};
 is $res->{landing_company}->{name}, 'Germany';
 is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
 ok not $res->{landing_company}->{gaming_company};
+test_schema('landing_company', $res);
 
 $t = $t->send_ok({json => {landing_company => 'im'}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{landing_company};
 is $res->{landing_company}->{name}, 'Isle of Man';
 is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
-is $res->{landing_company}->{gaming_company}->{shortcode}, 'iom';
+is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
+test_schema('landing_company', $res);
 
 $t = $t->send_ok({json => {landing_company => 'blabla'}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{error};
 is $res->{error}->{code}, 'UnknownLandingCompany';
+
+## states_list
+$t = $t->send_ok({json => {states_list => 'MY'}})->message_ok;
+$res = decode_json($t->message->[1]);
+diag Dumper(\$res);
+ok $res->{states_list};
+is_deeply $res->{states_list}->[0],
+    {
+    value => '01',
+    text  => 'Johor'
+    };
+test_schema('states_list', $res);
 
 $t->finish_ok;
 

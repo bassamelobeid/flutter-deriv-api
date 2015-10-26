@@ -20,8 +20,8 @@ use BOM::View::Language;
 sub landing_company {
     my ($c, $args) = @_;
 
-    my $country = $args->{landing_company};
-    my $configs = BOM::Platform::Runtime->instance->countries_list;
+    my $country  = $args->{landing_company};
+    my $configs  = BOM::Platform::Runtime->instance->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
@@ -36,12 +36,12 @@ sub landing_company {
 
     $c_config->{id} = $country;
     my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
-    if ( ($c_config->{gaming_company} // '') ne 'none' ) {
+    if (($c_config->{gaming_company} // '') ne 'none') {
         $c_config->{gaming_company} = __build_landing_company($registry->get($c_config->{gaming_company}));
     } else {
         delete $c_config->{gaming_company};
     }
-    if ( ($c_config->{financial_company} // '') ne 'none' ) {
+    if (($c_config->{financial_company} // '') ne 'none') {
         $c_config->{financial_company} = __build_landing_company($registry->get($c_config->{financial_company}));
     } else {
         delete $c_config->{financial_company};
@@ -65,7 +65,7 @@ sub landing_company_details {
         }} unless $lc;
 
     return {
-        msg_type        => 'landing_company_details',
+        msg_type                => 'landing_company_details',
         landing_company_details => __build_landing_company($lc),
     };
 }
@@ -82,7 +82,7 @@ sub __build_landing_company {
         legal_allowed_currencies          => $lc->legal_allowed_currencies,
         legal_allowed_markets             => $lc->legal_allowed_markets,
         legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
-    }
+    };
 }
 
 sub statement {
@@ -347,10 +347,10 @@ sub set_settings {
         $cil_message =
               'Client ['
             . $client->loginid
-            . '] updated his/her address from [' .
-             join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
-            . '] to [' .
-             join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
+            . '] updated his/her address from ['
+            . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
+            . '] to ['
+            . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
     }
 
     $client->address_1($address1);
