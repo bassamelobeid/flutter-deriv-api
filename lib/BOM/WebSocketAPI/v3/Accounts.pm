@@ -287,12 +287,12 @@ sub set_settings {
             code    => "PermissionDenied"
         }} if $client->is_virtual;
 
-    my $address1        = $c->param('address_line_1');
-    my $address2        = $c->param('address_line_2') // '';
-    my $addressTown     = $c->param('address_city');
-    my $addressState    = $c->param('address_state');
-    my $addressPostcode = $c->param('address_postcode');
-    my $phone           = $c->param('phone') // '';
+    my $address1        = $args->{'address_line_1'};
+    my $address2        = $args->{'address_line_2'} // '';
+    my $addressTown     = $args->{'address_city'};
+    my $addressState    = $args->{'address_state'};
+    my $addressPostcode = $args->{'address_postcode'};
+    my $phone           = $args->{'phone'} // '';
 
     my $cil_message;
     if (   $address1 ne $client->address_1
@@ -313,7 +313,7 @@ sub set_settings {
     $client->address_1($address1);
     $client->address_2($address2);
     $client->city($addressTown);
-    $client->state($addressState);    # FIXME, convert char to int
+    # $client->state($addressState);    # FIXME, convert char to int
     $client->postcode($addressPostcode);
     $client->phone($phone);
 

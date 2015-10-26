@@ -41,7 +41,7 @@ my %new_data = (
     "address_postcode" => "123456",
     "phone" => "1234567890"
 );
-$t = $t->send_ok({json => {set_settings => {%new_data}}})->message_ok;
+$t = $t->send_ok({json => {set_settings => 1, %new_data}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{set_settings}); # update OK
 test_schema('set_settings', $res);
@@ -76,7 +76,7 @@ ok not $res->{get_settings}->{address_line_1};    # do not have address for virt
 test_schema('get_settings', $res);
 
 # it should throw error b/c virtual can NOT update
-$t = $t->send_ok({json => {set_settings => {%new_data}}})->message_ok;
+$t = $t->send_ok({json => {set_settings => 1, %new_data}})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'PermissionDenied';
 
