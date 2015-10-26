@@ -4,7 +4,7 @@ use strict;
 use warnings;
 
 use Mojo::DOM;
-use Data::Utility;
+use Date::Utility;
 use Try::Tiny;
 
 use BOM::WebSocketAPI::v3::System;
