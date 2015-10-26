@@ -39,11 +39,6 @@ sub _forget_one {
 
     my $ws_id = $c->tx->connection;
     my $v     = delete $c->{ws}{$ws_id}{$id};
-    return unless $v;
-
-    if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
-        delete $c->{fmb_ids}{$ws_id}{$v->{data}{fmb}->id};
-    }
 
     return $v;
 }
