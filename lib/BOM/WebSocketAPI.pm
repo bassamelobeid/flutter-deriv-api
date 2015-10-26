@@ -2,6 +2,7 @@ package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
 
+use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 
 sub startup {
@@ -25,6 +26,12 @@ sub startup {
     $log->info("Log Level        is " . $log->level);
     $log->debug("Server config    is " . $app->dumper($app->config));
 
+    # add few helpers
+    $app->helper(
+        app_config => sub {
+            state $app_config = BOM::Platform::Runtime->instance->app_config;
+            return $app_config;
+        });
     $app->helper(
         l => sub {
             my $self = shift;

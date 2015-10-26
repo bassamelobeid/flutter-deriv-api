@@ -9,23 +9,7 @@
       "description":"Echo of the request made"
     },
     "get_limits": {
-      "type": "array",
-      "items":{
-        "type":"object",
-        "properties":{
-          "name":{
-            "type":"string",
-            "description": "short name"
-          },
-          "description":{
-            "type":"string",
-            "description": "long description"
-          },
-          "value":{
-            "type":"integer"
-          }
-        }
-      }
+      "type": "object"
     },
     "msg_type": {
       "type": "string",

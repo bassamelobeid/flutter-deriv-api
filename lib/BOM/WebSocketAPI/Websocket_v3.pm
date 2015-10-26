@@ -10,6 +10,7 @@ use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Static;
+use BOM::WebSocketAPI::v3::Cashier;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
@@ -157,6 +158,7 @@ sub __handle {
         ['change_password',         \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
         ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
         ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
+        ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
     );
 
     foreach my $dispatch (@dispatch) {
