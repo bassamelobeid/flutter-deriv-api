@@ -49,9 +49,8 @@ sub buy {
             $json->{error}->{code}    = $err->get_type;
             last;
         }
-        $trx = $trx->transaction_record;
         my $response = {
-            transaction_id => $trx->id,
+            transaction_id => $trx->transaction_id,
             contract_id    => $trx->contract_id,
             balance_after  => $trx->balance_after,
             purchase_time  => $trx->purchase_date->epoch,
