@@ -11,7 +11,7 @@ use DBI;
 use DateTime::Format::Pg;
 use DateTime;
 
-sub add {
+sub set {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
@@ -37,7 +37,7 @@ sub get {
 
     my $db_data = get_for($category, $name, DateTime::Format::Pg->format_timestamp(DateTime->now()));
 
-    if (defined $db_data) {
+    if (defined $db_data && keys %{$db_data}) {
         my $id_value = (sort keys %{$db_data})[0];
         my $db_value = $db_data->{$id_value}->{value};
 
