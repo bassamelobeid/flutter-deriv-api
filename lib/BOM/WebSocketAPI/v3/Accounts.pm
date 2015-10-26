@@ -125,6 +125,9 @@ sub __get_sold {
     $args->{after}  = $args->{date_from} if $args->{date_from};
     $args->{before} = $args->{date_to}   if $args->{date_to};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
+    # args is passed to echo req hence we need to delete them
+    delete $args->{after};
+    delete $args->{before};
 
     ## remove useless and plus new
     $data->{transactions} = [];
