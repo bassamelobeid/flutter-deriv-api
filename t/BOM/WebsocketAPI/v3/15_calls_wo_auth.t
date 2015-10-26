@@ -49,10 +49,20 @@ $res = decode_json($t->message->[1]);
 ok $res->{error};
 is $res->{error}->{code}, 'UnknownLandingCompany';
 
+## residence_list
+$t = $t->send_ok({json => {residence_list => 1}})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{residence_list};
+is_deeply $res->{residence_list}->[0],
+    {
+    value => 'af',
+    text  => 'Afghanistan'
+    };
+test_schema('states_list', $res);
+
 ## states_list
 $t = $t->send_ok({json => {states_list => 'MY'}})->message_ok;
 $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
 ok $res->{states_list};
 is_deeply $res->{states_list}->[0],
     {
