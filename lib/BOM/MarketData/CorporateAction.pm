@@ -59,7 +59,7 @@ sub save {
         delete $all_actions{$cancel_id};
     }
 
-    BOM::System::Chronicle::set('corporate_actions', $self->symbol, %all_actions);
+    BOM::System::Chronicle::set('corporate_actions', $self->symbol, \%all_actions);
 }
 
 =head2 actions
