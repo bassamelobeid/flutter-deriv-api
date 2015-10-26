@@ -1632,6 +1632,44 @@ test_with_feed([
 
     });
 
+test_with_feed([
+        [$oft_used_date->epoch + 1, 1000.94, 'R_100'],
+        [$oft_used_date->epoch + 3, 1000.83, 'R_100'],
+        [$oft_used_date->epoch + 5, 1000.72, 'R_100'],
+        [$oft_used_date->epoch + 7, 1000.61, 'R_100'],
+        [$oft_used_date->epoch + 9, 1000.50, 'R_100'],
+    ],
+    'digits contracts' => sub {
+        my $underlying = BOM::Market::Underlying->new('R_100');
+        my $starting   = $oft_used_date->epoch;
+
+        my %expectations = (
+            DIGITDIFF  => 100,
+            DIGITMATCH => 0,
+            DIGITODD   => 0,
+            DIGITEVEN  => 100,
+            DIGITOVER  => 0,
+            DIGITUNDER => 100,
+        );
+
+        note "For all conditions to pass we must be using the full-width quote with trailing 0";
+
+        my %shared_params = (
+            underlying => $underlying,
+            currency   => 'USD',
+            payout     => 100,
+            date_start => $starting,
+            duration   => '5t',
+            barrier    => 1,
+        );
+        foreach my $bt (sort keys %expectations) {
+            my $bet = produce_contract({%shared_params, bet_type => $bt});
+            ok($bet->is_expired, $bt . ' contract is expired');
+            cmp_ok($bet->exit_tick->quote, '==', 1000.5,             'numeric comparison of the exit tick works without trailing 0');
+            cmp_ok($bet->value,            '==', $expectations{$bt}, '...but we need the correct full-width to settle the ' . $bt);
+        }
+    });
+
 sub test_with_feed {
     my $setup    = shift;
     my $testname = shift;
