@@ -150,4 +150,7 @@
 "/payment-agent":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/payment_methods":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
 
