@@ -40,8 +40,8 @@ sub get_transactions {
     $args->{sort_by} = 'transaction_time desc';
     $args->{limit}  ||= 100;
     $args->{offset} ||= 0;
-    my $dt_fm = $args->{dt_fm};
-    my $dt_to = $args->{dt_to};
+    my $dt_fm = $args->{date_from};
+    my $dt_to = $args->{date_to};
 
     for ($dt_fm, $dt_to) {
         next unless $_;
@@ -122,8 +122,8 @@ sub __get_sold {
             )->db,
         });
 
-    $args->{after}  = $args->{dt_fm} if $args->{dt_fm};
-    $args->{before} = $args->{dt_to} if $args->{dt_to};
+    $args->{after}  = $args->{date_from} if $args->{date_from};
+    $args->{before} = $args->{date_to}   if $args->{date_to};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
 
     ## remove useless and plus new
