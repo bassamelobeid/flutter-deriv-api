@@ -4,9 +4,10 @@ use strict;
 use warnings;
 
 use Mojo::DOM;
-use BOM::WebSocketAPI::v3::System;
-
+use Data::Utility;
 use Try::Tiny;
+
+use BOM::WebSocketAPI::v3::System;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Runtime;
@@ -163,36 +164,52 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 sub portfolio {
     my ($c, $args) = @_;
 
-    my $client = $c->stash('client');
-    my $ws_id  = $c->tx->connection;
-
-    # TODO: run these under a separate event loop to avoid workload batching..
-    my @fmbs = grep { !$c->{fmb_ids}{$ws_id}{$_->id} } $client->open_bets;
-    my $portfolio;
-    $portfolio->{contracts} = [];
-    my $count = 0;
-    my $p0    = {%$args};
-    for my $fmb (@fmbs) {
-        push @{$portfolio->{contracts}},
-            {
-            contract_id   => $fmb->id,
-            purchase_time => $fmb->purchase_time->epoch,
-            symbol        => $fmb->underlying_symbol,
-            payout        => $fmb->payout_price,
-            buy_price     => $fmb->buy_price,
-            date_start    => $fmb->start_time->epoch,
-            expiry_time   => $fmb->expiry_time->epoch,
-            contract_type => $fmb->bet_type,
-            currency      => $fmb->account->currency_code,
-            shortcode     => $fmb->short_code,
-            longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
-            };
-    }
-
+    my $portfolio = __get_open($c, $args);
     return {
         msg_type  => 'portfolio',
         portfolio => $portfolio,
     };
+}
+
+sub __get_open {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+    my $acc    = $c->stash('account');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $client->loginid,
+            currency_code  => $client->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $client->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+
+    my $data = $fmb_dm->get_open_bets_of_account();
+    $data->{contracts} = [];
+
+    foreach my $row (@{delete $data->{rows}}) {
+        my %trx = (
+            contract_id    => $row->{id},
+            transaction_id => $row->{buy_id},
+            purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
+            symbol         => $row->{underlying_symbol},
+            payout         => $row->{payout_price},
+            buy_price      => $row->{buy_price},
+            date_start     => Date::Utility->new($row->{start_time})->epoch,
+            expiry_time    => Date::Utility->new($row->{expiry_time})->epoch,
+            contract_type  => $row->{bet_type},
+            currency       => $acc->currency_code,
+            shortcode      => $row->{short_code},
+            longcode =>
+                Mojo::DOM->new->parse(BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code)->longcode)->all_text
+        );
+        push @{$data->{contracts}}, \%trx;
+    }
+
+    return $data;
 }
 
 sub prepare_bid {
