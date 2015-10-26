@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Set User Settings Send",
+  "description":"Set User Settings",
+  "properties": {
+    "set_settings": {
+      "type":"string",
+      "sample": "1",
+      "pattern": "^1$"
+    },
+    "address_1":{
+      "type":"string",
+      "pattern": "^.{1,70}$"
+    },
+    "address_2":{
+      "type":"string",
+      "pattern": "^.{0,70}$"
+    },
+    "city":{
+      "type":"string",
+      "pattern": "^.{1,35}$"
+    },
+    "state":{
+      "type":"string",
+      "pattern": "^.{1,35}$"
+    },
+    "post_code":{
+      "type":"string",
+      "pattern": "^[\w\s-]{1,20}$"
+    },
+    "phone":{
+      "type":"string",
+      "pattern": "^\+?[0-9\s]{0,35}$"
+    }
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "set_settings"
+  ]
+}
