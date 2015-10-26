@@ -40,7 +40,9 @@ sub save {
     my $self = shift;
 
     my %new_actions = %{$self->new_actions};
-    my %existing_actions = %{$self->actions} // {};
+    my %existing_actions = %{$self->actions};
+
+    %existing_actions = () if not %existing_actions:
 
     delete $new_actions{$_}{flag} for keys %new_actions;
 
