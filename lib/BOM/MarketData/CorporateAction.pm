@@ -42,7 +42,7 @@ sub save {
     my %new_actions = %{$self->new_actions};
     my %existing_actions = %{$self->actions};
 
-    %existing_actions = () if not %existing_actions:
+    %existing_actions = () if not %existing_actions;
 
     delete $new_actions{$_}{flag} for keys %new_actions;
 
