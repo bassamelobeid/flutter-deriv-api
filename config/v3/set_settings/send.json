@@ -9,23 +9,23 @@
       "sample": "1",
       "pattern": "^1$"
     },
-    "address_1":{
+    "address_line_1":{
       "type":"string",
       "pattern": "^.{1,70}$"
     },
-    "address_2":{
+    "address_line_2":{
       "type":"string",
       "pattern": "^.{0,70}$"
     },
-    "city":{
+    "address_city":{
       "type":"string",
       "pattern": "^.{1,35}$"
     },
-    "state":{
+    "address_state":{
       "type":"string",
       "pattern": "^.{1,35}$"
     },
-    "post_code":{
+    "address_postcode":{
       "type":"string",
       "pattern": "^[\w\s-]{1,20}$"
     },

@@ -12,19 +12,19 @@
       "type": "object",
       "title": "Landing Company Structure",
       "properties":{
-        "address_1":{
+        "address_line_1":{
           "type":"string"
         },
-        "address_2":{
+        "address_line_2":{
           "type":"string"
         },
-        "city":{
+        "address_city":{
           "type":"string"
         },
-        "state":{
+        "address_state":{
           "type":"string"
         },
-        "post_code":{
+        "address_postcode":{
           "type":"string"
         },
         "phone":{
