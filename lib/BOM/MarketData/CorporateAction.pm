@@ -27,34 +27,32 @@ has symbol => (
     required => 1,
 );
 
+=head2 save
+
+Save actions for current symbol into Database. It will process actions before saving.
+This processing includes adding existing actions (stored in the database) and adding "new_actions" to them.
+Also deleting "cancelled_actions" from the result.
+We do this because we will be overwriting currently persistent data so we will need to re-construct the whole data structure.
+
+=cut
+
 sub save {
     my $self = shift;
 
-    my %new              = %{$self->new_actions};
+    my %new_actions = %{$self->new_actions};
     my %existing_actions = $self->actions // {};
 
-    #my %new_act;
-    #foreach my $id (keys %new) {
-    #    my %copy = %{$new{$id}};
-    #    delete $copy{flag};
-    #    $new_act{$id} = \%copy;
-    #}
-    
-    #all these logics (filtering) can be done in builder for 'actions'
-    #for reposting purposes we will have two RO properties: new and cancelled
-    #which can be made public or even used internal and returned upon saving corp actions
-    #to be used in the auto-updater module
-    my %new_acct = map { $_ => \%{$new{$_}} } keys %new;
-    delete $_{flag} for values %new_acct;
+    delete $new_actions{$_}{flag} for keys %new_actions;
 
-    # updates existing actions and adds new actions
+    #merge existing_actions and new_actions.
     my %all_actions;
-    if (%existing_actions and %new_act) {
-        %all_actions = (%existing_actions, %new_act);
-    } elsif (%existing_actions xor %new_act) {
-        %all_actions = (%existing_actions) ? %existing_actions : %new_act;
+    if (%existing_actions and %new_actions) {
+        %all_actions = (%existing_actions, %new_actions);
+    } elsif (%existing_actions xor %new_actions) {
+        %all_actions = (%existing_actions) ? %existing_actions : %new_actions;
     }
 
+    #delete cancelled actions from the result dataset
     foreach my $cancel_id (keys %{$self->cancelled_actions}) {
         delete $all_actions{$cancel_id};
     }
@@ -79,11 +77,30 @@ sub _build_actions {
     return \BOM::System::Chronicle->get("corporate_actions", $self->symbol) // {};
 }
 
-sub new_actions {
+=head2 action_exists
+
+Boolean. Returns true if action exists, false otherwise.
+
+=cut
+
+sub action_exists {
+    my ($self, $id) = @_;
+
+    return $self->actions->{$id} ? 1 : 0;
+}
+
+has [qw(new_actions cancelled_actions)] => (
+    is         => 'ro',
+    init_arg   => undef,
+    lazy_build => 1,
+);
+
+sub _build_new_actions {
     my $self = shift;
 
     my %new;
     my $actions = $self->actions;
+
     foreach my $action_id (keys %$actions) {
         # flag 'N' = New & 'U' = Update
         my $action = $actions->{$action_id};
@@ -97,7 +114,7 @@ sub new_actions {
     return \%new;
 }
 
-sub cancelled_actions {
+sub _build_cancelled_actions {
     my $self = shift;
 
     my %cancelled;
