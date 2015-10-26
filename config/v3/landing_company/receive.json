@@ -19,7 +19,10 @@
           "type":"string"
         },
         "address":{
-          "type":"string"
+          "type": ["array", "null"],
+          "items":{
+            "type":"string"
+          }
         },
         "country":{
           "type":"string"

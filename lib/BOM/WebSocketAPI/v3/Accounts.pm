@@ -14,6 +14,32 @@ use BOM::Platform::Context qw(localize);
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
+use BOM::Platform::Runtime::LandingCompany::Registry;
+
+sub landing_company {
+    my ($c, $args) = @_;
+
+    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company});
+    return {
+        msg_type => 'landing_company',
+        error    => {
+            message => "Unknown landing company",
+            code    => "UnknownLandingCompany"
+        }} unless $lc;
+
+    return {
+        msg_type        => 'landing_company',
+        landing_company => {
+            shortcode                         => $lc->short,
+            name                              => $lc->name,
+            address                           => $lc->address,
+            country                           => $lc->country,
+            legal_default_currency            => $lc->legal_default_currency,
+            legal_allowed_currencies          => $lc->legal_allowed_currencies,
+            legal_allowed_markets             => $lc->legal_allowed_markets,
+            legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
+        }};
+}
 
 sub statement {
     my ($c, $args) = @_;

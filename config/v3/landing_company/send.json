@@ -7,7 +7,7 @@
     "landing_company": {
       "type":"string",
       "sample": "costarica",
-      "pattern": "^\w+$"
+      "pattern": "^\\w+$"
     },
     "passthrough": {
       "type": "object",
