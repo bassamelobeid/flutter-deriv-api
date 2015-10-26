@@ -91,13 +91,13 @@ subtest 'japan' => sub {
     my $c = 'jp';
     my $c_config = $configs->{$c};
     isnt($c_config->{name}, undef, "$c [$c_config->{name}]");
-    is($c_config->{gaming_company}, 'japan', 'gaming company');
+    is($c_config->{gaming_company}, 'none', 'no gaming company');
     is($c_config->{financial_company}, 'japan', 'financial company');
 
     is(BOM::Platform::Runtime->instance->restricted_country($c), !1, '! restricted_country');
-    is(BOM::Platform::Runtime->instance->random_restricted_country($c), !1, '! random_restricted_country');
+    is(BOM::Platform::Runtime->instance->random_restricted_country($c), 1, 'random_restricted_country');
     is(BOM::Platform::Runtime->instance->virtual_company_for_country($c),   'japan-virtual', 'virtual_company_for_country');
-    is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    'japan', 'gaming_company_for_country');
+    is(BOM::Platform::Runtime->instance->gaming_company_for_country($c),    undef, '! gaming_company_for_country');
     is(BOM::Platform::Runtime->instance->financial_company_for_country($c), 'japan', 'financial_company_for_country');
 };
 
