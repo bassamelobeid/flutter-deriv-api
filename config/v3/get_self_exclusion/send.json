@@ -5,8 +5,8 @@
   "description":"Self-Exclusion Facilities",
   "properties": {
     "get_self_exclusion": {
-      "type":"string",
-      "sample": "1",
+      "type":"integer",
+      "sample": 1,
       "pattern": "^1$"
     },
     "passthrough": {
