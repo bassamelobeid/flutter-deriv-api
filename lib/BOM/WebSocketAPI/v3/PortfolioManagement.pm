@@ -152,12 +152,9 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         }
     } else {
         return {
-            echo_req => $args,
-            msg_type => 'proposal_open_contract',
-            error    => {
-                message => "Not found",
-                code    => "NotFound"
-            }};
+            echo_req               => $args,
+            msg_type               => 'proposal_open_contract',
+            proposal_open_contract => {}};
     }
 }
 
