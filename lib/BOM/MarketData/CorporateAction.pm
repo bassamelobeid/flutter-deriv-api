@@ -17,7 +17,8 @@ use Moose;
 
 =head2 symbol
 
-Represents underlying symbol
+A string whcih represents underlying symbol (company name) for which we are going to load/save actions (e.g. USPG)
+It is read-only (Cannot be changed after the object is instantieted) and required.
 
 =cut
 
@@ -26,29 +27,25 @@ has symbol => (
     required => 1,
 );
 
-has _existing_actions => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__existing_actions {
-    my $self = shift;
-
-    return ($self->actions) ? $self->actions : {};
-}
-
 sub save {
     my $self = shift;
 
     my %new              = %{$self->new_actions};
-    my %existing_actions = %{$self->_existing_actions};
+    my %existing_actions = $self->actions // {};
 
-    my %new_act;
-    foreach my $id (keys %new) {
-        my %copy = %{$new{$id}};
-        delete $copy{flag};
-        $new_act{$id} = \%copy;
-    }
+    #my %new_act;
+    #foreach my $id (keys %new) {
+    #    my %copy = %{$new{$id}};
+    #    delete $copy{flag};
+    #    $new_act{$id} = \%copy;
+    #}
+    
+    #all these logics (filtering) can be done in builder for 'actions'
+    #for reposting purposes we will have two RO properties: new and cancelled
+    #which can be made public or even used internal and returned upon saving corp actions
+    #to be used in the auto-updater module
+    my %new_acct = map { $_ => \%{$new{$_}} } keys %new;
+    delete $_{flag} for values %new_acct;
 
     # updates existing actions and adds new actions
     my %all_actions;
@@ -67,7 +64,7 @@ sub save {
 
 =head2 actions
 
-An hash reference of corporate reference for an underlying
+An hash reference of corporate actions. 
 
 =cut
 
@@ -79,7 +76,7 @@ has actions => (
 sub _build_actions {
     my $self = shift;
 
-    return BOM::System::Chronicle->get("corporate_actions", $self->symbol) // {};
+    return \BOM::System::Chronicle->get("corporate_actions", $self->symbol) // {};
 }
 
 sub new_actions {
