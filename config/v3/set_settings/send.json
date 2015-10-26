@@ -27,12 +27,12 @@
     },
     "address_postcode":{
       "type":"string",
-      "pattern": "^[\w\s-]{1,20}$"
+      "pattern": "^[\\w\\s-]{1,20}$"
     },
     "phone":{
       "type": ["string", "null"],
-      "pattern": "^\+?[0-9\s]{0,35}$"
-    }
+      "pattern": "^\\+?[0-9\\s]{0,35}$"
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."

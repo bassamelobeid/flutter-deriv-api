@@ -152,7 +152,7 @@ sub __handle {
         ['profit_table',           \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
         ['change_password',        \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
         ['get_settings',           \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
-
+        ['set_settings',           \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
     );
 
     foreach my $dispatch (@dispatch) {

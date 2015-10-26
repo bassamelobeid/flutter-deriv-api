@@ -10,7 +10,7 @@
     },
     "get_self_exclusion": {
       "type": "object",
-      "title": "Landing Company Structure",
+      "title": "Self-Exclusion Structure",
       "properties":{
         "max_cash_balance":{
           "type":"integer",

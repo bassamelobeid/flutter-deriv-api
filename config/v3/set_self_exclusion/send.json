@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Set User Settings Send",
-  "description":"Set User Settings",
+  "title": "Set Self-Exclusion Send",
+  "description":"Set Self-Exclusion",
   "properties": {
     "set_settings": {
       "type":"integer",
@@ -46,12 +46,12 @@
     },
     "max_open_bets":{
       "type":["integer", "null"],
-      "pattern": "^\d{0,20}$",
+      "pattern": "^\d{0,4}$",
       "description": "Maximum number of open positions"
     },
     "session_duration_limits":{
       "type":["integer", "null"],
-      "pattern": "^\d{0,20}$",
+      "pattern": "^\d{0,4}$",
       "description": "Session duration limit, in minutes"
     },
     "exclude_until":{
