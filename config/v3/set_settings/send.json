@@ -6,7 +6,6 @@
   "properties": {
     "set_settings": {
       "type":"integer",
-      "sample": 1,
       "pattern": "^1$"
     },
     "address_line_1":{

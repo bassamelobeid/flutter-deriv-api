@@ -6,8 +6,8 @@
   "properties": {
     "landing_company_details": {
       "type":"string",
-      "sample": "costarica",
-      "pattern": "^\\w+$"
+      "pattern": "^\\w+$",
+      "description": "landing company, for example: costarica"
     },
     "passthrough": {
       "type": "object",

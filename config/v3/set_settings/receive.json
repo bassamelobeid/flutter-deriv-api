@@ -11,7 +11,7 @@
     "set_settings": {
       "type": "integer",
       "title": "Update Status",
-      "sample": 1
+      "description": "1 on success"
     },
     "msg_type": {
       "type": "string",
