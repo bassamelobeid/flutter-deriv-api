@@ -40,7 +40,7 @@ sub save {
     my $self = shift;
 
     my %new_actions = %{$self->new_actions};
-    my %existing_actions = $self->actions // {};
+    my %existing_actions = %{$self->actions} // {};
 
     delete $new_actions{$_}{flag} for keys %new_actions;
 
@@ -57,7 +57,7 @@ sub save {
         delete $all_actions{$cancel_id};
     }
 
-    BOM::System::Chronicle->add('corporate_actions', $self->symbol, %all_actions);
+    BOM::System::Chronicle::set('corporate_actions', $self->symbol, %all_actions);
 }
 
 =head2 actions
@@ -74,7 +74,7 @@ has actions => (
 sub _build_actions {
     my $self = shift;
 
-    return \BOM::System::Chronicle->get("corporate_actions", $self->symbol) // {};
+    return \BOM::System::Chronicle::get("corporate_actions", $self->symbol);
 }
 
 =head2 action_exists
