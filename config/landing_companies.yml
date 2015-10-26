@@ -155,10 +155,10 @@
       - touchnotouch
     legal_default_currency: USD
     has_reality_check: 0
-'Binary Ltd Japan':
+'Binary Virtual Japan':
     short: japan-virtual
     fax: +61 2 94751035
-    country: Bahamas
+    country: Antarctica
     legal_allowed_currencies:
       - USD
     legal_allowed_markets:

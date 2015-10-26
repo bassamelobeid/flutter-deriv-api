@@ -449,7 +449,7 @@ jo:
 jp:
   name: "Japan"
   gaming_company: japan
-  financial_company: japan
+  financial_company: none
   virtual_company: japan-virtual
 ke:
   name: "Kenya"

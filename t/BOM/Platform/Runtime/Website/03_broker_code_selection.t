@@ -181,10 +181,10 @@ sub prepare_website {
 
     my $japan_vr = BOM::Platform::Runtime::LandingCompany->new(
         short            => 'japan-virtual',
-        name             => 'Binary Ltd Japan',
+        name             => 'Binary Virtual Japan',
         address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
         fax              => '+44 207 6813557',
-        country          => 'Bahamas',
+        country          => 'Antarctica',
     );
     isa_ok $japan_vr, 'BOM::Platform::Runtime::LandingCompany';
 
