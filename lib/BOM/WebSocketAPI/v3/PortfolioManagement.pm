@@ -164,18 +164,38 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 sub portfolio {
     my ($c, $args) = @_;
 
-    my $portfolio = __get_open($c, $args);
+    my $client = $c->stash('client');
+    my $portfolio = {contracts => []};
+
+    foreach my $row (@{__get_open_contracts()}) {
+        my %trx = (
+            contract_id    => $row->{id},
+            transaction_id => $row->{buy_id},
+            purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
+            symbol         => $row->{underlying_symbol},
+            payout         => $row->{payout_price},
+            buy_price      => $row->{buy_price},
+            date_start     => Date::Utility->new($row->{start_time})->epoch,
+            expiry_time    => Date::Utility->new($row->{expiry_time})->epoch,
+            contract_type  => $row->{bet_type},
+            currency       => $client->currency,
+            shortcode      => $row->{short_code},
+            longcode =>
+                Mojo::DOM->new->parse(BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency)->longcode)->all_text
+        );
+        push $portfolio->{contracts}, \%trx;
+    }
+
     return {
         msg_type  => 'portfolio',
         portfolio => $portfolio,
     };
 }
 
-sub __get_open {
-    my ($c, $args) = @_;
+sub __get_open_contracts {
+    my $c = shift;
 
     my $client = $c->stash('client');
-    my $acc    = $c->stash('account');
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
@@ -187,28 +207,7 @@ sub __get_open {
             )->db,
         });
 
-    my $result = {contracts => []};
-
-    foreach my $row (@{$fmb_dm->get_open_bets_of_account()}) {
-        my %trx = (
-            contract_id    => $row->{id},
-            transaction_id => $row->{buy_id},
-            purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
-            symbol         => $row->{underlying_symbol},
-            payout         => $row->{payout_price},
-            buy_price      => $row->{buy_price},
-            date_start     => Date::Utility->new($row->{start_time})->epoch,
-            expiry_time    => Date::Utility->new($row->{expiry_time})->epoch,
-            contract_type  => $row->{bet_type},
-            currency       => $acc->currency_code,
-            shortcode      => $row->{short_code},
-            longcode =>
-                Mojo::DOM->new->parse(BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code)->longcode)->all_text
-        );
-        push $result->{contracts}, \%trx;
-    }
-
-    return $result;
+    return $fmb_dm->get_open_bets_of_account();
 }
 
 sub prepare_bid {
