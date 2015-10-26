@@ -13,9 +13,9 @@
       "items":{
         "type":"object",
         "properties":{
-          "key":{
+          "name":{
             "type":"string",
-            "description": "short key"
+            "description": "short name"
           },
           "description":{
             "type":"string",

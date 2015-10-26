@@ -1,0 +1,71 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Set User Settings Send",
+  "description":"Set User Settings",
+  "properties": {
+    "set_settings": {
+      "type":"string",
+      "sample": "1",
+      "pattern": "^1$"
+    },
+    "max_cash_balance":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "Maximum account cash balance"
+    },
+    "max_daily_turnover":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "Daily turnover limit"
+    },
+    "max_daily_losses":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "Daily limit on losses"
+    },
+    "max_7day_turnover":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "7-day turnover limit"
+    },
+    "max_7day_losses":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "7-day limit on losses"
+    },
+    "max_30day_turnover":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "30-day turnover limit"
+    },
+    "max_30day_losses":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "30-day limit on losses"
+    },
+    "max_open_bets":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "Maximum number of open positions"
+    },
+    "session_duration_limits":{
+      "type":"integer",
+      "pattern": "^\d*$",
+      "description": "Session duration limit, in minutes"
+    },
+    "exclude_until":{
+      "type":"string",
+      "pattern": "^\d{4}-\d{2}-\d{2}$",
+      "description": "Exclude me from the website until"
+    }
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "set_settings"
+  ]
+}
