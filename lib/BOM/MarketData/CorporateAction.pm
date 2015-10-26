@@ -40,7 +40,7 @@ sub save {
     my $self = shift;
 
     my %new_actions = %{$self->new_actions};
-    my %existing_actions = %{$self->actions};
+    my %existing_actions = %{$self->_existing_actions};
 
     %existing_actions = () if not %existing_actions;
 
@@ -77,6 +77,18 @@ sub _build_actions {
     my $self = shift;
 
     return \BOM::System::Chronicle::get("corporate_actions", $self->symbol);
+}
+
+has _existing_actions => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build__existing_actions {
+    my $self = shift;
+    my $result = BOM::System::Chronicle::get("corporate_actions", $self->symbol);
+
+    return $result ? $result : {};
 }
 
 =head2 action_exists
