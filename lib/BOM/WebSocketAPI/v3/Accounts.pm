@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
+use Date::Utility;
 
 use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
@@ -129,10 +130,12 @@ sub __get_sold {
     $data->{transactions} = [];
     my $and_description = $args->{description};
     foreach my $row (@{delete $data->{rows}}) {
-        my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price purchase_time sell_time/);
+        my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
-        if ($and_description) {
+        $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch, $trx{sell_time} = Date::Utility->new($row->{sell_time})->epoch,
+
+            if ($and_description) {
             $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
                 $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
