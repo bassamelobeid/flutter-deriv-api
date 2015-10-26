@@ -5,8 +5,8 @@
   "description":"Set User Settings",
   "properties": {
     "set_settings": {
-      "type":"string",
-      "sample": "1",
+      "type":"integer",
+      "sample": 1,
       "pattern": "^1$"
     },
     "address_line_1":{

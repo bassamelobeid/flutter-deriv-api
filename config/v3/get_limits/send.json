@@ -5,8 +5,8 @@
   "description":"Trading and Withdrawal Limits",
   "properties": {
     "get_limits": {
-      "type":"string",
-      "sample": "1",
+      "type":"integer",
+      "sample": 1,
       "pattern": "^1$"
     },
     "passthrough": {

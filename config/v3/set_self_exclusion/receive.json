@@ -9,7 +9,7 @@
       "description":"Echo of the request made"
     },
     "set_self_exclusion": {
-      "type": "bool",
+      "type": "integer",
       "title": "Update Status",
       "sample": 1
     },
