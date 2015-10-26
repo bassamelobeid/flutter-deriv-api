@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Landing Company Send",
-  "description":"Landing Company",
+  "title": "Landing Company Details Send",
+  "description":"Landing Company details",
   "properties": {
-    "landing_company": {
+    "landing_company_details": {
       "type":"string",
       "sample": "costarica",
       "pattern": "^\\w+$"
@@ -16,6 +16,6 @@
   },
   "additionalProperties": false,
   "required": [
-    "landing_company"
+    "landing_company_details"
   ]
 }

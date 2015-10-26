@@ -17,20 +17,20 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::View::Language;
 
-sub landing_company {
+sub landing_company_details {
     my ($c, $args) = @_;
 
-    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company});
+    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
     return {
-        msg_type => 'landing_company',
+        msg_type => 'landing_company_details',
         error    => {
             message => "Unknown landing company",
             code    => "UnknownLandingCompany"
         }} unless $lc;
 
     return {
-        msg_type        => 'landing_company',
-        landing_company => {
+        msg_type        => 'landing_company_details',
+        landing_company_details => {
             shortcode                         => $lc->short,
             name                              => $lc->name,
             address                           => $lc->address,

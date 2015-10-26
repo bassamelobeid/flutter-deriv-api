@@ -8,7 +8,7 @@
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "landing_company": {
+    "landing_company_details": {
       "type": "object",
       "title": "Landing Company Structure",
       "properties":{
@@ -52,12 +52,12 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "landing_company"
+      "description": "landing_company_details"
     }
   },
   "required": [
     "echo_req",
-    "landing_company",
+    "landing_company_details",
     "msg_type"
   ]
 }
