@@ -10,25 +10,39 @@
     },
     "get_settings": {
       "type": "object",
-      "title": "Landing Company Structure",
+      "title": "User Details",
       "properties":{
+        "email":{
+          "type":"string",
+          "description": "User Email"
+        },
+        "country":{
+          "type":"string",
+          "description": "User Country"
+        },
         "address_line_1":{
-          "type":"string"
+          "type":"string",
+          "description": "Address 1, not for virtual account"
         },
         "address_line_2":{
-          "type":"string"
+          "type":"string",
+          "description": "Address 2, not for virtual account"
         },
         "address_city":{
-          "type":"string"
+          "type":"string",
+          "description": "City, not for virtual account"
         },
         "address_state":{
-          "type":"string"
+          "type":"string",
+          "description": "State, not for virtual account"
         },
         "address_postcode":{
-          "type":"string"
+          "type":"string",
+          "description": "Post Code, not for virtual account"
         },
         "phone":{
-          "type":"string"
+          "type":"string",
+          "description": "Phone, not for virtual account"
         }
       }
     },

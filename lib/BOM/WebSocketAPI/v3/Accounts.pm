@@ -248,4 +248,28 @@ sub change_password {
     };
 }
 
+sub get_settings {
+    my ($c, $args) = @_;
+
+    my $r      = $c->stash('r');
+    my $client = $c->stash('client');
+
+    return {
+        msg_type     => 'get_settings',
+        get_settings => {
+            email   => $client->email,
+            country => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
+            $client->is_virtual
+            ? ()
+            : (
+                address_line_1   => $client->address_1,
+                address_line_2   => $client->address_2,
+                address_city     => $client->city,
+                address_state    => $client->state,
+                address_postcode => $client->postcode,
+                phone            => $client->phone,
+            ),
+        }};
+}
+
 1;
