@@ -17,6 +17,42 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::View::Language;
 
+sub landing_company {
+    my ($c, $args) = @_;
+
+    my $country = $args->{landing_company};
+    my $configs = BOM::Platform::Runtime->instance->countries_list;
+    my $c_config = $configs->{$country};
+    unless ($c_config) {
+        ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
+    }
+
+    return {
+        msg_type => 'landing_company',
+        error    => {
+            message => "Unknown landing company",
+            code    => "UnknownLandingCompany"
+        }} unless $c_config;
+
+    $c_config->{id} = $country;
+    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
+    if ( ($c_config->{gaming_company} // '') ne 'none' ) {
+        $c_config->{gaming_company} = __build_landing_company($registry->get($c_config->{gaming_company}));
+    } else {
+        delete $c_config->{gaming_company};
+    }
+    if ( ($c_config->{financial_company} // '') ne 'none' ) {
+        $c_config->{financial_company} = __build_landing_company($registry->get($c_config->{financial_company}));
+    } else {
+        delete $c_config->{financial_company};
+    }
+
+    return {
+        msg_type        => 'landing_company',
+        landing_company => $c_config,
+    };
+}
+
 sub landing_company_details {
     my ($c, $args) = @_;
 
@@ -30,16 +66,23 @@ sub landing_company_details {
 
     return {
         msg_type        => 'landing_company_details',
-        landing_company_details => {
-            shortcode                         => $lc->short,
-            name                              => $lc->name,
-            address                           => $lc->address,
-            country                           => $lc->country,
-            legal_default_currency            => $lc->legal_default_currency,
-            legal_allowed_currencies          => $lc->legal_allowed_currencies,
-            legal_allowed_markets             => $lc->legal_allowed_markets,
-            legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
-        }};
+        landing_company_details => __build_landing_company($lc),
+    };
+}
+
+sub __build_landing_company {
+    my ($lc) = @_;
+
+    return {
+        shortcode                         => $lc->short,
+        name                              => $lc->name,
+        address                           => $lc->address,
+        country                           => $lc->country,
+        legal_default_currency            => $lc->legal_default_currency,
+        legal_allowed_currencies          => $lc->legal_allowed_currencies,
+        legal_allowed_markets             => $lc->legal_allowed_markets,
+        legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
+    }
 }
 
 sub statement {
