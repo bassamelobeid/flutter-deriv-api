@@ -133,9 +133,10 @@ sub __get_sold {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
-        $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch, $trx{sell_time} = Date::Utility->new($row->{sell_time})->epoch,
+        $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
+        $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
 
-            if ($and_description) {
+        if ($and_description) {
             $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
                 $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
