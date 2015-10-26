@@ -104,7 +104,6 @@ sub create_account {
     return {
         client => $client,
         user   => $user,
-        token  => $client->login()->{token},
     };
 }
 
