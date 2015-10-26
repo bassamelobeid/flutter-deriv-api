@@ -163,7 +163,7 @@ sub portfolio {
     my $client = $c->stash('client');
     my $portfolio = {contracts => []};
 
-    foreach my $row (@{__get_open_contracts()}) {
+    foreach my $row (@{__get_open_contracts($c)}) {
         my %trx = (
             contract_id    => $row->{id},
             transaction_id => $row->{buy_id},
