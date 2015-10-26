@@ -124,7 +124,7 @@ sub _build_cancelled_actions {
     foreach my $action_id (keys %$actions) {
         my $action = $actions->{$action_id};
         # flag 'D' = Delete
-        if ($action->{flag} eq 'D' and $self->action_exists($action_id)) {
+        if ($action->{flag} and $action->{flag} eq 'D' and $self->action_exists($action_id)) {
             $cancelled{$action_id} = $action;
         }
     }
