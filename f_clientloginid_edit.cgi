@@ -150,14 +150,15 @@ if ($input{whattodo} eq 'uploadID') {
     my $filetoupload = $cgi->param('FILE');
     my $docformat    = $cgi->param('docformat');
     my $expiration_date = $cgi->param('expiration_date');
+    my $broker_code  = $cgi->param('broker');
 
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
         code_exit_BO();
     }
     
-    if ($doctype =='passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && ($cgi->param('broker')=='MF'||$cgi->param('broker')=='MX')) {
-        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered</p><br />";
+    if ($doctype =='passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && ($broker_code eq 'MF'|| $broker_code eq 'MX')) {
+        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
         code_exit_BO();
     }
 
