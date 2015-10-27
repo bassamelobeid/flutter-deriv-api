@@ -203,19 +203,6 @@ sub _build_vanilla_option {
         });
 }
 
-sub _build_economic_events_markup {
-    my $self = shift;
-
-    my $markup = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'economic_events_markup',
-        description => 'markup for economic events impact',
-        set_by      => __PACKAGE__,
-        base_amount => $self->economic_events_spot_risk_markup->amount,
-    });
-
-    return $markup;
-}
-
 around '_build_commission_markup' => sub {
     my $orig = shift;
     my $self = shift;
