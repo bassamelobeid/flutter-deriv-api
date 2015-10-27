@@ -1,4 +1,4 @@
-package BOM::Platform::Translations;
+package BOM::Platform::Locale;
 
 use strict;
 use warnings;
