@@ -91,7 +91,7 @@ sub sell {
 
     my $json = {msg_type => 'sell'};
 
-    my $fmb = $dm->get_fmb_by_id($id)->[0];
+    my $fmb = $fmb_dm->get_fmb_by_id($id)->[0];
     if ($fmb) {
         my $contract = produce_contract($fmb->short_code, $client->currency);
         my $trx = BOM::Product::Transaction->new({
