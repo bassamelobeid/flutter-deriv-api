@@ -16,6 +16,7 @@ extends 'BOM::MarketData::VolSurface';
 use Date::Utility;
 use BOM::Platform::Runtime;
 use VolSurface::Utils qw(get_delta_for_strike get_strike_for_moneyness);
+use VolSurface::Calibration::Equities;
 
 use Try::Tiny;
 use Math::Function::Interpolator;
@@ -62,21 +63,38 @@ sub _build_parameterization {
         : $doc->{available_parameterizations} ? $doc->{available_parameterizations}->{sabr}
         :                                       undef;
     return $parameterization;
-
 }
 
-with 'BOM::MarketData::Role::VersionedSymbolData', 'BOM::MarketData::VolSurface::Calibration::SABR';
+with 'BOM::MarketData::Role::VersionedSymbolData';
 
-around 'compute_parameterization' => sub {
-    my $orig = shift;
+sub _get_calibrator {
     my $self = shift;
 
-    my $new_params = $self->$orig(@_);
+    my $calibrator = VolSurface::Calibration::Equities->new(
+        surface          => $self->surface,
+        term_by_day      => $self->term_by_day,
+        smile_points     => $self->smile_points,
+        parameterization => $self->parameterization
+    );
+
+    return $calibrator;
+}
+
+sub function_to_optimize {
+    my ($self, $params) = @_;
+
+    return $self->_get_calibrator->function_to_optimize($params);
+}
+
+sub compute_parameterization {
+    my $self = shift;
+
+    my $new_params = $self->_get_calibrator->compute_parameterization;
     $self->parameterization($new_params);
     $self->clear_calibration_error;
 
     return $new_params;
-};
+}
 
 =head2 type
 
@@ -124,10 +142,17 @@ sub _build_moneynesses {
     return $self->smile_points;
 }
 
+has calibration_param_names => (
+    is      => 'ro',
+    isa     => 'ArrayRef',
+    default => sub {
+        return [@VolSurface::Calibration::Equities::calibration_param_names];
+    });
+
 =head2 corresponding_deltas
 
 Stores the corresponding moneyness smile in terms on delta.
-This is aimed to reduced computation time
+This is aimed to reduced computation time.
 
 =cut
 
@@ -171,7 +196,7 @@ has calibrated_surface => (
 sub _build_calibrated_surface {
     my $self = shift;
 
-    return $self->get_calibrated_surface;
+    return $self->_get_calibrator->get_calibrated_surface;
 }
 
 =head2 calibration_error
@@ -231,7 +256,7 @@ sub get_volatility {
             : $args->{moneyness};
 
         if ($self->price_with_parameterized_surface) {
-            $vol = $self->calculate_calibrated_vol($args->{days}, $sought_point);
+            $vol = $self->_get_calibrator->_calculate_calibrated_vol($args->{days}, $sought_point);
         } else {
             my $calc_args = {
                 sought_point => $sought_point,
