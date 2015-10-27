@@ -1,12 +1,12 @@
-package BOM::WebSocketAPI::v3::MarketDiscovery;
+package BOM::WebSocketAPI::v2::MarketDiscovery;
 
 use strict;
 use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
-use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::System;
+use BOM::WebSocketAPI::v2::Symbols;
+use BOM::WebSocketAPI::v2::System;
 use Cache::RedisDB;
 use JSON;
 
@@ -45,13 +45,13 @@ sub trading_times {
             for my $ul (@{$sbm->{underlyings}}) {
                 push @{$submarket->{symbols}},
                     {
-                    name       => $ul->{name},
-                    symbol     => $ul->{symbol},
-                    settlement => $ul->{settlement} || '',
-                    events     => $ul->{events},
-                    times      => $ul->{times},
-                    ($ul->{feed_license} ne 'realtime') ? (feed_license => $ul->{feed_license}) : (),
-                    ($ul->{delay_amount} > 0)           ? (delay_amount => $ul->{delay_amount}) : (),
+                    name         => $ul->{name},
+                    symbol       => $ul->{symbol},
+                    settlement   => $ul->{settlement} || '',
+                    events       => $ul->{events},
+                    times        => $ul->{times},
+                    feed_license => $ul->{feed_license},
+                    delay_amount => $ul->{delay_amount},
                     };
             }
         }
@@ -180,7 +180,7 @@ sub ticks {
     if ($args->{end}) {
         my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
         if ($style eq 'ticks') {
-            my $ticks = $c->BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
+            my $ticks = $c->BOM::WebSocketAPI::v2::Symbols::ticks({%$args, ul => $ul});    ## no critic
             my $history = {
                 prices => [map { $_->{price} } @$ticks],
                 times  => [map { $_->{time} } @$ticks],
@@ -190,38 +190,22 @@ sub ticks {
                 history  => $history
             };
         } elsif ($style eq 'candles') {
-            my $sender = sub {
-                my $candles = shift;
-                my @labeled_candles =
-                    map { {'epoch' => $_->[0], 'open' => $_->[1], 'high' => $_->[2], 'low' => $_->[3], 'close' => $_->[4],} } @$candles;
+            my @candles = @{$c->BOM::WebSocketAPI::v2::Symbols::candles({%$args, ul => $ul})};    ## no critic
+            if (@candles) {
 
-                $c->send({
-                        json => {
-                            msg_type => 'candles',
-                            echo_req => $args,
-                            candles  => \@labeled_candles,
-                        }});
-            };
+                return {
+                    msg_type => 'candles',
+                    candles  => \@candles,
+                };
+            } else {
 
-            if (
-                my $watcher = $c->BOM::WebSocketAPI::v3::Symbols::candles({
-                        %$args,    ## no critic
-                        ul     => $ul,
-                        sender => $sender
-                    }))
-            {
-                # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
-                push @{$c->stash->{watchers}}, $watcher;
-                $c->on(finish => sub { $c->stash->{feeder}->_pg->destroy });
-                return;
+                return {
+                    msg_type => 'candles',
+                    error    => {
+                        message => 'invalid candles request',
+                        code    => 'InvalidCandlesRequest'
+                    }};
             }
-
-            return {
-                msg_type => 'candles',
-                error    => {
-                    message => 'invalid candles request',
-                    code    => 'InvalidCandlesRequest'
-                }};
         } else {
             return {
                 msg_type => 'tick',
@@ -242,7 +226,7 @@ sub ticks {
             type    => 'ticks',
             epoch   => 0,
         };
-        BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
+        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
         return 0;
     } else {
@@ -281,7 +265,7 @@ sub proposal {
         type    => 'proposal',
         data    => {%$p2},
     };
-    BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
+    BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
 
     send_ask($c, $id, $args, $p2);
 
