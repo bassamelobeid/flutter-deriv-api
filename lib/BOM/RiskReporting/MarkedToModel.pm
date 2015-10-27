@@ -121,10 +121,8 @@ sub generate {
                 } else {
                     # spreaed does not have greeks
                     if ($bet->is_spread) {
-                        $dbh->do(
-                            qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price)  VALUES(?, ?)},
-                            undef, $open_fmb_id, $value
-                        );
+                        $dbh->do(qq{INSERT INTO accounting.realtime_book (financial_market_bet_id, market_price)  VALUES(?, ?)},
+                            undef, $open_fmb_id, $value);
                     } else {
                         map { $totals{$_} += $bet->$_ } qw(delta theta vega gamma);
                         $dbh->do(
@@ -226,20 +224,38 @@ sub sell_expired_contracts {
         my $ref_number     = $open_bets_ref->{$id}->{transaction_id};
         my $buy_price      = $open_bets_ref->{$id}->{buy_price};
 
+        my $bet_info = {
+            loginid   => $client_id,
+            ref       => $ref_number,
+            fmb_id    => $fmb_id,
+            buy_price => $buy_price,
+            currency  => $currency,
+            bb_lookup => '--',
+        };
+
         my $client = BOM::Platform::Client::get_instance({'loginid' => $client_id});
 
-        my $fmb =
-          BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0];
+        my $fmb = BOM::Database::DataMapper::FinancialMarketBet->new({broker_code => $client->broker})->get_fmb_by_id([$fmb_id])->[0];
 
-        my $bet = produce_contract($fmb, $currency);
+        my $bet = try { produce_contract($fmb, $currency) };
+        if (not $bet) {
+            # Not a `catch` block, because we need to be able to 'next' the loop
+            $bet_info->{shortcode} = $fmb->short_code;
+            $bet_info->{payout}    = 'unknown';
+            $bet_info->{reason}    = 'Could not instantiate contract object';
+            push @error_lines, $bet_info;
+            next;    # Nothing else to do.
+        }
 
         my $stats_data = do {
             my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$bet->code};
             my $broker    = lc($client->broker_code);
             my $virtual   = $client->is_virtual ? 'yes' : 'no';
-            my $tags      = {tags => ["broker:$broker", "virtual:$virtual",
-                                      "rmgenv:$rmgenv", "contract_class:$bet_class",
-                                          "sell_type:autosell"]};
+            my $tags      = {
+                tags => [
+                    "broker:$broker",     "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",
+                    "sell_type:autosell", "client:" . lc($client_id),
+                ]};
             stats_inc("transaction.sell.attempt", $tags);
             +{
                 tags    => $tags,
@@ -247,23 +263,13 @@ sub sell_expired_contracts {
             };
         };
 
-        my $bb_lookup = '--';
         if (my $bb_symbol = $map_to_bb{$bet->underlying->symbol}) {
             $csv->combine($map_to_bb{$bet->underlying->symbol}, $bet->date_start->db_timestamp, $bet->date_expiry->db_timestamp);
-            $bb_lookup = $csv->string;
+            $bet_info->{bb_lookup} = $csv->string;
         }
+        $bet_info->{shortcode} = $bet->shortcode;
         # for spread max payout is determined by stop_profit.
-        my $payout = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
-        my $bet_info = {
-            loginid   => $client_id,
-            ref       => $ref_number,
-            fmb_id    => $fmb_id,
-            buy_price => $buy_price,
-            payout    => $payout,
-            currency  => $currency,
-            shortcode => $bet->shortcode,
-            bb_lookup => $bb_lookup,
-        };
+        $bet_info->{payout} = $bet->is_spread ? $bet->amount_per_point * $bet->stop_profit : $bet->payout;
 
         # We do this here because part of being "initialized_correctly" below
         # is hidden behind lazy attributes.  Makes you question the name of the method.
@@ -299,7 +305,10 @@ sub sell_expired_contracts {
                                 client_loginid => $client_id,
                                 currency_code  => $currency
                             },
-                            db => BOM::Database::ClientDB->new({client_loginid => $client_id,})->db,
+                            db => BOM::Database::ClientDB->new({
+                                    client_loginid => $client_id,
+                                }
+                            )->db,
                         })->sell_bet;
 
                     stats_inc("transaction.sell.success", $stats_data->{tags});
@@ -307,11 +316,12 @@ sub sell_expired_contracts {
                         my $usd_amount = int(in_USD($bet->value, $currency) * 100);
                         stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
                     }
-                } else{
-                    if ($bet->can('corporate_actions') and @{$bet->corporate_actions}){
+                } else {
+                    if ($bet->can('corporate_actions') and @{$bet->corporate_actions}) {
 
-                        $bet_info->{reason} = "This contract is affected by corporate action. Can you please verify the contract has been adjusted correctly to the corporte action.";
-                    }else{
+                        $bet_info->{reason} =
+                            "This contract is affected by corporate action. Can you please verify the contract has been adjusted correctly to the corporte action.";
+                    } else {
 
                         $bet_info->{reason} = $bet->primary_validation_error->message;
                     }
@@ -325,7 +335,7 @@ sub sell_expired_contracts {
     }
 
     if (scalar @error_lines) {
-        local ($/, $\) = ("\n", undef); # in case overridden elsewhere
+        local ($/, $\) = ("\n", undef);    # in case overridden elsewhere
         Cache::RedisDB->set('AUTOSELL', 'ERRORS', \@error_lines, 3600);
         my $sep     = '---';
         my $subject = 'AutoSell Failures during riskd operation';
