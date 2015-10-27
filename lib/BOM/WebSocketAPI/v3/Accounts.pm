@@ -15,7 +15,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
-use BOM::View::Language;
+use BOM::Platform::Locale;
 
 sub landing_company {
     my ($c, $args) = @_;
@@ -375,7 +375,7 @@ sub set_settings {
     }
 
     my $message =
-        $c->l('Dear [_1] [_2] [_3],', BOM::View::Language::translate_salutation($client->salutation), $client->first_name, $client->last_name)
+        $c->l('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
         . "\n\n";
     $message .= $c->l('Please note that your settings have been updated as follows:') . "\n\n";
 
