@@ -1,12 +1,12 @@
-package BOM::WebSocketAPI::v2::MarketDiscovery;
+package BOM::WebSocketAPI::v3::MarketDiscovery;
 
 use strict;
 use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
-use BOM::WebSocketAPI::v2::Symbols;
-use BOM::WebSocketAPI::v2::System;
+use BOM::WebSocketAPI::v3::Symbols;
+use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
 use JSON;
 
@@ -180,7 +180,7 @@ sub ticks {
     if ($args->{end}) {
         my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
         if ($style eq 'ticks') {
-            my $ticks = $c->BOM::WebSocketAPI::v2::Symbols::ticks({%$args, ul => $ul});    ## no critic
+            my $ticks = $c->BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
             my $history = {
                 prices => [map { $_->{price} } @$ticks],
                 times  => [map { $_->{time} } @$ticks],
@@ -190,7 +190,7 @@ sub ticks {
                 history  => $history
             };
         } elsif ($style eq 'candles') {
-            my @candles = @{$c->BOM::WebSocketAPI::v2::Symbols::candles({%$args, ul => $ul})};    ## no critic
+            my @candles = @{$c->BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
             if (@candles) {
 
                 return {
@@ -226,7 +226,7 @@ sub ticks {
             type    => 'ticks',
             epoch   => 0,
         };
-        BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+        BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
 
         return 0;
     } else {
@@ -265,7 +265,7 @@ sub proposal {
         type    => 'proposal',
         data    => {%$p2},
     };
-    BOM::WebSocketAPI::v2::System::_limit_stream_count($c);
+    BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
 
     send_ask($c, $id, $args, $p2);
 
