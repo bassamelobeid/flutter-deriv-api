@@ -76,8 +76,11 @@ has actions => (
 sub _build_actions {
     my $self = shift;
 
-    return BOM::System::Chronicle::get("corporate_actions", $self->symbol);
+    my $actions = BOM::System::Chronicle::get("corporate_actions", $self->symbol);
+
+    return $actions ? $actions : {}; 
 }
+
 
 has _existing_actions => (
     is         => 'ro',
