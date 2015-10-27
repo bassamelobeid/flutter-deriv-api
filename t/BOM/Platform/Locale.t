@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::Exception;
 use BOM::Platform::Locale;
 
 my $list;
