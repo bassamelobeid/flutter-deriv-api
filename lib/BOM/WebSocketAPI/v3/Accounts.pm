@@ -245,6 +245,22 @@ sub balance {
     };
 }
 
+sub get_account_status {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+
+    my @status;
+    foreach my $s (sort keys %{$client->client_status_types}) {
+        push @status, $s if $client->get_status($s);
+    }
+
+    return {
+        msg_type           => 'get_account_status',
+        get_account_status => \@status
+    };
+}
+
 sub change_password {
     my ($c, $args) = @_;
 

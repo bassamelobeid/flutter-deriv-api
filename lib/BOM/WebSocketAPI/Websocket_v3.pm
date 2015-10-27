@@ -155,6 +155,7 @@ sub __handle {
         ['balance',                 \&BOM::WebSocketAPI::v3::Accounts::balance,                           1],
         ['statement',               \&BOM::WebSocketAPI::v3::Accounts::statement,                         1],
         ['profit_table',            \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
+        ['get_account_status',      \&BOM::WebSocketAPI::v3::Accounts::get_account_status,                1],
         ['change_password',         \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
         ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
         ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],

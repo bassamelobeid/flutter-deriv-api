@@ -27,11 +27,22 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => $test_client->email,
 )->token;
 
+# test account status
+my $reason = "test to set unwelcome login";
+my $clerk  = 'shuwnyuan';
+$test_client->set_status('unwelcome', $clerk, $reason);
+$test_client->save();
+
 # authorize ok
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
-$t = $t->send_ok({json => {get_settings => 1}})->message_ok;
+$t = $t->send_ok({json => {get_account_status => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);
+ok($res->{get_account_status});
+test_schema('get_account_status', $res);
+
+$t = $t->send_ok({json => {get_settings => 1}})->message_ok;
+$res = decode_json($t->message->[1]);
 ok($res->{get_settings});
 my %old_data = %{$res->{get_settings}};
 ok $old_data{address_line_1};

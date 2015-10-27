@@ -9,8 +9,11 @@
       "description":"Echo of the request made"
     },
     "get_account_status": {
-      "type": "string",
-      "title": "Account status, sample: disabled, unwelcome, cashier locked, etc, active"
+      "type": "array",
+      "title": "Account status, sample: disabled, unwelcome, cashier locked, etc, active",
+      "items": {
+        "type": "string"
+      }
     },
     "msg_type": {
       "type": "string",
