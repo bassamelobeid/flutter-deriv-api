@@ -41,7 +41,7 @@ sub _forget_one {
     my $v     = delete $c->{ws}{$ws_id}{$id};
     return unless $v;
 
-    if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
+    if ($v->{type} eq 'proposal_open_contract') {
         delete $c->{fmb_ids}{$ws_id}{$v->{data}{fmb}->id};
     }
 
