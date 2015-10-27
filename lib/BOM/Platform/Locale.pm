@@ -5,6 +5,7 @@ use warnings;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
 use utf8;    # to support source-embedded country name strings in this module
+use Locale::SubCountry;
 
 sub getLanguageOptions {
     my $options = '';
@@ -84,5 +85,27 @@ sub _lang_display_name {
     return $lang_code_name{$iso_code} || $iso_code;
 }
 
-1;
+sub get_state_option {
+    my $country_code = shift or return;
 
+    $country_code = uc $country_code;
+    state %codes;
+    unless (%codes) {
+        %codes = Locale::SubCountry::World->code_full_name_hash;
+    }
+    return unless $codes{$country_code};
+
+    my @options = ({
+            value => '',
+            text  => localize('Please select')});
+
+    my $country = Locale::SubCountry->new($country_code);
+    if ($country and $country->has_sub_countries) {
+        my %name_map = $country->full_name_code_hash;
+        push @options, map { {value => $name_map{$_}, text => $_} }
+            sort $country->all_full_names;
+    }
+    return \@options;
+}
+
+1;
