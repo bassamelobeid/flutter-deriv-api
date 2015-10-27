@@ -170,17 +170,21 @@ sub stats_start {
     my $self = shift;
     my $what = shift;
 
-    my $broker    = lc($self->client->broker_code);
-    my $virtual   = $self->client->is_virtual ? 'yes' : 'no';
+    my $client   = $self->client;
+    my $contract = $self->contract;
+
+    my $loginid   = lc($client->loginid);
+    my $broker    = lc($client->broker_code);
+    my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
-    my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$self->contract->code};
-    my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
+    my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
+    my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class", "client:$loginid",]};
 
     if ($what eq 'buy') {
         if ($self->contract->is_spread) {
-            push @{$tags->{tags}}, "stop_type:" . lc($self->contract->stop_type);
+            push @{$tags->{tags}}, "stop_type:" . lc($contract->stop_type);
         } else {
-            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($self->contract->fixed_expiry ? 'fixed' : 'duration');
+            push @{$tags->{tags}}, "amount_type:" . lc($self->amount_type), "expiry_type:" . ($contract->fixed_expiry ? 'fixed' : 'duration');
         }
     } elsif ($what eq 'sell') {
         push @{$tags->{tags}}, "sell_type:manual";
@@ -284,6 +288,10 @@ sub calculate_limits {
         and $self->limits->{max_7day_turnover} = $lim;
     defined($lim = $client->get_limit_for_7day_losses)
         and $self->limits->{max_7day_losses} = $lim;
+    defined($lim = $client->get_limit_for_30day_turnover)
+        and $self->limits->{max_30day_turnover} = $lim;
+    defined($lim = $client->get_limit_for_30day_losses)
+        and $self->limits->{max_30day_losses} = $lim;
 
     if ($client->loginid !~ /^VRT/ and $contract->market->name eq 'forex' and $contract->is_intraday and not $contract->is_atm_bet) {
         $lim = $self->limits->{intraday_forex_iv_action} = from_json($ql->intraday_forex_iv);
@@ -988,6 +996,40 @@ my %known_errors = (
             -message_to_client => BOM::Platform::Context::localize('You have exceeded the daily limit for contracts of this type.'),
         );
     },
+    BI016 => sub {
+        my $self = shift;
+
+        my $client   = $self->client;
+        my $currency = $self->contract->currency;
+        my $limit =
+            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_turnover, USD => $currency)), 1);
+
+        my $error_message =
+            BOM::Platform::Context::localize('Purchase of this contract would cause you to exceed your 30-day turnover limit of [_1][_2].',
+            $currency, $limit);
+
+        return Error::Base->cuss(
+            -type              => '30DayTurnoverLimitExceeded',
+            -mesg              => "Client has exceeded a 30-day turnover of $currency$limit",
+            -message_to_client => $error_message,
+        );
+    },
+    BI017 => sub {
+        my $self = shift;
+
+        my $client   = $self->client;
+        my $currency = $self->contract->currency;
+        my $limit =
+            to_monetary_number_format(roundnear(0.01, amount_from_to_currency($client->get_limit_for_30day_losses, USD => $currency)), 1);
+
+        my $error_message = BOM::Platform::Context::localize('You have exceeded your 30-day limit on losses of [_1][_2].', $currency, $limit);
+
+        return Error::Base->cuss(
+            -type              => '30DayLossLimitExceeded',
+            -mesg              => "Client has exceeded his 30-day loss limit of $currency$limit",
+            -message_to_client => $error_message,
+        );
+    },
 );
 
 sub _recover {
@@ -1512,7 +1554,7 @@ sub sell_expired_contracts {
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
-    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type");
+    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type", "client:" . lc($loginid));
 
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});
