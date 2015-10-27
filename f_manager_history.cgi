@@ -4,7 +4,7 @@ use strict 'vars';
 
 use Locale::Country;
 use f_brokerincludeall;
-use BOM::Platform::Translations;
+use BOM::Platform::Locale;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::View::Controller::Bet;
@@ -64,7 +64,7 @@ print '<form action="'
     . '<input type=hidden name=loginID value='
     . $loginID . '>'
     . 'Language: <select name=l>'
-    . BOM::Platform::Translations::getLanguageOptions()
+    . BOM::Platform::Locale::getLanguageOptions()
     . '</select>'
     . '<input type=submit value="View/edit '
     . $loginID
