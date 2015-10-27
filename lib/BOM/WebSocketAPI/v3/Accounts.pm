@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
+use Date::Utility;
 
 use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
@@ -109,8 +110,8 @@ sub get_transactions {
     $args->{sort_by} = 'transaction_time desc';
     $args->{limit}  ||= 100;
     $args->{offset} ||= 0;
-    my $dt_fm = $args->{dt_fm};
-    my $dt_to = $args->{dt_to};
+    my $dt_fm = $args->{date_from};
+    my $dt_to = $args->{date_to};
 
     for ($dt_fm, $dt_to) {
         next unless $_;
@@ -191,17 +192,23 @@ sub __get_sold {
             )->db,
         });
 
-    $args->{after}  = $args->{dt_fm} if $args->{dt_fm};
-    $args->{before} = $args->{dt_to} if $args->{dt_to};
+    $args->{after}  = $args->{date_from} if $args->{date_from};
+    $args->{before} = $args->{date_to}   if $args->{date_to};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
+    # args is passed to echo req hence we need to delete them
+    delete $args->{after};
+    delete $args->{before};
 
     ## remove useless and plus new
     $data->{transactions} = [];
     my $and_description = $args->{description};
     foreach my $row (@{delete $data->{rows}}) {
-        my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price purchase_time sell_time/);
+        my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
+        $trx{purchase_time}  = Date::Utility->new($row->{purchase_time})->epoch;
+        $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
+
         if ($and_description) {
             $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {

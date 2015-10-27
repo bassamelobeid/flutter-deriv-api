@@ -4,9 +4,10 @@ use strict;
 use warnings;
 
 use Mojo::DOM;
-use BOM::WebSocketAPI::v3::System;
-
+use Date::Utility;
 use Try::Tiny;
+
+use BOM::WebSocketAPI::v3::System;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Runtime;
@@ -48,17 +49,15 @@ sub buy {
             $json->{error}->{code}    = $err->get_type;
             last;
         }
-        $trx = $trx->transaction_record;
-        my $fmb      = $trx->financial_market_bet;
         my $response = {
-            transaction_id => $trx->id,
-            contract_id    => $fmb->id,
+            transaction_id => $trx->transaction_id,
+            contract_id    => $trx->contract_id,
             balance_after  => $trx->balance_after,
-            purchase_time  => $fmb->purchase_time->epoch,
-            buy_price      => $fmb->buy_price,
-            start_time     => $fmb->start_time->epoch,
+            purchase_time  => $trx->purchase_date->epoch,
+            buy_price      => $trx->price,
+            start_time     => $contract->date_start->epoch,
             longcode       => Mojo::DOM->new->parse($contract->longcode)->all_text,
-            shortcode      => $fmb->short_code,
+            shortcode      => $contract->shortcode,
         };
 
         if ($contract->is_spread) {
@@ -78,41 +77,57 @@ sub sell {
 
     my $id     = $args->{sell};
     my $source = $c->stash('source');
-    my $ws_id  = $c->tx->connection;
-
-    Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
+
     my $json = {msg_type => 'sell'};
+    my $invalid_id = 0;
+
     {
-        my $p2 = delete $c->{ws}{$ws_id}{$id}{data} || do {
-            $json->{error}            = "";
-            $json->{error}->{message} = "unknown contract sell proposal";
-            $json->{error}->{code}    = "InvalidSellContractProposal";
-            last;
-        };
-        my $fmb      = $p2->{fmb};
-        my $contract = $p2->{contract};
-        my $trx      = BOM::Product::Transaction->new({
+        $invalid_id = 1 unless $id;
+        last if $invalid_id;
+
+        my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+                client_loginid => $client->loginid,
+                currency_code  => $client->currency,
+                db             => BOM::Database::ClientDB->new({
+                        client_loginid => $client->loginid,
+                        operation      => 'replica',
+                    }
+                )->db,
+            });
+
+        my $fmb = $fmb_dm->get_fmb_by_id([$id]);
+        $invalid_id = 1 unless $fmb;
+        last if $invalid_id;
+
+        my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
+        my $trx = BOM::Product::Transaction->new({
             client      => $client,
             contract    => $contract,
-            contract_id => $fmb->id,
+            contract_id => $id,
             price       => ($args->{price} || 0),
             source      => $source,
         });
+
         if (my $err = $trx->sell) {
             $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
             $json->{error}->{code}    = $err->get_type;
             $json->{error}->{message} = $err->{-message_to_client};
             last;
         }
-        $trx          = $trx->transaction_record;
-        $fmb          = $trx->financial_market_bet;
+
+        $trx = $trx->transaction_record;
         $json->{sell} = {
             transaction_id => $trx->id,
-            contract_id    => $fmb->id,
+            contract_id    => $id,
             balance_after  => $trx->balance_after,
             sold_for       => abs($trx->amount),
         };
+    }
+
+    if ($invalid_id) {
+        $json->{error}->{message} = "unknown contract sell proposal";
+        $json->{error}->{code}    = "InvalidSellContractProposal";
     }
 
     return $json;
@@ -152,12 +167,9 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         }
     } else {
         return {
-            echo_req => $args,
-            msg_type => 'proposal_open_contract',
-            error    => {
-                message => "Not found",
-                code    => "NotFound"
-            }};
+            echo_req               => $args,
+            msg_type               => 'proposal_open_contract',
+            proposal_open_contract => {}};
     }
 }
 
@@ -165,35 +177,49 @@ sub portfolio {
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
-    my $ws_id  = $c->tx->connection;
+    my $portfolio = {contracts => []};
 
-    # TODO: run these under a separate event loop to avoid workload batching..
-    my @fmbs = grep { !$c->{fmb_ids}{$ws_id}{$_->id} } $client->open_bets;
-    my $portfolio;
-    $portfolio->{contracts} = [];
-    my $count = 0;
-    my $p0    = {%$args};
-    for my $fmb (@fmbs) {
-        push @{$portfolio->{contracts}},
-            {
-            contract_id   => $fmb->id,
-            purchase_time => $fmb->purchase_time->epoch,
-            symbol        => $fmb->underlying_symbol,
-            payout        => $fmb->payout_price,
-            buy_price     => $fmb->buy_price,
-            date_start    => $fmb->start_time->epoch,
-            expiry_time   => $fmb->expiry_time->epoch,
-            contract_type => $fmb->bet_type,
-            currency      => $fmb->account->currency_code,
-            shortcode     => $fmb->short_code,
-            longcode      => Mojo::DOM->new->parse(produce_contract($fmb->short_code, $fmb->account->currency_code)->longcode)->all_text,
-            };
+    foreach my $row (@{__get_open_contracts($c)}) {
+        my %trx = (
+            contract_id    => $row->{id},
+            transaction_id => $row->{buy_id},
+            purchase_time  => Date::Utility->new($row->{purchase_time})->epoch,
+            symbol         => $row->{underlying_symbol},
+            payout         => $row->{payout_price},
+            buy_price      => $row->{buy_price},
+            date_start     => Date::Utility->new($row->{start_time})->epoch,
+            expiry_time    => Date::Utility->new($row->{expiry_time})->epoch,
+            contract_type  => $row->{bet_type},
+            currency       => $client->currency,
+            shortcode      => $row->{short_code},
+            longcode =>
+                Mojo::DOM->new->parse(BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency)->longcode)->all_text
+        );
+        push $portfolio->{contracts}, \%trx;
     }
 
     return {
         msg_type  => 'portfolio',
         portfolio => $portfolio,
     };
+}
+
+sub __get_open_contracts {
+    my $c = shift;
+
+    my $client = $c->stash('client');
+
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $client->loginid,
+            currency_code  => $client->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $client->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
+        });
+
+    return $fmb_dm->get_open_bets_of_account();
 }
 
 sub prepare_bid {
