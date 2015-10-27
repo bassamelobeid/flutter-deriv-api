@@ -3,16 +3,16 @@ BEGIN;
 SET search_path = sequences, pg_catalog;
 
 CREATE SEQUENCE loginid_sequence_vrtj
-    START WITH 90000000
+    START WITH 2000
     INCREMENT BY 1
-    MINVALUE 19
+    MINVALUE 2000
     NO MAXVALUE
     CACHE 1;
 
 CREATE SEQUENCE loginid_sequence_jp
-    START WITH 90000000
+    START WITH 2000
     INCREMENT BY 1
-    MINVALUE 19
+    MINVALUE 2000
     NO MAXVALUE
     CACHE 1;
 
