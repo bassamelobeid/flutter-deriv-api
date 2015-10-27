@@ -7,7 +7,7 @@
     "sell": {
       "type": "integer",
       "sample": "1111111",
-      "description": "Pass contract_id received from the Portfolio call"
+      "description": "Pass fmb_id received from the Portfolio call"
     },
     "price": {
       "type": "number",
