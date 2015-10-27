@@ -119,10 +119,10 @@ sub sell {
 
         $trx = $trx->transaction_record;
         $json->{sell} = {
-            transaction_id => $trx->id,
-            contract_id    => $id,
-            balance_after  => $trx->balance_after,
-            sold_for       => abs($trx->amount),
+            trx_id        => $trx->id,
+            fmb_id        => $id,
+            balance_after => $trx->balance_after,
+            sold_for      => abs($trx->amount),
         };
     }
 
