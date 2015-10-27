@@ -2,6 +2,7 @@ package BOM::Platform::Locale;
 
 use strict;
 use warnings;
+use feature "state";
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request localize);
 use utf8;    # to support source-embedded country name strings in this module
