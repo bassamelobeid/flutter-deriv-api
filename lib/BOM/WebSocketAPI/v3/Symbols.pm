@@ -244,9 +244,10 @@ sub candles {
         my $first_ohlc = $ul->feed_api->ohlc_daily_list({
                 start_time => $start_time,
                 end_time   => ($first_stop - 1)})->[0];
-        $first_ohlc->{epoch} = $start_time;
-        push @all_ohlc, @{$first_ohlc};
-
+        if ($first_ohlc) {
+            $first_ohlc->{epoch} = $start_time;
+            push @all_ohlc, @{$first_ohlc};
+        }
         push @all_ohlc,
             (
             reverse @{
@@ -259,9 +260,10 @@ sub candles {
                 start_time => $last_stop,
                 end_time   => $end_time
             })->[0];
-        $last_ohlc->{epoch} = $last_stop;
-        push @all_ohlc, @{$last_ohlc};
-
+        if ($last_ohlc) {
+            $last_ohlc->{epoch} = $last_stop;
+            push @all_ohlc, @{$last_ohlc};
+        }
     }
 
     return [map { {epoch => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
