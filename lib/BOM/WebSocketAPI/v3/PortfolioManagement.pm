@@ -79,21 +79,28 @@ sub sell {
     my $source = $c->stash('source');
     my $client = $c->stash('client');
 
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-            client_loginid => $client->loginid,
-            currency_code  => $client->currency,
-            db             => BOM::Database::ClientDB->new({
-                    client_loginid => $client->loginid,
-                    operation      => 'replica',
-                }
-            )->db,
-        });
-
     my $json = {msg_type => 'sell'};
+    my $invalid_id = 0;
 
-    my $fmb = $fmb_dm->get_fmb_by_id($id)->[0];
-    if ($fmb) {
-        my $contract = produce_contract($fmb->short_code, $client->currency);
+    {
+        $invalid_id = 1 unless $id;
+        last if $invalid_id;
+
+        my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+                client_loginid => $client->loginid,
+                currency_code  => $client->currency,
+                db             => BOM::Database::ClientDB->new({
+                        client_loginid => $client->loginid,
+                        operation      => 'replica',
+                    }
+                )->db,
+            });
+
+        my $fmb = $fmb_dm->get_fmb_by_id([$id]);
+        $invalid_id = 1 unless $fmb;
+        last if $invalid_id;
+
+        my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
         my $trx = BOM::Product::Transaction->new({
             client      => $client,
             contract    => $contract,
@@ -106,17 +113,19 @@ sub sell {
             $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
             $json->{error}->{code}    = $err->get_type;
             $json->{error}->{message} = $err->{-message_to_client};
-        } else {
-            $trx = $trx->transaction_record;
-            $json->{sell} = {
-                transaction_id => $trx->id,
-                contract_id    => $id,
-                balance_after  => $trx->balance_after,
-                sold_for       => abs($trx->amount),
-            };
+            last;
         }
-    } else {
-        $json->{error}            = "";
+
+        $trx = $trx->transaction_record;
+        $json->{sell} = {
+            transaction_id => $trx->id,
+            contract_id    => $id,
+            balance_after  => $trx->balance_after,
+            sold_for       => abs($trx->amount),
+        };
+    }
+
+    if ($invalid_id) {
         $json->{error}->{message} = "unknown contract sell proposal";
         $json->{error}->{code}    = "InvalidSellContractProposal";
     }
