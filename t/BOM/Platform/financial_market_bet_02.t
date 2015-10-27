@@ -187,17 +187,17 @@ sub buy_one_bet {
 sub buy_one_spread_bet {
     my ($acc, $args) = @_;
 
-    my $now      = Date::Utility->new;
-    my $buy_price    = delete $args->{buy_price}    // 20;
-    my $limits       = delete $args->{limits};
-    my $duration     = delete $args->{duration}     // '15s';
-    my $app          = delete $args->{amount_per_point} // 2;
-    my $stop_type    = delete $args->{stop_type} // 'point';
-    my $stop_loss    = delete $args->{stop_loss} // 10;
-    my $stop_profit  = delete $args->{stop_profit} // 10;
-    my $spread       = delete $args->{spread} // 2;
+    my $now            = Date::Utility->new;
+    my $buy_price      = delete $args->{buy_price} // 20;
+    my $limits         = delete $args->{limits};
+    my $duration       = delete $args->{duration} // '15s';
+    my $app            = delete $args->{amount_per_point} // 2;
+    my $stop_type      = delete $args->{stop_type} // 'point';
+    my $stop_loss      = delete $args->{stop_loss} // 10;
+    my $stop_profit    = delete $args->{stop_profit} // 10;
+    my $spread         = delete $args->{spread} // 2;
     my $spread_divisor = delete $args->{spread_divisor} // 1;
-    my $purchase_time = delete $args->{purchase_time} // $now->db_timestamp;
+    my $purchase_time  = delete $args->{purchase_time} // $now->db_timestamp;
 
     my $bet_data = +{
         underlying_symbol => 'R_100',
@@ -1135,7 +1135,12 @@ SKIP: {
         # can buy spread bet worth potential profit of USD 80 yesterday
         lives_ok {
             my $yest = Date::Utility->new->minus_time_interval('1d')->truncate_to_day;
-            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}, amount_per_point => 8, purchase_time => $yest->db_timestamp};
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd,
+                +{
+                limits           => {spread_bet_profit_limit => 80},
+                amount_per_point => 8,
+                purchase_time    => $yest->db_timestamp
+                };
             is $balance_after + 0, 10000 - 20, 'correct balance_after';
             $txnid = sell_one_bet $acc_usd,
                 +{
@@ -1143,7 +1148,8 @@ SKIP: {
                 sell_price => 100,
                 sell_time  => $yest->plus_time_interval('1s')->db_timestamp,
                 };
-        } 'bought and sold a spread bet with USD 80 profit';
+        }
+        'bought and sold a spread bet with USD 80 profit';
 
         my @bets_to_sell;
         lives_ok {
@@ -1152,13 +1158,19 @@ SKIP: {
             push @bets_to_sell, [$acc_usd, $fmbid];
             ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_aud;
             is $balance_after + 0, 10000 - 20, 'correct balance_after';
-        } 'buy spread bets';
+        }
+        'buy spread bets';
 
         # I bought 2 spread contracts with a potential profit of USD 20 and AUD 20 (USD 60 in total).
         # dies if you try to buy a contract with potential payout of USD 20.01
         dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}, amount_per_point => 2.001};
-        } 'cannot buy bet woth USD 20.01';
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd,
+                +{
+                limits           => {spread_bet_profit_limit => 80},
+                amount_per_point => 2.001
+                };
+        }
+        'cannot buy bet woth USD 20.01';
         is_deeply $@,
             [
             BI015 => 'ERROR:  daily profit limit on spread bets exceeded',
@@ -1169,17 +1181,18 @@ SKIP: {
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}};
             is $balance_after + 0, 10080 - 40, 'correct balance_after';
-        } 'can still buy bet worth USD 20';
+        }
+        'can still buy bet worth USD 20';
 
         # sell one spread bet and make profit of USD 10
         lives_ok {
-                my ($acc, $fmbid) = @{shift @bets_to_sell};
-                my $txnid = sell_one_bet $acc,
-                    +{
-                    id         => $fmbid,
-                    sell_price => 30,
-                    sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
-                    };
+            my ($acc, $fmbid) = @{shift @bets_to_sell};
+            my $txnid = sell_one_bet $acc,
+                +{
+                id         => $fmbid,
+                sell_price => 30,
+                sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
+                };
         }
         'and sell one bet in USD account for profit of USD 10';
 
@@ -1190,23 +1203,34 @@ SKIP: {
 
         # dies if try to buy a contract with potential payout of USD 10.01
         dies_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}, amount_per_point => 1.001};
-        } 'cannot buy bet woth USD 10.01';
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd,
+                +{
+                limits           => {spread_bet_profit_limit => 80},
+                amount_per_point => 1.001
+                };
+        }
+        'cannot buy bet woth USD 10.01';
         is_deeply $@,
             [
             BI015 => 'ERROR:  daily profit limit on spread bets exceeded',
             ],
             'daily profit limit on spread bets exceeded';
         lives_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}, amount_per_point => 1};
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd,
+                +{
+                limits           => {spread_bet_profit_limit => 80},
+                amount_per_point => 1
+                };
             is $balance_after + 0, 10080 - 30, 'correct balance_after';
-        } 'can still buy bet worth USD 10';
+        }
+        'can still buy bet worth USD 10';
 
         # can buy other bet even though we have hit the spread daily limit
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}};
             is $balance_after + 0, 10080 - 50, 'correct balance_after';
-        } 'can still buy bet worth USD 20';
+        }
+        'can still buy bet worth USD 20';
 
     };
 
@@ -1341,7 +1365,6 @@ SKIP: {
         }
         '7day turnover validation passed with slightly higher limits';
 
-
         # now we have one open bet for USD 20. So, we should raise the limits
         # accordingly to buy the next
 
@@ -1406,7 +1429,7 @@ SKIP: {
         }
         'setup new client';
 
-        my $today        = Date::Utility::today;
+        my $today         = Date::Utility::today;
         my $_29daysbefore = $today->minus_time_interval('29d');
 
         note "today = " . $today->db_timestamp . ", _29daysbefore = " . $_29daysbefore->db_timestamp;
@@ -1520,7 +1543,6 @@ SKIP: {
             is $balance_after + 0, 10000 - 80, 'correct balance_after';
         }
         '30day turnover validation passed with slightly higher limits';
-
 
         # now we have one open bet for USD 20. So, we should raise the limits
         # accordingly to buy the next

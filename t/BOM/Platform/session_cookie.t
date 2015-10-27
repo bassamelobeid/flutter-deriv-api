@@ -29,7 +29,7 @@ qr/email /, 'email parameter is mandatory';
 my $value = $session_cookie->token;
 ok !BOM::Platform::SessionCookie->new(token => "${value}a")->token, "Couldn't create instance from invalid value";
 $session_cookie = BOM::Platform::SessionCookie->new(token => $value);
-ok $session_cookie->token,     "Created login cookie from value" or diag $value;
+ok $session_cookie->token, "Created login cookie from value" or diag $value;
 isa_ok $session_cookie, 'BOM::Platform::SessionCookie';
 
 $session_cookie = BOM::Platform::SessionCookie->new(token => $value);
@@ -52,7 +52,7 @@ subtest 'session generation is fork-safe', sub {
     note "c1 = $c1";
     my $pid = open my $fh, '-|';
     defined $pid or die "Cannot fork(): $!";
-    unless ($pid) {             # child process
+    unless ($pid) {    # child process
         print +BOM::Platform::SessionCookie->new(
             loginid => $loginid,
             email   => $email,
