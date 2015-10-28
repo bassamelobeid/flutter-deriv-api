@@ -278,11 +278,11 @@ CREATE SERVER mlt FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'replica-mlt',
 CREATE SERVER vr  FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'replica-vr',  dbname  'regentmarkets');
 CREATE SERVER mf  FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'replica-mf',  dbname  'regentmarkets');
 
-CREATE USER MAPPING FOR postgres SERVER cr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR postgres SERVER mx  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR postgres SERVER mlt OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR postgres SERVER vr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR postgres SERVER mf  OPTIONS (user 'read', password 'hEWC2k7');
+CREATE USER MAPPING FOR postgres SERVER cr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR postgres SERVER mx  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR postgres SERVER mlt OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR postgres SERVER vr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR postgres SERVER mf  OPTIONS (user 'read', password 'letmein');
 
 GRANT USAGE ON FOREIGN SERVER cr TO read, master_write, write;
 GRANT USAGE ON FOREIGN SERVER mx TO read, master_write, write;
@@ -290,22 +290,22 @@ GRANT USAGE ON FOREIGN SERVER mlt TO read, master_write, write;
 GRANT USAGE ON FOREIGN SERVER vr TO read, master_write, write;
 GRANT USAGE ON FOREIGN SERVER mf TO read, master_write, write;
 
-CREATE USER MAPPING FOR master_write SERVER cr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR master_write SERVER mx  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR master_write SERVER mlt OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR master_write SERVER vr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR master_write SERVER mf  OPTIONS (user 'read', password 'hEWC2k7');
+CREATE USER MAPPING FOR master_write SERVER cr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR master_write SERVER mx  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR master_write SERVER mlt OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR master_write SERVER vr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR master_write SERVER mf  OPTIONS (user 'read', password 'letmein');
 
-CREATE USER MAPPING FOR write SERVER cr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR write SERVER mx  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR write SERVER mlt OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR write SERVER vr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR write SERVER mf  OPTIONS (user 'read', password 'hEWC2k7');
+CREATE USER MAPPING FOR write SERVER cr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR write SERVER mx  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR write SERVER mlt OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR write SERVER vr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR write SERVER mf  OPTIONS (user 'read', password 'letmein');
 
-CREATE USER MAPPING FOR read SERVER cr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR read SERVER mx  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR read SERVER mlt OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR read SERVER vr  OPTIONS (user 'read', password 'hEWC2k7');
-CREATE USER MAPPING FOR read SERVER mf  OPTIONS (user 'read', password 'hEWC2k7');
+CREATE USER MAPPING FOR read SERVER cr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR read SERVER mx  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR read SERVER mlt OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR read SERVER vr  OPTIONS (user 'read', password 'letmein');
+CREATE USER MAPPING FOR read SERVER mf  OPTIONS (user 'read', password 'letmein');
 
 COMMIT;
