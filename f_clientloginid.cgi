@@ -6,7 +6,7 @@ use open qw[ :encoding(UTF-8) ];
 use Format::Util::Strings qw( set_selected_item );
 
 use f_brokerincludeall;
-use BOM::View::Language;
+use BOM::Platform::Locale;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -52,7 +52,7 @@ print '<input type=text size=15 name="loginID" value="">'
     . '</td></tr>';
 
 print '<tr><td><b>Language</b></td><td>: <select name=l>'
-    . BOM::View::Language::getLanguageOptions()
+    . BOM::Platform::Locale::getLanguageOptions()
     . '</select>'
     . '&nbsp;&nbsp;<input type="submit" value="EDIT CLIENT DETAILS"></td>' . '</tr>'
     . '</table>'

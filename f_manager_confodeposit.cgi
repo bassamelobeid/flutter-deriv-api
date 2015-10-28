@@ -11,7 +11,7 @@ use Try::Tiny;
 use f_brokerincludeall;
 use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
-use BOM::View::Language;
+use BOM::Platform::Locale;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::System::AuditLog;
@@ -268,7 +268,7 @@ my $website          = BOM::Platform::Runtime->instance->website_list->get_by_br
 if ($toemail && $informclient) {
 
     my $subject = $ttype eq 'CREDIT' ? localize('Deposit') : localize('Withdrawal');
-    my $who = BOM::View::Language::translate_salutation($salutation) . " $first_name $last_name";
+    my $who = BOM::Platform::Locale::translate_salutation($salutation) . " $first_name $last_name";
     my $email_body =
           localize('Dear')
         . " $who,\n\n"

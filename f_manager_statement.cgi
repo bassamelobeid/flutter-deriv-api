@@ -6,7 +6,7 @@ use f_brokerincludeall;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::DataMapper::Transaction;
 use BOM::Product::Transaction;
-use BOM::View::Language;
+use BOM::Platform::Locale;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -48,7 +48,7 @@ Bar("$loginID ($client_email) Portfolio");
 print "<form style=\"float:left\" action=\"" . request()->url_for('backoffice/f_clientloginid_edit.cgi') . "\" METHOD=POST>";
 print "<input type=hidden name=broker value=$broker>";
 print "<input type=hidden name=loginID value=$loginID>";
-print "Language: <select name=l>", BOM::View::Language::getLanguageOptions(), "</select>";
+print "Language: <select name=l>", BOM::Platform::Locale::getLanguageOptions(), "</select>";
 print "<INPUT type=\"submit\" value=\"EDIT $loginID DETAILS\">";
 print "</form><form style=\"float:right\" action=\"" . request()->url_for('backoffice/f_manager_statement.cgi') . "\" method=\"POST\">
 Quick jump to see another portfolio: <input name=loginID type=text size=10 value='$broker'>";

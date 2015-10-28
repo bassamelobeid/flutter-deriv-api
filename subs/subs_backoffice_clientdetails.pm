@@ -10,6 +10,7 @@ use BOM::Database::DataMapper::Account;
 use BOM::Platform::Client::Utility ();
 use BOM::Database::DAO::Client;
 use BOM::Platform::Context qw(request);
+use BOM::Platform::Locale;
 use BOM::Web::Form;
 
 sub get_currency_options {
@@ -89,7 +90,7 @@ sub print_client_details {
 
     my $self_exclusion_enabled = $client->self_exclusion ? 'yes' : '';
 
-    my $stateoptionlist = BOM::Web::Form::get_state_option($client->residence);
+    my $stateoptionlist = BOM::Platform::Locale::get_state_option($client->residence);
     my $stateoptions    = '<option value=""></option>';
     $stateoptions .= qq|<option value="$_->{value}">$_->{text}</option>| for @$stateoptionlist;
     my $tnc_status = $client->get_status('tnc_approval');
