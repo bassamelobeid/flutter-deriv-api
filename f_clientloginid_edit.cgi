@@ -152,6 +152,8 @@ if ($input{whattodo} eq 'uploadID') {
     my $expiration_date = $cgi->param('expiration_date');
     my $broker_code  = $cgi->param('broker');
 
+print Dumper($cgi);
+
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
         code_exit_BO();
@@ -170,14 +172,20 @@ if ($input{whattodo} eq 'uploadID') {
 
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
-
-    $client->add_client_authentication_document({    # Rose
+    
+    my $form_submission={
         document_type              => $doctype,
         document_format            => $docformat,
         document_path              => $newfilename,
         authentication_method_code => 'ID_DOCUMENT',
-        expiration_date            => $expiration_date,
-    });
+        expiration_date            => $expiration_date
+    };
+    if (expiration_date eq ''){
+        delete $form_sumbission->{'expiration_date'};
+    }
+
+print "about to sumbit with :".$expiration_date;
+    $client->add_client_authentication_document($form_submission);
 
     $client->save;
 
