@@ -6,7 +6,6 @@ env:
     - TEST_SUITE=unit_test_platform_all
     - TEST_SUITE=unit_test_myaffiliates_extended
     - TEST_SUITE=syntax_lib
-    - TEST_SUITE=unit_test_bdd
 services:
     - redis-server
 addons:
@@ -24,10 +23,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-utility
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-web
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-app
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bdd
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-paymentapi
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
