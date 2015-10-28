@@ -190,38 +190,22 @@ sub ticks {
                 history  => $history
             };
         } elsif ($style eq 'candles') {
-            my $sender = sub {
-                my $candles = shift;
-                my @labeled_candles =
-                    map { {'epoch' => $_->[0], 'open' => $_->[1], 'high' => $_->[2], 'low' => $_->[3], 'close' => $_->[4],} } @$candles;
+            my @candles = @{$c->BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
+            if (@candles) {
 
-                $c->send({
-                        json => {
-                            msg_type => 'candles',
-                            echo_req => $args,
-                            candles  => \@labeled_candles,
-                        }});
-            };
+                return {
+                    msg_type => 'candles',
+                    candles  => \@candles,
+                };
+            } else {
 
-            if (
-                my $watcher = $c->BOM::WebSocketAPI::v3::Symbols::candles({
-                        %$args,    ## no critic
-                        ul     => $ul,
-                        sender => $sender
-                    }))
-            {
-                # keep this reference; otherwise it goes out of scope early and the job will self-destroy.
-                push @{$c->stash->{watchers}}, $watcher;
-                $c->on(finish => sub { $c->stash->{feeder}->_pg->destroy });
-                return;
+                return {
+                    msg_type => 'candles',
+                    error    => {
+                        message => 'invalid candles request',
+                        code    => 'InvalidCandlesRequest'
+                    }};
             }
-
-            return {
-                msg_type => 'candles',
-                error    => {
-                    message => 'invalid candles request',
-                    code    => 'InvalidCandlesRequest'
-                }};
         } else {
             return {
                 msg_type => 'tick',
