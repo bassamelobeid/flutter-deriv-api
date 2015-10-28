@@ -122,9 +122,11 @@ subtest 'create account' => sub {
 
 subtest 'get_real_acc_opening_type' => sub {
     my $type_map = {
-        'real'          => ['id', 'gb', 'nl'],
+        # TODO: remove jp later
+        'real'          => ['id', 'gb', 'nl', 'jp'],
         'maltainvest'   => ['de'],
-        'japan'         => ['jp'],
+        # until Japan is live
+        # 'japan'         => ['jp'],
         'restricted'    => ['us', 'my'],
     };
 
