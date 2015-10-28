@@ -17,12 +17,10 @@ sub _validate {
     }
 
     my $from_client = $args->{from_client};
-    #TODO: until we set JP <> restricted country
-    return;
-#    return if ($from_client->residence eq 'jp');
+    return if ($from_client->residence eq 'jp');
 
-    get_logger()->warn("japan acc opening err: loginid:" . $from_client->loginid . " wrong residence:" . $from_client->residence);    ## no critic
-    return {err => 'invalid'};                                                                                                        ## no critic
+    get_logger()->warn("japan acc opening err: loginid:" . $from_client->loginid . " wrong residence:" . $from_client->residence);
+    return {err => 'invalid'};
 }
 
 sub create_account {
