@@ -50,10 +50,10 @@ test_schema('get_settings', $res);
 
 ## set settings
 my %new_data = (
-    "address_line_1" => "Test Address Line 1",
-    "address_line_2" => "Test Address Line 2",
-    "address_city"   => "Test City",
-    "address_state"  => "01",
+    "address_line_1"   => "Test Address Line 1",
+    "address_line_2"   => "Test Address Line 2",
+    "address_city"     => "Test City",
+    "address_state"    => "01",
     "address_postcode" => "123456",
     "phone"            => "1234567890"
 );

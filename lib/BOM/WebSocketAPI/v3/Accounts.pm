@@ -35,22 +35,25 @@ sub landing_company {
             code    => "UnknownLandingCompany"
         }} unless $c_config;
 
-    $c_config->{id} = $country;
+    # BE CAREFUL, do not change ref since it's persistent
+    my %landing_company = %{$c_config};
+
+    $landing_company{id} = $country;
     my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
-    if (($c_config->{gaming_company} // '') ne 'none') {
-        $c_config->{gaming_company} = __build_landing_company($registry->get($c_config->{gaming_company}));
+    if (($landing_company{gaming_company} // '') ne 'none') {
+        $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
     } else {
-        delete $c_config->{gaming_company};
+        delete $landing_company{gaming_company};
     }
-    if (($c_config->{financial_company} // '') ne 'none') {
-        $c_config->{financial_company} = __build_landing_company($registry->get($c_config->{financial_company}));
+    if (($landing_company{financial_company} // '') ne 'none') {
+        $landing_company{financial_company} = __build_landing_company($registry->get($landing_company{financial_company}));
     } else {
-        delete $c_config->{financial_company};
+        delete $landing_company{financial_company};
     }
 
     return {
         msg_type        => 'landing_company',
-        landing_company => $c_config,
+        landing_company => {%landing_company},
     };
 }
 
@@ -379,11 +382,12 @@ sub set_settings {
     $client->address_1($address1);
     $client->address_2($address2);
     $client->city($addressTown);
-    $client->state($addressState); # FIXME validate
+    $client->state($addressState);    # FIXME validate
     $client->postcode($addressPostcode);
     $client->phone($phone);
 
-    $client->latest_environment($now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
+    $client->latest_environment(
+        $now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
     if (not $client->save()) {
         return {
             msg_type => 'set_settings',
