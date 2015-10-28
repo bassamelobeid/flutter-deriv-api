@@ -1576,14 +1576,14 @@ sub _market_convention {
 sub _market_data {
     my $self = shift;
 
-    my $volsurface = $self->volsurface;
+    # market data date is determined by for_date in underlying.
+    my $for_date    = $self->underlying->for_date;
+    my %underlyings = ($self->underlying->symbol => $self->underlying);
+    my $volsurface  = $self->volsurface;
     return {
         get_vol_spread => sub {
-            my ($type, $timeindays) = @_;
-            return $volsurface->get_spread({
-                sought_point => $type,
-                day          => $timeindays
-            });
+            my $args = shift;
+            return $volsurface->get_spread($args);
         },
         get_volsurface_data => sub {
             return $volsurface->surface;
@@ -1612,8 +1612,10 @@ sub _market_data {
             return $volsurface->get_volatility($args);
         },
         get_economic_event => sub {
-            my ($underlying_symbol, $from, $to) = @_;
-            my $underlying         = BOM::Market::Underlying->new($underlying_symbol);
+            my $args       = shift;
+            my $underlying = $underlyings{$args->{underlying_symbol}}
+                // BOM::Market::Underlying->new({$args->{underlying_symbol}, for_date => $for_date});
+            my ($from, $to) = map { Date::Utility->new($args->{$_}) } qw(start end);
             my %applicable_symbols = (
                 USD                                 => 1,
                 AUD                                 => 1,
@@ -1629,17 +1631,31 @@ sub _market_data {
                 to   => $to
             });
             my @applicable_news =
-                map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [$_->release_date->epoch, $_] } grep { $applicable_symbols{$_->symbol} } @$ee;
+                map {
+                {
+                    release_date => $_->[0],
+                    vol_factor   => $_->[1]->get_scaling_factor($underlying->symbol, 'vol'),
+                    spot_factor  => $_->[1]->get_scaling_factor($underlying->symbol, 'spot')}
+                } sort {
+                $a->[0] <=> $b->[0]
+                } map {
+                [$_->release_date->epoch, $_]
+                } grep {
+                $applicable_symbols{$_->symbol}
+                } @$ee;
 
             return @applicable_news;
         },
         get_ticks => sub {
-            my $args = shift;
-            my $us   = delete $args->{underlying_symbol};
-            $args->{underlying} = BOM::Market::Underlying->new($us);
+            my $args              = shift;
+            my $underlying_symbol = delete $args->{underlying_symbol};
+            $args->{underlying} = $underlyings{$underlying_symbol} // BOM::Market::Underlying->new({
+                symbol   => $underlying_symbol,
+                for_date => $for_date
+            });
             return BOM::Market::AggTicks->new->retrieve($args);
         },
-        get_overnight_days => sub {
+        get_overnight_tenor => sub {
             return $volsurface->_ON_day;
         },
     };
