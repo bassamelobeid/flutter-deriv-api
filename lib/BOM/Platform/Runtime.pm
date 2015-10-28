@@ -170,13 +170,21 @@ sub financial_company_for_country {
     return $config->{financial_company};
 }
 
-sub only_financial_company_for_country {
+sub gaming_company_for_country {
     my ($self, $country) = @_;
     my $config = $self->countries_list->{$country};
-    return unless ($config);
+    return if (not $config or $config->{gaming_company} eq 'none');
 
-    return $config->{financial_company} if ($config->{gaming_company} eq 'none' and $config->{financial_company} ne 'none');
-    return;
+    return $config->{gaming_company};
+}
+
+sub virtual_company_for_country {
+    my ($self, $country) = @_;
+    my $config = $self->countries_list->{$country};
+    return unless $config;
+
+    my $company = ($config->{virtual_company}) ? $config->{virtual_company} : 'fog';
+    return $company;
 }
 
 sub restricted_country {
@@ -204,7 +212,7 @@ sub _build_website_list {
     my $self = shift;
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
-        definitions  => YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
+        definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
         localhost    => $self->hosts->localhost,
     );
 }
@@ -214,7 +222,7 @@ sub _build_broker_codes {
     return BOM::Platform::Runtime::Broker::Codes->new(
         hosts              => $self->hosts,
         landing_companies  => $self->landing_companies,
-        broker_definitions => YAML::CacheLoader::LoadFile('/etc/rmg/broker_codes.yml'));
+        broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
 
 sub _build_datasources {

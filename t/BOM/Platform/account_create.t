@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More qw(no_plan);
+use Test::More (tests => 4);
 use Test::Exception;
 use Test::MockModule;
 use BOM::Platform::Client::Utility;
@@ -9,6 +9,7 @@ use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Runtime;
+use BOM::Platform::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 BOM::Platform::Runtime->instance->app_config->system->on_production(1);
@@ -83,39 +84,69 @@ my %financial_data = (
     estimated_worth                      => 'Less than $100,000',
 );
 
-foreach my $broker (keys %$vr_details) {
-    my ($real_acc, $vr_client, $real_client, $user);
-    lives_ok {
-        my $vr_acc = create_vr_acc($vr_details->{$broker});
-        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
-    } 'create VR acc';
+subtest 'create account' => sub {
+    foreach my $broker (keys %$vr_details) {
+        my ($real_acc, $vr_client, $real_client, $user);
+        lives_ok {
+            my $vr_acc = create_vr_acc($vr_details->{$broker});
+            ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+        } 'create VR acc';
 
-    # real acc failed
-    lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "create $broker acc";
-    is($real_acc->{error}, 'email unverified', "create $broker acc failed: email verification required");
+        # real acc failed
+        lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "create $broker acc";
+        is($real_acc->{error}, 'email unverified', "create $broker acc failed: email verification required");
 
-    $user->email_verified(1);
-    $user->save;
+        $user->email_verified(1);
+        $user->save;
 
-    # real acc
-    lives_ok {
-        $real_acc = create_real_acc($vr_client, $user, $broker);
-        ($real_client, $user) = @{$real_acc}{'client', 'user'};
-    } "create $broker acc OK, after verify email";
-    is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
+        # real acc
+        lives_ok {
+            $real_acc = create_real_acc($vr_client, $user, $broker);
+            ($real_client, $user) = @{$real_acc}{'client', 'user'};
+        } "create $broker acc OK, after verify email";
+        is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
 
-    # duplicate acc
-    lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "Try create duplicate $broker acc";
-    is($real_acc->{error}, 'duplicate email', "Create duplicate $broker acc failed");
+        # duplicate acc
+        lives_ok { $real_acc = create_real_acc($vr_client, $user, $broker); } "Try create duplicate $broker acc";
+        is($real_acc->{error}, 'duplicate email', "Create duplicate $broker acc failed");
 
-    # MF acc
-    lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
-    if ($broker eq 'MLT') {
-        is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
-    } else {
-        is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
+        # MF acc
+        lives_ok { $real_acc = create_mf_acc($real_client, $user); } "create MF acc";
+        if ($broker eq 'MLT') {
+            is($real_acc->{client}->broker, 'MF', "Successfully create " . $real_acc->{client}->loginid);
+        } else {
+            is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
+        }
     }
-}
+};
+
+subtest 'get_real_acc_opening_type' => sub {
+    my $type_map = {
+        'real'          => ['id', 'gb', 'nl'],
+        'maltainvest'   => ['de'],
+        'japan'         => ['jp'],
+        'restricted'    => ['us', 'my'],
+    };
+
+    foreach my $acc_type (keys %$type_map) {
+        foreach my $c (@{$type_map->{$acc_type}}) {
+            my $vr_client;
+            lives_ok {
+                my $acc = create_vr_acc({
+                    email           => 'shuwnyuan-test-'.$c.'@binary.com',
+                    client_password => 'foobar',
+                    residence       => ($acc_type eq 'restricted') ? 'id' : $c,
+                });
+                $vr_client = $acc->{client};
+                $vr_client->residence($c);
+            } 'create vr acc';
+
+            my $type_result;
+            $type_result = $acc_type if ($acc_type ne 'restricted');
+            is(BOM::Platform::Account::get_real_acc_opening_type({ from_client => $vr_client }), $type_result, "$c: acc type - " . ($type_result // ''));
+        }
+    }
+};
 
 sub create_vr_acc {
     my $args = shift;
