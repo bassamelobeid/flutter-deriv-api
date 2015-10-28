@@ -6,7 +6,6 @@ use warnings;
 use List::Util qw( min first );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Runtime;
-use BOM::Web::Form;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
 
 sub get_limits {
