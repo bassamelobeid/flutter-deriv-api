@@ -28,5 +28,5 @@ EOF
   --yes --hostname="$PGHOST" --port="$PGPORT" --username=postgres --database=regentmarkets --dbset=rmg
 
 psql -w regentmarkets postgres <<EOF
-INSERT INTO betonmarkets.broker_code VALUES ('CR'), ('VRTC'), ('MX'),('MLT'), ('MF') ;
+INSERT INTO betonmarkets.broker_code VALUES ('CR'), ('VRTC'), ('MX'), ('MLT'), ('MF'), ('JP'), ('VRTJ');
 EOF

@@ -49,6 +49,8 @@ INSERT INTO broker_code VALUES ('EM');
 INSERT INTO broker_code VALUES ('VRTE');
 INSERT INTO broker_code VALUES ('BFT');
 INSERT INTO broker_code VALUES ('VRTB');
+INSERT INTO broker_code VALUES ('VRTJ');
+INSERT INTO broker_code VALUES ('JP');
 
 --
 -- Data for Name: client; Type: TABLE DATA; Schema: betonmarkets; Owner: postgres
