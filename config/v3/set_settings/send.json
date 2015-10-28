@@ -39,6 +39,10 @@
   },
   "additionalProperties": false,
   "required": [
-    "set_settings"
+    "set_settings",
+    "address_line_1",
+    "address_city",
+    "address_state",
+    "address_postcode"
   ]
 }

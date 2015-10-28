@@ -379,11 +379,11 @@ sub set_settings {
     $client->address_1($address1);
     $client->address_2($address2);
     $client->city($addressTown);
-    # $client->state($addressState);    # FIXME, convert char to int
+    $client->state($addressState); # FIXME validate
     $client->postcode($addressPostcode);
     $client->phone($phone);
 
-    $client->latest_environment($now->datetime . ' ' . $r->client_ip . ' ' . $c->req->env->{HTTP_USER_AGENT} . ' LANG=' . $r->language . ' SKIN=');
+    $client->latest_environment($now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
     if (not $client->save()) {
         return {
             msg_type => 'set_settings',
