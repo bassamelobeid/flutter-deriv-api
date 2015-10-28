@@ -198,25 +198,75 @@ sub ticks {
 
 sub candles {
     my ($c, $args) = @_;
+    my $interval_map = {
+        M => 60,
+        H => 3600,
+        D => 86400,
+        S => 1,
+    };
 
     $args = _validate_start_end($c, $args);
 
     my $ul          = $args->{ul} || die 'no underlying';
-    my $start       = $args->{start};
-    my $end         = $args->{end};
-    my $count       = $args->{count};
+    my $start_time  = $args->{start};
+    my $end_time    = $args->{end};
     my $granularity = uc($args->{granularity} || 'M1');
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
-    $c->stash->{feeder} ||= BOM::Feed::Data::AnyEvent->new;
-    my $w = $c->stash->{feeder}->get_ohlc(
-        underlying => $ul->symbol,
-        start_time => $start,
-        end_time   => $end,
-        interval   => $size . lc $unit,
-        on_result  => $args->{sender},
-    );
-    return $w;
+    my $interval = $size * $interval_map->{$unit};
+    my @all_ohlc;
+
+    # This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
+    if ($end_time - $start_time <= $interval) {
+        my $ohlc = $ul->feed_api->ohlc_daily_list({
+                start_time => $start_time,
+                end_time   => $end_time,
+            })->[0];
+        $ohlc->{epoch} = $start_time;
+        push @all_ohlc, $ohlc;
+    } elsif ($unit eq 'D' and $ul->ohlc_daily_open) {
+        # For the underlying nocturne, for daily ohlc, the date need to be date
+        $start_time = Date::Utility->new($start_time)->truncate_to_day;
+        $end_time   = Date::Utility->new($end_time)->truncate_to_day;
+        push @all_ohlc,
+            (
+            reverse @{
+                $ul->feed_api->ohlc_start_end({
+                        start_time         => $start_time,
+                        end_time           => $end_time,
+                        aggregation_period => $interval,
+                    })});
+
+    } else {
+        my $first_stop = $start_time + ($interval - $start_time % $interval);
+        my $last_stop = $first_stop + $interval * int(($end_time - $first_stop) / $interval);
+
+        my $first_ohlc = $ul->feed_api->ohlc_daily_list({
+                start_time => $start_time,
+                end_time   => ($first_stop - 1)})->[0];
+        if ($first_ohlc) {
+            $first_ohlc->{epoch} = $start_time;
+            push @all_ohlc, $first_ohlc;
+        }
+        push @all_ohlc,
+            (
+            reverse @{
+                $ul->feed_api->ohlc_start_end({
+                        start_time         => $first_stop,
+                        end_time           => $last_stop,
+                        aggregation_period => $interval,
+                    })});
+        my $last_ohlc = $ul->feed_api->ohlc_daily_list({
+                start_time => $last_stop,
+                end_time   => $end_time
+            })->[0];
+        if ($last_ohlc) {
+            $last_ohlc->{epoch} = $last_stop;
+            push @all_ohlc, $last_ohlc;
+        }
+    }
+
+    return [map { {epoch => $_->epoch, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
 
 }
 1;
