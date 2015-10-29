@@ -171,7 +171,7 @@ note "\ntesting UI case\n\n";
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
         }
         'cache->finish_request_cycle survives a terminated backend';
-    } qr/backend terminated/;
+    } qr/terminating connection/;
 
     # now expect to get a different backend
 
