@@ -2,6 +2,7 @@ use strict;
 use warnings;
 use Test::More (tests => 14);
 use Test::NoWarnings;
+use Test::Warn;
 use DBI;
 use DBD::SQLite;
 use Test::Exception;
@@ -60,24 +61,24 @@ lives_ok {
 'Can change is_default';
 
 throws_ok {
-    warns {
+    warning_like {
         $account->currency_code('USD');
         $account->save();
-    }
+    } qr/permission denied/;
 }
 qr/permission denied/, 'Cannot change currency_code';
 
 throws_ok {
-    warns {
-        $account = BOM::Database::Model::Account->new({
-            'data_object_params' => {
-                'client_loginid' => $client->loginid,
-                'currency_code'  => 'GBP'
-            },
-            db => $connection_builder->db
-        });
+    $account = BOM::Database::Model::Account->new({
+        'data_object_params' => {
+            'client_loginid' => $client->loginid,
+            'currency_code'  => 'GBP'
+        },
+        db => $connection_builder->db
+    });
+    warning_like {
         $account->save();
-    }
+    } qr/duplicate key value violates unique constraint/i;
 }
 qr/duplicate key value violates unique constraint/i, 'Check if trying to save an existing account fails';
 
@@ -93,9 +94,9 @@ throws_ok {
            },
            db => $connection_builder->db
        });
-    warns {
+    warning_like {
        $account->save();
-    }  
+    } qr/permission denied for relation account/i; 
 }
 qr/permission denied for relation account/i, 'Check transaction.account.balance permissions';
 
@@ -107,8 +108,10 @@ throws_ok {
                'last_modified'  => '2000-01-01',
            },
            db => $connection_builder->db
-       });
-   $account->save();
+   });
+   warning_like {
+       $account->save();
+   } qr/permission denied for relation account/i;
 }
 qr/permission denied for relation account/i, 'Check transaction.account.last_modified permissions';
 
