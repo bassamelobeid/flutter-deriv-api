@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More qw/tests 24/;
+use Test::More qw/tests 23/;
 use Test::NoWarnings ();    # don't call ->import to avoid had_no_warnings to be
                             # called in an END block. We call it explicitly instead.
 use Test::Warn;
@@ -164,14 +164,14 @@ note "\ntesting UI case\n\n";
 
     # make the handle unusable and finish the request cycle.
 
-    warning_like { is terminate_backend($dbh), '1', 'backend terminated' } qr/backend terminated/;
+    warning_like { 
+       is terminate_backend($dbh), '1', 'backend terminated' 
 
-    lives_ok {
-        warning_like {
+        lives_ok {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-        } qr/terminating connection/;
-    }
-    'cache->finish_request_cycle survives a terminated backend';
+        }
+        'cache->finish_request_cycle survives a terminated backend';
+    } qr/backend terminated/;
 
     # now expect to get a different backend
 
