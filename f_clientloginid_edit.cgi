@@ -152,7 +152,6 @@ if ($input{whattodo} eq 'uploadID') {
     my $expiration_date = $cgi->param('expiration_date');
     my $broker_code  = $cgi->param('broker');
 
-print Dumper($cgi);
 
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
@@ -162,6 +161,28 @@ print Dumper($cgi);
     if ($doctype =='passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && ($broker_code eq 'MF'|| $broker_code eq 'MX')) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
         code_exit_BO();
+    }
+    
+   if ($expiration_date ne '') {
+        my ($current_date, $submitted_date);
+        $current_date=Date::Utility->new();
+        print "entering try block\n";
+        try{
+        print "inside try\n";
+            $submitted_date = Date::Utility->new($expiration_date);
+        };
+        print $@;
+        if($@){
+        print "inside if/n";
+            print "<br /><p style=\"color:red; font-weight:bold;\">Error in date: $@ - </p><br />";
+            code_exit_BO();
+        }
+        
+        if($submitted_date->is_before($current_date)){
+            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Current date cannot exceed expiration date - </p><br />";
+            code_exit_BO();
+        }
+            
     }
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
@@ -173,19 +194,28 @@ print Dumper($cgi);
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
     
-    my $form_submission={
+    my $upload_submission={
         document_type              => $doctype,
         document_format            => $docformat,
         document_path              => $newfilename,
         authentication_method_code => 'ID_DOCUMENT',
         expiration_date            => $expiration_date
     };
-    if (expiration_date eq ''){
-        delete $form_sumbission->{'expiration_date'};
+    
+    #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
+    if ($expiration_date eq ''){
+        delete $upload_submission->{'expiration_date'};
     }
-
-print "about to sumbit with :".$expiration_date;
-    $client->add_client_authentication_document($form_submission);
+    
+    $client->add_client_authentication_document($upload_submission);
+    if ($@){
+        print "<br /><p style=\"color:red; font-weight:bold;\">Error: $@ - </p><br />";
+        code_exit_BO();
+    }
+    if ($!){
+        print "<br /><p style=\"color:red; font-weight:bold;\">Error: $! - </p><br />";
+        code_exit_BO();
+    }
 
     $client->save;
 
