@@ -167,7 +167,9 @@ note "\ntesting UI case\n\n";
     warning_like { is terminate_backend($dbh), '1', 'backend terminated' } qr/backend terminated/;
 
     lives_ok {
-        BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+        warning_like {
+            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+        } qr/terminating connection/;
     }
     'cache->finish_request_cycle survives a terminated backend';
 
