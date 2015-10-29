@@ -3,7 +3,6 @@ package BOM::Database::Rose::DB;
 use strict;
 use warnings;
 use Carp;
-use BOM::Utility::Log4perl qw( get_logger );
 
 use Mojo::Exception;
 
@@ -63,14 +62,11 @@ sub _handle_errors {
     die [$state, $dbh->errstr] if $state =~ /^BI...$/;
 
     my $severity = _get_severity($state);
-    get_logger()->$severity(
-        sub {
-            $error_message ||= '[None Passed]';
-            my $state = $dbh->state || "[none]";
-            my $err   = $dbh->err   || "[none]";
-            return "$error_message.  SQLSTATE=$state. Error=$err";
-        });
-
+    $error_message ||= '[None Passed]';
+    my $state = $dbh->state || "[none]";
+    my $err   = $dbh->err   || "[none]";
+    warn "DB Error Severity: $severity, $error_message. SQLSTATE=$state. Error=$err";
+    
     die Mojo::Exception->new($dbh->errstr || $error_message);
 }
 
