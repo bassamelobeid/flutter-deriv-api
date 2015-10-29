@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More qw/tests 21/;
+use Test::More qw/tests 24/;
 use Test::NoWarnings ();    # don't call ->import to avoid had_no_warnings to be
                             # called in an END block. We call it explicitly instead.
 use Test::Warn;
