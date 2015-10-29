@@ -38,6 +38,18 @@ sub startup {
             return BOM::Platform::Context::localize(@_);
         });
 
+    $app->helper(
+        new_error => sub {
+            my $c = shift;
+            my ($msg_type, $code, $message) = scalar(@_) > 2 ? @_ : ('error', @_);
+            return {
+                msg_type => $msg_type,
+                error    => {
+                    code    => $code,
+                    message => $message
+                }};
+        });
+
     my $r = $app->routes;
 
     for ($r->under('/websockets/v1')) {
