@@ -31,3 +31,14 @@ definitions:
     server: www
     landing_company: fog
     transaction_db_cluster: fogclientdb
+  - code:
+      - VRTJ
+    server: www
+    landing_company: japan-virtual
+    is_virtual: 1
+    transaction_db_cluster: vrclientdb
+  - code:
+      - JP
+    server: www
+    landing_company: japan
+    transaction_db_cluster: www

@@ -196,14 +196,10 @@ has 'static_host' => (
 );
 
 sub broker_for_new_account {
-    my $self         = shift;
-    my $country_code = shift;
+    my ($self, $country_code) = @_;
 
-    my $company;
-    if (my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code}) {
-        $company = $config->{gaming_company} if ($config->{gaming_company} ne 'none');
-        $company = $config->{financial_company} if (not $company and $config->{financial_company} ne 'none');
-    }
+    my $company = BOM::Platform::Runtime->instance->gaming_company_for_country($country_code);
+    $company //= BOM::Platform::Runtime->instance->financial_company_for_country($country_code);
 
     # For restricted countries without landing company (eg: Malaysia, US), default to CR
     # As without this, accessing www.binary.com from restricted countries will die
@@ -218,17 +214,20 @@ sub broker_for_new_financial {
     my $self         = shift;
     my $country_code = shift;
 
-    my $config = BOM::Platform::Runtime->instance->countries_list->{$country_code};
-    if ($config and $config->{financial_company} ne 'none') {
-        my $broker = first { $_->landing_company->short eq $config->{financial_company} } @{$self->broker_codes};
-        return $broker;
+    my $broker;
+    if (my $company = BOM::Platform::Runtime->instance->financial_company_for_country($country_code)) {
+        $broker = first { $_->landing_company->short eq $company } @{$self->broker_codes};
     }
-    return;
+    return $broker;
 }
 
 sub broker_for_new_virtual {
-    my $self = shift;
-    my $vr_broker = first { $_->is_virtual } @{$self->broker_codes};
+    my ($self, $country_code) = @_;
+
+    my $vr_broker;
+    if (my $vr_company = BOM::Platform::Runtime->instance->virtual_company_for_country($country_code)) {
+        $vr_broker = first { $_->landing_company->short eq $vr_company } @{$self->broker_codes};
+    }
     return $vr_broker;
 }
 

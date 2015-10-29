@@ -16,6 +16,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Client;
 use BOM::Platform::User;
+use BOM::Platform::Account;
 
 sub _validate {
     my $args = shift;
@@ -70,6 +71,9 @@ sub _validate {
         if ($dob_date->is_after($cutoff)) {
             return {error => 'too young'};
         }
+
+        # TODO: to be removed later
+        BOM::Platform::Account::invalid_japan_access_check($residence, $from_client->email);
     }
     return;
 }
