@@ -1,46 +1,35 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "New virtual account Receive",
-  "description": "Create new virtual account",
+  "title": "Create virtual account Receive",
+  "description": "Create virtual account Receive",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "balance": {
-      "type": "array",
-      "title": "Array of balances",
-      "description": "Array of the user's account balances",
-      "items":{
-        "type":"object",
-        "title": "Array of balances",
-        "description": "Array of the user's account balances",
-        "properties": {
-          "balance": {
-            "type": "number",
-            "description": "Balance amount",
-            "pattern": "^([.0-9]{1,25})$"
-          },
-          "currency": {
-            "type": "string",
-            "description": "Currency Example: USD",
-            "pattern": "^([A-Z]{3})$"
-            	
-          },
-          "loginid": {
-            "type": "string",
-            "description": "Client loginid Example: CR000000",
-            "pattern": "^([A-Z0-9]{1,25})$"
-            	
-          }
+    "account": {
+      "type": "object",
+      "title": "new virtual account",
+      "description": "new virtual account details",
+      "properties": {
+        "loginid": {
+          "type": "string",
+          "description": "loginid of new virtual account"
+        },
+        "currency": {
+          "type": "string",
+          "description": "account currency"
+        },
+        "balance": {
+          "type": "number",
+          "description": "account balance"
         }
-
       }
     },
     "msg_type": {
         "type": "string",
-        "description": "balance"
+        "description": "account"
       }
   },
   "required": [
