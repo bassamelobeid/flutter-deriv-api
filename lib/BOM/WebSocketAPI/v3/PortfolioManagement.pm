@@ -22,54 +22,47 @@ sub buy {
 
     Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-    my $json = {msg_type => 'buy'};
-    {
-        my $p2 = delete $c->{ws}{$ws_id}{$id}{data} || do {
-            $json->{error}->{message} = "unknown contract proposal";
-            $json->{error}->{code}    = "InvalidContractProposal";
-            last;
-        };
-        my $contract = try { produce_contract({%$p2}) } || do {
-            my $err = $@;
-            $c->app->log->debug("contract creation failure: $err");
-            $json->{error}->{message} = "cannot create contract";
-            $json->{error}->{code}    = "ContractCreationFailure";
-            last;
-        };
-        my $trx = BOM::Product::Transaction->new({
-            client        => $client,
-            contract      => $contract,
-            price         => ($args->{price} || 0),
-            purchase_date => $purchase_date,
-            source        => $source,
-        });
-        if (my $err = $trx->buy) {
-            $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{error}->{message} = $err->{-message_to_client};
-            $json->{error}->{code}    = $err->get_type;
-            last;
-        }
-        my $response = {
-            transaction_id => $trx->transaction_id,
-            contract_id    => $trx->contract_id,
-            balance_after  => $trx->balance_after,
-            purchase_time  => $trx->purchase_date->epoch,
-            buy_price      => $trx->price,
-            start_time     => $contract->date_start->epoch,
-            longcode       => Mojo::DOM->new->parse($contract->longcode)->all_text,
-            shortcode      => $contract->shortcode,
-        };
 
-        if ($contract->is_spread) {
-            $response->{stop_loss_level}   = $contract->stop_loss_level;
-            $response->{stop_profit_level} = $contract->stop_profit_level;
-            $response->{amount_per_point}  = $contract->amount_per_point;
-        }
+    my $p2 = delete $c->{ws}{$ws_id}{$id}{data}
+        or return $c->new_error('buy', 'InvalidContractProposal', "unknown contract proposal");
 
-        $json->{buy} = $response;
+    my $contract = try { produce_contract({%$p2}) } || do {
+        my $err = $@;
+        $c->app->log->debug("contract creation failure: $err");
+        return $c->new_error('buy', 'ContractCreationFailure', 'cannot create contract');
+    };
+    my $trx = BOM::Product::Transaction->new({
+        client        => $client,
+        contract      => $contract,
+        price         => ($args->{price} || 0),
+        purchase_date => $purchase_date,
+        source        => $source,
+    });
+    if (my $err = $trx->buy) {
+        $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
+        return $c->new_error('buy', $err->get_type, $err->{-message_to_client});
+    }
+    my $response = {
+        transaction_id => $trx->transaction_id,
+        contract_id    => $trx->contract_id,
+        balance_after  => $trx->balance_after,
+        purchase_time  => $trx->purchase_date->epoch,
+        buy_price      => $trx->price,
+        start_time     => $contract->date_start->epoch,
+        longcode       => Mojo::DOM->new->parse($contract->longcode)->all_text,
+        shortcode      => $contract->shortcode,
+    };
+
+    if ($contract->is_spread) {
+        $response->{stop_loss_level}   = $contract->stop_loss_level;
+        $response->{stop_profit_level} = $contract->stop_profit_level;
+        $response->{amount_per_point}  = $contract->amount_per_point;
     }
 
-    return $json;
+    return {
+        msg_type => 'buy',
+        buy      => $response
+    };
 }
 
 sub sell {
@@ -79,58 +72,44 @@ sub sell {
     my $source = $c->stash('source');
     my $client = $c->stash('client');
 
-    my $json = {msg_type => 'sell'};
-    my $invalid_id = 0;
-
-    {
-        $invalid_id = 1 unless $id;
-        last if $invalid_id;
-
-        my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-                client_loginid => $client->loginid,
-                currency_code  => $client->currency,
-                db             => BOM::Database::ClientDB->new({
-                        client_loginid => $client->loginid,
-                        operation      => 'replica',
-                    }
-                )->db,
-            });
-
-        my $fmb = $fmb_dm->get_fmb_by_id([$id]);
-        $invalid_id = 1 unless $fmb;
-        last if $invalid_id;
-
-        my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
-        my $trx = BOM::Product::Transaction->new({
-            client      => $client,
-            contract    => $contract,
-            contract_id => $id,
-            price       => ($args->{price} || 0),
-            source      => $source,
+    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
+            client_loginid => $client->loginid,
+            currency_code  => $client->currency,
+            db             => BOM::Database::ClientDB->new({
+                    client_loginid => $client->loginid,
+                    operation      => 'replica',
+                }
+            )->db,
         });
 
-        if (my $err = $trx->sell) {
-            $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-            $json->{error}->{code}    = $err->get_type;
-            $json->{error}->{message} = $err->{-message_to_client};
-            last;
-        }
+    my $fmb = $fmb_dm->get_fmb_by_id([$id]);
+    return $c->new_error('sell', 'InvalidSellContractProposal', 'unknown contract sell proposal') unless $fmb;
 
-        $trx = $trx->transaction_record;
-        $json->{sell} = {
+    my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
+    my $trx = BOM::Product::Transaction->new({
+        client      => $client,
+        contract    => $contract,
+        contract_id => $id,
+        price       => ($args->{price} || 0),
+        source      => $source,
+    });
+
+    if (my $err = $trx->sell) {
+        $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
+        return $c->new_error('sell', $err->get_type, $err->{-message_to_client});
+    }
+
+    $trx = $trx->transaction_record;
+
+    return {
+        msg_type => 'sell',
+        sell     => {
             transaction_id => $trx->id,
             contract_id    => $id,
             balance_after  => $trx->balance_after,
             sold_for       => abs($trx->amount),
-        };
-    }
+        }};
 
-    if ($invalid_id) {
-        $json->{error}->{message} = "unknown contract sell proposal";
-        $json->{error}->{code}    = "InvalidSellContractProposal";
-    }
-
-    return $json;
 }
 
 sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)

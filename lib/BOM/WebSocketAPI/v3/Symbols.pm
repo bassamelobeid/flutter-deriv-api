@@ -64,12 +64,7 @@ sub active_symbols {
 
     my $return_type = $args->{active_symbols};
     $return_type =~ /^(brief|full)$/
-        or return {
-        msg_type => 'active_symbols',
-        error    => {
-            message => "Value must be 'brief' or 'full'",
-            code    => "InvalidValue"
-        }};
+        or return $c->new_error('active_symbols', 'InvalidValue', "Value must be 'brief' or 'full'");
 
     my $landing_company_name = 'costarica';
     if (my $client = $c->stash('client')) {
