@@ -6,7 +6,7 @@ use DBI;
 use RedisDB;
 use JSON;
 
-my $conn = _conn();
+my $conn = _master_db_connections();
 
 my $forks = 0;
 foreach my $ip (keys %{$conn}) {
@@ -42,7 +42,7 @@ for (1 .. $forks) {
     say "Parent saw $pid exiting";
 }
 
-sub _conn {
+sub _master_db_connections {
     my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
     my $conn;
     foreach my $lc (keys %{$config}) {
