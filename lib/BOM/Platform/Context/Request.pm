@@ -9,6 +9,7 @@ use CGI::Untaint;
 use URL::Encode;
 use Data::Dumper;
 use Try::Tiny;
+use Format::Util::Strings qw( defang_lite );
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
@@ -214,7 +215,7 @@ sub cookie {
 sub param {
     my $self = shift;
     my $name = shift;
-    return $self->params->{$name};
+    return defang_lite($self->params->{$name});
 }
 
 sub param_untaint {
