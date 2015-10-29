@@ -9,6 +9,7 @@ use DataDog::DogStatsd::Helper qw(stats_inc);
 use BOM::Utility::Log4perl qw(get_logger);
 use BOM::System::Password;
 use BOM::Platform::Runtime;
+use BOM::Platform::Context::Request;
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Client;
 use BOM::Platform::User;
@@ -22,6 +23,9 @@ sub create_account {
     $password = BOM::System::Password::hashpw($password);
     $email    = lc $email;
 
+    # TODO: to be removed later
+    BOM::Platform::Account::invalid_japan_access_check($residence, $email);
+
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->new_accounts) {
         return {error => 'invalid'};
     } elsif (BOM::Platform::User->new({email => $email})) {
@@ -33,24 +37,24 @@ sub create_account {
     my ($client, $error);
     try {
         $client = BOM::Platform::Client->register_and_return_new_client({
-            broker_code                   => request()->virtual_account_broker->code,
-            client_password               => $password,
-            salutation                    => '',
-            last_name                     => '',
-            first_name                    => '',
-            myaffiliates_token            => $details->{myaffiliates_token} // '',
-            date_of_birth                 => undef,
-            citizen                       => '',
-            residence                     => $residence,
-            email                         => $email,
-            address_line_1                => '',
-            address_line_2                => '',
-            address_city                  => '',
-            address_state                 => '',
-            address_postcode              => '',
-            phone                         => '',
-            secret_question               => '',
-            secret_answer                 => '',
+            broker_code     => BOM::Platform::Context::Request->new(country_code => $residence)->virtual_account_broker->code,
+            client_password => $password,
+            salutation      => '',
+            last_name       => '',
+            first_name      => '',
+            myaffiliates_token => $details->{myaffiliates_token} // '',
+            date_of_birth      => undef,
+            citizen            => '',
+            residence          => $residence,
+            email              => $email,
+            address_line_1     => '',
+            address_line_2     => '',
+            address_city       => '',
+            address_state      => '',
+            address_postcode   => '',
+            phone              => '',
+            secret_question    => '',
+            secret_answer      => '',
             myaffiliates_token_registered => 0,
             checked_affiliate_exposures   => 0,
             source                        => $details->{source} // '',
