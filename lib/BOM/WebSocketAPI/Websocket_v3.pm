@@ -1,6 +1,6 @@
 package BOM::WebSocketAPI::Websocket_v3;
 
-use Mojo::Base 'BOM::WebSocketAPI::v3::BaseController';
+use Mojo::Base 'Mojolicious::Controller';
 
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::Authorize;

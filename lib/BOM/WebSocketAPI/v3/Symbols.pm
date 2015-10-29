@@ -2,10 +2,7 @@ package BOM::WebSocketAPI::v3::Symbols;
 
 use strict;
 use warnings;
-
-use Mojo::Base 'BOM::WebSocketAPI::v3::BaseController';
 use Finance::Asset;
-
 use Date::Utility;
 use BOM::Platform::Context;
 use BOM::Feed::Data::AnyEvent;

@@ -118,9 +118,7 @@ sub get_transactions {
 
     for ($dt_fm, $dt_to) {
         next unless $_;
-        my $dt = eval { DateTime->from_epoch(epoch => $_) }
-            || return $c->_fail("date expression [$_] should be a valid epoch value");
-        $_ = $dt;
+        $_ = eval { DateTime->from_epoch(epoch => $_) };
     }
 
     my $query = [];
