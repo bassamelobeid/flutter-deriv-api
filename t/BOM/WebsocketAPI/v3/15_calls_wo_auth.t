@@ -44,7 +44,7 @@ is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
 is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
 test_schema('landing_company', $res);
 
-$t = $t->send_ok({json => {landing_company => 'blabla'}})->message_ok;
+$t = $t->send_ok({json => {landing_company => 'XX'}})->message_ok;
 $res = decode_json($t->message->[1]);
 ok $res->{error};
 is $res->{error}->{code}, 'UnknownLandingCompany';

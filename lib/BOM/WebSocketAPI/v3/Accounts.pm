@@ -258,6 +258,10 @@ sub get_account_status {
         push @status, $s if $client->get_status($s);
     }
 
+    if (scalar(@status) == 0) {
+        push @status, 'active';
+    }
+
     return {
         msg_type           => 'get_account_status',
         get_account_status => \@status
