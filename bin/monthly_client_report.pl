@@ -9,31 +9,47 @@ use DateTime;
 use BOM::Platform::Runtime;
 use BOM::Database::ClientDB;
 
-$| = 1; # flushes stdout progress report faster
+$| = 1;    # flushes stdout progress report faster
 
 sub go {
     my %params = @_;
 
-    my $crdr       = $params{crdr}     || die;
-    my $broker     = $params{broker}   || die;
+    my $crdr   = $params{crdr}   || die;
+    my $broker = $params{broker} || die;
 
-    my $yyyymm     = $params{yyyymm}   || do {
-        my $now = DateTime->now->subtract(months=>1);
+    my $yyyymm = $params{yyyymm} || do {
+        my $now = DateTime->now->subtract(months => 1);
         sprintf '%s-%02s', $now->year, $now->month;
     };
 
-    my ($yyyy,$mm) = $yyyymm =~ /^(\d{4})-(\d{2})$/;
-    my $start_date = DateTime->new(year=>$yyyy, month=>$mm);
-    my $month_end  = DateTime->last_day_of_month(year=>$yyyy, month=>$mm)->ymd;
-    my $until_date = $start_date->clone->add(months=>1);
+    my ($yyyy, $mm) = $yyyymm =~ /^(\d{4})-(\d{2})$/;
+    my $start_date = DateTime->new(
+        year  => $yyyy,
+        month => $mm
+    );
+    my $month_end = DateTime->last_day_of_month(
+        year  => $yyyy,
+        month => $mm
+    )->ymd;
+    my $until_date = $start_date->clone->add(months => 1);
 
-    my $dep_wth    = {credit=>'deposit', debit=>'withdrawal'}->{$crdr} || die;
-    my $buy_sell   = {credit=>'sell'   , debit=>'buy'       }->{$crdr};
-    my $gt_lt      = {credit=>'>'      , debit=>'<'         }->{$crdr};
-    my $Buy_Sell   = ucfirst $buy_sell;
-    my $CrDr       = ucfirst $crdr;
+    my $dep_wth = {
+        credit => 'deposit',
+        debit  => 'withdrawal'
+        }->{$crdr}
+        || die;
+    my $buy_sell = {
+        credit => 'sell',
+        debit  => 'buy'
+    }->{$crdr};
+    my $gt_lt = {
+        credit => '>',
+        debit  => '<'
+    }->{$crdr};
+    my $Buy_Sell = ucfirst $buy_sell;
+    my $CrDr     = ucfirst $crdr;
 
-    my $csv_name   = "/db/f_broker/$broker/monthly_client_report/${yyyymm}_${crdr}.csv";
+    my $csv_name = "/db/f_broker/$broker/monthly_client_report/${yyyymm}_${crdr}.csv";
 
     my $sql = <<HERE;
 
@@ -96,32 +112,32 @@ sub go {
 HERE
 
     my $dbh = BOM::Database::ClientDB->new({
-        broker_code => $broker,
-        operation   => 'backoffice_replica',
-    })->db->dbh;
+            broker_code => $broker,
+            operation   => 'backoffice_replica',
+        })->db->dbh;
 
-    my $sth = $dbh->prepare($sql);
+    my $sth   = $dbh->prepare($sql);
     my @binds = (
-        $start_date->ymd,   # b0
-        $until_date->ymd,   # b1
-        $buy_sell,          # b2
-        $broker,            # b3
-        $start_date->ymd,   # b4
-        $until_date->ymd,   # b5
-        $broker,            # b6
+        $start_date->ymd,    # b0
+        $until_date->ymd,    # b1
+        $buy_sell,           # b2
+        $broker,             # b3
+        $start_date->ymd,    # b4
+        $until_date->ymd,    # b5
+        $broker,             # b6
     );
 
     $sth->execute(@binds);
 
-    my @headers    = qw/Date Loginid Description CrDr_Amount Amount Currency Broker Type/;
-    my $csv = Text::CSV->new({eol=>"\n"});
+    my @headers = qw/Date Loginid Description CrDr_Amount Amount Currency Broker Type/;
+    my $csv = Text::CSV->new({eol => "\n"});
     my $fh;
     while (my $row = $sth->fetchrow_arrayref) {
         unless ($fh) {
             $fh = IO::File->new($csv_name, 'w') || die "writing $csv_name: $!";
             $csv->print($fh, \@headers);
         }
-        $csv->print($fh, $row );
+        $csv->print($fh, $row);
     }
     $fh->close if $fh;
     return $sth->rows;
@@ -130,7 +146,9 @@ HERE
 for my $broker (qw/ MLT MX MF CR /) {
     for my $crdr ('debit', 'credit') {
         printf "%5s / %6s: %s.. ", $broker, $crdr, scalar(localtime);
-        my $rows = go broker => $broker, crdr => $crdr;
+        my $rows = go
+            broker => $broker,
+            crdr   => $crdr;
         printf "%7d records\n", $rows;
     }
 }
