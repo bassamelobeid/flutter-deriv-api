@@ -15,9 +15,6 @@ foreach my $lc (keys %{$config}) {
   }
 }
 
-say "Process ID: $$";
-my $forks = 0;
-
 sub _redis {
     my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
     return RedisDB->new(
@@ -26,7 +23,7 @@ sub _redis {
         password => $config->{write}->{password});
 }
 
-
+my $forks = 0;
 foreach my $ip (keys %{$conn}) {
   my $pid = fork;
   if (not defined $pid) {
@@ -35,15 +32,11 @@ foreach my $ip (keys %{$conn}) {
   }
   if ($pid) {
     $forks++;
-    say "In the parent process PID ($$), Child pid: $pid Num of fork child processes: $forks";
   } else {
-    say "In the child process PID ($$)";
     say "starting to listen to $ip";
 
     my $dbh = DBI->connect("dbi:Pg:dbname=regentmarkets;host=$ip;port=5432", 'write', $conn->{$ip}, {AutoCommit => 1, RaiseError => 1, PrintError => 1});
-
     $dbh->do("LISTEN transaction_watchers");
-
     my $redis = _redis();
 
     LISTENLOOP: {
@@ -59,15 +52,13 @@ foreach my $ip (keys %{$conn}) {
         $msg->{payment_id} = $items[5];
         $msg->{amount} = $items[6];
         $msg->{balance_after} = $items[7];
-        say "(PUBLISH:".'balance_'.$msg->{account_id}.")";
+
         $redis->publish('balance_'.$msg->{account_id}, JSON::to_json($msg));
         $redis->publish('buy_'.$msg->{account_id}, JSON::to_json($msg));
         $redis->publish('sell_'.$msg->{account_id}, JSON::to_json($msg));
         $redis->publish('transaction_'.$msg->{account_id}, JSON::to_json($msg));
         $redis->publish('payment_'.$msg->{account_id}, JSON::to_json($msg));
-        say "($name, $pid, $payload)";
       }
-      $dbh->ping() or die qq{Ping failed!};
       sleep(1);
       redo;
     }
