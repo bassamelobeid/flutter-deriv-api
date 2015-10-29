@@ -12,12 +12,7 @@ sub authorize {
 
     my $token = $args->{authorize};
 
-    my $err = {
-        msg_type => 'authorize',
-        error    => {
-            message => "Token invalid",
-            code    => "InvalidToken"
-        }};
+    my $err = $c->new_error('authorize', 'InvalidToken', 'Token invalid');
 
     my $loginid;
     if (length $token == 15) {    # access token

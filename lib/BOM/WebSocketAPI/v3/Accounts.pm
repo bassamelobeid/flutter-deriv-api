@@ -28,12 +28,8 @@ sub landing_company {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
     }
 
-    return {
-        msg_type => 'landing_company',
-        error    => {
-            message => "Unknown landing company",
-            code    => "UnknownLandingCompany"
-        }} unless $c_config;
+    return $c->new_error('landing_company', 'UnknownLandingCompany', 'Unknown landing company')
+        unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
     my %landing_company = %{$c_config};
@@ -61,12 +57,8 @@ sub landing_company_details {
     my ($c, $args) = @_;
 
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
-    return {
-        msg_type => 'landing_company_details',
-        error    => {
-            message => "Unknown landing company",
-            code    => "UnknownLandingCompany"
-        }} unless $lc;
+    return $c->new_error('landing_company_details', 'UnknownLandingCompany', 'Unknown landing company')
+        unless $lc;
 
     return {
         msg_type                => 'landing_company_details',
@@ -274,13 +266,7 @@ sub change_password {
 
     my $err = sub {
         my ($message) = @_;
-        return {
-            msg_type => 'change_password',
-            error    => {
-                message => $message,
-                code    => "ChangePasswordError"
-            },
-        };
+        return $c->new_error('change_password', 'ChangePasswordError', $message);
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
@@ -351,12 +337,7 @@ sub set_settings {
     my $now    = Date::Utility->new;
     my $client = $c->stash('client');
 
-    return {
-        msg_type => 'set_settings',
-        error    => {
-            message => "Permission Denied.",
-            code    => "PermissionDenied"
-        }} if $client->is_virtual;
+    return $c->new_error('set_settings', 'PermissionDenied', 'Permission Denied.') if $client->is_virtual;
 
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -391,12 +372,7 @@ sub set_settings {
     $client->latest_environment(
         $now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
     if (not $client->save()) {
-        return {
-            msg_type => 'set_settings',
-            error    => {
-                message => "Sorry, an error occurred while processing your account.",
-                code    => "InternalServerError"
-            }};
+        return $c->new_error('set_settings', 'InternalServerError', 'Sorry, an error occurred while processing your account.');
     }
 
     if ($cil_message) {
