@@ -53,6 +53,12 @@ ok($trx);
 ok($trx->{$_}, "got $_") foreach (qw/sell_price buy_price purchase_time contract_id transaction_id/);
 test_schema('profit_table', $profit_table);
 
+$t = $t->send_ok({json => {get_limits => 1}})->message_ok;
+my $res = decode_json($t->message->[1]);
+ok($res->{get_limits});
+is $res->{get_limits}->{open_positions}, 60;
+test_schema('get_limits', $res);
+
 $t->finish_ok;
 
 done_testing();

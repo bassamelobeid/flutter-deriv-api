@@ -80,7 +80,7 @@ sub active_symbols {
     }
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    my $request = BOM::Platform::Context::request();
+    my $request = $c->stash('r');
     my $lang    = $request->language;
 
     # we need put $lang as part of the key b/c market translated_display_name
