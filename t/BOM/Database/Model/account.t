@@ -60,20 +60,24 @@ lives_ok {
 'Can change is_default';
 
 throws_ok {
-    $account->currency_code('USD');
-    $account->save();
+    warns {
+        $account->currency_code('USD');
+        $account->save();
+    }
 }
 qr/permission denied/, 'Cannot change currency_code';
 
 throws_ok {
-    $account = BOM::Database::Model::Account->new({
+    warns {
+        $account = BOM::Database::Model::Account->new({
             'data_object_params' => {
                 'client_loginid' => $client->loginid,
                 'currency_code'  => 'GBP'
             },
             db => $connection_builder->db
         });
-    $account->save();
+        $account->save();
+    }
 }
 qr/duplicate key value violates unique constraint/i, 'Check if trying to save an existing account fails';
 
@@ -81,7 +85,7 @@ throws_ok {
     $client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
         broker_code => 'MX',
     });
-   $account = BOM::Database::Model::Account->new({
+    $account = BOM::Database::Model::Account->new({
            'data_object_params' => {
                'client_loginid' => $client->loginid,
                'currency_code'  => 'JPY',
@@ -89,7 +93,9 @@ throws_ok {
            },
            db => $connection_builder->db
        });
-   $account->save();
+    warns {
+       $account->save();
+    }  
 }
 qr/permission denied for relation account/i, 'Check transaction.account.balance permissions';
 
