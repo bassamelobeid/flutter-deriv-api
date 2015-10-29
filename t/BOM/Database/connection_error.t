@@ -134,14 +134,14 @@ note "\ntesting UI case\n\n";
     throws_ok {
         warning_like {
             $dbh->do('select 1/0');
-        }, qr/division by zero/;
+        } qr/division by zero/;
     }
     qr/division by zero/, 'connection now in faulty transaction state';
 
     throws_ok {
         warning_like {
             $dbh->do('select 1');
-        }, qr/current transaction is aborted/;
+        } qr/current transaction is aborted/;
     }
     qr/current transaction is aborted/, 'transaction aborted state';
 
