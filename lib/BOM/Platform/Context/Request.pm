@@ -215,7 +215,7 @@ sub cookie {
 sub param {
     my $self = shift;
     my $name = shift;
-    return defang_lite($self->params->{$name});
+    return $self->params->{$name};
 }
 
 sub param_untaint {
@@ -267,10 +267,11 @@ sub _build_params {
             $params->{$param} = [];
             foreach my $value (@values) {
                 $value = Encode::decode('UTF-8', $value) unless Encode::is_utf8($value);
-                push @{$params->{$param}}, $value;
+                push @{$params->{$param}}, defang_lite($value);
             }
         } else {
             $params->{$param} = Encode::decode('UTF-8', $params->{$param}) unless Encode::is_utf8($params->{$param});
+            $params->{$param} = defang_lite($params->{$param});
         }
     }
 
