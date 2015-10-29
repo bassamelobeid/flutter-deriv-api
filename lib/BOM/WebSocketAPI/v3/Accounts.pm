@@ -271,6 +271,15 @@ sub get_account_status {
 sub change_password {
     my ($c, $args) = @_;
 
+    ## only allow for Session Token
+    return {
+        msg_type => 'change_password',
+        error    => {
+            message => "Permission Denied.",
+            code    => "PermissionDenied"
+        }}
+        unless ($c->stash('token_type') // '') eq 'session_token';
+
     my $client_obj = $c->stash('client');
     my $user = BOM::Platform::User->new({email => $client_obj->email});
 
