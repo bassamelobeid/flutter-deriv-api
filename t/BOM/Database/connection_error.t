@@ -165,7 +165,7 @@ note "\ntesting UI case\n\n";
     # make the handle unusable and finish the request cycle.
 
     warning_like { 
-       is terminate_backend($dbh), '1', 'backend terminated' 
+       is terminate_backend($dbh), '1', 'backend terminated';
 
         lives_ok {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
