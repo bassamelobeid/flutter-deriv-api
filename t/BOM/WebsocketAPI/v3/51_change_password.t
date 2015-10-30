@@ -8,6 +8,7 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Platform::SessionCookie;
+use BOM::Database::Model::AccessToken;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::System::Password;
@@ -119,6 +120,21 @@ is $status->{success}, 1, 'login with new password OK';
 foreach my $client ($user->clients) {
     is $client->password, $user->password;
 }
+
+## for api token, it's not allowed to change password
+$token = BOM::Database::Model::AccessToken->new->create_token($vr_1, 'Test Token');
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+$authorize = decode_json($t->message->[1]);
+is $authorize->{authorize}->{email},   $email;
+is $authorize->{authorize}->{loginid}, $vr_1;
+$t = $t->send_ok({
+        json => {
+            change_password => 1,
+            old_password    => $new_password,
+            new_password    => 'abc123456'
+        }})->message_ok;
+my $res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'PermissionDenied', 'got PermissionDenied for api token';
 
 $t->finish_ok;
 
