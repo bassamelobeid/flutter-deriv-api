@@ -166,20 +166,10 @@ if ($input{whattodo} eq 'uploadID') {
    if ($expiration_date ne '') {
         my ($current_date, $submitted_date);
         $current_date=Date::Utility->new();
-        print "entering try block\n";
-        try{
-        print "inside try\n";
-            $submitted_date = Date::Utility->new($expiration_date);
-        };
-        print $@;
-        if($@){
-        print "inside if/n";
-            print "<br /><p style=\"color:red; font-weight:bold;\">Error in date: $@ - </p><br />";
-            code_exit_BO();
-        }
+        $submitted_date = Date::Utility->new($expiration_date);
         
-        if($submitted_date->is_before($current_date)){
-            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Current date cannot exceed expiration date - </p><br />";
+        if($submitted_date->is_before($current_date)||$submitted_date->is_same_as($current_date)){
+            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Expiration date cannot be in the past or be same as current date - </p><br />";
             code_exit_BO();
         }
             
@@ -208,17 +198,9 @@ if ($input{whattodo} eq 'uploadID') {
     }
     
     $client->add_client_authentication_document($upload_submission);
-    if ($@){
-        print "<br /><p style=\"color:red; font-weight:bold;\">Error: $@ - </p><br />";
-        code_exit_BO();
-    }
-    if ($!){
-        print "<br /><p style=\"color:red; font-weight:bold;\">Error: $! - </p><br />";
-        code_exit_BO();
-    }
-
+    
     $client->save;
-
+    
     print "<br /><p style=\"color:green; font-weight:bold;\">Ok! File $newfilename is uploaded (filesize $filesize).</p><br />";
 
     code_exit_BO();
