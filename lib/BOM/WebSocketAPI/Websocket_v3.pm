@@ -170,18 +170,8 @@ sub __handle {
         ## refetch account b/c stash client won't get updated in websocket
         if ($dispatch->[2] and my $loginid = $c->stash('loginid')) {
             my $client = BOM::Platform::Client->new({loginid => $loginid});
-            return {
-                msg_type => 'error',
-                error    => {
-                    message => "Invalid client",
-                    code    => "InvalidClient"
-                }} unless $client;
-            return {
-                msg_type => 'error',
-                error    => {
-                    message => "This account is unavailable",
-                    code    => "DisabledClient"
-                }}
+            return $c->new_error('InvalidClient', 'Invalid client') unless $client;
+            return $c->new_error('DisabledClient', 'This account is unavailable')
                 if $client->get_status('disabled');
             $c->stash(
                 client  => $client,
