@@ -169,7 +169,7 @@ if ($input{whattodo} eq 'uploadID') {
         $submitted_date = Date::Utility->new($expiration_date);
         
         if($submitted_date->is_before($current_date)||$submitted_date->is_same_as($current_date)){
-            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Expiration date cannot be in the past or be same as current date - </p><br />";
+            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Expiration date should be greater than current date </p><br />";
             code_exit_BO();
         }
             
