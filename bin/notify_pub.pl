@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 use strict;
 use warnings;
 use 5.010;
@@ -9,6 +10,7 @@ use JSON;
 my $conn = _master_db_connections();
 
 my $forks = 0;
+my @cpid;
 foreach my $ip (keys %{$conn}) {
     my $pid = fork;
     if (not defined $pid) {
@@ -16,6 +18,7 @@ foreach my $ip (keys %{$conn}) {
     }
     if ($pid) {
         $forks++;
+        push @cpid, $pid;
     } else {
         say "starting to listen to $ip";
 
@@ -36,6 +39,13 @@ foreach my $ip (keys %{$conn}) {
         exit;
     }
 }
+
+$SIG{INT} = sub{
+    foreach my $p (@cpid) {
+        say "Killing $p";
+        kill KILL => $p;
+    }
+};
 
 for (1 .. $forks) {
     my $pid = wait();
