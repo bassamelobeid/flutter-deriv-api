@@ -18,11 +18,7 @@ sub get_real_acc_opening_type {
 
         if ($financial_company) {
             # Eg: Germany, Japan
-
-            # temporary comment out, until japan a/c opening goes live
-            # return $financial_company if (any { $_ eq $financial_company } qw(maltainvest japan));
-
-            return $financial_company if ($financial_company eq 'maltainvest');
+            return $financial_company if (any { $_ eq $financial_company } qw(maltainvest japan));
 
             # Eg: Singapore has no gaming_company
             return 'real';
