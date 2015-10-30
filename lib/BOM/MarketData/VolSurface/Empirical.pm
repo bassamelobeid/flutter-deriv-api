@@ -5,10 +5,8 @@ use Moose;
 use Math::Gauss qw(pdf);
 use Cache::RedisDB;
 use List::Util qw(max min sum);
-use List::MoreUtils qw(uniq);
 use Tie::Scalar::Timeout;
-use POSIX qw(ceil);
-use Time::Duration::Concise::Localize;
+use Time::Duration::Concise;
 
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
@@ -18,91 +16,12 @@ use BOM::Market::Types;
 sub get_volatility {
     my ($self, $args) = @_;
 
-    my ($naked_vol, $average_tick_count, $err) = @{$self->_naked_vol($args)}{'naked_vol', 'average_tick_count', 'err'};
-
-    return {
-        volatility         => $naked_vol,
-        average_tick_count => $average_tick_count,
-        err                => $err,
-    };
-}
-
-sub get_seasonalized_volatility {
-    my ($self, $args) = @_;
-
-    my ($naked_vol, $average_tick_count, $err) = @{$self->_naked_vol($args)}{'naked_vol', 'average_tick_count', 'err'};
-    my ($past, $fut) = $self->_get_volatility_seasonality_areas($args);
-    my $past_vol_seasonality   = sum(map { $_**2 } @$past);
-    my $future_vol_seasonality = sum(map { $_**2 } @$fut);
-    my $seasonalized_vol       = $self->_seasonalize({
-        volatility => $naked_vol,
-        past       => $past_vol_seasonality,
-        future     => $future_vol_seasonality,
-        steps      => scalar @$fut,
-        %$args
-    });
-    return {
-        volatility           => $seasonalized_vol,
-        average_tick_count   => $average_tick_count,
-        long_term_prediction => $self->long_term_prediction,
-        err                  => $err,
-    };
-}
-
-sub get_seasonalized_volatility_with_news {
-    my ($self, $args) = @_;
-
-    my ($naked_vol, $average_tick_count, $err) = @{$self->_naked_vol($args)}{'naked_vol', 'average_tick_count', 'err'};
-    my ($vs_past,                    $vs_fut)                       = $self->_get_volatility_seasonality_areas($args);
-    my ($eco_past,                   $eco_fut)                      = $self->_get_economic_event_seasonality_areas($args);
-    my ($past_seasonality_with_news, $future_seasonality_with_news) = (0, 0);
-    my $steps = scalar @$vs_fut - 1;
-    for my $n (0 .. $steps) {
-        $past_seasonality_with_news   += ($vs_past->[$n] * ($eco_past->[$n] // 1))**2;
-        $future_seasonality_with_news += ($vs_fut->[$n] *  ($eco_fut->[$n]  // 1))**2;
-    }
-    my $seasonalized_vol = $self->_seasonalize({
-        volatility => $naked_vol,
-        past       => $past_seasonality_with_news,
-        future     => $future_seasonality_with_news,
-        steps      => $steps,
-        %$args
-    });
-    return {
-        volatility           => $seasonalized_vol,
-        average_tick_count   => $average_tick_count,
-        long_term_prediction => $self->long_term_prediction,
-        err                  => $err,
-    };
-}
-
-sub _get_economic_events {
-    my ($self, $start, $end) = @_;
-
-    my $underlying = $self->underlying;
-
-    my $news = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-            from => Date::Utility->new($start),
-            to   => Date::Utility->new($end)});
-    # static duration that needs to be replaced.
-    my $news_duration = 3600;
-    my @applicable_news =
-        map { {release_time => $_->[0], magnitude => $_->[1]->impact, duration => $news_duration} }
-        sort { $a->[0] <=> $b->[0] }
-        map { [$_->release_date->epoch, $_] }
-        grep { $_->symbol eq $underlying->quote_currency_symbol or $_->symbol eq $underlying->asset_symbol } @$news;
-
-    return \@applicable_news;
-}
-
-sub _naked_vol {
-    my ($self, $args) = @_;
-
+    # naked volatility
     my $underlying = $self->underlying;
     my ($current_epoch, $seconds_to_expiration) =
         @{$args}{'current_epoch', 'seconds_to_expiration'};
 
-    my $lookback_interval = Time::Duration::Concise::Localize->new(interval => max(900, $seconds_to_expiration) . 's');
+    my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $seconds_to_expiration) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
     my $at    = BOM::Market::AggTicks->new;
@@ -126,49 +45,68 @@ sub _naked_vol {
         $real_periods++;
         $tick_count += $ticks->[$i]->{count};
     }
+    # setting time samples past here.
+    $self->time_samples_past(\@time_samples_past);
 
     my $average_tick_count = ($tick_count) ? ($tick_count / $real_periods) : 0;
+    $self->average_tick_count($average_tick_count);
     $self->error(1) if ($tick_count < $lookback_interval->minutes * 0.8);
 
     # if there's error we just return long term volatility
     return $self->long_term_vol if $self->error;
 
     my $start_lookback  = $current_epoch - $seconds_to_expiration - 3600;
-    my $end_lookback    = $currency_epoch;
-    my $economic_events = $self->_get_economic_events($start_lookback, $end_lookbak);
-    my $weights_past    = _calculate_weights(\@time_samples_past, $economic_events);
-    my $sum_vol         = sum map { $returns[$_]**2 * $weights_past->[$_] } (0 .. $#time_samples_past);
-    my $vol_past        = sqrt($sum_vol / sum(@$weights_past));
+    my $end_lookback    = $current_epoch + $seconds_to_expiration + 300; #plus 5 minutes for the shifting logic
+    my $economic_events = $self->_get_economic_events($start_lookback, $end_lookback);
+    my $weights         = _calculate_weights(\@time_samples_past, $economic_events);
+    my $sum_vol         = sum map { $returns[$_]**2 * $weights->[$_] } (0 .. $#time_samples_past);
+    my $observed_vol    = sqrt($sum_vol / sum(@$weights));
 
-    return $vol_past;
-}
-
-sub _calculate_weights {
-    my ($times, $news_array) = @_;
-
-    my @times    = @$times;
-    my @combined = (1) x scalar(@times);
-    foreach my $news (@$news_array) {
-        my @weights;
-        foreach my $time (@$times) {
-            my $width = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
-            push @weights, 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * $news->{magnitude});
-        }
-        @combined = map { min($weights[$_], $combined[$_]) } (0 .. $#times);
+    my $c_start = $args->{current_epoch};
+    my $c_end   = $c_start + $args->{seconds_to_expiration};
+    my @time_samples_fut;
+    for (my $i = $c_start; $i <= $c_end; $i += 15) {
+        push @time_samples_fut, $i;
     }
 
-    return \@combined;
+    #seasonality curves
+    my $seasonality_past = $self->_get_volatility_seasonality_areas(\@time_samples_past);
+    my $seasonality_fut  = $self->_get_volatility_seasonality_areas(\@time_samples_fut);
+
+    #news triangles
+    #no news if not requested
+    my $news_past = (1) x (scalar @time_samples_past);
+    my $news_fut  = (1) x (scalar @time_samples_fut);
+    if ($args->{include_news_impact}) {
+        my $contract_details = {
+            start    => $c_start,
+            duration => $args->{seconds_to_expiration},
+        };
+        $news_past = _calculate_news_triangle(\@time_samples_past, $economic_events, $contract_details);
+        $news_fut  = _calculate_news_triangle(\@time_samples_fut,  $economic_events, $contract_details);
+    }
+
+    my $past_sum           = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
+    my $past_seasonality   = sqrt($past_sum / sum(@$weights));
+    my $future_sum         = sum(map { ($seasonality_fut->[$_] * $news_fut->[0])**2 } (0 .. $#time_samples_fut));
+    my $future_seasonality = sqrt($future_sum / scalar(@time_samples_fut));
+
+    return $self->_seasonalize({
+        volatility => $observed_vol,
+        past       => $past_seasonality,
+        future     => $future_seasonality,
+        %$args
+    });
 }
 
 sub _seasonalize {
     my ($self, $args) = @_;
 
     my ($past, $future) = @{$args}{'past', 'future'};
-    my $steps = $args->{steps};
 
-    my $ltp_volatility_seasonality = sqrt($future / $steps);
-    my $stp_volatility_seasonality = sqrt($future / $past);
-    $stp_volatility_seasonality = min(1.6, max($stp_volatility_seasonality, 0.5));
+    my $ltp_volatility_seasonality = $future;
+    my $stp_volatility_seasonality = $future / $past;
+    $stp_volatility_seasonality = min(2, max($stp_volatility_seasonality, 0.5));
 
     my $duration_coef        = $self->_get_coefficients('duration_coef');
     my $minutes_to_expiry    = $args->{seconds_to_expiration} / 60;
@@ -190,7 +128,7 @@ sub _seasonalize {
     return $seasonalized_vol;
 }
 
-sub _get_applicable_economic_events {
+sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
     my $underlying = $self->underlying;
@@ -198,111 +136,83 @@ sub _get_applicable_economic_events {
     my $news = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
-    my @influential_currencies = ('USD', 'AUD', 'CAD', 'CNY', 'NZD');
-    my @applicable_symbols = uniq($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
-    my @applicable_news;
+    # static duration that needs to be replaced.
+    my $news_duration = 3600;
+    my @applicable_news =
+        map { {release_time => $_->[0], magnitude => $_->[1]->impact, duration => $news_duration} }
+        sort { $a->[0] <=> $b->[0] }
+        map { [$_->release_date->epoch, $_] }
+        grep { $_->symbol eq $underlying->quote_currency_symbol or $_->symbol eq $underlying->asset_symbol } @$news;
 
-    foreach my $symbol (@applicable_symbols) {
-        my @news = grep { $_->symbol eq $symbol } @$news;
-        push @applicable_news, @news;
-    }
-    @applicable_news =
-        sort { $a->release_date->epoch <=> $b->release_date->epoch } @applicable_news;
-
-    return @applicable_news;
+    return \@applicable_news;
 }
 
-sub _get_economic_event_seasonality_areas {
-    my ($self, $args) = @_;
+sub _calculate_weights {
+    my ($times, $news_array) = @_;
 
-    my $secs_to_expiry             = $args->{seconds_to_expiration};
-    my $applicable_event_starttime = $args->{current_epoch} - $secs_to_expiry;
-    my $applicable_event_endtime   = $args->{current_epoch} + $secs_to_expiry;
-
-    my $secs_to_backout = $secs_to_expiry + 3600;
-    my $effective_start = $args->{current_epoch};
-    my $start           = $effective_start - $secs_to_backout;
-    my $end             = $effective_start + $secs_to_expiry;
-    my @economic_events = $self->_get_applicable_economic_events($start, $end);
-
-    my (@sum_past_triangle, @sum_future_triangle);
-    my $step_size  = $self->_step_size_for_duration($secs_to_expiry);
-    my $step_count = ceil($secs_to_expiry / $step_size);
-
-    foreach my $event (@economic_events) {
-        my $end_of_effect = $event->release_date->plus_time_interval('1h');
-        my $scale = $event->get_scaling_factor($self->underlying, 'vol');
-        next if not defined $scale;
-        my $x1             = $event->release_date->epoch;
-        my $x2             = $end_of_effect->epoch;
-        my $y1             = $scale;
-        my $y2             = 1;
-        my $triangle_slope = ($y1 - $y2) / ($x1 - $x2);
-        my $intercept      = $y1 - $triangle_slope * $x1;
-
-        my $n = 0;
-        for (my $t = $applicable_event_starttime; $t <= $effective_start; $t += $step_size) {
-            my $height = ($t > $x1 and $t <= $x2) ? $triangle_slope * $t + $intercept : 1;
-            $sum_past_triangle[$n] = max($height, $sum_past_triangle[$n] // 1);
-            $n++;
+    my @times    = @$times;
+    my @combined = (1) x scalar(@times);
+    foreach my $news (@$news_array) {
+        my @weights;
+        foreach my $time (@$times) {
+            my $width = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
+            push @weights, 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * $news->{magnitude});
         }
-
-        my $thirty_minutes_in_epoch = $event->release_date->plus_time_interval('30m')->epoch;
-        my $primary_sum             = 5 * (sqrt((6 * (7 * $scale**2 + 4 * $scale + 1)) / $step_size));
-        my $primary_sum_index       = 0;
-
-        $n = 0;
-        for (my $t = $effective_start; $t <= $end_of_effect; $t += $step_size) {
-            $primary_sum_index++ if $t <= $x1;
-            my $height = ($t > $thirty_minutes_in_epoch and $t <= $x2) ? $triangle_slope * $t + $intercept : 1;
-            $sum_future_triangle[$n] = max($height, $sum_future_triangle[$n] // 1);
-            $n++;
-        }
-
-        if (    $args->{current_epoch} <= $thirty_minutes_in_epoch
-            and $applicable_event_endtime >= $event->release_date->epoch - 600)
-        {
-            $primary_sum_index = min($primary_sum_index, $secs_to_expiry);
-            $sum_future_triangle[$primary_sum_index] = max($primary_sum, $sum_future_triangle[$primary_sum_index] // 1);
-        }
+        @combined = map { min($weights[$_], $combined[$_]) } (0 .. $#times);
     }
 
-    @sum_past_triangle   = @sum_past_triangle[-$step_count .. -1];        # Align with volatility slice.
-    @sum_future_triangle = @sum_future_triangle[0 .. $step_count - 1];    # Align with volatility slice.
+    return \@combined;
+}
 
-    return (\@sum_past_triangle, \@sum_future_triangle);
+sub _calculate_news_triangle {
+    my ($times, $news_array, $contract) = @_;
+
+    my @times    = @$times;
+    my @combined = (1) x scalar(@times);
+    foreach my $news (@$news_array) {
+        my $shift               = _shift($news->{release_time}, $contract->{start}, $contract->{duration});
+        my $effective_news_time = $news->{release_time} + $shift;
+        my $decay_coef          = -log(2 / ($news->{magnitude} - 1)) / $news->{duration};
+        my @triangle;
+        foreach my $time (@$times) {
+            if ($time < $effective_news_time) {
+                push @triangle, 1;
+            } else {
+                my $chunk = ($news->{magnitude} - 1) * exp(-$decay_coef * ($time - $effective_news_time)) + 1;
+                push @triangle, $chunk;
+            }
+        }
+        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#times);
+    }
+
+    return \@combined;
+}
+
+sub _shift {
+    my ($news_time, $contract_start, $contract_duration) = @_;
+
+    my $shift_seconds = 0;
+    my $contract_end = $contract_start + $contract_duration;
+    if ($news_time > $contract_start - 5*60 and $news_time < $contract_start) {
+        $shift_seconds = $contract_start - $news_time;
+    } elsif ($news_time < $contract_end + 5*60 and $news_time > $contract_end - 5*60) {
+        $shift_seconds = $news_time - $contract_end + 5*60;
+    }
+
+    return $shift_seconds;
 }
 
 sub _get_volatility_seasonality_areas {
-    my ($self, $args) = @_;
+    my ($self, $times) = @_;
 
-    my $second_of_day = $args->{current_epoch} % 86400;
-    my $duration_seconds = max(0, $args->{seconds_to_expiration});
-
+    my @seasonality;
     my $secondly_seasonality = $self->per_second_seasonality_curve;
-    my $step_size            = $self->_step_size_for_duration($duration_seconds);
-    my (@future_seasonality, @past_seasonality);
-    for (my $t = $second_of_day - $duration_seconds; $t <= $second_of_day + $duration_seconds; $t += $step_size) {
-        my $area = $secondly_seasonality->[$t % 86400];
-        push @future_seasonality, $area if ($t >= $second_of_day);
-        push @past_seasonality,   $area if ($t <= $second_of_day);
+    foreach my $time (@$times) {
+        my $second_of_day = $time % 86400;
+        push @seasonality, $secondly_seasonality->[$second_of_day];
     }
 
-    return (\@past_seasonality, \@future_seasonality);
-}
-
-# This is only the approximate number of steps
-# it will vary based on relative primality:
-# 60 chosen for many small factors and clock-likeness
-has approx_steps => (
-    is      => 'ro',
-    default => 60,
-);
-
-sub _step_size_for_duration {
-    my ($self, $duration_seconds) = @_;
-
-    return max(1, int($duration_seconds / $self->approx_steps));
+    return \@seasonality;
 }
 
 has per_second_seasonality_curve => (
@@ -378,12 +288,7 @@ sub _get_coefficients {
     return $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 }
 
-has _naked_vol_cache => (
-    is      => 'ro',
-    default => sub { {} },
-);
-
-has long_term_prediction => (
+has [qw(long_term_prediction average_tick_count error)] => (
     is      => 'rw',
     default => undef,
 );
