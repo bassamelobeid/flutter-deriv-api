@@ -17,7 +17,7 @@ use Carp;
 
 sub documentation {
     return qq/\nInspects replication delays and reinitialize replication if above threshold./
-        . qq/\nAlso restarts CouchDB if it's stuck and replications cannot be stopped.'/;
+      . qq/\nAlso restarts CouchDB if it's stuck and replications cannot be stopped.'/;
 }
 
 sub options {
@@ -39,7 +39,7 @@ sub options {
         {
             name => 'restart-stale',
             documentation =>
-                'Find replications whose delays are over threshold and try to restart them. Kills and restarts CouchDB if they are stuck and cannot be reinstantiated.',
+              'Find replications whose delays are over threshold and try to restart them. Kills and restarts CouchDB if they are stuck and cannot be reinstantiated.',
         },
         {
             name          => 'force-restart-couch',
@@ -49,7 +49,7 @@ sub options {
             name    => 'random-delay',
             display => 'random-delay=<n>',
             documentation =>
-                'Wait for random <n> seconds before starting. This is just to avoid cron triggered replications to hit master server at same time',
+              'Wait for random <n> seconds before starting. This is just to avoid cron triggered replications to hit master server at same time',
             option_type => 'integer',
             default     => undef,
         },
@@ -356,8 +356,8 @@ sub _is_replication_running {
         %active_replications = map { $_->{target} => 1 } $self->_active_replications;
     }
     catch {
-        when (/couldn't connect to host/) { }          # couch is not running, no replications active
-        default                           { die $_ }
+        when (/couldn't connect to host/) { }           # couch is not running, no replications active
+        default                           { die $_ };
     };
     return grep { exists $active_replications{$_} } @dbs;
 }
@@ -394,8 +394,8 @@ sub _kill_couch {
         $self->_system("pkill -KILL -u couchdb -f 'heart -pid|$couchid'");
     }
     catch {
-        when (/Failed with exit code 1/) { }          # process not found, already died/exited; that's ok.
-        default                          { die $_ }
+        when (/Failed with exit code 1/) { }           # process not found, already died/exited; that's ok.
+        default                          { die $_ };
     }
 }
 

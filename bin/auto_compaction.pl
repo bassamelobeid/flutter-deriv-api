@@ -19,8 +19,7 @@ sub _destroy_and_replicate {
     my $dbs = BOM::Platform::Runtime->instance->datasources->couchdb_databases;
     $dbs = join(',', values %{$dbs});
     local $ENV{FORCEDESTROY} = 1;
-    system("/home/git/regentmarkets/bom-platform/bin/bom_couchdb_maintenance.pm --destroy-databases='$dbs'") == 0
-        or confess 'Failed to destroy database';
-    system("/home/git/regentmarkets/bom-platform/bin/bom_couchdb_maintenance.pm --start-replication") == 0 or confess 'Failed to start replication';
+    system("/home/git/regentmarkets/bom-platform/bin/bom_couchdb_maintenance.pm --destroy-databases='$dbs'") == 0 or confess 'Failed to destroy database';
+    system("/home/git/regentmarkets/bom-platform/bin/bom_couchdb_maintenance.pm --start-replication") == 0        or confess 'Failed to start replication';
     return;
 }

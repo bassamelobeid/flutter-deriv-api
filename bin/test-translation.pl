@@ -81,9 +81,8 @@ USAGE
 binmode STDOUT, ':utf8';
 binmode STDERR, ':utf8';
 
-GetOptions
-    'directory=s' => \$dir,
-    'help'        => \$opt_help,
+GetOptions 'directory=s' => \$dir,
+           'help'        => \$opt_help,
     or die usage;
 
 if ($opt_help) {
@@ -97,7 +96,7 @@ select STDOUT;
 
 my @lang = sort do {
     if (opendir my $dh, $dir) {
-        grep { s/^(\w+)\.po$/$1/ } readdir $dh;
+        grep {s/^(\w+)\.po$/$1/} readdir $dh
     } else {
         ();
     }
@@ -107,18 +106,16 @@ my @lang = sort do {
 
 {
     my $status = 0;
-
     sub elog {
         my $severity = shift;
-        my $lg       = shift;
-        my $ln       = shift;
-        my $prefix   = color('bright_yellow bold') . "WARNING" . color('reset');
+        my $lg = shift;
+        my $ln = shift;
+        my $prefix = color('bright_yellow bold') . "WARNING" . color('reset');
         $status = $severity if $severity > $status;
         $prefix = color('bright_red bold') . "ERROR" . color('reset') if $severity;
 
         print STDERR join '', "$prefix (lang=$lg, line=$ln): ", @_, "\n";
     }
-
     sub exit_status {
         return $status;
     }
@@ -126,14 +123,14 @@ my @lang = sort do {
 
 sub cstring {
     my %map = (
-        'a' => "\007",
-        'b' => "\010",
-        't' => "\011",
-        'n' => "\012",
-        'v' => "\013",
-        'f' => "\014",
-        'r' => "\015",
-    );
+               'a' => "\007",
+               'b' => "\010",
+               't' => "\011",
+               'n' => "\012",
+               'v' => "\013",
+               'f' => "\014",
+               'r' => "\015",
+              );
     return $_[0] =~ s/
                          \\
                          (?:
@@ -181,12 +178,12 @@ sub bstring {
                              $params[$pos] = $+{func} && $+{func} eq 'plural' ? 'plural' : ($params[$pos] // 'text');
                              $+{func} ? "[$+{func},_$+{p0}$+{prest}]" : "[_$+{simple}]";
                          }
-                     !regx, \@params;
+                     !regx,
+           \@params;
 }
 
 {
     my @stack;
-
     sub nextline {
         return pop @stack if @stack;
         return scalar readline $_[0];
@@ -200,10 +197,10 @@ sub bstring {
 sub get_trans {
     my $f = shift;
 
-    while (defined(my $l = nextline $f)) {
+    while (defined (my $l = nextline $f)) {
         if ($l =~ /^\s*msgstr\s*"(.*)"/) {
             my $line = $1;
-            while (defined($l = nextline $f)) {
+            while (defined ($l = nextline $f)) {
                 if ($l =~ /^\s*"(.*)"/) {
                     $line .= $1;
                 } else {
@@ -221,7 +218,7 @@ sub get_po {
     my $header_only = shift;
 
     unless ($lang =~ /\.po$/) {
-        $lang = $dir . '/' . $lang . '.po';
+        $lang = $dir . '/'. $lang . '.po';
     }
 
     my %header;
@@ -230,19 +227,19 @@ sub get_po {
     my $ln;
 
     open my $f, '<:utf8', $lang or die "Cannot open $lang: $!\n";
-    READ:
-    while (defined(my $l = nextline $f)) {
+ READ:
+    while (defined (my $l = nextline $f)) {
         if ($l =~ /^\s*msgid\s*"(.*)"/) {
             my $line = $1;
             $ln = $.;
-            while (defined($l = nextline $f)) {
+            while (defined ($l = nextline $f)) {
                 if ($l =~ /^\s*"(.*)"/) {
                     $line .= $1;
                 } else {
                     unread $l;
                     if ($first) {
                         undef $first;
-                        %header = map { split /\s*:\s*/, lc($_), 2 } split /\n/, get_trans($f);
+                        %header = map {split /\s*:\s*/, lc($_), 2} split /\n/, get_trans($f);
                         last READ if $header_only;
                     } elsif (length $line) {
                         push @ids, [bstring(cstring($line)), get_trans($f), $ln];
@@ -254,45 +251,44 @@ sub get_po {
     }
 
     return {
-        header => \%header,
-        ids    => \@ids,
-        lang   => $header{language},
-        file   => $lang,
-    };
+            header => \%header,
+            ids    => \@ids,
+            lang   => $header{language},
+            file   => $lang,
+           };
 }
 
 my $orig_configs_for = \&BOM::Platform::Context::I18N::configs_for;
 my $mock = Test::MockModule->new('BOM::Platform::Context::I18N', no_auto => 1);
-$mock->mock(
-    configs_for => sub {
-        my $config = $orig_configs_for->(@_);
+$mock->mock(configs_for => sub {
+    my $config = $orig_configs_for->(@_);
 
-        delete @{$config}{grep { !/^_/ } keys %$config};
-        for my $lang (@lang) {
-            my $po = get_po $lang, 'header_only';
-            $config->{uc $po->{lang}} = [Gettext => $po->{file}];
-        }
-        $config->{_encoding} = 'utf-8';
+    delete @{$config}{grep {!/^_/} keys %$config};
+    for my $lang (@lang) {
+        my $po = get_po $lang, 'header_only';
+        $config->{uc $po->{lang}} = [Gettext => $po->{file}];
+    }
+    $config->{_encoding} = 'utf-8';
 
-        #use Data::Dumper; print Data::Dumper->new([$config])->Useqq(1)->Sortkeys(1)->Dump;
+    #use Data::Dumper; print Data::Dumper->new([$config])->Useqq(1)->Sortkeys(1)->Dump;
 
-        return $config;
-    });
+    return $config;
+});
 
 for my $lang (@lang) {
     my $po = get_po $lang;
 
-    my $lg  = $po->{header}->{language};
+    my $lg = $po->{header}->{language};
     my $hnd = BOM::Platform::Context::I18N::handle_for($lg);
 
     $hnd->plural(1, 'test');
     my $plural_sub = $hnd->{_plural};
 
-    my $nplurals = 2;    # default
+    my $nplurals = 2;            # default
     $nplurals = $1 if $po->{header}->{'plural-forms'} =~ /\bnplurals=(\d+);/;
     my @plural;
 
-    for (my ($i, $j) = (0, $nplurals); $i < 10000 && $j > 0; $i++) {
+    for (my ($i, $j) = (0, $nplurals); $i<10000 && $j>0; $i++) {
         my $pos = $plural_sub->($i);
         unless (defined $plural[$pos]) {
             $plural[$pos] = $i;
@@ -320,55 +316,55 @@ for my $lang (@lang) {
 
     $plural_sub = $hnd->can('plural');
     my $mock = Test::MockModule->new(ref($hnd), no_auto => 1);
-    $mock->mock(
-        plural => sub {
-            # The plural call should provide exactly the number of forms required by the language
-            elog(1, $lg, $ln, "\%plural() requires $nplurals parameters for this language (provided: @{[@_ - 2]})")
-                unless @_ == $nplurals + 2;
+    $mock->mock(plural => sub {
+                    # The plural call should provide exactly the number of forms required by the language
+                    elog(1, $lg, $ln, "\%plural() requires $nplurals parameters for this language (provided: @{[@_ - 2]})")
+                        unless @_ == $nplurals+2;
 
-            # %plural() can be used like
-            #
-            #     %plural(%3,word,words)
-            #
-            # or like
-            #
-            #     %plural(%3,%d word,%d words)
-            #
-            # In the first case we are only looking for the correct plural form
-            # providing the actual quantity elsewhere.
-            #
-            # The code below checks that either all parameters of the current call contain %d
-            # or none of them. That means something like %plural(%15,one word,%d words) is an
-            # error as singular is in many languages also applied to other quantities than 1.
+                    # %plural() can be used like
+                    #
+                    #     %plural(%3,word,words)
+                    #
+                    # or like
+                    #
+                    #     %plural(%3,%d word,%d words)
+                    #
+                    # In the first case we are only looking for the correct plural form
+                    # providing the actual quantity elsewhere.
+                    #
+                    # The code below checks that either all parameters of the current call contain %d
+                    # or none of them. That means something like %plural(%15,one word,%d words) is an
+                    # error as singular is in many languages also applied to other quantities than 1.
 
-            my $found_percent_d = 0;
-            my @no_percent_d;
-            for (my $i = 2; $i < @_; $i++) {
-                if ($_[$i] =~ /%d/) {
-                    $found_percent_d++;
-                } else {
-                    # $i==2 means it's the singular parameter. This one is allowed to not contain
-                    # %d if the language is like English
-                    push @no_percent_d, $i - 1 unless ($i == 2 and $lang_plural_is_like_english);
-                }
-            }
-            if ($found_percent_d) {
-                if (@no_percent_d > 1) {
-                    my $s = join(', ', @no_percent_d[0 .. $#no_percent_d - 1]) . ' and ' . $no_percent_d[-1];
-                    elog(1, $lg, $ln, "\%plural() parameters $s miss %d");
-                } elsif (@no_percent_d == 1) {
-                    elog(1, $lg, $ln, "\%plural() parameter $no_percent_d[0] misses %d");
-                }
-            }
 
-            goto $plural_sub;
-        });
+                    my $found_percent_d = 0;
+                    my @no_percent_d;
+                    for (my $i = 2; $i < @_; $i++) {
+                        if ($_[$i] =~ /%d/) {
+                            $found_percent_d++;
+                        } else {
+                            # $i==2 means it's the singular parameter. This one is allowed to not contain
+                            # %d if the language is like English
+                            push @no_percent_d, $i - 1 unless ($i == 2 and $lang_plural_is_like_english);
+                        }
+                    }
+                    if ($found_percent_d) {
+                        if (@no_percent_d > 1) {
+                            my $s = join(', ', @no_percent_d[0 .. $#no_percent_d - 1]) . ' and ' . $no_percent_d[-1];
+                            elog(1, $lg, $ln, "\%plural() parameters $s miss %d");
+                        } elsif (@no_percent_d == 1) {
+                            elog(1, $lg, $ln, "\%plural() parameter $no_percent_d[0] misses %d");
+                        }
+                    }
+
+                    goto $plural_sub;
+                });
 
     for my $test (@{$po->{ids}}) {
         #use Data::Dumper; print Data::Dumper->new([$test])->Useqq(1)->Sortkeys(1)->Dump;
         $ln = $test->[3];
-        my $i     = 0;
-        my $j     = 0;
+        my $i = 0;
+        my $j = 0;
         my @param = map {
             $j++;
             elog(0, $lg, $ln, "unused parameter \%$j") unless defined $_;

@@ -12,15 +12,9 @@ my @opt_m;
 my @opt_t;
 my $opt_h;
 
-if (
-    !GetOptions(
-        'measure=s' => \@opt_m,
-        'tag=s'     => \@opt_t,
-        'help!'     => \$opt_h
-    )
-    or $opt_h
-    )
-{
+if (!GetOptions('measure=s' => \@opt_m,
+                'tag=s'     => \@opt_t,
+                'help!'     => \$opt_h) or $opt_h) {
     print STDERR <<'EOF';
 Usage: peek-statsd.pl [-measure=regexp ...] [-tag=regexp ...] [-help]
 EOF
@@ -58,7 +52,7 @@ while () {
                 }
             }
             unless ($print) {
-                OUTER:
+            OUTER:
                 for my $t (@tags) {
                     for my $re (@opt_t) {
                         if ($t =~ $re) {
@@ -70,8 +64,9 @@ while () {
             }
             next unless $print;
         }
-        printf "%vd:%d: measure=%s, delta=%s, type=%s, rate=%s, tags=%s\n", $addr, $port, $m, $d, $t, $rate, join(' ', @tags);
+        printf "%vd:%d: measure=%s, delta=%s, type=%s, rate=%s, tags=%s\n",
+               $addr, $port, $m, $d, $t, $rate, join(' ', @tags);
     } else {
-        select undef, undef, undef, .2;    # error: sleep for a while
+        select undef, undef, undef, .2; # error: sleep for a while
     }
 }
