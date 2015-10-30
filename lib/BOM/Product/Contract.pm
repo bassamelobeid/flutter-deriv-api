@@ -40,12 +40,7 @@ with 'MooseX::Role::Validatable';
 
 sub is_spread { return 0 }
 
-has average_tick_count => (
-    is      => 'rw',
-    default => undef,
-);
-
-has long_term_prediction => (
+has [qw(average_tick_count long_term_prediction)] => (
     is      => 'rw',
     default => undef,
 );
@@ -1264,17 +1259,14 @@ sub _build_pricing_vol {
         });
     } elsif ($pen =~ /Intraday::Forex/) {
         my $volsurface = $self->empirical_volsurface;
-        my $vol_args   = {
+        $vol = $volsurface->get_volatility({
             fill_cache            => !$self->backtest,
             current_epoch         => $self->date_pricing->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
-        };
-
-        my $ref = $volsurface->get_seasonalized_volatility($vol_args);
-        $vol = $ref->{volatility};
-        $self->long_term_prediction($ref->{long_term_prediction});
-        $self->average_tick_count($ref->{average_tick_count});
-        if ($ref->{err}) {
+        });
+        $self->long_term_prediction($volsurface->long_term_prediction);
+        $self->average_tick_count($volsurface->average_tick_count);
+        if ($volsurface->error) {
             $self->add_errors({
                     message => format_error_string(
                         'Too few periods for historical vol calculation',
@@ -1299,12 +1291,15 @@ sub _build_news_adjusted_pricing_vol {
     my $secs_to_expiry = $self->get_time_to_expiry({from => $self->effective_start})->seconds;
     my $news_adjusted_vol = $self->pricing_vol;
     if ($secs_to_expiry and $secs_to_expiry > 10) {
-        $news_adjusted_vol = $self->empirical_volsurface->get_seasonalized_volatility_with_news({
+        $news_adjusted_vol = $self->empirical_volsurface->get_volatility({
+            fill_cache            => !$self->backtest,
             current_epoch         => $self->effective_start->epoch,
             seconds_to_expiration => $secs_to_expiry,
+            include_news_impact   => 1,
         });
     }
-    return $news_adjusted_vol->{volatility};
+
+    return $news_adjusted_vol;
 }
 
 sub _build_vol_at_strike {
