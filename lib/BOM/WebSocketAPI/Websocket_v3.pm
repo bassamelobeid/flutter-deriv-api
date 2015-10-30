@@ -175,7 +175,7 @@ sub __handle {
                 if $client->get_status('disabled');
             $c->stash(
                 client  => $client,
-                account => $client->default_account
+                account => $client->default_account // undef
             );
         }
 

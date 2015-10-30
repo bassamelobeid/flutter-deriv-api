@@ -262,12 +262,7 @@ sub change_password {
     my ($c, $args) = @_;
 
     ## only allow for Session Token
-    return {
-        msg_type => 'change_password',
-        error    => {
-            message => "Permission Denied.",
-            code    => "PermissionDenied"
-        }}
+    return $c->new_error('change_password', 'PermissionDenied', 'Permission Denied.')
         unless ($c->stash('token_type') // '') eq 'session_token';
 
     my $client_obj = $c->stash('client');
