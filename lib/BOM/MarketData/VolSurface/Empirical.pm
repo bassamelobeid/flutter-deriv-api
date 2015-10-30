@@ -2,6 +2,7 @@ package BOM::MarketData::VolSurface::Empirical;
 
 use Moose;
 
+use Math::Gauss qw(pdf);
 use Cache::RedisDB;
 use List::Util qw(max min sum);
 use List::MoreUtils qw(uniq);
@@ -75,6 +76,25 @@ sub get_seasonalized_volatility_with_news {
     };
 }
 
+sub _get_economic_events {
+    my ($self, $start, $end) = @_;
+
+    my $underlying = $self->underlying;
+
+    my $news = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => Date::Utility->new($start),
+            to   => Date::Utility->new($end)});
+    # static duration that needs to be replaced.
+    my $news_duration = 3600;
+    my @applicable_news =
+        map { {release_time => $_->[0], magnitude => $_->[1]->impact, duration => $news_duration} }
+        sort { $a->[0] <=> $b->[0] }
+        map { [$_->release_date->epoch, $_] }
+        grep { $_->symbol eq $underlying->quote_currency_symbol or $_->symbol eq $underlying->asset_symbol } @$news;
+
+    return \@applicable_news;
+}
+
 sub _naked_vol {
     my ($self, $args) = @_;
 
@@ -82,53 +102,62 @@ sub _naked_vol {
     my ($current_epoch, $seconds_to_expiration) =
         @{$args}{'current_epoch', 'seconds_to_expiration'};
 
-    my $cache_key = $underlying->symbol . '-' . $current_epoch . '-' . $seconds_to_expiration;
-    # if parameters to get volatility match, it is the same vol.
-    if (my $cache_vol = $self->_naked_vol_cache->{$cache_key}) {
-        $cache_vol->{cache} = 1;
-        return $cache_vol;
-    }
-
     my $lookback_interval = Time::Duration::Concise::Localize->new(interval => max(900, $seconds_to_expiration) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
-    my $real_periods = 0;
-    my $at           = BOM::Market::AggTicks->new;
-    my $ticks        = $at->retrieve({
+    my $at    = BOM::Market::AggTicks->new;
+    my $ticks = $at->retrieve({
         underlying   => $underlying,
         interval     => $lookback_interval,
         ending_epoch => $current_epoch,
         fill_cache   => $fill_cache,
     });
-    my ($tick_count, $variance, $sum_squaredinput) = (0, 0, 0);
-    my $length      = scalar @$ticks;
-    my $returns_sep = $at->returns_to_agg_ratio;
 
-    if ($length > $returns_sep) {
-        # Can compute vol.
-        for (my $i = $returns_sep; $i < $length; $i++) {
-            $real_periods++;
-            my ($now, $then) = ($ticks->[$i], $ticks->[$i - $returns_sep]);
-            $sum_squaredinput += (log($now->{quote} / $then->{quote})**2);
-            $tick_count += $now->{count};
-        }
-        $variance = $sum_squaredinput * ($at->annualization / $real_periods);
+    my $returns_sep = 4;
+    $self->error(1) if @$ticks <= $returns_sep;
+
+    my ($tick_count, $real_periods) = (0, 0);
+    my @tick_epochs = map { $_->{epoch} } @$ticks;
+    my (@time_samples_past, @returns);
+    for (my $i = $returns_sep; $i <= $#tick_epochs; $i++) {
+        push @time_samples_past, ($tick_epochs[$i] + $tick_epochs[$i - $returns_sep]) / 2;
+        my $dt = $tick_epochs[$i] - $tick_epochs[$i - $returns_sep];
+        push @returns, log($ticks->[$i]->{quote} / $ticks->[$i - 4]->{quote}) * 365 * 86400 / $dt;
+        $real_periods++;
+        $tick_count += $ticks->[$i]->{count};
     }
 
-    my $uc_vol = sqrt($variance) || $self->long_term_vol;    # set vol to long term vol if variance goes to zero.
-
-    # Per 15-seconds, for legacy reasons.
     my $average_tick_count = ($tick_count) ? ($tick_count / $real_periods) : 0;
-    my $err = ($tick_count < $lookback_interval->minutes * 0.8) ? 1 : undef;
+    $self->error(1) if ($tick_count < $lookback_interval->minutes * 0.8);
 
-    my $ref = {
-        naked_vol          => $uc_vol,
-        average_tick_count => $average_tick_count,
-        err                => $err,
-    };
-    $self->_naked_vol_cache->{$cache_key} = $ref;
+    # if there's error we just return long term volatility
+    return $self->long_term_vol if $self->error;
 
-    return $ref;
+    my $start_lookback  = $current_epoch - $seconds_to_expiration - 3600;
+    my $end_lookback    = $currency_epoch;
+    my $economic_events = $self->_get_economic_events($start_lookback, $end_lookbak);
+    my $weights_past    = _calculate_weights(\@time_samples_past, $economic_events);
+    my $sum_vol         = sum map { $returns[$_]**2 * $weights_past->[$_] } (0 .. $#time_samples_past);
+    my $vol_past        = sqrt($sum_vol / sum(@$weights_past));
+
+    return $vol_past;
+}
+
+sub _calculate_weights {
+    my ($times, $news_array) = @_;
+
+    my @times    = @$times;
+    my @combined = (1) x scalar(@times);
+    foreach my $news (@$news_array) {
+        my @weights;
+        foreach my $time (@$times) {
+            my $width = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
+            push @weights, 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * $news->{magnitude});
+        }
+        @combined = map { min($weights[$_], $combined[$_]) } (0 .. $#times);
+    }
+
+    return \@combined;
 }
 
 sub _seasonalize {
