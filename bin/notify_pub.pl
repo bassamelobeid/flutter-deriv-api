@@ -42,17 +42,6 @@ for (1 .. $forks) {
     say "Parent saw $pid exiting";
 }
 
-sub _master_db_connections {
-    my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    my $conn;
-    foreach my $lc (keys %{$config}) {
-        if (ref $config->{$lc}) {
-            $conn->{$config->{$lc}->{write}->{ip}} = $config->{password};
-        }
-    }
-    return $conn;
-}
-
 sub _publish {
     my $redis = shift;
     my $msg   = shift;
@@ -78,6 +67,17 @@ sub _msg {
     $msg->{amount}                  = $items[6];
     $msg->{balance_after}           = $items[7];
     return $msg;
+}
+
+sub _master_db_connections {
+    my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
+    my $conn;
+    foreach my $lc (keys %{$config}) {
+        if (ref $config->{$lc}) {
+            $conn->{$config->{$lc}->{write}->{ip}} = $config->{password};
+        }
+    }
+    return $conn;
 }
 
 sub _db {
