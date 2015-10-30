@@ -16,12 +16,7 @@ sub get_limits {
 
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
-        return {
-            msg_type => 'get_limits',
-            error    => {
-                message => "Sorry, this feature is not available.",
-                code    => "FeatureNotAvailable"
-            }};
+        return $c->new_error('get_limits', 'FeatureNotAvailable', 'Sorry, this feature is not available.');
     }
 
     my $limit = +{

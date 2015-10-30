@@ -170,12 +170,7 @@ sub ticks {
 
     my $symbol = $args->{ticks};
     my $ul     = BOM::Market::Underlying->new($symbol)
-        or return {
-        msg_type => 'tick',
-        error    => {
-            message => "symbol $symbol invalid",
-            code    => "InvalidSymbol"
-        }};
+        or return $c->new_error('tick', 'InvalidSymbol', "symbol $symbol invalid");
 
     if ($args->{end}) {
         my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
@@ -198,21 +193,10 @@ sub ticks {
                     candles  => \@candles,
                 };
             } else {
-
-                return {
-                    msg_type => 'candles',
-                    error    => {
-                        message => 'invalid candles request',
-                        code    => 'InvalidCandlesRequest'
-                    }};
+                return $c->new_error('candles', 'InvalidCandlesRequest', 'invalid candles request');
             }
         } else {
-            return {
-                msg_type => 'tick',
-                error    => {
-                    message => "style $style invalid",
-                    code    => "InvalidStyle"
-                }};
+            return $c->new_error('tick', 'InvalidStyle', "style $style invalid");
         }
     }
     if ($ul->feed_license eq 'realtime') {
@@ -230,12 +214,7 @@ sub ticks {
 
         return 0;
     } else {
-        return {
-            msg_type => 'tick',
-            error    => {
-                message => "realtime quotes not available",
-                code    => "NoRealtimeQuotes"
-            }};
+        return $c->new_error('tick', 'NoRealtimeQuotes', 'realtime quotes not available');
     }
 }
 
