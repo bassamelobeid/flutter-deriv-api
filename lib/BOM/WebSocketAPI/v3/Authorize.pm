@@ -20,10 +20,12 @@ sub authorize {
         }};
 
     my $loginid;
+    my $token_type = 'session_token';
     if (length $token == 15) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
         $loginid = $m->get_loginid_by_token($token);
         return $err unless $loginid;
+        $token_type = 'api_token';
     } else {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         if (!$session || !$session->validate_session()) {
@@ -40,9 +42,10 @@ sub authorize {
     my $account = $client->default_account;
 
     $c->stash(
-        loginid => $loginid,
-        client  => $client,
-        account => $account,
+        loginid    => $loginid,
+        token_type => $token_type,
+        client     => $client,
+        account    => $account,
     );
 
     return {
