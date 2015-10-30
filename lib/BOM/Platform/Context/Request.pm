@@ -9,6 +9,7 @@ use CGI::Untaint;
 use URL::Encode;
 use Data::Dumper;
 use Try::Tiny;
+use Format::Util::Strings qw( defang_lite );
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
@@ -266,10 +267,11 @@ sub _build_params {
             $params->{$param} = [];
             foreach my $value (@values) {
                 $value = Encode::decode('UTF-8', $value) unless Encode::is_utf8($value);
-                push @{$params->{$param}}, $value;
+                push @{$params->{$param}}, defang_lite($value);
             }
         } else {
             $params->{$param} = Encode::decode('UTF-8', $params->{$param}) unless Encode::is_utf8($params->{$param});
+            $params->{$param} = defang_lite($params->{$param});
         }
     }
 
@@ -376,7 +378,7 @@ sub _build_broker {
 sub _build_virtual_account_broker {
     my $self = shift;
     return unless ($self->website);
-    return $self->website->broker_for_new_virtual();
+    return $self->website->broker_for_new_virtual($self->country_code);
 }
 
 sub _build_real_account_broker {
