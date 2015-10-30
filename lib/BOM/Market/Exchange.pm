@@ -198,6 +198,12 @@ sub BUILDARGS {
     }
 
     $params_ref->{holidays} = \%holidays;
+    my $extended_lunch_hour =
+          $params_ref->{day_of_week_extended_trading_breaks}
+        ? Date::Utility->new->day_of_week == $params_ref->{day_of_week_extended_trading_breaks}
+            ? 1
+            : 0
+        : 0;
 
     foreach my $dst_maybe (keys %{$params_ref->{market_times}}) {
         foreach my $trading_segment (keys %{$params_ref->{market_times}->{$dst_maybe}}) {
@@ -210,6 +216,8 @@ sub BUILDARGS {
                 my $break_intervals = $params_ref->{market_times}->{$dst_maybe}->{$trading_segment};
                 my @converted;
                 foreach my $int (@$break_intervals) {
+                    # For extended lunch hour, we use the second trading break
+                    if ($extended_lunch_hour and $int == 0) { next; }
                     my $open_int = Time::Duration::Concise::Localize->new(
                         interval => $int->[0],
                         locale   => BOM::Platform::Context::request()->language
