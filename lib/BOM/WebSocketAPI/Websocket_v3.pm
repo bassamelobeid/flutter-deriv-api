@@ -167,6 +167,18 @@ sub __handle {
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',               {tags => [$tag]});
 
+        ## refetch account b/c stash client won't get updated in websocket
+        if ($dispatch->[2] and my $loginid = $c->stash('loginid')) {
+            my $client = BOM::Platform::Client->new({loginid => $loginid});
+            return $c->new_error('InvalidClient', 'Invalid client') unless $client;
+            return $c->new_error('DisabledClient', 'This account is unavailable')
+                if $client->get_status('disabled');
+            $c->stash(
+                client  => $client,
+                account => $client->default_account
+            );
+        }
+
         if ($dispatch->[2] and not $c->stash('client')) {
             return $c->new_error($dispatch->[0], 'AuthorizationRequired', 'Please log in');
         }

@@ -37,11 +37,10 @@ sub authorize {
     my $account = $client->default_account;
 
     $c->stash(
-        token      => $token,
+        loginid    => $loginid,
         token_type => $token_type,
         client     => $client,
         account    => $account,
-        email      => $email
     );
 
     return {
