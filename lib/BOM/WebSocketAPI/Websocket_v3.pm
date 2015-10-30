@@ -1,6 +1,6 @@
 package BOM::WebSocketAPI::Websocket_v3;
 
-use Mojo::Base 'BOM::WebSocketAPI::v3::BaseController';
+use Mojo::Base 'Mojolicious::Controller';
 
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::Authorize;
@@ -68,7 +68,7 @@ sub entry_point {
                     }
                 }
 
-                $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
+                $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
                 if (not $data) {
                     $send = undef;
                     $data = {};
@@ -81,25 +81,15 @@ sub entry_point {
                 }
             } else {
                 # for invalid call, eg: not json
-                $data = {
-                    echo_req => {},
-                    msg_type => 'error',
-                    error    => {
-                        message => "Bad Request",
-                        code    => "BadRequest"
-                    }};
+                $data = $c->new_error('BadRequest', 'Bad Request');
+                $data->{echo_req} = {};
             }
             $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                $data = {
-                    echo_req => $p1,
-                    msg_type => 'error',
-                    error    => {
-                        message => "Response too large.",
-                        code    => "ResponseTooLarge"
-                    }};
+                $data = $c->new_error('ResponseTooLarge', 'Response too large.');
+                $data->{echo_req} = $p1;
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
             if ($send) {
@@ -171,12 +161,7 @@ sub __handle {
             my $result = $validator->validate($p1);
             my $error;
             $error .= " - $_" foreach $result->errors;
-            return {
-                msg_type => 'error',
-                error    => {
-                    message => "Input validation failed " . $error,
-                    code    => "InputValidationFailed"
-                }};
+            return $c->new_error('InputValidationFailed', "Input validation failed " . $error);
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
@@ -205,7 +190,7 @@ sub __handle {
         }
 
         if ($dispatch->[2] and not $c->stash('client')) {
-            return __authorize_error($dispatch->[0]);
+            return $c->new_error($dispatch->[0], 'AuthorizationRequired', 'Please log in');
         }
 
         ## sell expired
@@ -226,40 +211,18 @@ sub __handle {
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
             warn "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
-            return {
-                msg_type => 'error',
-                error    => {
-                    message => "Output validation failed " . $error,
-                    code    => "OutputValidationFailed"
-                }}
-
+            return $c->new_error('OutputValidationFailed', "Output validation failed " . $error);
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return {
-        msg_type => 'error',
-        error    => {
-            message => "unrecognised request",
-            code    => "UnrecognisedRequest"
-        }};
-}
-
-sub __authorize_error {
-    my ($msg_type) = @_;
-    return {
-        msg_type => $msg_type,
-        'error'  => {
-            message  => "Please log in",
-            msg_type => $msg_type,
-            code     => "AuthorizationRequired"
-        }};
+    return $c->new_error('UnrecognisedRequest', 'unrecognised request');
 }
 
 sub _sanity_failed {
-    my $arg = shift;
+    my ($c, $arg) = @_;
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
@@ -280,12 +243,7 @@ sub _sanity_failed {
     }
     if ($failed) {
         warn 'Sanity check failed.';
-        return {
-            msg_type => 'sanity_check',
-            error    => {
-                message => "Parameters sanity check failed",
-                code    => "SanityCheckFailed"
-            }};
+        return $c->new_error('sanity_check', 'SanityCheckFailed', "Parameters sanity check failed");
     }
     return;
 }
