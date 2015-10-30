@@ -45,6 +45,7 @@ __PACKAGE__->meta->setup(
         payment_agent_withdrawal_expiration_date => { type => 'date' },
         first_time_login                         => { type => 'boolean', default => 'true' },
         source                                   => { type => 'varchar', length => 50 },
+        occupation                               => { type => 'varchar', length => 100 },
     ],
 
     primary_key_columns => [ 'loginid' ],
