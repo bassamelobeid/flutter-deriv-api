@@ -77,6 +77,17 @@ is($profit_table->{profit_table}->{total}, 0);
 is_deeply $profit_table->{profit_table}->{transactions}, [];
 test_schema('profit_table', $profit_table);
 
+## test disabled
+$client_vr->set_status('disabled', 'test.t', "just for test");
+$client_vr->save();
+$t = $t->send_ok({
+        json => {
+            profit_table => 1,
+            limit        => 1,
+        }})->message_ok;
+my $res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'DisabledClient', 'you can not call any authenticated api after disabled.';
+
 $t->finish_ok;
 
 done_testing();

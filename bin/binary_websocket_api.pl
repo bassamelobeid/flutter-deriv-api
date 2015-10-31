@@ -2,9 +2,8 @@
 
 use strict;
 use warnings;
-
 use FindBin;
-BEGIN { unshift @INC, "$FindBin::Bin/../lib" }
+use lib "$FindBin::Bin/../lib";
 
 # Start command line interface for application
 require Mojolicious::Commands;

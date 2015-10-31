@@ -2,10 +2,7 @@ package BOM::WebSocketAPI::v3::Symbols;
 
 use strict;
 use warnings;
-
-use Mojo::Base 'BOM::WebSocketAPI::v3::BaseController';
 use Finance::Asset;
-
 use Date::Utility;
 use BOM::Platform::Context;
 use BOM::Feed::Data::AnyEvent;
@@ -67,12 +64,7 @@ sub active_symbols {
 
     my $return_type = $args->{active_symbols};
     $return_type =~ /^(brief|full)$/
-        or return {
-        msg_type => 'active_symbols',
-        error    => {
-            message => "Value must be 'brief' or 'full'",
-            code    => "InvalidValue"
-        }};
+        or return $c->new_error('active_symbols', 'InvalidValue', "Value must be 'brief' or 'full'");
 
     my $landing_company_name = 'costarica';
     if (my $client = $c->stash('client')) {
@@ -80,7 +72,7 @@ sub active_symbols {
     }
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    my $request = BOM::Platform::Context::request();
+    my $request = $c->stash('r');
     my $lang    = $request->language;
 
     # we need put $lang as part of the key b/c market translated_display_name

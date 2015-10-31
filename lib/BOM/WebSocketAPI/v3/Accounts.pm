@@ -15,6 +15,71 @@ use BOM::Platform::Context qw(localize);
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
+use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::Locale;
+
+sub landing_company {
+    my ($c, $args) = @_;
+
+    my $country  = $args->{landing_company};
+    my $configs  = BOM::Platform::Runtime->instance->countries_list;
+    my $c_config = $configs->{$country};
+    unless ($c_config) {
+        ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
+    }
+
+    return $c->new_error('landing_company', 'UnknownLandingCompany', 'Unknown landing company')
+        unless $c_config;
+
+    # BE CAREFUL, do not change ref since it's persistent
+    my %landing_company = %{$c_config};
+
+    $landing_company{id} = $country;
+    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
+    if (($landing_company{gaming_company} // '') ne 'none') {
+        $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
+    } else {
+        delete $landing_company{gaming_company};
+    }
+    if (($landing_company{financial_company} // '') ne 'none') {
+        $landing_company{financial_company} = __build_landing_company($registry->get($landing_company{financial_company}));
+    } else {
+        delete $landing_company{financial_company};
+    }
+
+    return {
+        msg_type        => 'landing_company',
+        landing_company => {%landing_company},
+    };
+}
+
+sub landing_company_details {
+    my ($c, $args) = @_;
+
+    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
+    return $c->new_error('landing_company_details', 'UnknownLandingCompany', 'Unknown landing company')
+        unless $lc;
+
+    return {
+        msg_type                => 'landing_company_details',
+        landing_company_details => __build_landing_company($lc),
+    };
+}
+
+sub __build_landing_company {
+    my ($lc) = @_;
+
+    return {
+        shortcode                         => $lc->short,
+        name                              => $lc->name,
+        address                           => $lc->address,
+        country                           => $lc->country,
+        legal_default_currency            => $lc->legal_default_currency,
+        legal_allowed_currencies          => $lc->legal_allowed_currencies,
+        legal_allowed_markets             => $lc->legal_allowed_markets,
+        legal_allowed_contract_categories => $lc->legal_allowed_contract_categories,
+    };
+}
 
 sub statement {
     my ($c, $args) = @_;
@@ -45,9 +110,7 @@ sub get_transactions {
 
     for ($dt_fm, $dt_to) {
         next unless $_;
-        my $dt = eval { DateTime->from_epoch(epoch => $_) }
-            || return $c->_fail("date expression [$_] should be a valid epoch value");
-        $_ = $dt;
+        $_ = eval { DateTime->from_epoch(epoch => $_) };
     }
 
     my $query = [];
@@ -175,21 +238,39 @@ sub balance {
     };
 }
 
+sub get_account_status {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+
+    my @status;
+    foreach my $s (sort keys %{$client->client_status_types}) {
+        push @status, $s if $client->get_status($s);
+    }
+
+    if (scalar(@status) == 0) {
+        push @status, 'active';
+    }
+
+    return {
+        msg_type           => 'get_account_status',
+        get_account_status => \@status
+    };
+}
+
 sub change_password {
     my ($c, $args) = @_;
+
+    ## only allow for Session Token
+    return $c->new_error('change_password', 'PermissionDenied', 'Permission Denied.')
+        unless ($c->stash('token_type') // '') eq 'session_token';
 
     my $client_obj = $c->stash('client');
     my $user = BOM::Platform::User->new({email => $client_obj->email});
 
     my $err = sub {
         my ($message) = @_;
-        return {
-            msg_type => 'change_password',
-            error    => {
-                message => $message,
-                code    => "ChangePasswordError"
-            },
-        };
+        return $c->new_error('change_password', 'ChangePasswordError', $message);
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
@@ -226,6 +307,127 @@ sub change_password {
     return {
         msg_type        => 'change_password',
         change_password => 1
+    };
+}
+
+sub get_settings {
+    my ($c, $args) = @_;
+
+    my $r      = $c->stash('r');
+    my $client = $c->stash('client');
+
+    return {
+        msg_type     => 'get_settings',
+        get_settings => {
+            email   => $client->email,
+            country => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
+            $client->is_virtual
+            ? ()
+            : (
+                address_line_1   => $client->address_1,
+                address_line_2   => $client->address_2,
+                address_city     => $client->city,
+                address_state    => $client->state,
+                address_postcode => $client->postcode,
+                phone            => $client->phone,
+            ),
+        }};
+}
+
+sub set_settings {
+    my ($c, $args) = @_;
+
+    my $r      = $c->stash('r');
+    my $now    = Date::Utility->new;
+    my $client = $c->stash('client');
+
+    return $c->new_error('set_settings', 'PermissionDenied', 'Permission Denied.') if $client->is_virtual;
+
+    my $address1        = $args->{'address_line_1'};
+    my $address2        = $args->{'address_line_2'} // '';
+    my $addressTown     = $args->{'address_city'};
+    my $addressState    = $args->{'address_state'};
+    my $addressPostcode = $args->{'address_postcode'};
+    my $phone           = $args->{'phone'} // '';
+
+    my $cil_message;
+    if (   $address1 ne $client->address_1
+        or $address2 ne $client->address_2
+        or $addressTown ne $client->city
+        or $addressState ne $client->state
+        or $addressPostcode ne $client->postcode)
+    {
+        $cil_message =
+              'Client ['
+            . $client->loginid
+            . '] updated his/her address from ['
+            . join(' ', $client->address_1, $client->address_2, $client->city, $client->state, $client->postcode)
+            . '] to ['
+            . join(' ', $address1, $address2, $addressTown, $addressState, $addressPostcode) . ']';
+    }
+
+    $client->address_1($address1);
+    $client->address_2($address2);
+    $client->city($addressTown);
+    $client->state($addressState);    # FIXME validate
+    $client->postcode($addressPostcode);
+    $client->phone($phone);
+
+    $client->latest_environment(
+        $now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
+    if (not $client->save()) {
+        return $c->new_error('set_settings', 'InternalServerError', 'Sorry, an error occurred while processing your account.');
+    }
+
+    if ($cil_message) {
+        $client->add_note('Update Address Notification', $cil_message);
+    }
+
+    my $message =
+        $c->l('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
+        . "\n\n";
+    $message .= $c->l('Please note that your settings have been updated as follows:') . "\n\n";
+
+    my $residence_country = Locale::Country::code2country($client->residence);
+
+    my @updated_fields = (
+        [$c->l('Email address'),        $client->email],
+        [$c->l('Country of Residence'), $residence_country],
+        [
+            $c->l('Address'),
+            $client->address_1 . ', '
+                . $client->address_2 . ', '
+                . $client->city . ', '
+                . $client->state . ', '
+                . $client->postcode . ', '
+                . $residence_country
+        ],
+        [$c->l('Telephone'), $client->phone],
+    );
+    $message .= "<table>";
+    foreach my $updated_field (@updated_fields) {
+        $message .=
+              "<tr><td style='text-align:left'><strong>"
+            . $updated_field->[0]
+            . "</strong></td><td>:</td><td style='text-align:left'>"
+            . $updated_field->[1]
+            . "</td></tr>";
+    }
+    $message .= "</table>";
+    $message .= "\n" . $c->l('The [_1] team.', $r->website->display_name);
+
+    send_email({
+        from               => $r->website->config->get('customer_support.email'),
+        to                 => $client->email,
+        subject            => $client->loginid . ' ' . $c->l('Change in account settings'),
+        message            => [$message],
+        use_email_template => 1,
+    });
+    BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
+
+    return {
+        msg_type     => 'set_settings',
+        set_settings => 1,
     };
 }
 

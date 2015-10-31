@@ -1,12 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Asset Index Send",
-  "description":"Asset Index",
+  "title": "States List Send",
+  "description":"States List based on country",
   "properties": {
-    "asset_index": {
-      "type":"integer",
-      "pattern": "^1$"
+    "states_list": {
+      "title": "States list",
+      "description":"Two letter country code.",
+      "type":"string",
+      "pattern": "^\\w\\w$"
     },
     "passthrough": {
       "type": "object",
@@ -15,6 +17,6 @@
   },
   "additionalProperties": false,
   "required": [
-    "asset_index"
+    "states_list"
   ]
 }

@@ -1,6 +1,6 @@
 package BOM::WebSocketAPI::Websocket_v3;
 
-use Mojo::Base 'BOM::WebSocketAPI::v3::BaseController';
+use Mojo::Base 'Mojolicious::Controller';
 
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::Authorize;
@@ -9,6 +9,8 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
+use BOM::WebSocketAPI::v3::Static;
+use BOM::WebSocketAPI::v3::Cashier;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
@@ -66,7 +68,7 @@ sub entry_point {
                     }
                 }
 
-                $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
+                $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
                 if (not $data) {
                     $send = undef;
                     $data = {};
@@ -79,25 +81,15 @@ sub entry_point {
                 }
             } else {
                 # for invalid call, eg: not json
-                $data = {
-                    echo_req => {},
-                    msg_type => 'error',
-                    error    => {
-                        message => "Bad Request",
-                        code    => "BadRequest"
-                    }};
+                $data = $c->new_error('BadRequest', 'Bad Request');
+                $data->{echo_req} = {};
             }
             $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                $data = {
-                    echo_req => $p1,
-                    msg_type => 'error',
-                    error    => {
-                        message => "Response too large.",
-                        code    => "ResponseTooLarge"
-                    }};
+                $data = $c->new_error('ResponseTooLarge', 'Response too large.');
+                $data->{echo_req} = $p1;
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
             if ($send) {
@@ -130,27 +122,35 @@ sub __handle {
 
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
-        ['authorize',              \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
-        ['ticks',                  \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
-        ['proposal',               \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
-        ['forget',                 \&BOM::WebSocketAPI::v3::System::forget,                              0],
-        ['forget_all',             \&BOM::WebSocketAPI::v3::System::forget_all,                          0],
-        ['ping',                   \&BOM::WebSocketAPI::v3::System::ping,                                0],
-        ['time',                   \&BOM::WebSocketAPI::v3::System::server_time,                         0],
-        ['payout_currencies',      \&BOM::WebSocketAPI::v3::ContractDiscovery::payout_currencies,        0],
-        ['active_symbols',         \&BOM::WebSocketAPI::v3::Symbols::active_symbols,                     0],
-        ['contracts_for',          \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
-        ['trading_times',          \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
-        ['asset_index',            \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
-        ['new_account_virtual',    \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,             0],
-        ['buy',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
-        ['sell',                   \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
-        ['portfolio',              \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
-        ['proposal_open_contract', \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract, 1],
-        ['balance',                \&BOM::WebSocketAPI::v3::Accounts::balance,                           1],
-        ['statement',              \&BOM::WebSocketAPI::v3::Accounts::statement,                         1],
-        ['profit_table',           \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
-        ['change_password',        \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
+        ['authorize',               \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
+        ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
+        ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
+        ['forget',                  \&BOM::WebSocketAPI::v3::System::forget,                              0],
+        ['forget_all',              \&BOM::WebSocketAPI::v3::System::forget_all,                          0],
+        ['ping',                    \&BOM::WebSocketAPI::v3::System::ping,                                0],
+        ['time',                    \&BOM::WebSocketAPI::v3::System::server_time,                         0],
+        ['payout_currencies',       \&BOM::WebSocketAPI::v3::ContractDiscovery::payout_currencies,        0],
+        ['active_symbols',          \&BOM::WebSocketAPI::v3::Symbols::active_symbols,                     0],
+        ['contracts_for',           \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
+        ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
+        ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
+        ['residence_list',          \&BOM::WebSocketAPI::v3::Static::residence_list,                      0],
+        ['states_list',             \&BOM::WebSocketAPI::v3::Static::states_list,                         0],
+        ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
+        ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
+        ['new_account_virtual',    \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,              0],
+        ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
+        ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
+        ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
+        ['proposal_open_contract',  \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract, 1],
+        ['balance',                 \&BOM::WebSocketAPI::v3::Accounts::balance,                           1],
+        ['statement',               \&BOM::WebSocketAPI::v3::Accounts::statement,                         1],
+        ['profit_table',            \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
+        ['get_account_status',      \&BOM::WebSocketAPI::v3::Accounts::get_account_status,                1],
+        ['change_password',         \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
+        ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
+        ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
+        ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
     );
 
     foreach my $dispatch (@dispatch) {
@@ -162,19 +162,26 @@ sub __handle {
             my $result = $validator->validate($p1);
             my $error;
             $error .= " - $_" foreach $result->errors;
-            return {
-                msg_type => 'error',
-                error    => {
-                    message => "Input validation failed " . $error,
-                    code    => "InputValidationFailed"
-                }};
+            return $c->new_error('InputValidationFailed', "Input validation failed " . $error);
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',               {tags => [$tag]});
 
+        ## refetch account b/c stash client won't get updated in websocket
+        if ($dispatch->[2] and my $loginid = $c->stash('loginid')) {
+            my $client = BOM::Platform::Client->new({loginid => $loginid});
+            return $c->new_error('InvalidClient', 'Invalid client') unless $client;
+            return $c->new_error('DisabledClient', 'This account is unavailable')
+                if $client->get_status('disabled');
+            $c->stash(
+                client  => $client,
+                account => $client->default_account // undef
+            );
+        }
+
         if ($dispatch->[2] and not $c->stash('client')) {
-            return __authorize_error($dispatch->[0]);
+            return $c->new_error($dispatch->[0], 'AuthorizationRequired', 'Please log in');
         }
 
         ## sell expired
@@ -195,40 +202,18 @@ sub __handle {
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
             warn "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
-            return {
-                msg_type => 'error',
-                error    => {
-                    message => "Output validation failed " . $error,
-                    code    => "OutputValidationFailed"
-                }}
-
+            return $c->new_error('OutputValidationFailed', "Output validation failed " . $error);
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return {
-        msg_type => 'error',
-        error    => {
-            message => "unrecognised request",
-            code    => "UnrecognisedRequest"
-        }};
-}
-
-sub __authorize_error {
-    my ($msg_type) = @_;
-    return {
-        msg_type => $msg_type,
-        'error'  => {
-            message  => "Please log in",
-            msg_type => $msg_type,
-            code     => "AuthorizationRequired"
-        }};
+    return $c->new_error('UnrecognisedRequest', 'unrecognised request');
 }
 
 sub _sanity_failed {
-    my $arg = shift;
+    my ($c, $arg) = @_;
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
@@ -249,12 +234,7 @@ sub _sanity_failed {
     }
     if ($failed) {
         warn 'Sanity check failed.';
-        return {
-            msg_type => 'sanity_check',
-            error    => {
-                message => "Parameters sanity check failed",
-                code    => "SanityCheckFailed"
-            }};
+        return $c->new_error('sanity_check', 'SanityCheckFailed', "Parameters sanity check failed");
     }
     return;
 }

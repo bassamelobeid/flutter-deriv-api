@@ -2,6 +2,9 @@ package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
 
+use BOM::Platform::Runtime;
+use BOM::Platform::Context;
+
 sub startup {
     my $app = shift;
 
@@ -22,6 +25,30 @@ sub startup {
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
     $log->debug("Server config    is " . $app->dumper($app->config));
+
+    # add few helpers
+    $app->helper(
+        app_config => sub {
+            state $app_config = BOM::Platform::Runtime->instance->app_config;
+            return $app_config;
+        });
+    $app->helper(
+        l => sub {
+            my $self = shift;
+            return BOM::Platform::Context::localize(@_);
+        });
+
+    $app->helper(
+        new_error => sub {
+            my $c = shift;
+            my ($msg_type, $code, $message) = scalar(@_) > 2 ? @_ : ('error', @_);
+            return {
+                msg_type => $msg_type,
+                error    => {
+                    code    => $code,
+                    message => $message
+                }};
+        });
 
     my $r = $app->routes;
 
