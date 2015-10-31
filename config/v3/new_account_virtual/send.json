@@ -19,7 +19,7 @@
     "residence": {
       "type": "string",
       "sample": "au",
-      "description": "2-letter country code in small letter",
+      "description": "value receive from residence_list call, 2-letter country code",
       "pattern": "^[a-z]{2}$"
     },
     "source": {
