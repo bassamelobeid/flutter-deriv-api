@@ -13,9 +13,9 @@
       "title": "new virtual account",
       "description": "new virtual account details",
       "properties": {
-        "loginid": {
+        "client_id": {
           "type": "string",
-          "description": "loginid of new virtual account"
+          "description": "client id of new virtual account"
         },
         "currency": {
           "type": "string",

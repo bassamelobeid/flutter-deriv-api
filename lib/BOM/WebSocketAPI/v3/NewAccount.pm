@@ -3,24 +3,33 @@ package BOM::WebSocketAPI::v3::NewAccount;
 use strict;
 use warnings;
 
+use List::MoreUtils qw(any);
 use BOM::Platform::Account::Virtual;
+use BOM::Platform::Locale;
 
-sub virtual {
+sub new_account_virtual {
     my ($c, $args) = @_;
 
-    my $acc = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email           => $args->{email},
-                client_password => $args->{client_password},
-                residence       => $args->{residence},
-        }});
+    my $allowed_countries = BOM::Platform::Locale::generate_residence_countries_list();
+    unless (any { $_ and $args->{residence} eq $_ } @{$allowed_countries->{value}}) {
+        return {
+            echo_req => $args,
+            msg_type => 'account',
+            error    => {
+                message => localize("Sorry, our service is not available for your country of residence"),
+                code    => 'ResidenceInvalid',
+            }
+        };
+    }
+
+    my $acc = BOM::Platform::Account::Virtual::create_account({ details => $args });
     my $client = $acc->{client};
     my $account = $client->default_account->load;
 
     my $result = {
-        loginid  => $client->loginid,
-        currency => $account->currency_code,
-        balance  => $account->balance,
+        client_id   => $client->loginid,
+        currency    => $account->currency_code,
+        balance     => $account->balance,
     };
 
     return {

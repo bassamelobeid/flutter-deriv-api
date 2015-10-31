@@ -8,19 +8,34 @@
       "type": "string",
       "sample": "test@binary.com",
       "description": "email address",
-      "pattern": "^\\w+$"
+      "format": "email"
     },
     "client_password": {
       "type": "string",
       "sample": "abc123",
       "description": "password",
-      "pattern": "^\\w+$"
+      "pattern": "^.{5,25}$"
     },
     "residence": {
       "type": "string",
       "sample": "au",
       "description": "2-letter country code in small letter",
       "pattern": "^[a-z]{2}$"
+    },
+    "source": {
+      "type": "string",
+      "sample": "Binary.com Console-To-Go App",
+      "description": "app name or referrer URL"
+    },
+    "latest_environment": {
+      "type": "string",
+      "sample": "28-Oct-15 05:14:36GMT IP=xxxx IP_COUNTRY=ID User_AGENT=Mozilla/5.0 (Windows NT 6.1; rv:41.0) Gecko/20100101 Firefox/41.0 LANG=ID",
+      "description": "specifying IP, country, browser used"
+    },
+    "myaffiliates_token": {
+      "type": "string",
+      "sample": "p6WDISNLIF189kyl",
+      "description": "affiliate's token"
     },
     "passthrough": {
       "type": "object",

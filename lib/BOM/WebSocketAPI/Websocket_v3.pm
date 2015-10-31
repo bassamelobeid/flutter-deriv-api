@@ -142,7 +142,7 @@ sub __handle {
         ['contracts_for',          \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
         ['trading_times',          \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
         ['asset_index',            \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
-        ['new_account_virtual',    \&BOM::WebSocketAPI::v3::NewAccount::virtual,                         0],
+        ['new_account_virtual',    \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,             0],
         ['buy',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
         ['sell',                   \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
         ['portfolio',              \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
