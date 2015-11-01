@@ -12,7 +12,7 @@
     "client_password": {
       "type": "string",
       "description": "password",
-      "pattern": "^.{5,25}$"
+      "pattern": "^\\w{5,25}$"
     },
     "residence": {
       "type": "string",
