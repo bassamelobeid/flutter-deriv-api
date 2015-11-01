@@ -68,6 +68,16 @@
                 <condition><key>range</key></condition>
             </conditions>
         </param>
+        <!-- backoffice/f_profit_table.cgi -->
+        <param>
+            <key>investigate_list</key>
+            <encoding>json</encoding>
+        </param>
+        <!-- backoffice/f_quant_query.cgi -->
+        <param><key>details</key></param>
+        <param><key>desc</key></param>
+        <param><key>reflist</key></param>
+        <param><key>query_doc</key></param>
         <!-- backoffice/f_setting_paymentagent.cgi -->
         <param>
             <!-- payment agent further info -->
