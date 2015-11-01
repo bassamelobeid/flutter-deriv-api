@@ -143,4 +143,25 @@ sub get_state_option {
     return \@options;
 }
 
+sub error_map {
+    return {
+        'email unverified' => localize('Your email address is unverified.'),
+        'no residence'     => localize('Your account has no country of residence.'),
+        'invalid'          => localize('Sorry, account opening is unavailable.'),
+        'duplicate email'  => localize(
+            'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_1]">try our password recovery tool</a> or contact customer service.',
+            request()->url_for('/user/lost_password')
+        ),
+        'duplicate name DOB' => localize(
+            'Sorry, you seem to already have a real money account with us. Perhaps you have used a different email address when you registered it. For legal reasons we are not allowed to open multiple real money accounts per person. If you don\'t remember your account with us, please <a href="[_1]">contact us</a>.',
+            request()->url_for('contact')
+        ),
+        'too young'            => localize('Sorry, you are too young to open an account.'),
+        'show risk disclaimer' => localize('Please agree to accept risk before proceed.'),
+        'insufficient score'   => localize(
+            'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
+        ),
+    };
+}
+
 1;
