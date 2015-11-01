@@ -139,7 +139,7 @@ sub __handle {
         ['states_list',             \&BOM::WebSocketAPI::v3::Static::states_list,                         0],
         ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
         ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
-        ['new_account_virtual',    \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,              0],
+        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,             0],
         ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
         ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
         ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
@@ -158,7 +158,9 @@ sub __handle {
         next unless $p1->{$dispatch->[0]};
         my $t0        = [Time::HiRes::gettimeofday];
         my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v3/' . $dispatch->[0];
-        my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
+        my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")),
+                            format => \%JSON::Schema::FORMATS);
+
         if (not $validator->validate($p1)) {
             my $result = $validator->validate($p1);
             my $error;
@@ -218,14 +220,14 @@ sub _sanity_failed {
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
-        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)) {
+        if ($k !~ /^([A-Za-z0-9\@_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9\@_:+-]{0,256})$/)) {
             $failed = 1;
             warn "Sanity check failed: $k -> " . $arg->{$k};
             last OUTER;
         }
         if (ref $arg->{$k}) {
             foreach my $l (keys %{$arg->{$k}}) {
-                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
+                if ($l !~ /^([A-Za-z0-9\@_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9\@_:+-]{0,256})$/) {
                     $failed = 1;
                     warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
                     last OUTER;

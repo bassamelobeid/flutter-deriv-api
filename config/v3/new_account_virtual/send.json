@@ -7,22 +7,26 @@
     "new_account_virtual": {
       "type": "integer",
       "description":"Must be 1",
-      "pattern": "^1$"
+      "pattern": "^1$",
+      "required": "1"
     },
     "email": {
       "type": "string",
       "description": "email address",
-      "format": "email"
+      "format": "email",
+      "required": "1"
     },
     "client_password": {
       "type": "string",
       "description": "password",
-      "pattern": "^\\w{5,25}$"
+      "pattern": "^\\w{5,25}$",
+      "required": "1"
     },
     "residence": {
       "type": "string",
       "description": "value receive from residence_list call, 2-letter country code",
-      "pattern": "^[a-z]{2}$"
+      "pattern": "^[a-z]{2}$",
+      "required": "1"
     },
     "passthrough": {
       "type": "object",
@@ -31,6 +35,7 @@
   },
   "additionalProperties": false,
   "required": [
+    "new_account_virtual",
     "email",
     "client_password",
     "residence"
