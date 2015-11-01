@@ -2,4 +2,7 @@
     "email": "test@binary.com",
     "client_password": "abc123",
     "residence": "id",
+    "source": "Binary.com App",
+    "latest_environment": "28-Oct-15 05:14:36GMT IP=xxxx IP_COUNTRY=ID User_AGENT=Mozilla/5.0 (Windows NT 6.1; rv:41.0) Gecko/20100101 Firefox/41.0 LANG=ID",
+    "myaffiliates_token": "p6WDISNLIF189kyl"
 }
