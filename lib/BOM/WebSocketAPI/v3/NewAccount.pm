@@ -10,32 +10,33 @@ use BOM::Platform::Locale;
 sub new_account_virtual {
     my ($c, $args) = @_;
 
-    my $allowed_countries = BOM::Platform::Locale::generate_residence_countries_list();
-    unless (any { not exists $_->{disabled} and $_->{value} and $args->{residence} eq $_->{value} } @$allowed_countries) {
+    my $acc = BOM::Platform::Account::Virtual::create_account({details => $args});
+
+    if (my $err_code = $acc->{error}) {
         return {
-            echo_req => $args,
             msg_type => 'account',
             error    => {
-                message => localize("Sorry, our service is not available for your country of residence"),
-                code    => 'ResidenceInvalid',
-            }};
+                message => BOM::Platform::Locale::error_map()->{$err_code},
+                code    => $err_code,
+            }
+        };
     }
 
-    my $acc     = BOM::Platform::Account::Virtual::create_account({details => $args});
     my $client  = $acc->{client};
     my $account = $client->default_account->load;
 
-    my $result = {
-        client_id => $client->loginid,
-        currency  => $account->currency_code,
-        balance   => $account->balance,
-    };
-
     return {
-        echo_req => $args,
         msg_type => 'account',
-        account  => $result,
+        account  => {
+            client_id => $client->loginid,
+            currency  => $account->currency_code,
+            balance   => $account->balance,
+        }
     };
+}
+
+sub new_account_default {
+
 }
 
 1;
