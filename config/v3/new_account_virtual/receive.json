@@ -6,7 +6,8 @@
   "properties": {
     "echo_req": {
       "title":"Echo request",
-      "description":"Echo of the request made"
+      "description":"Echo of the request made",
+      "required": "1"
     },
     "account": {
       "type": "object",
@@ -29,7 +30,8 @@
     },
     "msg_type": {
         "type": "string",
-        "description": "account"
+        "description": "account",
+        "required": "1"
       }
   },
   "required": [
