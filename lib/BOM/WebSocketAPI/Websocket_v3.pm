@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Static;
 use BOM::WebSocketAPI::v3::Cashier;
+use BOM::WebSocketAPI::v3::NewAccount;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
