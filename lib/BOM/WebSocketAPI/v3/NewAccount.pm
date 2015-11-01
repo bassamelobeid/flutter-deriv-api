@@ -18,8 +18,7 @@ sub new_account_virtual {
             error    => {
                 message => BOM::Platform::Locale::error_map()->{$err_code},
                 code    => $err_code,
-            }
-        };
+            }};
     }
 
     my $client  = $acc->{client};
@@ -31,8 +30,7 @@ sub new_account_virtual {
             client_id => $client->loginid,
             currency  => $account->currency_code,
             balance   => $account->balance,
-        }
-    };
+        }};
 }
 
 1;
