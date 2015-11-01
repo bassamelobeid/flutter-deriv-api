@@ -35,8 +35,4 @@ sub new_account_virtual {
     };
 }
 
-sub new_account_default {
-
-}
-
 1;
