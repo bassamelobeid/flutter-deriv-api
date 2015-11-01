@@ -15,6 +15,7 @@ use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::SessionCookie;
+use BOM::Platform::Account;
 
 sub create_account {
     my $args    = shift;
