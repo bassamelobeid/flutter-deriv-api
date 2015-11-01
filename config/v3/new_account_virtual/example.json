@@ -1,4 +1,5 @@
 {
+    "new_account_virtual": "1",
     "email": "test@binary.com",
     "client_password": "abc123",
     "residence": "id"

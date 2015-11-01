@@ -4,6 +4,11 @@
   "title":"Create virtual account Send",
   "description": "Create virtual account Send",
   "properties": {
+    "new_account_virtual": {
+      "type": "integer",
+      "description":"Must be 1",
+      "pattern": "^1$"
+    },
     "email": {
       "type": "string",
       "description": "email address",
