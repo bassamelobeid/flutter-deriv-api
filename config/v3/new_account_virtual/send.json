@@ -19,18 +19,6 @@
       "description": "value receive from residence_list call, 2-letter country code",
       "pattern": "^[a-z]{2}$"
     },
-    "source": {
-      "type": "string",
-      "description": "app name or referrer URL"
-    },
-    "latest_environment": {
-      "type": "string",
-      "description": "specifying IP, country, browser used"
-    },
-    "myaffiliates_token": {
-      "type": "string",
-      "description": "affiliate's token"
-    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
