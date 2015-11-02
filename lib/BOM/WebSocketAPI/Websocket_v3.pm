@@ -160,10 +160,19 @@ sub __handle {
 
         if (not $validator->validate($p1)) {
             my $validation_errors = $validator->validate($p1);
-            my %details = map { $_->property =~ /\$\.(.+)$/; $1 => $_->message  } ($validation_errors->errors);
-            my $message = 'Input validation failed for: ' . join(', ', keys %details);
 
-            return $c->new_error('error', 'InputValidationFailed', $message, \%details);
+            my $details;
+            my $message = 'Input validation failed for: ';
+            foreach my $err ($validation_errors->errors) {
+                if ($err->property =~ /\$\.(.+)$/) {
+                    $details->{$1} = $err->message;
+                } else {
+                    $message .= (' - ' . $err->message);
+                }
+            }
+            $message .= join(', ', keys %$details);
+
+            return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
@@ -200,10 +209,10 @@ sub __handle {
         $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
         if ($result and not $validator->validate($result)) {
             my $validation_errors = $validator->validate($result);
-            my %details = map { $_->property =~ /\$\.(.+)$/; $1 => $_->message  } ($validation_errors->errors);
-            my $message = 'Output validation failed for: ' . join(', ', keys %details);
-
-            return $c->new_error('error', 'OutputValidationFailed', $message, \%details);
+            my $error;
+            $error .= " - $_" foreach $validation_errors->errors;
+            $log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
+            return $c->new_error('OutputValidationFailed', "Output validation failed " . $error);
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
@@ -216,25 +225,26 @@ sub __handle {
 sub _sanity_failed {
     my ($c, $arg) = @_;
     my $failed;
+    my $log = $c->app->log;
     OUTER:
     foreach my $k (keys %$arg) {
         if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)) {
             $failed = 1;
-            warn "Sanity check failed: $k -> " . $arg->{$k};
+            $log->warn("Sanity check failed: $k -> " . $arg->{$k});
             last OUTER;
         }
         if (ref $arg->{$k}) {
             foreach my $l (keys %{$arg->{$k}}) {
                 if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
                     $failed = 1;
-                    warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                    $log->warn("Sanity check failed: $l -> " . $arg->{$k}->{$l});
                     last OUTER;
                 }
             }
         }
     }
     if ($failed) {
-        warn 'Sanity check failed.';
+        $log->warn('Sanity check failed.');
         return $c->new_error('sanity_check', 'SanityCheckFailed', "Parameters sanity check failed");
     }
     return;
