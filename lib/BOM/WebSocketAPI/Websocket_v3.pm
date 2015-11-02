@@ -169,7 +169,7 @@ sub __handle {
                     push @general, $err->message;
                 }
             }
-            my $message = 'Input validation failed for: ' . join(', ', keys %$details) . join(' , ', @general);
+            my $message = 'Input validation failed for: ' . join(', ', (keys %$details, @general));
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
