@@ -229,7 +229,7 @@ subtest 'custom client payout limit' => sub {
 };
 
 subtest 'Is contract valid to buy' => sub {
-    plan tests => 3;
+    plan tests => 2;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_buy', sub { 1 });
@@ -263,20 +263,10 @@ subtest 'Is contract valid to buy' => sub {
     my $error = $transaction->_is_valid_to_buy;
     is($error->get_type, 'InvalidtoBuy', 'Contract is invalid to buy as it contains errors: _is_valid_to_buy - error type');
 
-    SKIP: {
-        skip 'because the exchange is not trading today', 1
-            unless $underlying->exchange->trades_on($now)
-            and $underlying->exchange->trades_on(Date::Utility->new($now->epoch + 500));
-        like(
-            $error->{-message_to_client},
-            qr/Error message to be sent to client/,
-            'contract is invalid to buy as it contains errors: _is_valid_to_buy - error message'
-        );
-    }
 };
 
 subtest 'Is contract valid to sell' => sub {
-    plan tests => 3;
+    plan tests => 2;
 
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('is_valid_to_sell', sub { 1 });
@@ -310,17 +300,6 @@ subtest 'Is contract valid to sell' => sub {
 
     my $error = $transaction->_is_valid_to_sell;
     is($error->get_type, 'InvalidtoSell', 'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error type');
-
-    SKIP: {
-        skip 'because the exchange is not trading today', 1
-            unless $underlying->exchange->trades_on($now)
-            and $underlying->exchange->trades_on(Date::Utility->new($now->epoch + 10));
-        like(
-            $error->{-message_to_client},
-            qr/Resale of this contract is not offered with/,
-            'Contract is invalid to sell as expiry is too low: _is_valid_to_sell - error message'
-        );
-    }
 
 };
 
