@@ -3,9 +3,10 @@
 use strict;
 use warnings;
 
-use Test::More qw/tests 21/;
+use Test::More qw/tests 22/;
 use Test::NoWarnings ();    # don't call ->import to avoid had_no_warnings to be
                             # called in an END block. We call it explicitly instead.
+use Test::Warn;
 use Test::Exception;
 
 use BOM::Database::ClientDB;
@@ -131,12 +132,16 @@ note "\ntesting UI case\n\n";
 
     $dbh->begin_work;
     throws_ok {
-        $dbh->do('select 1/0');
+        warning_like {
+            $dbh->do('select 1/0');
+        } qr/division by zero/;
     }
     qr/division by zero/, 'connection now in faulty transaction state';
 
     throws_ok {
-        $dbh->do('select 1');
+        warning_like {
+            $dbh->do('select 1');
+        } qr/current transaction is aborted/;
     }
     qr/current transaction is aborted/, 'transaction aborted state';
 
@@ -159,12 +164,14 @@ note "\ntesting UI case\n\n";
 
     # make the handle unusable and finish the request cycle.
 
-    is terminate_backend($dbh), '1', 'backend terminated';
+    warning_like { 
+       is terminate_backend($dbh), '1', 'backend terminated';
 
-    lives_ok {
-        BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-    }
-    'cache->finish_request_cycle survives a terminated backend';
+        lives_ok {
+            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+        }
+        'cache->finish_request_cycle survives a terminated backend';
+    } qr/terminating connection/;
 
     # now expect to get a different backend
 
@@ -202,7 +209,9 @@ note "\ntesting UI case\n\n";
     is a_query($dbh), $dbh_pid, "still the same backend pid $dbh_pid";
 
     throws_ok {
-        $dbh->do('insert into vafdbtujrwty(i) values(2)');
+        warning_like {
+            $dbh->do('insert into vafdbtujrwty(i) values(2)');
+        } qr/relation "vafdbtujrwty" does not exist/;
     }
     qr/relation "vafdbtujrwty" does not exist/, 'DISCARD ALL during ->finish_request_cycle';
 }

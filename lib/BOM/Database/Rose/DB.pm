@@ -3,7 +3,6 @@ package BOM::Database::Rose::DB;
 use strict;
 use warnings;
 use Carp;
-use BOM::Utility::Log4perl qw( get_logger );
 
 use Mojo::Exception;
 
@@ -56,21 +55,18 @@ sub _handle_errors {
     my $sth           = shift;
     my $dbh           = eval { $sth->isa('DBI::st') } ? $sth->{Database} : $sth;
     my $state         = $dbh->state;
+    my $severity      = _get_severity($state);
+    my $err           = $dbh->err   || "[none]";
+    $error_message    ||= '[None Passed]';
+    $state            ||= "[none]";
 
     # Exceptions are really ugly. They obfuscate the control flow
     # just like "goto" or even worse.
     # These exceptions are supposed to be caught
     die [$state, $dbh->errstr] if $state =~ /^BI...$/;
 
-    my $severity = _get_severity($state);
-    get_logger()->$severity(
-        sub {
-            $error_message ||= '[None Passed]';
-            my $state = $dbh->state || "[none]";
-            my $err   = $dbh->err   || "[none]";
-            return "$error_message.  SQLSTATE=$state. Error=$err";
-        });
-
+    warn "DB Error Severity: $severity, $error_message. SQLSTATE=$state. Error=$err";
+    
     die Mojo::Exception->new($dbh->errstr || $error_message);
 }
 
