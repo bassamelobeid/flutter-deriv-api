@@ -41,7 +41,7 @@ sub startup {
                 code    => $code,
                 message => $message
             };
-            $error->{details} = $details if ($details);
+            $error->{details} = $details if (keys %$details);
 
             return {
                 msg_type => $msg_type,
