@@ -1,5 +1,6 @@
 package BOM::MarketData::VolSurface::Empirical;
 
+use feature 'state';
 use Moose;
 
 use Math::Gauss qw(pdf);
@@ -7,11 +8,16 @@ use Cache::RedisDB;
 use List::Util qw(max min sum);
 use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
+use YAML::CacheLoader qw(LoadFile);
 
+use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
 use BOM::Market::Types;
+
+state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
+state $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
 
 sub get_volatility {
     my ($self, $args) = @_;
@@ -20,6 +26,13 @@ sub get_volatility {
     my $underlying = $self->underlying;
     my ($current_epoch, $seconds_to_expiration) =
         @{$args}{'current_epoch', 'seconds_to_expiration'};
+
+    $self->error('current_epoch is not provided to get_volatility') unless $current_epoch;
+
+    unless ($seconds_to_expiration) {
+        $self->error('seconds_to_expiration is not provided to get_volatility');
+        $seconds_to_expiration = 0;    #hard-coded it to zero second
+    }
 
     my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $seconds_to_expiration) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
@@ -33,7 +46,7 @@ sub get_volatility {
     });
 
     my $returns_sep = 4;
-    $self->error(1) if @$ticks <= $returns_sep;
+    $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
 
     my ($tick_count, $real_periods) = (0, 0);
     my @tick_epochs = map { $_->{epoch} } @$ticks;
@@ -45,18 +58,20 @@ sub get_volatility {
         $real_periods++;
         $tick_count += $ticks->[$i]->{count};
     }
-    # setting time samples past here.
-    $self->time_samples_past(\@time_samples_past);
 
     my $average_tick_count = ($tick_count) ? ($tick_count / $real_periods) : 0;
     $self->average_tick_count($average_tick_count);
-    $self->error(1) if ($tick_count < $lookback_interval->minutes * 0.8);
+    # check to make sure that 80% of the interval in the lookback period has ticks.
+    my $interval_threshold = int(($lookback_interval->minutes * $returns_sep + 1) * 0.8);
+    $self->error('Insufficient ticks in each interval to get_volatility') if ($real_periods + $returns_sep < $interval_threshold);
 
     # if there's error we just return long term volatility
     return $self->long_term_vol if $self->error;
 
-    my $start_lookback  = $current_epoch - $seconds_to_expiration - 3600;
-    my $end_lookback    = $current_epoch + $seconds_to_expiration + 300; #plus 5 minutes for the shifting logic
+    #go back another hour because we expect the maximum impact on any news would not last for more than an hour.
+    my $start_lookback = $current_epoch - $seconds_to_expiration - 3600;
+    #plus 5 minutes for the shifting logic. If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
+    my $end_lookback    = $current_epoch + $seconds_to_expiration + 300;
     my $economic_events = $self->_get_economic_events($start_lookback, $end_lookback);
     my $weights         = _calculate_weights(\@time_samples_past, $economic_events);
     my $sum_vol         = sum map { $returns[$_]**2 * $weights->[$_] } (0 .. $#time_samples_past);
@@ -75,8 +90,8 @@ sub get_volatility {
 
     #news triangles
     #no news if not requested
-    my $news_past = (1) x (scalar @time_samples_past);
-    my $news_fut  = (1) x (scalar @time_samples_fut);
+    my $news_past = [(1) x (scalar @time_samples_past)];
+    my $news_fut  = [(1) x (scalar @time_samples_fut)];
     if ($args->{include_news_impact}) {
         my $contract_details = {
             start    => $c_start,
@@ -133,18 +148,27 @@ sub _get_economic_events {
 
     my $underlying = $self->underlying;
 
-    my $news = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+    my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
     # static duration that needs to be replaced.
-    my $news_duration = 3600;
-    my @applicable_news =
-        map { {release_time => $_->[0], magnitude => $_->[1]->impact, duration => $news_duration} }
-        sort { $a->[0] <=> $b->[0] }
-        map { [$_->release_date->epoch, $_] }
-        grep { $_->symbol eq $underlying->quote_currency_symbol or $_->symbol eq $underlying->asset_symbol } @$news;
+    my @events;
+    foreach my $event (@$raw_events) {
+        my $event_name = $event->event_name;
+        $event_name =~ s/\s/_/g;
+        my $key             = $underlying->symbol . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name;
+        my $default         = $underlying->symbol . '_' . $event->symbol . '_' . $event->impact . '_default';
+        my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
 
-    return \@applicable_news;
+        unless ($news_parameters) {
+            $self->uncategorized_economic_event('Missing economic events categories for ' . $key);
+            next;
+        }
+        $news_parameters->{release_time} = $event->release_date->epoch;
+        push @events, $news_parameters;
+    }
+
+    return \@events;
 }
 
 sub _calculate_weights {
@@ -156,7 +180,7 @@ sub _calculate_weights {
         my @weights;
         foreach my $time (@$times) {
             my $width = $time < $news->{release_time} ? 2 * 60 : 2 * 60 + $news->{duration};
-            push @weights, 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * $news->{magnitude});
+            push @weights, 1 / (1 + pdf($time, $news->{release_time}, $width) / pdf(0, 0, $width) * ($news->{magnitude} - 1));
         }
         @combined = map { min($weights[$_], $combined[$_]) } (0 .. $#times);
     }
@@ -170,9 +194,10 @@ sub _calculate_news_triangle {
     my @times    = @$times;
     my @combined = (1) x scalar(@times);
     foreach my $news (@$news_array) {
-        my $shift               = _shift($news->{release_time}, $contract->{start}, $contract->{duration});
+        my $shift = _shift($news->{release_time}, $contract->{start}, $contract->{duration});
         my $effective_news_time = $news->{release_time} + $shift;
-        my $decay_coef          = -log(2 / ($news->{magnitude} - 1)) / $news->{duration};
+        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
+        my $decay_coef = -log(2 / ($news->{magnitude} - 1 + 1e-9)) / $news->{duration};
         my @triangle;
         foreach my $time (@$times) {
             if ($time < $effective_news_time) {
@@ -192,11 +217,11 @@ sub _shift {
     my ($news_time, $contract_start, $contract_duration) = @_;
 
     my $shift_seconds = 0;
-    my $contract_end = $contract_start + $contract_duration;
-    if ($news_time > $contract_start - 5*60 and $news_time < $contract_start) {
+    my $contract_end  = $contract_start + $contract_duration;
+    if ($news_time > $contract_start - 5 * 60 and $news_time < $contract_start) {
         $shift_seconds = $contract_start - $news_time;
-    } elsif ($news_time < $contract_end + 5*60 and $news_time > $contract_end - 5*60) {
-        $shift_seconds = $news_time - $contract_end + 5*60;
+    } elsif ($news_time < $contract_end + 5 * 60 and $news_time > $contract_end - 5 * 60) {
+        $shift_seconds = $news_time - $contract_end + 5 * 60;
     }
 
     return $shift_seconds;
@@ -255,18 +280,6 @@ has underlying => (
     required => 1,
 );
 
-has _coefficients => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-sub _build__coefficients {
-    my $self = shift;
-
-    return YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
-}
-
 has long_term_vol => (
     is         => 'ro',
     lazy_build => 1,
@@ -284,11 +297,11 @@ sub _build_long_term_vol {
 sub _get_coefficients {
     my ($self, $which, $underlying) = @_;
     $underlying = $self->underlying if not $underlying;
-    my $coef = $self->_coefficients->{$which};
+    my $coef = $coefficients->{$which};
     return $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 }
 
-has [qw(long_term_prediction average_tick_count error)] => (
+has [qw(long_term_prediction average_tick_count error uncategorized_economic_event)] => (
     is      => 'rw',
     default => undef,
 );
