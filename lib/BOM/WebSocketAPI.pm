@@ -41,13 +41,18 @@ sub startup {
     $app->helper(
         new_error => sub {
             my $c = shift;
-            my ($msg_type, $code, $message) = scalar(@_) > 2 ? @_ : ('error', @_);
+            my ($msg_type, $code, $message, $details) = @_;
+
+            my $error = {
+                code    => $code,
+                message => $message
+            };
+            $error->{details} = $details if ($details);
+
             return {
                 msg_type => $msg_type,
-                error    => {
-                    code    => $code,
-                    message => $message
-                }};
+                error    => $error,
+            };
         });
 
     my $r = $app->routes;
