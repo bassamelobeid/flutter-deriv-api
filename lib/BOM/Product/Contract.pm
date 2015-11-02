@@ -1418,7 +1418,8 @@ sub _build_staking_limits {
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
-    my $payout_min = 1;
+    # 
+    my $payout_min = $self->underlying->market->name eq 'random' ? 0.5 : 1;
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
