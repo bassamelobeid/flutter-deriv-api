@@ -149,10 +149,30 @@ if ($input{whattodo} eq 'uploadID') {
     my $doctype      = $cgi->param('doctype');
     my $filetoupload = $cgi->param('FILE');
     my $docformat    = $cgi->param('docformat');
+    my $expiration_date = $cgi->param('expiration_date');
+    my $broker_code  = $cgi->param('broker');
+
 
     if (not $filetoupload) {
         print "<br /><p style=\"color:red; font-weight:bold;\">Error: You did not browse for a file to upload.</p><br />";
         code_exit_BO();
+    }
+    
+    if ($doctype =='passport' && $expiration_date !~/\d{4}-\d{2}-\d{2}/ && ($broker_code eq 'MF'|| $broker_code eq 'MX')) {
+        print "<br /><p style=\"color:red; font-weight:bold;\">Error: Missing or invalid date format entered - </p><br />";
+        code_exit_BO();
+    }
+    
+   if ($expiration_date ne '') {
+        my ($current_date, $submitted_date);
+        $current_date=Date::Utility->new();
+        $submitted_date = Date::Utility->new($expiration_date);
+        
+        if($submitted_date->is_before($current_date)||$submitted_date->is_same_as($current_date)){
+            print "<br /><p style=\"color:red; font-weight:bold;\">Error: Expiration date should be greater than current date </p><br />";
+            code_exit_BO();
+        }
+            
     }
 
     my $newfilename = "$dbloc/clientIDscans/$broker/$loginid.$doctype." . (time()) . ".$docformat";
@@ -163,16 +183,24 @@ if ($input{whattodo} eq 'uploadID') {
 
     copy($filetoupload, $newfilename) or die "[$0] could not copy uploaded file to $newfilename: $!";
     my $filesize = (stat $newfilename)[7];
-
-    $client->add_client_authentication_document({    # Rose
+    
+    my $upload_submission={
         document_type              => $doctype,
         document_format            => $docformat,
         document_path              => $newfilename,
         authentication_method_code => 'ID_DOCUMENT',
-    });
-
+        expiration_date            => $expiration_date
+    };
+    
+    #needed because CR based submissions don't return a result when an empty string is submitted in expiration_date;
+    if ($expiration_date eq ''){
+        delete $upload_submission->{'expiration_date'};
+    }
+    
+    $client->add_client_authentication_document($upload_submission);
+    
     $client->save;
-
+    
     print "<br /><p style=\"color:green; font-weight:bold;\">Ok! File $newfilename is uploaded (filesize $filesize).</p><br />";
 
     code_exit_BO();
@@ -619,6 +647,7 @@ print qq{
 	<input type=hidden name=broker value=$broker>
 	<input type=hidden name=loginID value=$loginid>
 	<input type=hidden name=l value=$language>
+	Expiration date:<input type="text" size=10 name="expiration_date"><i> format YYYY-MM-DD </i>
 	<input type=submit value="Upload new ID doc.">
 </form>
 };
