@@ -18,7 +18,7 @@
         <div class="grd-grid-2">[% contract.purchase_date.datetime %]</div>
         <div class="grd-grid-1">
             <a href="[% request.url_for('backoffice/quant/pricing/bpot.cgi', {currency => currency, shortcode => contract.short_code }) %]">[% ident %]</a>
-            <br/><label class="investigate"><input type="checkbox" name="investigate_list" value='{"ref":"[% ident %]","desc":"[% contract.info.description FILTER truncate(70) %]","bought":"[% contract.purchase_date.datetime %]"}'>QQ</label>
+            <br/><label class="investigate"><input type="checkbox" name="investigate_list" value='[% ident %]:::[% contract.info.description FILTER truncate(70) %]:::[% contract.purchase_date.datetime %]'>QQ</label>
         </div>
         <div class="grd-grid-3">[% contract.info.description %]</div>
         <div class="grd-grid-1 right-aligned">
