@@ -950,8 +950,6 @@ sub _build_ask_probability {
         $minimum = 0.4;
     } elsif ($self->tick_expiry and $self->category->code eq 'digits') {
         $minimum = ($self->sentiment eq 'match') ? 0.1 : 0.9;
-    } elsif ($self->tick_expiry and $self->market->name ne 'random') {
-        $minimum = 0.5;
     } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
         $minimum = 0.5 + $self->model_markup->amount;
     } else {
