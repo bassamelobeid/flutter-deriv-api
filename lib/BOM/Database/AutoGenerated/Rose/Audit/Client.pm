@@ -51,6 +51,7 @@ __PACKAGE__->meta->setup(
         first_time_login                         => { type => 'boolean', default => 'true' },
         source                                   => { type => 'varchar', length => 50 },
         remote_addr                              => { type => 'scalar' },
+        occupation                               => { type => 'varchar', length => 100 },
     ],
 
     primary_key_columns => [ 'custom_max_payout' ],
