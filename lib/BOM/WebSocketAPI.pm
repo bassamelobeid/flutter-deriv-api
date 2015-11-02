@@ -32,11 +32,6 @@ sub startup {
             state $app_config = BOM::Platform::Runtime->instance->app_config;
             return $app_config;
         });
-    $app->helper(
-        l => sub {
-            my $self = shift;
-            return BOM::Platform::Context::localize(@_);
-        });
 
     $app->helper(
         new_error => sub {
