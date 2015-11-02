@@ -1419,7 +1419,7 @@ sub _build_staking_limits {
     my $stake_max = $payout_max;
 
     # Client likes lower stake/payout limit on random market.
-    my $payout_min = $self->underlying->market->name eq 'random' ? 0.5 : 1;
+    my $payout_min = $self->underlying->market->name eq 'random' ? 0.7 : 1;
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
