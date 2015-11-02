@@ -950,8 +950,6 @@ sub _build_ask_probability {
         $minimum = 0.4;
     } elsif ($self->tick_expiry and $self->category->code eq 'digits') {
         $minimum = ($self->sentiment eq 'match') ? 0.1 : 0.9;
-    } elsif ($self->tick_expiry and $self->market->name ne 'random') {
-        $minimum = 0.5;
     } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
         $minimum = 0.5 + $self->model_markup->amount;
     } else {
@@ -1420,7 +1418,8 @@ sub _build_staking_limits {
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
-    my $payout_min = 1;
+    # Client likes lower stake/payout limit on random market.
+    my $payout_min = $self->underlying->market->name eq 'random' ? 0.7 : 1;
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
