@@ -1418,7 +1418,7 @@ sub _build_staking_limits {
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
-    # 
+    # Client likes lower stake/payout limit on random market.
     my $payout_min = $self->underlying->market->name eq 'random' ? 0.5 : 1;
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
