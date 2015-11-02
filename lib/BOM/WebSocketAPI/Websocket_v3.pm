@@ -201,7 +201,7 @@ sub __handle {
         if ($result and not $validator->validate($result)) {
             my $validation_errors = $validator->validate($result);
             my %details = map { $_->property =~ /\$\.(.+)$/; $1 => $_->message  } ($validation_errors->errors);
-            my $message = 'Input validation failed for: ' . join(', ', keys %details);
+            my $message = 'Output validation failed for: ' . join(', ', keys %details);
 
             return $c->new_error('error', 'OutputValidationFailed', $message, \%details);
         }
