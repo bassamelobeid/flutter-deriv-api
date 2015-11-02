@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(localize);
 
 sub buy {
     my ($c, $args) = @_;
@@ -24,12 +25,12 @@ sub buy {
     my $client = $c->stash('client');
 
     my $p2 = delete $c->{ws}{$ws_id}{$id}{data}
-        or return $c->new_error('buy', 'InvalidContractProposal', "unknown contract proposal");
+        or return $c->new_error('buy', 'InvalidContractProposal', localize("Unknown contract proposal"));
 
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $c->app->log->debug("contract creation failure: $err");
-        return $c->new_error('buy', 'ContractCreationFailure', 'cannot create contract');
+        return $c->new_error('buy', 'ContractCreationFailure', localize('Cannot create contract'));
     };
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
@@ -83,7 +84,7 @@ sub sell {
         });
 
     my $fmb = $fmb_dm->get_fmb_by_id([$id]);
-    return $c->new_error('sell', 'InvalidSellContractProposal', 'unknown contract sell proposal') unless $fmb;
+    return $c->new_error('sell', 'InvalidSellContractProposal', localize('Unknown contract sell proposal')) unless $fmb;
 
     my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
     my $trx = BOM::Product::Transaction->new({
@@ -237,7 +238,7 @@ sub get_bid {
         $log->info("contract for sale creation failure: $err");
         return {
             error => {
-                message => "cannot create sell contract",
+                message => localize("Cannot create sell contract"),
                 code    => "ContractSellCreateError"
             }};
     };

@@ -7,6 +7,7 @@ use List::Util qw( min first );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
+use BOM::Platform::Context qw(localize);
 
 sub get_limits {
     my ($c, $args) = @_;
@@ -16,7 +17,7 @@ sub get_limits {
 
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
-        return $c->new_error('get_limits', 'FeatureNotAvailable', 'Sorry, this feature is not available.');
+        return $c->new_error('get_limits', 'FeatureNotAvailable', localize('Sorry, this feature is not available.'));
     }
 
     my $limit = +{

@@ -3,7 +3,6 @@ package BOM::WebSocketAPI;
 use Mojo::Base 'Mojolicious';
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
 
 sub startup {
     my $app = shift;
@@ -31,11 +30,6 @@ sub startup {
         app_config => sub {
             state $app_config = BOM::Platform::Runtime->instance->app_config;
             return $app_config;
-        });
-    $app->helper(
-        l => sub {
-            my $self = shift;
-            return BOM::Platform::Context::localize(@_);
         });
 
     $app->helper(

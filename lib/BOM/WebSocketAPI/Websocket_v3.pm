@@ -16,7 +16,7 @@ use JSON::Schema;
 use File::Slurp;
 use JSON;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context;
+use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Context::Request;
 use BOM::Product::Transaction;
 use Time::HiRes;
@@ -81,14 +81,14 @@ sub entry_point {
                 }
             } else {
                 # for invalid call, eg: not json
-                $data = $c->new_error('error', 'BadRequest', 'Bad Request');
+                $data = $c->new_error('error', 'BadRequest', BOM::Platform::Context::localize('The application sent an invalid request.'));
                 $data->{echo_req} = {};
             }
             $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                $data = $c->new_error('error', 'ResponseTooLarge', 'Response too large.');
+                $data = $c->new_error('error', 'ResponseTooLarge', BOM::Platform::Context::localize('Response too large.'));
                 $data->{echo_req} = $p1;
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
@@ -169,7 +169,7 @@ sub __handle {
                     push @general, $err->message;
                 }
             }
-            my $message = 'Input validation failed for: ' . join(', ', (keys %$details, @general));
+            my $message = BOM::Platform::Context::localize('Input validation failed: ') . join(', ', (keys %$details, @general));
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
@@ -179,8 +179,8 @@ sub __handle {
         ## refetch account b/c stash client won't get updated in websocket
         if ($dispatch->[2] and my $loginid = $c->stash('loginid')) {
             my $client = BOM::Platform::Client->new({loginid => $loginid});
-            return $c->new_error('error', 'InvalidClient', 'Invalid client') unless $client;
-            return $c->new_error('error', 'DisabledClient', 'This account is unavailable')
+            return $c->new_error('error', 'InvalidClient', BOM::Platform::Context::localize('Invalid client account.')) unless $client;
+            return $c->new_error('error', 'DisabledClient', BOM::Platform::Context::localize('This account is unavailable.'))
                 if $client->get_status('disabled');
             $c->stash(
                 client  => $client,
@@ -189,7 +189,7 @@ sub __handle {
         }
 
         if ($dispatch->[2] and not $c->stash('client')) {
-            return $c->new_error($dispatch->[0], 'AuthorizationRequired', 'Please log in');
+            return $c->new_error($dispatch->[0], 'AuthorizationRequired', BOM::Platform::Context::localize('Please log in.'));
         }
 
         ## sell expired
@@ -210,14 +210,14 @@ sub __handle {
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
             $log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-            return $c->new_error('OutputValidationFailed', "Output validation failed " . $error);
+            return $c->new_error('OutputValidationFailed', BOM::Platform::Context::localize("Output validation failed: ") . $error);
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return $c->new_error('error', 'UnrecognisedRequest', 'unrecognised request');
+    return $c->new_error('error', 'UnrecognisedRequest', BOM::Platform::Context::localize('Unrecognised request.'));
 }
 
 sub _sanity_failed {
@@ -243,7 +243,7 @@ sub _sanity_failed {
     }
     if ($failed) {
         $log->warn('Sanity check failed.');
-        return $c->new_error('sanity_check', 'SanityCheckFailed', "Parameters sanity check failed");
+        return $c->new_error('sanity_check', 'SanityCheckFailed', BOM::Platform::Context::localize("Parameters sanity check failed."));
     }
     return;
 }
