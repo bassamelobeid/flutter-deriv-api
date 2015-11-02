@@ -170,7 +170,7 @@ sub ticks {
 
     my $symbol = $args->{ticks};
     my $ul     = BOM::Market::Underlying->new($symbol)
-        or return $c->new_error('tick', 'InvalidSymbol', "symbol $symbol invalid");
+        or return $c->new_error('tick', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
 
     if ($args->{end}) {
         my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
@@ -193,10 +193,10 @@ sub ticks {
                     candles  => \@candles,
                 };
             } else {
-                return $c->new_error('candles', 'InvalidCandlesRequest', 'invalid candles request');
+                return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
             }
         } else {
-            return $c->new_error('tick', 'InvalidStyle', "style $style invalid");
+            return $c->new_error('tick', 'InvalidStyle', localize("Style [_1] invalid", $style));
         }
     }
     if ($ul->feed_license eq 'realtime') {
@@ -214,7 +214,7 @@ sub ticks {
 
         return 0;
     } else {
-        return $c->new_error('tick', 'NoRealtimeQuotes', 'realtime quotes not available');
+        return $c->new_error('tick', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
     }
 }
 
@@ -296,7 +296,7 @@ sub get_ask {
         $log->info("contract creation failure: $err");
         return {
             error => {
-                message => "cannot create contract",
+                message => localize("Cannot create contract"),
                 code    => "ContractCreationFailure"
             }};
     };
@@ -315,7 +315,7 @@ sub get_ask {
         $log->error("contract invalid but no error!");
         return {
             error => {
-                message => "cannot validate contract",
+                message => localize("Cannot validate contract"),
                 code    => "ContractValidationError"
             }};
     }

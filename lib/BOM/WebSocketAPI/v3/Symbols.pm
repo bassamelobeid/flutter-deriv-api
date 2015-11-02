@@ -4,13 +4,14 @@ use strict;
 use warnings;
 use Finance::Asset;
 use Date::Utility;
+use Cache::RedisDB;
+use JSON;
+
 use BOM::Platform::Context;
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
-use Cache::RedisDB;
-use JSON;
 
 sub _description {
     my $symbol = shift;
@@ -64,7 +65,7 @@ sub active_symbols {
 
     my $return_type = $args->{active_symbols};
     $return_type =~ /^(brief|full)$/
-        or return $c->new_error('active_symbols', 'InvalidValue', "Value must be 'brief' or 'full'");
+        or return $c->new_error('active_symbols', 'InvalidValue', localize("Value must be 'brief' or 'full'"));
 
     my $landing_company_name = 'costarica';
     if (my $client = $c->stash('client')) {

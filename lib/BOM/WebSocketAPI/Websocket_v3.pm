@@ -81,14 +81,14 @@ sub entry_point {
                 }
             } else {
                 # for invalid call, eg: not json
-                $data = $c->new_error('BadRequest', 'Bad Request');
+                $data = $c->new_error('BadRequest', localize('Bad Request'));
                 $data->{echo_req} = {};
             }
             $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                $data = $c->new_error('ResponseTooLarge', 'Response too large.');
+                $data = $c->new_error('ResponseTooLarge', localize('Response too large.'));
                 $data->{echo_req} = $p1;
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
@@ -161,7 +161,7 @@ sub __handle {
             my $result = $validator->validate($p1);
             my $error;
             $error .= " - $_" foreach $result->errors;
-            return $c->new_error('InputValidationFailed', "Input validation failed " . $error);
+            return $c->new_error('InputValidationFailed', localize("Input validation failed") . " " . $error);
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
@@ -170,8 +170,8 @@ sub __handle {
         ## refetch account b/c stash client won't get updated in websocket
         if ($dispatch->[2] and my $loginid = $c->stash('loginid')) {
             my $client = BOM::Platform::Client->new({loginid => $loginid});
-            return $c->new_error('InvalidClient', 'Invalid client') unless $client;
-            return $c->new_error('DisabledClient', 'This account is unavailable')
+            return $c->new_error('InvalidClient', localize('Invalid client')) unless $client;
+            return $c->new_error('DisabledClient', localize('This account is unavailable'))
                 if $client->get_status('disabled');
             $c->stash(
                 client  => $client,
@@ -180,7 +180,7 @@ sub __handle {
         }
 
         if ($dispatch->[2] and not $c->stash('client')) {
-            return $c->new_error($dispatch->[0], 'AuthorizationRequired', 'Please log in');
+            return $c->new_error($dispatch->[0], 'AuthorizationRequired', localize('Please log in'));
         }
 
         ## sell expired
@@ -201,14 +201,14 @@ sub __handle {
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
             warn "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
-            return $c->new_error('OutputValidationFailed', "Output validation failed " . $error);
+            return $c->new_error('OutputValidationFailed', localize("Output validation failed") . " " . $error);
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return $c->new_error('UnrecognisedRequest', 'unrecognised request');
+    return $c->new_error('UnrecognisedRequest', localize('unrecognised request'));
 }
 
 sub _sanity_failed {
@@ -233,7 +233,7 @@ sub _sanity_failed {
     }
     if ($failed) {
         warn 'Sanity check failed.';
-        return $c->new_error('sanity_check', 'SanityCheckFailed', "Parameters sanity check failed");
+        return $c->new_error('sanity_check', 'SanityCheckFailed', localize("Parameters sanity check failed"));
     }
     return;
 }

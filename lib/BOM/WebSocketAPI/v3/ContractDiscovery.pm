@@ -6,6 +6,7 @@ use warnings;
 use BOM::Product::Contract::Finder;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Finder::Japan;
+use BOM::Platform::Context qw(localize);
 
 sub payout_currencies {
     my $c = shift;
@@ -35,7 +36,7 @@ sub contracts_for {
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
     if ($contracts_for->{hit_count} == 0) {
-        return $c->new_error('contracts_for', 'InvalidSymbol', 'Invalid symbol');
+        return $c->new_error('contracts_for', 'InvalidSymbol', localize('Invalid symbol'));
     } else {
         return {
             msg_type      => 'contracts_for',

@@ -6,13 +6,14 @@ use warnings;
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Client;
 use BOM::Database::Model::AccessToken;
+use BOM::Platform::Context qw(localize);
 
 sub authorize {
     my ($c, $args) = @_;
 
     my $token = $args->{authorize};
 
-    my $err = $c->new_error('authorize', 'InvalidToken', 'Token invalid');
+    my $err = $c->new_error('authorize', 'InvalidToken', localize('Token invalid'));
 
     my $loginid;
     my $token_type = 'session_token';
