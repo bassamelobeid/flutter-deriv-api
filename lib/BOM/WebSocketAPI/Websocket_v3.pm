@@ -155,7 +155,8 @@ sub __handle {
     foreach my $dispatch (@dispatch) {
         next unless exists $p1->{$dispatch->[0]};
         my $t0        = [Time::HiRes::gettimeofday];
-        my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v3/' . $dispatch->[0];
+        my $dir       = ($dispatch->[0] eq 'ticks' and not exists $p1->{end}) ? 'tick' : $dispatch->[0];
+        my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v3/' . $dir;
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
 
         if (not $validator->validate($p1)) {
