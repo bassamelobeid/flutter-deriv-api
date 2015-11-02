@@ -231,11 +231,64 @@ sub balance {
             balance  => $cl->default_account->balance,
             };
     }
-
     return {
         msg_type => 'balance',
         balance  => \@client_balances,
     };
+}
+
+sub _redis {
+    my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
+    return RedisDB->new(
+        host     => $config->{read}->{host},
+        port     => $config->{read}->{port},
+        password => $config->{read}->{password});
+}
+
+sub send_balance_stream {
+    my ($c, $id, $args, $client) = @_;
+    my $redis               = _redis();
+
+    my $log = $c->app->log;
+
+    my $message='';
+    $log->info("key " . 'TXNUPDATE::balance_' . $client->default_account->id);
+    my $message = $redis->get('TXNUPDATE::balance_' . $client->default_account->id);
+    if ($message && $redis->ttl('TXNUPDATE::balance_' . $client->default_account->id)>0) {
+        $log->info("[$message]" );
+
+        my $payload = JSON::from_json($message);
+        $c->send({
+                json => {
+                    msg_type       => 'balance_stream',
+                    echo_req       => $args,
+                    balance_stream => {
+                        id         => $id,
+                        account_id => $payload->{account_id},
+                        balance    => $payload->{balance_after}
+                    },
+                }});
+    }
+    return;
+}
+
+sub balance_stream {
+    my ($c, $args) = @_;
+
+    my $ws_id  = $c->tx->connection;
+    my $client = $c->stash('client');
+    my $id;
+    $id = Mojo::IOLoop->recurring(2 => sub { send_balance_stream($c, $id, $args, $client) });
+
+    my $ws_id = $c->tx->connection;
+    $c->{ws}{$ws_id}{$id} = {
+        started => time(),
+        type    => 'ticks',
+        epoch   => 0,
+    };
+    BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
+    send_balance_stream($c, $id, $args, $client);
+    return;
 }
 
 sub get_account_status {

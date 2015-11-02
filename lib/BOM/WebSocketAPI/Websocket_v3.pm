@@ -143,6 +143,7 @@ sub __handle {
         ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
         ['proposal_open_contract',  \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract, 1],
         ['balance',                 \&BOM::WebSocketAPI::v3::Accounts::balance,                           1],
+        ['balance_stream',          \&BOM::WebSocketAPI::v3::Accounts::balance_stream,                    1],
         ['statement',               \&BOM::WebSocketAPI::v3::Accounts::statement,                         1],
         ['profit_table',            \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
         ['get_account_status',      \&BOM::WebSocketAPI::v3::Accounts::get_account_status,                1],
