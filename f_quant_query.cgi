@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use JSON qw(to_json from_json);
 
 use BOM::Platform::Client;
 use BOM::Platform::Email qw(send_email);
@@ -32,7 +31,8 @@ if (not $client) {
 }
 
 my $section_sep = '---';
-my @reasons = ('Disputed Settlement', 'Duplicate Purchase', 'Missing Market Data', 'Other');
+my $bits_sep    = ':::';
+my @reasons     = ('Disputed Settlement', 'Duplicate Purchase', 'Missing Market Data', 'Other');
 
 if (my $il = request()->param('investigate_list')) {
     # Step one from the profit table
@@ -52,9 +52,10 @@ if (my $il = request()->param('investigate_list')) {
         $section_sep
     );
     my $reflist;
-    foreach my $details (map { from_json($_) } @$il) {
-        push @message, '- ' . $details->{ref} . ' [' . $details->{bought} . '] (' . $details->{desc} . ")";
-        $reflist .= $details->{ref} . ', ';
+    foreach my $details (@$il) {
+        my ($ref, $desc, $bought) = split /$bits_sep/, $details;
+        push @message, $ref . ' [' . $bought . '] (' . $desc . ")";
+        $reflist .= $ref . ', ';
     }
     $reflist = substr($reflist, 0, -2);
 
@@ -64,7 +65,7 @@ if (my $il = request()->param('investigate_list')) {
             reasons => \@reasons,
             loginID => $loginID,
             reflist => $reflist,
-            details => to_json(\@message),
+            details => join($bits_sep, @message),
         }) || die BOM::Platform::Context::template->error();
 
     code_exit_BO();
@@ -89,7 +90,7 @@ if (my $il = request()->param('investigate_list')) {
                 subject => '[QQ] ' . $client->loginid . ': ' . $reason . ' - ' . request()->param('reflist'),
                 message => [
                     'Reported by: ' . $staff->{nickname} . ' (' . $staff->{email} . ')',
-                    $section_sep, @{from_json(request()->param('details'))},
+                    $section_sep, (split /$bits_sep/, request()->param('details')),
                     $section_sep, $reason . ':',
                     $desc, $section_sep,
                 ],
