@@ -10,7 +10,7 @@ use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
 use JSON;
 
-use BOM::Platform::Context;
+use BOM::Platform::Context qw(request localize);
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);

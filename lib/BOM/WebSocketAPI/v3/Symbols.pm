@@ -7,7 +7,7 @@ use Date::Utility;
 use Cache::RedisDB;
 use JSON;
 
-use BOM::Platform::Context;
+use BOM::Platform::Context qw( localize );
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
