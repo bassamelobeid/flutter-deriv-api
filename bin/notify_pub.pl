@@ -57,10 +57,8 @@ sub _publish {
     my $msg   = shift;
 
     $redis->publish('balance_' . $msg->{account_id},     JSON::to_json($msg));
-    $redis->publish('buy_' . $msg->{account_id},         JSON::to_json($msg));
-    $redis->publish('sell_' . $msg->{account_id},        JSON::to_json($msg));
+    $redis->publish($msg->{action_type} . '_' . $msg->{account_id},         JSON::to_json($msg));
     $redis->publish('transaction_' . $msg->{account_id}, JSON::to_json($msg));
-    $redis->publish('payment_' . $msg->{account_id},     JSON::to_json($msg));
 }
 
 sub _msg {
