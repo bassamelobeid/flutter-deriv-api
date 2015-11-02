@@ -27,6 +27,7 @@ sub send_email {
     my @message            = @{$args_ref->{'message'}};
     my $use_email_template = $args_ref->{'use_email_template'};
     my $attachment         = $args_ref->{'attachment'};
+    my $ctype              = $args_ref->{'att_type'} // 'text/plain';
     my $skip_text2html     = $args_ref->{'skip_text2html'};
     croak 'No email provided' unless $email;
 
@@ -98,7 +99,7 @@ sub send_email {
                 )->MailFile({
                     subject => $subject,
                     msg     => $message,
-                    ctype   => 'text/plain',
+                    ctype   => $ctype,
                     file    => $attachment,
                 });
         }

@@ -23,10 +23,10 @@ subtest 'valid broker codes' => sub {
     throws_ok { $broker_codes->get('TIMTY1122') } qr/Unknown broker code or loginid \[TIMTY\]/, "No Such Login TIMTY";
 
     my @brokers = sort map { $_->code } $broker_codes->all;
-    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG)], "Got correct list of brokers";
+    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG JP VRTJ)], "Got correct list of brokers";
 
     @brokers = sort $broker_codes->all_codes;
-    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG)], "Got correct list of brokers";
+    eq_or_diff \@brokers, [sort qw(CR MLT MF MX VRTC FOG JP VRTJ)], "Got correct list of brokers";
 };
 
 lives_ok {
