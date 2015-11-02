@@ -161,17 +161,15 @@ sub __handle {
         if (not $validator->validate($p1)) {
             my $validation_errors = $validator->validate($p1);
 
-            my $details;
-            my $message = 'Input validation failed for: ';
+            my ($details, @general);
             foreach my $err ($validation_errors->errors) {
                 if ($err->property =~ /\$\.(.+)$/) {
                     $details->{$1} = $err->message;
                 } else {
-                    $message .= (' - ' . $err->message);
+                    push @general, $err->message;
                 }
             }
-            $message .= join(', ', keys %$details);
-
+            my $message = 'Input validation failed for: ' . join(', ', keys %$details) . ', '. join(', ', @general);
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
