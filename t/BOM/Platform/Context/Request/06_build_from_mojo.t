@@ -56,7 +56,6 @@ subtest 'param builds' => sub {
         $request = BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/")});
         ok((not defined $request->session_cookie), "not a valid cookie");
 
-
     };
 
     subtest 'loginid' => sub {
@@ -67,7 +66,7 @@ subtest 'param builds' => sub {
         );
 
         my $request =
-            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token })});
+            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token})});
         is $request->loginid, 'CR1001', "Valid Client and loginid";
     };
 
@@ -80,11 +79,11 @@ subtest 'param builds' => sub {
             );
 
             my $request =
-                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
+                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token})});
             is $request->broker_code, 'MX', "Valid broker" or diag(Dumper($request));
 
             $request =
-                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token }, {})});
+                BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {login => $lc->token}, {})});
             is $request->broker_code, 'MX', "Valid broker";
         };
 
@@ -119,8 +118,7 @@ subtest 'cookie builds' => sub {
         );
 
         my $request =
-            BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, { login => $lc->token })});
+            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token})});
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
 
         $request =
@@ -137,7 +135,7 @@ subtest 'cookie builds' => sub {
         );
 
         my $request =
-            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token })});
+            BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {}, {login => $lc->token})});
         is $request->loginid, 'CR1001', "Valid Client and loginid";
     };
 
@@ -150,7 +148,7 @@ subtest 'cookie builds' => sub {
 
         my $request =
             BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->token })});
+            {mojo_request => mock_request_for("https://www.binary.com/", {}, {$cookie_name => $lc->token})});
         is $request->broker_code, 'CR', "Valid login id and broker";
     };
 };
@@ -169,7 +167,7 @@ subtest 'cookie preferred' => sub {
         );
 
         my $request = BOM::Platform::Context::Request::from_mojo(
-            {mojo_request => mock_request_for("https://www.binary.com/", {login => $lc2->token }, {$cookie_name => $lc->token })});
+            {mojo_request => mock_request_for("https://www.binary.com/", {login => $lc2->token}, {$cookie_name => $lc->token})});
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
     };
 };

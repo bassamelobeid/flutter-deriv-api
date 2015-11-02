@@ -29,16 +29,16 @@ subtest 'get' => sub {
     is $website->broker_for_new_virtual('nl')->code, 'VRTC', 'New Virtual Broker Code for Netherlands - Binary';
     is $website->broker_for_new_virtual('jp')->code, 'VRTJ', 'New Virtual Broker Code for Japan - Binary';
 
-    is $website->broker_for_new_account('id')->code, 'CR', 'New Broker Code for Indonesia - Binary';
+    is $website->broker_for_new_account('id')->code,   'CR', 'New Broker Code for Indonesia - Binary';
     is $website->broker_for_new_financial('id')->code, 'CR', 'New financial Broker Code for Indonesia - Binary';
 
-    is $website->broker_for_new_account('gb')->code, 'MX', 'New Broker Code for UK - Binary';
+    is $website->broker_for_new_account('gb')->code,   'MX', 'New Broker Code for UK - Binary';
     is $website->broker_for_new_financial('gb')->code, 'MX', 'New financial Broker Code for UK - Binary';
 
-    is $website->broker_for_new_account('nl')->code, 'MLT', 'New Broker Code for Netherlands - Binary';
-    is $website->broker_for_new_financial('nl')->code, 'MF', 'New financial Broker Code for Netherlands - Binary';
+    is $website->broker_for_new_account('nl')->code,   'MLT', 'New Broker Code for Netherlands - Binary';
+    is $website->broker_for_new_financial('nl')->code, 'MF',  'New financial Broker Code for Netherlands - Binary';
 
-    is $website->broker_for_new_account('de')->code, 'MF', 'New Broker Code for Germany - Binary';
+    is $website->broker_for_new_account('de')->code,   'MF', 'New Broker Code for Germany - Binary';
     is $website->broker_for_new_financial('de')->code, 'MF', 'New financial Broker Code for Germany - Binary';
 
     is $website->broker_for_new_account('jp')->code, 'JP', 'New Broker Code for Japan - Binary';
@@ -73,11 +73,10 @@ subtest 'get_by_broker_code' => sub {
 
 cmp_deeply [sort map { $_->name } $website_list->all],
     [
-    'BackOffice', 'Binary', 'Binaryqa01', 'Binaryqa02', 'Binaryqa03', 'Binaryqa04', 'Binaryqa05', 'Binaryqa06',
-    'Binaryqa07', 'Binaryqa08', 'Binaryqa09', 'Binaryqa10', 'Binaryqa11', 'Binaryqa12', 'Binaryqa13', 'Binaryqa14', 'Binaryqa15',
-    'Binaryqa16', 'Binaryqa17', 'Binaryqa18', 'Binaryqa19', 'Binaryqa20', 'Binaryqa21', 'Binaryqa22', 'Binaryqa23', 'Binaryqa24',
-    'Binaryqa25', 'Binaryqa26', 'Binaryqa27', 'Binaryqa28', 'Binaryqa29', 'Binaryqa30', 'Binaryqa31', 'Binaryqa32', 'Binaryqa33',
-    'Binaryqa34', 'Binaryqa35'
+    'BackOffice', 'Binary',     'Binaryqa01', 'Binaryqa02', 'Binaryqa03', 'Binaryqa04', 'Binaryqa05', 'Binaryqa06', 'Binaryqa07', 'Binaryqa08',
+    'Binaryqa09', 'Binaryqa10', 'Binaryqa11', 'Binaryqa12', 'Binaryqa13', 'Binaryqa14', 'Binaryqa15', 'Binaryqa16', 'Binaryqa17', 'Binaryqa18',
+    'Binaryqa19', 'Binaryqa20', 'Binaryqa21', 'Binaryqa22', 'Binaryqa23', 'Binaryqa24', 'Binaryqa25', 'Binaryqa26', 'Binaryqa27', 'Binaryqa28',
+    'Binaryqa29', 'Binaryqa30', 'Binaryqa31', 'Binaryqa32', 'Binaryqa33', 'Binaryqa34', 'Binaryqa35'
     ],
     "A list of all known websites";
 
