@@ -625,13 +625,14 @@ subtest 'general' => sub {
         BOM::MarketData::VolSurface::Empirical->new();
     }
     qr/is required/, 'throws error if underlying is not specified';
-    },
+};
 
-    my $mock_at = Test::MockModule->new('BOM::Market::AggTicks');
+my $mock_at = Test::MockModule->new('BOM::Market::AggTicks');
+
+my $mock_emp = Test::MockModule->new('BOM::MarketData::VolSurface::Empirical');
+$mock_emp->mock('long_term_vol', sub { 0.11 });
 
 subtest 'error check' => sub {
-    my $mock_emp = Test::MockModule->new('BOM::MarketData::VolSurface::Empirical');
-    $mock_emp->mock('long_term_vol', sub { 0.11 });
     lives_ok {
         $mock_at->mock('retrieve', sub { [] });
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');
@@ -683,7 +684,7 @@ subtest 'seasonalized volatility' => sub {
                 seconds_to_expiration => 900
             }
             ),
-            0.214213663354711, '';
+            0.156466025941551, '';
     }
     'lives through process of getting seasonalized volatility';
 };
@@ -707,7 +708,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.596287006596922, '';
+            0.627760976608482, '';
         ok !$vs->error,                        'no error';
         ok !$vs->uncategorized_economic_event, 'no uncategorized event';
     }
@@ -729,7 +730,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.214213663354711, '';
+            0.156466025941551, '';
         ok !$vs->error, 'no error';
         ok $vs->uncategorized_economic_event, 'uncategorized event';
     }
