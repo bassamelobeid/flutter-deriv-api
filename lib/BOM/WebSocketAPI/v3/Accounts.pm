@@ -28,7 +28,7 @@ sub landing_company {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
     }
 
-    return $c->new_error('landing_company', 'UnknownLandingCompany', localize('Unknown landing company'))
+    return $c->new_error('landing_company', 'UnknownLandingCompany', localize('Unknown landing company.'))
         unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
@@ -57,7 +57,7 @@ sub landing_company_details {
     my ($c, $args) = @_;
 
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
-    return $c->new_error('landing_company_details', 'UnknownLandingCompany', localize('Unknown landing company'))
+    return $c->new_error('landing_company_details', 'UnknownLandingCompany', localize('Unknown landing company.'))
         unless $lc;
 
     return {
@@ -262,7 +262,7 @@ sub change_password {
     my ($c, $args) = @_;
 
     ## only allow for Session Token
-    return $c->new_error('change_password', 'PermissionDenied', localize('Permission Denied.'))
+    return $c->new_error('change_password', 'PermissionDenied', localize('Permission denied.'))
         unless ($c->stash('token_type') // '') eq 'session_token';
 
     my $client_obj = $c->stash('client');
@@ -341,7 +341,7 @@ sub set_settings {
     my $now    = Date::Utility->new;
     my $client = $c->stash('client');
 
-    return $c->new_error('set_settings', 'PermissionDenied', localize('Permission Denied.')) if $client->is_virtual;
+    return $c->new_error('set_settings', 'PermissionDenied', localize('Permission denied.')) if $client->is_virtual;
 
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';

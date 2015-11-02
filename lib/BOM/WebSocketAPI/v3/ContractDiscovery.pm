@@ -36,7 +36,7 @@ sub contracts_for {
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
     if ($contracts_for->{hit_count} == 0) {
-        return $c->new_error('contracts_for', 'InvalidSymbol', localize('Invalid symbol'));
+        return $c->new_error('contracts_for', 'InvalidSymbol', localize('The symbol is invalid.'));
     } else {
         return {
             msg_type      => 'contracts_for',

@@ -13,7 +13,7 @@ sub authorize {
 
     my $token = $args->{authorize};
 
-    my $err = $c->new_error('authorize', 'InvalidToken', localize('Token invalid'));
+    my $err = $c->new_error('authorize', 'InvalidToken', localize('The token is invalid.'));
 
     my $loginid;
     my $token_type = 'session_token';
