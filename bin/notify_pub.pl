@@ -40,7 +40,7 @@ foreach my $ip (keys %{$conn}) {
     }
 }
 
-$SIG{INT} = sub{
+$SIG{INT} = sub {
     foreach my $p (@cpid) {
         say "Killing $p";
         kill KILL => $p;
@@ -56,9 +56,15 @@ sub _publish {
     my $redis = shift;
     my $msg   = shift;
 
-    $redis->publish('balance_' . $msg->{account_id},     JSON::to_json($msg));
-    $redis->publish($msg->{action_type} . '_' . $msg->{account_id},         JSON::to_json($msg));
-    $redis->publish('transaction_' . $msg->{account_id}, JSON::to_json($msg));
+    my $expire_in = 2;
+
+    return if $msg->{account_id} ne '12353508';
+    $redis->set('TXNUPDATE::balance_' . $msg->{account_id}, JSON::to_json($msg));
+    $redis->expire('TXNUPDATE::balance_' . $msg->{account_id},  $expire_in);
+    $redis->set('TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id}, JSON::to_json($msg));
+    $redis->expire('TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id},  $expire_in);
+    $redis->set('TXNUPDATE::transaction_' . $msg->{account_id}, JSON::to_json($msg));
+    $redis->expire('TXNUPDATE::transaction_' . $msg->{account_id},  $expire_in);
 }
 
 sub _msg {
