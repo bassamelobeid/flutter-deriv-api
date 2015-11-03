@@ -11,7 +11,7 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 
 sub buy {
     my ($c, $args) = @_;
@@ -261,6 +261,9 @@ sub get_bid {
 
 sub send_bid {
     my ($c, $id, $p0, $p2) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
+
     my $latest = get_bid($c, $p2);
 
     my $response = {
