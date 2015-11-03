@@ -69,14 +69,14 @@ sub entry_point {
                 }
             } else {
                 # for invalid call, eg: not json
-                $data = $c->new_error('BadRequest', BOM::Platform::Context::localize('The application sent an invalid request.'));
+                $data = $c->new_error('error', 'BadRequest', BOM::Platform::Context::localize('The application sent an invalid request.'));
                 $data->{echo_req} = {};
             }
             $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                $data = $c->new_error('ResponseTooLarge', BOM::Platform::Context::localize('Response too large.'));
+                $data = $c->new_error('error', 'ResponseTooLarge', BOM::Platform::Context::localize('Response too large.'));
                 $data->{echo_req} = $p1;
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
@@ -112,6 +112,7 @@ sub __handle {
     my @dispatch = (
         ['authorize',               \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
         ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
+        ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,              0],
         ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
         ['forget',                  \&BOM::WebSocketAPI::v3::System::forget,                              0],
         ['forget_all',              \&BOM::WebSocketAPI::v3::System::forget_all,                          0],
@@ -141,15 +142,24 @@ sub __handle {
     );
 
     foreach my $dispatch (@dispatch) {
-        next unless $p1->{$dispatch->[0]};
+        next unless exists $p1->{$dispatch->[0]};
         my $t0        = [Time::HiRes::gettimeofday];
         my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v3/' . $dispatch->[0];
-        my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")));
+        my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
+
         if (not $validator->validate($p1)) {
-            my $result = $validator->validate($p1);
-            my $error;
-            $error .= " - $_" foreach $result->errors;
-            return $c->new_error('InputValidationFailed', BOM::Platform::Context::localize("Input validation failed:") . " " . $error);
+            my $validation_errors = $validator->validate($p1);
+
+            my ($details, @general);
+            foreach my $err ($validation_errors->errors) {
+                if ($err->property =~ /\$\.(.+)$/) {
+                    $details->{$1} = $err->message;
+                } else {
+                    push @general, $err->message;
+                }
+            }
+            my $message = BOM::Platform::Context::localize('Input validation failed: ') . join(', ', (keys %$details, @general));
+            return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $dispatch->[0], {tags => [$tag]});
@@ -158,8 +168,8 @@ sub __handle {
         ## refetch account b/c stash client won't get updated in websocket
         if ($dispatch->[2] and my $loginid = $c->stash('loginid')) {
             my $client = BOM::Platform::Client->new({loginid => $loginid});
-            return $c->new_error('InvalidClient', BOM::Platform::Context::localize('Invalid client account.')) unless $client;
-            return $c->new_error('DisabledClient', BOM::Platform::Context::localize('This account is unavailable.'))
+            return $c->new_error('error', 'InvalidClient', BOM::Platform::Context::localize('Invalid client account.')) unless $client;
+            return $c->new_error('error', 'DisabledClient', BOM::Platform::Context::localize('This account is unavailable.'))
                 if $client->get_status('disabled');
             $c->stash(
                 client  => $client,
@@ -183,44 +193,45 @@ sub __handle {
 
         my $result = $dispatch->[1]->($c, $p1);
 
-        $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));
+        $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")), format => \%JSON::Schema::FORMATS);
         if ($result and not $validator->validate($result)) {
             my $validation_errors = $validator->validate($result);
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
-            warn "Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]";
-            return $c->new_error('OutputValidationFailed', BOM::Platform::Context::localize("Output validation failed:") . " " . $error);
+            $log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
+            return $c->new_error('OutputValidationFailed', BOM::Platform::Context::localize("Output validation failed: ") . $error);
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return $c->new_error('UnrecognisedRequest', BOM::Platform::Context::localize('Unrecognised request.'));
+    return $c->new_error('error', 'UnrecognisedRequest', BOM::Platform::Context::localize('Unrecognised request.'));
 }
 
 sub _sanity_failed {
     my ($c, $arg) = @_;
     my $failed;
+    my $log = $c->app->log;
     OUTER:
     foreach my $k (keys %$arg) {
         if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)) {
             $failed = 1;
-            warn "Sanity check failed: $k -> " . $arg->{$k};
+            $log->warn("Sanity check failed: $k -> " . $arg->{$k});
             last OUTER;
         }
         if (ref $arg->{$k}) {
             foreach my $l (keys %{$arg->{$k}}) {
                 if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
                     $failed = 1;
-                    warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                    $log->warn("Sanity check failed: $l -> " . $arg->{$k}->{$l});
                     last OUTER;
                 }
             }
         }
     }
     if ($failed) {
-        warn 'Sanity check failed.';
+        $log->warn('Sanity check failed.');
         return $c->new_error('sanity_check', 'SanityCheckFailed', BOM::Platform::Context::localize("Parameters sanity check failed."));
     }
     return;
