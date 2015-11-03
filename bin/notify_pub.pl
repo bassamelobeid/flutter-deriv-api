@@ -4,6 +4,9 @@ use warnings;
 use 5.010;
 use YAML::XS;
 use DBI;
+use DBD::Pg;
+use IO::Select;
+use Try::Tiny;
 use RedisDB;
 use JSON;
 
@@ -22,19 +25,26 @@ foreach my $ip (keys %{$conn}) {
     } else {
         say "starting to listen to $ip";
 
-        my $redis = _redis();
-        my $dbh   = _db($ip);
+        while (1) {
+            try {
+                my $redis = _redis();
+                my $dbh   = _db($ip);
 
-        $dbh->do("LISTEN transaction_watchers");
+                $dbh->do("LISTEN transaction_watchers");
 
-        LISTENLOOP: {
-            while (my $notify = $dbh->pg_notifies) {
-                my ($name, $pid, $payload) = @$notify;
-                my $msg = _msg($payload);
-                _publish($redis, $msg);
+                my $sel = IO::Select->new;
+                $sel->add($dbh->{pg_socket});
+                while ($sel->can_read) {
+                    while (my $notify = $dbh->pg_notifies) {
+                        my ($name, $pid, $payload) = @$notify;
+                        _publish($redis, _msg($payload));
+                    }
+                }
             }
-            sleep(1);
-            redo;
+            catch {
+                warn "$0 ($$): saw exception: $_";
+                sleep 1;
+            };
         }
         exit;
     }
@@ -55,31 +65,26 @@ for (1 .. $forks) {
 sub _publish {
     my $redis = shift;
     my $msg   = shift;
+    my $json  = JSON::to_json($msg);
 
     my $expire_in = 2;
 
-    $redis->set('TXNUPDATE::balance_' . $msg->{account_id}, JSON::to_json($msg));
-    $redis->expire('TXNUPDATE::balance_' . $msg->{account_id},  $expire_in);
-    $redis->set('TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id}, JSON::to_json($msg));
-    $redis->expire('TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id},  $expire_in);
-    $redis->set('TXNUPDATE::transaction_' . $msg->{account_id}, JSON::to_json($msg));
-    $redis->expire('TXNUPDATE::transaction_' . $msg->{account_id},  $expire_in);
+    for ('TXNUPDATE::balance_' . $msg->{account_id},
+         'TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id},
+         'TXNUPDATE::transaction_' . $msg->{account_id}) {
+        $redis->set($_, $json);
+        $redis->expire($_,  $expire_in);
+    }
 }
 
 sub _msg {
     my $payload = shift;
-    my @items = split(',', $payload);
-    my $msg;
 
-    $msg->{id}                      = $items[0];
-    $msg->{account_id}              = $items[1];
-    $msg->{action_type}             = $items[2];
-    $msg->{referrer_type}           = $items[3];
-    $msg->{financial_market_bet_id} = $items[4];
-    $msg->{payment_id}              = $items[5];
-    $msg->{amount}                  = $items[6];
-    $msg->{balance_after}           = $items[7];
-    return $msg;
+    my %msg;
+    @msg{qw/id account_id action_type referrer_type financial_market_bet_id
+            payment_id amount balance_after/} = split(',', $payload);
+
+    return \%msg;
 }
 
 sub _master_db_connections {
@@ -96,13 +101,13 @@ sub _master_db_connections {
 sub _db {
     my $ip = shift;
     DBI->connect(
-        "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432",
+        "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
         'write',
         $conn->{$ip},
         {
             AutoCommit => 1,
             RaiseError => 1,
-            PrintError => 1
+            PrintError => 0
         });
 }
 
