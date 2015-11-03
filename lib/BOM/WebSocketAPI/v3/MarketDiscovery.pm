@@ -169,8 +169,8 @@ sub asset_index {
 sub ticks {
     my ($c, $args) = @_;
 
-    my $symbol         = $args->{ticks};
-    my $symbol_offered = any { $symbol eq $_  } get_offerings_with_filter('underlying_symbol');
+    my $symbol = $args->{ticks};
+    my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
     my $ul;
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
         return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
@@ -198,8 +198,8 @@ sub ticks {
 sub ticks_history {
     my ($c, $args) = @_;
 
-    my $symbol         = $args->{ticks_history};
-    my $symbol_offered = any { $symbol eq $_  } get_offerings_with_filter('underlying_symbol');
+    my $symbol = $args->{ticks_history};
+    my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
     my $ul;
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
         return $c->new_error('ticks_history', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
@@ -231,6 +231,7 @@ sub ticks_history {
         return $c->new_error('ticks_history', 'InvalidStyle', localize("Style [_1] invalid", $style));
     }
 }
+
 sub proposal {
     my ($c, $args) = @_;
 
