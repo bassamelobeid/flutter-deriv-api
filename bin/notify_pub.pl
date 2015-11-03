@@ -58,7 +58,6 @@ sub _publish {
 
     my $expire_in = 2;
 
-    return if $msg->{account_id} ne '12353508';
     $redis->set('TXNUPDATE::balance_' . $msg->{account_id}, JSON::to_json($msg));
     $redis->expire('TXNUPDATE::balance_' . $msg->{account_id},  $expire_in);
     $redis->set('TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id}, JSON::to_json($msg));
