@@ -229,7 +229,6 @@ sub send_realtime_balance {
 
     my $log = $c->app->log;
 
-    my $message = '';
     $log->info("key " . 'TXNUPDATE::balance_' . $client->default_account->id);
     my $message = $redis->get('TXNUPDATE::balance_' . $client->default_account->id);
     if ($message && $redis->ttl('TXNUPDATE::balance_' . $client->default_account->id) > 0) {
