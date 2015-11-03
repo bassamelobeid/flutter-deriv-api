@@ -66,7 +66,7 @@ sub trading_times {
 sub asset_index {
     my ($c, $args) = @_;
 
-    my $request = $c->stash('r');
+    my $request = $c->stash('request');
     my $lang    = $request->language;
 
     if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
@@ -241,10 +241,6 @@ sub proposal {
     my $id;
     $id = Mojo::IOLoop->recurring(
         1 => sub {
-
-            if ($c->stash('language')) {
-                $c->req->param('l' => $c->stash('language'));
-            }
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
             if ($request) {
                 BOM::Platform::Context::request($request);
