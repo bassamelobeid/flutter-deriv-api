@@ -1,6 +1,7 @@
 package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
+use Try::Tiny;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(request);
