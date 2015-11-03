@@ -15,9 +15,7 @@ use Moose::Role;
 requires 'bet';
 
 use List::Util qw(max min sum first);
-use List::MoreUtils qw(uniq);
-use POSIX qw(ceil);
-use YAML::CacheLoader;
+use YAML::CacheLoader qw(LoadFile);
 use Math::Function::Interpolator;
 
 use BOM::Platform::Context qw(request localize);
@@ -568,88 +566,65 @@ sub _build_economic_events_markup {
     return $economic_events_markup;
 }
 
-has _influential_currencies => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub { ['USD', 'AUD', 'CAD', 'CNY', 'NZD'] });
-
-sub get_applicable_economic_events {
+sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
-    my $bet = $self->bet;
+    state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
+    my $underlying = $self->underlying;
 
-    my $news = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-        from => $start,
-        to   => $end
-    });
-    my @influential_currencies = @{$self->_influential_currencies};
-    my @applicable_symbols = uniq($bet->underlying->quoted_currency_symbol, $bet->underlying->asset_symbol, @influential_currencies);
-    my @applicable_news;
+    my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => Date::Utility->new($start),
+            to   => Date::Utility->new($end)});
+    # static duration that needs to be replaced.
+    my $default_underlying = 'frxUSDJPY';
+    my @events;
+    foreach my $event (@$raw_events) {
+        my $event_name = $event->event_name;
+        $event_name =~ s/\s/_/g;
+        my @keys = map {
+            ($_ . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name, $_ . '_' . $event->symbol . '_' . $event->impact . '_default')
+        } ($underlying->symbol, $default_underlying);
+        my $news_parameters = first { exists $news_categories->{$_} } @keys;
 
-    foreach my $symbol (@applicable_symbols) {
-        my @news = grep { $_->symbol eq $symbol } @$news;
-        push @applicable_news, @news;
+        next unless $news_parameters;
+        $news_parameters->{release_time} = $event->release_date->epoch;
+        push @events, $news_parameters;
     }
-    @applicable_news =
-        sort { $a->release_date->epoch <=> $b->release_date->epoch } @applicable_news;
 
-    return @applicable_news;
+    return \@events;
 }
 
 sub _build_economic_events_spot_risk_markup {
     my $self = shift;
 
-    my $markup_base_amount = 0;
-    my $bet                = $self->bet;
-    my $secs_to_expiry     = $bet->get_time_to_expiry({from => $bet->effective_start})->seconds;
-    if ($secs_to_expiry and $secs_to_expiry > 10) {
-        my $start           = $bet->effective_start->minus_time_interval('20m');
-        my $end             = $bet->effective_start->plus_time_interval($bet->get_time_to_expiry({from => $bet->effective_start})->seconds + 600);
-        my @economic_events = $self->get_applicable_economic_events($start, $end);
+    my $bet   = $self->bet;
+    my $start = $bet->effective_start;
+    my $end   = $bet->date_expiry;
+    my @time_samples;
+    for (my $i = $start->epoch; $i <= $end->epoch; $i += 15) {
+        push @time_samples, $i;
+    }
 
-        my @triangle_sum = (0) x ($self->_volatility_seasonality_step_size + 1);
-        foreach my $event (@economic_events) {
-            my $end_of_effect = $event->release_date->plus_time_interval('20m');
-            my @triangle;
-            my $scale = $event->get_scaling_factor($bet->underlying, 'spot');
-            next if not defined $scale;
-            my $x1                   = $event->release_date->epoch;
-            my $x2                   = $end_of_effect->epoch;
-            my $y1                   = $scale;
-            my $y2                   = 0;
-            my $triangle_slope       = ($y1 - $y2) / ($x1 - $x2);
-            my $intercept            = $y1 - $triangle_slope * $x1;
-            my $epsilon              = $secs_to_expiry / $self->_volatility_seasonality_step_size;
-            my $t                    = $bet->effective_start->epoch;
-            my $ten_minutes_in_epoch = $event->release_date->plus_time_interval('10m')->epoch;
-            my $primary_sum          = (3 / 4 * $scale * 600) / $epsilon;
-            my $primary_sum_index    = 0;
+    my $contract_duration = $bet->remaining_time->seconds;
+    my $lookback          = $start->minus($contract_durati0n + 3600);
+    my $news_array        = $self->_get_economic_events($lookback, $end);
 
-# for intervals between $bet->effective_start->epoch and $bet->date_expiry->epoch
-            for (0 .. $self->_volatility_seasonality_step_size) {
-                my $height = 0;
-                $primary_sum_index++ if $t <= $x1;
-                if ($t >= $ten_minutes_in_epoch and $t <= $x2) {
-                    $height = $triangle_slope * $t + $intercept;
-                }
-                push @triangle, $height;
-                $t += $epsilon;
-            }
-
-            if (    $bet->effective_start->epoch <= $ten_minutes_in_epoch
-                and $bet->date_expiry->epoch >= $event->release_date->epoch - 600)
-            {
-                $primary_sum_index = min($primary_sum_index, scalar(@triangle) - 1);
-                $triangle[$primary_sum_index] = $primary_sum;
-            }
-
-            for (0 .. $#triangle) {
-                $triangle_sum[$_] = $triangle[$_]
-                    if $triangle[$_] > $triangle_sum[$_];
+    my @combined = (0) x scalar(@time_samples);
+    foreach my $news (@$news_array) {
+        my $shift = _shift($news->{release_time}, $start->epoch, $contract_duration);
+        my $effective_news_time = $news->{release_time} + $shift;
+        # +1e-9 is added to prevent a division by zero error if news magnitude is 1
+        my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
+        my @triangle;
+        foreach my $time (@time_samples) {
+            if ($time < $effective_news_time) {
+                push @triangle, 0;
+            } else {
+                my $chunk = $news->{bias} * exp(-$decay_coef * ($time - $effective_news_time));
+                push @triangle, $chunk;
             }
         }
-
-        $markup_base_amount = sum(@triangle_sum) / $self->_volatility_seasonality_step_size;
+        @combined = map { max($triangle[$_], $combined[$_]) } (0 .. $#time_samples);
     }
 
     my $spot_risk_markup = Math::Util::CalculatedValue::Validatable->new({
@@ -657,10 +632,24 @@ sub _build_economic_events_spot_risk_markup {
         description => 'markup to account for spot risk of economic events',
         set_by      => __PACKAGE__,
         maximum     => 0.15,
-        base_amount => $markup_base_amount,
+        base_amount => sum(@combined) / scalar(@combined),
     });
 
     return $spot_risk_markup;
+}
+
+sub _shift {
+    my ($news_time, $contract_start, $contract_duration) = @_;
+
+    my $shift_seconds = 0;
+    my $contract_end  = $contract_start + $contract_duration;
+    if ($news_time > $contract_start - 5 * 60 and $news_time < $contract_start) {
+        $shift_seconds = $contract_start - $news_time;
+    } elsif ($news_time < $contract_end + 5 * 60 and $news_time > $contract_end - 5 * 60) {
+        $shift_seconds = $news_time - $contract_end + 5 * 60;
+    }
+
+    return $shift_seconds;
 }
 
 # Generally for indices and stocks the minimum available tenor for smile is 30 days.
