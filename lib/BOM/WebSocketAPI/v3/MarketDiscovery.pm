@@ -9,6 +9,7 @@ use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
 use JSON;
+use List::MoreUtils qw(any);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Registry;
@@ -168,9 +169,12 @@ sub asset_index {
 sub ticks {
     my ($c, $args) = @_;
 
-    my $symbol = $args->{ticks};
-    my $ul     = BOM::Market::Underlying->new($symbol)
-        or return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+    my $symbol         = $args->{ticks};
+    my $symbol_offered = any { $symbol eq $_  } get_offerings_with_filter('underlying_symbol');
+    my $ul;
+    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
+        return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+    }
 
     if ($ul->feed_license eq 'realtime') {
         my $id;
@@ -194,9 +198,12 @@ sub ticks {
 sub ticks_history {
     my ($c, $args) = @_;
 
-    my $symbol = $args->{ticks_history};
-    my $ul     = BOM::Market::Underlying->new($symbol)
-        or return $c->new_error('ticks_history', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+    my $symbol         = $args->{ticks_history};
+    my $symbol_offered = any { $symbol eq $_  } get_offerings_with_filter('underlying_symbol');
+    my $ul;
+    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
+        return $c->new_error('ticks_history', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+    }
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
     if ($style eq 'ticks') {
