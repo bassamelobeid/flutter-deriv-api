@@ -5,6 +5,7 @@ use warnings;
 
 use Test::More tests => 3;
 use Test::Exception;
+use Test::Warn;
 use Test::NoWarnings;
 use Test::MockModule;
 
@@ -66,17 +67,19 @@ subtest 'skip if it dies' => sub {
             bet_class => 'higher_lower_bet',
             shortcode => 'wrong_shortcode'
         });
-    lives_ok {
-        my $total_pl = BOM::DailySummaryReport->new(
-            for_date    => Date::Utility->new->date_yyyymmdd,
-            currencies  => ['USD'],
-            brokercodes => ['CR'],
-            broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-            save_file   => 0,
-        )->generate_report;
-        cmp_ok $total_pl->{CR}->{USD}, '==', 0;
-    }
-    'skip if it dies';
+    warning_like {
+        lives_ok {
+            my $total_pl = BOM::DailySummaryReport->new(
+                for_date    => Date::Utility->new->date_yyyymmdd,
+                currencies  => ['USD'],
+                brokercodes => ['CR'],
+                broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+                save_file   => 0,
+            )->generate_report;
+            cmp_ok $total_pl->{CR}->{USD}, '==', 0;
+        }
+        'skip if it dies';
+     } qr/No symbol provided to constructor/, 'correct warning';
 };
 
 subtest 'successful run' => sub {
@@ -118,23 +121,24 @@ subtest 'successful run' => sub {
                     %{$contracts{$type}}});
         }
     }
-
-    lives_ok {
-        my $total_pl = BOM::DailySummaryReport->new(
-            for_date    => $next_day->date_yyyymmdd,
-            currencies  => ['USD'],
-            brokercodes => ['CR'],
-            broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
-            save_file   => 0,
-        )->generate_report;
-        my @brokers = keys %$total_pl;
-        ok @brokers, 'has element';
-        cmp_ok scalar @brokers, '==', 1;
-        ok exists $total_pl->{CR};
-        ok exists $total_pl->{CR}->{USD};
-        cmp_ok $total_pl->{CR}->{USD}, '>', 0;
-    }
-    'generate daily summary report';
+    warning_like {
+        lives_ok {
+            my $total_pl = BOM::DailySummaryReport->new(
+                for_date    => $next_day->date_yyyymmdd,
+                currencies  => ['USD'],
+                brokercodes => ['CR'],
+                broker_path => BOM::Platform::Runtime->instance->app_config->system->directory->db . '/f_broker/',
+                save_file   => 0,
+            )->generate_report;
+            my @brokers = keys %$total_pl;
+            ok @brokers, 'has element';
+            cmp_ok scalar @brokers, '==', 1;
+            ok exists $total_pl->{CR};
+            ok exists $total_pl->{CR}->{USD};
+            cmp_ok $total_pl->{CR}->{USD}, '>', 0;
+        }
+        'generate daily summary report';
+    } qr/No symbol provided to constructor/, 'correct warning';
 };
 
 sub db {
