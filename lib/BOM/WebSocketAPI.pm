@@ -44,6 +44,26 @@ sub startup {
                 }};
         });
 
+    $app->hooks(
+        before_dispatch => sub {
+            my $c = shift;
+            try {
+                my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+                if ($request) {
+                    BOM::Platform::Context::request($request);
+                }
+            }
+            catch {
+                $c->app->log->error($_);
+            };
+
+            my $request = BOM::Platform::Context::request();
+            $c->stash(request => $request);
+            my $lang = lc $c->stash('request')->language;
+            $c->stash(language => uc $lang);
+            $c->res->headers->header('Content-Language' => $lang);
+        });
+
     my $r = $app->routes;
 
     for ($r->under('/websockets/v1')) {
