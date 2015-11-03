@@ -132,20 +132,6 @@ sub has_identical_event {
     return (@docs) ? $docs[0] : '';
 }
 
-has _influential_currencies => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub { ['USD', 'AUD', 'CAD', 'CNY', 'NZD'] });
-
-has _coefficients => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__coefficients {
-    return LoadFile('/home/git/regentmarkets/bom-market/config/files/news_impact_coefficients.yml');
-}
-
 sub get_scaling_factor {
     my ($self, $underlying, $risk_type) = @_;
 
@@ -160,16 +146,11 @@ sub get_scaling_factor {
         } elsif (
             first {
                 $event_symbol eq $_
-            }
-            @{$self->_influential_currencies})
+            }('USD', 'AUD', 'CAD', 'CNY', 'NZD'))
         {
             $scaling_factor = 0.06;
         } else {
             $scaling_factor = 0;
-        }
-    } elsif ($risk_type eq 'vol') {
-        if ($impact == 1 or $impact == 3 or $impact == 5) {
-            $scaling_factor = $self->_coefficients->{$impact}{$event_symbol}{$underlying_symbol};
         }
     }
 
