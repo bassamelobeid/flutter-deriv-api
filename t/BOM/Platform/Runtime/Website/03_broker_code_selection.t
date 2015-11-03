@@ -162,11 +162,11 @@ sub prepare_website {
     isa_ok $ci, 'BOM::Platform::Runtime::Broker';
 
     my $fog = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'fog',
-        name             => 'Binary Ltd',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Bahamas',
+        short   => 'fog',
+        name    => 'Binary Ltd',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Bahamas',
     );
     isa_ok $fog, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -180,11 +180,11 @@ sub prepare_website {
     isa_ok $vrtc, 'BOM::Platform::Runtime::Broker';
 
     my $japan_vr = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'japan-virtual',
-        name             => 'Binary Virtual Japan',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Antarctica',
+        short   => 'japan-virtual',
+        name    => 'Binary Virtual Japan',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Antarctica',
     );
     isa_ok $japan_vr, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -198,11 +198,11 @@ sub prepare_website {
     isa_ok $vrtj, 'BOM::Platform::Runtime::Broker';
 
     my $japan = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'japan',
-        name             => 'Binary KK',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Japan',
+        short   => 'japan',
+        name    => 'Binary KK',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Japan',
     );
     isa_ok $japan, 'BOM::Platform::Runtime::LandingCompany';
 

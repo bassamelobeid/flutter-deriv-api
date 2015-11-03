@@ -41,7 +41,7 @@ subtest 'get' => sub {
     is $website->broker_for_new_account('de')->code,   'MF', 'New Broker Code for Germany - Binary';
     is $website->broker_for_new_financial('de')->code, 'MF', 'New financial Broker Code for Germany - Binary';
 
-    is $website->broker_for_new_account('jp')->code, 'JP', 'New Broker Code for Japan - Binary';
+    is $website->broker_for_new_account('jp')->code,   'JP', 'New Broker Code for Japan - Binary';
     is $website->broker_for_new_financial('jp')->code, 'JP', 'New financial Broker Code for Japan - Binary';
 };
 
