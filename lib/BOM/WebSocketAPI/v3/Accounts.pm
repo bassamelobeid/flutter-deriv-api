@@ -240,9 +240,10 @@ sub send_realtime_balance {
                     msg_type => 'balance',
                     echo_req => $args,
                     balance  => {
-                        id         => $id,
-                        account_id => $payload->{account_id},
-                        balance    => $payload->{balance_after}
+                        id       => $id,
+                        loginid  => $client->loginid,
+                        currency => $client->default_account->currency_code,
+                        balance  => $payload->{balance_after}
                     },
                 }});
     }
@@ -266,6 +267,7 @@ sub balance {
     return {
         msg_type => 'balance',
         balance  => {
+            id       => $id,
             loginid  => $client->loginid,
             currency => $client->default_account->currency_code,
             balance  => $client->default_account->balance,
