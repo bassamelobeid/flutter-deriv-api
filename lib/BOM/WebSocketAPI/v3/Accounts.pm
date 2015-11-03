@@ -215,28 +215,6 @@ sub __get_sold {
     return $data;
 }
 
-sub user_balances {
-    my ($c, $args) = @_;
-
-    my $client = $c->stash('client');
-
-    my @client_balances;
-    for my $cl ($client->siblings) {
-        next unless $cl->default_account;
-
-        push @client_balances,
-            {
-            loginid  => $cl->loginid,
-            currency => $cl->default_account->currency_code,
-            balance  => $cl->default_account->balance,
-            };
-    }
-    return {
-        msg_type => 'user_balances',
-        user_balances  => \@client_balances,
-    };
-}
-
 sub _redis {
     my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
     return RedisDB->new(
