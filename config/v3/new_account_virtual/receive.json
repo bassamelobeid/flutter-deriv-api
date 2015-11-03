@@ -28,9 +28,9 @@
       }
     },
     "msg_type": {
-        "type": "string",
-        "description": "account"
-      }
+      "type": "string",
+      "description": "account"
+    }
   },
   "required": [
     "echo_req",

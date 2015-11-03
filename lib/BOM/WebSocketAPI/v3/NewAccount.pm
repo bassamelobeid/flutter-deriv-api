@@ -13,12 +13,7 @@ sub new_account_virtual {
     my $acc = BOM::Platform::Account::Virtual::create_account({details => $args});
 
     if (my $err_code = $acc->{error}) {
-        return {
-            msg_type => 'account',
-            error    => {
-                message => BOM::Platform::Locale::error_map()->{$err_code},
-                code    => $err_code,
-            }};
+        return $c->new_error('account', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
     }
 
     my $client  = $acc->{client};
