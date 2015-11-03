@@ -12,7 +12,7 @@ use BOM::Platform::Context qw(localize);
 sub get_limits {
     my ($c, $args) = @_;
 
-    my $r      = $c->stash('r');
+    my $r      = $c->stash('request');
     my $client = $c->stash('client');
 
     # check if Client is not in lock cashier and not virtual account
