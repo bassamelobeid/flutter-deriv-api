@@ -9,13 +9,11 @@ use warnings;
 use Getopt::Long;
 
 use Date::Utility;
-use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::DailySummaryReport;
 
-BOM::Utility::Log4perl::init_log4perl_console;
 BOM::Platform::Sysinit::init();
 
 my ($jobs, $currencies, $brokercodes, $for_date);
@@ -30,7 +28,6 @@ if (!$optres) {
     exit;
 }
 
-my $logger = get_logger;
 
 # By default we run all brokers and currencies for today.
 $for_date ||= Date::Utility->new->date_yyyymmdd;
@@ -65,6 +62,5 @@ send_email({
     'message' => \@mail_msg,
 });
 
-$logger->debug('Finished.');
 
 1;

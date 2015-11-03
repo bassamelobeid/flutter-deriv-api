@@ -9,7 +9,6 @@ use Path::Tiny;
 
 use f_brokerincludeall;
 use Date::Utility;
-use BOM::Utility::Log4perl qw( get_logger );
 use Format::Util::Numbers qw( commas );
 use BOM::MarketData::InterestRate;
 use BOM::MarketData::VolSurface::Delta;
@@ -226,7 +225,7 @@ if (    -e $overridefilename
 
 #internal audit warnings
 if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Runtime->instance->app_config->system->on_development and $diff) {
-    get_logger->warn("promocodes.txt EDITED BY $clerk");
+    warn("promocodes.txt EDITED BY $clerk");
     send_email({
             from    => BOM::Platform::Runtime->instance->app_config->system->email,
             to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
@@ -301,7 +300,7 @@ unless ($diff eq '0') {
     }
 }
 if ($message and not BOM::Platform::Runtime->instance->app_config->system->on_development) {
-    get_logger()->warn('FILECHANGED', "File $filen edited by $clerk", $message);
+    warn('FILECHANGED', "File $filen edited by $clerk", $message);
 }
 
 code_exit_BO();
