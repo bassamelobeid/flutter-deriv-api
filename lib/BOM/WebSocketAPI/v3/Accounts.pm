@@ -252,7 +252,6 @@ sub send_realtime_balance {
 sub balance {
     my ($c, $args) = @_;
 
-    my $ws_id  = $c->tx->connection;
     my $client = $c->stash('client');
     my $id;
     $id = Mojo::IOLoop->recurring(2 => sub { send_realtime_balance($c, $id, $args, $client) });
