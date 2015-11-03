@@ -160,10 +160,7 @@ sub _get_economic_events {
         my $default         = $underlying->symbol . '_' . $event->symbol . '_' . $event->impact . '_default';
         my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
 
-        unless ($news_parameters) {
-            $self->uncategorized_economic_event('Missing economic events categories for ' . $key);
-            next;
-        }
+        next unless $news_parameters;
         $news_parameters->{release_time} = $event->release_date->epoch;
         push @events, $news_parameters;
     }
@@ -301,7 +298,7 @@ sub _get_coefficients {
     return $underlying->submarket->name eq 'minor_pairs' ? $coef->{frxUSDJPY} : $coef->{$underlying->symbol};
 }
 
-has [qw(long_term_prediction average_tick_count error uncategorized_economic_event)] => (
+has [qw(long_term_prediction average_tick_count error)] => (
     is      => 'rw',
     default => undef,
 );
