@@ -273,7 +273,6 @@ sub balance {
             balance  => $client->default_account->balance,
         },
     };
-    return;
 }
 
 sub get_account_status {
