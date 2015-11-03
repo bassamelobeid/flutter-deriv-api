@@ -27,7 +27,7 @@ subtest "Sanity check" => sub {
     is(BOM::Platform::MyAffiliates->new->get_affiliate_id_from_token('jGZUKO3JWgyVAv0U_Fv2nVOqZLGcUW5p'), 6,     "Affiliate 6 token");
 
     # subordinate affiliates and tokens
-    is(BOM::Platform::MyAffiliates->new->is_subordinate_affiliate(13), 1, "Affiliate 13 is subordinate");
+    is(BOM::Platform::MyAffiliates->new->is_subordinate_affiliate(13),                                    1,  "Affiliate 13 is subordinate");
     is(BOM::Platform::MyAffiliates->new->get_affiliate_id_from_token('k7a3BtGf-EjKto_EPcZApGNd7ZgqdRLk'), 13, "Affiliate 13 token");
 
     is(BOM::Platform::MyAffiliates->new->is_subordinate_affiliate(274),                                   1,   "Affiliate 274 is subordinate");

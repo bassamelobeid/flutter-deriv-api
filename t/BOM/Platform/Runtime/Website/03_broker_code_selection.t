@@ -137,11 +137,11 @@ subtest 'broker_for_new_virtual' => sub {
 
 sub prepare_website {
     my $costarica = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'costarica',
-        name             => 'Binary (C.R.) S.A.',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Costa Rica',
+        short   => 'costarica',
+        name    => 'Binary (C.R.) S.A.',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Costa Rica',
     );
     isa_ok $costarica, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -162,11 +162,11 @@ sub prepare_website {
     isa_ok $ci, 'BOM::Platform::Runtime::Broker';
 
     my $fog = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'fog',
-        name             => 'Binary Ltd',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Bahamas',
+        short   => 'fog',
+        name    => 'Binary Ltd',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Bahamas',
     );
     isa_ok $fog, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -180,11 +180,11 @@ sub prepare_website {
     isa_ok $vrtc, 'BOM::Platform::Runtime::Broker';
 
     my $japan_vr = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'japan-virtual',
-        name             => 'Binary Virtual Japan',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Antarctica',
+        short   => 'japan-virtual',
+        name    => 'Binary Virtual Japan',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Antarctica',
     );
     isa_ok $japan_vr, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -198,11 +198,11 @@ sub prepare_website {
     isa_ok $vrtj, 'BOM::Platform::Runtime::Broker';
 
     my $japan = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'japan',
-        name             => 'Binary KK',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Japan',
+        short   => 'japan',
+        name    => 'Binary KK',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Japan',
     );
     isa_ok $japan, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -215,11 +215,11 @@ sub prepare_website {
     isa_ok $jp, 'BOM::Platform::Runtime::Broker';
 
     my $iom = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'iom',
-        name             => 'Binary (IOM) Ltd',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Isle of Man',
+        short   => 'iom',
+        name    => 'Binary (IOM) Ltd',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Isle of Man',
     );
     isa_ok $iom, 'BOM::Platform::Runtime::LandingCompany';
 
@@ -232,11 +232,11 @@ sub prepare_website {
     isa_ok $mx, 'BOM::Platform::Runtime::Broker';
 
     my $maltainvest = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'maltainvest',
-        name             => 'Binary (Europe) Ltd',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Isle of Man',
+        short   => 'maltainvest',
+        name    => 'Binary (Europe) Ltd',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Isle of Man',
     );
 
     isa_ok $maltainvest, 'BOM::Platform::Runtime::LandingCompany';
@@ -249,11 +249,11 @@ sub prepare_website {
     isa_ok $mf, 'BOM::Platform::Runtime::Broker';
 
     my $malta = BOM::Platform::Runtime::LandingCompany->new(
-        short            => 'malta',
-        name             => 'Binary (Europe) Ltd',
-        address          => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
-        fax              => '+44 207 6813557',
-        country          => 'Isle of Man',
+        short   => 'malta',
+        name    => 'Binary (Europe) Ltd',
+        address => ["First Floor, Millennium House", "Victoria Road", "Douglas", "IM2 4RW", "Isle of Man", "British Isles"],
+        fax     => '+44 207 6813557',
+        country => 'Isle of Man',
     );
 
     isa_ok $malta, 'BOM::Platform::Runtime::LandingCompany';
