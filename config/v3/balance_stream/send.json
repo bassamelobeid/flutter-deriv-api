@@ -2,9 +2,9 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title":"Balance Send",
-  "description": "Get realtime user balance",
+  "description": "Get realtime stream of user balance changes.",
   "properties": {
-    "balance_stream": {
+    "realtime_balance": {
       "type": "integer",
       "sample": "1",
       "description": "Must be 1.",
@@ -18,6 +18,6 @@
   },
   "additionalProperties": false,
   "required": [
-    "balance_stream"
+    "realtime_balance"
   ]
 }

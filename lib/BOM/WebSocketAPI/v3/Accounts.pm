@@ -245,24 +245,24 @@ sub _redis {
         password => $config->{read}->{password});
 }
 
-sub send_balance_stream {
+sub send_realtime_balance {
     my ($c, $id, $args, $client) = @_;
-    my $redis               = _redis();
+    my $redis = _redis();
 
     my $log = $c->app->log;
 
-    my $message='';
+    my $message = '';
     $log->info("key " . 'TXNUPDATE::balance_' . $client->default_account->id);
     my $message = $redis->get('TXNUPDATE::balance_' . $client->default_account->id);
-    if ($message && $redis->ttl('TXNUPDATE::balance_' . $client->default_account->id)>0) {
-        $log->info("[$message]" );
+    if ($message && $redis->ttl('TXNUPDATE::balance_' . $client->default_account->id) > 0) {
+        $log->info("[$message]");
 
         my $payload = JSON::from_json($message);
         $c->send({
                 json => {
-                    msg_type       => 'balance_stream',
+                    msg_type       => 'realtime_balance',
                     echo_req       => $args,
-                    balance_stream => {
+                    realtime_balance => {
                         id         => $id,
                         account_id => $payload->{account_id},
                         balance    => $payload->{balance_after}
@@ -272,13 +272,13 @@ sub send_balance_stream {
     return;
 }
 
-sub balance_stream {
+sub realtime_balance {
     my ($c, $args) = @_;
 
     my $ws_id  = $c->tx->connection;
     my $client = $c->stash('client');
     my $id;
-    $id = Mojo::IOLoop->recurring(2 => sub { send_balance_stream($c, $id, $args, $client) });
+    $id = Mojo::IOLoop->recurring(2 => sub { send_realtime_balance($c, $id, $args, $client) });
 
     my $ws_id = $c->tx->connection;
     $c->{ws}{$ws_id}{$id} = {
@@ -287,7 +287,7 @@ sub balance_stream {
         epoch   => 0,
     };
     BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
-    send_balance_stream($c, $id, $args, $client);
+    send_realtime_balance($c, $id, $args, $client);
     return;
 }
 

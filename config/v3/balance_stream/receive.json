@@ -2,16 +2,16 @@
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
   "title": "Realtime Balance",
-  "description": "Return details of user account balances",
+  "description": "Return details of user account balance",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "balance_stream": {
+    "realtime_balance": {
       "type": "object",
-      "title": "Realtime balance record.",
-      "description": "latest balance of the user's account in realtime",
+      "title": "Lastest balance of client",
+      "description": "Realtime stream of user balance changes.",
       "properties": {
           "balance": {
             "type": "number",
