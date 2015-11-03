@@ -4,7 +4,7 @@
   "title":"Balance Send",
   "description": "Get user balance",
   "properties": {
-    "balance": {
+    "user_balances": {
       "type": "integer",
       "sample": "1",
       "description": "Must be 1.",
@@ -18,6 +18,6 @@
   },
   "additionalProperties": false,
   "required": [
-    "balance"
+    "user_balances"
   ]
 }

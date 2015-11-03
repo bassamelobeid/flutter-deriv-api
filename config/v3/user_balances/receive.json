@@ -8,7 +8,7 @@
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "balance": {
+    "user_balances": {
       "type": "array",
       "title": "Array of balances",
       "description": "Array of the user's account balances",
@@ -40,7 +40,7 @@
     },
     "msg_type": {
         "type": "string",
-        "description": "balance"
+        "description": "user_balances"
       }
   },
   "required": [

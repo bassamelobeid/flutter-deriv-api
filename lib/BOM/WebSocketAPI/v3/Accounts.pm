@@ -232,8 +232,8 @@ sub user_balances {
             };
     }
     return {
-        msg_type => 'balance',
-        balance  => \@client_balances,
+        msg_type => 'user_balances',
+        user_balances  => \@client_balances,
     };
 }
 
@@ -260,9 +260,9 @@ sub send_realtime_balance {
         my $payload = JSON::from_json($message);
         $c->send({
                 json => {
-                    msg_type       => 'realtime_balance',
+                    msg_type       => 'balance',
                     echo_req       => $args,
-                    realtime_balance => {
+                    balance => {
                         id         => $id,
                         account_id => $payload->{account_id},
                         balance    => $payload->{balance_after}
@@ -287,7 +287,14 @@ sub balance {
         epoch   => 0,
     };
     BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
-    send_realtime_balance($c, $id, $args, $client);
+    return {
+        msg_type => 'balance',
+        balance  => {
+            loginid  => $client->loginid,
+            currency => $client->default_account->currency_code,
+            balance  => $client->default_account->balance,
+        },
+    };
     return;
 }
 

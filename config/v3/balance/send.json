@@ -4,7 +4,7 @@
   "title":"Balance Send",
   "description": "Get realtime stream of user balance changes.",
   "properties": {
-    "realtime_balance": {
+    "balance": {
       "type": "integer",
       "sample": "1",
       "description": "Must be 1.",
@@ -18,6 +18,6 @@
   },
   "additionalProperties": false,
   "required": [
-    "realtime_balance"
+    "balance"
   ]
 }
