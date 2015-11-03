@@ -170,35 +170,8 @@ sub ticks {
 
     my $symbol = $args->{ticks};
     my $ul     = BOM::Market::Underlying->new($symbol)
-        or return $c->new_error('tick', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+        or return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
 
-    if ($args->{end}) {
-        my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
-        if ($style eq 'ticks') {
-            my $ticks = $c->BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
-            my $history = {
-                prices => [map { $_->{price} } @$ticks],
-                times  => [map { $_->{time} } @$ticks],
-            };
-            return {
-                msg_type => 'history',
-                history  => $history
-            };
-        } elsif ($style eq 'candles') {
-            my @candles = @{$c->BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
-            if (@candles) {
-
-                return {
-                    msg_type => 'candles',
-                    candles  => \@candles,
-                };
-            } else {
-                return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
-            }
-        } else {
-            return $c->new_error('tick', 'InvalidStyle', localize("Style [_1] invalid", $style));
-        }
-    }
     if ($ul->feed_license eq 'realtime') {
         my $id;
         $id = Mojo::IOLoop->recurring(1 => sub { send_tick($c, $id, $args, $ul) });
@@ -214,10 +187,43 @@ sub ticks {
 
         return 0;
     } else {
-        return $c->new_error('tick', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
+        return $c->new_error('ticks', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
     }
 }
 
+sub ticks_history {
+    my ($c, $args) = @_;
+
+    my $symbol = $args->{ticks_history};
+    my $ul     = BOM::Market::Underlying->new($symbol)
+        or return $c->new_error('ticks_history', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+
+    my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
+    if ($style eq 'ticks') {
+        my $ticks = $c->BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
+        my $history = {
+            prices => [map { $_->{price} } @$ticks],
+            times  => [map { $_->{time} } @$ticks],
+        };
+        return {
+            msg_type => 'history',
+            history  => $history
+        };
+    } elsif ($style eq 'candles') {
+        my @candles = @{$c->BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
+        if (@candles) {
+
+            return {
+                msg_type => 'candles',
+                candles  => \@candles,
+            };
+        } else {
+            return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
+        }
+    } else {
+        return $c->new_error('ticks_history', 'InvalidStyle', localize("Style [_1] invalid", $style));
+    }
+}
 sub proposal {
     my ($c, $args) = @_;
 

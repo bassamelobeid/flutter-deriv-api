@@ -124,6 +124,7 @@ sub __handle {
     my @dispatch = (
         ['authorize',               \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
         ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
+        ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,              0],
         ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
         ['forget',                  \&BOM::WebSocketAPI::v3::System::forget,                              0],
         ['forget_all',              \&BOM::WebSocketAPI::v3::System::forget_all,                          0],
@@ -155,8 +156,7 @@ sub __handle {
     foreach my $dispatch (@dispatch) {
         next unless exists $p1->{$dispatch->[0]};
         my $t0        = [Time::HiRes::gettimeofday];
-        my $dir       = ($dispatch->[0] eq 'ticks' and not exists $p1->{end}) ? 'tick' : $dispatch->[0];
-        my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v3/' . $dir;
+        my $f         = '/home/git/regentmarkets/bom-websocket-api/config/v3/' . $dispatch->[0];
         my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/send.json")), format => \%JSON::Schema::FORMATS);
 
         if (not $validator->validate($p1)) {
