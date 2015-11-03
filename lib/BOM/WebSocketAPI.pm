@@ -3,6 +3,8 @@ package BOM::WebSocketAPI;
 use Mojo::Base 'Mojolicious';
 
 use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(request);
+use BOM::Platform::Context::Request;
 
 sub startup {
     my $app = shift;
