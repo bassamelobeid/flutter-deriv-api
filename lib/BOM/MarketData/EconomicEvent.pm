@@ -146,7 +146,8 @@ sub get_scaling_factor {
         } elsif (
             first {
                 $event_symbol eq $_
-            }('USD', 'AUD', 'CAD', 'CNY', 'NZD'))
+            }
+            ('USD', 'AUD', 'CAD', 'CNY', 'NZD'))
         {
             $scaling_factor = 0.06;
         } else {
