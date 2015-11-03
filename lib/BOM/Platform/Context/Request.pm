@@ -271,7 +271,7 @@ sub _build_params {
             }
         } else {
             $params->{$param} = Encode::decode('UTF-8', $params->{$param}) unless Encode::is_utf8($params->{$param});
-            $params->{$param} = defang_lite($params->{$param});
+            $params->{$param} = $self->backoffice ? $params->{$param} : defang_lite($params->{$param});
         }
     }
 
