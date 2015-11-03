@@ -44,7 +44,7 @@ sub startup {
                 }};
         });
 
-    $app->hooks(
+    $app->hook(
         before_dispatch => sub {
             my $c = shift;
             try {
