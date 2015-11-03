@@ -28,7 +28,7 @@ sub landing_company {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
     }
 
-    return $c->new_error('landing_company', 'UnknownLandingCompany', 'Unknown landing company')
+    return $c->new_error('landing_company', 'UnknownLandingCompany', localize('Unknown landing company.'))
         unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
@@ -57,7 +57,7 @@ sub landing_company_details {
     my ($c, $args) = @_;
 
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
-    return $c->new_error('landing_company_details', 'UnknownLandingCompany', 'Unknown landing company')
+    return $c->new_error('landing_company_details', 'UnknownLandingCompany', localize('Unknown landing company.'))
         unless $lc;
 
     return {
@@ -262,7 +262,7 @@ sub change_password {
     my ($c, $args) = @_;
 
     ## only allow for Session Token
-    return $c->new_error('change_password', 'PermissionDenied', 'Permission Denied.')
+    return $c->new_error('change_password', 'PermissionDenied', localize('Permission denied.'))
         unless ($c->stash('token_type') // '') eq 'session_token';
 
     my $client_obj = $c->stash('client');
@@ -341,7 +341,7 @@ sub set_settings {
     my $now    = Date::Utility->new;
     my $client = $c->stash('client');
 
-    return $c->new_error('set_settings', 'PermissionDenied', 'Permission Denied.') if $client->is_virtual;
+    return $c->new_error('set_settings', 'PermissionDenied', localize('Permission denied.')) if $client->is_virtual;
 
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -376,7 +376,7 @@ sub set_settings {
     $client->latest_environment(
         $now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
     if (not $client->save()) {
-        return $c->new_error('set_settings', 'InternalServerError', 'Sorry, an error occurred while processing your account.');
+        return $c->new_error('set_settings', 'InternalServerError', localize('Sorry, an error occurred while processing your account.'));
     }
 
     if ($cil_message) {
@@ -384,17 +384,17 @@ sub set_settings {
     }
 
     my $message =
-        $c->l('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
+        localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
         . "\n\n";
-    $message .= $c->l('Please note that your settings have been updated as follows:') . "\n\n";
+    $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     my $residence_country = Locale::Country::code2country($client->residence);
 
     my @updated_fields = (
-        [$c->l('Email address'),        $client->email],
-        [$c->l('Country of Residence'), $residence_country],
+        [localize('Email address'),        $client->email],
+        [localize('Country of Residence'), $residence_country],
         [
-            $c->l('Address'),
+            localize('Address'),
             $client->address_1 . ', '
                 . $client->address_2 . ', '
                 . $client->city . ', '
@@ -402,7 +402,7 @@ sub set_settings {
                 . $client->postcode . ', '
                 . $residence_country
         ],
-        [$c->l('Telephone'), $client->phone],
+        [localize('Telephone'), $client->phone],
     );
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
@@ -414,12 +414,12 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . $c->l('The [_1] team.', $r->website->display_name);
+    $message .= "\n" . localize('The [_1] team.', $r->website->display_name);
 
     send_email({
         from               => $r->website->config->get('customer_support.email'),
         to                 => $client->email,
-        subject            => $client->loginid . ' ' . $c->l('Change in account settings'),
+        subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
     });
