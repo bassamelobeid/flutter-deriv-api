@@ -1,6 +1,7 @@
 package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
+use Mojo::Redis2;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
@@ -50,6 +51,19 @@ sub startup {
                 msg_type => $msg_type,
                 error    => $error,
             };
+        });
+
+    $app->helper(
+        redis => sub {
+            my $c = shift;
+            state $url = do {
+                my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
+                defined($cf->{password})
+                    ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
+                        : "redis://$cf->{host}:$cf->{port}";
+            };
+
+            return $c->stash->{redis} ||= Mojo::Redis2->new(url => $url);
         });
 
     $app->hook(

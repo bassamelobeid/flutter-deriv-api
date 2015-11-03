@@ -1,5 +1,6 @@
 package BOM::WebSocketAPI::v3::Accounts;
 
+use 5.014;
 use strict;
 use warnings;
 
@@ -215,47 +216,57 @@ sub __get_sold {
     return $data;
 }
 
-sub _redis {
-    my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
-    return RedisDB->new(
-        host     => $config->{read}->{host},
-        port     => $config->{read}->{port},
-        password => $config->{read}->{password});
-}
-
 sub send_realtime_balance {
-    my ($c, $id, $args, $client) = @_;
-    my $redis = _redis();
+    my ($c, $id, $args, $client, $message) = @_;
 
-    my $log = $c->app->log;
-
-    $log->info("key " . 'TXNUPDATE::balance_' . $client->default_account->id);
-    my $message = $redis->get('TXNUPDATE::balance_' . $client->default_account->id);
-    if ($message && $redis->ttl('TXNUPDATE::balance_' . $client->default_account->id) > 0) {
-        $log->info("[$message]");
-
-        my $payload = JSON::from_json($message);
-        $c->send({
-                json => {
-                    msg_type => 'balance',
-                    echo_req => $args,
-                    balance  => {
-                        id       => $id,
-                        loginid  => $client->loginid,
-                        currency => $client->default_account->currency_code,
-                        balance  => $payload->{balance_after}
-                    },
-                }});
-    }
-    return;
+    my $payload = JSON::from_json($message);
+    $c->send({
+        json => {
+            msg_type => 'balance',
+            echo_req => $args,
+            balance  => {
+                id       => $id,
+                loginid  => $client->loginid,
+                currency => $client->default_account->currency_code,
+                balance  => $payload->{balance_after}
+            }
+        }}); return;
 }
 
 sub balance {
     my ($c, $args) = @_;
 
+    my $log = $c->app->log;
+
     my $client = $c->stash('client');
-    my $id;
-    $id = Mojo::IOLoop->recurring(2 => sub { send_realtime_balance($c, $id, $args, $client) });
+    my $id = 0;
+
+    my $redis = $c->redis;
+    $redis->on(connection => sub {
+        my ($self, $info) = @_;
+        $log->info("connected: ".JSON::to_json($info));
+        warn("connected: ".JSON::to_json($info));
+    });
+
+    $redis->on(error => sub {
+        my ($self, $err) = @_;
+        $log->info("error: $err");
+        warn("error: $err");
+    });
+
+    $redis->on(message => sub {
+        my ($self, $msg, $channel) = @_;
+        send_realtime_balance($c, $id, $args, $client, $msg);
+    });
+
+    warn "subscribing to TXNUPDATE::balance_" . $client->default_account->id;
+    $redis->subscribe(
+        ['TXNUPDATE::balance_' . $client->default_account->id],
+        sub {
+            my ($self, $err) = @_;
+            warn "redis subscribe: $err";
+        }
+    );
 
     my $ws_id = $c->tx->connection;
     $c->{ws}{$ws_id}{$id} = {
