@@ -215,7 +215,7 @@ sub __get_sold {
     return $data;
 }
 
-sub balance {
+sub user_balances {
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
@@ -272,7 +272,7 @@ sub send_realtime_balance {
     return;
 }
 
-sub realtime_balance {
+sub balance {
     my ($c, $args) = @_;
 
     my $ws_id  = $c->tx->connection;
