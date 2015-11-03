@@ -28,7 +28,7 @@ my $tick = decode_json($t->message->[1]);
 ok $tick->{tick}->{id};
 ok $tick->{tick}->{quote};
 ok $tick->{tick}->{epoch};
-test_schema('tick', $tick);
+test_schema('ticks', $tick);
 
 # stop tick
 $t = $t->send_ok({json => {forget => $tick->{tick}->{id}}})->message_ok;
