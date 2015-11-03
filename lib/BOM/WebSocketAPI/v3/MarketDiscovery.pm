@@ -227,10 +227,6 @@ sub proposal {
     my $id;
     $id = Mojo::IOLoop->recurring(
         1 => sub {
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-            if ($request) {
-                BOM::Platform::Context::request($request);
-            }
             send_ask($c, $id, $args, $p2);
         });
 
