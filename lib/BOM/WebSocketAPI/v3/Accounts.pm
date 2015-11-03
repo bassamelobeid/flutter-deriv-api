@@ -238,9 +238,9 @@ sub send_realtime_balance {
         my $payload = JSON::from_json($message);
         $c->send({
                 json => {
-                    msg_type       => 'balance',
-                    echo_req       => $args,
-                    balance => {
+                    msg_type => 'balance',
+                    echo_req => $args,
+                    balance  => {
                         id         => $id,
                         account_id => $payload->{account_id},
                         balance    => $payload->{balance_after}
