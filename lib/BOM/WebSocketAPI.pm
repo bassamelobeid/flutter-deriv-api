@@ -60,7 +60,7 @@ sub startup {
                 my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
                 defined($cf->{password})
                     ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
-                        : "redis://$cf->{host}:$cf->{port}";
+                    : "redis://$cf->{host}:$cf->{port}";
             };
 
             return $c->stash->{redis} ||= Mojo::Redis2->new(url => $url);
