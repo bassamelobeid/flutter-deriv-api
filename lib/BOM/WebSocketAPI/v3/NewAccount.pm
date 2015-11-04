@@ -15,7 +15,7 @@ sub new_account_virtual {
     my ($c, $args) = @_;
 
     my %details = %{$args};
-    my $code = delete $details{verification_code};
+    my $code    = delete $details{verification_code};
 
     my $err_code;
     if (BOM::Platform::Account::validate_verification_code($details{email}, $code)) {
@@ -52,17 +52,17 @@ sub verify_email {
 
         my $website = $c->stash('request')->website;
         send_email({
-            from    => $website->config->get('customer_support.email'),
-            to      => $email,
-            subject => localize('Verify your email address - [_1]', $website->display_name),
-            message => [localize('Your email address verification code is: ' . $code)],
+            from               => $website->config->get('customer_support.email'),
+            to                 => $email,
+            subject            => localize('Verify your email address - [_1]', $website->display_name),
+            message            => [localize('Your email address verification code is: ' . $code)],
             use_email_template => 1,
         });
     }
 
     return {
         msg_type     => 'verify_email',
-        verify_email => 1                   # always return 1, so not to leak client's email
+        verify_email => 1                 # always return 1, so not to leak client's email
     };
 }
 
