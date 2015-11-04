@@ -56,7 +56,6 @@ sub verify_email {
             to                 => $email,
             subject            => localize('Verify your email address - [_1]', $website->display_name),
             message            => [localize('Your email address verification code is: ' . $code)],
-            use_email_template => 1,
         });
     }
 
