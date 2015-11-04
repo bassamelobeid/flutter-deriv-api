@@ -280,11 +280,11 @@ sub get_bid {
 
     if ($contract->two_barriers) {
         $returnhash{high_barrier} = $contract->high_barrier->as_absolute;
-        $returnhash{low_barrier} = $contract->low_barrier->as_absolute;
+        $returnhash{low_barrier}  = $contract->low_barrier->as_absolute;
     } elsif ($contract->barrier) {
         $returnhash{barrier} = $contract->barrier->as_absolute;
     }
- 
+
     if (not $contract->is_valid_to_sell) {
         $returnhash{validation_error} = $contract->primary_validation_error->message_to_client;
     }
