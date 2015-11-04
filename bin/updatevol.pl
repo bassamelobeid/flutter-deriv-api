@@ -22,7 +22,6 @@ use BOM::Platform::Runtime;
 use BOM::MarketData::AutoUpdater::Forex;
 use BOM::MarketData::AutoUpdater::Indices;
 
-BOM::Utility::Log4perl::init_log4perl_console;
 
 # su nobody
 unless ($>) {
