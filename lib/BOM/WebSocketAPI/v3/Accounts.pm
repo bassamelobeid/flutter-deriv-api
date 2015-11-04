@@ -226,8 +226,6 @@ sub _redis {
 sub send_realtime_balance {
     my ($c, $id, $args, $client) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     my $redis = _redis();
 
     my $log = $c->app->log;

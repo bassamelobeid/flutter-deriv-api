@@ -40,6 +40,10 @@ sub entry_point {
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
 
+    $c->req->param('l' => $c->stash('language'));
+    my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+    BOM::Platform::Context::request($request);
+
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
