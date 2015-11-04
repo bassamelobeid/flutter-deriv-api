@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 7;
 use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
@@ -13,13 +13,25 @@ use Test::MockModule;
 my $client_mocked = Test::MockModule->new('BOM::Platform::Client');
 $client_mocked->mock('add_note', sub { return 1 });
 
+my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
+$email_mocked->mock('send_email', sub { return 1 });
+
 my $t = build_mojo_test();
 
+my $email = 'test@binary.com';
 my $create_vr = {
     new_account_virtual => 1,
-    email               => 'test@binary.com',
+    email               => $email,
     client_password     => 'Ac0+-_:@. ',
     residence           => 'de',
+    verification_code   => BOM::Platform::Account::get_verification_code($email),
+};
+
+subtest 'verify_email' => sub {
+    $t = $t->send_ok({json => { verify_email => $create_vr->{email} } })->message_ok;
+    my $res = decode_json($t->message->[1]);
+    is($res->{verify_email}, 1, 'verify_email OK');
+    test_schema('verify_email', $res);
 };
 
 subtest 'create Virtual account' => sub {
@@ -33,7 +45,19 @@ subtest 'create Virtual account' => sub {
     cmp_ok($res->{account}->{balance}, '==', '10000', 'got balance');
 };
 
+subtest 'Invalid email verification code' => sub {
+    $create_vr->{email} = 'test123@binary.com';
+
+    $t = $t->send_ok({json => $create_vr })->message_ok;
+    my $res = decode_json($t->message->[1]);
+
+    is($res->{error}->{code}, 'email unverified', 'Email unverified as wrong verification code');
+    is($res->{account}, undef, 'NO account created');
+};
+
 subtest 'NO duplicate email' => sub {
+    $create_vr->{email} = $email;
+
     $t = $t->send_ok({json => $create_vr })->message_ok;
     my $res = decode_json($t->message->[1]);
 

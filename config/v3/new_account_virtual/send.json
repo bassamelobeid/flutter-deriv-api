@@ -16,9 +16,9 @@
       "format": "email",
       "required": "1"
     },
-    "activation_code": {
+    "verification_code": {
       "type": "string",
-      "description": "email activation code receive from verify_email",
+      "description": "email verification code receive from verify_email call",
       "pattern": ".+",
       "required": "1"
     },

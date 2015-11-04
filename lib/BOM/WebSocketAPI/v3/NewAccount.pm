@@ -15,10 +15,10 @@ sub new_account_virtual {
     my ($c, $args) = @_;
 
     my %details = %{$args};
-    my $activation_code = delete $details{activation_code};
+    my $code = delete $details{verification_code};
 
     my $err_code;
-    if (BOM::Platform::Account::validate_activation_code($details{email}, $activation_code)) {
+    if (BOM::Platform::Account::validate_verification_code($details{email}, $code)) {
         my $acc = BOM::Platform::Account::Virtual::create_account({details => \%details});
         if (not $acc->{error}) {
             my $client  = $acc->{client};
@@ -34,7 +34,7 @@ sub new_account_virtual {
         }
         $err_code = $acc->{error};
     } else {
-        $c->app->log->info("invalid email activation code: $details{email}, $activation_code");
+        $c->app->log->info("invalid email verification code: $details{email}, $code");
         $err_code = 'email unverified';
     }
 
@@ -48,14 +48,14 @@ sub verify_email {
     if (BOM::Platform::User->new({email => $email})) {
         $c->app->log->warn("verify_email, [$email] already a Binary.com user, no email sent");
     } else {
-        my $activation_code = BOM::Platform::Account::get_activation_code($email);
+        my $code = BOM::Platform::Account::get_verification_code($email);
 
         my $website = $c->stash('request')->website;
         send_email({
             from    => $website->config->get('customer_support.email'),
             to      => $email,
             subject => localize('Verify your email address - [_1]', $website->display_name),
-            message => [localize('Your email address verification code is: ' . $activation_code)],
+            message => [localize('Your email address verification code is: ' . $code)],
             use_email_template => 1,
         });
     }
