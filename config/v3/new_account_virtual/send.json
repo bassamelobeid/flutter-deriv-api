@@ -18,8 +18,8 @@
     },
     "client_password": {
       "type": "string",
-      "description": "password within 5-15 chars, accepts alphanumeric, space, @_:+-.",
-      "pattern": "^[\\s.A-Za-z0-9@_:+-]{5,25}$",
+      "description": "password length within 5-15 chars, accepts alphanumeric, space, @_:+-./=",
+      "pattern": "^[\\s.A-Za-z0-9@_:+-\/=]{5,25}$",
       "required": "1"
     },
     "residence": {

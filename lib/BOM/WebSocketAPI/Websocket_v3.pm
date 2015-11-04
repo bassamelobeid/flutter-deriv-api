@@ -127,6 +127,7 @@ sub __handle {
         ['states_list',             \&BOM::WebSocketAPI::v3::Static::states_list,                         0],
         ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
         ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
+        ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                    0],
         ['new_account_virtual',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,             0],
         ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
         ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
@@ -213,7 +214,7 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    if ($key !~ /^([A-Za-z0-9_-]{1,25})$/ or $value !~ /^([\s\.A-Za-z0-9\@_:+-]{0,256})$/) {
+    if ($key !~ /^([A-Za-z0-9_-]{1,25})$/ or $value !~ /^([\s\.A-Za-z0-9\@_:+-\/=]{0,256})$/) {
         return ($key, $value);
     }
     return;
