@@ -252,11 +252,11 @@ sub get_bid {
     }
 
     return {
-        ask_price   => sprintf('%.2f', $contract->ask_price),
-        bid_price   => sprintf('%.2f', $contract->bid_price),
-        spot        => $contract->current_spot,
-        spot_time   => $contract->current_tick->epoch,
-        contract_id => $p2->{contract_id}};
+        ask_price           => sprintf('%.2f', $contract->ask_price),
+        bid_price           => sprintf('%.2f', $contract->bid_price),
+        current_spot        => $contract->current_spot,
+        current_spot_time   => $contract->current_tick->epoch,
+        contract_id         => $p2->{contract_id}};
 }
 
 sub send_bid {

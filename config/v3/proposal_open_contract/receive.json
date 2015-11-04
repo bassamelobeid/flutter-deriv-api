@@ -21,11 +21,11 @@
           "type": "string",
           "description": "Example: 1d6651e7d599bce6c54bd71a8283e579"
         },
-        "spot": {
+        "current_spot": {
           "type": "number",
           "description": "Example: 9874.52"
         },
-        "spot_time": {
+        "current_spot_time": {
           "type": "integer",
           "description": "Example: 1439999052"
         },
