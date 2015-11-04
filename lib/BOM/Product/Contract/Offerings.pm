@@ -199,12 +199,6 @@ my %known_decorations = (
 sub _build_tree {
     my $self = shift;
 
-    my @cache_info = ('OFFERINGS');
-
-    if (my $cached = Cache::RedisDB->get(@cache_info)) {
-        return $cached;
-    }
-
     my $tree = [];
 
     foreach my $market (
