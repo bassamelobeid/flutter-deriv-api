@@ -19,6 +19,7 @@ use Finance::Asset;
 
 use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
+use BOM::Platform::Context;
 
 my $cache_namespace = 'OFFERINGS';
 
@@ -48,7 +49,7 @@ sub _make_new_flyby {
 
     state $cache_key = 'FLYBY';
 
-    my $fb = Cache::RedisDB->get($cache_namespace, $cache_key);
+    my $fb = Cache::RedisDB->get($cache_namespace . '_' . BOM::Platform::Context::request()->language, $cache_key);
 
     if (not $fb) {
         my %category_cache;    # Per-run to catch differences.
@@ -97,7 +98,8 @@ sub _make_new_flyby {
             }
         }
 
-        Cache::RedisDB->set($cache_namespace, $cache_key, $fb, 159);    # Machine leveling caching for about two and a half minutes.
+        Cache::RedisDB->set($cache_namespace . '_' . BOM::Platform::Context::request()->language, $cache_key, $fb, 159)
+            ;    # Machine leveling caching for about two and a half minutes.
     }
 
     return $fb;
@@ -105,7 +107,7 @@ sub _make_new_flyby {
 
 sub get_offerings_flyby {
 
-    $ofb //= _make_new_flyby();                                         # Cannot use T::S::Timeout POLICY because it wouldn't start with a value.
+    $ofb //= _make_new_flyby();    # Cannot use T::S::Timeout POLICY because it wouldn't start with a value.
 
     return $ofb;
 }
