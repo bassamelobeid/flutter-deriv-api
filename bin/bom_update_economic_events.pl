@@ -4,7 +4,6 @@ package BOM::System::Script::UpdateEconomicEvents;
 
 use Moose;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
