@@ -5,7 +5,7 @@
   "description": "Verify your email address before new account signup",
   "properties": {
     "verify_email": {
-      "type": "integer",
+      "type": "string",
       "description": "email address to be verified",
       "format": "email",
       "required": "1"

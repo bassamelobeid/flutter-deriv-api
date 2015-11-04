@@ -16,6 +16,12 @@
       "format": "email",
       "required": "1"
     },
+    "activation_code": {
+      "type": "string",
+      "description": "email activation code receive from verify_email",
+      "pattern": ".+",
+      "required": "1"
+    },
     "client_password": {
       "type": "string",
       "description": "password length within 5-15 chars, accepts alphanumeric, space, @_:+-./=",

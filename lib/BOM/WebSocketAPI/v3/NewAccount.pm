@@ -6,26 +6,65 @@ use warnings;
 use List::MoreUtils qw(any);
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Locale;
+use BOM::Platform::Email qw(send_email);
+use BOM::Platform::User;
+use BOM::Platform::Account;
+use BOM::Platform::Context qw(localize);
 
 sub new_account_virtual {
     my ($c, $args) = @_;
 
-    my $acc = BOM::Platform::Account::Virtual::create_account({details => $args});
+    my %details = %{$args};
+    my $activation_code = delete $details{activation_code};
 
-    if (my $err_code = $acc->{error}) {
-        return $c->new_error('account', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
+    my $err_code;
+    if (BOM::Platform::Account::validate_activation_code($details{email}, $activation_code)) {
+        my $acc = BOM::Platform::Account::Virtual::create_account({details => \%details});
+        if (not $acc->{error}) {
+            my $client  = $acc->{client};
+            my $account = $client->default_account->load;
+
+            return {
+                msg_type => 'new_account_virtual',
+                account  => {
+                    client_id => $client->loginid,
+                    currency  => $account->currency_code,
+                    balance   => $account->balance,
+                }};
+        }
+        $err_code = $acc->{error};
+    } else {
+        $c->app->log->info("invalid email activation code: $details{email}, $activation_code");
+        $err_code = 'email unverified';
     }
 
-    my $client  = $acc->{client};
-    my $account = $client->default_account->load;
+    return $c->new_error('new_account_virtual', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
+}
+
+sub verify_email {
+    my ($c, $args) = @_;
+    my $email = $args->{verify_email};
+
+    if (BOM::Platform::User->new({email => $email})) {
+        $c->app->log->warn("verify_email, [$email] already a Binary.com user, no email sent");
+    } else {
+        my $activation_code = BOM::Platform::Account::get_activation_code($email);
+
+        my $website = $c->stash('request')->website;
+        # email client for email activation code
+
+#        send_email({
+#            from    => $website->config->get('customer_support.email'),
+#            to      => $email,
+#            subject => localize('Verify your email address - [_1]', $website->display_name,
+#            message => '',
+#        });
+    }
 
     return {
-        msg_type => 'account',
-        account  => {
-            client_id => $client->loginid,
-            currency  => $account->currency_code,
-            balance   => $account->balance,
-        }};
+        msg_type     => 'verify_email',
+        verify_email => 1                   # always return 1, so not to leak client's email
+    };
 }
 
 1;
