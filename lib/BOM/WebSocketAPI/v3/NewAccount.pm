@@ -51,14 +51,13 @@ sub verify_email {
         my $activation_code = BOM::Platform::Account::get_activation_code($email);
 
         my $website = $c->stash('request')->website;
-        # email client for email activation code
-
-#        send_email({
-#            from    => $website->config->get('customer_support.email'),
-#            to      => $email,
-#            subject => localize('Verify your email address - [_1]', $website->display_name,
-#            message => '',
-#        });
+        send_email({
+            from    => $website->config->get('customer_support.email'),
+            to      => $email,
+            subject => localize('Verify your email address - [_1]', $website->display_name,
+            message => localize('Your email address verification code is: ' . $activation_code),
+            use_email_template => 1,
+        });
     }
 
     return {
