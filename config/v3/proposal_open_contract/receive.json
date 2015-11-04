@@ -13,13 +13,21 @@
       "title": "Open contract response",
       "description": "Latest price and other details for an open contract",
       "properties":{
-        "contract_id": {
-          "type": "integer",
-          "description": "Binary.com internal contract identifier"
-        },
         "id": {
           "type": "string",
           "description": "Example: 1d6651e7d599bce6c54bd71a8283e579"
+        },
+        "display_value": {
+          "type": "number",
+          "description": "Example: 5.14, same as ask_price except for spread contracts"
+        },
+        "ask_price": {
+          "type": "number",
+          "description": "Example: 5.14"
+        },
+        "bid_price": {
+          "type": "number",
+          "description": "Example: 5.14"
         },
         "current_spot": {
           "type": "number",
@@ -29,17 +37,101 @@
           "type": "integer",
           "description": "Example: 1439999052"
         },
-        "ask_price": {
-          "type": "number",
-          "description": "Example: 5.14"
+        "contract_id": {
+          "type": "integer",
+          "description": "Binary.com internal contract identifier"
         },
-        "display_value": {
-          "type": "number",
-          "description": "Example: 5.14, same as ask_price except for spread contracts"
+        "underlying": {
+          "type": "string",
+          "description": "Example: BSESENSEX30"
         },
-        "bid_price": {
+        "is_expired": {
+          "type": "integer",
+          "description": "Boolean value 1 or 0"
+        },
+        "is_valid_to_sell": {
+          "type": "integer",
+          "description": "Boolean value 1 or 0"
+        },
+        "is_forward_starting": {
+          "type": "integer",
+          "description": "Boolean value 1 or 0"
+        },
+        "is_path_dependent": {
+          "type": "integer",
+          "description": "Boolean value 1 or 0"
+        },
+        "is_intraday": {
+          "type": "integer",
+          "description": "Boolean value 1 or 0"
+        },
+        "entry_tick": {
+          "type": "string",
+          "description": "Example: 7 seconds"
+        },
+        "entry_tick_time": {
+          "type": "string",
+          "description": "Example: 2015-11-04 07:14:03"
+        },
+        "exit_tick": {
+          "type": "string",
+          "description": "Example: 7 seconds"
+        },
+        "exit_tick_time": {
+          "type": "string",
+          "description": "Example: 2015-11-04 07:14:03"
+        },
+        "date_start": {
+          "type": "string",
+          "description": "Example: 2015-11-04 07:14:03"
+        },
+        "date_expiry": {
+          "type": "string",
+          "description": "Example: 2015-11-04 07:14:03"
+        },
+        "date_settlement": {
           "type": "number",
-          "description": "Example: 5.14"
+          "description": "Example: 2015-11-04 07:14:03"
+        },
+        "currency": {
+          "type": "string",
+          "description": "Example: USD"
+        },
+        "longcode": {
+          "type": "string",
+          "description": "Text description of the bet purchased"
+        },
+        "shortcode": {
+          "type": "string",
+          "description": "Shorter description of the bet purchased"
+        },
+        "payout": {
+          "type": "number",
+          "description": "Example: 10.50"
+        },
+        "prediction": {
+          "type": "integer",
+          "description": "Example: 8"
+        },
+        "tick_count": {
+          "type": "string",
+          "description": "number of ticks"
+        },
+        "high_barrier": {
+          "type": "number",
+          "description": "42.123"
+        },
+        "low_barrier": {
+          "type": "number",
+          "description": "40.132"
+        },
+        "barrier": {
+          "type": "number",
+          "description": "42.123"
+        },
+        "validation_error": {
+          "type": "integer",
+          "description": "error message if validation fails"
         }
       }
     },

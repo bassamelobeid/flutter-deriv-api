@@ -251,12 +251,46 @@ sub get_bid {
             }};
     }
 
-    return {
+    my %returnhash = {
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot        => $contract->current_spot,
         current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $p2->{contract_id}};
+        contract_id         => $p2->{contract_id},
+
+        underlying          => $contract->underlying,
+        is_expired          => $contract->is_expired,
+        is_valid_to_sell    => $contract->is_valid_to_sell,
+        is_forward_starting => $contract->is_forward_starting,
+        is_path_dependent   => $contract->is_path_dependent,
+        is_intraday         => $contract->is_intraday,
+        entry_tick          => $contract->entry_tick->quote,
+        entry_tick_time     => $contract->entry_tick->epoch,
+        exit_tick           => $contract->exit_tick->quote,
+        exit_tick_time      => $contract->exit_tick->epoch,
+        date_start          => $contract->date_start->epoch,
+        date_expiry         => $contract->date_expiry->epoch,
+        date_settlement     => $contract->date_settlement->epoch,
+        currency            => $contract->currency,
+        longcode            => $contract->longcode,
+        shortcode           => $contract->shortcode,
+        payout              => $contract->payout,
+        prediction          => $contract->prediction,
+        tick_count          => $contract->tick_count;}
+
+   if ($contract->two_barriers) {
+       $returnhash{high_barrier} = $contract->high_barrier->as_absolute;
+       $returnhash{low_barrier} = $contract->low_barrier->as_absolute;
+   }
+   elsif ($contract->barrier) {
+       $returnhash{barrier} = $contract->barrier->as_absolute;
+   }
+ 
+   if (not $contract->is_valid_to_sell) {
+       $returnhash{validation_error} = $contract->primary_validation_error->message_to_client;
+   }
+
+   return %returnhash;
 }
 
 sub send_bid {
