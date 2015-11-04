@@ -885,7 +885,7 @@ my %known_errors = (
             -type              => 'AccountBalanceExceedsLimit',
             -mesg              => 'Client balance is above the allowed limits',
             -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, your account cash balance is too high ([_1]). <B>Your maximum account balance is [_2] </b>.',
+                'Sorry, your account cash balance is too high ([_1]). Your maximum account balance is [_2].',
                 "$currency$balance", $limit
             ),
         );
