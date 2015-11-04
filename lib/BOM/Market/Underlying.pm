@@ -23,7 +23,6 @@ use Carp;
 use List::MoreUtils qw( any );
 use List::Util qw( first max min);
 use Scalar::Util qw( looks_like_number );
-use BOM::Utility::Log4perl qw( get_logger );
 use Memoize;
 use Finance::Asset;
 
@@ -426,14 +425,10 @@ around BUILDARGS => sub {
         if ($params) {
             @$params_ref{keys %$params} = @$params{keys %$params};
             $params_ref->{inverted} = 1;
-        } else {
-            get_logger()->debug("Forex underlying does not exist in yml file [" . $params_ref->{symbol} . "]");
         }
         $params_ref->{symbol}          = $requested_symbol;
         $params_ref->{asset}           = $asset;
         $params_ref->{quoted_currency} = $quoted;
-    } elsif ($params_ref->{symbol} ne 'HEARTB') {
-        get_logger()->debug("Underlying does not exist in yml file [" . $params_ref->{symbol} . "]");
     }
 
     # Pre-convert to seconds.  let underlyings.yml have easy to read.
@@ -540,7 +535,7 @@ sub _build_market {
         $market = BOM::Market::Registry->instance->get('config');
     } elsif (length($symbol) >= 15) {
         $market = BOM::Market::Registry->instance->get('config');
-        get_logger()->warn("Unknown symbol, symbol[$symbol]");
+        warn("Unknown symbol, symbol[$symbol]");
     }
 
     return $market;

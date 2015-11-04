@@ -1,7 +1,6 @@
 package BOM::MarketData::AutoUpdater;
 
 use Moose;
-use BOM::Utility::Log4perl qw( get_logger );
 use Date::Utility;
 use BOM::Platform::Runtime;
 use Mail::Sender;
@@ -15,13 +14,6 @@ has report => (
 has is_a_weekend => (
     is      => 'ro',
     default => sub { Date::Utility->new->is_a_weekend },
-);
-
-has _logger => (
-    is      => 'ro',
-    default => sub {
-        get_logger('QUANT');
-    },
 );
 
 has _fqdn => (
