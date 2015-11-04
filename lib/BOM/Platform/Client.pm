@@ -516,6 +516,26 @@ sub get_limit_for_7day_losses {
     return in_USD($excl, $self->currency);
 }
 
+sub get_limit_for_30day_turnover {
+    my $self = shift;
+
+    my $excl = $self->get_self_exclusion;
+    return unless $excl;
+    $excl = $excl->max_30day_turnover;
+    return unless $excl;
+    return in_USD($excl, $self->currency);
+}
+
+sub get_limit_for_30day_losses {
+    my $self = shift;
+
+    my $excl = $self->get_self_exclusion;
+    return unless $excl;
+    $excl = $excl->max_30day_losses;
+    return unless $excl;
+    return in_USD($excl, $self->currency);
+}
+
 sub get_limit_for_open_positions {
     my $self = shift;
 

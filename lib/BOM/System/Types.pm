@@ -84,7 +84,7 @@ A valid BetOnMarkets broker code. Many of these are deprecated, but nonetheless 
 =cut
 
 my $known_broker_codes = {};
-foreach (qw(CR MLT MF MX VRTC FOG)) {
+foreach (qw(CR MLT MF MX VRTC FOG JP VRTJ)) {
     $known_broker_codes->{$_} = 1;
 }
 subtype 'bom_broker_code', as Str, where { exists $known_broker_codes->{$_}; }, message { "Unknown broker code [$_]" };

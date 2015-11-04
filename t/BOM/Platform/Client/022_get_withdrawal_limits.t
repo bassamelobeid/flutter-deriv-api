@@ -54,7 +54,6 @@ subtest 'CR0029.' => sub {
     is($withdrawal_limits->{'frozen_free_gift'},         0, 'USD frozen_free_gift is 100');
     is($withdrawal_limits->{'free_gift_turnover_limit'}, 0, 'USD free_gift_turnover_limit is 2500');
 
-
     BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_2500_1258502400_1258588800_892700_0', 'USD', $client, 1440.26, '2009-11-17 00:00:00');
 
     $withdrawal_limits = $client->get_withdrawal_limits();
@@ -104,7 +103,8 @@ subtest 'CR0012.' => sub {
 
     cmp_ok($account->load->balance, '==', 20, 'Balance after being given promo bonus.');
 
-    my $txn_buy_contract_id = BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 20, '2009-11-17 00:00:00');
+    my $txn_buy_contract_id =
+        BOM::Test::Data::Utility::Product::buy_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 20, '2009-11-17 00:00:00');
 
     BOM::Test::Data::Utility::Product::sell_bet('CALL_FRXUSDJPY_40_1258502400_1258588800_892100_0', 'USD', $client, 40, $txn_buy_contract_id);
 

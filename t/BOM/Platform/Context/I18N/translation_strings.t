@@ -1,4 +1,4 @@
-use Test::Most 0.22 (tests => 14);
+use Test::Most 0.22 (tests => 15);
 use Test::NoWarnings;
 use Test::Warn;
 use Test::MockModule;
@@ -16,7 +16,7 @@ use BOM::Platform::Context;
 use BOM::Platform::Context::I18N;
 use BOM::Platform::Runtime;
 
-foreach my $language (qw(EN AR DE ES FR ID JA PL PT RU ZH_CN VI ZH_TW)) {
+foreach my $language (qw(EN AR DE ES FR ID JA PL PT RU ZH_CN VI ZH_TW IT)) {
     subtest "Testing Language : $language" => sub {
         #Force load the MakeText
         ok BOM::Platform::Context::localize("Hello, World!"), "Translation working!";

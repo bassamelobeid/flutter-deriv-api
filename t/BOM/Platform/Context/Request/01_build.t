@@ -21,7 +21,7 @@ subtest 'build' => sub {
         my $request = BOM::Platform::Context::Request->new();
         is $request->broker_code, 'CR';
         like $request->website->name, '/^Binaryqa/';
-        is $request->language,    'EN';
+        is $request->language, 'EN';
         is $request->broker->code,                   'CR';
         is $request->real_account_broker->code,      'CR';
         is $request->financial_account_broker->code, 'CR';
@@ -34,7 +34,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'au');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
+            like $request->website->name,                '/^Binaryqa/';
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
@@ -45,7 +45,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'id');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
+            like $request->website->name,                '/^Binaryqa/';
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
@@ -56,7 +56,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'gb');
             is $request->broker_code, 'MX';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
+            like $request->website->name,                '/^Binaryqa/';
             is $request->broker->code,                   'MX';
             is $request->real_account_broker->code,      'MX';
             is $request->financial_account_broker->code, 'MX';
@@ -67,7 +67,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'nl');
             is $request->broker_code, 'MLT';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
+            like $request->website->name,                '/^Binaryqa/';
             is $request->broker->code,                   'MLT';
             is $request->real_account_broker->code,      'MLT';
             is $request->financial_account_broker->code, 'MF';
@@ -78,7 +78,7 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'fr');
             is $request->broker_code, 'MF';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
+            like $request->website->name,                '/^Binaryqa/';
             is $request->broker->code,                   'MF';
             is $request->real_account_broker->code,      'MF';
             is $request->financial_account_broker->code, 'MF';
@@ -89,8 +89,8 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'mt');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
-            is $request->broker->code, 'CR';
+            like $request->website->name,           '/^Binaryqa/';
+            is $request->broker->code,              'CR';
             is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
             is $request->virtual_account_broker->code, 'VRTC';
@@ -100,8 +100,8 @@ subtest 'build' => sub {
             my $request = BOM::Platform::Context::Request->new(country_code => 'us');
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
-            is $request->broker->code, 'CR';
+            like $request->website->name,           '/^Binaryqa/';
+            is $request->broker->code,              'CR';
             is $request->real_account_broker->code, 'CR';
             is $request->financial_account_broker, undef;
             is $request->virtual_account_broker->code, 'VRTC';
@@ -110,10 +110,13 @@ subtest 'build' => sub {
 
     subtest 'with country code, loginid' => sub {
         subtest 'loginid => CR10001' => sub {
-            my $request = BOM::Platform::Context::Request->new(loginid => 'CR10001', country_code => 'au');
+            my $request = BOM::Platform::Context::Request->new(
+                loginid      => 'CR10001',
+                country_code => 'au'
+            );
             is $request->broker_code, 'CR';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
+            like $request->website->name,                '/^Binaryqa/';
             is $request->broker->code,                   'CR';
             is $request->real_account_broker->code,      'CR';
             is $request->financial_account_broker->code, 'CR';
@@ -121,10 +124,13 @@ subtest 'build' => sub {
         };
 
         subtest 'loginid => MLT10001' => sub {
-            my $request = BOM::Platform::Context::Request->new(loginid => 'MLT10001', country_code => 'nl');
+            my $request = BOM::Platform::Context::Request->new(
+                loginid      => 'MLT10001',
+                country_code => 'nl'
+            );
             is $request->broker_code, 'MLT';
             is $request->language,    'EN';
-            like $request->website->name, '/^Binaryqa/';
+            like $request->website->name,                '/^Binaryqa/';
             is $request->broker->code,                   'MLT';
             is $request->real_account_broker->code,      'MLT';
             is $request->financial_account_broker->code, 'MF';
@@ -163,13 +169,13 @@ subtest 'url_for' => sub {
     my $bo_static_url = BOM::Platform::Runtime->instance->app_config->cgi->backoffice->static_url;
     subtest 'simple' => sub {
         $request->website->config->set('static.url', 'https://static.binaryqa01.com/');
-        is $request->url_for('/why-us'),                   "$domain/why-us?l=EN",                                    "frontend";
+        is $request->url_for('/why-us'), "$domain/why-us?l=EN", "frontend";
         is $request->url_for('images/pages/open_account/real-money-account.svg'),
             $request->website->config->get('static.url') . "images/pages/open_account/real-money-account.svg", "Static indexed image";
 
-        is $request->url_for('errors/500.html'),      "$domain/errors/500.html",                  "errors";
-        is $request->url_for('EN_appcache.appcache'), "$domain/EN_appcache.appcache",             "appcache";
-        is $request->url_for('/'),                    "$domain/?l=EN",                            "frontend /";
+        is $request->url_for('errors/500.html'),      "$domain/errors/500.html",      "errors";
+        is $request->url_for('EN_appcache.appcache'), "$domain/EN_appcache.appcache", "appcache";
+        is $request->url_for('/'),                    "$domain/?l=EN",                "frontend /";
     };
 
     subtest 'with domain_type' => sub {
