@@ -251,7 +251,7 @@ sub get_bid {
             }};
     }
 
-    my %returnhash = {
+    my %returnhash = (
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot        => $contract->current_spot,
@@ -276,7 +276,7 @@ sub get_bid {
         shortcode           => $contract->shortcode,
         payout              => $contract->payout,
         prediction          => $contract->prediction,
-        tick_count          => $contract->tick_count};
+        tick_count          => $contract->tick_count);
 
    if ($contract->two_barriers) {
        $returnhash{high_barrier} = $contract->high_barrier->as_absolute;
