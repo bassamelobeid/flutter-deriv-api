@@ -215,7 +215,7 @@ sub _calculate_grid_for_max_exposure {
                 produce_contract(
                     +{
                         %params,
-                        vol_at_strike => $vol,
+                        pricing_vol   => $vol,
                         current_spot  => $spot
                     }
                     )->bid_price,
