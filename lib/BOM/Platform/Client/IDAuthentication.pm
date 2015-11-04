@@ -123,15 +123,29 @@ sub _do_proveid {
         and defined $prove_id_result->{matches}
         and (scalar @{$prove_id_result->{matches}} > 0))
     {
-        # check for PEP
-        if (grep { /PEP/ } @{$prove_id_result->{matches}}) {
+        if (grep { /PEP/ } @{$prove_id_result->{matches}} && $prove_id_result->{num_verifications} >= 2) {
 
+            # Set age verfied
+            $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+            $client->save;
+
+            $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [PEP]', 'PEP match. Could only get enough score for age verification.');
         }
+        elsif (grep { /Directors/ } @{$prove_id_result->{matches}} && $prove_id_result->{num_verifications} >= 2) {
 
-        $client->set_status('unwelcome', 'system', 'Failed identity test via Experian');
-        $client->save();
+            # Set age verfied
+            $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
+            $client->save;
 
-        $self->_notify('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
+            $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [Director]', 'Director match. Could only get enough score for age verification.');
+        }
+        else {
+
+            $client->set_status('unwelcome', 'system', 'Failed identity test via Experian');
+            $client->save();
+
+            $self->_notify('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
+        }
     } else {
         $self->_notify('192_PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
         return $self->_request_id_authentication;
