@@ -210,29 +210,32 @@ sub __handle {
     return $c->new_error('error', 'UnrecognisedRequest', BOM::Platform::Context::localize('Unrecognised request.'));
 }
 
+sub _failed_key_value {
+    my ($key, $value) = @_;
+
+    if ($key !~ /^([A-Za-z0-9_-]{1,25})$/ or $value !~ /^([\s\.A-Za-z0-9\@_:+-]{0,256})$/) {
+        return ($key, $value);
+    }
+    return;
+}
+
 sub _sanity_failed {
     my ($c, $arg) = @_;
-    my $failed;
-    my $log = $c->app->log;
+    my @failed;
+
     OUTER:
     foreach my $k (keys %$arg) {
-        if ($k !~ /^([A-Za-z0-9\@_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9\@_:+-]{0,256})$/)) {
-            $failed = 1;
-            $log->warn("Sanity check failed: $k -> " . $arg->{$k});
-            last OUTER;
-        }
-        if (ref $arg->{$k}) {
+        if (not ref $arg->{$k}) {
+            last OUTER if (@failed = _failed_key_value($k, $arg->{$k}));
+        } else {
             foreach my $l (keys %{$arg->{$k}}) {
-                if ($l !~ /^([A-Za-z0-9\@_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9\@_:+-]{0,256})$/) {
-                    $failed = 1;
-                    $log->warn("Sanity check failed: $l -> " . $arg->{$k}->{$l});
-                    last OUTER;
-                }
+                last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
             }
         }
     }
-    if ($failed) {
-        $log->warn('Sanity check failed.');
+
+    if (@failed) {
+        $c->app->log->warn("Sanity check failed: $failed[0] -> $failed[1]");
         return $c->new_error('sanity_check', 'SanityCheckFailed', BOM::Platform::Context::localize("Parameters sanity check failed."));
     }
     return;
