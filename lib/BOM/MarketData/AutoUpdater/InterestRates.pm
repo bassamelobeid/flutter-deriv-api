@@ -26,7 +26,6 @@ sub _build_file {
 sub run {
     my $self = shift;
 
-    $self->_logger->debug(ref($self) . ' starting update.');
     my $file   = $self->file;
     my $csv    = Text::CSV::Slurp->load(file => $file);
     my $report = $self->report;
@@ -70,7 +69,6 @@ sub run {
         }
     }
 
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }
