@@ -54,8 +54,8 @@ sub verify_email {
         send_email({
             from    => $website->config->get('customer_support.email'),
             to      => $email,
-            subject => localize('Verify your email address - [_1]', $website->display_name,
-            message => localize('Your email address verification code is: ' . $activation_code),
+            subject => localize('Verify your email address - [_1]', $website->display_name),
+            message => [localize('Your email address verification code is: ' . $activation_code)],
             use_email_template => 1,
         });
     }
