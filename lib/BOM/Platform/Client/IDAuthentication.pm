@@ -129,17 +129,25 @@ sub _do_proveid {
             $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
             $client->save;
 
-            $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [PEP]', 'PEP match. Could only get enough score for age verification.');
-        }
-        elsif (grep { /Directors/ } @{$prove_id_result->{matches}} && $prove_id_result->{num_verifications} >= 2) {
+            $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [PEP]',
+                'PEP match. Could only get enough score for age verification.');
+        } elsif (
+            grep {
+                /Directors/
+            } @{$prove_id_result->{matches}}
+            && $prove_id_result->{num_verifications} >= 2
+            )
+        {
 
             # Set age verfied
             $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
             $client->save;
 
-            $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [Director]', 'Director match. Could only get enough score for age verification.');
-        }
-        else {
+            $self->_notify(
+                'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [Director]',
+                'Director match. Could only get enough score for age verification.'
+            );
+        } else {
 
             $client->set_status('unwelcome', 'system', 'Failed identity test via Experian');
             $client->save();
