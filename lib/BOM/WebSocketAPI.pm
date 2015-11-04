@@ -55,7 +55,9 @@ sub startup {
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            $c->cookie(language=>'',{expires=>1});
+            $c->cookie(
+                language => '',
+                {expires => 1});
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
 
             $c->stash(request => $request);
