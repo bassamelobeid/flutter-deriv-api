@@ -276,7 +276,7 @@ sub get_bid {
         shortcode           => $contract->shortcode,
         payout              => $contract->payout,
         prediction          => $contract->prediction,
-        tick_count          => $contract->tick_count;}
+        tick_count          => $contract->tick_count};
 
    if ($contract->two_barriers) {
        $returnhash{high_barrier} = $contract->high_barrier->as_absolute;
