@@ -885,9 +885,8 @@ my %known_errors = (
             -type              => 'AccountBalanceExceedsLimit',
             -mesg              => 'Client balance is above the allowed limits',
             -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, your account cash balance is too high ([_1]). <B>Your maximum account balance is [_2] </b>. Please withdraw money from your account to bring down your cash balance under that amount. You may not trade until you do so.',
-                "$currency$balance",
-                $limit
+                'Sorry, your account cash balance is too high ([_1]). Your maximum account balance is [_2].',
+                "$currency$balance", $limit
             ),
         );
     },
