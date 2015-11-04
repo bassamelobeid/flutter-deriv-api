@@ -241,10 +241,6 @@ sub proposal {
     my $id;
     $id = Mojo::IOLoop->recurring(
         1 => sub {
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-            if ($request) {
-                BOM::Platform::Context::request($request);
-            }
             send_ask($c, $id, $args, $p2);
         });
 
@@ -349,6 +345,11 @@ sub get_ask {
 
 sub send_ask {
     my ($c, $id, $p1, $p2) = @_;
+
+    # set the context here as IOLoop doesn't maintain the parent context
+    # if we don't do that then we face issue related to translations
+    BOM::Platform::Context::request($c->stash('request'));
+
     my $latest = get_ask($c, $p2);
     if ($latest->{error}) {
         Mojo::IOLoop->remove($id);
@@ -380,6 +381,10 @@ sub send_ask {
 
 sub send_tick {
     my ($c, $id, $p1, $ul) = @_;
+
+    # set the context here as IOLoop doesn't maintain the parent context
+    # if we don't do that then we face issue related to translations
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $ws_id = $c->tx->connection;
     my $tick  = $ul->get_combined_realtime;

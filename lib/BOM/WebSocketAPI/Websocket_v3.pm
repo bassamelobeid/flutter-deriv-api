@@ -17,8 +17,7 @@ use JSON::Schema;
 use File::Slurp;
 use JSON;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request localize);
-use BOM::Platform::Context::Request;
+use BOM::Platform::Context qw(localize);
 use BOM::Product::Transaction;
 use Time::HiRes;
 

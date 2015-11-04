@@ -11,7 +11,7 @@ use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use BOM::System::Password;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -225,6 +225,9 @@ sub _redis {
 
 sub send_realtime_balance {
     my ($c, $id, $args, $client) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
+
     my $redis = _redis();
 
     my $log = $c->app->log;
