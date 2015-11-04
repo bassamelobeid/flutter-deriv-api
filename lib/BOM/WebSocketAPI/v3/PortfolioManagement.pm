@@ -257,7 +257,6 @@ sub get_bid {
         current_spot        => $contract->current_spot,
         current_spot_time   => $contract->current_tick->epoch,
         contract_id         => $p2->{contract_id},
-
         underlying          => $contract->underlying,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
@@ -276,21 +275,21 @@ sub get_bid {
         shortcode           => $contract->shortcode,
         payout              => $contract->payout,
         prediction          => $contract->prediction,
-        tick_count          => $contract->tick_count);
+        tick_count          => $contract->tick_count,
+    );
 
-   if ($contract->two_barriers) {
-       $returnhash{high_barrier} = $contract->high_barrier->as_absolute;
-       $returnhash{low_barrier} = $contract->low_barrier->as_absolute;
-   }
-   elsif ($contract->barrier) {
-       $returnhash{barrier} = $contract->barrier->as_absolute;
-   }
+    if ($contract->two_barriers) {
+        $returnhash{high_barrier} = $contract->high_barrier->as_absolute;
+        $returnhash{low_barrier} = $contract->low_barrier->as_absolute;
+    } elsif ($contract->barrier) {
+        $returnhash{barrier} = $contract->barrier->as_absolute;
+    }
  
-   if (not $contract->is_valid_to_sell) {
-       $returnhash{validation_error} = $contract->primary_validation_error->message_to_client;
-   }
+    if (not $contract->is_valid_to_sell) {
+        $returnhash{validation_error} = $contract->primary_validation_error->message_to_client;
+    }
 
-   return %returnhash;
+    return %returnhash;
 }
 
 sub send_bid {
