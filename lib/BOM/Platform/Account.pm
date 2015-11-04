@@ -42,14 +42,14 @@ sub invalid_japan_access_check {
     }
 }
 
-sub get_activation_code {
+sub get_verification_code {
     my $email = shift;
     return Crypt::ScryptKDF::scrypt_b64($email, '&*%hHKDJHI$#%^@_+?><!~');
 }
 
-sub validate_activation_code {
-    my ($email, $activation_code) = @_;
-    return ($activation_code eq get_activation_code($email));
+sub validate_verification_code {
+    my ($email, $code) = @_;
+    return ($code eq get_verification_code($email));
 }
 
 1;
