@@ -5,6 +5,7 @@ use warnings;
 
 use List::MoreUtils qw(any);
 use BOM::Platform::Runtime;
+use Crypt::ScryptKDF;
 
 sub get_real_acc_opening_type {
     my $args        = shift;
@@ -39,6 +40,16 @@ sub invalid_japan_access_check {
     if ($residence eq 'jp' and $email !~ /\@binary\.com$/) {
         die "NOT authorized JAPAN access: $residence , $email";
     }
+}
+
+sub get_activation_code {
+    my $email = shift;
+    return Crypt::ScryptKDF::scrypt_b64($email, '&*%hHKDJHI$#%^@_+?><!~');
+}
+
+sub validate_activation_code {
+    my ($email, $activation_code) = @_;
+    return ($activation_code eq get_activation_code($email));
 }
 
 1;
