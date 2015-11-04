@@ -33,10 +33,6 @@ sub entry_point {
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
 
-            if ($c->stash('language')) {
-               $c->req->param('l' => 'RU');
-            }
-
     # enable permessage-deflate
     $c->tx->with_compression;
 
