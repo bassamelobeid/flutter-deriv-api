@@ -252,8 +252,7 @@ sub balance {
     $redis->on(
         connection => sub {
             my ($self, $info) = @_;
-            $log->info("connected: " . JSON::to_json($info));
-            warn("connected: " . JSON::to_json($info));
+            $log->debug("connected: " . JSON::to_json($info));
         });
 
     $redis->on(
