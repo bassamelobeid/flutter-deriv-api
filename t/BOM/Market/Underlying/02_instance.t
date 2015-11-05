@@ -2,6 +2,7 @@ use strict;
 use warnings;
 
 use Test::Most;
+use Test::Warn;
 use Test::FailWarnings;
 use File::Slurp;
 use List::Util qw(max min);
@@ -176,7 +177,9 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 # reason: if we only test existing symbols, attributes are set by config file,
 # and _build methods are not called.
 subtest 'what happens to an undefined symbol name' => sub {
-    my $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
+    my $symbol_undefined;
+    warning_like sub { $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol'); } qr/Unknown symbol/, 
+      'Correct warning';
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
     is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
