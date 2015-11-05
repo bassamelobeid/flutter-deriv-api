@@ -1,6 +1,7 @@
 package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
+use Mojo::Redis2;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
@@ -52,14 +53,27 @@ sub startup {
             };
         });
 
+    $app->helper(
+        redis => sub {
+            my $c = shift;
+            state $url = do {
+                my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
+                defined($cf->{password})
+                    ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
+                    : "redis://$cf->{host}:$cf->{port}";
+            };
+
+            return $c->stash->{redis} ||= Mojo::Redis2->new(url => $url);
+        });
+
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
             $c->cookie(
                 language => '',
                 {expires => 1});
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
 
+            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
             $c->stash(request => $request);
             my $lang = lc $c->stash('request')->language;
             $c->stash(language => uc $lang) if $lang;

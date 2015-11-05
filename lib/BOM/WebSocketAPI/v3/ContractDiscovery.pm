@@ -6,7 +6,7 @@ use warnings;
 use BOM::Product::Contract::Finder;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Finder::Japan;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 
 sub payout_currencies {
     my $c = shift;
@@ -27,6 +27,9 @@ sub payout_currencies {
 
 sub contracts_for {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
+
     my $symbol = $args->{contracts_for};
     my $region = $args->{region} || 'other';
     my $contracts_for;

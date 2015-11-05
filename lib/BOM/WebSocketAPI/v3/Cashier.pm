@@ -7,13 +7,15 @@ use List::Util qw( min first );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 
 sub get_limits {
     my ($c, $args) = @_;
 
     my $r      = $c->stash('request');
     my $client = $c->stash('client');
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
