@@ -71,16 +71,24 @@ sub _limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
     my ($c) = @_;
 
     my $ws_id  = $c->tx->connection;
-    my @ws_ids = keys %{$c->{ws}{$ws_id}};
+    my $this_c = $c->{ws}{$ws_id};
+    my @ids    = keys %$this_c;
 
-    return if scalar(@ws_ids) <= 50;
+    return if scalar(@ids) <= 50;
 
     # remove first b/c we added one
-    @ws_ids = sort { $c->{ws}{$ws_id}{$a}{started} <=> $c->{ws}{$ws_id}{$b}{started} } @ws_ids;
-    Mojo::IOLoop->remove($ws_ids[0]);
-    my $v = delete $c->{ws}{$ws_id}{$ws_ids[0]};
-    if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
-        delete $c->{fmb_ids}{$ws_id}{$v->{fmb}->id};
+    @ids = sort { $this_c->{$a}{started} <=> $this_c->{$b}{started} } @ids;
+
+    my $v = delete $this_c->{$ids[0]};
+
+    if (ref($v) eq 'CODE') {
+        $v->();
+    } else {
+        Mojo::IOLoop->remove($ids[0]);
+        if ($v->{type} eq 'portfolio' ||
+            $v->{type} eq 'proposal_open_contract') {
+            delete $c->{fmb_ids}{$ws_id}{$v->{fmb}->id};
+        }
     }
 }
 
