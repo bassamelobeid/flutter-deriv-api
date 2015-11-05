@@ -12,7 +12,7 @@ use BOM::Product::ContractFactory;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use BOM::System::Password;
-use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -21,6 +21,8 @@ use BOM::Platform::Locale;
 
 sub landing_company {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $country  = $args->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
@@ -56,6 +58,8 @@ sub landing_company {
 
 sub landing_company_details {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
     return $c->new_error('landing_company_details', 'UnknownLandingCompany', localize('Unknown landing company.'))
@@ -95,6 +99,8 @@ sub statement {
 
 sub get_transactions {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $log = $c->app->log;
     my $acc = $c->stash('account');
@@ -172,6 +178,8 @@ sub profit_table {
 
 sub __get_sold {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $client = $c->stash('client');
     my $acc    = $c->stash('account');
@@ -310,6 +318,8 @@ sub get_account_status {
 sub change_password {
     my ($c, $args) = @_;
 
+    BOM::Platform::Context::request($c->stash('request'));
+
     ## only allow for Session Token
     return $c->new_error('change_password', 'PermissionDenied', localize('Permission denied.'))
         unless ($c->stash('token_type') // '') eq 'session_token';
@@ -389,6 +399,8 @@ sub set_settings {
     my $r      = $c->stash('request');
     my $now    = Date::Utility->new;
     my $client = $c->stash('client');
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     return $c->new_error('set_settings', 'PermissionDenied', localize('Permission denied.')) if $client->is_virtual;
 
