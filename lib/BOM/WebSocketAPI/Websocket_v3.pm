@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Static;
 use BOM::WebSocketAPI::v3::Cashier;
+use BOM::WebSocketAPI::v3::NewAccount;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
@@ -39,10 +40,6 @@ sub entry_point {
     $c->inactivity_timeout(120);
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
-
-    $c->req->param('l' => $c->stash('language'));
-    my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-    BOM::Platform::Context::request($request);
 
     $c->on(
         json => sub {
@@ -130,6 +127,8 @@ sub __handle {
         ['states_list',             \&BOM::WebSocketAPI::v3::Static::states_list,                         0],
         ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
         ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
+        ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                    0],
+        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,             0],
         ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
         ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
         ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
@@ -212,29 +211,32 @@ sub __handle {
     return $c->new_error('error', 'UnrecognisedRequest', BOM::Platform::Context::localize('Unrecognised request.'));
 }
 
+sub _failed_key_value {
+    my ($key, $value) = @_;
+
+    if ($key !~ /^([A-Za-z0-9_-]{1,25})$/ or $value !~ /^([\s\.A-Za-z0-9\@_:+-\/=]{0,256})$/) {
+        return ($key, $value);
+    }
+    return;
+}
+
 sub _sanity_failed {
     my ($c, $arg) = @_;
-    my $failed;
-    my $log = $c->app->log;
+    my @failed;
+
     OUTER:
     foreach my $k (keys %$arg) {
-        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)) {
-            $failed = 1;
-            $log->warn("Sanity check failed: $k -> " . $arg->{$k});
-            last OUTER;
-        }
-        if (ref $arg->{$k}) {
+        if (not ref $arg->{$k}) {
+            last OUTER if (@failed = _failed_key_value($k, $arg->{$k}));
+        } else {
             foreach my $l (keys %{$arg->{$k}}) {
-                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
-                    $failed = 1;
-                    $log->warn("Sanity check failed: $l -> " . $arg->{$k}->{$l});
-                    last OUTER;
-                }
+                last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
             }
         }
     }
-    if ($failed) {
-        $log->warn('Sanity check failed.');
+
+    if (@failed) {
+        $c->app->log->warn("Sanity check failed: $failed[0] -> $failed[1]");
         return $c->new_error('sanity_check', 'SanityCheckFailed', BOM::Platform::Context::localize("Parameters sanity check failed."));
     }
     return;

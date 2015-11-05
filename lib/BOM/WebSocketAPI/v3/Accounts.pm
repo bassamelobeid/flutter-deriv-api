@@ -1,5 +1,6 @@
 package BOM::WebSocketAPI::v3::Accounts;
 
+use 5.014;
 use strict;
 use warnings;
 
@@ -20,6 +21,8 @@ use BOM::Platform::Locale;
 
 sub landing_company {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $country  = $args->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
@@ -55,6 +58,8 @@ sub landing_company {
 
 sub landing_company_details {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
     return $c->new_error('landing_company_details', 'UnknownLandingCompany', localize('Unknown landing company.'))
@@ -94,6 +99,8 @@ sub statement {
 
 sub get_transactions {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $log = $c->app->log;
     my $acc = $c->stash('account');
@@ -172,6 +179,8 @@ sub profit_table {
 sub __get_sold {
     my ($c, $args) = @_;
 
+    BOM::Platform::Context::request($c->stash('request'));
+
     my $client = $c->stash('client');
     my $acc    = $c->stash('account');
 
@@ -215,48 +224,57 @@ sub __get_sold {
     return $data;
 }
 
-sub _redis {
-    my $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
-    return RedisDB->new(
-        host     => $config->{read}->{host},
-        port     => $config->{read}->{port},
-        password => $config->{read}->{password});
-}
-
 sub send_realtime_balance {
-    my ($c, $id, $args, $client) = @_;
+    my ($c, $id, $args, $client, $message) = @_;
 
-    my $redis = _redis();
-
-    my $log = $c->app->log;
-
-    $log->info("key " . 'TXNUPDATE::balance_' . $client->default_account->id);
-    my $message = $redis->get('TXNUPDATE::balance_' . $client->default_account->id);
-    if ($message && $redis->ttl('TXNUPDATE::balance_' . $client->default_account->id) > 0) {
-        $log->info("[$message]");
-
-        my $payload = JSON::from_json($message);
-        $c->send({
-                json => {
-                    msg_type => 'balance',
-                    echo_req => $args,
-                    balance  => {
-                        id       => $id,
-                        loginid  => $client->loginid,
-                        currency => $client->default_account->currency_code,
-                        balance  => $payload->{balance_after}
-                    },
-                }});
-    }
+    my $payload = JSON::from_json($message);
+    $c->send({
+            json => {
+                msg_type => 'balance',
+                echo_req => $args,
+                balance  => {
+                    id       => $id,
+                    loginid  => $client->loginid,
+                    currency => $client->default_account->currency_code,
+                    balance  => $payload->{balance_after}}}});
     return;
 }
 
 sub balance {
     my ($c, $args) = @_;
 
+    my $log = $c->app->log;
+
     my $client = $c->stash('client');
-    my $id;
-    $id = Mojo::IOLoop->recurring(2 => sub { send_realtime_balance($c, $id, $args, $client) });
+    my $id     = 0;
+
+    my $redis = $c->redis;
+    $redis->on(
+        connection => sub {
+            my ($self, $info) = @_;
+            $log->debug("connected: " . JSON::to_json($info));
+        });
+
+    $redis->on(
+        error => sub {
+            my ($self, $err) = @_;
+            $log->info("error: $err");
+            warn("error: $err");
+        });
+
+    $redis->on(
+        message => sub {
+            my ($self, $msg, $channel) = @_;
+            send_realtime_balance($c, $id, $args, $client, $msg);
+        });
+
+    warn "subscribing to TXNUPDATE::balance_" . $client->default_account->id;
+    $redis->subscribe(
+        ['TXNUPDATE::balance_' . $client->default_account->id],
+        sub {
+            my ($self, $err) = @_;
+            warn "redis subscribe: $err";
+        });
 
     my $ws_id = $c->tx->connection;
     $c->{ws}{$ws_id}{$id} = {
@@ -298,6 +316,8 @@ sub get_account_status {
 
 sub change_password {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     ## only allow for Session Token
     return $c->new_error('change_password', 'PermissionDenied', localize('Permission denied.'))
@@ -378,6 +398,8 @@ sub set_settings {
     my $r      = $c->stash('request');
     my $now    = Date::Utility->new;
     my $client = $c->stash('client');
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     return $c->new_error('set_settings', 'PermissionDenied', localize('Permission denied.')) if $client->is_virtual;
 
