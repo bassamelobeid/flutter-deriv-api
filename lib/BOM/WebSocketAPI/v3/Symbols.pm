@@ -7,7 +7,7 @@ use Date::Utility;
 use Cache::RedisDB;
 use JSON;
 
-use BOM::Platform::Context qw( localize );
+use BOM::Platform::Context qw( localize request );
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
@@ -62,6 +62,8 @@ sub _description {
 
 sub active_symbols {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $return_type = $args->{active_symbols};
     $return_type =~ /^(brief|full)$/
