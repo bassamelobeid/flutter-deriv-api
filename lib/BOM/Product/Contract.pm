@@ -26,6 +26,7 @@ use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::MarketData::VolSurface::Utils;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -730,11 +731,15 @@ sub _build_volsurface {
         major_pairs => 1,
         minor_pairs => 1
     );
+    my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
-        my $exchange    = $self->exchange;
-        my $when        = $exchange->trades_on($self->date_pricing) ? $self->date_pricing : $exchange->representative_trading_date;
-        my $cutoff_date = $self->is_intraday ? $exchange->closing_on($when) : $self->date_expiry;
+        my $exchange = $self->exchange;
+        my $when = $exchange->trades_on($self->date_pricing) ? $self->date_pricing : $exchange->representative_trading_date;
+
+        my $effective_date = $vol_utils->effective_date_for($when);
+        my $cutoff_date    = $exchange->closing_on($effective_date);
+
         $cutoff_str = $cutoff_date->time_cutoff;
     }
 
