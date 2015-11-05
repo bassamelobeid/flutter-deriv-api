@@ -44,7 +44,10 @@ sub invalid_japan_access_check {
 
 sub get_verification_code {
     my $email = shift;
-    return Crypt::ScryptKDF::scrypt_b64($email, '&*%hHKDJHI$#%^@_+?><!~');
+
+    # default params: (N=2^14, r=8, p=1, len=32)
+    # change len=9 (scrypt_raw), so len=12 (scrypt_b64)
+    return Crypt::ScryptKDF::scrypt_b64($email, '&*%hHKDJHI$#%^@_+?><!~', 16384, 8, 1, 9);
 }
 
 sub validate_verification_code {
