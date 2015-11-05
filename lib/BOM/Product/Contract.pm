@@ -948,13 +948,14 @@ sub _build_ask_probability {
     my $minimum;
     if ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         $minimum = 0.4;
-    } elsif ($self->tick_expiry and $self->category->code eq 'digits') {
-        $minimum = ($self->sentiment eq 'match') ? 0.1 : 0.9;
     } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
         $minimum = 0.5 + $self->model_markup->amount;
     } else {
         $minimum = $self->theo_probability->amount;
     }
+
+    # The above is a pretty unacceptable way to acheive this result. You do that stuff at the
+    # Engine level.. or work it into your markup.  This is nonsense.
 
     my $marked_up = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
