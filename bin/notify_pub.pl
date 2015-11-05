@@ -74,6 +74,7 @@ sub _publish {
          'TXNUPDATE::transaction_' . $msg->{account_id}) {
         $redis->set($_, $json);
         $redis->expire($_,  $expire_in);
+        $redis->publish($_, $json);
     }
 }
 
