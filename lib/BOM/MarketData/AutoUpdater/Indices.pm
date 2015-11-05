@@ -21,9 +21,13 @@ use Try::Tiny;
 use File::Temp;
 use BOM::MarketData::VolSurface::Moneyness;
 
-has filename => ( is => 'ro', );
+has filename => (
+    is => 'ro',
+);
 
-has input_market => ( is => 'ro', );
+has input_market => (
+    is => 'ro',
+);
 
 has file => (
     is         => 'ro',
@@ -44,9 +48,9 @@ sub _build_file {
     my $self     = shift;
     my $filename = $self->filename;
     my $url =
-      $filename eq 'auto_upload.xls'
-      ? 'https://www.dropbox.com/s/67s60tryh057qx1/auto_upload.xls?dl=0'
-      : 'https://www.dropbox.com//www.dropbox.com/s/4tv8y7sph1nh0cb/auto_upload_Euronext.xls?dl=0';
+        $filename eq 'auto_upload.xls'
+        ? 'https://www.dropbox.com/s/67s60tryh057qx1/auto_upload.xls?dl=0'
+        : 'https://www.dropbox.com//www.dropbox.com/s/4tv8y7sph1nh0cb/auto_upload_Euronext.xls?dl=0';
     my $file = '/tmp/' . $filename;
     `wget -O $file $url > /dev/null 2>&1`;
     return $file;
@@ -60,32 +64,27 @@ sub _build_symbols_to_update {
     my $self      = shift;
     my $market    = $self->input_market;
     my %skip_list = map { $_ => 1 } (
-        @{ BOM::Platform::Runtime->instance->app_config->quants->underlyings
-              ->disable_autoupdate_vol },
+        @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
         qw(OMXS30 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ)
     );
 
     my @symbols_to_update;
-    if ( $market eq 'indices' ) {
+    if ($market eq 'indices') {
         @symbols_to_update =
-          grep { not $skip_list{$_} and $_ !~ /^SYN/ }
-          BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
             market            => 'indices',
             contract_category => 'ANY',
             exclude_disabled  => 1
-          );
+            );
 
         # forcing it here since we don't have offerings for the index.
         push @symbols_to_update, 'FTSE';
-    }
-    else {
-        @symbols_to_update =
-          BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    } else {
+        @symbols_to_update = BOM::Market::UnderlyingDB->instance->get_symbols_for(
             market            => 'stocks',
             contract_category => 'ANY',
             exclude_disabled  => 1,
-            submarket         => [ 'france', 'belgium', 'amsterdam' ]
-          );
+            submarket         => ['france', 'belgium', 'amsterdam']);
     }
     return \@symbols_to_update;
 }
@@ -97,66 +96,52 @@ has surfaces_from_file => (
 
 sub _build_surfaces_from_file {
     my $self = shift;
-    return SuperDerivatives::VolSurface->new->parse_data_for( $self->file,
-        $self->symbols_to_update );
+    return SuperDerivatives::VolSurface->new->parse_data_for($self->file, $self->symbols_to_update);
 }
 
 sub run {
     my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
     my %valid_synthetic =
-      map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => 'indices',
         submarket         => 'smart_index',
         contract_category => 'ANY',
         exclude_disabled  => 1
-      );
-    foreach my $symbol ( @{ $self->symbols_to_update } ) {
+        );
+    foreach my $symbol (@{$self->symbols_to_update}) {
         if (    not $valid_synthetic{$symbol}
-            and not $surfaces_from_file->{$symbol} )
+            and not $surfaces_from_file->{$symbol})
         {
             $self->report->{$symbol} = {
                 success => 0,
-                reason  => 'Surface Information missing from datasource for '
-                  . $symbol,
+                reason  => 'Surface Information missing from datasource for ' . $symbol,
             };
             next;
         }
         my $underlying     = BOM::Market::Underlying->new($symbol);
         my $raw_volsurface = $surfaces_from_file->{$symbol};
-        if ( $self->uses_binary_spot->{$symbol} ) {
-            $raw_volsurface->{spot_reference} =
-              $underlying->tick_at( $raw_volsurface->{recorded_date}->epoch,
-                { allow_inconsistent => 1 } )->quote;
+        if ($self->uses_binary_spot->{$symbol}) {
+            $raw_volsurface->{spot_reference} = $underlying->tick_at($raw_volsurface->{recorded_date}->epoch, {allow_inconsistent => 1})->quote;
         }
-        my $volsurface = BOM::MarketData::VolSurface::Moneyness->new(
-            {
-                underlying     => $underlying,
-                recorded_date  => $raw_volsurface->{recorded_date},
-                spot_reference => $raw_volsurface->{spot_reference},
-                surface        => $raw_volsurface->{surface},
-            }
-        );
-        if ( $volsurface->is_valid ) {
-            if (
-                exists $valid_synthetic{ 'SYN'
-                      . $volsurface->underlying->symbol } )
-            {
-                my $syn = BOM::Market::Underlying->new( 'SYN' . $symbol );
-                my $synthetic_surface = $volsurface->clone(
-                    {
-                        underlying => $syn,
-                        cutoff     => $syn->exchange->closing_on(
-                            $syn->exchange->representative_trading_date
-                        )->time_cutoff
-                    }
-                );
+        my $volsurface = BOM::MarketData::VolSurface::Moneyness->new({
+            underlying     => $underlying,
+            recorded_date  => $raw_volsurface->{recorded_date},
+            spot_reference => $raw_volsurface->{spot_reference},
+            surface        => $raw_volsurface->{surface},
+        });
+        if ($volsurface->is_valid) {
+            if (exists $valid_synthetic{'SYN' . $volsurface->underlying->symbol}) {
+                my $syn               = BOM::Market::Underlying->new('SYN' . $symbol);
+                my $synthetic_surface = $volsurface->clone({
+                    underlying => $syn,
+                    cutoff     => $syn->exchange->closing_on($syn->exchange->representative_trading_date)->time_cutoff
+                });
                 $synthetic_surface->save;
             }
             $volsurface->save;
             $self->report->{$symbol}->{success} = 1;
-        }
-        else {
+        } else {
             $self->report->{$symbol} = {
                 success => 0,
                 reason  => $volsurface->validation_error,
