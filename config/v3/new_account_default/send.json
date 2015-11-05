@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title":"Create real account Send",
+  "description": "Create real account Send",
+  "properties": {
+    "new_account_default": {
+      "type": "integer",
+      "description": "Must be 1",
+      "pattern": "^1$",
+      "required": "1"
+    },
+    "salutation" : {
+      "enum": ["Mr", "Mrs", "Ms", "Miss", "Dr", "Prof"],
+      "description": "salutation",
+      "required": "1"
+    },
+    "first_name": {
+      "type": "string",
+      "pattern": "^\\w+$",
+      "description": "first name",
+      "required": "1"
+    },
+    "last_name": {
+      "type": "string",
+      "pattern": "^\\w+$",
+      "description": "last name",
+      "required": "1"
+    },
+    "date_of_birth" : {
+      "type": "string",
+      "format": "date",
+      "description": "date of birth format: yyyy-mm-dd",
+      "required": "1"
+    },
+    "residence" : {
+      "type" : "string",
+      "pattern": "^[a-z]{2}$",
+      "description": "value receive from residence_list call, 2-letter country code",
+      "required": "1"
+    },
+    "address_line_1": {
+      "type" : "string",
+      "pattern": "^\\w+$",
+      "description": "address line 1",
+      "required": "1"
+    },
+    "address_line_2": {
+      "type" : "string",
+      "description": "address line 2",
+      "pattern": "^\\w+$"
+    },
+    "address_state": {
+      "type" : "string",
+      "description": "address state",
+      "pattern": "^\\w+$"
+    },
+    "address_postcode": {
+      "type" : "string",
+      "description": "address postcode",
+      "pattern": "^\\w+$",
+      "required": "1"
+    },
+    "phone": {
+      "type" : "string",
+      "description": "address postcode",
+      "pattern": "^\\w+$",
+      "required": "1"
+    },
+    "secret_question": {
+      "enum": [ "Mother's maiden name", "Name of your pet", "Name of first love", "Memorable town/city", "Memorable date", "Favourite dish", "Brand of first car", "Favourite artist" ],
+      "description": "secret question",
+      "required": "1"
+    },
+    "secret_answer": {
+      "type": "string",
+      "description": "answer to secret question",
+      "required": "1"
+    },
+    "passthrough": {
+      "type": "object",
+      "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
+    }
+  },
+  "additionalProperties": false
+}
