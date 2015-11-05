@@ -184,7 +184,7 @@ sub ticks {
     }
 
     if ($ul->feed_license eq 'realtime') {
-        my $ws_id  = $c->tx->connection;
+        my $ws_id = $c->tx->connection;
         my $this_c = ($c->{ws}{$ws_id} //= {});
 
         my ($id, $dictator_client);
@@ -201,8 +201,7 @@ sub ticks {
                         json => $c->new_error(
                             'ticks',
                             'EndOfTickStream',
-                            localize('This tick stream was canceled due to '
-                                   . 'resource limitations'),
+                            localize('This tick stream was canceled due to resource limitations'),
                             {
                                 id     => $id,
                                 symbol => $symbol,
@@ -221,8 +220,7 @@ sub ticks {
                             json => $c->new_error(
                                 'ticks',
                                 'EndOfTickStream',
-                                localize('There is a temporary disruption of this '
-                                       . 'tick stream. Please try again later.'),
+                                localize('This tick stream has been disrupted. Please try again later.'),
                                 {
                                     id     => $id,
                                     symbol => $symbol,
