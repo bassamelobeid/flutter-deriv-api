@@ -734,8 +734,8 @@ sub _build_volsurface {
     my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
-        my $exchange    = $self->exchange;
-        my $when        = $exchange->trades_on($self->date_pricing) ? $self->date_pricing : $exchange->representative_trading_date;
+        my $exchange = $self->exchange;
+        my $when = $exchange->trades_on($self->date_pricing) ? $self->date_pricing : $exchange->representative_trading_date;
 
         my $effective_date = $vol_utils->effective_date_for($when);
         my $cutoff_date    = $exchange->closing_on($effective_date);
