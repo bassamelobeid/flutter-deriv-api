@@ -19,7 +19,7 @@
     "verification_code": {
       "type": "string",
       "description": "email verification code receive from verify_email call",
-      "pattern": "[0-9A-Za-z\/+=]{10,15}",
+      "pattern": "^[0-9A-Za-z\/+=]{10,15}$",
       "required": "1"
     },
     "client_password": {
