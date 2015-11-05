@@ -26,6 +26,7 @@ validation checks on BOM::MarketData::VolSurface objects.
 
 use Moose;
 use 5.010;
+use Carp;
 
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw( min reduce );
