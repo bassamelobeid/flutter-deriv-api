@@ -5,6 +5,8 @@ use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
+use Mojo::Util qw(md5_sum steady_time);
+use Time::HiRes;
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
@@ -18,6 +20,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
+use BOM::Feed::Dictator::Client;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -181,16 +184,67 @@ sub ticks {
     }
 
     if ($ul->feed_license eq 'realtime') {
-        my $id;
-        $id = Mojo::IOLoop->recurring(1 => sub { send_tick($c, $id, $args, $ul) });
-        send_tick($c, $id, $args, $ul);
+        my $ws_id  = $c->tx->connection;
+        my $this_c = ($c->{ws}{$ws_id} //= {});
 
-        my $ws_id = $c->tx->connection;
-        $c->{ws}{$ws_id}{$id} = {
-            started => time(),
+        my ($id, $dictator_client);
+        do { $id = md5_sum 'tick' . steady_time . rand 999 } while $this_c->{$id};
+
+        $this_c->{$id} = {
+            started => time,
             type    => 'ticks',
-            epoch   => 0,
+            cleanup => sub {
+                my $reason = shift;
+
+                $dictator_client && $dictator_client->stop;
+                $c->send({
+                        json => $c->new_error(
+                            'ticks',
+                            'EndOfTickStream',
+                            localize('This tick stream was canceled due to '
+                                   . 'resource limitations'),
+                            {
+                                id     => $id,
+                                symbol => $symbol,
+                            })}) if $reason;
+            },
         };
+
+        $dictator_client = BOM::Feed::Dictator::Client->new(
+            symbol     => $symbol,
+            start_time => time,
+            on_message => sub {
+                my $tick = shift;
+
+                if (not $tick or ref($tick) eq 'HASH' and exists $tick->{error}) {
+                    $c->send({
+                            json => $c->new_error(
+                                'ticks',
+                                'EndOfTickStream',
+                                localize('There is a temporary disruption of this '
+                                       . 'tick stream. Please try again later.'),
+                                {
+                                    id     => $id,
+                                    symbol => $symbol,
+                                })});
+                    BOM::WebSocketAPI::v3::System::forget_one $id;
+                    return;
+                }
+
+                $tick = [$tick] unless ref($tick) eq 'ARRAY';
+
+                for (@$tick) {
+                    $c->send({
+                            json => {
+                                msg_type => 'tick',
+                                echo_req => $args,
+                                tick     => {
+                                    id    => $id,
+                                    epoch => $_->{epoch},
+                                    quote => $_->{quote}}}});
+                }
+            });
+
         BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
 
         return 0;
@@ -377,26 +431,6 @@ sub send_ask {
                         id => $id,
                         %$latest
                     }}});
-    }
-    return;
-}
-
-sub send_tick {
-    my ($c, $id, $p1, $ul) = @_;
-
-    my $ws_id = $c->tx->connection;
-    my $tick  = $ul->get_combined_realtime;
-    if ($tick->{epoch} > ($c->{ws}{$ws_id}{$id}{epoch} || 0)) {
-        $c->send({
-                json => {
-                    msg_type => 'tick',
-                    echo_req => $p1,
-                    tick     => {
-                        id    => $id,
-                        epoch => $tick->{epoch},
-                        quote => $tick->{quote}}}});
-
-        $c->{ws}{$ws_id}{$id}{epoch} = $tick->{epoch};
     }
     return;
 }
