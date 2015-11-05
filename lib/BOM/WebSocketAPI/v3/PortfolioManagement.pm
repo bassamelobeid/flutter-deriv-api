@@ -295,8 +295,6 @@ sub get_bid {
 sub send_bid {
     my ($c, $id, $p0, $p2) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     my $latest = get_bid($c, $p2);
 
     my $response = {
