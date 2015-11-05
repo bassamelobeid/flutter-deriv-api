@@ -157,7 +157,7 @@ sub error_map {
             request()->url_for('contact')
         ),
         'too young'            => localize('Sorry, you are too young to open an account.'),
-        'show risk disclaimer' => localize('Please agree to accept risk before proceed.'),
+        'show risk disclaimer' => localize('Please agree to the risk disclaimer before proceeding.'),
         'insufficient score'   => localize(
             'Unfortunately your answers to the questions above indicate that you do not have sufficient financial resources or trading experience to be eligible to open a trading account at this time.'
         ),
