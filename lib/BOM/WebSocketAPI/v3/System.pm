@@ -8,7 +8,7 @@ sub forget {
 
     return {
         msg_type => 'forget',
-        forget => _forget_one($c, $args->{forget}) ? 1 : 0,
+        forget => forget_one($c, $args->{forget}) ? 1 : 0,
     };
 }
 
@@ -21,7 +21,7 @@ sub forget_all {
         my $ws_id = $c->tx->connection;
         foreach my $id (keys %{$c->{ws}{$ws_id}}) {
             if ($c->{ws}{$ws_id}{$id}{type} eq $type) {
-                push @removed_ids, $id if _forget_one($c, $id);
+                push @removed_ids, $id if forget_one($c, $id);
             }
         }
     }
@@ -32,17 +32,20 @@ sub forget_all {
     };
 }
 
-sub _forget_one {
-    my ($c, $id) = @_;
-
-    Mojo::IOLoop->remove($id);
+sub forget_one {
+    my ($c, $id, $reason) = @_;
 
     my $ws_id = $c->tx->connection;
     my $v     = delete $c->{ws}{$ws_id}{$id};
     return unless $v;
 
-    if ($v->{type} eq 'proposal_open_contract') {
-        delete $c->{fmb_ids}{$ws_id}{$v->{data}{fmb}->id};
+    if (exists $v->{cleanup}) {
+        $v->{cleanup}->($reason);
+    } else {
+        Mojo::IOLoop->remove($id);
+        if ($v->{type} eq 'proposal_open_contract') {
+            delete $c->{fmb_ids}{$ws_id}{$v->{fmb}->id};
+        }
     }
 
     return $v;
@@ -71,7 +74,7 @@ sub _limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
     my ($c) = @_;
 
     my $ws_id  = $c->tx->connection;
-    my $this_c = $c->{ws}{$ws_id};
+    my $this_c = ($c->{ws}{$ws_id} //= {});
     my @ids    = keys %$this_c;
 
     return if scalar(@ids) <= 50;
@@ -79,17 +82,7 @@ sub _limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
     # remove first b/c we added one
     @ids = sort { $this_c->{$a}{started} <=> $this_c->{$b}{started} } @ids;
 
-    my $v = delete $this_c->{$ids[0]};
-
-    if (ref($v) eq 'CODE') {
-        $v->();
-    } else {
-        Mojo::IOLoop->remove($ids[0]);
-        if ($v->{type} eq 'portfolio' ||
-            $v->{type} eq 'proposal_open_contract') {
-            delete $c->{fmb_ids}{$ws_id}{$v->{fmb}->id};
-        }
-    }
+    forget_one $c, $ids[0], 'StreamCountLimitReached';
 }
 
 1;
