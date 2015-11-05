@@ -172,7 +172,7 @@ sub generate {
     my $sender = Mail::Sender->new({
         smtp    => 'localhost',
         from    => 'Risk reporting <risk-reporting@binary.com>',
-        to      => 'Quants <quants-market-data@binary.com>',
+        to      => '<x-risk@binary.com>',
         subject => $subject,
     });
     $sender->MailFile({
