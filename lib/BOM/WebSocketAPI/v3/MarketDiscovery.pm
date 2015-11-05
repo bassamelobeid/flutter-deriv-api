@@ -22,6 +22,8 @@ use BOM::Product::Contract::Category;
 sub trading_times {
     my ($c, $args) = @_;
 
+    BOM::Platform::Context::request($c->stash('request'));
+
     my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
         markets     => {name => 'name'},
@@ -65,6 +67,8 @@ sub trading_times {
 
 sub asset_index {
     my ($c, $args) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $request = $c->stash('request');
     my $lang    = $request->language;
@@ -345,6 +349,8 @@ sub get_ask {
 
 sub send_ask {
     my ($c, $id, $p1, $p2) = @_;
+
+    BOM::Platform::Context::request($c->stash('request'));
 
     my $latest = get_ask($c, $p2);
     if ($latest->{error}) {
