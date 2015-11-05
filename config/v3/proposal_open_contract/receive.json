@@ -70,16 +70,16 @@
           "description": "Example: 7 seconds"
         },
         "entry_tick_time": {
-          "type": "string",
-          "description": "Example: 2015-11-04 07:14:03"
+          "type": "epoch",
+          "description": "Example: 1446629000"
         },
         "exit_tick": {
           "type": "string",
           "description": "Example: 7 seconds"
         },
         "exit_tick_time": {
-          "type": "string",
-          "description": "Example: 2015-11-04 07:14:03"
+          "type": "epoch",
+          "description": "Example: 1446629000"
         },
         "date_start": {
           "type": "epoch",
