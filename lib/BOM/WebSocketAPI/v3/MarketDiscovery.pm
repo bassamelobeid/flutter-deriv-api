@@ -225,7 +225,7 @@ sub ticks {
                                     id     => $id,
                                     symbol => $symbol,
                                 })});
-                    BOM::WebSocketAPI::v3::System::forget_one $id;
+                    BOM::WebSocketAPI::v3::System::forget_one $c, $id;
                     return;
                 }
 
