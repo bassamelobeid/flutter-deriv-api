@@ -11,10 +11,6 @@ use RedisDB;
 use JSON;
 use BOM::Database::FeedDB;
 
-my $conn = _master_db_connections();
-
-
-
 while (1) {
     try {
         my $redis = _redis();
