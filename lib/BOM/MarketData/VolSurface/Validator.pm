@@ -50,9 +50,9 @@ smile_flags will be set on the surface.
 =cut
 
 sub validate_surface {
-    my ( $self, $surface ) = @_;
+    my ($self, $surface) = @_;
 
-    return 1 if ( scalar grep { $surface->type eq $_ } (qw(flat phased)) );
+    return 1 if (scalar grep { $surface->type eq $_ } (qw(flat phased)));
 
     # Throws exceptions if unsuccessful
     $self->_do_raw_validation_on($surface);
@@ -62,7 +62,7 @@ sub validate_surface {
 
 # Performs all checks implemented in this package on the given surface.
 sub _do_raw_validation_on {
-    my ( $self, $surface ) = @_;
+    my ($self, $surface) = @_;
 
     _check_structure($surface);
     _check_identical_surface($surface);
@@ -82,29 +82,21 @@ sub _check_identical_surface {
     my $surface = shift;
 
     my $existing       = $surface->get_existing_surface;
-    my @points         = @{ $existing->smile_points };
-    my @existing_terms = @{ $existing->original_term_for_smile };
-    my @new_terms      = @{ $surface->original_term_for_smile };
+    my @points         = @{$existing->smile_points};
+    my @existing_terms = @{$existing->original_term_for_smile};
+    my @new_terms      = @{$surface->original_term_for_smile};
 
     # we return if it is not identical
     return 1 if $#existing_terms != $#new_terms;
-    return 1
-      if grep { $existing_terms[$_] != $new_terms[$_] }
-      ( 0 .. $#existing_terms );
+    return 1 if grep { $existing_terms[$_] != $new_terms[$_] } (0 .. $#existing_terms);
 
     foreach my $term (@existing_terms) {
         foreach my $point (@points) {
-            return 1
-              if $existing->surface->{$term}->{smile}->{$point} !=
-              $surface->surface->{$term}->{smile}->{$point};
+            return 1 if $existing->surface->{$term}->{smile}->{$point} != $surface->surface->{$term}->{smile}->{$point};
         }
     }
-    if ( time - $existing->recorded_date->epoch > 15000
-        and not $surface->{underlying}->quanto_only )
-    {
-        croak(  'Surface data has not changed since last update ['
-              . $existing->recorded_date->epoch
-              . '].' );
+    if (time - $existing->recorded_date->epoch > 15000 and not $surface->{underlying}->quanto_only) {
+        croak('Surface data has not changed since last update [' . $existing->recorded_date->epoch . '].');
     }
     return;
 }
@@ -113,38 +105,34 @@ sub _check_volatility_jump {
     my $surface = shift;
 
     my $existing = $surface->get_existing_surface;
-    my @terms    = @{ $surface->original_term_for_smile };
-    my @points   = @{ $surface->smile_points };
+    my @terms    = @{$surface->original_term_for_smile};
+    my @points   = @{$surface->smile_points};
     my $type     = $surface->type;
 
-    for ( my $i = 0 ; $i < $#terms ; $i++ ) {
+    for (my $i = 0; $i < $#terms; $i++) {
         my $days = $terms[$i];
-        for ( my $j = 0 ; $j < $#points ; $j++ ) {
+        for (my $j = 0; $j < $#points; $j++) {
             my $sought_point = $points[$j];
-            my $new_vol      = $surface->get_volatility(
-                {
-                    $type => $sought_point,
-                    days  => $days,
-                }
-            );
-            my $existing_vol = $existing->get_volatility(
-                {
-                    $type => $sought_point,
-                    days  => $days,
-                }
-            );
-            my $diff            = abs( $new_vol - $existing_vol );
+            my $new_vol      = $surface->get_volatility({
+                $type => $sought_point,
+                days  => $days,
+            });
+            my $existing_vol = $existing->get_volatility({
+                $type => $sought_point,
+                days  => $days,
+            });
+            my $diff            = abs($new_vol - $existing_vol);
             my $percentage_diff = $diff / $existing_vol * 100;
-            if ( $diff > 0.03 and $percentage_diff > 100 ) {
-                croak(  'Big difference found on term['
-                      . $days
-                      . '] for point ['
-                      . $sought_point
-                      . '] with absolute diff ['
-                      . $diff
-                      . '] percentage diff ['
-                      . $percentage_diff
-                      . ']' );
+            if ($diff > 0.03 and $percentage_diff > 100) {
+                croak('Big difference found on term['
+                        . $days
+                        . '] for point ['
+                        . $sought_point
+                        . '] with absolute diff ['
+                        . $diff
+                        . '] percentage diff ['
+                        . $percentage_diff
+                        . ']');
             }
         }
     }
@@ -155,45 +143,31 @@ sub _check_volatility_jump {
 sub _admissible_check {
     my $surface = shift;
 
-    my $underlying   = $surface->underlying;
-    my $exchange     = $underlying->exchange;
-    my $surface_type = $surface->type;
-    my $S =
-      ( $surface_type eq 'delta' )
-      ? $underlying->spot
-      : $surface->spot_reference;
-    my $premium_adjusted =
-      $underlying->{market_convention}->{delta_premium_adjusted};
-    my $now = Date::Utility->new;
+    my $underlying       = $surface->underlying;
+    my $exchange         = $underlying->exchange;
+    my $surface_type     = $surface->type;
+    my $S                = ($surface_type eq 'delta') ? $underlying->spot : $surface->spot_reference;
+    my $premium_adjusted = $underlying->{market_convention}->{delta_premium_adjusted};
+    my $now              = Date::Utility->new;
 
     my $utils = BOM::MarketData::VolSurface::Utils->new;
-    foreach my $day ( @{ $surface->_days_with_smiles } ) {
-        my $date_expiry = Date::Utility->new( time + $day * 86400 );
-        $date_expiry =
-            $exchange->trades_on($date_expiry)
-          ? $date_expiry
-          : $exchange->trade_date_after($date_expiry);
+    foreach my $day (@{$surface->_days_with_smiles}) {
+        my $date_expiry = Date::Utility->new(time + $day * 86400);
+        $date_expiry = $exchange->trades_on($date_expiry) ? $date_expiry : $exchange->trade_date_after($date_expiry);
         my $adjustment;
-        if ( $underlying->market->prefer_discrete_dividend ) {
-            $adjustment = $underlying->dividend_adjustments_for_period(
-                {
-                    start => $now,
-                    end   => $date_expiry,
-                }
-            );
+        if ($underlying->market->prefer_discrete_dividend) {
+            $adjustment = $underlying->dividend_adjustments_for_period({
+                start => $now,
+                end   => $date_expiry,
+            });
             $S += $adjustment->{spot};
         }
-        my $atid = $utils->effective_date_for($date_expiry)
-          ->days_between( $utils->effective_date_for($now) );
-
-   # If intraday or not FX, then use the exact duration with fractions of a day.
-        croak("Invalid tenor[$atid] on surface") if ( $atid == 0 );
-        my $t = $atid / 365;
-        my $r = $underlying->interest_rate_for($t);
-        my $q =
-          ( $underlying->market->prefer_discrete_dividend )
-          ? 0
-          : $underlying->dividend_rate_for($t);
+        my $atid = $utils->effective_date_for($date_expiry)->days_between($utils->effective_date_for($now));
+        # If intraday or not FX, then use the exact duration with fractions of a day.
+        croak("Invalid tenor[$atid] on surface") if ($atid == 0);
+        my $t     = $atid / 365;
+        my $r     = $underlying->interest_rate_for($t);
+        my $q     = ($underlying->market->prefer_discrete_dividend) ? 0 : $underlying->dividend_rate_for($t);
         my $smile = $surface->surface->{$day}->{smile};
 
         my @volatility_level = sort { $a <=> $b } keys %{$smile};
@@ -205,10 +179,9 @@ sub _admissible_check {
         foreach my $vol_level (@volatility_level) {
             my $vol = $smile->{$vol_level};
             my $barrier;
-
- # Temporarily get the Call strike via the Put side of the algorithm,
- # as it seems not to go crazy at the extremities. Should give the same barrier.
-            if ( $surface_type eq 'delta' ) {
+            # Temporarily get the Call strike via the Put side of the algorithm,
+            # as it seems not to go crazy at the extremities. Should give the same barrier.
+            if ($surface_type eq 'delta') {
                 my $conversion_args = {
                     atm_vol          => $vol,
                     t                => $t,
@@ -218,47 +191,40 @@ sub _admissible_check {
                     premium_adjusted => $premium_adjusted
                 };
 
-                if ( $vol_level > 50 ) {
-                    $conversion_args->{delta} =
-                      exp( -$r * $t ) - $vol_level / 100;
+                if ($vol_level > 50) {
+                    $conversion_args->{delta}       = exp(-$r * $t) - $vol_level / 100;
                     $conversion_args->{option_type} = 'VANILLA_PUT';
-                }
-                else {
+                } else {
                     $conversion_args->{delta}       = $vol_level / 100;
                     $conversion_args->{option_type} = 'VANILLA_CALL';
                 }
                 $barrier = get_strike_for_spot_delta($conversion_args);
-            }
-            elsif ( $surface_type eq 'moneyness' ) {
+            } elsif ($surface_type eq 'moneyness') {
                 $barrier = $vol_level / 100 * $S;
             }
 
-            if ( $underlying->market->prefer_discrete_dividend ) {
+            if ($underlying->market->prefer_discrete_dividend) {
 
                 $barrier += $adjustment->{barrier};
             }
-            my $prob = Math::Business::BlackScholes::Binaries::vanilla_call( $S,
-                $barrier, $t, $r, $r - $q, $vol );
+            my $prob = Math::Business::BlackScholes::Binaries::vanilla_call($S, $barrier, $t, $r, $r - $q, $vol);
             my $slope;
 
-            if ( exists $prev{prob} ) {
-                $slope =
-                  ( $prob - $prev{prob} ) / ( $vol_level - $prev{vol_level} );
+            if (exists $prev{prob}) {
+                $slope = ($prob - $prev{prob}) / ($vol_level - $prev{vol_level});
 
-# Admissible Check 1.
-# For delta surface, the strike(prob) is decreasing(increasing) across delta point, hence the slope is positive
-# For moneyness surface, the strike(prob) is increasing(decreasing) across moneyness point, hence the slope is negative
-                if ( $surface_type eq 'delta' and $slope <= 0 ) {
+                # Admissible Check 1.
+                # For delta surface, the strike(prob) is decreasing(increasing) across delta point, hence the slope is positive
+                # For moneyness surface, the strike(prob) is increasing(decreasing) across moneyness point, hence the slope is negative
+                if ($surface_type eq 'delta' and $slope <= 0) {
                     croak(
-"Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and "
-                          . $vol_level );
+                        "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level);
                 }
 
-                if ( $surface_type eq 'moneyness' and $slope >= 0.0 ) {
+                if ($surface_type eq 'moneyness' and $slope >= 0.0) {
                     croak(
-"Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and "
-                          . $vol_level,
-                    );
+                        "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level,
+                        );
                 }
             }
 
@@ -267,14 +233,12 @@ sub _admissible_check {
             # What we've implemented is largely equivalent, and easier to check:
             # digital call prob = 1 for very small K.
             $barrier = 0.00000001;
-            my $bs_theo =
-              Math::Business::BlackScholes::Binaries::call( $S, $barrier, $t,
-                $r, $r - $q, $vol );
-            my $bs_theo_before_discounted = $bs_theo / ( exp( -$r * $t ) );
+            my $bs_theo = Math::Business::BlackScholes::Binaries::call($S, $barrier, $t, $r, $r - $q, $vol);
+            my $bs_theo_before_discounted = $bs_theo / (exp(-$r * $t));
 
-            if ( $bs_theo_before_discounted < 0.95 ) {
+            if ($bs_theo_before_discounted < 0.95) {
                 croak(
-"Admissible check 4 failure for maturity[$day] vol at level [$vol_level]. BS digital call theo prob[$bs_theo] not 1 when barrier -> zero.",
+                    "Admissible check 4 failure for maturity[$day] vol at level [$vol_level]. BS digital call theo prob[$bs_theo] not 1 when barrier -> zero.",
                 );
 
             }
@@ -282,14 +246,12 @@ sub _admissible_check {
             # Admissible Check 5.
             # The call price of an infinity strike should be zero.
             $barrier = $S * 10000;
-            my $call_prob_for_inf_strike =
-              Math::Business::BlackScholes::Binaries::call( $S, $barrier, $t,
-                $r, $r - $q, $vol );
-            if ( $call_prob_for_inf_strike > 1e-10 ) {
+            my $call_prob_for_inf_strike = Math::Business::BlackScholes::Binaries::call($S, $barrier, $t, $r, $r - $q, $vol);
+            if ($call_prob_for_inf_strike > 1e-10) {
                 croak(
-"Admissible check 5 failure for maturity[$day] vol at level[$vol_level].BS digital call price not -> 0 ["
-                      . $call_prob_for_inf_strike
-                      . "] as barrier -> 'infinity'.",
+                          "Admissible check 5 failure for maturity[$day] vol at level[$vol_level].BS digital call price not -> 0 ["
+                        . $call_prob_for_inf_strike
+                        . "] as barrier -> 'infinity'.",
                 );
             }
 
@@ -300,54 +262,38 @@ sub _admissible_check {
             );
 
             next
-              if ( $vol_level == $first_vol_level
+                if ($vol_level == $first_vol_level
                 || $vol_level == $last_vol_level
-                || $surface_type eq 'delta' );
+                || $surface_type eq 'delta');
 
             $barrier = $vol_level / 100 * $S;
-            my $h = ( 2.0 / 100 ) * $S;
+            my $h = (2.0 / 100) * $S;
 
-            my $cloned =
-              $surface->clone( { price_with_parameterized_surface => 0 } );
-            $vol = $cloned->get_volatility(
-                {
-                    moneyness => ( $vol_level - 2 ),
-                    days      => $day
-                }
-            );
-            my $bet_minus_h =
-              Math::Business::BlackScholes::Binaries::vanilla_call( $S,
-                $barrier - $h,
-                $t, $r, $r - $q, $vol );
+            my $cloned = $surface->clone({price_with_parameterized_surface => 0});
+            $vol = $cloned->get_volatility({
+                moneyness => ($vol_level - 2),
+                days      => $day
+            });
+            my $bet_minus_h = Math::Business::BlackScholes::Binaries::vanilla_call($S, $barrier - $h, $t, $r, $r - $q, $vol);
 
-            $vol = $cloned->get_volatility(
-                {
-                    moneyness => ($vol_level),
-                    days      => $day
-                }
-            );
-            my $bet = Math::Business::BlackScholes::Binaries::vanilla_call( $S,
-                $barrier, $t, $r, $r - $q, $vol );
+            $vol = $cloned->get_volatility({
+                moneyness => ($vol_level),
+                days      => $day
+            });
+            my $bet = Math::Business::BlackScholes::Binaries::vanilla_call($S, $barrier, $t, $r, $r - $q, $vol);
 
-            $vol = $cloned->get_volatility(
-                {
-                    moneyness => ( $vol_level + 2 ),
-                    days      => $day
-                }
-            );
-            my $bet_plus_h =
-              Math::Business::BlackScholes::Binaries::vanilla_call( $S,
-                $barrier + $h,
-                $t, $r, $r - $q, $vol );
+            $vol = $cloned->get_volatility({
+                moneyness => ($vol_level + 2),
+                days      => $day
+            });
+            my $bet_plus_h = Math::Business::BlackScholes::Binaries::vanilla_call($S, $barrier + $h, $t, $r, $r - $q, $vol);
 
             ## The actual finite difference formula has a / $h**2, but since we're checking
             ## for negativity, we don't need it. Also, we introducted an error margin to allow
             ## surfaces that are close to passing through.
             my $convexity_flag = $bet_minus_h - 2 * $bet + $bet_plus_h;
-            if ( $convexity_flag < -0.009 ) {
-                croak(
-"Admissible check 2 failure for maturity[$day] strike center[$vol_level] convexity value is [$convexity_flag].",
-                );
+            if ($convexity_flag < -0.009) {
+                croak("Admissible check 2 failure for maturity[$day] strike center[$vol_level] convexity value is [$convexity_flag].",);
             }
         }
     }
@@ -358,10 +304,8 @@ sub _admissible_check {
 sub _check_spot_reference {
     my $surface = shift;
 
-    croak(  'spot_reference is undef during volupdate for underlying ['
-          . $surface->underlying->symbol
-          . ']' )
-      unless $surface->spot_reference;
+    croak('spot_reference is undef during volupdate for underlying [' . $surface->underlying->symbol . ']')
+        unless $surface->spot_reference;
 
     return 1;
 }
@@ -369,7 +313,7 @@ sub _check_spot_reference {
 sub _check_age {
     my $surface = shift;
 
-    if ( time - $surface->recorded_date->epoch > 7200 ) {
+    if (time - $surface->recorded_date->epoch > 7200) {
         croak('VolSurface is more than 2 hours old');
     }
 
@@ -386,97 +330,80 @@ sub _check_structure {
     # Somehow I do not know why there is a limit of term on delta surface, but
     # for moneyness we might need at least up to 2 years to get the spread.
     my $type = $surface->type;
-    my ( $max_term, $diff_smile_point ) =
-      $type eq 'delta' ? ( 380, 30 ) : ( 750, 100 );
+    my ($max_term, $diff_smile_point) = $type eq 'delta' ? (380, 30) : (750, 100);
 
-    my $extra_allowed =
-      BOM::Platform::Runtime->instance->app_config->quants->market_data
-      ->extra_vol_diff_by_delta || 0;
+    my $extra_allowed = BOM::Platform::Runtime->instance->app_config->quants->market_data->extra_vol_diff_by_delta || 0;
     my $max_vol_change_by_delta = 0.4 + $extra_allowed;
 
     my @days = keys %{$surface_hashref};
-    croak('Must be at least two maturities on vol surface.')
-      if scalar @days < 2;
+    croak('Must be at least two maturities on vol surface.') if scalar @days < 2;
 
     foreach my $day (@days) {
-        if ( $day !~ /^\d+$/ ) {
-            croak(
-"Invalid day[$day] in volsurface for underlying[$system_symbol]. Not a positive integer."
-            );
-        }
-        elsif ( $day > $max_term ) {
-            croak(
-"Day[$day] in volsurface for underlying[$system_symbol] greater than allowed."
-            );
+        if ($day !~ /^\d+$/) {
+            croak("Invalid day[$day] in volsurface for underlying[$system_symbol]. Not a positive integer.");
+        } elsif ($day > $max_term) {
+            croak("Day[$day] in volsurface for underlying[$system_symbol] greater than allowed.");
         }
 
-        if ( not grep { exists $surface_hashref->{$day}->{$_} }
-            qw(smile vol_spread) )
-        {
-            croak(
-"Missing both smile and atm_spread (must have at least one) for day [$day] on underlying [$system_symbol]"
-            );
+        if (not grep { exists $surface_hashref->{$day}->{$_} } qw(smile vol_spread)) {
+            croak("Missing both smile and atm_spread (must have at least one) for day [$day] on underlying [$system_symbol]");
         }
     }
 
     my $min_day = min @days;
     my $market  = $surface->underlying->market;
 
-    if ( $market eq 'forex' and $min_day > 7 ) {
-        croak(
-"ON term is missing in volsurface for underlying $system_symbol, the minimum term is $min_day"
-        );
+    if ($market eq 'forex' and $min_day > 7) {
+        croak("ON term is missing in volsurface for underlying $system_symbol, the minimum term is $min_day");
     }
 
     @days = sort { $a <=> $b } @days;
     my @volatility_level;
 
-    if ( $type eq 'delta' ) {
-        @volatility_level = sort { $a <=> $b } @{ $surface->deltas };
-    }
-    else {
-        @volatility_level = sort { $a <=> $b } @{ $surface->moneynesses };
+    if ($type eq 'delta') {
+        @volatility_level = sort { $a <=> $b } @{$surface->deltas};
+    } else {
+        @volatility_level = sort { $a <=> $b } @{$surface->moneynesses};
     }
 
     foreach my $vol_level (@volatility_level) {
-        if ( $vol_level !~ /^\d+\.?\d+$/ ) {
+        if ($vol_level !~ /^\d+\.?\d+$/) {
             die("Invalid vol_point[$vol_level] for underlying[$system_symbol]");
         }
     }
 
     reduce {
-        abs( $a - $b ) <= $diff_smile_point
-          ? $b
-          : die("Difference between point $a and $b too great.");
+        abs($a - $b) <= $diff_smile_point
+            ? $b
+            : die("Difference between point $a and $b too great.");
     }
     @volatility_level;
 
     foreach my $day (@days) {
 
-        if ( exists $surface_hashref->{$day}->{smile} ) {
+        if (exists $surface_hashref->{$day}->{smile}) {
             my $smile = $surface_hashref->{$day}->{smile};
             my @vol_levels_for_smile = sort { $a <=> $b } keys %{$smile};
 
-            if ( $type eq 'delta' ) {
-                if ( not @volatility_level ~~ @vol_levels_for_smile ) {
-                    die(    'Deltas['
-                          . join( ',', @vol_levels_for_smile )
-                          . "] for maturity[$day], underlying["
-                          . $system_symbol
-                          . '] are not the same as deltas for rest of surface['
-                          . join( ',', @volatility_level )
-                          . '].' );
+            if ($type eq 'delta') {
+                if (not @volatility_level ~~ @vol_levels_for_smile) {
+                    die('Deltas['
+                            . join(',', @vol_levels_for_smile)
+                            . "] for maturity[$day], underlying["
+                            . $system_symbol
+                            . '] are not the same as deltas for rest of surface['
+                            . join(',', @volatility_level)
+                            . '].');
                 }
             }
 
             reduce {
-                return $a if ( not defined $b );
-                abs( $smile->{$a} - $smile->{$b} ) <=
-                  $max_vol_change_by_delta * $smile->{$a}
-                  ? $b
-                  : die("Invalid volatility points: too big jump from "
-                      . "$a:$smile->{$a} to $b:$smile->{$b}"
-                      . "for maturity[$day], underlying[$system_symbol]" );
+                return $a if (not defined $b);
+                abs($smile->{$a} - $smile->{$b}) <= $max_vol_change_by_delta * $smile->{$a}
+                    ? $b
+                    : die("Invalid volatility points: too big jump from "
+                        . "$a:$smile->{$a} to $b:$smile->{$b}"
+                        . "for maturity[$day], underlying[$system_symbol]");
             }
             @volatility_level;
 
@@ -487,14 +414,10 @@ sub _check_structure {
 }
 
 sub check_smiles {
-    my ( $self, $surface ) = @_;
+    my ($self, $surface) = @_;
 
-    foreach my $day ( @{ $surface->original_term_for_smile } ) {
-        $self->check_smile(
-            $day,
-            $surface->surface->{$day}->{smile},
-            $surface->underlying->system_symbol
-        );
+    foreach my $day (@{$surface->original_term_for_smile}) {
+        $self->check_smile($day, $surface->surface->{$day}->{smile}, $surface->underlying->system_symbol);
     }
 
     return 1;
@@ -507,20 +430,20 @@ Performs error checking on an individual smile of a given surface.
 =cut
 
 sub check_smile {
-    my ( $self, $day, $smile, $system_symbol ) = @_;
+    my ($self, $day, $smile, $system_symbol) = @_;
 
     $system_symbol ||= 'unknown symbol';
 
-    foreach my $vol_level ( keys %{$smile} ) {
+    foreach my $vol_level (keys %{$smile}) {
         my $vol = $smile->{$vol_level};
-        if ( $vol !~ /^\d?\.?\d*$/ or $vol > 5 ) {
-            die(    'Invalid smile volatility for '
-                  . $day
-                  . ' days at volatility level (either delta or moneyness level) '
-                  . $vol_level . ' ('
-                  . $vol
-                  . ') for '
-                  . $system_symbol );
+        if ($vol !~ /^\d?\.?\d*$/ or $vol > 5) {
+            die('Invalid smile volatility for '
+                    . $day
+                    . ' days at volatility level (either delta or moneyness level) '
+                    . $vol_level . ' ('
+                    . $vol
+                    . ') for '
+                    . $system_symbol);
         }
     }
 
@@ -539,8 +462,7 @@ sub check_smile {
 # Forward Moneyness = K/F_T
 sub _check_termstructure_for_calendar_arbitrage {
     my $surface = shift;
-    my @sorted_expiries =
-      sort { $a <=> $b } @{ $surface->original_term_for_smile };
+    my @sorted_expiries = sort { $a <=> $b } @{$surface->original_term_for_smile};
 
     my $cloned_surface = $surface->clone;
     my $surface_type   = $surface->type;
@@ -548,39 +470,33 @@ sub _check_termstructure_for_calendar_arbitrage {
     my $error_maturity = 0;
     my $error_strike   = 0;
     my $message;
-    for ( my $i = 1 ; $i < scalar(@sorted_expiries) ; $i++ ) {
-        my $smile = $surface->surface->{ $sorted_expiries[$i] }->{smile};
-        my $smile_prev =
-          $surface->surface->{ $sorted_expiries[ $i - 1 ] }->{smile};
+    for (my $i = 1; $i < scalar(@sorted_expiries); $i++) {
+        my $smile      = $surface->surface->{$sorted_expiries[$i]}->{smile};
+        my $smile_prev = $surface->surface->{$sorted_expiries[$i - 1]}->{smile};
 
         my @volatility_level = sort { $a <=> $b } keys %{$smile};
-        if ( $surface_type eq 'delta' ) {
+        if ($surface_type eq 'delta') {
             my $vol      = $smile->{50};
             my $vol_prev = $smile_prev->{50};
             my $T        = $sorted_expiries[$i];
-            my $T_prev   = $sorted_expiries[ $i - 1 ];
-            if ( ( ( ($vol)**2 ) * $T ) < ( ( $vol_prev**2 ) * $T_prev ) ) {
+            my $T_prev   = $sorted_expiries[$i - 1];
+            if (((($vol)**2) * $T) < (($vol_prev**2) * $T_prev)) {
                 $flag           = -1;
-                $error_maturity = $sorted_expiries[ $i - 1 ];
+                $error_maturity = $sorted_expiries[$i - 1];
                 $error_strike   = 50;
-                $message =
-                    'Variance negative for maturity '
-                  . $error_maturity
-                  . ' for ATM';
+                $message        = 'Variance negative for maturity ' . $error_maturity . ' for ATM';
                 last;
             }
-        }
-        else {
+        } else {
             my $atm_level = 100;
             my $atm_index = indexes { $_ == $atm_level } @volatility_level;
 
             my $symbol = $surface->underlying->symbol;
         }
     }
-
 # This check is ad-hoc, just to ensure there are no huge outliers, or calendar arbitrages.
-    if ( $flag == -1 ) {
-        $surface->set_smile_flag( $error_maturity, $message );
+    if ($flag == -1) {
+        $surface->set_smile_flag($error_maturity, $message);
     }
 
     return 1;
