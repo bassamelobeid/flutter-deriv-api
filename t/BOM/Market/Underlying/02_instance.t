@@ -178,12 +178,12 @@ my $looks_like_currency = qr/^[A-Z]{3}/;
 # and _build methods are not called.
 subtest 'what happens to an undefined symbol name' => sub {
     my $symbol_undefined;
-    warning_like sub { $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol'); }, qr/Unknown symbol/, 
-      'Correct warning';
+    $symbol_undefined = BOM::Market::Underlying->new('an_undefined_symbol');
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
     is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
-    is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market');
+    warning_like sub { is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market'), qr/Unknown symbol/, 
+    'Correct warning';
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
     is($symbol_undefined->display_decimals, 4,          'an undefined symbol has correct display_decimals');
