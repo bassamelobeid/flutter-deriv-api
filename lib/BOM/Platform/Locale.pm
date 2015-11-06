@@ -25,7 +25,7 @@ sub getLanguageOptions {
     return $options;
 }
 
-sub get_secret_question {
+sub get_secret_questions {
     return (
         'Mother\'s maiden name' => localize('Mother\'s maiden name'),
         'Name of your pet'      => localize('Name of your pet'),
