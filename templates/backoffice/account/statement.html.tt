@@ -42,13 +42,13 @@
                 [% IF transaction.action_type == 'sell' %]
                         <div class="grd-grid-4">
                                 Sell<br />
-                                [% contract_details(transaction, currency, 1).description %]
+                                [% contract_details(transaction, currency, loginid, 1).description %]
                         </div>
                         <div class="grd-grid-1 right-aligned"></div>
                         <div class="grd-grid-1 right-aligned">[% currency %] [% to_monetary_number_format(transaction.amount) %]</div>
                 [% ELSE %]
                         <div class="grd-grid-4">
-                                [% details = contract_details(transaction, currency, 1) %]
+                                [% details = contract_details(transaction, currency, loginid, 1) %]
                                 Buy<br />[% details.longcode %]
                                 [% details.analyse_link %]
                         </div>
