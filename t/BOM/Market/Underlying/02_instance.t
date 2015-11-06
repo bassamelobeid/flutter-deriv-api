@@ -182,7 +182,7 @@ subtest 'what happens to an undefined symbol name' => sub {
     is($symbol_undefined->display_name,            'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct display_name');
     is($symbol_undefined->translated_display_name, 'AN_UNDEFINED_SYMBOL', 'an undefined symbol has correct translated_display_name');
 
-    warning_like sub { is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market'), qr/Unknown symbol/, 
+    warning_like sub { is($symbol_undefined->market->name,     'config',   'an undefined symbol has correct market'); }, qr/Unknown symbol/, 
     'Correct warning';
     is($symbol_undefined->instrument_type,  'config',   'an undefined symbol has correct instrument_type');
     is($symbol_undefined->feed_license,     'realtime', 'an undefined symbol has correct feed_license');
