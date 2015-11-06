@@ -1021,7 +1021,7 @@ sub _market_maturities_interpolation_function {
     my $tau1       = $underlying->weighted_days_in_period($dates{T1}, $dates{T}) / 365;
     my $tau2       = $underlying->weighted_days_in_period($dates{T1}, $dates{T2}) / 365;
 
-    warn('Error in volsurface['
+    warn(     'Error in volsurface['
             . $self->recorded_date->datetime
             . '] for symbol['
             . $underlying->symbol
@@ -1097,7 +1097,7 @@ sub get_volatility {
     # Error checks:
     if (not $vol) {
         my $emsg = "Could not interpolate volatility for " . $self->symbol . " for [$days] days and [$sought_point] delta.";
-        warn($emsg); # I think we are catching the error below for friendly output
+        warn($emsg);    # I think we are catching the error below for friendly output
         die "PricingError";
     } elsif ($vol < 0) {
         my $emsg =

@@ -98,9 +98,9 @@ sub _build_surfaces_from_file {
 }
 
 sub run {
-    my $self = shift;
+    my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my %valid_synthetic    = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => 'indices',
         submarket         => 'smart_index',
         contract_category => 'ANY',

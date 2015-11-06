@@ -124,7 +124,7 @@ sub _check_volatility_jump {
             my $diff            = abs($new_vol - $existing_vol);
             my $percentage_diff = $diff / $existing_vol * 100;
             if ($diff > 0.03 and $percentage_diff > 100) {
-                croak('Big difference found on term['
+                croak(    'Big difference found on term['
                         . $days
                         . '] for point ['
                         . $sought_point
@@ -222,9 +222,8 @@ sub _admissible_check {
                 }
 
                 if ($surface_type eq 'moneyness' and $slope >= 0.0) {
-                    croak(
-                        "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level,
-                        );
+                    croak("Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level,
+                    );
                 }
             }
 
@@ -387,7 +386,7 @@ sub _check_structure {
 
             if ($type eq 'delta') {
                 if (not @volatility_level ~~ @vol_levels_for_smile) {
-                    die('Deltas['
+                    die(      'Deltas['
                             . join(',', @vol_levels_for_smile)
                             . "] for maturity[$day], underlying["
                             . $system_symbol
@@ -437,7 +436,7 @@ sub check_smile {
     foreach my $vol_level (keys %{$smile}) {
         my $vol = $smile->{$vol_level};
         if ($vol !~ /^\d?\.?\d*$/ or $vol > 5) {
-            die('Invalid smile volatility for '
+            die(      'Invalid smile volatility for '
                     . $day
                     . ' days at volatility level (either delta or moneyness level) '
                     . $vol_level . ' ('

@@ -181,7 +181,7 @@ sub _passes_sanity_check {
 sub verify_ohlc_update {
     my $self = shift;
 
-    my $now    = Date::Utility->new;
+    my $now = Date::Utility->new;
 
     if ($self->is_a_weekend) {
         # Skipping OHLC update verification on weekends
@@ -219,7 +219,7 @@ sub verify_ohlc_update {
         if (my @filelines = read_file($db_file)) {
             $self->_check_file($underlying, @filelines);
         } else {
-            die ('Could not open file: ' . $db_file);
+            die('Could not open file: ' . $db_file);
         }
 
     }
@@ -262,12 +262,10 @@ sub _check_file {
 
                 if ($prevclose) {
                     if ($low > $prevclose * (1 + $suspicious_move)) {
-                        warn(
-                            "--Warning: Suspicious : $underlying_symbol $date low ($low) > previousclose ($prevclose) + $p_suspicious_move\%");
+                        warn("--Warning: Suspicious : $underlying_symbol $date low ($low) > previousclose ($prevclose) + $p_suspicious_move\%");
                     }
                     if ($high < $prevclose * (1 - $suspicious_move)) {
-                        warn(
-                            "--Warning: Suspicious : $underlying_symbol $date high ($high) < previousclose ($prevclose) - $p_suspicious_move\%");
+                        warn("--Warning: Suspicious : $underlying_symbol $date high ($high) < previousclose ($prevclose) - $p_suspicious_move\%");
                     }
                 }
 
@@ -294,8 +292,7 @@ sub _check_file {
 
                         # If days between is too big, there should also be a trading day in between
                         if ($days_between > 10) {
-                            warn(
-                                "--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (days between is: $days_between).");
+                            warn("--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (days between is: $days_between).");
                         }
                     }
                 }
