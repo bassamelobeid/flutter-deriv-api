@@ -8,7 +8,7 @@ CREATE TABLE feed.realtime_ohlc (
     high DOUBLE PRECISION NOT NULL,
     low DOUBLE PRECISION NOT NULL,
     close DOUBLE PRECISION NOT NULL,
-    PRIMARY KEY (type,underlying),
+    PRIMARY KEY (type,underlying)
 );
 
 
