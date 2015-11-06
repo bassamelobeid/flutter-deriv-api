@@ -70,13 +70,11 @@ sub _build_symbols_to_update {
 
     my @symbols_to_update;
     if ($market eq 'indices') {
-        @symbols_to_update =
-            grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+        @symbols_to_update = grep { not $skip_list{$_} and $_ !~ /^SYN/ } BOM::Market::UnderlyingDB->instance->get_symbols_for(
             market            => 'indices',
             contract_category => 'ANY',
             exclude_disabled  => 1
-            );
-
+        );
         # forcing it here since we don't have offerings for the index.
         push @symbols_to_update, 'FTSE';
     } else {
@@ -102,17 +100,14 @@ sub _build_surfaces_from_file {
 sub run {
     my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %valid_synthetic =
-        map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my %valid_synthetic    = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => 'indices',
         submarket         => 'smart_index',
         contract_category => 'ANY',
         exclude_disabled  => 1
-        );
+    );
     foreach my $symbol (@{$self->symbols_to_update}) {
-        if (    not $valid_synthetic{$symbol}
-            and not $surfaces_from_file->{$symbol})
-        {
+        if (not $valid_synthetic{$symbol} and not $surfaces_from_file->{$symbol}) {
             $self->report->{$symbol} = {
                 success => 0,
                 reason  => 'Surface Information missing from datasource for ' . $symbol,

@@ -88,18 +88,14 @@ sub _check_identical_surface {
 
     # we return if it is not identical
     return 1 if $#existing_terms != $#new_terms;
-    return 1
-        if grep { $existing_terms[$_] != $new_terms[$_] } (0 .. $#existing_terms);
+    return 1 if grep { $existing_terms[$_] != $new_terms[$_] } (0 .. $#existing_terms);
 
     foreach my $term (@existing_terms) {
         foreach my $point (@points) {
-            return 1
-                if $existing->surface->{$term}->{smile}->{$point} != $surface->surface->{$term}->{smile}->{$point};
+            return 1 if $existing->surface->{$term}->{smile}->{$point} != $surface->surface->{$term}->{smile}->{$point};
         }
     }
-    if (time - $existing->recorded_date->epoch > 15000
-        and not $surface->{underlying}->quanto_only)
-    {
+    if (time - $existing->recorded_date->epoch > 15000 and not $surface->{underlying}->quanto_only) {
         croak('Surface data has not changed since last update [' . $existing->recorded_date->epoch . '].');
     }
     return;
@@ -147,23 +143,17 @@ sub _check_volatility_jump {
 sub _admissible_check {
     my $surface = shift;
 
-    my $underlying   = $surface->underlying;
-    my $exchange     = $underlying->exchange;
-    my $surface_type = $surface->type;
-    my $S =
-        ($surface_type eq 'delta')
-        ? $underlying->spot
-        : $surface->spot_reference;
+    my $underlying       = $surface->underlying;
+    my $exchange         = $underlying->exchange;
+    my $surface_type     = $surface->type;
+    my $S                = ($surface_type eq 'delta') ? $underlying->spot : $surface->spot_reference;
     my $premium_adjusted = $underlying->{market_convention}->{delta_premium_adjusted};
     my $now              = Date::Utility->new;
 
     my $utils = BOM::MarketData::VolSurface::Utils->new;
     foreach my $day (@{$surface->_days_with_smiles}) {
         my $date_expiry = Date::Utility->new(time + $day * 86400);
-        $date_expiry =
-              $exchange->trades_on($date_expiry)
-            ? $date_expiry
-            : $exchange->trade_date_after($date_expiry);
+        $date_expiry = $exchange->trades_on($date_expiry) ? $date_expiry : $exchange->trade_date_after($date_expiry);
         my $adjustment;
         if ($underlying->market->prefer_discrete_dividend) {
             $adjustment = $underlying->dividend_adjustments_for_period({
@@ -173,15 +163,11 @@ sub _admissible_check {
             $S += $adjustment->{spot};
         }
         my $atid = $utils->effective_date_for($date_expiry)->days_between($utils->effective_date_for($now));
-
         # If intraday or not FX, then use the exact duration with fractions of a day.
         croak("Invalid tenor[$atid] on surface") if ($atid == 0);
-        my $t = $atid / 365;
-        my $r = $underlying->interest_rate_for($t);
-        my $q =
-            ($underlying->market->prefer_discrete_dividend)
-            ? 0
-            : $underlying->dividend_rate_for($t);
+        my $t     = $atid / 365;
+        my $r     = $underlying->interest_rate_for($t);
+        my $q     = ($underlying->market->prefer_discrete_dividend) ? 0 : $underlying->dividend_rate_for($t);
         my $smile = $surface->surface->{$day}->{smile};
 
         my @volatility_level = sort { $a <=> $b } keys %{$smile};
@@ -193,7 +179,6 @@ sub _admissible_check {
         foreach my $vol_level (@volatility_level) {
             my $vol = $smile->{$vol_level};
             my $barrier;
-
             # Temporarily get the Call strike via the Put side of the algorithm,
             # as it seems not to go crazy at the extremities. Should give the same barrier.
             if ($surface_type eq 'delta') {
@@ -226,12 +211,11 @@ sub _admissible_check {
             my $slope;
 
             if (exists $prev{prob}) {
-                $slope =
-                    ($prob - $prev{prob}) / ($vol_level - $prev{vol_level});
+                $slope = ($prob - $prev{prob}) / ($vol_level - $prev{vol_level});
 
-# Admissible Check 1.
-# For delta surface, the strike(prob) is decreasing(increasing) across delta point, hence the slope is positive
-# For moneyness surface, the strike(prob) is increasing(decreasing) across moneyness point, hence the slope is negative
+                # Admissible Check 1.
+                # For delta surface, the strike(prob) is decreasing(increasing) across delta point, hence the slope is positive
+                # For moneyness surface, the strike(prob) is increasing(decreasing) across moneyness point, hence the slope is negative
                 if ($surface_type eq 'delta' and $slope <= 0) {
                     croak(
                         "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level);
@@ -345,15 +329,13 @@ sub _check_structure {
     # Somehow I do not know why there is a limit of term on delta surface, but
     # for moneyness we might need at least up to 2 years to get the spread.
     my $type = $surface->type;
-    my ($max_term, $diff_smile_point) =
-        $type eq 'delta' ? (380, 30) : (750, 100);
+    my ($max_term, $diff_smile_point) = $type eq 'delta' ? (380, 30) : (750, 100);
 
     my $extra_allowed = BOM::Platform::Runtime->instance->app_config->quants->market_data->extra_vol_diff_by_delta || 0;
     my $max_vol_change_by_delta = 0.4 + $extra_allowed;
 
     my @days = keys %{$surface_hashref};
-    croak('Must be at least two maturities on vol surface.')
-        if scalar @days < 2;
+    croak('Must be at least two maturities on vol surface.') if scalar @days < 2;
 
     foreach my $day (@days) {
         if ($day !~ /^\d+$/) {
@@ -479,8 +461,7 @@ sub check_smile {
 # Forward Moneyness = K/F_T
 sub _check_termstructure_for_calendar_arbitrage {
     my $surface = shift;
-    my @sorted_expiries =
-        sort { $a <=> $b } @{$surface->original_term_for_smile};
+    my @sorted_expiries = sort { $a <=> $b } @{$surface->original_term_for_smile};
 
     my $cloned_surface = $surface->clone;
     my $surface_type   = $surface->type;
@@ -489,9 +470,8 @@ sub _check_termstructure_for_calendar_arbitrage {
     my $error_strike   = 0;
     my $message;
     for (my $i = 1; $i < scalar(@sorted_expiries); $i++) {
-        my $smile = $surface->surface->{$sorted_expiries[$i]}->{smile};
-        my $smile_prev =
-            $surface->surface->{$sorted_expiries[$i - 1]}->{smile};
+        my $smile      = $surface->surface->{$sorted_expiries[$i]}->{smile};
+        my $smile_prev = $surface->surface->{$sorted_expiries[$i - 1]}->{smile};
 
         my @volatility_level = sort { $a <=> $b } keys %{$smile};
         if ($surface_type eq 'delta') {
@@ -513,7 +493,6 @@ sub _check_termstructure_for_calendar_arbitrage {
             my $symbol = $surface->underlying->symbol;
         }
     }
-
 # This check is ad-hoc, just to ensure there are no huge outliers, or calendar arbitrages.
     if ($flag == -1) {
         $surface->set_smile_flag($error_maturity, $message);

@@ -83,21 +83,12 @@ sub run {
             } else {
                 my $symbol = $underlying->symbol;
                 $ohlc_data->{item} = $symbol;
-                my $date =
-                      $data->{LAST_UPDATE_DATE_EOD}
-                    ? $data->{LAST_UPDATE_DATE_EOD}
-                    : $data->{PX_YEST_DT};
+                my $date = $data->{LAST_UPDATE_DATE_EOD} ? $data->{LAST_UPDATE_DATE_EOD} : $data->{PX_YEST_DT};
                 $date =~ s/^0//;
-                my $open =
-                    $data->{PX_OPEN} ? $data->{PX_OPEN} : $data->{PX_YEST_OPEN};
-                my $high =
-                    $data->{PX_HIGH} ? $data->{PX_HIGH} : $data->{PX_YEST_HIGH};
-                my $low =
-                    $data->{PX_LOW} ? $data->{PX_LOW} : $data->{PX_YEST_LOW};
-                my $close =
-                      $data->{PX_LAST_EOD}
-                    ? $data->{PX_LAST_EOD}
-                    : $data->{PX_YEST_CLOSE};
+                my $open  = $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN};
+                my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
+                my $low   = $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW};
+                my $close = $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE};
 
                 my $market_db_file_path = $self->directory_to_save . '/' . $symbol . '.db';
                 my $line_to_append      = "$date $open $high $low $close\n";
@@ -130,10 +121,7 @@ sub _passes_sanity_check {
 
     my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
     my $symbol     = $underlying->symbol;
-    my $date =
-          $data->{LAST_UPDATE_DATE_EOD}
-        ? $data->{LAST_UPDATE_DATE_EOD}
-        : $data->{PX_YEST_DT};
+    my $date       = $data->{LAST_UPDATE_DATE_EOD} ? $data->{LAST_UPDATE_DATE_EOD} : $data->{PX_YEST_DT};
     $date =~ s/^0//;
     my $now   = Date::Utility->new;
     my $today = $now->date_ddmmmyy;
@@ -143,16 +131,14 @@ sub _passes_sanity_check {
     }
 
     my $divisor = $underlying->divisor;
-    $data->{PX_OPEN} ? $data->{PX_OPEN} : $data->{PX_YEST_OPEN} /= $divisor;
-    $data->{PX_HIGH} ? $data->{PX_HIGH} : $data->{PX_YEST_HIGH} /= $divisor;
-    $data->{PX_LOW}  ? $data->{PX_LOW}  : $data->{PX_YEST_LOW}  /= $divisor;
-    $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE} /=
-        $divisor;
-    my $open = $data->{PX_OPEN} ? $data->{PX_OPEN} : $data->{PX_YEST_OPEN};
-    my $high = $data->{PX_HIGH} ? $data->{PX_HIGH} : $data->{PX_YEST_HIGH};
-    my $low  = $data->{PX_LOW}  ? $data->{PX_LOW}  : $data->{PX_YEST_LOW};
-    my $close =
-        $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE};
+    $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN}  /= $divisor;
+    $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH}  /= $divisor;
+    $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW}   /= $divisor;
+    $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE} /= $divisor;
+    my $open  = $data->{PX_OPEN}     ? $data->{PX_OPEN}     : $data->{PX_YEST_OPEN};
+    my $high  = $data->{PX_HIGH}     ? $data->{PX_HIGH}     : $data->{PX_YEST_HIGH};
+    my $low   = $data->{PX_LOW}      ? $data->{PX_LOW}      : $data->{PX_YEST_LOW};
+    my $close = $data->{PX_LAST_EOD} ? $data->{PX_LAST_EOD} : $data->{PX_YEST_CLOSE};
 
     my $suspicious_move   = $underlying->market->suspicious_move;
     my $p_suspicious_move = $suspicious_move * 100;
@@ -198,12 +184,10 @@ sub verify_ohlc_update {
     my $now = Date::Utility->new;
 
     if ($self->is_a_weekend) {
-
         # Skipping OHLC update verification on weekends
         return;
     }
-    my @all_markets =
-        map { $_->name } BOM::Market::Registry->instance->display_markets;
+    my @all_markets = map { $_->name } BOM::Market::Registry->instance->display_markets;
 
     my @underlying_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => \@all_markets,
@@ -222,13 +206,11 @@ sub verify_ohlc_update {
             next;
         }
 
-        next
-            if (-M $db_file and -M $db_file >= 20);    # do only those that were modified in last 20 days (others are junk/tests)
+        next if (-M $db_file and -M $db_file >= 20);    # do only those that were modified in last 20 days (others are junk/tests)
 
         my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 
         if ($underlying->has_holiday_on($now)) {
-
             # skipping on a holiday
             next;
         }
@@ -287,13 +269,9 @@ sub _check_file {
                     }
                 }
 
-                if ($high < $low) {
-                    warn("--ERROR : $underlying_symbol $date high ($high) < low ($low) !!");
-                } elsif ($close < $low) {
-                    warn("--ERROR : $underlying_symbol $date close ($close) < low ($low) !!");
-                } elsif ($close > $high) {
-                    warn("--ERROR : $underlying_symbol $date close ($close) > high ($high) !!");
-                }
+                if    ($high < $low)   { warn("--ERROR : $underlying_symbol $date high ($high) < low ($low) !!"); }
+                elsif ($close < $low)  { warn("--ERROR : $underlying_symbol $date close ($close) < low ($low) !!"); }
+                elsif ($close > $high) { warn("--ERROR : $underlying_symbol $date close ($close) > high ($high) !!"); }
 
                 if ($prevwhen and $when->is_same_as($prevwhen)) {
                     warn("--ERROR : $underlying_symbol $date appears twice");
@@ -305,7 +283,7 @@ sub _check_file {
                     } else {
                         my $days_between = $when->days_between($prevwhen);
 
-# If days between is negative it would mean that the dates are not ordered properly
+                        # If days between is negative it would mean that the dates are not ordered properly
                         if ($days_between < 0) {
                             warn(
                                 "--Warning: $underlying_symbol DATES are out of order date $prevdate is after $date (days between is: $days_between)."
@@ -327,11 +305,8 @@ sub _check_file {
 
     #check yesterday is in it
     my $yesterday = Date::Utility->new($now->epoch - 86400);
-
     #Sunday or Monday, or Saturday (db won't update until Monday's first tick)
-    if (   $now->is_a_weekend
-        or $now->day_of_week == 1 and $date ne $now->date_ddmmmyy and $date ne $yesterday->date_ddmmmyy)
-    {
+    if ($now->is_a_weekend or $now->day_of_week == 1 and $date ne $now->date_ddmmmyy and $date ne $yesterday->date_ddmmmyy) {
         # Make sure we traded yesterday
         if ($underlying->trades_on($yesterday)) {
             warn("--$underlying_symbol ERROR can't find yesterday's data (" . $yesterday->date_ddmmmyy . ")");

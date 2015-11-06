@@ -165,10 +165,7 @@ sub _build_cutoff {
     my $underlying = $self->underlying;
     my $when       = $self->for_date || Date::Utility->today;
     my $util       = BOM::MarketData::VolSurface::Utils->new;
-    my $cutoff_str =
-        ($self->_new_surface)
-        ? $util->default_bloomberg_cutoff($underlying)
-        : $util->default_pricing_cutoff($underlying);
+    my $cutoff_str = ($self->_new_surface) ? $util->default_bloomberg_cutoff($underlying) : $util->default_pricing_cutoff($underlying);
 
     return BOM::MarketData::VolSurface::Cutoff->new($cutoff_str);
 }
@@ -196,8 +193,7 @@ sub _build_smile_points {
     # points, the Validator is going to give you trouble!
     my $surface = $self->surface;
 
-    my $suitable_day =
-        first { exists $surface->{$_}->{smile} } @{$self->term_by_day};
+    my $suitable_day = first { exists $surface->{$_}->{smile} } @{$self->term_by_day};
     my @smile_points = ();
     if ($suitable_day) {
         @smile_points =
@@ -221,8 +217,7 @@ sub _build_spread_points {
     # points, the Validator is going to give you trouble!
     my $surface = $self->surface;
 
-    my $suitable_day =
-        first { exists $surface->{$_}->{vol_spread} } keys %{$surface};
+    my $suitable_day = first { exists $surface->{$_}->{vol_spread} } keys %{$surface};
 
     my @spread_points = ();
     if ($suitable_day) {
@@ -231,8 +226,7 @@ sub _build_spread_points {
             sort { $a <=> $b } keys %{$surface->{$suitable_day}->{vol_spread}};
     } else {
 
-        $suitable_day =
-            first { exists $surface->{$_}->{atm_spread} } keys %{$surface};
+        $suitable_day = first { exists $surface->{$_}->{atm_spread} } keys %{$surface};
         push @spread_points, 'atm_spread';
     }
 
@@ -321,8 +315,7 @@ sub _build_original_term {
                 and not defined $surface->{$days[$end_index]}->{atm_spread})
             {
                 $spread_type = 'vol_spread';
-                $surface->{$days[$end_index]}->{vol_spread} =
-                    $self->default_vol_spread;
+                $surface->{$days[$end_index]}->{vol_spread} = $self->default_vol_spread;
                 push @vol_spreads, $days[$end_index];
 
             }
@@ -729,10 +722,8 @@ sub _interpolate_smile_spread {
             $interpolation_first_point  = $surface->{$first_point}->{atm_spread};
             $interpolation_second_point = $surface->{$second_point}->{atm_spread};
         } else {
-            $interpolation_first_point =
-                $surface->{$first_point}->{vol_spread}->{$spread_point};
-            $interpolation_second_point =
-                $surface->{$second_point}->{vol_spread}->{$spread_point};
+            $interpolation_first_point  = $surface->{$first_point}->{vol_spread}->{$spread_point};
+            $interpolation_second_point = $surface->{$second_point}->{vol_spread}->{$spread_point};
         }
 
         my $interp = Math::Function::Interpolator->new(
@@ -745,8 +736,7 @@ sub _interpolate_smile_spread {
 
             $interpolated_smile->{atm_spread} = $interp->linear($seek);
         } else {
-            $interpolated_smile->{vol_spread}->{$spread_point} =
-                $interp->linear($seek);
+            $interpolated_smile->{vol_spread}->{$spread_point} = $interp->linear($seek);
         }
 
     }
@@ -798,10 +788,8 @@ sub _extrapolate_smile_spread_down {
             $extrapolation_first_point  = $surface->{$first_point}->{atm_spread};
             $extrapolation_second_point = $surface->{$second_point}->{atm_spread};
         } else {
-            $extrapolation_first_point =
-                $surface->{$first_point}->{vol_spread}->{$spread_point};
-            $extrapolation_second_point =
-                $surface->{$second_point}->{vol_spread}->{$spread_point};
+            $extrapolation_first_point  = $surface->{$first_point}->{vol_spread}->{$spread_point};
+            $extrapolation_second_point = $surface->{$second_point}->{vol_spread}->{$spread_point};
         }
 
         my $interp = Math::Function::Interpolator->new(
@@ -815,8 +803,7 @@ sub _extrapolate_smile_spread_down {
 
             $extrapolated_smile->{atm_spread} = $interp->linear($seek);
         } else {
-            $extrapolated_smile->{vol_spread}->{$spread_point} =
-                $interp->linear($seek);
+            $extrapolated_smile->{vol_spread}->{$spread_point} = $interp->linear($seek);
         }
 
     }
@@ -881,10 +868,8 @@ sub _interpolate_atm_spread {
         $interpolation_first_point  = $surface->{$first}->{atm_spread};
         $interpolation_second_point = $surface->{$second}->{atm_spread};
     } else {
-        $interpolation_first_point =
-            $surface->{$first}->{vol_spread}->{$atm_spread_point};
-        $interpolation_second_point =
-            $surface->{$second}->{vol_spread}->{$atm_spread_point};
+        $interpolation_first_point  = $surface->{$first}->{vol_spread}->{$atm_spread_point};
+        $interpolation_second_point = $surface->{$second}->{vol_spread}->{$atm_spread_point};
     }
 
     my $interp = Math::Function::Interpolator->new(
@@ -899,8 +884,7 @@ sub _interpolate_atm_spread {
     if ($atm_spread_point eq 'atm_spread') {
         $interpolated_spread->{$atm_spread_point} = $interp->linear($seek);
     } else {
-        $interpolated_spread->{'vol_spread'}->{$atm_spread_point} =
-            $interp->linear($seek);
+        $interpolated_spread->{'vol_spread'}->{$atm_spread_point} = $interp->linear($seek);
     }
 
     return $interpolated_spread;
@@ -925,8 +909,7 @@ sub _extrapolate_atm_spread_up {
     if ($atm_spread_point eq 'atm_spread') {
         $extrapolation->{'atm_spread'} = $self->surface->{$day}->{atm_spread};
     } else {
-        $extrapolation->{vol_spread}->{$atm_spread_point} =
-            $self->surface->{$day}->{vol_spread}->{$atm_spread_point};
+        $extrapolation->{vol_spread}->{$atm_spread_point} = $self->surface->{$day}->{vol_spread}->{$atm_spread_point};
     }
 
     return $extrapolation;
@@ -947,10 +930,8 @@ sub _extrapolate_atm_spread_down {
         $extrapolation_first_point  = $surface->{$first_point}->{atm_spread};
         $extrapolation_second_point = $surface->{$second_point}->{atm_spread};
     } else {
-        $extrapolation_first_point =
-            $surface->{$first_point}->{vol_spread}->{$atm_spread_point};
-        $extrapolation_second_point =
-            $surface->{$second_point}->{vol_spread}->{$atm_spread_point};
+        $extrapolation_first_point  = $surface->{$first_point}->{vol_spread}->{$atm_spread_point};
+        $extrapolation_second_point = $surface->{$second_point}->{vol_spread}->{$atm_spread_point};
     }
 
     my $interp = Math::Function::Interpolator->new(
@@ -963,8 +944,7 @@ sub _extrapolate_atm_spread_down {
 
         $extrapolated_smile->{atm_spread} = $interp->linear($seek);
     } else {
-        $extrapolated_smile->{vol_spread}->{$atm_spread_point} =
-            $interp->linear($seek);
+        $extrapolated_smile->{vol_spread}->{$atm_spread_point} = $interp->linear($seek);
     }
 
     return $extrapolated_smile;
@@ -1038,10 +1018,8 @@ sub _market_maturities_interpolation_function {
     );
 
     my $underlying = $self->underlying;
-    my $tau1 =
-        $underlying->weighted_days_in_period($dates{T1}, $dates{T}) / 365;
-    my $tau2 =
-        $underlying->weighted_days_in_period($dates{T1}, $dates{T2}) / 365;
+    my $tau1       = $underlying->weighted_days_in_period($dates{T1}, $dates{T}) / 365;
+    my $tau2       = $underlying->weighted_days_in_period($dates{T1}, $dates{T2}) / 365;
 
     warn(     'Error in volsurface['
             . $self->recorded_date->datetime
@@ -1250,8 +1228,7 @@ sub _interpolate_smile {
     foreach my $smile_point (@{$self->smile_points}) {
         my $first_iv  = $surface->{$first_point}->{smile}->{$smile_point};
         my $second_iv = $surface->{$second_point}->{smile}->{$smile_point};
-        $interpolated_smile->{smile}->{$smile_point} =
-            $interpolate_func->($first_iv, $second_iv);
+        $interpolated_smile->{smile}->{$smile_point} = $interpolate_func->($first_iv, $second_iv);
     }
 
     return $interpolated_smile->{smile};
