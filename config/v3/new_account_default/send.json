@@ -12,7 +12,7 @@
     },
     "salutation" : {
       "enum": ["Mr", "Mrs", "Ms", "Miss", "Dr", "Prof"],
-      "description": "Salutation, accepts any value from enum list.",
+      "description": "Accept any value from enum list.",
       "required": "1"
     },
     "first_name": {
@@ -41,41 +41,41 @@
     },
     "address_line_1": {
       "type" : "string",
-      "pattern": "^.+{1,70}$",
-      "description": "Address line 1, max length of 70 characters.",
+      "pattern": "^.{1,70}$",
+      "description": "Address line 1, within 70 characters.",
       "required": "1"
     },
     "address_line_2": {
       "type" : "string",
-      "pattern": "^.+{0,70}$",
-      "description": "Optional field for address line 2, max length of 70 characters."
+      "pattern": "^.{0,70}$",
+      "description": "Optional field for address line 2, within 70 characters."
     },
     "address_state": {
       "type" : "string",
-      "pattern": "^.+{1,35}$",
+      "pattern": "^.{1,35}$",
       "description": "Address state, possible value get from states_list call.",
       "required": "1"
     },
     "address_postcode": {
       "type" : "string",
       "pattern": "^[^\+]{0,20}$",
-      "description": "address postcode",
-      "required": "1"
+      "description": "Optional field for postcode, within 20 characters and may not contain '+'."
     },
     "phone": {
       "type" : "string",
-      "description": "address postcode",
-      "pattern": "^\\w+$",
+      "pattern": "^\+?[0-9\\s]{6,35}$",
+      "description": "Phone within 6-35 digits, allowing '+' in front, numbers or space.",
       "required": "1"
     },
     "secret_question": {
       "enum": [ "Mother's maiden name", "Name of your pet", "Name of first love", "Memorable town/city", "Memorable date", "Favourite dish", "Brand of first car", "Favourite artist" ],
-      "description": "secret question",
+      "description": "Accept any value from enum list.",
       "required": "1"
     },
     "secret_answer": {
       "type": "string",
-      "description": "answer to secret question",
+      "pattern": "^.{4,50}$",
+      "description": "Answer to secret question, within 4-50 characters.",
       "required": "1"
     },
     "passthrough": {
