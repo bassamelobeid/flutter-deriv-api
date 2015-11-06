@@ -30,7 +30,7 @@ use BOM::Database::ClientDB;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 use Text::CSV_XS;
-use BOM::System::Types qw(bom_time_interval);
+use BOM::System::Types;
 use Time::Duration::Concise::Localize;
 
 has 'min_contract_length' => (
@@ -172,7 +172,7 @@ sub generate {
     my $sender = Mail::Sender->new({
         smtp    => 'localhost',
         from    => 'Risk reporting <risk-reporting@binary.com>',
-        to      => 'Quants <quants-market-data@binary.com>',
+        to      => '<x-risk@binary.com>',
         subject => $subject,
     });
     $sender->MailFile({
@@ -215,7 +215,7 @@ sub _calculate_grid_for_max_exposure {
                 produce_contract(
                     +{
                         %params,
-                        vol_at_strike => $vol,
+                        pricing_vol   => $vol,
                         current_spot  => $spot
                     }
                     )->bid_price,
