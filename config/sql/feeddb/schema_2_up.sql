@@ -203,7 +203,7 @@ BEGIN
     PERFORM update_realtime_ohlc('minute', NEW.underlying,NEW.ts, NEW.spot);
     PERFORM update_realtime_ohlc('hour', NEW.underlying,NEW.ts, NEW.spot);
     PERFORM update_realtime_ohlc('day', NEW.underlying,NEW.ts, NEW.spot);
-    PERFORM pg_notify('watchers_tick_' || NEW.underlying, NEW.underlying || ',' || NEW.ts || ',' || NEW."open" || ',' || NEW.high || ',' || NEW.low || ',' || NEW."close" );
+    PERFORM pg_notify('ohlc_watchers', 'tick,' || NEW.underlying || ',' || NEW.ts || ',' || NEW."open" || ',' || NEW.high || ',' || NEW.low || ',' || NEW."close" );
 
 
     RETURN NULL;

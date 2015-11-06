@@ -37,7 +37,7 @@ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION notify_realtime_ohlc_trigger() RETURNS trigger AS $$
 DECLARE
 BEGIN
-  PERFORM pg_notify('watchers_ohlc_' || NEW.type || '_' || NEW.underlying, NEW.underlying || ',' || NEW.ts || ',' || NEW."open" || ',' || NEW.high || ',' || NEW.low || ',' || NEW."close" );
+  PERFORM pg_notify('ohlc_watchers' , NEW.type || ',' || NEW.underlying || ',' || NEW.ts || ',' || NEW."open" || ',' || NEW.high || ',' || NEW.low || ',' || NEW."close" );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
