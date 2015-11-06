@@ -8,6 +8,7 @@
 [% END %]
 </select>
 </td></tr>
+<tr><td>Inform triage:</td><td><input type="checkbox" name="inform_triage" value="1"></td></tr>
 <tr><td>Description:</td><td><textarea rows=10 cols=135 name="desc"></textarea></td></tr>
 <tr><td>Documentation:</td><td><input type="file" name="query_doc"></td></tr>
 <tr><td colspan=2 align="center">
