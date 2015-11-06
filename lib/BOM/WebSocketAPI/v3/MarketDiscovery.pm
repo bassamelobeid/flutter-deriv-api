@@ -5,7 +5,6 @@ use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
-use Mojo::Util qw(md5_sum steady_time);
 use Time::HiRes;
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::System;
@@ -184,14 +183,9 @@ sub ticks {
     }
 
     if ($ul->feed_license eq 'realtime') {
-        my $ws_id = $c->tx->connection;
-        my $this_c = ($c->{ws}{$ws_id} //= {});
+        my ($dictator_client, $id);
 
-        my ($id, $dictator_client);
-        do { $id = md5_sum 'tick' . steady_time . rand 999 } while $this_c->{$id};
-
-        $this_c->{$id} = {
-            started => time,
+        my $data = {
             type    => 'ticks',
             cleanup => sub {
                 my $reason = shift;
@@ -208,6 +202,8 @@ sub ticks {
                             })}) if $reason;
             },
         };
+
+        $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
 
         $dictator_client = BOM::Feed::Dictator::Client->new(
             symbol     => $symbol,
@@ -242,8 +238,6 @@ sub ticks {
                                     quote => $_->{quote}}}});
                 }
             });
-
-        BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
 
         return 0;
     } else {
@@ -300,13 +294,26 @@ sub proposal {
             send_ask($c, $id, $args, $p2);
         });
 
-    my $ws_id = $c->tx->connection;
-    $c->{ws}{$ws_id}{$id} = {
-        started => time(),
-        type    => 'proposal',
-        data    => {%$p2},
-    };
-    BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
+    BOM::WebSocketAPI::v3::System::limit_stream_count(
+        $c,
+        {
+            id      => $id,
+            type    => 'proposal',
+            data    => {%$p2},
+            cleanup => sub {
+                my $reason = shift;
+
+                Mojo::IOLoop->remove($id);
+                $c->send({
+                        json => $c->new_error(
+                            'ticks',
+                            'EndOfStream',
+                            localize('This stream has been canceled due to resource limitations'),
+                            {
+                                id => $id,
+                            })}) if $reason;
+            },
+        });
 
     send_ask($c, $id, $args, $p2);
 

@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::System;
 use strict;
 use warnings;
 
+use Mojo::Util qw(md5_sum steady_time);
+
 sub forget {
     my ($c, $args) = @_;
 
@@ -18,11 +20,13 @@ sub forget_all {
     my @removed_ids;
 
     if (my $type = $args->{forget_all}) {
-        my $ws_id = $c->tx->connection;
-        foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-            if ($c->{ws}{$ws_id}{$id}{type} eq $type) {
-                push @removed_ids, $id if forget_one($c, $id);
-            }
+        my $ws_id  = $c->tx->connection;
+        my $this_c = ($c->{ws}{$ws_id} //= {});
+        my $list   = ($this_c->{l} //= []);
+
+        for my $v (@$list) {
+            push @removed_ids, $v->{id}
+                if $v->{type} eq $type and forget_one($c, $v->{id});
         }
     }
 
@@ -35,9 +39,14 @@ sub forget_all {
 sub forget_one {
     my ($c, $id, $reason) = @_;
 
-    my $ws_id = $c->tx->connection;
-    my $v     = delete $c->{ws}{$ws_id}{$id};
+    my $ws_id  = $c->tx->connection;
+    my $this_c = ($c->{ws}{$ws_id} //= {});
+    my $list   = ($this_c->{l} //= []);
+    my $hash   = ($this_c->{h} //= {});
+
+    my $v = delete $hash->{$id};
     return unless $v;
+    @$list = grep { $_->{id} ne $id } @$list;
 
     if (exists $v->{cleanup}) {
         $v->{cleanup}->($reason);
@@ -69,20 +78,36 @@ sub server_time {
     };
 }
 
+sub _id {
+    my ($hash) = @_;
+
+    my $id;
+    do { $id = md5_sum steady_time . rand 999 } while $hash->{$id};
+
+    return $id;
+}
+
 ## limit total stream count to 50
-sub _limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
-    my ($c) = @_;
+sub limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
+    my ($c, $data) = @_;
 
     my $ws_id  = $c->tx->connection;
     my $this_c = ($c->{ws}{$ws_id} //= {});
-    my @ids    = keys %$this_c;
+    my $list   = ($this_c->{l} //= []);
+    my $hash   = ($this_c->{h} //= {});
 
-    return if scalar(@ids) <= 50;
+    my $id = ($data->{id} //= _id);
+    forget_one $c, $id, 'StreamCountLimitReached'
+        if exists $hash->{$id};
 
-    # remove first b/c we added one
-    @ids = sort { $this_c->{$a}{started} <=> $this_c->{$b}{started} } @ids;
+    push @$list, $data;
+    $hash->{$id} = $data;
 
-    forget_one $c, $ids[0], 'StreamCountLimitReached';
+    return $id if scalar(@$list) <= 50;
+
+    forget_one $c, $list->[0]->{id}, 'StreamCountLimitReached';
+
+    return $id;
 }
 
 1;

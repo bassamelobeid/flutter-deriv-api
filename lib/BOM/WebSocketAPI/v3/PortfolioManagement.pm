@@ -140,12 +140,12 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             $p2->{contract_id} = $fmb->id;
             $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
 
-            $c->{ws}{$ws_id}{$id} = {
-                started => time(),
-                type    => 'proposal_open_contract',
-                data    => {%$p2},
+            my $data = {
+                id   => $id,
+                type => 'proposal_open_contract',
+                data => {%$p2},
             };
-            BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
+            BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
 
             $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
         }

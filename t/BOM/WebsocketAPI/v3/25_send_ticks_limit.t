@@ -9,18 +9,6 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 
-my $req = {
-    json => {
-        "proposal"      => 1,
-        "amount"        => "10",
-        "basis"         => "payout",
-        "contract_type" => "CALL",
-        "currency"      => "USD",
-        "symbol"        => "R_50",
-        "duration"      => "2",
-        "duration_unit" => "m"
-    }};
-
 build_test_R_50_data();
 
 my $t = build_mojo_test();
@@ -28,15 +16,15 @@ my @ticks;
 my %ticks;
 
 for (1..50) {
-    $t->send_ok($req);
+    $t->send_ok({json => {ticks => 'R_50'}});
     while (1) {
         $t->message_ok;
         my $m = JSON::from_json $t->message->[1];
-        is $m->{msg_type}, 'proposal', 'got msg_type proposal';
-        ok $m->{proposal}->{id}, 'got id';
-        unless (exists $ticks{$m->{proposal}->{id}}) {
+        is $m->{msg_type}, 'tick', 'got msg_type tick';
+        ok $m->{tick}->{id}, 'got id';
+        unless (exists $ticks{$m->{tick}->{id}}) {
             push @ticks, $m;
-            $ticks{$m->{proposal}->{id}} = $m;
+            $ticks{$m->{tick}->{id}} = $m;
             last;
         }
     }
@@ -63,8 +51,8 @@ while (1) {
 }
 
 ok $emsg->{error}, 'got an error message';
-is $emsg->{error}->{code}, 'EndOfStream', 'EndOfStream';
-is $emsg->{error}->{details}->{id}, $ticks[0]->{proposal}->{id}, 'first opened stream has been canceled';
+is $emsg->{error}->{code}, 'EndOfTickStream', 'EndOfTickStream';
+is $emsg->{error}->{details}->{id}, $ticks[0]->{tick}->{id}, 'first opened stream has been canceled';
 
 $t->finish_ok;
 
