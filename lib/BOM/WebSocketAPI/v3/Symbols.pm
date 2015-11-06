@@ -206,7 +206,7 @@ sub candles {
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
     my $granularity = uc($args->{granularity} || 'M1');
-    my $count = $args->{count};
+    my $count       = $args->{count};
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
     my $interval = $size * $interval_map->{$unit};
@@ -262,11 +262,11 @@ sub candles {
         }
     }
 
-    if(scalar(@all_ohlc)-$count > 0){
-        @all_ohlc = @all_ohlc[-$count..-1];
+    if (scalar(@all_ohlc) - $count > 0) {
+        @all_ohlc = @all_ohlc[-$count .. -1];
     }
 
-    return [map { {epoch => $_->epoch+0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
+    return [map { {epoch => $_->epoch + 0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
 
 }
 1;
