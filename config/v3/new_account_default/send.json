@@ -12,53 +12,54 @@
     },
     "salutation" : {
       "enum": ["Mr", "Mrs", "Ms", "Miss", "Dr", "Prof"],
-      "description": "salutation",
+      "description": "Salutation, accepts any value from enum list.",
       "required": "1"
     },
     "first_name": {
       "type": "string",
-      "pattern": "^\\w+$",
-      "description": "first name",
+      "pattern": "^[a-zA-Z\\s\'.-]{2,30}$",
+      "description": "First name within 2-30 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
       "required": "1"
     },
     "last_name": {
       "type": "string",
-      "pattern": "^\\w+$",
-      "description": "last name",
+      "pattern": "^[a-zA-Z\\s\'.-]{2,30}$",
+      "description": "Last name within 2-30 characters, use only letters, spaces, hyphens, full-stops or apostrophes.",
       "required": "1"
     },
     "date_of_birth" : {
       "type": "string",
       "format": "date",
-      "description": "date of birth format: yyyy-mm-dd",
+      "description": "Date of birth format: yyyy-mm-dd.",
       "required": "1"
     },
     "residence" : {
       "type" : "string",
       "pattern": "^[a-z]{2}$",
-      "description": "value receive from residence_list call, 2-letter country code",
+      "description": "Value receive from residence_list call, 2-letter country code.",
       "required": "1"
     },
     "address_line_1": {
       "type" : "string",
-      "pattern": "^\\w+$",
-      "description": "address line 1",
+      "pattern": "^.+{1,70}$",
+      "description": "Address line 1, max length of 70 characters.",
       "required": "1"
     },
     "address_line_2": {
       "type" : "string",
-      "description": "address line 2",
-      "pattern": "^\\w+$"
+      "pattern": "^.+{0,70}$",
+      "description": "Optional field for address line 2, max length of 70 characters."
     },
     "address_state": {
       "type" : "string",
-      "description": "address state",
-      "pattern": "^\\w+$"
+      "pattern": "^.+{1,35}$",
+      "description": "Address state, possible value get from states_list call.",
+      "required": "1"
     },
     "address_postcode": {
       "type" : "string",
+      "pattern": "^[^\+]{0,20}$",
       "description": "address postcode",
-      "pattern": "^\\w+$",
       "required": "1"
     },
     "phone": {

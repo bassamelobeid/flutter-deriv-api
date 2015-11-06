@@ -65,4 +65,20 @@ sub verify_email {
     };
 }
 
+sub _validate_option {
+    my ($field_value, $options) = @_;
+    return if (any { $field_value eq $_ } @{$options});
+}
+
+sub new_account_default {
+    my ($c, $args) = @_;
+    my $error;
+
+    my %salutations = BOM::Platform::Locale::get_salutations();
+    if (not _validate_option($args->{salutation}, [keys %salutations])) {
+        $error = 'Invalid salutation';
+    }
+
+}
+
 1;
