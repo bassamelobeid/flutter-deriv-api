@@ -200,6 +200,10 @@ BEGIN
         UPDATE feed.ohlc_status SET last_time=current_tick_ts_trunc WHERE underlying=NEW.underlying and type='minute';
     END IF;
 
+    PERFORM update_realtime_ohlc('minute', NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc('hour', NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc('day', NEW.underlying,NEW.ts, NEW.spot);
+
     RETURN NULL;
 END;
 $tick_insert$
