@@ -8,18 +8,16 @@ BOM::MarketData::CorporateAction
 
 =head1 DESCRIPTION
 
-Represents the corporate actions data of an underlying from chronicle
+Represents the corporate actions data of an underlying from couch database
 $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
 
 =cut
 
 use Moose;
+extends 'BOM::MarketData';
 
 =head2 symbol
-
-A string whcih represents underlying symbol (company name) for which we are going to load/save actions (e.g. USPG)
-It is read-only (Cannot be changed after the object is instantieted) and required.
-
+Represents underlying symbol
 =cut
 
 has symbol => (
@@ -27,44 +25,73 @@ has symbol => (
     required => 1,
 );
 
-=head2 save
+has _data_location => (
+    is      => 'ro',
+    default => 'corporate_actions'
+);
 
-Save actions for current symbol into Database. It will process actions before saving.
-This processing includes adding existing actions (stored in the database) and adding "new_actions" to them.
-Also deleting "cancelled_actions" from the result.
-We do this because we will be overwriting currently persistent data so we will need to re-construct the whole data structure.
+has _existing_actions => (
+    is         => 'ro',
+    lazy_build => 1,
+);
 
-=cut
-
-sub save {
+sub _build__existing_actions {
     my $self = shift;
 
-    my %new_actions = %{$self->new_actions};
+    return ($self->document->{actions}) ? $self->document->{actions} : {};
+}
+
+around _document_content => sub {
+    my $orig = shift;
+    my $self = shift;
+
+    my %new              = %{$self->new_actions};
     my %existing_actions = %{$self->_existing_actions};
 
-    %existing_actions = () if not %existing_actions;
-
-    delete $new_actions{$_}{flag} for keys %new_actions;
-
-    #merge existing_actions and new_actions.
-    my %all_actions;
-    if (%existing_actions and %new_actions) {
-        %all_actions = (%existing_actions, %new_actions);
-    } elsif (%existing_actions xor %new_actions) {
-        %all_actions = (%existing_actions) ? %existing_actions : %new_actions;
+    my %new_act;
+    foreach my $id (keys %new) {
+        my %copy = %{$new{$id}};
+        delete $copy{flag};
+        $new_act{$id} = \%copy;
     }
 
-    #delete cancelled actions from the result dataset
+    # updates existing actions and adds new actions
+    my %all_actions;
+    if (%existing_actions and %new_act) {
+        %all_actions = (%existing_actions, %new_act);
+    } elsif (%existing_actions xor %new_act) {
+        %all_actions = (%existing_actions) ? %existing_actions : %new_act;
+    }
+
     foreach my $cancel_id (keys %{$self->cancelled_actions}) {
         delete $all_actions{$cancel_id};
     }
 
-    BOM::System::Chronicle::set('corporate_actions', $self->symbol, \%all_actions);
+    return {
+        %{$self->$orig},
+        actions => \%all_actions,
+    };
+};
+
+with 'BOM::MarketData::Role::VersionedSymbolData' => {
+    -alias    => {save => '_save'},
+    -excludes => ['save']};
+
+sub save {
+    my $self = shift;
+
+    #first call original save method to save all data into CouchDB just like before
+    _save();
+
+    my $new_document = $self->_document_content;
+    my $all_actions  = $new_document->{actions};
+
+    BOM::System::Chronicle::set('corporate_actions', $self->symbol, $all_actions);
 }
 
 =head2 actions
 
-An hash reference of corporate actions. 
+An hash reference of corporate reference for an underlying
 
 =cut
 
@@ -76,34 +103,17 @@ has actions => (
 sub _build_actions {
     my $self = shift;
 
-    my $actions = BOM::System::Chronicle::get("corporate_actions", $self->symbol);
-
-    return $actions ? $actions : {}; 
-}
-
-
-has _existing_actions => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__existing_actions {
-    my $self = shift;
-    my $result = BOM::System::Chronicle::get("corporate_actions", $self->symbol);
-
-    return $result ? $result : {};
+    return $self->_couchdb->document_present($self->current_document_id) ? $self->document->{actions} : {};
 }
 
 =head2 action_exists
-
 Boolean. Returns true if action exists, false otherwise.
-
 =cut
 
 sub action_exists {
     my ($self, $id) = @_;
 
-    return $self->actions->{$id} ? 1 : 0;
+    return $self->_existing_actions->{$id} ? 1 : 0;
 }
 
 has [qw(new_actions cancelled_actions)] => (
@@ -117,7 +127,6 @@ sub _build_new_actions {
 
     my %new;
     my $actions = $self->actions;
-
     foreach my $action_id (keys %$actions) {
         # flag 'N' = New & 'U' = Update
         my $action = $actions->{$action_id};
@@ -139,7 +148,7 @@ sub _build_cancelled_actions {
     foreach my $action_id (keys %$actions) {
         my $action = $actions->{$action_id};
         # flag 'D' = Delete
-        if ($action->{flag} and $action->{flag} eq 'D' and $self->action_exists($action_id)) {
+        if ($action->{flag} eq 'D' and $self->action_exists($action_id)) {
             $cancelled{$action_id} = $action;
         }
     }
