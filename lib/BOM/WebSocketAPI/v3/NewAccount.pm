@@ -26,7 +26,7 @@ sub new_account_virtual {
 
             return {
                 msg_type => 'new_account_virtual',
-                account  => {
+                new_account_virtual => {
                     client_id => $client->loginid,
                     currency  => $account->currency_code,
                     balance   => $account->balance,
@@ -72,13 +72,37 @@ sub _validate_option {
 
 sub new_account_default {
     my ($c, $args) = @_;
-    my $error;
+    my $err_code;
 
-    my %salutations = BOM::Platform::Locale::get_salutations();
-    if (not _validate_option($args->{salutation}, [keys %salutations])) {
+    # compulsory fields check: salutation, first_name, last_name, residence, address_1, address_state, address_postcode, phone, secret_question, secret_answer
+    # UK client - must have postcode
+    # address_1, address_2 - can't contain P.O. Box
+
+
+    if (not _validate_option($args->{salutation}, [keys BOM::Platform::Locale::get_salutations()])) {
         $error = 'Invalid salutation';
+    } elsif (not _validate_option($args->{secret_question}, [keys BOM::Platform::Locale::get_secret_questions()])) {
+        $error = 'Invalid secret question';
+    } else {
+        my $client = $c->stash('client');
+
+        my $acc = BOM::Platform::Account::Real::default::create_account({
+            from_client => $client,
+            user        => BOM::Platform::User->new({email => $client->email}),
+            country     => $client->country_code,
+            details     => $args,
+        });
+        if (not $acc->{error}) {
+            return {
+                msg_type => 'new_account_default',
+                new_account_default  => {
+                    client_id => $acc->{client}->loginid,
+                }};
+        }
+        $err_code = $acc->{error};
     }
 
+    return $c->new_error('new_account_default', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
 }
 
 1;

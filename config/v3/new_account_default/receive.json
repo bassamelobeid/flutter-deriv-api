@@ -1,35 +1,27 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Create virtual account Receive",
-  "description": "Create virtual account Receive",
+  "title": "Create real account Receive",
+  "description": "Create real account Receive",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "account": {
-      "type": "object",
-      "title": "new virtual account",
-      "description": "new virtual account details",
+    "new_account_default": {
+      "type": "string",
+      "title": "New real money account",
+      "description": "New real money account details",
       "properties": {
         "client_id": {
           "type": "string",
-          "description": "client id of new virtual account"
-        },
-        "currency": {
-          "type": "string",
-          "description": "account currency"
-        },
-        "balance": {
-          "type": "number",
-          "description": "account balance"
+          "description": "Client id of new real money account"
         }
       }
     },
     "msg_type": {
       "type": "string",
-      "description": "account"
+      "description": "new_account_default"
     }
   },
   "required": [
