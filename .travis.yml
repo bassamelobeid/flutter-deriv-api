@@ -47,4 +47,4 @@ install:
     - export BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom-test/data/config/log4perl.conf
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
-    - perl Makefile.PL && make test
+    - perl Makefile.PL && make TEST_VERBOSE=1 test
