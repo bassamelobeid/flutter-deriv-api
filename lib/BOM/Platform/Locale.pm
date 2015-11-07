@@ -25,34 +25,19 @@ sub getLanguageOptions {
     return $options;
 }
 
-sub get_secret_questions {
-    return (
-        'Mother\'s maiden name' => localize('Mother\'s maiden name'),
-        'Name of your pet'      => localize('Name of your pet'),
-        'Name of first love'    => localize('Name of first love'),
-        'Memorable town/city'   => localize('Memorable town/city'),
-        'Memorable date'        => localize('Memorable date'),
-        'Favourite dish'        => localize('Favourite dish'),
-        'Brand of first car'    => localize('Brand of first car'),
-        'Favourite artist'      => localize('Favourite artist'),
-    );
-}
-
-sub get_salutations {
-    return (
-        Ms   => localize('Ms'),
-        Miss => localize('Miss'),
-        Mrs  => localize('Mrs'),
-        Dr   => localize('Dr'),
-        Mr   => localize('Mr'),
-        Prof => localize('Prof'),
-    );
-}
-
 sub translate_salutation {
     my $provided = shift;
-    my %translated_salutation = get_salutations();
-    return $translated_salutation{$provided} || $provided;
+
+    my %translated_titles = (
+        MS   => localize('Ms'),
+        MISS => localize('Miss'),
+        MRS  => localize('Mrs'),
+        DR   => localize('Dr'),
+        MR   => localize('Mr'),
+        PROF => localize('Prof'),
+    );
+
+    return $translated_titles{uc $provided} || $provided;
 }
 
 sub language_selector {
