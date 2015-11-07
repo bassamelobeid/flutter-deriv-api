@@ -31,6 +31,7 @@ for (1..50) {
     }
 }
 
+alarm 10;
 diag 'triggering resource error now';
 
 my $emsg;

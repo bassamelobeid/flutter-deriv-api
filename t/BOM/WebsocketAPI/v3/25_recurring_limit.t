@@ -31,6 +31,7 @@ for (1..50) {
     $t->send_ok($req);
     while (1) {
         $t->message_ok;
+        diag $t->message->[1];
         my $m = JSON::from_json $t->message->[1];
         is $m->{msg_type}, 'proposal', 'got msg_type proposal';
         ok $m->{proposal}->{id}, 'got id';
@@ -42,11 +43,15 @@ for (1..50) {
     }
 }
 
+alarm 10;
+diag 'triggering resource error now';
+
 my $emsg;
 my $lastid;
 $t->send_ok({json => {ticks => 'R_50'}});
 while (1) {
     $t->message_ok;
+    diag $t->message->[1];
     my $m = JSON::from_json $t->message->[1];
     if ($m->{msg_type} eq 'tick') {
         ok $m->{tick}->{id}, 'got id';
