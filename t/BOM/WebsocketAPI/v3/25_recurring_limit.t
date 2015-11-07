@@ -61,6 +61,8 @@ while (1) {
             $lastid = $m->{tick}->{id};
             last if $emsg;
         }
+    } elsif ($m->{msg_type} eq 'proposal') {
+        ok $m->{proposal}->{id}, 'got id';
     } else {
         $emsg = $m;
         last if $lastid;
