@@ -49,11 +49,18 @@ sub _validate {
     if ($details) {
         if (BOM::Platform::Client::check_country_restricted($residence)) {
             $logger->warn($msg . "restricted residence [$residence]");
-            return {error => 'invalid'};
+            return {error => 'invalid residence'};
         }
         if ($from_client->residence ne $residence) {
             $logger->warn($msg . "Invalid residence, residence[$residence], from_client: " . $from_client->residence);
             return {error => 'invalid'};
+        }
+        if ($residence eq 'gb' and not $details->{address_postcode}) {
+            return {error => 'invalid UK postcode'};
+        }
+        if ( ($details->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
+                or ($details->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i ) {
+            return {error => 'invalid PO Box'};
         }
         if (any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
             return {error => 'duplicate email'};
