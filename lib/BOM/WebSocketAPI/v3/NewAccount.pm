@@ -10,6 +10,8 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Account;
 use BOM::Platform::Context qw(localize);
+use BOM::Platform::Context::Request;
+
 
 sub new_account_virtual {
     my ($c, $args) = @_;
@@ -65,44 +67,54 @@ sub verify_email {
     };
 }
 
-sub _validate_option {
-    my ($field_value, $options) = @_;
-    return if (any { $field_value eq $_ } @{$options});
-}
-
 sub new_account_default {
     my ($c, $args) = @_;
-    my $err_code;
+    my $client = $c->stash('client');
 
-    # compulsory fields check: salutation, first_name, last_name, residence, address_1, address_state, address_postcode, phone, secret_question, secret_answer
-    # UK client - must have postcode
-    # address_1, address_2 - can't contain P.O. Box
-
-
-    if (not _validate_option($args->{salutation}, [keys BOM::Platform::Locale::get_salutations()])) {
-        $error = 'Invalid salutation';
-    } elsif (not _validate_option($args->{secret_question}, [keys BOM::Platform::Locale::get_secret_questions()])) {
-        $error = 'Invalid secret question';
-    } else {
-        my $client = $c->stash('client');
-
-        my $acc = BOM::Platform::Account::Real::default::create_account({
-            from_client => $client,
-            user        => BOM::Platform::User->new({email => $client->email}),
-            country     => $client->country_code,
-            details     => $args,
-        });
-        if (not $acc->{error}) {
-            return {
-                msg_type => 'new_account_default',
-                new_account_default  => {
-                    client_id => $acc->{client}->loginid,
-                }};
-        }
-        $err_code = $acc->{error};
+    unless ($client->is_virtual and BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) eq 'real') {
+        return $c->new_error('new_account_default', 'invalid', BOM::Platform::Locale::error_map()->{'invalid'});
     }
 
-    return $c->new_error('new_account_default', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
+    my $details = {
+        broker_code                     => BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code,
+        email                           => $client->email,
+        client_password                 => $client->password,
+        salutation                      => $args->{salutation},
+        last_name                       => $args->{last_name},
+        first_name                      => $args->{first_name},
+        date_of_birth                   => $args->{date_of_birth},
+        residence                       => $args->{residence},
+        address_line_1                  => $args->{address_line_1},
+        address_line_2                  => $args->{address_line_2}      || '',
+        address_city                    => $args->{address_city},
+        address_state                   => $args->{address_state}       || '',
+        address_postcode                => $args->{address_postcode}    || '',
+        phone                           => $args->{phone},
+        secret_question                 => $args->{secret_question},
+        secret_answer                   => $args->{secret_answer},
+        myaffiliates_token_registered   => 0,
+        checked_affiliate_exposures     => 0,
+        source                          => 'websocket-api',
+        latest_environment              => '',
+        myaffiliates_token              => $client->myaffiliates_token || '',
+    };
+
+    my $acc = BOM::Platform::Account::Real::default::create_account({
+        from_client => $client,
+        user        => BOM::Platform::User->new({email => $client->email}),
+        country     => $client->residence,
+        details     => $args,
+    });
+
+    if (my $err_code = $acc->{error}) {
+        return $c->new_error('new_account_default', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
+    }
+
+    return {
+        msg_type => 'new_account_default',
+        new_account_default  => {
+            client_id => $acc->{client}->loginid,
+        }};
 }
 
 1;
