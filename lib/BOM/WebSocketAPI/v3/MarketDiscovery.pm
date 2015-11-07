@@ -206,6 +206,8 @@ sub ticks {
         $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
 
         $dictator_client = BOM::Feed::Dictator::Client->new(
+            $ENV{TEST_DICTATOR_HOST} ? (host => $ENV{TEST_DICTATOR_HOST}) : (),
+            $ENV{TEST_DICTATOR_PORT} ? (port => $ENV{TEST_DICTATOR_PORT}) : (),
             symbol     => $symbol,
             start_time => time,
             on_message => sub {
