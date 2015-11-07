@@ -101,7 +101,7 @@ sub session_validate_GET {
         return $c->status_bad_request('No token found');
     }
 
-    if (!$handoff_token->is_valid) {
+    if (!$handoff_token->is_valid or $handoff_token->client_loginid ne $c->user->loginid) {
         return $c->status_bad_request('Token invalid or expired');
     }
 
