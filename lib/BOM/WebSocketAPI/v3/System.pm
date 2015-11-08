@@ -23,7 +23,7 @@ sub forget_all {
         my $ws_id  = $c->tx->connection;
         my $this_c = ($c->{ws}{$ws_id} //= {});
         my $list   = ($this_c->{l} //= []);
-        my @dummy  = @$list;    # must copy b/c forget_one modifies @$list
+        my @dummy  = @$list;                      # must copy b/c forget_one modifies @$list
 
         for my $v (@dummy) {
             if ($v->{type} eq $type and forget_one($c, $v->{id})) {
