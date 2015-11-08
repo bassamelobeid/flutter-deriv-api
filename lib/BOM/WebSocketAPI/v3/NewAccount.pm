@@ -102,7 +102,6 @@ sub new_account_default {
     my $acc = BOM::Platform::Account::Real::default::create_account({
         from_client => $client,
         user        => BOM::Platform::User->new({email => $client->email}),
-        country     => $client->residence,
         details     => $args,
     });
 
