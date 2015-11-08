@@ -20,7 +20,8 @@ use BOM::Platform::Account;
 
 sub _validate {
     my $args = shift;
-    my ($from_client, $user, $country) = @{$args}{'from_client', 'user', 'country'};
+    my ($from_client, $user) = @{$args}{'from_client', 'user'};
+    my $country = $args->{country} || '';
 
     my $details;
     my ($broker, $residence) = ('', '');
@@ -35,7 +36,7 @@ sub _validate {
         $logger->warn($msg . 'new account opening suspended');
         return {error => 'invalid'};
     }
-    if (BOM::Platform::Client::check_country_restricted($country)) {
+    if ($country and BOM::Platform::Client::check_country_restricted($country)) {
         $logger->warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
