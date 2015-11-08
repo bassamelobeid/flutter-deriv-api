@@ -21,7 +21,10 @@ sub new_account_virtual {
 
     my $err_code;
     if (BOM::Platform::Account::validate_verification_code($details{email}, $code)) {
-        my $acc = BOM::Platform::Account::Virtual::create_account({details => \%details});
+        my $acc = BOM::Platform::Account::Virtual::create_account({
+                details         => \%details,
+                email_verified  => 1
+            });
         if (not $acc->{error}) {
             my $client  = $acc->{client};
             my $account = $client->default_account->load;
