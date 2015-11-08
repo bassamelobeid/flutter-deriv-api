@@ -33,15 +33,26 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $now->epoch
-});
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $now->epoch + 1,
-    quote      => 100,
-});
+
+my @ticks_to_add = (
+    [$now->epoch        => 100],
+    [$now->epoch + 1    => 100],
+    [$now->epoch + 2    => 100.020],
+    [$now->epoch + 30   => 100.030],
+    [$now->epoch + 3600 => 100.020],
+    [$now->epoch + 3601 => 100]);
+
+my $close_tick;
+
+foreach my $pair (@ticks_to_add) {
+    # We just want the last one to INJECT below
+    # OHLC test DB does not work as expected.
+    $close_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => 'frxUSDJPY',
+        epoch      => $pair->[0],
+        quote      => $pair->[1],
+    });
+}
 
 my $args = {
     bet_type     => 'ONETOUCH',
@@ -79,11 +90,6 @@ subtest 'touch' => sub {
         cmp_ok $c->barrier->as_absolute, '==', 100.020, 'correct barrier';
         ok !$c->is_expired, 'not expired';
         cmp_ok $c->value, '==', 0.00, 'zero payout';
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'frxUSDJPY',
-            epoch      => $now->epoch + 2,
-            quote      => 100.020,
-        });
         $args->{date_pricing} = $now->plus_time_interval('2s');
         $c = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '<', $c->date_expiry->epoch, 'date pricing is before expiry';
@@ -128,11 +134,6 @@ subtest 'notouch' => sub {
         is $c->expiry_type, 'daily';
         ok !$c->is_expired, 'not expired';
         cmp_ok $c->value, '==', 0.00, 'zero payout';
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'frxUSDJPY',
-            epoch      => $now->epoch + 30,
-            quote      => 100.030,
-        });
         $args->{date_pricing} = $args->{date_start}->epoch + 31;
         $c = produce_contract($args);
         ok $c->is_expired, 'expired';
@@ -141,6 +142,7 @@ subtest 'notouch' => sub {
         cmp_ok $c->value, '==', 0.00, 'zero payout, cause it touched';
         $args->{barrier}      = 100.050;
         $args->{date_pricing} = $now->truncate_to_day->plus_time_interval('2d');
+        $args->{exit_tick}    = $close_tick;                                       # INJECT OHLC since cannot find it in the test DB.
         $c                    = produce_contract($args);
         cmp_ok $c->date_pricing->epoch, '>', $c->date_expiry->epoch, 'after expiry';
         ok $c->is_expired, 'expired';
