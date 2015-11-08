@@ -18,12 +18,12 @@ use BOM::Platform::SessionCookie;
 use BOM::Platform::Account;
 
 sub create_account {
-    my $args    = shift;
+    my $args = shift;
     my ($details, $email_verified) = @{$args}{'details', 'email_verified'};
 
-    my $email       = lc $details->{email};
-    my $password    = BOM::System::Password::hashpw($details->{client_password});
-    my $residence   = $details->{residence};
+    my $email     = lc $details->{email};
+    my $password  = BOM::System::Password::hashpw($details->{client_password});
+    my $residence = $details->{residence};
 
     # TODO: to be removed later
     BOM::Platform::Account::invalid_japan_access_check($residence, $email);
@@ -72,10 +72,9 @@ sub create_account {
     }
 
     my $user = BOM::Platform::User->create(
-        email           => $email,
-        password        => $password,
-        ($email_verified) ? (email_verified => 1) : ()
-    );
+        email    => $email,
+        password => $password,
+        ($email_verified) ? (email_verified => 1) : ());
     $user->add_loginid({loginid => $client->loginid});
     $user->add_login_history({
         environment => $details->{latest_environment} // '',

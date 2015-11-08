@@ -59,8 +59,9 @@ sub _validate {
         if ($residence eq 'gb' and not $details->{address_postcode}) {
             return {error => 'invalid UK postcode'};
         }
-        if ( ($details->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
-                or ($details->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i ) {
+        if (   ($details->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
+            or ($details->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i)
+        {
             return {error => 'invalid PO Box'};
         }
         if (any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
