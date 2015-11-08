@@ -48,4 +48,4 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    - perl Makefile.PL && make TEST_VERBOSE=1 test
+    - perl Makefile.PL && make test
