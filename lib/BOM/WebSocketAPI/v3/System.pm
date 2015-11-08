@@ -23,10 +23,12 @@ sub forget_all {
         my $ws_id  = $c->tx->connection;
         my $this_c = ($c->{ws}{$ws_id} //= {});
         my $list   = ($this_c->{l} //= []);
+        my @dummy  = @$list;    # must copy b/c forget_one modifies @$list
 
-        for my $v (@$list) {
-            push @removed_ids, $v->{id}
-                if $v->{type} eq $type and forget_one($c, $v->{id});
+        for my $v (@dummy) {
+            if ($v->{type} eq $type and forget_one($c, $v->{id})) {
+                push @removed_ids, $v->{id};
+            }
         }
     }
 
@@ -96,7 +98,7 @@ sub limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
     my $list   = ($this_c->{l} //= []);
     my $hash   = ($this_c->{h} //= {});
 
-    my $id = ($data->{id} //= _id);
+    my $id = ($data->{id} //= _id($hash));
     forget_one $c, $id, 'StreamCountLimitReached'
         if exists $hash->{$id};
 
