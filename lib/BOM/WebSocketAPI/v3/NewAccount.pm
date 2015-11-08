@@ -7,6 +7,7 @@ use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
 use BOM::Platform::Account::Virtual;
+use BOM::Platform::Account::Real::default;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
@@ -17,6 +18,7 @@ use BOM::Platform::Context::Request;
 
 sub new_account_virtual {
     my ($c, $args) = @_;
+    BOM::Platform::Context::request($c->stash('request'));
 
     my %details = %{$args};
     my $code    = delete $details{verification_code};
@@ -51,6 +53,7 @@ sub new_account_virtual {
 sub verify_email {
     my ($c, $args) = @_;
     my $email = $args->{verify_email};
+    BOM::Platform::Context::request($c->stash('request'));
 
     if (BOM::Platform::User->new({email => $email})) {
         $c->app->log->warn("verify_email, [$email] already a Binary.com user, no email sent");
@@ -75,6 +78,8 @@ sub verify_email {
 sub new_account_default {
     my ($c, $args)  = @_;
     my $client      = $c->stash('client');
+    BOM::Platform::Context::request($c->stash('request'));
+
     my $error_map   = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) eq 'real') {
@@ -118,7 +123,7 @@ sub new_account_default {
     my $acc = BOM::Platform::Account::Real::default::create_account({
         from_client => $client,
         user        => BOM::Platform::User->new({email => $client->email}),
-        details     => $args,
+        details     => $details,
     });
 
     if (my $err_code = $acc->{error}) {

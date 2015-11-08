@@ -9,7 +9,7 @@
       "description":"Echo of the request made"
     },
     "new_account_default": {
-      "type": "string",
+      "type": "object",
       "title": "New real money account",
       "description": "New real money account details",
       "properties": {
