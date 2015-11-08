@@ -96,7 +96,7 @@ for (1..25) {
 }
 
 alarm 10;
-diag 'triggering resource error now';
+# diag 'triggering resource error now';
 
 my $emsg;
 my $lastid;
