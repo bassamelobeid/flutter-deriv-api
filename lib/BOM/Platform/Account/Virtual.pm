@@ -19,10 +19,11 @@ use BOM::Platform::Account;
 
 sub create_account {
     my $args    = shift;
-    my $details = $args->{details};
-    my ($email, $password, $residence) = @{$details}{'email', 'client_password', 'residence'};
-    $password = BOM::System::Password::hashpw($password);
-    $email    = lc $email;
+    my ($details, $email_verified) = @{$args}{'details', 'email_verified'};
+
+    my $email       = lc $details->{email};
+    my $password    = BOM::System::Password::hashpw($details->{client_password});
+    my $residence   = $details->{residence};
 
     # TODO: to be removed later
     BOM::Platform::Account::invalid_japan_access_check($residence, $email);
@@ -71,8 +72,9 @@ sub create_account {
     }
 
     my $user = BOM::Platform::User->create(
-        email    => $email,
-        password => $password
+        email           => $email,
+        password        => $password,
+        ($email_verified) ? (email_verified => 1) : ()
     );
     $user->add_loginid({loginid => $client->loginid});
     $user->add_login_history({
@@ -83,27 +85,29 @@ sub create_account {
     $user->save;
     $client->deposit_virtual_funds;
 
-    my $link = request()->url_for(
-        '/user/validate_link',
-        {
-            verify_token => BOM::Platform::SessionCookie->new({
-                    email      => $email,
-                    expires_in => 3600
-                }
-                )->token,
-            step => 'account'
-        });
-    my $email_content;
-    BOM::Platform::Context::template->process('email/resend_verification.html.tt', {link => $link}, \$email_content)
-        || die BOM::Platform::Context::template->error();
+    unless ($email_verified) {
+        my $link = request()->url_for(
+            '/user/validate_link',
+            {
+                verify_token => BOM::Platform::SessionCookie->new({
+                        email      => $email,
+                        expires_in => 3600
+                    }
+                    )->token,
+                step => 'account'
+            });
+        my $email_content;
+        BOM::Platform::Context::template->process('email/resend_verification.html.tt', {link => $link}, \$email_content)
+            || die BOM::Platform::Context::template->error();
 
-    send_email({
-        from               => request()->website->config->get('customer_support.email'),
-        to                 => $email,
-        subject            => localize('Verify your email address - [_1]', request()->website->display_name),
-        message            => [$email_content],
-        use_email_template => 1,
-    });
+        send_email({
+            from               => request()->website->config->get('customer_support.email'),
+            to                 => $email,
+            subject            => localize('Verify your email address - [_1]', request()->website->display_name),
+            message            => [$email_content],
+            use_email_template => 1,
+        });
+    }
     stats_inc("business.new_account.virtual");
 
     return {
