@@ -65,12 +65,12 @@
     },
     "address_postcode": {
       "type" : "string",
-      "pattern": "^[^\+]{0,20}$",
+      "pattern": "^[^+]{0,20}$",
       "description": "Optional field, within 20 characters and may not contain '+'."
     },
     "phone": {
       "type" : "string",
-      "pattern": "^\+?[0-9\\s]{6,35}$",
+      "pattern": "^\\+?[0-9\\s]{6,35}$",
       "description": "Within 6-35 digits, allowing '+' in front, numbers or space.",
       "required": "1"
     },
