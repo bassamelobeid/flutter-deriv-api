@@ -23,7 +23,7 @@ my $create_vr = {
     new_account_virtual => 1,
     email               => $email,
     client_password     => 'Ac0+-_:@. ',
-    residence           => 'de',
+    residence           => 'au',
     verification_code   => BOM::Platform::Account::get_verification_code($email),
 };
 
