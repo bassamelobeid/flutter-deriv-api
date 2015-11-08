@@ -33,7 +33,7 @@ sub create_account {
     } elsif (BOM::Platform::User->new({email => $email})) {
         return {error => 'duplicate email'};
     } elsif (BOM::Platform::Client::check_country_restricted($residence)) {
-        return {error => 'invalid'};
+        return {error => 'invalid residence'};
     }
 
     my ($client, $error);

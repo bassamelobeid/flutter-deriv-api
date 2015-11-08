@@ -151,6 +151,7 @@ sub error_map {
         'invalid residence'     => localize('Sorry, our service is not available for your country of residence.'),
         'invalid UK postcode'   => localize('Postcode is required for UK residents.'),
         'invalid PO Box'        => localize('P.O. Box is not accepted in address.'),
+        'invalid DOB'           => localize('Your date of birth is invalid.'),
         'duplicate email'       => localize(
             'Your provided email address is already in use by another Login ID. According to our terms and conditions, you may only register once through our site. If you have forgotten the password of your existing account, please <a href="[_1]">try our password recovery tool</a> or contact customer service.',
             request()->url_for('/user/lost_password')
