@@ -214,7 +214,7 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    if ($key !~ /^([A-Za-z0-9_-]{1,25})$/ or $value !~ /^([\s\.A-Za-z0-9\@_:+-\/=]{0,256})$/) {
+    if ($key !~ /^[A-Za-z0-9_-]{1,25}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/=']{0,256}$/) {
         return ($key, $value);
     }
     return;

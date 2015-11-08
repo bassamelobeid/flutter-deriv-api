@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::NewAccount;
 use strict;
 use warnings;
 
+use DateTime;
+use Try::Tiny;
 use List::MoreUtils qw(any);
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Locale;
@@ -71,12 +73,23 @@ sub verify_email {
 }
 
 sub new_account_default {
-    my ($c, $args) = @_;
-    my $client = $c->stash('client');
+    my ($c, $args)  = @_;
+    my $client      = $c->stash('client');
+    my $error_map   = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) eq 'real') {
-        return $c->new_error('new_account_default', 'invalid', BOM::Platform::Locale::error_map()->{'invalid'});
+        return $c->new_error('new_account_default', 'invalid', $error_map->{'invalid'});
     }
+
+    # JSON::Schema "date" format only check regex. Check for valid date here
+    $args->{date_of_birth} =~ /(\d{4})-(\d{2})-(\d{2})/;
+    try {
+        DateTime->new(
+            year       => $1,
+            month      => $2,
+            day        => $3,
+        );
+    } catch { return; } or return $c->new_error('new_account_default', 'invalid DOB', $error_map->{'invalid DOB'});
 
     my $details = {
         broker_code                     => BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code,
@@ -109,7 +122,7 @@ sub new_account_default {
     });
 
     if (my $err_code = $acc->{error}) {
-        return $c->new_error('new_account_default', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
+        return $c->new_error('new_account_default', $err_code, $error_map->{$err_code});
     }
 
     return {
