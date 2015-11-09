@@ -35,7 +35,7 @@ subtest 'builds' => sub {
             replica_port => 5984,
             master_host  => 'localhost',
             master_port  => 5984,
-            couchdb      => 'letmein'
+            couchdb      => 'mRX1E3Mi00oS8LG'
         );
 
         isa_ok $couch->replica, 'BOM::Platform::Data::CouchDB::Connection';
@@ -44,8 +44,8 @@ subtest 'builds' => sub {
         is $couch->master->protocol,  'http://';
         is $couch->replica->protocol, 'http://';
 
-        is $couch->master->couchdb,  'letmein';
-        is $couch->replica->couchdb, 'letmein';
+        is $couch->master->couchdb,  'mRX1E3Mi00oS8LG';
+        is $couch->replica->couchdb, 'mRX1E3Mi00oS8LG';
     };
 
     subtest 'host, port & protocol' => sub {

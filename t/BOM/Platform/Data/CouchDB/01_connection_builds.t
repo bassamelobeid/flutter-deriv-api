@@ -11,10 +11,10 @@ subtest 'Password URI' => sub {
     my $couch = BOM::Platform::Data::CouchDB::Connection->new(
         host    => 'localhost',
         port    => '6984',
-        couchdb => 'letmein'
+        couchdb => 'mRX1E3Mi00oS8LG'
     );
 
-    is $couch->uri,     'https://couchdb:letmein@localhost:6984/';
+    is $couch->uri,     'https://couchdb:mRX1E3Mi00oS8LG@localhost:6984/';
     is $couch->log_uri, 'https://localhost:6984/';
 };
 
@@ -23,10 +23,10 @@ subtest 'Protocol wth Password URI' => sub {
         host     => 'localhost',
         port     => '6984',
         protocol => 'https://',
-        couchdb  => 'letmein'
+        couchdb  => 'mRX1E3Mi00oS8LG'
     );
 
-    is $couch->uri,     'https://couchdb:letmein@localhost:6984/';
+    is $couch->uri,     'https://couchdb:mRX1E3Mi00oS8LG@localhost:6984/';
     is $couch->log_uri, 'https://localhost:6984/';
 };
 
@@ -46,7 +46,7 @@ subtest 'port 5984 has no password' => sub {
     my $couch = BOM::Platform::Data::CouchDB::Connection->new(
         host    => 'localhost',
         port    => '5984',
-        couchdb => 'letmein',
+        couchdb => 'mRX1E3Mi00oS8LG',
     );
 
     is $couch->uri,     'http://localhost:5984/';
