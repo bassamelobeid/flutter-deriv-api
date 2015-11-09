@@ -16,7 +16,7 @@ while (1) {
         my $redis = _redis();
         my $dbh   = BOM::Database::FeedDB::write_dbh();
 
-        $dbh->do("LISTEN ohlc_watchers");
+        $dbh->do("LISTEN feed_watchers");
 
         my $sel = IO::Select->new;
         $sel->add($dbh->{pg_socket});
