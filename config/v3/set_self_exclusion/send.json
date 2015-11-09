@@ -8,17 +8,17 @@
       "type":"integer",
       "pattern": "^1$"
     },
-    "max_cash_balance":{
+    "max_balance":{
       "type": ["integer", "null"],
       "pattern": "^\\d{0,20}$",
       "description": "Maximum account cash balance"
     },
-    "max_daily_turnover":{
+    "max_turnover":{
       "type":["integer", "null"],
       "pattern": "^\\d{0,20}$",
       "description": "Daily turnover limit"
     },
-    "max_daily_losses":{
+    "max_losses":{
       "type":["integer", "null"],
       "pattern": "^\\d{0,20}$",
       "description": "Daily limit on losses"
@@ -48,7 +48,7 @@
       "pattern": "^\\d{0,4}$",
       "description": "Maximum number of open positions"
     },
-    "session_duration_limits":{
+    "session_duration_limit":{
       "type":["integer", "null"],
       "pattern": "^\\d{0,4}$",
       "description": "Session duration limit, in minutes"

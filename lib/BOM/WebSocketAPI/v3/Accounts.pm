@@ -504,4 +504,51 @@ sub set_settings {
     };
 }
 
+sub get_self_exclusion {
+    my ($c, $args) = @_;
+
+    my $r      = $c->stash('request');
+    my $client = $c->stash('client');
+
+    my $self_exclusion     = $client->get_self_exclusion;
+    my $get_self_exclusion = {};
+
+    if ($self_exclusion) {
+        $get_self_exclusion->{max_balance} = $self_exclusion->max_balance
+            if $self_exclusion->max_balance;
+        $get_self_exclusion->{max_turnover} = $self_exclusion->max_turnover
+            if $self_exclusion->max_turnover;
+        $get_self_exclusion->{max_open_bets} = $self_exclusion->max_open_bets
+            if $self_exclusion->max_open_bets;
+        $get_self_exclusion->{max_losses} = $self_exclusion->max_losses
+            if $self_exclusion->{max_losses};
+        $get_self_exclusion->{max_7day_losses} = $self_exclusion->max_7day_losses
+            if $self_exclusion->max_7day_losses;
+        $get_self_exclusion->{max_7day_turnover} = $self_exclusion->max_7day_turnover
+            if $self_exclusion->{max_7day_turnover};
+        $get_self_exclusion->{max_30day_losses} = $self_exclusion->max_30day_losses
+            if $self_exclusion->{max_30day_losses};
+        $get_self_exclusion->{max_30day_turnover} = $self_exclusion->max_30day_turnover
+            if $self_exclusion->{max_30day_turnover};
+        $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit
+            if $self_exclusion->{session_duration_limit};
+
+        if (my $until = $self_exclusion->exclude_until) {
+            $until = Date::Utility->new($until);
+            if (Date::Utility::today->days_between($limit_exclude_until) < 0) {
+                $get_self_exclusion->{exclude_until} = $limit_exclude_until->date;
+            }
+        }
+    }
+
+    return {
+        msg_type           => 'get_self_exclusion',
+        get_self_exclusion => $get_self_exclusion,
+    };
+}
+
+sub set_self_exclusion {
+
+}
+
 1;

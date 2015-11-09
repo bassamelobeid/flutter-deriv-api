@@ -12,15 +12,15 @@
       "type": "object",
       "title": "Self-Exclusion Structure",
       "properties":{
-        "max_cash_balance":{
+        "max_balance":{
           "type":"integer",
           "description": "Maximum account cash balance"
         },
-        "max_daily_turnover":{
+        "max_turnover":{
           "type":"integer",
           "description": "Daily turnover limit"
         },
-        "max_daily_losses":{
+        "max_losses":{
           "type":"integer",
           "description": "Daily limit on losses"
         },
@@ -44,12 +44,12 @@
           "type":"integer",
           "description": "Maximum number of open positions"
         },
-        "session_duration_limits":{
+        "session_duration_limit":{
           "type":"integer",
           "description": "Session duration limit, in minutes"
         },
         "exclude_until":{
-          "type":"string",
+          "type": "string",
           "description": "Exclude me from the website until (date YYYY-MM-DD)"
         }
       }
