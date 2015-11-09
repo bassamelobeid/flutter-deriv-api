@@ -82,7 +82,7 @@ sub new_account_default {
 
     my $error_map   = BOM::Platform::Locale::error_map();
 
-    unless ($client->is_virtual and BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) eq 'real') {
+    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return $c->new_error('new_account_default', 'invalid', $error_map->{'invalid'});
     }
 
