@@ -2,8 +2,8 @@ SET client_min_messages TO warning;
 
 -- -------------------------------------------
 -- User creation, Enable if needed
--- CREATE USER read WITH PASSWORD 'letmein';
--- CREATE USER write WITH PASSWORD 'letmein';
+-- CREATE USER read WITH PASSWORD 'mRX1E3Mi00oS8LG';
+-- CREATE USER write WITH PASSWORD 'mRX1E3Mi00oS8LG';
 -- -------------------------------------------
 
 GRANT CONNECT ON DATABASE feed to read;
@@ -22,4 +22,3 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA feed TO postgres WITH GRANT OPTION;
 GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA feed TO postgres WITH GRANT OPTION;
 
 GRANT SELECT ON ALL TABLES IN SCHEMA feed TO monitor;
-

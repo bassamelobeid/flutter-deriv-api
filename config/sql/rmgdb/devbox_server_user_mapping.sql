@@ -1,14 +1,14 @@
 ALTER SERVER cr  OPTIONS (SET host 'localhost');
 ALTER SERVER dc  OPTIONS (SET host 'localhost');
 
-ALTER USER MAPPING FOR postgres SERVER dc  OPTIONS (SET password 'letmein');
-ALTER USER MAPPING FOR read SERVER dc      OPTIONS (SET password 'letmein');
-ALTER USER MAPPING FOR write SERVER dc      OPTIONS (SET password 'letmein');
+ALTER USER MAPPING FOR postgres SERVER dc  OPTIONS (SET password 'mRX1E3Mi00oS8LG');
+ALTER USER MAPPING FOR read SERVER dc      OPTIONS (SET password 'mRX1E3Mi00oS8LG');
+ALTER USER MAPPING FOR write SERVER dc      OPTIONS (SET password 'mRX1E3Mi00oS8LG');
 
-ALTER USER MAPPING FOR postgres SERVER cr  OPTIONS (SET password 'letmein');
-ALTER USER MAPPING FOR master_write SERVER cr  OPTIONS (SET password 'letmein');
-ALTER USER MAPPING FOR write SERVER cr  OPTIONS (SET password 'letmein');
-ALTER USER MAPPING FOR read SERVER cr  OPTIONS (SET password 'letmein');
+ALTER USER MAPPING FOR postgres SERVER cr  OPTIONS (SET password 'mRX1E3Mi00oS8LG');
+ALTER USER MAPPING FOR master_write SERVER cr  OPTIONS (SET password 'mRX1E3Mi00oS8LG');
+ALTER USER MAPPING FOR write SERVER cr  OPTIONS (SET password 'mRX1E3Mi00oS8LG');
+ALTER USER MAPPING FOR read SERVER cr  OPTIONS (SET password 'mRX1E3Mi00oS8LG');
 
 
 DROP USER MAPPING FOR postgres SERVER mx;

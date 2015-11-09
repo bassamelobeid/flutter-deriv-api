@@ -60,7 +60,7 @@ my $convention_manager = Rose::DB::Object::ConventionManager->new(
 my $loader = Rose::DB::Object::Loader->new(
     db_dsn      => "dbi:Pg:dbname=$dbname;host=localhost",
     db_username => 'postgres',
-    db_password => 'letmein',
+    db_password => 'mRX1E3Mi00oS8LG',
     db_options  => {
         AutoCommit => 1,
         ChopBlanks => 1
@@ -79,4 +79,3 @@ my @classes = $loader->make_modules;
 printf "%d modules made.\n", scalar(@classes);
 # if zero classes built, exit with a non-zero result..
 exit(@classes == 0);
-

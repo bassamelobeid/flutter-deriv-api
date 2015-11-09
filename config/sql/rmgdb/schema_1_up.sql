@@ -51,17 +51,17 @@ GRANT USAGE ON FOREIGN SERVER dc TO read;
 GRANT USAGE ON FOREIGN SERVER dc TO write;
 
 CREATE USER MAPPING FOR postgres SERVER dc OPTIONS (
-    password 'letmein',
+    password 'mRX1E3Mi00oS8LG',
     "user" 'read'
 );
 
 CREATE USER MAPPING FOR read SERVER dc OPTIONS (
-    password 'letmein',
+    password 'mRX1E3Mi00oS8LG',
     "user" 'read'
 );
 
 CREATE USER MAPPING FOR write SERVER dc OPTIONS (
-    password 'letmein',
+    password 'mRX1E3Mi00oS8LG',
     "user" 'read'
 );
 
