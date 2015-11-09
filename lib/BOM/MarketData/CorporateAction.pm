@@ -94,6 +94,7 @@ sub save {
     my $all_actions  = $new_document->{actions};
 
     BOM::System::Chronicle::set('corporate_actions', $self->symbol, $all_actions);
+    return;
 }
 
 =head2 actions
