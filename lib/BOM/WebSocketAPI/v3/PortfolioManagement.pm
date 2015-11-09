@@ -23,11 +23,12 @@ sub buy {
     my $source        = $c->stash('source');
     my $ws_id         = $c->tx->connection;
 
-    Mojo::IOLoop->remove($id);
-    my $client = $c->stash('client');
 
-    my $p2 = delete $c->{ws}{$ws_id}{$id}{data}
+
+    my $client = $c->stash('client');
+    my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
         or return $c->new_error('buy', 'InvalidContractProposal', localize("Unknown contract proposal"));
+    $p2 = $p2->{data};
 
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
@@ -315,10 +316,7 @@ sub send_bid {
     };
 
     if ($latest->{error}) {
-        Mojo::IOLoop->remove($id);
-        my $ws_id = $c->tx->connection;
-        delete $c->{ws}{$ws_id}{$id};
-        delete $c->{fmb_ids}{$ws_id}{$p2->{fmb}->id};
+        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
         $c->send({
                 json => {
                     %$response,

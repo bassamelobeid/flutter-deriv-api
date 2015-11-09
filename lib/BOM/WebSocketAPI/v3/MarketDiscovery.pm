@@ -415,9 +415,7 @@ sub send_ask {
 
     my $latest = get_ask($c, $p2);
     if ($latest->{error}) {
-        Mojo::IOLoop->remove($id);
-        my $ws_id = $c->tx->connection;
-        delete $c->{ws}{$ws_id}{$id};
+        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
 
         my $proposal = {id => $id};
         $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
