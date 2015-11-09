@@ -200,11 +200,16 @@ BEGIN
         UPDATE feed.ohlc_status SET last_time=current_tick_ts_trunc WHERE underlying=NEW.underlying and type='minute';
     END IF;
 
-    PERFORM update_realtime_ohlc('minute', NEW.underlying,NEW.ts, NEW.spot);
-    PERFORM update_realtime_ohlc('hour', NEW.underlying,NEW.ts, NEW.spot);
-    PERFORM update_realtime_ohlc('day', NEW.underlying,NEW.ts, NEW.spot);
-    PERFORM pg_notify('ohlc_watchers', 'tick,' || NEW.underlying || ',' || NEW.ts || ',' || NEW.spot);
-
+    PERFORM update_realtime_ohlc(1*60, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(5*60, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(10*60, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(30*60, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(1*3600, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(2*3600, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(4*3600, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(8*3600, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM update_realtime_ohlc(24*3600, NEW.underlying,NEW.ts, NEW.spot);
+    PERFORM pg_notify('feed_watchers', 'tick,' || NEW.underlying || ',' || NEW.ts || ',' || NEW.spot);
 
     RETURN NULL;
 END;
