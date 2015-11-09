@@ -54,9 +54,6 @@ sub forget_one {
         $v->{cleanup}->($reason);
     } else {
         Mojo::IOLoop->remove($id);
-        if ($v->{type} eq 'proposal_open_contract') {
-            delete $c->{fmb_ids}{$ws_id}{$v->{data}->{fmb}->id};
-        }
     }
 
     return $v;

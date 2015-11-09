@@ -140,15 +140,22 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             my $p2 = prepare_bid($c, $args);
             $p2->{contract_id} = $fmb->id;
             $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
+            my $fmb_map = ($c->{fmb_ids}{$ws_id} //= {});
+            $fmb_map->{$fmb->id} = $id;
 
             my $data = {
                 id   => $id,
                 type => 'proposal_open_contract',
                 data => {%$p2},
+                cleanup => sub {
+                    Mojo::IOLoop->remove($id);
+                    delete $fmb_map->{$fmb->id};
+                    # TODO: we might want to send an error to the client
+                    # if this function is called with a parameter indicating
+                    # the proposal stream was closed due to an error.
+                },
             };
             BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
-
-            $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
         }
     } else {
         return {
