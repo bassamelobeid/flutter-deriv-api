@@ -81,7 +81,7 @@ sub save {
     my $self = shift;
 
     #first call original save method to save all data into CouchDB just like before
-    _save();
+    $self->_save();
 
     my $new_document = $self->_document_content;
     my $all_actions  = $new_document->{actions};
