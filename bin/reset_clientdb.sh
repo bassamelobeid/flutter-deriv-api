@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# reset_rmgdb.sh <<<letmein
+# reset_rmgdb.sh <<<mRX1E3Mi00oS8LG
 
 : ${PGHOST:=localhost} ${PGPORT:=5432} ${PGPASSFILE:=~/.pgpass$$}
 export PGHOST PGPORT PGPASSFILE

@@ -93,7 +93,7 @@ sub script_run {
 
     my $hostname = $self->getOption('hostname');
     my $username = $self->getOption('username');
-    my $password = 'letmein';
+    my $password = 'mRX1E3Mi00oS8LG';
     my $tablename_extension;
 
     my $database = 'regentmarkets';
