@@ -5,6 +5,7 @@ use warnings;
 
 use Try::Tiny;
 use Mojo::DOM;
+use Time::HiRes;
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
@@ -18,6 +19,7 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
+use BOM::Feed::Dictator::Client;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -181,17 +183,63 @@ sub ticks {
     }
 
     if ($ul->feed_license eq 'realtime') {
-        my $id;
-        $id = Mojo::IOLoop->recurring(1 => sub { send_tick($c, $id, $args, $ul) });
-        send_tick($c, $id, $args, $ul);
+        my ($dictator_client, $id);
 
-        my $ws_id = $c->tx->connection;
-        $c->{ws}{$ws_id}{$id} = {
-            started => time(),
+        my $data = {
             type    => 'ticks',
-            epoch   => 0,
+            cleanup => sub {
+                my $reason = shift;
+
+                $dictator_client && $dictator_client->stop;
+                $c->send({
+                        json => $c->new_error(
+                            'ticks',
+                            'EndOfTickStream',
+                            localize('This tick stream was canceled due to resource limitations'),
+                            {
+                                id     => $id,
+                                symbol => $symbol,
+                            })}) if $reason;
+            },
         };
-        BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
+
+        $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
+
+        $dictator_client = BOM::Feed::Dictator::Client->new(
+            $ENV{TEST_DICTATOR_HOST} ? (host => $ENV{TEST_DICTATOR_HOST}) : (),
+            $ENV{TEST_DICTATOR_PORT} ? (port => $ENV{TEST_DICTATOR_PORT}) : (),
+            symbol     => $symbol,
+            start_time => time,
+            on_message => sub {
+                my $tick = shift;
+
+                if (not $tick or ref($tick) eq 'HASH' and exists $tick->{error}) {
+                    $c->send({
+                            json => $c->new_error(
+                                'ticks',
+                                'EndOfTickStream',
+                                localize('This tick stream has been disrupted. Please try again later.'),
+                                {
+                                    id     => $id,
+                                    symbol => $symbol,
+                                })});
+                    BOM::WebSocketAPI::v3::System::forget_one $c, $id;
+                    return;
+                }
+
+                $tick = [$tick] unless ref($tick) eq 'ARRAY';
+
+                for (@$tick) {
+                    $c->send({
+                            json => {
+                                msg_type => 'tick',
+                                echo_req => $args,
+                                tick     => {
+                                    id    => $id,
+                                    epoch => $_->{epoch},
+                                    quote => $_->{quote}}}});
+                }
+            });
 
         return 0;
     } else {
@@ -248,13 +296,26 @@ sub proposal {
             send_ask($c, $id, $args, $p2);
         });
 
-    my $ws_id = $c->tx->connection;
-    $c->{ws}{$ws_id}{$id} = {
-        started => time(),
-        type    => 'proposal',
-        data    => {%$p2},
-    };
-    BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
+    BOM::WebSocketAPI::v3::System::limit_stream_count(
+        $c,
+        {
+            id      => $id,
+            type    => 'proposal',
+            data    => {%$p2},
+            cleanup => sub {
+                my $reason = shift;
+
+                Mojo::IOLoop->remove($id);
+                $c->send({
+                        json => $c->new_error(
+                            'ticks',
+                            'EndOfStream',
+                            localize('This stream has been canceled due to resource limitations'),
+                            {
+                                id => $id,
+                            })}) if $reason;
+            },
+        });
 
     send_ask($c, $id, $args, $p2);
 
@@ -354,9 +415,7 @@ sub send_ask {
 
     my $latest = get_ask($c, $p2);
     if ($latest->{error}) {
-        Mojo::IOLoop->remove($id);
-        my $ws_id = $c->tx->connection;
-        delete $c->{ws}{$ws_id}{$id};
+        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
 
         my $proposal = {id => $id};
         $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
@@ -377,26 +436,6 @@ sub send_ask {
                         id => $id,
                         %$latest
                     }}});
-    }
-    return;
-}
-
-sub send_tick {
-    my ($c, $id, $p1, $ul) = @_;
-
-    my $ws_id = $c->tx->connection;
-    my $tick  = $ul->get_combined_realtime;
-    if ($tick->{epoch} > ($c->{ws}{$ws_id}{$id}{epoch} || 0)) {
-        $c->send({
-                json => {
-                    msg_type => 'tick',
-                    echo_req => $p1,
-                    tick     => {
-                        id    => $id,
-                        epoch => $tick->{epoch},
-                        quote => $tick->{quote}}}});
-
-        $c->{ws}{$ws_id}{$id}{epoch} = $tick->{epoch};
     }
     return;
 }

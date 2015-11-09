@@ -3,12 +3,14 @@ package BOM::WebSocketAPI::v3::System;
 use strict;
 use warnings;
 
+use Mojo::Util qw(md5_sum steady_time);
+
 sub forget {
     my ($c, $args) = @_;
 
     return {
         msg_type => 'forget',
-        forget => _forget_one($c, $args->{forget}) ? 1 : 0,
+        forget => forget_one($c, $args->{forget}) ? 1 : 0,
     };
 }
 
@@ -18,10 +20,14 @@ sub forget_all {
     my @removed_ids;
 
     if (my $type = $args->{forget_all}) {
-        my $ws_id = $c->tx->connection;
-        foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-            if ($c->{ws}{$ws_id}{$id}{type} eq $type) {
-                push @removed_ids, $id if _forget_one($c, $id);
+        my $ws_id  = $c->tx->connection;
+        my $this_c = ($c->{ws}{$ws_id} //= {});
+        my $list   = ($this_c->{l} //= []);
+        my @dummy  = @$list;                      # must copy b/c forget_one modifies @$list
+
+        for my $v (@dummy) {
+            if ($v->{type} eq $type and forget_one($c, $v->{id})) {
+                push @removed_ids, $v->{id};
             }
         }
     }
@@ -32,17 +38,22 @@ sub forget_all {
     };
 }
 
-sub _forget_one {
-    my ($c, $id) = @_;
+sub forget_one {
+    my ($c, $id, $reason) = @_;
 
-    Mojo::IOLoop->remove($id);
+    my $ws_id  = $c->tx->connection;
+    my $this_c = ($c->{ws}{$ws_id} //= {});
+    my $list   = ($this_c->{l} //= []);
+    my $hash   = ($this_c->{h} //= {});
 
-    my $ws_id = $c->tx->connection;
-    my $v     = delete $c->{ws}{$ws_id}{$id};
+    my $v = delete $hash->{$id};
     return unless $v;
+    @$list = grep { $_->{id} ne $id } @$list;
 
-    if ($v->{type} eq 'proposal_open_contract') {
-        delete $c->{fmb_ids}{$ws_id}{$v->{data}{fmb}->id};
+    if (exists $v->{cleanup}) {
+        $v->{cleanup}->($reason);
+    } else {
+        Mojo::IOLoop->remove($id);
     }
 
     return $v;
@@ -66,22 +77,36 @@ sub server_time {
     };
 }
 
+sub _id {
+    my ($hash) = @_;
+
+    my $id;
+    do { $id = md5_sum steady_time . rand 999 } while $hash->{$id};
+
+    return $id;
+}
+
 ## limit total stream count to 50
-sub _limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
-    my ($c) = @_;
+sub limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
+    my ($c, $data) = @_;
 
     my $ws_id  = $c->tx->connection;
-    my @ws_ids = keys %{$c->{ws}{$ws_id}};
+    my $this_c = ($c->{ws}{$ws_id} //= {});
+    my $list   = ($this_c->{l} //= []);
+    my $hash   = ($this_c->{h} //= {});
 
-    return if scalar(@ws_ids) <= 50;
+    my $id = ($data->{id} //= _id($hash));
+    forget_one $c, $id, 'StreamCountLimitReached'
+        if exists $hash->{$id};
 
-    # remove first b/c we added one
-    @ws_ids = sort { $c->{ws}{$ws_id}{$a}{started} <=> $c->{ws}{$ws_id}{$b}{started} } @ws_ids;
-    Mojo::IOLoop->remove($ws_ids[0]);
-    my $v = delete $c->{ws}{$ws_id}{$ws_ids[0]};
-    if ($v->{type} eq 'portfolio' || $v->{type} eq 'proposal_open_contract') {
-        delete $c->{fmb_ids}{$ws_id}{$v->{fmb}->id};
-    }
+    push @$list, $data;
+    $hash->{$id} = $data;
+
+    return $id if scalar(@$list) <= 50;
+
+    forget_one $c, $list->[0]->{id}, 'StreamCountLimitReached';
+
+    return $id;
 }
 
 1;

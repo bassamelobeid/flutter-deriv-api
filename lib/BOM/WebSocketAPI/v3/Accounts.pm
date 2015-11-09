@@ -246,14 +246,35 @@ sub balance {
     my $log = $c->app->log;
 
     my $client = $c->stash('client');
-    my $id     = 0;
+    my $redis  = $c->redis;
+    my $id;
 
-    my $redis = $c->redis;
-    $redis->on(
-        connection => sub {
-            my ($self, $info) = @_;
-            $log->debug("connected: " . JSON::to_json($info));
-        });
+    my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
+
+    my $data = {
+        type    => 'balance',
+        cleanup => sub {
+            my $reason = shift;
+
+            $redis && $redis->unsubscribe($channel, sub { });
+            $c->send({
+                    json => $c->new_error(
+                        'ticks',
+                        'EndOfBalanceStream',
+                        localize('This stream was canceled due to resource limitations'),
+                        {
+                            id => $id,
+                        })}) if $reason;
+        },
+    };
+
+    $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
+
+    # $redis->on(
+    #     connection => sub {
+    #         my ($self, $info) = @_;
+    #         $log->debug("connected: " . JSON::to_json($info));
+    #     });
 
     $redis->on(
         error => sub {
@@ -268,21 +289,13 @@ sub balance {
             send_realtime_balance($c, $id, $args, $client, $msg);
         });
 
-    warn "subscribing to TXNUPDATE::balance_" . $client->default_account->id;
     $redis->subscribe(
-        ['TXNUPDATE::balance_' . $client->default_account->id],
+        $channel,
         sub {
             my ($self, $err) = @_;
             warn "redis subscribe: $err";
         });
 
-    my $ws_id = $c->tx->connection;
-    $c->{ws}{$ws_id}{$id} = {
-        started => time(),
-        type    => 'ticks',
-        epoch   => 0,
-    };
-    BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
     return {
         msg_type => 'balance',
         balance  => {

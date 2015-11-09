@@ -23,11 +23,10 @@ sub buy {
     my $source        = $c->stash('source');
     my $ws_id         = $c->tx->connection;
 
-    Mojo::IOLoop->remove($id);
     my $client = $c->stash('client');
-
-    my $p2 = delete $c->{ws}{$ws_id}{$id}{data}
+    my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
         or return $c->new_error('buy', 'InvalidContractProposal', localize("Unknown contract proposal"));
+    $p2 = $p2->{data};
 
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
@@ -139,15 +138,22 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             my $p2 = prepare_bid($c, $args);
             $p2->{contract_id} = $fmb->id;
             $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
+            my $fmb_map = ($c->{fmb_ids}{$ws_id} //= {});
+            $fmb_map->{$fmb->id} = $id;
 
-            $c->{ws}{$ws_id}{$id} = {
-                started => time(),
+            my $data = {
+                id      => $id,
                 type    => 'proposal_open_contract',
                 data    => {%$p2},
+                cleanup => sub {
+                    Mojo::IOLoop->remove($id);
+                    delete $fmb_map->{$fmb->id};
+                    # TODO: we might want to send an error to the client
+                    # if this function is called with a parameter indicating
+                    # the proposal stream was closed due to an error.
+                },
             };
-            BOM::WebSocketAPI::v3::System::_limit_stream_count($c);
-
-            $c->{fmb_ids}{$ws_id}{$fmb->id} = $id;
+            BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
         }
     } else {
         return {
@@ -315,10 +321,7 @@ sub send_bid {
     };
 
     if ($latest->{error}) {
-        Mojo::IOLoop->remove($id);
-        my $ws_id = $c->tx->connection;
-        delete $c->{ws}{$ws_id}{$id};
-        delete $c->{fmb_ids}{$ws_id}{$p2->{fmb}->id};
+        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
         $c->send({
                 json => {
                     %$response,
