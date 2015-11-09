@@ -268,7 +268,7 @@ sub get_bid {
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot_time   => $contract->current_tick->epoch,
         contract_id         => $p2->{contract_id},
-        underlying          => $contract->underlying,
+        underlying          => $contract->underlying->symbol,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
         is_forward_starting => $contract->is_forward_starting,
