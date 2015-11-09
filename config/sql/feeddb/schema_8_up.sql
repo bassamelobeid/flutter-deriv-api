@@ -15,9 +15,12 @@ CREATE TABLE feed.realtime_ohlc (
 CREATE OR REPLACE FUNCTION update_realtime_ohlc(fgranuality BIGINT, funderlying VARCHAR(128),fts TIMESTAMP, fspot DOUBLE PRECISION)
 RETURNS INT AS $$
 DECLARE last_aggregation_period BIGINT;
+DECLARE tick_period BIGINT;
 BEGIN
     SELECT EXTRACT(EPOCH FROM ts)::BIGINT -  EXTRACT(EPOCH FROM ts)::BIGINT % (fgranuality) INTO last_aggregation_period FROM feed.realtime_ohlc where underlying=funderlying and granuality=fgranuality;
-    IF last_aggregation_period IS NOT NULL THEN
+    SELECT EXTRACT(EPOCH FROM fts)::BIGINT -  EXTRACT(EPOCH FROM fts)::BIGINT % (fgranuality) INTO tick_period;
+
+    IF last_aggregation_period IS NOT NULL and tick_period = last_aggregation_period THEN
       UPDATE feed.realtime_ohlc SET
           ts=fts,
           high = GREATEST(fspot, high),
