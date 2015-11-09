@@ -46,7 +46,7 @@ sub _msg {
     my $payload = shift;
 
     my %msg;
-    if ($payload ~= /tick/) {
+    if ($payload =~ /tick/) {
         @msg{qw/type underlying ts spot/} = split(',', $payload);
     } else {
         @msg{qw/type underlying ts open high low close/} = split(',', $payload);
