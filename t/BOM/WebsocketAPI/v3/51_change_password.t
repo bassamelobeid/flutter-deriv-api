@@ -46,7 +46,7 @@ $user->save;
 
 my $status = $user->login(password => $password);
 is $status->{success}, 1, 'login with correct password OK';
-$status = $user->login(password => 'letmein');
+$status = $user->login(password => 'mRX1E3Mi00oS8LG');
 ok !$status->{success}, 'Bad password; cannot login';
 
 my $token = BOM::Platform::SessionCookie->new(
@@ -66,7 +66,7 @@ my $new_hash_pwd = BOM::System::Password::hashpw($new_password);
 $t = $t->send_ok({
         json => {
             change_password => 1,
-            old_password    => 'letmein',
+            old_password    => 'mRX1E3Mi00oS8LG',
             new_password    => $new_password
         }})->message_ok;
 my $change_password = decode_json($t->message->[1]);
