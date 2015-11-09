@@ -34,6 +34,7 @@ sub _build__document_content {
         market_times             => $self->market_times,
         tenfore_trading_timezone => $self->tenfore_trading_timezone,
         open_on_weekends         => $self->open_on_weekends,
+        normal_trading_days      => $self->normal_trading_days,
         bloomberg_calendar_code  => $self->bloomberg_calendar_code,
     };
 
@@ -50,7 +51,7 @@ has recorded_date => (
 );
 
 has [
-    qw(delay_amount offered display_name trading_timezone currency holidays market_times tenfore_trading_timezone open_on_weekends bloomberg_calendar_code)
+    qw(delay_amount offered display_name trading_timezone currency holidays market_times tenfore_trading_timezone open_on_weekends normal_trading_days bloomberg_calendar_code)
     ] => (
     is         => 'ro',
     lazy_build => 1,
@@ -109,6 +110,14 @@ sub _build_open_on_weekends {
 
     return $self->document->{'open_on_weekends'};
 }
+
+sub _build_normal_trading_days {
+    my $self = shift;
+
+    return $self->document->{'normal_tradings_days'};
+}
+
+
 
 sub _build_bloomberg_calendar_code {
     my $self = shift;
