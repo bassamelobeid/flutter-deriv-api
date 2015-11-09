@@ -9,11 +9,11 @@ use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 use Test::MockModule;
 use DateTime;
 
-my ($client, $pa_client);
+my ($client,         $pa_client);
 my ($client_account, $pa_account);
 
 my ($client_datamapper, $pa_datamapper);
-my ($total_withdrawal, $withdrawal_count);
+my ($total_withdrawal,  $withdrawal_count);
 
 my $transfer_amount = 2000.2525;
 my $transfer_amount_2dp = sprintf('%.2f', $transfer_amount);
