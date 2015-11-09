@@ -49,7 +49,7 @@ sub _validate {
 
     if ($details) {
         if (BOM::Platform::Client::check_country_restricted($residence) or $from_client->residence ne $residence) {
-            $logger->warn($msg . "restricted residence [$residence], or unmatch with from_client residence: " . $from_client->residence);
+            $logger->warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
             return {error => 'invalid residence'};
         }
         if ($residence eq 'gb' and not $details->{address_postcode}) {
