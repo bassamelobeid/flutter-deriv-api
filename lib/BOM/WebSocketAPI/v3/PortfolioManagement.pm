@@ -23,8 +23,6 @@ sub buy {
     my $source        = $c->stash('source');
     my $ws_id         = $c->tx->connection;
 
-
-
     my $client = $c->stash('client');
     my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
         or return $c->new_error('buy', 'InvalidContractProposal', localize("Unknown contract proposal"));
@@ -144,9 +142,9 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             $fmb_map->{$fmb->id} = $id;
 
             my $data = {
-                id   => $id,
-                type => 'proposal_open_contract',
-                data => {%$p2},
+                id      => $id,
+                type    => 'proposal_open_contract',
+                data    => {%$p2},
                 cleanup => sub {
                     Mojo::IOLoop->remove($id);
                     delete $fmb_map->{$fmb->id};
