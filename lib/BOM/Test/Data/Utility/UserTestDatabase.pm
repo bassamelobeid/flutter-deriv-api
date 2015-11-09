@@ -19,7 +19,7 @@ sub _build__connection_parameters {
         host     => 'localhost',
         port     => '5436',
         user     => 'postgres',
-        password => 'letmein',
+        password => 'mRX1E3Mi00oS8LG',
     };
 }
 
@@ -44,4 +44,3 @@ sub import {
 }
 
 1;
-
