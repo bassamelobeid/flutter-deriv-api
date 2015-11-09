@@ -27,7 +27,7 @@ sub _build__connection_parameters {
         host     => 'localhost',
         port     => '5433',
         user     => 'postgres',
-        password => 'letmein',
+        password => 'mRX1E3Mi00oS8LG',
     };
 }
 
@@ -56,7 +56,7 @@ sub setup_ticks {
     my $feed_file = '/home/git/regentmarkets/bom-test/feed/combined/' . $file;
 
     my $command;
-    $command = "PGPASSWORD=letmein";
+    $command = "PGPASSWORD=mRX1E3Mi00oS8LG";
     $command .= " /usr/lib/postgresql/9.1/bin/pg_restore -d feed";
     $command .= " -Fc -a -p 5433";
     $command .= " -U write";
@@ -167,7 +167,7 @@ sub _create_table_for_date {
     my $table_present = $stmt->fetchrow_arrayref;
 
     if ($table_present->[0] < 1) {
-        my $dbh = DBI->connect('dbi:Pg:dbname=feed;host=localhost;port=5433', 'postgres', 'letmein') or croak $DBI::errstr;
+        my $dbh = DBI->connect('dbi:Pg:dbname=feed;host=localhost;port=5433', 'postgres', 'mRX1E3Mi00oS8LG') or croak $DBI::errstr;
 
         # This operation is bound to raise an warning about how index was created.
         # We can ignore it.
