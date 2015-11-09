@@ -59,11 +59,32 @@ subtest 'new CR real account' => sub {
         like($loginid, qr/^CR\d+$/, "got CR client $loginid");
     };
 
-    subtest 'no duplicate account' => sub {
+    subtest 'no duplicate account - same email' => sub {
         $t = $t->send_ok({json => \%client_details })->message_ok;
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'duplicate email', 'no duplicate account for CR');
+        is($res->{new_account_default}, undef, 'NO account created');
+    };
+
+    subtest 'no duplicate - Name + DOB' => sub {
+        my ($vr_client, $user) = create_vr_account({
+                email           => 'test+test@binary.com',
+                client_password => 'abc123',
+                residence       => 'au',
+            });
+        # authorize
+        my $token = BOM::Platform::SessionCookie->new(
+            loginid => $vr_client->loginid,
+            email   => $vr_client->email,
+        )->token;
+        $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
+        # create CR acc
+        $t = $t->send_ok({json => \%client_details })->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is($res->{error}->{code}, 'duplicate name DOB', 'no duplicate account: same name + DOB');
         is($res->{new_account_default}, undef, 'NO account created');
     };
 };
@@ -87,13 +108,23 @@ subtest 'new MX real account' => sub {
     $details{residence} = 'gb';
     $details{first_name} .= '-gb';
 
-    $t = $t->send_ok({json => \%details })->message_ok;
-    my $res = decode_json($t->message->[1]);
-    ok($res->{new_account_default});
-    test_schema('new_account_default', $res);
+    subtest 'UK client - invalid postcode' => sub {
+        $t = $t->send_ok({json => {%details, address_postcode => ''} })->message_ok;
+        my $res = decode_json($t->message->[1]);
 
-    my $loginid = $res->{new_account_default}->{client_id};
-    like($loginid, qr/^MX\d+$/, "got MX client - $loginid");
+        is($res->{error}->{code}, 'invalid UK postcode', 'UK client must have postcode');
+        is($res->{new_account_default}, undef, 'NO account created');
+    };
+
+    subtest 'new MX account' => sub {
+        $t = $t->send_ok({json => \%details })->message_ok;
+        my $res = decode_json($t->message->[1]);
+        ok($res->{new_account_default});
+        test_schema('new_account_default', $res);
+
+        my $loginid = $res->{new_account_default}->{client_id};
+        like($loginid, qr/^MX\d+$/, "got MX client - $loginid");
+    };
 };
 
 subtest 'new MLT real account' => sub {
@@ -184,6 +215,86 @@ subtest 'create account failed' => sub {
 
         is($res->{error}->{code}, 'invalid residence', 'cannot create real account');
         is($res->{new_account_default}, undef, 'NO account created');
+    };
+
+    subtest 'no POBox for address' => sub {
+        my %details = %client_details;
+        $details{residence} = 'id';
+
+        $t = $t->send_ok({json => {%details, address_line_1 => 'address 1 P.O.Box 1234'} })->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is($res->{error}->{code}, 'invalid PO Box', 'address cannot contain P.O.Box');
+        is($res->{new_account_default}, undef, 'NO account created');
+    };
+
+    subtest 'min age check' => sub {
+        my %details = %client_details;
+        $details{residence} = 'id';
+
+        $t = $t->send_ok({json => {%details, date_of_birth => '2008-01-01'} })->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is($res->{error}->{code}, 'too young', 'min age unmatch');
+        is($res->{new_account_default}, undef, 'NO account created');
+    };
+
+    subtest 'restricted or invalid country' => sub {
+        subtest 'restricted - US' => sub {
+            $vr_client->residence('us');
+            $vr_client->save;
+
+            my %details = %client_details;
+            $details{residence} = 'us';
+
+            $t = $t->send_ok({json => \%details})->message_ok;
+            my $res = decode_json($t->message->[1]);
+
+            is($res->{error}->{code}, 'invalid', 'restricted country - US');
+            is($res->{new_account_default}, undef, 'NO account created');
+        };
+        subtest 'invalid - xx' => sub {
+            $vr_client->residence('xx');
+            $vr_client->save;
+
+            my %details = %client_details;
+            $details{residence} = 'xx';
+
+            $t = $t->send_ok({json => \%details})->message_ok;
+            my $res = decode_json($t->message->[1]);
+
+            is($res->{error}->{code}, 'invalid', 'invalid country - xx');
+            is($res->{new_account_default}, undef, 'NO account created');
+        };
+    };
+
+    subtest 'no MF or JP' => sub {
+        subtest 'Maltainvest' => sub {
+            $vr_client->residence('de');
+            $vr_client->save;
+
+            my %details = %client_details;
+            $details{residence} = 'de';
+
+            $t = $t->send_ok({json => \%details})->message_ok;
+            my $res = decode_json($t->message->[1]);
+
+            is($res->{error}->{code}, 'invalid', 'wrong acc opening - MF');
+            is($res->{new_account_default}, undef, 'NO account created');
+        };
+        subtest 'Japan' => sub {
+            $vr_client->residence('jp');
+            $vr_client->save;
+
+            my %details = %client_details;
+            $details{residence} = 'jp';
+
+            $t = $t->send_ok({json => \%details})->message_ok;
+            my $res = decode_json($t->message->[1]);
+
+            is($res->{error}->{code}, 'invalid', 'wrong acc opening - JP');
+            is($res->{new_account_default}, undef, 'NO account created');
+        };
     };
 };
 
