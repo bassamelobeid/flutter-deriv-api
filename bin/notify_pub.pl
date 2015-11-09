@@ -67,13 +67,9 @@ sub _publish {
     my $msg   = shift;
     my $json  = JSON::to_json($msg);
 
-    my $expire_in = 2;
-
     for ('TXNUPDATE::balance_' . $msg->{account_id},
          'TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id},
          'TXNUPDATE::transaction_' . $msg->{account_id}) {
-        $redis->set($_, $json);
-        $redis->expire($_,  $expire_in);
         $redis->publish($_, $json);
     }
 }
