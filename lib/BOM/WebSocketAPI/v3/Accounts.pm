@@ -256,8 +256,7 @@ sub balance {
         cleanup => sub {
             my $reason = shift;
 
-            warn "unsubscribing " . $channel->[0];
-            $redis && $redis->subscribe($channel, sub { });
+            $redis && $redis->unsubscribe($channel, sub { });
             $c->send({
                     json => $c->new_error(
                         'ticks',
@@ -271,11 +270,11 @@ sub balance {
 
     $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
 
-    $redis->on(
-        connection => sub {
-            my ($self, $info) = @_;
-            $log->debug("connected: " . JSON::to_json($info));
-        });
+    # $redis->on(
+    #     connection => sub {
+    #         my ($self, $info) = @_;
+    #         $log->debug("connected: " . JSON::to_json($info));
+    #     });
 
     $redis->on(
         error => sub {
@@ -290,7 +289,6 @@ sub balance {
             send_realtime_balance($c, $id, $args, $client, $msg);
         });
 
-    warn "subscribing to " . $channel->[0];
     $redis->subscribe(
         $channel,
         sub {
