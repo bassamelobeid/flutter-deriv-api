@@ -73,6 +73,13 @@ around _document_content => sub {
     };
 };
 
+=head2 VersionedSymbolData
+
+As this module inherits from VersionedSymbolData we need to manipulate the inheritance so that we can "inject"
+our Chronicle saving code in the inherited "save" subroutine.
+
+=cut
+
 with 'BOM::MarketData::Role::VersionedSymbolData' => {
     -alias    => {save => '_save'},
     -excludes => ['save']};
