@@ -141,6 +141,35 @@ has open_on_weekends => (
     default => 0,
 );
 
+=head2 trading_day
+
+What is the trading days of the exchange? It can be everyday, weekday or sun_thru_thu
+
+=cut
+
+has trading_days => (
+    is      => 'ro',
+    default => 'everyday',
+);
+
+=head2 trading_day_list
+
+List the trading day index which defined on config/files/exchanges_trading_days_aliases.yml
+
+=cut
+
+has trading_days_list => (
+    is         => 'ro',
+    isa        => 'array',
+    lazy_build => 1,
+);
+
+sub _build_trading_days_list {
+    my $self                 = shift;
+    my $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
+    return $trading_days_aliases{$self->trading_days};
+}
+
 =head2 display_name
 
 A name we can show to someone someday
@@ -336,11 +365,8 @@ sub trades_on {
     my $days_since  = $really_when->days_since_epoch;
     my $symbol      = $self->symbol;
 
-    $trades_cache{$symbol}->{$days_since} //= ((
-                   $self->open_on_weekends
-                or $really_when->is_a_weekday
-        )
-            and not $self->has_holiday_on($really_when)) ? 1 : 0;
+    $trades_cache{$symbol}->{$days_since} //=
+        ($self->trading_days_list{$really_when->day_of_week} and not $self->has_holiday_on($really_when)) ? 1 : 0;
 
     return $trades_cache{$symbol}->{$days_since};
 }
