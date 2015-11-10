@@ -36,9 +36,8 @@ use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
-
 use BOM::Utility::Log4perl qw( get_logger );
-
+use YAML::CacheLoader qw(LoadFile);
 # We're going to do this from time to time.
 # I claim it's under control.
 ## no critic(TestingAndDebugging::ProhibitNoWarnings)
@@ -167,7 +166,7 @@ has trading_days_list => (
 sub _build_trading_days_list {
     my $self                 = shift;
     my $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
-    return $trading_days_aliases{$self->trading_days};
+    return $trading_days_aliases->{$self->trading_days};
 }
 
 =head2 display_name
