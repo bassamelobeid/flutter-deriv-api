@@ -8,16 +8,32 @@ BOM::MarketData::CorporateAction
 
 =head1 DESCRIPTION
 
-Represents the corporate actions data of an underlying from couch database
+Represents the corporate actions data of an underlying from database
 $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
 
 =cut
 
 use Moose;
-extends 'BOM::MarketData';
+extends 'BOM::MarketData';    #we keep this as its not related to CouchDB
+
+=head1 ATTRIBUTES
+
+=head2 for_date
+
+The date for which we wish data
+
+=cut
+
+has for_date => (
+    is      => 'ro',
+    isa     => 'Maybe[Date::Utility]',
+    default => undef,
+);
 
 =head2 symbol
+
 Represents underlying symbol
+
 =cut
 
 has symbol => (
@@ -73,28 +89,27 @@ around _document_content => sub {
     };
 };
 
-=head2 VersionedSymbolData
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
+);
 
-As this module inherits from VersionedSymbolData we need to manipulate the inheritance so that we can "inject"
-our Chronicle saving code in the inherited "save" subroutine.
+sub _build_document {
+    my $self = shift;
 
-=cut
+    my $document = BOM::System::Chronicle::get('corporate_actions', $self->symbol);
 
-with 'BOM::MarketData::Role::VersionedSymbolData' => {
-    -alias    => {save => '_save'},
-    -excludes => ['save']};
+    if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
+        $document = BOM::System::Chronicle::get_for('corporate_actions', $self->symbol, $self->for_date);
+    }
+
+    return $document;
+}
 
 sub save {
     my $self = shift;
 
-    #first call original save method to save all data into CouchDB just like before
-    $self->_save();
-
-    my $new_document = $self->_document_content;
-    my $all_actions  = $new_document->{actions};
-
-    BOM::System::Chronicle::set('corporate_actions', $self->symbol, $all_actions);
-    return;
+    return BOM::System::Chronicle::set('corporate_actions', $self->symbol, $self->_document_content);
 }
 
 =head2 actions
@@ -111,7 +126,10 @@ has actions => (
 sub _build_actions {
     my $self = shift;
 
-    return $self->_couchdb->document_present($self->current_document_id) ? $self->document->{actions} : {};
+    my $document = $self->document;
+
+    return $document->{actions} if defined $document;
+    return {};
 }
 
 =head2 action_exists
