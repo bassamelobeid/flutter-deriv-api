@@ -43,7 +43,7 @@ sub save {
     my $self = shift;
 
     #first call original save method to save all data into CouchDB just like before
-    $self->_save();
+    my $result = $self->_save();
 
     my $new_document  = $self->_document_content;
     my $dividend_data = {
@@ -53,7 +53,7 @@ sub save {
     };
 
     BOM::System::Chronicle::set('dividends', $self->symbol, $dividend_data);
-    return;
+    return $result;
 }
 
 =head2 recorded_date
