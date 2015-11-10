@@ -45,14 +45,7 @@ sub save {
     #first call original save method to save all data into CouchDB just like before
     my $result = $self->_save();
 
-    my $new_document  = $self->_document_content;
-    my $dividend_data = {
-        rates           => $new_document->{rates},
-        discrete_points => $new_document->{discrete_points},
-        date            => $new_document->{date},
-    };
-
-    BOM::System::Chronicle::set('dividends', $self->symbol, $dividend_data);
+    BOM::System::Chronicle::set('dividends', $self->symbol, $self->_document_content);
     return $result;
 }
 
