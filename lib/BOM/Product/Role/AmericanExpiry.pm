@@ -59,7 +59,9 @@ sub _build_hit_tick {
 sub get_high_low_for_contract_period {
     my $self = shift;
 
-    my ($high, $low);
+    my ($high, $low, $close);
+    my $ok_through_expiry = 0;                                     # Must be confirmed.
+    my $exit_tick = $self->is_after_expiry && $self->exit_tick;    # Can still be undef if the tick is not yet in the DB.
     if (not $self->pricing_new and $self->entry_tick and $self->entry_tick->epoch < $self->date_pricing->epoch) {
         my $start;
         my $end = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement : $self->date_pricing;
@@ -79,15 +81,17 @@ sub get_high_low_for_contract_period {
             # Also, ticks after settlement do not apply
             $start = $self->entry_tick;
         }
-        ($high, $low) = @{
+        ($high, $low, $close) = @{
             $self->underlying->get_high_low_for_period({
                     start => $start->epoch,
                     end   => $end->epoch,
-                })}{'high', 'low'};
-
+                })}{'high', 'low', 'close'};
+        # The two intraday queries run off different tables, so we have to make sure our consistent
+        # exit tick was included. expiry_daily may have differences, but should be fine anyway.
+        $ok_through_expiry = 1 if ($exit_tick and ($self->expiry_daily or $exit_tick->quote == $close));
     }
 
-    return ($high, $low);
+    return ($high, $low, $ok_through_expiry);
 }
 
 1;

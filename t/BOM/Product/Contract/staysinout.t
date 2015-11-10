@@ -18,9 +18,9 @@ my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol => 'FOREX',
+        symbol => $_,
         date   => Date::Utility->new
-    });
+    }) for ('FOREX', 'RANDOM');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -33,16 +33,38 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $now->epoch,
-    quote      => 100,
-});
-BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-    underlying => 'frxUSDJPY',
-    epoch      => $now->epoch + 1,
-    quote      => 100.001,
-});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol        => 'R_100',
+        recorded_date => $now
+    });
+
+my @ticks_to_add = (
+    ['frxUSDJPY', $now->epoch                    => 100],
+    ['frxUSDJPY', $now->epoch + 1                => 100.001],
+    ['frxUSDJPY', $now->epoch + 3                => 100.020],
+    ['frxUSDJPY', $now->epoch + 5                => 100.010],
+    ['frxUSDJPY', $now->epoch + 6                => 98.010],
+    ['R_100',     $now->epoch                    => 100],
+    ['R_100',     $now->epoch + 1                => 100],
+    ['R_100',     $now->epoch + 5                => 100.50],
+    ['R_100',     $now->epoch + 120              => 100.01],
+    ['R_100',     $now->epoch + 121              => 100.02],
+    ['R_100',     $now->epoch + 180              => 99.80],
+    ['R_100',     $now->epoch + 2 * 24 * 60 * 60 => 99.80],
+);
+
+my $close_tick;
+
+foreach my $triple (@ticks_to_add) {
+    # We just want the last tick to INJECT below sine the test DB OHLC doesn't seem to work.
+    $close_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $triple->[0],
+        epoch      => $triple->[1],
+        quote      => $triple->[2],
+    });
+}
 
 my $args = {
     bet_type     => 'RANGE',
@@ -77,32 +99,12 @@ subtest 'range' => sub {
         ok $c->high_barrier;
         ok $c->low_barrier;
         ok !$c->is_expired, 'not expired';
-        $args->{date_pricing} = $now->plus_time_interval('2d');
-        $c = produce_contract($args);
-        ok $c->is_expired, 'expired';
-        ok !$c->hit_tick;
-        cmp_ok $c->value, '==', $c->payout, 'full payout';
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'frxUSDJPY',
-            epoch      => $now->epoch + 3,
-            quote      => 100.020,
-        });
         $args->{date_pricing} = $now->plus_time_interval('3s');
         $c = produce_contract($args);
         ok $c->is_expired, 'expired';
         ok $c->hit_tick;
         cmp_ok $c->hit_tick->quote, '==', 100.020;
         cmp_ok $c->value, '==', 0.00, 'zero payout';
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'frxUSDJPY',
-            epoch      => $now->epoch + 5,
-            quote      => 100.010,
-        });
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'frxUSDJPY',
-            epoch      => $now->epoch + 6,
-            quote      => 98.010,
-        });
         $args->{date_start}   = $now->plus_time_interval('4s');
         $args->{date_pricing} = $now->plus_time_interval('6s');
         $c                    = produce_contract($args);
@@ -110,6 +112,15 @@ subtest 'range' => sub {
         ok $c->hit_tick;
         cmp_ok $c->hit_tick->quote, '==', 98.010;
         cmp_ok $c->value, '==', 0.00, 'zero payout';
+        $args->{high_barrier} = 200;
+        $args->{low_barrier}  = 90;
+        $args->{date_pricing} = $now->plus_time_interval('2d');
+        $args->{exit_tick}    = $close_tick;                      # INJECT OHLC since cannot find it in the test DB
+        $c                    = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok !$c->hit_tick, 'no hit tick';
+        cmp_ok $c->value, '==', $c->payout, 'full payout';
+        delete $args->{exit_tick};
     }
     'expiry checks';
 };
@@ -130,29 +141,6 @@ subtest 'up or down' => sub {
     }
     'generic';
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => 'RANDOM',
-            date   => Date::Utility->new
-        });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_flat',
-        {
-            symbol        => 'R_100',
-            recorded_date => $now
-        });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $now->epoch,
-        quote      => 100,
-    });
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        underlying => 'R_100',
-        epoch      => $now->epoch + 1,
-        quote      => 100,
-    });
     lives_ok {
         $args->{date_start}   = $now;
         $args->{date_pricing} = $now->plus_time_interval('10s');
@@ -170,37 +158,19 @@ subtest 'up or down' => sub {
         $args->{date_pricing} = $now->plus_time_interval('2m');
         $c = produce_contract($args);
         ok $c->is_expired, 'expired';
-        ok $c->entry_tick;
-        ok !$c->hit_tick;
-        cmp_ok $c->value, '==', 0.00, 'zero payout';
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'R_100',
-            epoch      => $now->epoch + 5,
-            quote      => 100.50,
-        });
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'R_100',
-            epoch      => $now->plus_time_interval('2m')->epoch,
-            quote      => 100.01,
-        });
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'R_100',
-            epoch      => $now->plus_time_interval('2m')->epoch + 1,
-            quote      => 100.02,
-        });
-        $c = produce_contract($args);
-        ok $c->is_expired, 'expired';
-        ok $c->hit_tick;
+        ok $c->hit_tick,   'hit tick';
         cmp_ok $c->hit_tick->quote, '==', 100.50;
         cmp_ok $c->value, '==', $c->payout, 'full payout';
+        $args->{high_barrier} = 'S1000P';
+        $c = produce_contract($args);
+        ok $c->is_expired, 'expired';
+        ok $c->entry_tick, 'entry tick';
+        ok !$c->hit_tick, 'No hit tick';
+        cmp_ok $c->value, '==', 0.00, 'zero payout';
+        $args->{high_barrier} = 'S10P';
         $args->{date_start}   = $now->plus_time_interval('2m');
         $args->{date_pricing} = $now->plus_time_interval('3m');
         $c                    = produce_contract($args);
-        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-            underlying => 'R_100',
-            epoch      => $now->plus_time_interval('2m2s')->epoch,
-            quote      => 99.80,
-        });
         ok $c->is_expired, 'expired';
         ok $c->hit_tick;
         cmp_ok $c->hit_tick->quote, '==', 99.80;
