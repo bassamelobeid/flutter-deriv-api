@@ -3,6 +3,7 @@ package main;
 
 use strict 'vars';
 
+use List::MoreUtils qw(any);
 use DateTime;
 use f_brokerincludeall;
 use BOM::Platform::Plack qw( PrintContentType );
@@ -82,7 +83,7 @@ print "<form action=\""
     . "</form>";
 
 my $landing_company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($broker)->short;
-if ($landing_company eq 'iom' or $landing_company eq 'malta') {
+if (any { $landing_company eq $_ } qw(iom malta maltainvest)) {
     Bar("HMCE/IOMCE bet numbering records");
 
     print "<form action=\""
