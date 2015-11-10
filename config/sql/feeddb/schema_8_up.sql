@@ -5,7 +5,7 @@ CREATE UNLOGGED TABLE feed.realtime_ohlc (
     underlying VARCHAR(128) NOT NULL,
     ts BIGINT NOT NULL,
     ohlc TEXT NOT NULL,
-    PRIMARY KEY (underlying,ts)
+    PRIMARY KEY (underlying)
 );
 
 -- underlying VARCHAR(128),ts EPOCH, spot DOUBLE PRECISION
