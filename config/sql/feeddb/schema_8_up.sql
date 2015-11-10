@@ -1,11 +1,18 @@
 BEGIN;
 CREATE OR REPLACE PROCEDURAL LANGUAGE plperl;
 
-CREATE UNLOGGED TABLE feed.realtime_ohlc (
+CREATE TABLE feed.realtime_ohlc (
     underlying VARCHAR(128) NOT NULL,
     ts BIGINT NOT NULL,
     ohlc TEXT NOT NULL,
     PRIMARY KEY (underlying)
+);
+
+CREATE TABLE feed.underlying_open_close (
+    underlying VARCHAR(128) NOT NULL,
+    open_time BIGINT NOT NULL,
+    close_time TEXT NOT NULL,
+    PRIMARY KEY (underlyings)
 );
 
 -- underlying VARCHAR(128),ts EPOCH, spot DOUBLE PRECISION
@@ -18,6 +25,10 @@ $tick_notify$
 
   # Get the only record which should exist for each underlying
   $rv = spi_exec_query("SELECT * FROM feed.realtime_ohlc where underlying='$underlying'", 1);
+
+  # dealing with those markets that their open and close is not in the same UTC period.
+  $openclose = spi_exec_query("SELECT * FROM feed.underlying_open_close where underlying='$underlying'", 1);
+  $ts += $openclose->{rows}[0]->{open_time} if $openclose->{rows}[0]->{open_time};
 
 
   # If there is no then record insert one.
