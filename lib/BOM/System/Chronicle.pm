@@ -114,7 +114,7 @@ sub get {
         return JSON::from_json($cached_data);
     }
 
-    my $db_data = get_for($category, $name, DateTime::Format::Pg->format_timestamp(DateTime->now()));
+    my $db_data = get_for($category, $name, time);
 
     if (defined $db_data && keys %{$db_data}) {
         my $id_value = (sort keys %{$db_data})[0];
@@ -129,10 +129,12 @@ sub get {
 sub get_for {
     my $category = shift;
     my $name     = shift;
-    my $date_for = shift;
+    my $date_for = shift; #epoch
+
+    my $db_date = DateTime::Format::Pg->format_timestamp(DateTime->from_epoch(epoch => $date_for));
 
     return _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
-        'id', {}, $category, $name, $date_for);
+        'id', {}, $category, $name, $db_date);
 }
 
 sub _archive {
