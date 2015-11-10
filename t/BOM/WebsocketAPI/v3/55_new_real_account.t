@@ -169,6 +169,19 @@ subtest 'create account failed' => sub {
     )->token;
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
+    subtest 'insufficient info' => sub {
+        # create real acc
+        my %details = %client_details;
+        delete $details{residence};
+        delete $details{first_name};
+
+        $t = $t->send_ok({json => \%details })->message_ok;
+        my $res = decode_json($t->message->[1]);
+
+        is($res->{error}->{code}, 'InputValidationFailed', 'fail input validation');
+        is($res->{new_account_default}, undef, 'NO account created');
+    };
+
     subtest 'email unverified' => sub {
         $user->email_verified(0);
         $user->save;
