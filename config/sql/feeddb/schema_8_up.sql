@@ -28,7 +28,7 @@ $tick_notify$
 
   # dealing with those markets that their open and close is not in the same UTC period.
   $openclose = spi_exec_query("SELECT * FROM feed.underlying_open_close where underlying='$underlying'", 1);
-  $ts += $openclose->{rows}[0]->{open_time} if $openclose->{rows}[0]->{open_time};
+  $ts -= $openclose->{rows}[0]->{open_time} if $openclose->{rows}[0]->{open_time};
 
 
   # If there is no then record insert one.
