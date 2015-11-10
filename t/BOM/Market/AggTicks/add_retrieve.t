@@ -21,6 +21,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => 'FOREX',
         date   => Date::Utility->new,
+        trading_days => 'weekdays',
     });
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/14-Mar-12.dump');
 
