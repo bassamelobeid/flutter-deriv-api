@@ -148,10 +148,10 @@ What is the trading days of the exchange? It can be everyday, weekday or sun_thr
 
 has trading_days => (
     is      => 'ro',
-    default => 'everyday',
+    default => 'weekday',
 );
 
-=head2 trading_day_list
+=head2 trading_days_list
 
 List the trading day index which defined on config/files/exchanges_trading_days_aliases.yml
 
@@ -159,14 +159,15 @@ List the trading day index which defined on config/files/exchanges_trading_days_
 
 has trading_days_list => (
     is         => 'ro',
-    isa        => 'array',
+    isa        => 'ArrayRef',
     lazy_build => 1,
 );
 
 sub _build_trading_days_list {
     my $self                 = shift;
-    my $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
-    return $trading_days_aliases->{$self->trading_days};
+    state $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
+    return \@{$trading_days_aliases->{$self->trading_days}};
+
 }
 
 =head2 display_name
@@ -363,9 +364,8 @@ sub trades_on {
     my $really_when = $self->trading_date_for($when);
     my $days_since  = $really_when->days_since_epoch;
     my $symbol      = $self->symbol;
-
     $trades_cache{$symbol}->{$days_since} //=
-        ($self->trading_days_list{$really_when->day_of_week} and not $self->has_holiday_on($really_when)) ? 1 : 0;
+        (@{$self->trading_days_list}[$really_when->day_of_week] and not $self->has_holiday_on($really_when)) ? 1 : 0;
 
     return $trades_cache{$symbol}->{$days_since};
 }
