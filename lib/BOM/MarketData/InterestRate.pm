@@ -46,7 +46,7 @@ sub save {
     my $self = shift;
 
     #first call original save method to save all data into CouchDB just like before
-    $self->_save();
+    my $result = $self->_save();
 
     my $new_document = $self->_document_content;
     my $ir_data      = {
@@ -55,8 +55,7 @@ sub save {
     };
 
     BOM::System::Chronicle::set('interest_rates', $self->symbol, $ir_data);
-    print "sent to chronicle for " . $self->symbol . "\n";
-    return;
+    return $result;
 }
 
 has type => (
