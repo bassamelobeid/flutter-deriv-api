@@ -164,7 +164,7 @@ has trading_days_list => (
 );
 
 sub _build_trading_days_list {
-    my $self                 = shift;
+    my $self = shift;
     state $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
     return \@{$trading_days_aliases->{$self->trading_days}};
 

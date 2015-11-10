@@ -117,8 +117,6 @@ sub _build_trading_days {
     return $self->document->{'tradings_days'};
 }
 
-
-
 sub _build_bloomberg_calendar_code {
     my $self = shift;
 
