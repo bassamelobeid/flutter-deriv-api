@@ -20,7 +20,7 @@ $tick_notify$
   $rv = spi_exec_query("SELECT * FROM feed.realtime_ohlc where underlying='$underlying'", 1);
 
 
-  # If there is not record insert one.
+  # If there is no then record insert one.
   if (!$rv->{rows}[0]->{ohlc}) {
     $all_same = "$spot,$spot,$spot,$spot";
     $ohlc_val='';
