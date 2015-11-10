@@ -10,6 +10,11 @@ use Try::Tiny;
 use RedisDB;
 use BOM::Database::FeedDB;
 
+use BOM::Market::UnderlyingDB;
+use BOM::Market::Registry;
+
+
+update_crossing_underlyings()
 while (1) {
     try {
         my $redis = _redis();
@@ -48,4 +53,24 @@ sub _redis {
         host     => $config->{write}->{host},
         port     => $config->{write}->{port},
         password => $config->{write}->{password});
+}
+
+sub update_crossing_underlyings {
+    my @all_symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
+            market            => [BOM::Market::Registry->instance->all_market_names],
+            contract_category => 'ANY'
+        );
+    my $update = '';
+    foreach $s (@all_symbols) {
+        $u = BOM::Market::Underlying->new($s);
+        if ($u->exchange->market_times()->{standard}->{daily_open}->seconds<0) {
+            $update .= "INSERT INTO feed.underlying_open_close VALEUS ('$s', ".$u->exchange->market_times()->{standard}->{daily_open}->seconds.", ".$u->exchange->market_times()->{standard}->{daily_close}->seconds.");";
+        }
+    }
+    BOM::Database::FeedDB::write_dbh()->do("
+        BEGIN;
+        DELETE FROM feed.underlying_open_close;
+        $update
+        COMMIT;
+    ");
 }
