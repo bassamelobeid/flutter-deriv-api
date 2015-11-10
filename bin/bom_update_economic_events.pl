@@ -47,7 +47,7 @@ sub script_run {
 
     # Removing older events for chronicle. This trimmed version can be use in back pricing if pricing code changes.
     BOM::System::Chronicle->_redis_write->zremrangebyscore("ECONOMIC_EVENTS_TRIMMED" , 0, Date::Utility->new->epoch - 2 * 24 * 3600 );
-    BOM::System::Chronicle::add('economic_events' , '', JSON::to_json(BOM::System::Chronicle->_redis_write->zrangebyscore("ECONOMIC_EVENTS_TRIMMED" , 0, "+inf")) );
+    BOM::System::Chronicle::set('economic_events' , '', JSON::to_json(BOM::System::Chronicle->_redis_write->zrangebyscore("ECONOMIC_EVENTS_TRIMMED" , 0, "+inf")) );
 
 
     my $num_events_saved  = scalar(@$events_received);

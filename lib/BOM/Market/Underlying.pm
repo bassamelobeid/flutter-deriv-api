@@ -1621,22 +1621,23 @@ sub get_high_low_for_period {
 
     my @ohlcs = $self->get_ohlc_data_for_period($args);
 
-    my ($final_high, $final_low);
+    my ($final_high, $final_low, $final_close);
     foreach my $ohlc (@ohlcs) {
         my $high = $ohlc->high;
         my $low  = $ohlc->low;
-        my $date = Date::Utility->new($ohlc->epoch)->date;
 
         $final_high = $high unless $final_high;
         $final_low  = $low  unless $final_low;
 
         $final_high = $high if $high > $final_high;
         $final_low  = $low  if $low < $final_low;
+        $final_close = $ohlc->close;
     }
 
     return {
-        high => $final_high,
-        low  => $final_low,
+        high  => $final_high,
+        low   => $final_low,
+        close => $final_close,
     };
 }
 
