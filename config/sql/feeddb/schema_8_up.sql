@@ -12,7 +12,7 @@ CREATE TABLE feed.underlying_open_close (
     underlying VARCHAR(128) NOT NULL,
     open_time BIGINT NOT NULL,
     close_time TEXT NOT NULL,
-    PRIMARY KEY (underlyings)
+    PRIMARY KEY (underlying)
 );
 
 -- underlying VARCHAR(128),ts EPOCH, spot DOUBLE PRECISION
