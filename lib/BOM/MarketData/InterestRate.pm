@@ -48,13 +48,7 @@ sub save {
     #first call original save method to save all data into CouchDB just like before
     my $result = $self->_save();
 
-    my $new_document = $self->_document_content;
-    my $ir_data      = {
-        type  => $new_document->{type},
-        rates => $new_document->{rates},
-    };
-
-    BOM::System::Chronicle::set('interest_rates', $self->symbol, $ir_data);
+    BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content);
     return $result;
 }
 
