@@ -15,7 +15,6 @@ use BOM::Platform::Account;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 
-
 sub new_account_virtual {
     my ($c, $args) = @_;
     BOM::Platform::Context::request($c->stash('request'));
@@ -26,15 +25,15 @@ sub new_account_virtual {
     my $err_code;
     if (BOM::Platform::Account::validate_verification_code($details{email}, $code)) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
-                details         => \%details,
-                email_verified  => 1
-            });
+            details        => \%details,
+            email_verified => 1
+        });
         if (not $acc->{error}) {
             my $client  = $acc->{client};
             my $account = $client->default_account->load;
 
             return {
-                msg_type => 'new_account_virtual',
+                msg_type            => 'new_account_virtual',
                 new_account_virtual => {
                     client_id => $client->loginid,
                     currency  => $account->currency_code,
@@ -76,11 +75,11 @@ sub verify_email {
 }
 
 sub new_account_default {
-    my ($c, $args)  = @_;
-    my $client      = $c->stash('client');
+    my ($c, $args) = @_;
+    my $client = $c->stash('client');
     BOM::Platform::Context::request($c->stash('request'));
 
-    my $error_map   = BOM::Platform::Locale::error_map();
+    my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return $c->new_error('new_account_default', 'invalid', $error_map->{'invalid'});
@@ -90,35 +89,36 @@ sub new_account_default {
     $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/;
     try {
         my $dob = DateTime->new(
-            year       => $1,
-            month      => $2,
-            day        => $3,
+            year  => $1,
+            month => $2,
+            day   => $3,
         );
         $args->{date_of_birth} = $dob->ymd;
-    } catch { return; } or return $c->new_error('new_account_default', 'invalid DOB', $error_map->{'invalid DOB'});
+    }
+    catch { return; } or return $c->new_error('new_account_default', 'invalid DOB', $error_map->{'invalid DOB'});
 
     my $details = {
-        broker_code                     => BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code,
-        email                           => $client->email,
-        client_password                 => $client->password,
-        salutation                      => $args->{salutation},
-        last_name                       => $args->{last_name},
-        first_name                      => $args->{first_name},
-        date_of_birth                   => $args->{date_of_birth},
-        residence                       => $args->{residence},
-        address_line_1                  => $args->{address_line_1},
-        address_line_2                  => $args->{address_line_2}      || '',
-        address_city                    => $args->{address_city},
-        address_state                   => $args->{address_state}       || '',
-        address_postcode                => $args->{address_postcode}    || '',
-        phone                           => $args->{phone},
-        secret_question                 => $args->{secret_question},
-        secret_answer                   => $args->{secret_answer},
-        myaffiliates_token_registered   => 0,
-        checked_affiliate_exposures     => 0,
-        source                          => 'websocket-api',
-        latest_environment              => '',
-        myaffiliates_token              => $client->myaffiliates_token || '',
+        broker_code     => BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code,
+        email           => $client->email,
+        client_password => $client->password,
+        salutation      => $args->{salutation},
+        last_name       => $args->{last_name},
+        first_name      => $args->{first_name},
+        date_of_birth   => $args->{date_of_birth},
+        residence       => $args->{residence},
+        address_line_1  => $args->{address_line_1},
+        address_line_2   => $args->{address_line_2}   || '',
+        address_city     => $args->{address_city},
+        address_state    => $args->{address_state}    || '',
+        address_postcode => $args->{address_postcode} || '',
+        phone            => $args->{phone},
+        secret_question  => $args->{secret_question},
+        secret_answer    => $args->{secret_answer},
+        myaffiliates_token_registered => 0,
+        checked_affiliate_exposures   => 0,
+        source                        => 'websocket-api',
+        latest_environment            => '',
+        myaffiliates_token            => $client->myaffiliates_token || '',
     };
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
@@ -132,8 +132,8 @@ sub new_account_default {
     }
 
     return {
-        msg_type => 'new_account_default',
-        new_account_default  => {
+        msg_type            => 'new_account_default',
+        new_account_default => {
             client_id => $acc->{client}->loginid,
         }};
 }
