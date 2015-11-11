@@ -131,10 +131,15 @@ sub new_account_real {
         return $c->new_error('new_account_real', $err_code, $error_map->{$err_code});
     }
 
+    my $new_client      = $acc->{client};
+    my $landing_company = $acc->{client}->landing_company;
+
     return {
         msg_type            => 'new_account_real',
         new_account_real => {
-            client_id => $acc->{client}->loginid,
+            client_id                 => $new_client->loginid,
+            landing_company           => $landing_company->name,
+            landing_company_shortcode => $landing_company->short,
         }};
 }
 

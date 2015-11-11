@@ -16,6 +16,14 @@
         "client_id": {
           "type": "string",
           "description": "Client id of new real money account"
+        },
+        "landing_company": {
+          "type": "string",
+          "description": "landing company full name"
+        },
+        "landing_company_short": {
+          "type": "string",
+          "description": "landing company shortcode"
         }
       }
     },
