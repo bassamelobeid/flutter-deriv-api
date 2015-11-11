@@ -15,7 +15,6 @@ CREATE TABLE feed.underlying_open_close (
     PRIMARY KEY (underlying)
 );
 
--- underlying VARCHAR(128),ts EPOCH, spot DOUBLE PRECISION
 CREATE OR REPLACE FUNCTION tick_notify(VARCHAR(128),BIGINT,DOUBLE PRECISION) RETURNS TEXT AS
 $tick_notify$
     my $underlying      = $_[0];
@@ -24,10 +23,8 @@ $tick_notify$
     my $time_adjustment = 0;
     my @grans           = qw(60 120 300 600 900 1800 3600 7200 14400 28800 86400);
 
-    # Get the only record which should exist for each underlying
     $rv = spi_exec_query("SELECT * FROM feed.realtime_ohlc where underlying='$underlying'", 1);
 
-    # dealing with those markets that their open and close is not in the same UTC period. open_time is negative for those.
     $openclose = spi_exec_query("SELECT * FROM feed.underlying_open_close where underlying='$underlying'", 1);
     $time_adjustment = $openclose->{rows}[0]->{open_time} if $openclose->{rows}[0]->{open_time};
 
@@ -37,12 +34,10 @@ $tick_notify$
         foreach (@grans) { $ohlc_val .= "$_:$all_same;" }
         $rv = spi_exec_query("INSERT INTO feed.realtime_ohlc VALUES ('$underlying', $ts, '$ohlc_val')");
     } else {
-        # Find array of all ohlc values saved in ohlc field in text type
         $pattern = "";
         foreach (@grans) { $pattern .= "$_:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);" }
         @match = ($rv->{rows}[0]->{ohlc} =~ /$pattern/g);
 
-        # convert the array to hash to using it a bit less error prone
         my $m;
         $c = 0;
         foreach (@grans) {
@@ -54,13 +49,12 @@ $tick_notify$
         }
 
         foreach $g (@grans) {
-            # if last ohlc ts is still in same time period of new tick ts for that granuality
+            # Shitfing the record TS with time_adjustment for cross UTC day markets
             if (($ts - $ts % $g) == ($rv->{rows}[0]->{ts} - $time_adjustment - $rv->{rows}[0]->{ts} % $g)) {
                 $ohlc_val .= "$g:" . $m->{"o_$g"} . ",";
                 $ohlc_val .= ($spot > $m->{"h_$g"}) ? "$spot," : $m->{"h_$g"} . ",";
                 $ohlc_val .= ($spot < $m->{"l_$g"}) ? "$spot," : $m->{"l_$g"} . ",";
                 $ohlc_val .= "$spot;";
-                # if this is a new period reset all ohlc values for that period
             } else {
                 $ohlc_val .= "$g:$spot,$spot,$spot,$spot;";
             }
