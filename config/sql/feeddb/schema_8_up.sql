@@ -15,6 +15,13 @@ CREATE TABLE feed.underlying_open_close (
     PRIMARY KEY (underlying)
 );
 
+-- This is just to set if notification must be sent or not.
+-- in case of accumulation of ticks system might have issue seding thoushands of notifications
+-- in a short period.
+CREATE TABLE feed.do_notify (
+    do_notify BOOLEAN DEFAULT 'true'
+);
+
 CREATE OR REPLACE FUNCTION tick_notify(VARCHAR(128),BIGINT,DOUBLE PRECISION) RETURNS TEXT AS
 $tick_notify$
     my $underlying      = $_[0];
@@ -48,7 +55,9 @@ $tick_notify$
             }
         }
         $rv = spi_exec_query("UPDATE feed.realtime_ohlc SET ts=$ts, ohlc='$ohlc_val' where underlying='$underlying'");
-        $rv = spi_exec_query("SELECT pg_notify('feed_watchers', '$underlying;$ts;$spot;$ohlc_val');");
+        if (spi_exec_query("SELECT do_notify FROM feed.do_notify", 1)->{rows}[0]->{do_notify} eq 't') {
+            $rv = spi_exec_query("SELECT pg_notify('feed_watchers', '$underlying;$ts;$spot;$ohlc_val');");
+        }
     }
 
   return $ohlc_val;
