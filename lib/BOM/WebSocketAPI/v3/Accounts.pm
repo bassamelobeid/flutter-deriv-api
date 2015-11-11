@@ -254,7 +254,7 @@ sub balance {
         }}
         unless ($client->default_account);
 
-    my $redis = $c->stash('redis');
+    my $redis   = $c->stash('redis');
     my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
 
     if ($args->{subscribe} eq '1') {

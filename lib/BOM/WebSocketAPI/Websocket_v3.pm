@@ -64,7 +64,6 @@ sub entry_point {
         $c->stash->{redis} = $redis;
     }
 
-
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
