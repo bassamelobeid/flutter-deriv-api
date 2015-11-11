@@ -8,8 +8,24 @@ BOM::MarketData::CorporateAction
 
 =head1 DESCRIPTION
 
-Represents the corporate actions data of an underlying from database
-$corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
+Represents the corporate actions data of an underlying from database. To read actions for a company:
+
+ my $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
+ my $actions = $corp->actions;
+
+
+To save actions for a company:
+
+ my $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol, 
+                                                    actions => {
+                                                        1234 => {
+                                                            monitor_date => "2014-02-07",
+                                                            type => "ACQUIS",
+                                                            description => "Acquisition",
+                                                            effective_date => "15-Jul-15",
+                                                            flag => "N", #N means new action, U means updated action, D means cancelled action
+                                                        }});
+ $corp->save();
 
 =cut
 
@@ -53,6 +69,8 @@ has _existing_actions => (
 
 sub _build__existing_actions {
     my $self = shift;
+
+    return {} if not defined $self->document;
 
     return ($self->document->{actions}) ? $self->document->{actions} : {};
 }

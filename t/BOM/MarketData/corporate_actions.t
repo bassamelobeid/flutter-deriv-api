@@ -3,14 +3,14 @@
 use strict;
 use warnings;
 
-use Test::More tests => 2;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
 use Date::Utility;
 
 use BOM::MarketData::CorporateAction;
 
-#is(BOM::MarketData::CorporateAction->new(symbol => 'FPGZ')->document, undef, 'document is not present');
+is(BOM::MarketData::CorporateAction->new(symbol => 'FPGZ')->document, undef, 'document is not present');
 
 my $int = BOM::MarketData::CorporateAction->new(
     symbol        => 'QWER',
@@ -32,6 +32,5 @@ ok $int->save, 'save without error';
 lives_ok {
     my $new = BOM::MarketData::CorporateAction->new(symbol => 'QWER');
     ok $new->document;
-    is $new->document->actions->{62799500}->{type}, "ACQUIS";
-}
-'successfully retrieved saved document';
+    is $new->document->{actions}->{62799500}->{type}, "ACQUIS";
+} 'successfully retrieved saved document';
