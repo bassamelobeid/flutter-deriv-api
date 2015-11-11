@@ -141,7 +141,7 @@ sub __handle {
         ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
         ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
         ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
-        ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real   ,             1],
+        ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
     );
 
     foreach my $dispatch (@dispatch) {

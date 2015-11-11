@@ -135,7 +135,7 @@ sub new_account_real {
     my $landing_company = $acc->{client}->landing_company;
 
     return {
-        msg_type            => 'new_account_real',
+        msg_type         => 'new_account_real',
         new_account_real => {
             client_id                 => $new_client->loginid,
             landing_company           => $landing_company->name,
