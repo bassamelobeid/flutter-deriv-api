@@ -1,10 +1,9 @@
 use strict;
 use warnings;
-use Test::MockTime qw( set_fixed_time restore_time );
 use Test::Most (tests => 20);
 use Test::NoWarnings;
 use Test::MockModule;
-
+use Test::MockTime::HiRes;
 use Test::Exception;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::Model::Account;
@@ -316,8 +315,7 @@ my $transaction_4 = BOM::Product::Transaction->new({
     purchase_date => $contract_4->date_start,
 });
 isnt $transaction_4->buy, 'undef', 'successful buy';
-
-my $start_time_5 = Date::Utility->new->epoch;
+my $start_time_5 = Date::Utility->new('2015-11-10 08:30:00')->epoch;
 my $end_time_5   = $start_time_5 + 900;
 my $contract_5   = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
 my $p_5          = $contract_5->build_parameters;
@@ -327,7 +325,6 @@ my $tick_params_5 = {
     epoch  => $start_time_5,
     quote  => 100
 };
-
 my $tick_5 = BOM::Market::Data::Tick->new($tick_params_5);
 $p_5->{date_pricing} = $start_time_5;
 $p_5->{current_tick} = $tick_5;
@@ -336,15 +333,16 @@ my $mock = Test::MockModule->new('BOM::Product::Contract');
 # we need a vol for this.
 $mock->mock('_validate_volsurface', sub { () });
 $contract_5 = produce_contract($p_5);
-local $ENV{REQUEST_STARTTIME} = $start_time_5;
+set_absolute_time($start_time_5);
 my $transaction_5 = BOM::Product::Transaction->new({
-    price    => 53.14,
-    client   => $new_client,
-    contract => $contract_5,
-    comment  => '',
+    price         => 53.14,
+    client        => $new_client,
+    contract      => $contract_5,
+    comment       => '',
+    purchase_date => $start_time_5,
 });
 isnt $transaction_5->buy, 'undef', 'successful buy';
-
+restore_time;
 my $start_time_6 = Date::Utility->new->epoch;
 my $end_time_6   = $start_time_6 + 900;
 my $contract_6   = produce_contract('FLASHU_WLDEUR_100_' . $start_time_6 . '_7T_S0P_0', 'USD');
