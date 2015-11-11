@@ -2,6 +2,7 @@ BEGIN;
 CREATE OR REPLACE PROCEDURAL LANGUAGE plperl;
 
 CREATE TABLE feed.realtime_ohlc (
+    id serial,
     underlying VARCHAR(128) NOT NULL,
     ts BIGINT NOT NULL,
     ohlc TEXT NOT NULL,
@@ -39,7 +40,8 @@ $tick_notify$
     if (!$rv->{rows}[0]->{ohlc}) {
         $all_same = "$spot,$spot,$spot,$spot";
         foreach (@grans) { $ohlc_val .= "$_:$all_same;" }
-        $rv = spi_exec_query("INSERT INTO feed.realtime_ohlc VALUES ('$underlying', $ts, '$ohlc_val')");
+        spi_exec_query("INSERT INTO feed.realtime_ohlc VALUES (DEFAULT, '$underlying', $ts, '$ohlc_val')");
+        $rv = spi_exec_query("SELECT * FROM feed.realtime_ohlc where underlying='$underlying'", 1);
     } else {
         foreach $g (@grans) {
             my $pattern = "$g:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);";
@@ -54,9 +56,9 @@ $tick_notify$
                 $ohlc_val .= "$g:$spot,$spot,$spot,$spot;";
             }
         }
-        $rv = spi_exec_query("UPDATE feed.realtime_ohlc SET ts=$ts, ohlc='$ohlc_val' where underlying='$underlying'");
+        spi_exec_query("UPDATE feed.realtime_ohlc SET ts=$ts, ohlc='$ohlc_val' where underlying='$underlying'");
         if (spi_exec_query("SELECT do_notify FROM feed.do_notify", 1)->{rows}[0]->{do_notify} eq 't') {
-            $rv = spi_exec_query("SELECT pg_notify('feed_watchers', '$underlying;$ts;$spot;$ohlc_val');");
+            $rv = spi_exec_query("SELECT pg_notify('feed_watchers_". $rv->{rows}[0]->{id} .", '$underlying;$ts;$spot;$ohlc_val');");
         }
     }
 
