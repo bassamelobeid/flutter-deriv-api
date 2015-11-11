@@ -20,6 +20,7 @@ CREATE OR REPLACE FUNCTION tick_notify(VARCHAR(128),BIGINT,DOUBLE PRECISION) RET
 $tick_notify$
   my $underlying = $_[0];
   my $ts = $_[1];
+  my $time_adjustment = 0;
   my $spot = $_[2];
   my @grans = qw(60 120 300 600 900 1800 3600 7200 14400 28800 86400);
 
@@ -28,13 +29,13 @@ $tick_notify$
 
   # dealing with those markets that their open and close is not in the same UTC period.
   $openclose = spi_exec_query("SELECT * FROM feed.underlying_open_close where underlying='$underlying'", 1);
-  $ts -= $openclose->{rows}[0]->{open_time} if $openclose->{rows}[0]->{open_time};
+  $time_adjustment = $openclose->{rows}[0]->{open_time} if $openclose->{rows}[0]->{open_time};
 
 
   # If there is no then record insert one.
+  $ohlc_val='';
   if (!$rv->{rows}[0]->{ohlc}) {
     $all_same = "$spot,$spot,$spot,$spot";
-    $ohlc_val='';
     foreach (@grans) {$ohlc_val .= "$_:$all_same;"}
     $rv = spi_exec_query("INSERT INTO feed.realtime_ohlc VALUES ('$underlying', $ts, '$ohlc_val')");
   # If there is any record update it for each granuality
@@ -50,11 +51,9 @@ $tick_notify$
     $c=0;
     foreach (@grans) {$m->{"o_$_"}=$match[$c];$c++;$m->{"h_$_"}=$match[$c];$c++;$m->{"l_$_"}=$match[$c];$c++;$m->{"c_$_"}=$match[$c];$c++;}
 
-    # go through all granualities and update them
-    $ohlc_val='';
     foreach $g (@grans) {
       # if last ohlc ts is still in same time period of new tick ts for that granuality
-      if (($ts - $ts % $g) == ($rv->{rows}[0]->{ts} - $rv->{rows}[0]->{ts} % $g)) {
+      if (($ts - $ts % $g) == ($rv->{rows}[0]->{ts} - $time_adjustment - $rv->{rows}[0]->{ts} % $g)) {
         $ohlc_val.="$g:".$m->{"o_$g"}.",";
         $ohlc_val.=($spot>$m->{"h_$g"})? "$spot,":$m->{"h_$g"}.",";
         $ohlc_val.=($spot<$m->{"l_$g"})? "$spot,":$m->{"l_$g"}.",";
