@@ -57,11 +57,6 @@ has symbol => (
     required => 1,
 );
 
-has _data_location => (
-    is      => 'ro',
-    default => 'corporate_actions'
-);
-
 has _existing_actions => (
     is         => 'ro',
     lazy_build => 1,
@@ -118,7 +113,7 @@ sub _build_document {
     my $document = BOM::System::Chronicle::get('corporate_actions', $self->symbol);
 
     if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
-        $document = BOM::System::Chronicle::get_for('corporate_actions', $self->symbol, $self->for_date);
+        $document = BOM::System::Chronicle::get_for('corporate_actions', $self->symbol, $self->for_date->epoch);
     }
 
     return $document;
