@@ -17,7 +17,14 @@ initialize_realtime_ticks_db();
 use Date::Utility;
 
 my $now = Date::Utility->new;
-
+use BOM::Test::Data::Utility::UnitTestCouchDB;
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange',
+    {
+        symbol => 'RANDOM',
+        trading_day => 'everyday',
+        date   => $now,
+    });
 subtest 'forward starting with payout/stake' => sub {
     my $c = produce_contract({
         bet_type     => 'CALL',
