@@ -141,6 +141,7 @@ sub __handle {
         ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
         ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
         ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
+        ['new_account_default',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_default,             1],
     );
 
     foreach my $dispatch (@dispatch) {
@@ -214,7 +215,7 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    if ($key !~ /^([A-Za-z0-9_-]{1,25})$/ or $value !~ /^([\s\.A-Za-z0-9\@_:+-\/=]{0,256})$/) {
+    if ($key !~ /^[A-Za-z0-9_-]{1,25}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/=']{0,256}$/) {
         return ($key, $value);
     }
     return;
