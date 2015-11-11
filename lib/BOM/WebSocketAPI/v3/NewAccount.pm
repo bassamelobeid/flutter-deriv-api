@@ -87,7 +87,7 @@ sub new_account_default {
     }
 
     # JSON::Schema "date" format only check regex. Check for valid date here
-    $args->{date_of_birth} =~ /(\d{4})-(\d{2})-(\d{2})/;
+    $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/;
     try {
         DateTime->new(
             year       => $1,
