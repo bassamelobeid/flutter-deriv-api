@@ -248,66 +248,25 @@ sub balance {
     return {
         msg_type => 'balance',
         balance  => {
-            id       => '',
             currency => '',
             loginid  => $client->loginid,
             balance  => 0,
         }}
         unless ($client->default_account);
 
-    my $redis = $c->redis;
-    my $id;
+    my $redis = $c->stash('redis');
     my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
 
-    my $data = {
-        type    => 'balance',
-        cleanup => sub {
-            my $reason = shift;
-
-            $redis && $redis->unsubscribe($channel, sub { });
-            $c->send({
-                    json => $c->new_error(
-                        'ticks',
-                        'EndOfBalanceStream',
-                        localize('This stream was canceled due to resource limitations'),
-                        {
-                            id => $id,
-                        })}) if $reason;
-        },
-    };
-
-    $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
-
-    # $redis->on(
-    #     connection => sub {
-    #         my ($self, $info) = @_;
-    #         $log->debug("connected: " . JSON::to_json($info));
-    #     });
-
-    $redis->on(
-        error => sub {
-            my ($self, $err) = @_;
-            $log->info("error: $err");
-            warn("error: $err");
-        });
-
-    $redis->on(
-        message => sub {
-            my ($self, $msg, $channel) = @_;
-            send_realtime_balance($c, $id, $args, $client, $msg);
-        });
-
-    $redis->subscribe(
-        $channel,
-        sub {
-            my ($self, $err) = @_;
-            warn "redis subscribe: $err";
-        });
+    if ($args->{subscribe} eq '1') {
+        $redis->unsubscribe($channel, sub { });
+    }
+    if ($args->{subscribe} eq '0') {
+        $redis->unsubscribe($channel, sub { });
+    }
 
     return {
         msg_type => 'balance',
         balance  => {
-            id       => $id,
             loginid  => $client->loginid,
             currency => $client->default_account->currency_code,
             balance  => $client->default_account->balance,
