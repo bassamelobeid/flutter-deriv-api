@@ -89,11 +89,12 @@ sub new_account_default {
     # JSON::Schema "date" format only check regex. Check for valid date here
     $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/;
     try {
-        DateTime->new(
+        my $dob = DateTime->new(
             year       => $1,
             month      => $2,
             day        => $3,
         );
+        $args->{date_of_birth} = $dob->ymd;
     } catch { return; } or return $c->new_error('new_account_default', 'invalid DOB', $error_map->{'invalid DOB'});
 
     my $details = {
