@@ -19,7 +19,7 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_mojo_test();
 
 my %client_details  = (
-    new_account_default             => 1,
+    new_account_real             => 1,
     salutation                      => 'Ms',
     last_name                       => 'last-name',
     first_name                      => 'first\'name',
@@ -52,10 +52,10 @@ subtest 'new CR real account' => sub {
     subtest 'create CR account' => sub {
         $t = $t->send_ok({json => \%client_details })->message_ok;
         my $res = decode_json($t->message->[1]);
-        ok($res->{new_account_default});
-        test_schema('new_account_default', $res);
+        ok($res->{new_account_real});
+        test_schema('new_account_real', $res);
 
-        my $loginid = $res->{new_account_default}->{client_id};
+        my $loginid = $res->{new_account_real}->{client_id};
         like($loginid, qr/^CR\d+$/, "got CR client $loginid");
     };
 
@@ -64,7 +64,7 @@ subtest 'new CR real account' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'duplicate email', 'no duplicate account for CR');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'no duplicate - Name + DOB' => sub {
@@ -85,7 +85,7 @@ subtest 'new CR real account' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'duplicate name DOB', 'no duplicate account: same name + DOB');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 };
 
@@ -113,16 +113,16 @@ subtest 'new MX real account' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'invalid UK postcode', 'UK client must have postcode');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'new MX account' => sub {
         $t = $t->send_ok({json => \%details })->message_ok;
         my $res = decode_json($t->message->[1]);
-        ok($res->{new_account_default});
-        test_schema('new_account_default', $res);
+        ok($res->{new_account_real});
+        test_schema('new_account_real', $res);
 
-        my $loginid = $res->{new_account_default}->{client_id};
+        my $loginid = $res->{new_account_real}->{client_id};
         like($loginid, qr/^MX\d+$/, "got MX client - $loginid");
     };
 };
@@ -148,10 +148,10 @@ subtest 'new MLT real account' => sub {
 
     $t = $t->send_ok({json => \%details })->message_ok;
     my $res = decode_json($t->message->[1]);
-    ok($res->{new_account_default});
-    test_schema('new_account_default', $res);
+    ok($res->{new_account_real});
+    test_schema('new_account_real', $res);
 
-    my $loginid = $res->{new_account_default}->{client_id};
+    my $loginid = $res->{new_account_real}->{client_id};
     like($loginid, qr/^MLT\d+$/, "got MLT client - $loginid");
 };
 
@@ -179,7 +179,7 @@ subtest 'create account failed' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'InputValidationFailed', 'fail input validation');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'email unverified' => sub {
@@ -195,7 +195,7 @@ subtest 'create account failed' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'email unverified', 'email unverified');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     $user->email_verified(1);
@@ -213,7 +213,7 @@ subtest 'create account failed' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'invalid', 'cannot create real account');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     $vr_client->residence('id');
@@ -227,7 +227,7 @@ subtest 'create account failed' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'invalid residence', 'cannot create real account');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'no POBox for address' => sub {
@@ -238,7 +238,7 @@ subtest 'create account failed' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'invalid PO Box', 'address cannot contain P.O.Box');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'min age check' => sub {
@@ -249,7 +249,7 @@ subtest 'create account failed' => sub {
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'too young', 'min age unmatch');
-        is($res->{new_account_default}, undef, 'NO account created');
+        is($res->{new_account_real}, undef, 'NO account created');
     };
 
     subtest 'restricted or invalid country' => sub {
@@ -264,7 +264,7 @@ subtest 'create account failed' => sub {
             my $res = decode_json($t->message->[1]);
 
             is($res->{error}->{code}, 'invalid', 'restricted country - US');
-            is($res->{new_account_default}, undef, 'NO account created');
+            is($res->{new_account_real}, undef, 'NO account created');
         };
         subtest 'invalid - xx' => sub {
             $vr_client->residence('xx');
@@ -277,7 +277,7 @@ subtest 'create account failed' => sub {
             my $res = decode_json($t->message->[1]);
 
             is($res->{error}->{code}, 'invalid', 'invalid country - xx');
-            is($res->{new_account_default}, undef, 'NO account created');
+            is($res->{new_account_real}, undef, 'NO account created');
         };
     };
 
@@ -293,7 +293,7 @@ subtest 'create account failed' => sub {
             my $res = decode_json($t->message->[1]);
 
             is($res->{error}->{code}, 'invalid', 'wrong acc opening - MF');
-            is($res->{new_account_default}, undef, 'NO account created');
+            is($res->{new_account_real}, undef, 'NO account created');
         };
         subtest 'Japan' => sub {
             $vr_client->residence('jp');
@@ -306,7 +306,7 @@ subtest 'create account failed' => sub {
             my $res = decode_json($t->message->[1]);
 
             is($res->{error}->{code}, 'invalid', 'wrong acc opening - JP');
-            is($res->{new_account_default}, undef, 'NO account created');
+            is($res->{new_account_real}, undef, 'NO account created');
         };
     };
 };
