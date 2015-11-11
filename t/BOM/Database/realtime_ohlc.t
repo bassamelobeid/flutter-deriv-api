@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use Test::More qw/tests 14/;
+use Test::More qw/tests 15/;
 use Test::Deep;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
@@ -75,6 +75,15 @@ $dbh->do("INSERT INTO feed.realtime_ohlc VALUES('WILLCHANGE', 1, '120:0.6,0.6,0.
 $p = "0.6,1.1,0.6,1.1";
 $dbh->do("SELECT tick_notify('WILLCHANGE', 2, CAST(1.1 as DOUBLE PRECISION))");
 cmp_deeply(_r('WILLCHANGE'), {underlying=>'WILLCHANGE', ts=>2, ohlc=>"60:1.1,1.1,1.1,1.1;120:$p;300:$p;600:$p;900:$p;1800:$p;3600:1.1,1.1,1.1,1.1;7200:$p;14400:$p;28800:$p;86400:1.1,1.1,1.1,1.1;"}, "If new granualities are introduced, missing 60, 3600 and 86400 must be new others will just update");
+
+
+# What if we remove granuality
+$dbh->do("INSERT INTO feed.realtime_ohlc VALUES('HASEXTRA', 1, '5:0.6,0.6,0.6,0.6;60:0.6,0.6,0.6,0.6;120:0.6,0.6,0.6,0.6;300:0.6,0.6,0.6,0.6;600:0.6,0.6,0.6,0.6;900:0.6,0.6,0.6,0.6;1800:0.6,0.6,0.6,0.6;3600:0.6,0.6,0.6,0.6;7200:0.6,0.6,0.6,0.6;14400:0.6,0.6,0.6,0.6;28800:0.6,0.6,0.6,0.6;86400:0.6,0.6,0.6,0.6;');");
+
+$p = "0.6,1.1,0.6,1.1";
+$dbh->do("SELECT tick_notify('HASEXTRA', 2, CAST(1.1 as DOUBLE PRECISION))");
+cmp_deeply(_r('HASEXTRA'), {underlying=>'HASEXTRA', ts=>2, ohlc=>"60:$p;120:$p;300:$p;600:$p;900:$p;1800:$p;3600:$p;7200:$p;14400:$p;28800:$p;86400:$p;"}, "Even if we remove granuality still result must be all valid removing the extra in next call (extra begin 5)");
+
 
 
 sub _r {
