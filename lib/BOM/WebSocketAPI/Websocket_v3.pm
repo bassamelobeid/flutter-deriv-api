@@ -79,6 +79,7 @@ sub entry_point {
                     }
                 }
 
+                $c->stash('args' => $p1);
                 $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
                 if (not $data) {
                     $send = undef;

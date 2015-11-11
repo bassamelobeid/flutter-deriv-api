@@ -225,7 +225,10 @@ sub __get_sold {
 }
 
 sub send_realtime_balance {
-    my ($c, $id, $args, $client, $message) = @_;
+    my ($c, $message) = @_;
+
+    my $client = $c->stash('client');
+    my $args   = $c->stash('$args');
 
     my $payload = JSON::from_json($message);
     $c->send({
@@ -233,7 +236,6 @@ sub send_realtime_balance {
                 msg_type => 'balance',
                 echo_req => $args,
                 balance  => {
-                    id       => $id,
                     loginid  => $client->loginid,
                     currency => $client->default_account->currency_code,
                     balance  => $payload->{balance_after}}}});
