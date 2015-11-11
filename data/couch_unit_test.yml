@@ -672,7 +672,7 @@ exchange:
     trading_timezone: UTC
     tenfore_trading_timezone: UTC
     open_on_weekends : 0
-    trading_days: everyday
+    trading_days: weekdays
     currency: NA
     bloomberg_calendar_code: NA
     holidays:
