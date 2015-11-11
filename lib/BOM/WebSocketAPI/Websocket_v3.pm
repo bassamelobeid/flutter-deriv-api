@@ -49,7 +49,7 @@ sub entry_point {
                 : "redis://$cf->{host}:$cf->{port}";
         };
 
-        $redis = Mojo::Redis2->new(url => $url);
+        my $redis = Mojo::Redis2->new(url => $url);
         $redis->on(
             error => sub {
                 my ($self, $err) = @_;
