@@ -33,7 +33,8 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'RANDOM',
         holidays         => {},
-        open_on_weekends => 1
+        open_on_weekends => 1,
+        trading_days     => 'everyday',
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
@@ -133,6 +134,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         trading_timezone         => 'UTC',
         tenfore_trading_timezone => 'NA',
         open_on_weekends         => 1,
+        trading_days             => 'everyday',
         currency                 => 'NA',
         bloomberg_calendar_code  => 'NA',
         holidays                 => {},
