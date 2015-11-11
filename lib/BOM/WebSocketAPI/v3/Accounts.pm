@@ -242,7 +242,7 @@ sub send_realtime_balance {
 
 sub balance {
     my ($c, $args) = @_;
-    my $log = $c->app->log;
+    my $log    = $c->app->log;
     my $client = $c->stash('client');
 
     return {
@@ -252,10 +252,10 @@ sub balance {
             currency => '',
             loginid  => $client->loginid,
             balance  => 0,
-        },
-    } unless ($client->default_account);
+        }}
+        unless ($client->default_account);
 
-    my $redis  = $c->redis;
+    my $redis = $c->redis;
     my $id;
     my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
 
