@@ -50,7 +50,7 @@ $tick_notify$
 
         foreach $g (@grans) {
             # Shitfing the record TS with time_adjustment for cross UTC day markets
-            if (($ts  - $time_adjustment - ($ts - $time_adjustment) % $g) == ($rv->{rows}[0]->{ts} - $rv->{rows}[0]->{ts} % $g)) {
+            if (($ts  - $time_adjustment - ($ts - $time_adjustment) % $g) == ($rv->{rows}[0]->{ts} - $time_adjustment - ($rv->{rows}[0]->{ts} - $time_adjustment) % $g)) {
                 $ohlc_val .= "$g:" . $m->{"o_$g"} . ",";
                 $ohlc_val .= ($spot > $m->{"h_$g"}) ? "$spot," : $m->{"h_$g"} . ",";
                 $ohlc_val .= ($spot < $m->{"l_$g"}) ? "$spot," : $m->{"l_$g"} . ",";
