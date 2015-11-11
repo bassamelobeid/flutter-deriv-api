@@ -34,26 +34,14 @@ $tick_notify$
         foreach (@grans) { $ohlc_val .= "$_:$all_same;" }
         $rv = spi_exec_query("INSERT INTO feed.realtime_ohlc VALUES ('$underlying', $ts, '$ohlc_val')");
     } else {
-        $pattern = "";
-        foreach (@grans) { $pattern .= "$_:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);" }
-        @match = ($rv->{rows}[0]->{ohlc} =~ /$pattern/g);
-
-        my $m;
-        $c = 0;
-        foreach (@grans) {
-            $m->{"o_$_"} = $match[$c];
-            $m->{"h_$_"} = $match[$c+1];
-            $m->{"l_$_"} = $match[$c+2];
-            $m->{"c_$_"} = $match[$c+3];
-            $c+=4;
-        }
-
         foreach $g (@grans) {
+            my $pattern = "$g:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);";
+            @match = ($rv->{rows}[0]->{ohlc} =~ /$pattern/g);
             # Shitfing the record TS with time_adjustment for cross UTC day markets
-            if (($ts  - $time_adjustment - ($ts - $time_adjustment) % $g) == ($rv->{rows}[0]->{ts} - $time_adjustment - ($rv->{rows}[0]->{ts} - $time_adjustment) % $g)) {
-                $ohlc_val .= "$g:" . $m->{"o_$g"} . ",";
-                $ohlc_val .= ($spot > $m->{"h_$g"}) ? "$spot," : $m->{"h_$g"} . ",";
-                $ohlc_val .= ($spot < $m->{"l_$g"}) ? "$spot," : $m->{"l_$g"} . ",";
+            if (scalar @match>0 and ($ts  - $time_adjustment - ($ts - $time_adjustment) % $g) == ($rv->{rows}[0]->{ts} - $time_adjustment - ($rv->{rows}[0]->{ts} -$time_adjustment) % $g)) {
+                $ohlc_val .= "$g:" . $match[0] . ",";
+                $ohlc_val .= ($spot > $match[1]) ? "$spot," : $match[1] . ",";
+                $ohlc_val .= ($spot < $match[2]) ? "$spot," : $match[2] . ",";
                 $ohlc_val .= "$spot;";
             } else {
                 $ohlc_val .= "$g:$spot,$spot,$spot,$spot;";

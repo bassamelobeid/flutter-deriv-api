@@ -2,7 +2,7 @@
 use strict;
 use warnings;
 
-use Test::More qw/tests 13/;
+use Test::More qw/tests 14/;
 use Test::Deep;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
@@ -67,6 +67,14 @@ cmp_deeply(_r('EARLY'), {underlying=>'EARLY', ts=>$start+3600*9, ohlc=>"60:$p;12
 $p = "1.9,1.9,1.9,1.9";
 $dbh->do("SELECT tick_notify('EARLY', $start+3600*24, CAST(1.9 as DOUBLE PRECISION))");
 cmp_deeply(_r('EARLY'), {underlying=>'EARLY', ts=>$start+3600*24, ohlc=>"60:$p;120:$p;300:$p;600:$p;900:$p;1800:$p;3600:$p;7200:$p;14400:$p;28800:$p;86400:$p;"}, "And the next day start again before next UTC day");
+
+
+#What happens if we introduce a new granuality
+$dbh->do("INSERT INTO feed.realtime_ohlc VALUES('WILLCHANGE', 1, '120:0.6,0.6,0.6,0.6;300:0.6,0.6,0.6,0.6;600:0.6,0.6,0.6,0.6;900:0.6,0.6,0.6,0.6;1800:0.6,0.6,0.6,0.6;7200:0.6,0.6,0.6,0.6;14400:0.6,0.6,0.6,0.6;28800:0.6,0.6,0.6,0.6;');");
+
+$p = "0.6,1.1,0.6,1.1";
+$dbh->do("SELECT tick_notify('WILLCHANGE', 2, CAST(1.1 as DOUBLE PRECISION))");
+cmp_deeply(_r('WILLCHANGE'), {underlying=>'WILLCHANGE', ts=>2, ohlc=>"60:1.1,1.1,1.1,1.1;120:$p;300:$p;600:$p;900:$p;1800:$p;3600:1.1,1.1,1.1,1.1;7200:$p;14400:$p;28800:$p;86400:1.1,1.1,1.1,1.1;"}, "If new granualities are introduced, missing 60, 3600 and 86400 must be new others will just update");
 
 
 sub _r {
