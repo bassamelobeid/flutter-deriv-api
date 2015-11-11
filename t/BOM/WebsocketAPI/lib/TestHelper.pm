@@ -56,6 +56,7 @@ sub build_test_R_50_data {
         {
             symbol           => $_,
             date             => Date::Utility->new,
+            trading_days     => 'everyday',
             open_on_weekends => 1
         }) for @exchange;
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);
