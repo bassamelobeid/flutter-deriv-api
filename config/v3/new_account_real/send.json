@@ -4,7 +4,7 @@
   "title":"Create real account Send",
   "description": "Create real account Send",
   "properties": {
-    "new_account_default": {
+    "new_account_real": {
       "type": "integer",
       "description": "Must be 1",
       "pattern": "^1$",
