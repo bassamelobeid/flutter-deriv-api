@@ -70,6 +70,7 @@ sub generate {
     my $subject          = 'Scenario analysis as of ' . $pricing_date->db_timestamp;
     my $scenario_message = $subject . ":\n\n";
     my $raw_fh           = File::Temp->new(
+        dir      => '/tmp/',
         TEMPLATE => 'raw-scenario-' . $pricing_date->time_hhmm . '-XXXXX',
         suffix   => '.csv'
     );
@@ -139,6 +140,7 @@ sub generate {
     $scenario_message .= format_report("Combined", $total_payout, $total_buyprice, $total_risk);
 
     my $scenario_fh = File::Temp->new(
+        dir      => '/tmp/',
         TEMPLATE => 'scenario-' . $pricing_date->time_hhmm . '-XXXXX',
         suffix   => '.csv'
     );
