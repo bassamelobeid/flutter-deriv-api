@@ -13,7 +13,8 @@ use BOM::Database::FeedDB;
 use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
 
-update_crossing_underlyings() while (1) {
+update_crossing_underlyings();
+while (1) {
     try {
         my $redis = _redis();
         my $dbh   = BOM::Database::FeedDB::write_dbh();
@@ -59,11 +60,11 @@ sub update_crossing_underlyings {
         contract_category => 'ANY'
     );
     my $update = '';
-    foreach $s (@all_symbols) {
-        $u = BOM::Market::Underlying->new($s);
+    foreach my $s (@all_symbols) {
+        my $u = BOM::Market::Underlying->new($s);
         if ($u->exchange->market_times()->{standard}->{daily_open}->seconds < 0) {
             $update .=
-                  "INSERT INTO feed.underlying_open_close VALEUS ('$s', "
+                  "INSERT INTO feed.underlying_open_close VALUES ('$s', "
                 . $u->exchange->market_times()->{standard}->{daily_open}->seconds . ", "
                 . $u->exchange->market_times()->{standard}->{daily_close}->seconds . ");";
         }
