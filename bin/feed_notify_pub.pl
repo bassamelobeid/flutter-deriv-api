@@ -19,8 +19,8 @@ while (1) {
         my $redis = _redis();
         my $dbh   = BOM::Database::FeedDB::write_dbh();
 
-        my $MAX_FEED_CHANNELS = 10;
-        $dbh->do("LISTEN feed_watchers$_") for (1..$MAX_FEED_CHANNELS);
+        my $MAX_FEED_CHANNELS = 20;
+        $dbh->do("LISTEN feed_watchers_$_") for (1..$MAX_FEED_CHANNELS);
 
         my $sel = IO::Select->new;
         $sel->add($dbh->{pg_socket});
