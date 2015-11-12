@@ -517,7 +517,104 @@ sub get_self_exclusion {
 }
 
 sub set_self_exclusion {
+    my ($c, $args) = @_;
 
+    my $r      = $c->stash('request');
+    my $client = $c->stash('client');
+
+    # get old from above sub get_self_exclusion
+    my $self_exclusion = get_self_exclusion($c)->{'get_self_exclusion'};
+
+    ## validate
+    my %args = %$args;
+    foreach my field(
+        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
+        )
+    {
+        my $val = $args{$field};
+        next unless defined $val;
+        unless ($val =~ /^\d+/ and $val > 0) {
+            delete $args{$field};
+            next;
+        }
+        if ($self_exclusion->{$field} and val > $self_exclusion->{$field}) {
+            my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError',
+                localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}));
+            $err->{field} = $field;
+            return $err;
+        }
+    }
+    my $exclude_until = $args{exclude_until};
+    if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
+        unless (Date::Utility::today->days_between(Date::Utility->new($exclude_until))) {
+            my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError', localize('Please enter date beyond today'));
+            $err->{field} = 'exclude_until';
+            return $err;
+        }
+    } else {
+        delete $args{exclude_until};
+    }
+
+    my $message = '';
+    if ($args{max_open_bets}) {
+        my $ret = $client->set_exclusion->max_open_bets($args{max_open_bets});
+        $message .= "- Maximum number of open positions: $ret\n";
+    }
+    if ($args{max_turnover}) {
+        my $ret = $client->set_exclusion->max_turnover($args{max_turnover});
+        $message .= "- Daily turnover: $ret\n";
+    }
+    if ($args{max_losses}) {
+        my $ret = $client->set_exclusion->max_losses($args{max_losses});
+        $message .= "- Daily losses: $ret\n";
+    }
+    if ($args{max_7day_turnover}) {
+        my $ret = $client->set_exclusion->max_7day_turnover($args{max_7day_turnover});
+        $message .= "- 7-Day turnover: $ret\n";
+    }
+    if ($args{max_7day_losses}) {
+        my $ret = $client->set_exclusion->max_7day_losses($args{max_7day_losses});
+        $message .= "- 7-Day losses: $ret\n";
+    }
+    if ($args{max_30day_turnover}) {
+        my $ret = $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
+        $message .= "- 30-Day turnover: $ret\n";
+    }
+    if ($args{max_30day_losses}) {
+        my $ret = $client->set_exclusion->max_30day_losses($args{max_30day_losses});
+        $message .= "- 30-Day losses: $ret\n";
+    }
+    if ($args{max_balance}) {
+        my $ret = $client->set_exclusion->max_balance($args{max_balance});
+        $message .= "- Maximum account balance: $ret\n";
+    }
+    if ($args{session_duration_limit}) {
+        my $ret = $client->set_exclusion->session_duration_limit($args{session_duration_limit});
+        $message .= "- Maximum session duration: $ret\n";
+    }
+    if ($args{exclude_until}) {
+        my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
+        $message .= "- Exclude from website until: $ret\n";
+    }
+    if ($message) {
+        $message = "Client $client set the following self-exclusion limits:\n\n$message";
+        my $compliance_email = $c->app_config->compliance->email;
+        send_email({
+            from    => $compliance_email,
+            to      => $compliance_email . ',' . $r->website->config->get('customer_support.email'),
+            subject => "Client set self-exclusion limits",
+            message => [$message],
+        });
+    } else {
+        return $c->new_error('set_self_exclusion', 'SetSelfExclusionError', localize('Please provide at least one self-exclusion setting.'));
+    }
+
+    $client->save();
+
+    return {
+        msg_type           => 'set_self_exclusion',
+        set_self_exclusion => 1,
+    };
 }
 
 1;
