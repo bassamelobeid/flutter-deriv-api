@@ -74,7 +74,7 @@ sub verify_email {
     };
 }
 
-sub new_account_default {
+sub new_account_real {
     my ($c, $args) = @_;
     my $client = $c->stash('client');
     BOM::Platform::Context::request($c->stash('request'));
@@ -82,7 +82,7 @@ sub new_account_default {
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
-        return $c->new_error('new_account_default', 'invalid', $error_map->{'invalid'});
+        return $c->new_error('new_account_real', 'invalid', $error_map->{'invalid'});
     }
 
     # JSON::Schema "date" format only check regex. Check for valid date here
@@ -95,7 +95,7 @@ sub new_account_default {
         );
         $args->{date_of_birth} = $dob->ymd;
     }
-    catch { return; } or return $c->new_error('new_account_default', 'invalid DOB', $error_map->{'invalid DOB'});
+    catch { return; } or return $c->new_error('new_account_real', 'invalid DOB', $error_map->{'invalid DOB'});
 
     my $details = {
         broker_code     => BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code,
@@ -128,13 +128,18 @@ sub new_account_default {
     });
 
     if (my $err_code = $acc->{error}) {
-        return $c->new_error('new_account_default', $err_code, $error_map->{$err_code});
+        return $c->new_error('new_account_real', $err_code, $error_map->{$err_code});
     }
 
+    my $new_client      = $acc->{client};
+    my $landing_company = $acc->{client}->landing_company;
+
     return {
-        msg_type            => 'new_account_default',
-        new_account_default => {
-            client_id => $acc->{client}->loginid,
+        msg_type         => 'new_account_real',
+        new_account_real => {
+            client_id                 => $new_client->loginid,
+            landing_company           => $landing_company->name,
+            landing_company_shortcode => $landing_company->short,
         }};
 }
 
