@@ -4,7 +4,7 @@
   "title": "Set Self-Exclusion Send",
   "description":"Set Self-Exclusion",
   "properties": {
-    "set_settings": {
+    "set_self_exclusion": {
       "type":"integer",
       "pattern": "^1$"
     },
@@ -65,6 +65,6 @@
   },
   "additionalProperties": false,
   "required": [
-    "set_settings"
+    "set_self_exclusion"
   ]
 }

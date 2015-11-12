@@ -483,24 +483,15 @@ sub get_self_exclusion {
     my $get_self_exclusion = {};
 
     if ($self_exclusion) {
-        $get_self_exclusion->{max_balance} = $self_exclusion->max_balance
-            if $self_exclusion->max_balance;
-        $get_self_exclusion->{max_turnover} = $self_exclusion->max_turnover
-            if $self_exclusion->max_turnover;
-        $get_self_exclusion->{max_open_bets} = $self_exclusion->max_open_bets
-            if $self_exclusion->max_open_bets;
-        $get_self_exclusion->{max_losses} = $self_exclusion->max_losses
-            if $self_exclusion->{max_losses};
-        $get_self_exclusion->{max_7day_losses} = $self_exclusion->max_7day_losses
-            if $self_exclusion->max_7day_losses;
-        $get_self_exclusion->{max_7day_turnover} = $self_exclusion->max_7day_turnover
-            if $self_exclusion->{max_7day_turnover};
-        $get_self_exclusion->{max_30day_losses} = $self_exclusion->max_30day_losses
-            if $self_exclusion->{max_30day_losses};
-        $get_self_exclusion->{max_30day_turnover} = $self_exclusion->max_30day_turnover
-            if $self_exclusion->{max_30day_turnover};
-        $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit
-            if $self_exclusion->{session_duration_limit};
+        $get_self_exclusion->{max_balance}            = $self_exclusion->max_balance            // '';
+        $get_self_exclusion->{max_turnover}           = $self_exclusion->max_turnover           // '';
+        $get_self_exclusion->{max_open_bets}          = $self_exclusion->max_open_bets          // '';
+        $get_self_exclusion->{max_losses}             = $self_exclusion->max_losses             // '';
+        $get_self_exclusion->{max_7day_losses}        = $self_exclusion->max_7day_losses        // '';
+        $get_self_exclusion->{max_7day_turnover}      = $self_exclusion->max_7day_turnover      // '';
+        $get_self_exclusion->{max_30day_losses}       = $self_exclusion->max_30day_losses       // '';
+        $get_self_exclusion->{max_30day_turnover}     = $self_exclusion->max_30day_turnover     // '';
+        $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit // '';
 
         if (my $until = $self_exclusion->exclude_until) {
             $until = Date::Utility->new($until);
@@ -526,6 +517,13 @@ sub set_self_exclusion {
     my $self_exclusion = get_self_exclusion($c)->{'get_self_exclusion'};
 
     ## validate
+    my $error_sub = sub {
+        my ($c, $error, $field) = @_;
+        my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $error);
+        $err->{field} = $field;
+        return $err;
+    };
+
     my %args = %$args;
     foreach my field(
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
@@ -538,18 +536,35 @@ sub set_self_exclusion {
             next;
         }
         if ($self_exclusion->{$field} and val > $self_exclusion->{$field}) {
-            my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError',
-                localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}));
-            $err->{field} = $field;
-            return $err;
+            return $error_sub->($c, localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         }
     }
+
+    if (my $session_duration_limit = $args{session_duration_limit}) {
+        if ($session_duration_limit > 1440 * 42) {
+            return $error_sub->($c, localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
+        }
+    }
+
     my $exclude_until = $args{exclude_until};
     if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
-        unless (Date::Utility::today->days_between(Date::Utility->new($exclude_until))) {
-            my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError', localize('Please enter date beyond today'));
-            $err->{field} = 'exclude_until';
-            return $err;
+        my $now           = Date::Utility->new;
+        my $exclusion_end = Date::Utility->new($exclude_until);
+        my $six_month     = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+
+        # checking for the exclude until date which must be larger than today's date
+        if (not $exclusion_end->is_after($now)) {
+            return $error_sub->($c, localize('Exclude time must be after today.'), 'exclude_until');
+        }
+
+        # checking for the exclude until date could not be less than 6 months
+        elsif ($exclusion_end->epoch < $six_month->epoch) {
+            return $error_sub->($c, localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
+        }
+
+        # checking for the exclude until date could not be more than 5 years
+        elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
+            return $error_sub->($c, localize('Exclude time cannot be for more than five years.'), 'exclude_until');
         }
     } else {
         delete $args{exclude_until};
