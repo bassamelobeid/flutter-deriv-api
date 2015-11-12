@@ -50,7 +50,7 @@
     },
     "session_duration_limit":{
       "type":["integer", "null"],
-      "pattern": "^\\d{0,4}$",
+      "pattern": "^\\d{0,5}$",
       "description": "Session duration limit, in minutes"
     },
     "exclude_until":{

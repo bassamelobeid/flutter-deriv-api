@@ -57,7 +57,7 @@ ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 my %data = %{$res->{get_self_exclusion}};
 is $data{max_balance},   10000, 'max_balance saved ok';
-is $data{max_turnover},  '',    'max_turnover is still blank';
+is $data{max_turnover},  undef, 'max_turnover is not there';
 is $data{max_open_bets}, 100,   'max_open_bets saved';
 
 # plus save is ok
@@ -88,66 +88,65 @@ $t = $t->send_ok({
             max_balance        => 10001,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
-is $res->{error}->{code}, 'SetSelfExclusionError';
+is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'max_balance';
 test_schema('set_self_exclusion', $res);
 
 $t = $t->send_ok({
         json => {
-            set_self_exclusion => 1,
-            max_balance        => 9999,
-            session_duration_limit       => 1440 * 42 + 1,
+            set_self_exclusion     => 1,
+            max_balance            => 9999,
+            session_duration_limit => 1440 * 42 + 1,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
-is $res->{error}->{code}, 'SetSelfExclusionError';
+is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'session_duration_limit';
+ok $res->{error}->{message} =~ /more than 6 weeks/;
 
 $t = $t->send_ok({
         json => {
-            set_self_exclusion => 1,
-            max_balance        => 9999,
+            set_self_exclusion     => 1,
+            max_balance            => 9999,
             session_duration_limit => 1440,
-            exclude_until => '2010-01-01'
+            exclude_until          => '2010-01-01'
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
-is $res->{error}->{code}, 'SetSelfExclusionError';
+is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'exclude_until';
+ok $res->{error}->{message} =~ /after today/;
 
 $t = $t->send_ok({
         json => {
-            set_self_exclusion => 1,
-            max_balance        => 9999,
+            set_self_exclusion     => 1,
+            max_balance            => 9999,
             session_duration_limit => 1440,
-            exclude_until => DateTime->now()->add(months => 3)->ymd
+            exclude_until          => DateTime->now()->add(months => 3)->ymd
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
-is $res->{error}->{code}, 'SetSelfExclusionError';
+is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'exclude_until';
+ok $res->{error}->{message} =~ /less than 6 months/;
 
 $t = $t->send_ok({
         json => {
-            set_self_exclusion => 1,
-            max_balance        => 9999,
+            set_self_exclusion     => 1,
+            max_balance            => 9999,
             session_duration_limit => 1440,
-            exclude_until => DateTime->now()->add(years => 6)->ymd
+            exclude_until          => DateTime->now()->add(years => 6)->ymd
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
-is $res->{error}->{code}, 'SetSelfExclusionError';
+is $res->{error}->{code},  'SetSelfExclusionError';
 is $res->{error}->{field}, 'exclude_until';
+ok $res->{error}->{message} =~ /more than five years/;
 
 # good one
 my $exclude_until = DateTime->now()->add(months => 7)->ymd;
 $t = $t->send_ok({
         json => {
-            set_self_exclusion => 1,
-            max_balance        => 9998,
+            set_self_exclusion     => 1,
+            max_balance            => 9998,
             session_duration_limit => 1440,
-            exclude_until => $exclude_until
+            exclude_until          => $exclude_until
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{set_self_exclusion});
@@ -159,10 +158,10 @@ $res = decode_json($t->message->[1]);
 ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 %data = %{$res->{get_self_exclusion}};
-is $data{max_balance},   9998, 'max_balance is updated';
-is $data{max_turnover},  1000, 'max_turnover is untouched';
+is $data{max_balance},            9998, 'max_balance is updated';
+is $data{max_turnover},           1000, 'max_turnover is untouched';
 is $data{session_duration_limit}, 1440, 'session_duration_limit is good';
-is $data{exclude_until}, $exclude_until,  'exclude_until is good';
+is $data{exclude_until}, $exclude_until, 'exclude_until is good';
 
 $t->finish_ok;
 
