@@ -28,6 +28,22 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
+        symbol => 'RANDOM_NOCTURNE',
+        trading_day => 'everyday',
+        date   => $now,
+        market_times             => {
+            early_closes => {},
+            standard     => {
+                daily_close      => '11h59m59s',
+                daily_open       => '-12h',
+                daily_settlement => '11h59m59s',
+            },
+            partial_trading => {},
+        },   
+      });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange',
+    {
         symbol => 'FOREX',
         trading_day => 'weekdays',
         date   => $now,
