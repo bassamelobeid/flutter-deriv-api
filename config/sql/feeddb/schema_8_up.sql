@@ -30,6 +30,7 @@ $tick_notify$
     my $spot            = $_[2];
     my $time_adjustment = 0;
     my @grans           = qw(60 120 300 600 900 1800 3600 7200 14400 28800 86400);
+    my $MAX_CHANNELS    = 10; # Listener must listen to all these.
 
     $rv = spi_exec_query("SELECT * FROM feed.realtime_ohlc where underlying='$underlying'", 1);
 
@@ -58,7 +59,7 @@ $tick_notify$
         }
         spi_exec_query("UPDATE feed.realtime_ohlc SET ts=$ts, ohlc='$ohlc_val' where underlying='$underlying'");
         if (spi_exec_query("SELECT do_notify FROM feed.do_notify", 1)->{rows}[0]->{do_notify} eq 't') {
-            $rv = spi_exec_query("SELECT pg_notify('feed_watchers_". $rv->{rows}[0]->{id} .", '$underlying;$ts;$spot;$ohlc_val');");
+            $rv = spi_exec_query("SELECT pg_notify('feed_watchers_". ($rv->{rows}[0]->{id} % $MAX_CHANNELS) .", '$underlying;$ts;$spot;$ohlc_val');");
         }
     }
 
