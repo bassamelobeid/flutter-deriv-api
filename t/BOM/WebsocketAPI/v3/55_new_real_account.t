@@ -18,30 +18,30 @@ $email_mocked->mock('send_email', sub { return 1 });
 
 my $t = build_mojo_test();
 
-my %client_details  = (
-    new_account_real             => 1,
-    salutation                      => 'Ms',
-    last_name                       => 'last-name',
-    first_name                      => 'first\'name',
-    date_of_birth                   => '1990-12-30',
-    residence                       => 'au',
-    address_line_1                  => 'Jalan Usahawan',
-    address_line_2                  => 'Enterpreneur Center',
-    address_city                    => 'Cyberjaya',
-    address_state                   => 'Selangor',
-    address_postcode                => '47120',
-    phone                           => '+603 34567890',
-    secret_question                 => 'Favourite dish',
-    secret_answer                   => 'nasi lemak,teh tarik',
+my %client_details = (
+    new_account_real => 1,
+    salutation       => 'Ms',
+    last_name        => 'last-name',
+    first_name       => 'first\'name',
+    date_of_birth    => '1990-12-30',
+    residence        => 'au',
+    address_line_1   => 'Jalan Usahawan',
+    address_line_2   => 'Enterpreneur Center',
+    address_city     => 'Cyberjaya',
+    address_state    => 'Selangor',
+    address_postcode => '47120',
+    phone            => '+603 34567890',
+    secret_question  => 'Favourite dish',
+    secret_answer    => 'nasi lemak,teh tarik',
 );
 
 subtest 'new CR real account' => sub {
     # create VR acc
     my ($vr_client, $user) = create_vr_account({
-            email           => 'test@binary.com',
-            client_password => 'abc123',
-            residence       => 'au',
-        });
+        email           => 'test@binary.com',
+        client_password => 'abc123',
+        residence       => 'au',
+    });
     # authorize
     my $token = BOM::Platform::SessionCookie->new(
         loginid => $vr_client->loginid,
@@ -50,7 +50,7 @@ subtest 'new CR real account' => sub {
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     subtest 'create CR account' => sub {
-        $t = $t->send_ok({json => \%client_details })->message_ok;
+        $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
@@ -60,19 +60,19 @@ subtest 'new CR real account' => sub {
     };
 
     subtest 'no duplicate account - same email' => sub {
-        $t = $t->send_ok({json => \%client_details })->message_ok;
+        $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
-        is($res->{error}->{code}, 'duplicate email', 'no duplicate account for CR');
-        is($res->{new_account_real}, undef, 'NO account created');
+        is($res->{error}->{code},    'duplicate email', 'no duplicate account for CR');
+        is($res->{new_account_real}, undef,             'NO account created');
     };
 
     subtest 'no duplicate - Name + DOB' => sub {
         my ($vr_client, $user) = create_vr_account({
-                email           => 'test+test@binary.com',
-                client_password => 'abc123',
-                residence       => 'au',
-            });
+            email           => 'test+test@binary.com',
+            client_password => 'abc123',
+            residence       => 'au',
+        });
         # authorize
         my $token = BOM::Platform::SessionCookie->new(
             loginid => $vr_client->loginid,
@@ -81,7 +81,7 @@ subtest 'new CR real account' => sub {
         $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
         # create CR acc
-        $t = $t->send_ok({json => \%client_details })->message_ok;
+        $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'duplicate name DOB', 'no duplicate account: same name + DOB');
@@ -92,10 +92,10 @@ subtest 'new CR real account' => sub {
 subtest 'new MX real account' => sub {
     # create VR acc
     my ($vr_client, $user) = create_vr_account({
-            email           => 'test+gb@binary.com',
-            client_password => 'abc123',
-            residence       => 'gb',
-        });
+        email           => 'test+gb@binary.com',
+        client_password => 'abc123',
+        residence       => 'gb',
+    });
     # authorize
     my $token = BOM::Platform::SessionCookie->new(
         loginid => $vr_client->loginid,
@@ -109,7 +109,7 @@ subtest 'new MX real account' => sub {
     $details{first_name} .= '-gb';
 
     subtest 'UK client - invalid postcode' => sub {
-        $t = $t->send_ok({json => {%details, address_postcode => ''} })->message_ok;
+        $t = $t->send_ok({json => {%details, address_postcode => ''}})->message_ok;
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'invalid UK postcode', 'UK client must have postcode');
@@ -117,7 +117,7 @@ subtest 'new MX real account' => sub {
     };
 
     subtest 'new MX account' => sub {
-        $t = $t->send_ok({json => \%details })->message_ok;
+        $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
@@ -130,10 +130,10 @@ subtest 'new MX real account' => sub {
 subtest 'new MLT real account' => sub {
     # create VR acc
     my ($vr_client, $user) = create_vr_account({
-            email           => 'test+nl@binary.com',
-            client_password => 'abc123',
-            residence       => 'nl',
-        });
+        email           => 'test+nl@binary.com',
+        client_password => 'abc123',
+        residence       => 'nl',
+    });
     # authorize
     my $token = BOM::Platform::SessionCookie->new(
         loginid => $vr_client->loginid,
@@ -146,7 +146,7 @@ subtest 'new MLT real account' => sub {
     $details{residence} = 'nl';
     $details{first_name} .= '-nl';
 
-    $t = $t->send_ok({json => \%details })->message_ok;
+    $t = $t->send_ok({json => \%details})->message_ok;
     my $res = decode_json($t->message->[1]);
     ok($res->{new_account_real});
     test_schema('new_account_real', $res);
@@ -158,10 +158,10 @@ subtest 'new MLT real account' => sub {
 subtest 'create account failed' => sub {
     # create VR acc
     my ($vr_client, $user) = create_vr_account({
-            email           => 'test+id@binary.com',
-            client_password => 'abc123',
-            residence       => 'id',
-        });
+        email           => 'test+id@binary.com',
+        client_password => 'abc123',
+        residence       => 'id',
+    });
     # authorize
     my $token = BOM::Platform::SessionCookie->new(
         loginid => $vr_client->loginid,
@@ -175,7 +175,7 @@ subtest 'create account failed' => sub {
         delete $details{residence};
         delete $details{first_name};
 
-        $t = $t->send_ok({json => \%details })->message_ok;
+        $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'InputValidationFailed', 'fail input validation');
@@ -191,7 +191,7 @@ subtest 'create account failed' => sub {
         $details{residence} = 'id';
         $details{first_name} .= '-id';
 
-        $t = $t->send_ok({json => \%details })->message_ok;
+        $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'email unverified', 'email unverified');
@@ -209,11 +209,11 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
 
-        $t = $t->send_ok({json => \%details })->message_ok;
+        $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
-        is($res->{error}->{code}, 'invalid', 'cannot create real account');
-        is($res->{new_account_real}, undef, 'NO account created');
+        is($res->{error}->{code},    'invalid', 'cannot create real account');
+        is($res->{new_account_real}, undef,     'NO account created');
     };
 
     $vr_client->residence('id');
@@ -223,7 +223,7 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'au';
 
-        $t = $t->send_ok({json => \%details })->message_ok;
+        $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
         is($res->{error}->{code}, 'invalid residence', 'cannot create real account');
@@ -234,22 +234,22 @@ subtest 'create account failed' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
 
-        $t = $t->send_ok({json => {%details, address_line_1 => 'address 1 P.O.Box 1234'} })->message_ok;
+        $t = $t->send_ok({json => {%details, address_line_1 => 'address 1 P.O.Box 1234'}})->message_ok;
         my $res = decode_json($t->message->[1]);
 
-        is($res->{error}->{code}, 'invalid PO Box', 'address cannot contain P.O.Box');
-        is($res->{new_account_real}, undef, 'NO account created');
+        is($res->{error}->{code},    'invalid PO Box', 'address cannot contain P.O.Box');
+        is($res->{new_account_real}, undef,            'NO account created');
     };
 
     subtest 'min age check' => sub {
         my %details = %client_details;
         $details{residence} = 'id';
 
-        $t = $t->send_ok({json => {%details, date_of_birth => '2008-01-01'} })->message_ok;
+        $t = $t->send_ok({json => {%details, date_of_birth => '2008-01-01'}})->message_ok;
         my $res = decode_json($t->message->[1]);
 
-        is($res->{error}->{code}, 'too young', 'min age unmatch');
-        is($res->{new_account_real}, undef, 'NO account created');
+        is($res->{error}->{code},    'too young', 'min age unmatch');
+        is($res->{new_account_real}, undef,       'NO account created');
     };
 
     subtest 'restricted or invalid country' => sub {
@@ -263,8 +263,8 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code}, 'invalid', 'restricted country - US');
-            is($res->{new_account_real}, undef, 'NO account created');
+            is($res->{error}->{code},    'invalid', 'restricted country - US');
+            is($res->{new_account_real}, undef,     'NO account created');
         };
         subtest 'invalid - xx' => sub {
             $vr_client->residence('xx');
@@ -276,8 +276,8 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code}, 'invalid', 'invalid country - xx');
-            is($res->{new_account_real}, undef, 'NO account created');
+            is($res->{error}->{code},    'invalid', 'invalid country - xx');
+            is($res->{new_account_real}, undef,     'NO account created');
         };
     };
 
@@ -292,8 +292,8 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code}, 'invalid', 'wrong acc opening - MF');
-            is($res->{new_account_real}, undef, 'NO account created');
+            is($res->{error}->{code},    'invalid', 'wrong acc opening - MF');
+            is($res->{new_account_real}, undef,     'NO account created');
         };
         subtest 'Japan' => sub {
             $vr_client->residence('jp');
@@ -305,22 +305,22 @@ subtest 'create account failed' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code}, 'invalid', 'wrong acc opening - JP');
-            is($res->{new_account_real}, undef, 'NO account created');
+            is($res->{error}->{code},    'invalid', 'wrong acc opening - JP');
+            is($res->{new_account_real}, undef,     'NO account created');
         };
     };
 };
 
 sub create_vr_account {
     my $args = shift;
-    my $acc = BOM::Platform::Account::Virtual::create_account({
-       details => {
-            email              => $args->{email},
-            client_password    => $args->{client_password},
-            residence          => $args->{residence},
-        },
-        email_verified  => 1
-    });
+    my $acc  = BOM::Platform::Account::Virtual::create_account({
+            details => {
+                email           => $args->{email},
+                client_password => $args->{client_password},
+                residence       => $args->{residence},
+            },
+            email_verified => 1
+        });
 
     return ($acc->{client}, $acc->{user});
 }
