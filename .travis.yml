@@ -1,6 +1,10 @@
 language: perl
 perl:
     - "5.14.2"
+env:
+    - TEST_SUITE=v2
+    - TEST_SUITE=v3
+    - TEST_SUITE=structure
 addons:
     postgresql: "9.3"
 services:
@@ -48,4 +52,4 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    - perl Makefile.PL && make test
+    - make $TEST_SUITE
