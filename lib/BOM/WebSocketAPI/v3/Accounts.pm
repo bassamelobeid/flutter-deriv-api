@@ -483,20 +483,29 @@ sub get_self_exclusion {
     my $get_self_exclusion = {};
 
     if ($self_exclusion) {
-        $get_self_exclusion->{max_balance}            = $self_exclusion->max_balance            // '';
-        $get_self_exclusion->{max_turnover}           = $self_exclusion->max_turnover           // '';
-        $get_self_exclusion->{max_open_bets}          = $self_exclusion->max_open_bets          // '';
-        $get_self_exclusion->{max_losses}             = $self_exclusion->max_losses             // '';
-        $get_self_exclusion->{max_7day_losses}        = $self_exclusion->max_7day_losses        // '';
-        $get_self_exclusion->{max_7day_turnover}      = $self_exclusion->max_7day_turnover      // '';
-        $get_self_exclusion->{max_30day_losses}       = $self_exclusion->max_30day_losses       // '';
-        $get_self_exclusion->{max_30day_turnover}     = $self_exclusion->max_30day_turnover     // '';
-        $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit // '';
+        $get_self_exclusion->{max_balance} = $self_exclusion->max_balance
+            if $self_exclusion->max_balance;
+        $get_self_exclusion->{max_turnover} = $self_exclusion->max_turnover
+            if $self_exclusion->max_turnover;
+        $get_self_exclusion->{max_open_bets} = $self_exclusion->max_open_bets
+            if $self_exclusion->max_open_bets;
+        $get_self_exclusion->{max_losses} = $self_exclusion->max_losses
+            if $self_exclusion->max_losses;
+        $get_self_exclusion->{max_7day_losses} = $self_exclusion->max_7day_losses
+            if $self_exclusion->max_7day_losses;
+        $get_self_exclusion->{max_7day_turnover} = $self_exclusion->max_7day_turnover
+            if $self_exclusion->max_7day_turnover;
+        $get_self_exclusion->{max_30day_losses} = $self_exclusion->max_30day_losses
+            if $self_exclusion->max_30day_losses;
+        $get_self_exclusion->{max_30day_turnover} = $self_exclusion->max_30day_turnover
+            if $self_exclusion->max_30day_turnover;
+        $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit
+            if $self_exclusion->session_duration_limit;
 
         if (my $until = $self_exclusion->exclude_until) {
             $until = Date::Utility->new($until);
-            if (Date::Utility::today->days_between($limit_exclude_until) < 0) {
-                $get_self_exclusion->{exclude_until} = $limit_exclude_until->date;
+            if (Date::Utility::today->days_between($until) < 0) {
+                $get_self_exclusion->{exclude_until} = $until->date;
             }
         }
     }
@@ -520,12 +529,12 @@ sub set_self_exclusion {
     my $error_sub = sub {
         my ($c, $error, $field) = @_;
         my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $error);
-        $err->{field} = $field;
+        $err->{error}->{field} = $field;
         return $err;
     };
 
     my %args = %$args;
-    foreach my field(
+    foreach my $field (
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
     {
@@ -535,7 +544,7 @@ sub set_self_exclusion {
             delete $args{$field};
             next;
         }
-        if ($self_exclusion->{$field} and val > $self_exclusion->{$field}) {
+        if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
             return $error_sub->($c, localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         }
     }
