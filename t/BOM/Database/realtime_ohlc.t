@@ -70,7 +70,7 @@ cmp_deeply(_r('EARLY'), {id=>2, underlying=>'EARLY', ts=>$start+3600*24, ohlc=>"
 
 
 #What happens if we introduce a new granuality
-$dbh->do("INSERT INTO feed.realtime_ohlc VALUES('WILLCHANGE', 1, '120:0.6,0.6,0.6,0.6;300:0.6,0.6,0.6,0.6;600:0.6,0.6,0.6,0.6;900:0.6,0.6,0.6,0.6;1800:0.6,0.6,0.6,0.6;7200:0.6,0.6,0.6,0.6;14400:0.6,0.6,0.6,0.6;28800:0.6,0.6,0.6,0.6;');");
+$dbh->do("INSERT INTO feed.realtime_ohlc VALUES(DEFAULT, 'WILLCHANGE', 1, '120:0.6,0.6,0.6,0.6;300:0.6,0.6,0.6,0.6;600:0.6,0.6,0.6,0.6;900:0.6,0.6,0.6,0.6;1800:0.6,0.6,0.6,0.6;7200:0.6,0.6,0.6,0.6;14400:0.6,0.6,0.6,0.6;28800:0.6,0.6,0.6,0.6;');");
 
 $p = "0.6,1.1,0.6,1.1";
 $dbh->do("SELECT tick_notify('WILLCHANGE', 2, CAST(1.1 as DOUBLE PRECISION))");
