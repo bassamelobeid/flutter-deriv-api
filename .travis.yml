@@ -50,4 +50,4 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
 script:
-    - [ "$GITTOKEN" == "" ] && make $TEST_SUITE
+    - true && [ "$GITTOKEN" == "" ] && make $TEST_SUITE
