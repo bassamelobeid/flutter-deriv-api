@@ -8,7 +8,6 @@ services:
     - couchdb
 cache: apt
 env:
-env:
     - TEST_SUITE=v2
     - TEST_SUITE=v3
     - TEST_SUITE=structure
