@@ -13,7 +13,7 @@ use Net::EmptyPort qw(empty_port);
 my $port = empty_port;
 @ENV{qw/TEST_DICTATOR_HOST TEST_DICTATOR_PORT/} = ('127.0.0.1', $port);
 
-{   # shamelessly borrowed from BOM::Feed
+{    # shamelessly borrowed from BOM::Feed
 
     # mock BOM::Feed::Dictator::Cache
     package BOM::Feed::Dictator::MockCache;
@@ -28,10 +28,12 @@ my $port = empty_port;
 
     sub add_callback {
         my ($self, %args) = @_;
-        my ($symbol, $start, $end, $cb) =
-            @args{qw(symbol start_time end_time callback)};
+        my ($symbol, $start, $end, $cb) = @args{qw(symbol start_time end_time callback)};
         $self->{"$cb"}{timer} = AE::timer 0.1, 0.5, sub {
-            $cb->({epoch => time, quote => "42"});
+            $cb->({
+                epoch => time,
+                quote => "42"
+            });
         };
     }
 }
@@ -67,7 +69,7 @@ my $t = build_mojo_test();
 my @ticks;
 my %ticks;
 
-for (1..50) {
+for (1 .. 50) {
     $t->send_ok($req);
     while (1) {
         $t->message_ok;
