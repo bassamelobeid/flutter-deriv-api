@@ -23,6 +23,8 @@ CREATE TABLE feed.do_notify (
     do_notify BOOLEAN DEFAULT 'true'
 );
 
+INSERT INTO feed.do_notify VALUES (true);
+
 CREATE OR REPLACE FUNCTION tick_notify(VARCHAR(128),BIGINT,DOUBLE PRECISION) RETURNS TEXT AS
 $tick_notify$
     my $underlying      = $_[0];
