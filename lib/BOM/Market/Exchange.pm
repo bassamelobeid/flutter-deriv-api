@@ -142,13 +142,13 @@ has open_on_weekends => (
 
 =head2 trading_day
 
-What is the trading days of the exchange? It can be everyday, weekday or sun_thru_thu
+An exchange's trading day category. The list is enumerated in the exchanges_trading_days_aliases.yml file.
 
 =cut
 
 has trading_days => (
     is      => 'ro',
-    default => 'weekday',
+    default => 'weekdays',
 );
 
 =head2 trading_days_list
@@ -164,8 +164,8 @@ has trading_days_list => (
 );
 
 sub _build_trading_days_list {
-    my $self = shift;
-    state $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
+    my $self                 = shift;
+    my $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
     return \@{$trading_days_aliases->{$self->trading_days}};
 
 }
@@ -227,12 +227,8 @@ sub BUILDARGS {
     }
 
     $params_ref->{holidays} = \%holidays;
-    my $extended_lunch_hour =
-          $params_ref->{day_of_week_extended_trading_breaks}
-        ? Date::Utility->new->day_of_week == $params_ref->{day_of_week_extended_trading_breaks}
-            ? 1
-            : 0
-        : 0;
+    my $extended_trading_breaks = $params_ref->{day_of_week_extended_trading_breaks};
+    my $extended_lunch_hour = ($extended_trading_breaks and Date::Utility->new->day_of_week == $extended_trading_breaks) ? 1 : 0;
 
     foreach my $dst_maybe (keys %{$params_ref->{market_times}}) {
         foreach my $trading_segment (keys %{$params_ref->{market_times}->{$dst_maybe}}) {
