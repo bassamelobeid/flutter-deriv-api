@@ -163,12 +163,14 @@ has trading_days_list => (
     lazy_build => 1,
 );
 
-my $trading_days_aliases = YAML::XS::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
+{
+    my $trading_days_aliases = YAML::XS::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
 
-sub _build_trading_days_list {
-    my $self = shift;
-    return \@{$trading_days_aliases->{$self->trading_days}};
+    sub _build_trading_days_list {
+        my $self = shift;
+        return \@{$trading_days_aliases->{$self->trading_days}};
 
+    }
 }
 
 =head2 display_name
@@ -251,7 +253,7 @@ sub BUILDARGS {
                     interval => $trading_breaks->[1],
                     locale   => BOM::Platform::Context::request()->language
                 );
-                $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = [$open_int, $close_int];
+                $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = [[$open_int, $close_int]];
             }
         }
     }
