@@ -59,7 +59,7 @@ $tick_notify$
         }
         spi_exec_query("UPDATE feed.realtime_ohlc SET ts=$ts, ohlc='$ohlc_val' where underlying='$underlying'");
         if (spi_exec_query("SELECT do_notify FROM feed.do_notify", 1)->{rows}[0]->{do_notify} eq 't') {
-            $rv = spi_exec_query("SELECT pg_notify('feed_watchers_". ($rv->{rows}[0]->{id} % $MAX_CHANNELS) .", '$underlying;$ts;$spot;$ohlc_val');");
+            $rv = spi_exec_query("SELECT pg_notify('feed_watchers_". ($rv->{rows}[0]->{id} % $MAX_CHANNELS + 1) .", '$underlying;$ts;$spot;$ohlc_val');");
         }
     }
 
