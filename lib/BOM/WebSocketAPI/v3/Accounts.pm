@@ -129,8 +129,8 @@ sub get_transactions {
                 ORDER BY t.transaction_time DESC
     };
 
-    my $limit  = $args->{limit}     || 100;
-    my $offset = $args->{offset}    || 0;
+    my $limit  = $args->{limit}  || 100;
+    my $offset = $args->{offset} || 0;
     my $dt_fm  = $args->{date_from};
     my $dt_to  = $args->{date_to};
 
@@ -140,14 +140,11 @@ sub get_transactions {
     $dt_fm ||= '1970-01-01';
     $dt_to ||= Date::Utility->today->plus_time_interval('1d')->datetime;
 
-    my $action_type = ($args->{action_type})? 'AND action_type = ?' : '';
+    my $action_type = ($args->{action_type}) ? 'AND action_type = ?' : '';
     $sql =~ s/##ACTION_TYPE##/$action_type/;
 
-    my @binds = ($acc->id, $dt_to, $dt_fm,
-        ($action_type) ? $action_type : (),
-        $limit, $offset
-    );
-    my $results = $acc->db->dbh->selectall_arrayref($sql, { Slice => {} }, @binds);
+    my @binds = ($acc->id, $dt_to, $dt_fm, ($action_type) ? $action_type : (), $limit, $offset);
+    my $results = $acc->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
 
     my @txns;
     foreach my $txn (@$results) {
