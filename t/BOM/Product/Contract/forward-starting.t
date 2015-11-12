@@ -25,6 +25,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         trading_day => 'everyday',
         date   => $now,
     });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange',
+    {
+        symbol => 'FOREX',
+        trading_day => 'weekdays',
+        date   => $now,
+    });
 subtest 'forward starting with payout/stake' => sub {
     my $c = produce_contract({
         bet_type     => 'CALL',
