@@ -37,7 +37,7 @@ use BOM::Platform::Runtime;
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
 use BOM::Utility::Log4perl qw( get_logger );
-use YAML::CacheLoader qw(LoadFile);
+use YAML::XS qw(LoadFile);
 # We're going to do this from time to time.
 # I claim it's under control.
 ## no critic(TestingAndDebugging::ProhibitNoWarnings)
@@ -163,9 +163,10 @@ has trading_days_list => (
     lazy_build => 1,
 );
 
+my $trading_days_aliases = YAML::XS::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
+
 sub _build_trading_days_list {
-    my $self                 = shift;
-    my $trading_days_aliases = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
+    my $self = shift;
     return \@{$trading_days_aliases->{$self->trading_days}};
 
 }
@@ -243,13 +244,13 @@ sub BUILDARGS {
                 # For extended lunch hour, we use the second trading break
                 my $trading_breaks = $extended_lunch_hour ? @$break_intervals[1] : @$break_intervals[0];
                 my $open_int = Time::Duration::Concise::Localize->new(
-                        interval => $trading_breaks->[0],
-                        locale   => BOM::Platform::Context::request()->language
-                    );
+                    interval => $trading_breaks->[0],
+                    locale   => BOM::Platform::Context::request()->language
+                );
                 my $close_int = Time::Duration::Concise::Localize->new(
-                        interval => $trading_breaks->[1],
-                        locale   => BOM::Platform::Context::request()->language
-                    );
+                    interval => $trading_breaks->[1],
+                    locale   => BOM::Platform::Context::request()->language
+                );
                 $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = [$open_int, $close_int];
             }
         }
