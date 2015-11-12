@@ -228,7 +228,7 @@ sub send_realtime_balance {
     my ($c, $message) = @_;
 
     my $client = $c->stash('client');
-    my $args   = $c->stash('$args');
+    my $args   = $c->stash('args');
 
     my $payload = JSON::from_json($message);
     $c->send({
@@ -260,7 +260,7 @@ sub balance {
     my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
 
     if ($args->{subscribe} eq '1') {
-        $redis->unsubscribe($channel, sub { });
+        $redis->subscribe($channel, sub { });
     }
     if ($args->{subscribe} eq '0') {
         $redis->unsubscribe($channel, sub { });
