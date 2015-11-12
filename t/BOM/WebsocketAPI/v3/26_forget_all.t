@@ -11,7 +11,7 @@ use Net::EmptyPort qw(empty_port);
 my $port = empty_port;
 @ENV{qw/TEST_DICTATOR_HOST TEST_DICTATOR_PORT/} = ('127.0.0.1', $port);
 
-{   # shamelessly borrowed from BOM::Feed
+{    # shamelessly borrowed from BOM::Feed
 
     # mock BOM::Feed::Dictator::Cache
     package BOM::Feed::Dictator::MockCache;
@@ -26,10 +26,12 @@ my $port = empty_port;
 
     sub add_callback {
         my ($self, %args) = @_;
-        my ($symbol, $start, $end, $cb) =
-            @args{qw(symbol start_time end_time callback)};
+        my ($symbol, $start, $end, $cb) = @args{qw(symbol start_time end_time callback)};
         $self->{"$cb"}{timer} = AE::timer 0.1, 1, sub {
-            $cb->({epoch => time, quote => "42"});
+            $cb->({
+                epoch => time,
+                quote => "42"
+            });
         };
     }
 }
@@ -49,10 +51,10 @@ unless ($pid) {
 
 build_test_R_50_data();
 
-my $t               = build_mojo_test();
+my $t = build_mojo_test();
 my (@ticks, %ticks, @proposals, %proposals);
 
-for (1..25) {
+for (1 .. 25) {
     $t->send_ok({json => {ticks => 'R_50'}});
     while (1) {
         $t->message_ok;
@@ -68,18 +70,18 @@ for (1..25) {
     }
 }
 
-for (1..25) {
+for (1 .. 25) {
     $t->send_ok({
-        json => {
-            "proposal"      => 1,
-            "amount"        => "10",
-            "basis"         => "payout",
-            "contract_type" => "CALL",
-            "currency"      => "USD",
-            "symbol"        => "R_50",
-            "duration"      => "2",
-            "duration_unit" => "m"
-        }});
+            json => {
+                "proposal"      => 1,
+                "amount"        => "10",
+                "basis"         => "payout",
+                "contract_type" => "CALL",
+                "currency"      => "USD",
+                "symbol"        => "R_50",
+                "duration"      => "2",
+                "duration_unit" => "m"
+            }});
     while (1) {
         $t->message_ok;
         # diag $t->message->[1];
@@ -139,8 +141,7 @@ while (1) {
     is scalar(@{$m->{forget_all}}), 25;
     test_schema('forget_all', $m);
 
-    is_deeply [sort @{$m->{forget_all}}], [sort map {$_->{tick}->{id}} @ticks],
-        'forgotten ids meet expectations';
+    is_deeply [sort @{$m->{forget_all}}], [sort map { $_->{tick}->{id} } @ticks], 'forgotten ids meet expectations';
 
     last;
 }
@@ -155,8 +156,7 @@ while (1) {
     is scalar(@{$m->{forget_all}}), 25;
     test_schema('forget_all', $m);
 
-    is_deeply [sort @{$m->{forget_all}}], [sort map {$_->{proposal}->{id}} @proposals],
-        'forgotten ids meet expectations';
+    is_deeply [sort @{$m->{forget_all}}], [sort map { $_->{proposal}->{id} } @proposals], 'forgotten ids meet expectations';
 
     last;
 }

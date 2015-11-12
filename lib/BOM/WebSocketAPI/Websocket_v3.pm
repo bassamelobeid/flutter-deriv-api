@@ -41,6 +41,29 @@ sub entry_point {
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
 
+    if (not $c->stash->{redis}) {
+        state $url = do {
+            my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
+            defined($cf->{password})
+                ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
+                : "redis://$cf->{host}:$cf->{port}";
+        };
+
+        my $redis = Mojo::Redis2->new(url => $url);
+        $redis->on(
+            error => sub {
+                my ($self, $err) = @_;
+                $log->info("error: $err");
+                warn("error: $err");
+            });
+        $redis->on(
+            message => sub {
+                my ($self, $msg, $channel) = @_;
+                BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
+            });
+        $c->stash->{redis} = $redis;
+    }
+
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
@@ -56,6 +79,7 @@ sub entry_point {
                     }
                 }
 
+                $c->stash('args' => $p1);
                 $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
                 if (not $data) {
                     $send = undef;
