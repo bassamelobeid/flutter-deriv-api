@@ -162,8 +162,9 @@ sub get_transactions {
             longcode         => $txn->{payment_remark},
         };
 
-        if ($txn->{short_code} and my $con = eval { BOM::Product::ContractFactory::produce_contract($txn->{short_code}, $acc->currency_code) }) {
-            $struct->{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
+        if ($txn->{short_code}) {
+            ($struct->{longcode}, undef, undef) = try { simple_contract_info($txn->{short_code}, $acc->currency_code) };
+            $struct->{longcode} = Mojo::DOM->new->parse($struct->{longcode})->all_text;
         }
         push @txns, $struct;
     }
