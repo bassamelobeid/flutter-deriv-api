@@ -104,6 +104,11 @@ sub get_transactions {
     $c->app->log->debug("transaction query opts are " . $c->dumper($args));
     my $acc = $c->stash('account');
 
+    return {
+        transactions => [],
+        count        => 0
+    } unless ($acc);
+
     my $sql = q{
             SELECT
                 t.*,
