@@ -8,7 +8,7 @@ use Try::Tiny;
 use Mojo::DOM;
 use Date::Utility;
 
-use BOM::Product::ContractFactory;
+use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use BOM::System::Password;
@@ -107,7 +107,7 @@ sub get_transactions {
     my $sql = q{
             SELECT
                 t.*,
-                EXTRACT(EPOCH FROM t.transaction_time) as t_epoch,
+                EXTRACT(EPOCH FROM date_trunc('s', t.transaction_time)) as t_epoch,
                 b.short_code,
                 p.remark AS payment_remark
             FROM
@@ -132,7 +132,7 @@ sub get_transactions {
     my $limit  = $args->{limit}     || 100;
     my $offset = $args->{offset}    || 0;
     my $dt_fm  = $args->{date_from};
-    my $dt_to  = $args->{date_to});
+    my $dt_to  = $args->{date_to};
 
     for ($dt_fm, $dt_to) {
         $_ = eval { Date::Utility->new($_)->datetime } if ($_);
@@ -143,21 +143,21 @@ sub get_transactions {
     my $action_type = ($args->{action_type})? 'AND action_type = ?' : '';
     $sql =~ s/##ACTION_TYPE##/$action_type/;
 
-    my @params = ($acc->id, $dt_to, $dt_frm,
+    my @binds = ($acc->id, $dt_to, $dt_fm,
         ($action_type) ? $action_type : (),
         $limit, $offset
     );
-    my $results = $acc->db->dbh->selectall_hashref($sql, 'id', {}, @params);
+    my $results = $acc->db->dbh->selectall_arrayref($sql, { Slice => {} }, @binds);
 
     my @txns;
-    foreach my $txn (keys %$results) {
+    foreach my $txn (@$results) {
         my $struct = {
             transaction_id   => $txn->{id},
             transaction_time => $txn->{t_epoch},
             amount           => $txn->{amount},
             action_type      => $txn->{action_type},
             balance_after    => $txn->{balance_after},
-            contract_id      => $txn->{financial_market_bet_id};
+            contract_id      => $txn->{financial_market_bet_id},
             shortcode        => $txn->{short_code},
             longcode         => $txn->{payment_remark},
         };
@@ -165,7 +165,7 @@ sub get_transactions {
         if ($txn->{short_code} and my $con = eval { BOM::Product::ContractFactory::produce_contract($txn->{short_code}, $acc->currency_code) }) {
             $struct->{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
         }
-        push @txns, $txn;
+        push @txns, $struct;
     }
 
     return {
