@@ -325,13 +325,29 @@ sub send_realtime_ticks {
 
     my @m = split(';',$message);
 
-    foreach my $g (%{$c->stash->{feed_channels}}) {
-        $g =~ /(.*);(.*)/;
-        if ($1 eq 'tick' and $m[0] eq $2) {
-            # send tick
+    foreach my $listen (%{$c->stash->{feed_channels}}) {
+        $listen =~ /(.*);(.*)/;
+        my $symbol = $1;
+        my $granularity = $2;
+        if ($granularity eq 'tick' and $m[0] eq $2) {
+                               $c->send({
+                            json => {
+                                msg_type => 'candles',
+                                echo_req => $c->stah->('args'),
+                                tick     => {
+                                    epoch => $m[1],
+                                    quote => $m[2]}}});
+                }
         } elsif ($m[0] eq $2) {
-            # send tick ohlc for that message
-        }
+            $message =~ /;$granularity:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
+            
+                               $c->send({
+                            json => {
+                                msg_type => 'ohlc',
+                                echo_req => $c->stah->('args'),
+                                candles     => {epoch => $m[1], open => $1, high => $2, low => $3, close => $4}
+                              }});
+        }  
     }
 
     return 0;
