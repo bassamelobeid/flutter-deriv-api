@@ -140,7 +140,7 @@ has open_on_weekends => (
     default => 0,
 );
 
-=head2 trading_day
+=head2 trading_days
 
 An exchange's trading day category. The list is enumerated in the exchanges_trading_days_aliases.yml file.
 
