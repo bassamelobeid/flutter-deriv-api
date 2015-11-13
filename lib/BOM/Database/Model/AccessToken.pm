@@ -52,6 +52,14 @@ sub is_name_taken {
     );
 }
 
+sub remove_by_loginid {
+    my ($self, $client_loginid) = @_;
+
+    return $self->dbh->do(
+        "DELETE FROM auth.access_token WHERE client_loginid = ?", undef, $client_loginid
+    );
+}
+
 sub remove_by_token {
     my ($self, $token) = @_;
 
