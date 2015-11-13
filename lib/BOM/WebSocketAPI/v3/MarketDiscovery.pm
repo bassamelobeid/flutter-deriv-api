@@ -295,9 +295,9 @@ sub ticks_history {
 
     my $redis = $c->stash('redis');
     if (scalar keys @{$c->stash->{feed_channels}} > 0) {
-        $redis->subscribe("FEED::$symbol", sub { });
+        $redis->subscribe(["FEED::$symbol"], sub { });
     } else {
-        $redis->unsubscribe("FEED::$symbol", sub { });
+        $redis->unsubscribe(["FEED::$symbol"], sub { });
     }
 
 }
