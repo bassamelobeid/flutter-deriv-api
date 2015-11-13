@@ -272,6 +272,7 @@ sub ticks_history {
         };
         $publish = 'tick';
     } elsif ($style eq 'candles') {
+
         my @candles = @{$c->BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
         if (@candles) {
             $result = {
@@ -290,42 +291,46 @@ sub ticks_history {
         $c->stash->{feed_channels}->{"$symbol;$publish"} = 1;
     }
     if ($args->{subscribe} eq '0') {
-        delete $c->stash->{feed_channels}->{_candle_channel_name("$symbol;$publish")};
+        delete $c->stash->{feed_channels}->{"$symbol;$publish"};
     }
 
     my $redis = $c->stash('redis');
-    if (scalar keys @{$c->stash->{feed_channels}} > 0) {
+    my $feed_channels = $c->stash('feed_channels');
+
+    if (scalar keys %{$feed_channels} > 0) {
         $redis->subscribe(["FEED::$symbol"], sub { });
     } else {
         $redis->unsubscribe(["FEED::$symbol"], sub { });
     }
-
+    return $result;
 }
 
 sub send_realtime_ticks {
     my ($c, $message) = @_;
 
     my @m = split(';', $message);
+    my $feed_channels = $c->stash('feed_channels');
 
-    foreach my $feed_channels (%{$c->stash->{feed_channels}}) {
-        $feed_channels =~ /(.*);(.*);/;
+    foreach my $channel (keys %{$feed_channels}) {
+        $channel =~ /(.*);(.*)/;
         my $symbol      = $1;
         my $granularity = $2;
-        if ($granularity eq 'tick' and $m[0] eq $2) {
+
+        if ($granularity eq 'tick' and $m[0] eq $symbol) {
             $c->send({
                     json => {
                         msg_type => 'tick',
-                        echo_req => $c->stah->('args'),
+                        echo_req => $c->stash('args'),
                         tick     => {
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => $m[2]}}});
-        } elsif ($m[0] eq $2) {
+        } elsif ($m[0] eq $symbol) {
             $message =~ /;$granularity:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             $c->send({
                     json => {
                         msg_type => 'ohlc',
-                        echo_req => $c->stah->('args'),
+                        echo_req => $c->stash('args'),
                         candles  => {
                             epoch  => $symbol,
                             granularity => $granularity,

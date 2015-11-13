@@ -202,7 +202,6 @@ sub candles {
     my $granularity = $args->{granularity};
     my $count       = $args->{count};
 
-    my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
     my @all_ohlc;
 
     # This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
@@ -213,7 +212,7 @@ sub candles {
             })->[0];
         $ohlc->{epoch} = $start_time;
         push @all_ohlc, $ohlc;
-    } elsif ($unit eq 'D' and $ul->ohlc_daily_open) {
+    } elsif ($granularity >= 86400 and $ul->ohlc_daily_open) {
         # For the underlying nocturne, for daily ohlc, the date need to be date
         $start_time = Date::Utility->new($start_time)->truncate_to_day;
         $end_time   = Date::Utility->new($end_time)->truncate_to_day;
