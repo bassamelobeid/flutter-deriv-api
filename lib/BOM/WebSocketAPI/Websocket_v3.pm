@@ -208,7 +208,8 @@ sub __handle {
             my $self_excl = $client->get_self_exclusion;
             my $lim;
             if ($self_excl and $lim = $self_excl->exclude_until and Date::Utility->new->is_before(Date::Utility->new($lim))) {
-                return $c->new_error('error', 'ClientSelfExclusion', BOM::Platform::Context::localize('Sorry, you have excluded yourself until [_1].', $lim));
+                return $c->new_error('error', 'ClientSelfExclusion',
+                    BOM::Platform::Context::localize('Sorry, you have excluded yourself until [_1].', $lim));
             }
         }
 

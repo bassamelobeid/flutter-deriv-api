@@ -155,7 +155,7 @@ test_schema('set_self_exclusion', $res);
 # re-get should be exclude yourself
 $t = $t->send_ok({json => {get_self_exclusion => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
-is $res->{error}->{code},  'ClientSelfExclusion';
+is $res->{error}->{code}, 'ClientSelfExclusion';
 ok $res->{error}->{message} =~ /you have excluded yourself until/;
 
 ## try read from db
@@ -164,7 +164,6 @@ my $self_excl = $client->get_self_exclusion;
 is $self_excl->max_balance, 9998, 'set correct in db';
 is $self_excl->exclude_until, $exclude_until, 'exclude_until in db is right';
 is $self_excl->session_duration_limit, 1440, 'all good';
-
 
 $t->finish_ok;
 
