@@ -53,19 +53,6 @@ sub startup {
             };
         });
 
-    $app->helper(
-        redis => sub {
-            my $c = shift;
-            state $url = do {
-                my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
-                defined($cf->{password})
-                    ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
-                    : "redis://$cf->{host}:$cf->{port}";
-            };
-
-            return $c->stash->{redis} ||= Mojo::Redis2->new(url => $url);
-        });
-
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
