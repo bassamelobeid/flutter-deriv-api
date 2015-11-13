@@ -20,7 +20,8 @@ use BOM::Platform::Account;
 
 sub _validate {
     my $args = shift;
-    my ($from_client, $user, $country) = @{$args}{'from_client', 'user', 'country'};
+    my ($from_client, $user) = @{$args}{'from_client', 'user'};
+    my $country = $args->{country} || '';
 
     my $details;
     my ($broker, $residence) = ('', '');
@@ -35,7 +36,7 @@ sub _validate {
         $logger->warn($msg . 'new account opening suspended');
         return {error => 'invalid'};
     }
-    if (BOM::Platform::Client::check_country_restricted($country)) {
+    if ($country and BOM::Platform::Client::check_country_restricted($country)) {
         $logger->warn($msg . "restricted IP country [$country]");
         return {error => 'invalid'};
     }
@@ -47,13 +48,17 @@ sub _validate {
     }
 
     if ($details) {
-        if (BOM::Platform::Client::check_country_restricted($residence)) {
-            $logger->warn($msg . "restricted residence [$residence]");
-            return {error => 'invalid'};
+        if (BOM::Platform::Client::check_country_restricted($residence) or $from_client->residence ne $residence) {
+            $logger->warn($msg . "restricted residence [$residence], or mismatch with from_client residence: " . $from_client->residence);
+            return {error => 'invalid residence'};
         }
-        if ($from_client->residence ne $residence) {
-            $logger->warn($msg . "Invalid residence, residence[$residence], from_client: " . $from_client->residence);
-            return {error => 'invalid'};
+        if ($residence eq 'gb' and not $details->{address_postcode}) {
+            return {error => 'invalid UK postcode'};
+        }
+        if (   ($details->{address_line_1} || '') =~ /p[\.\s]+o[\.\s]+box/i
+            or ($details->{address_line_2} || '') =~ /p[\.\s]+o[\.\s]+box/i)
+        {
+            return {error => 'invalid PO Box'};
         }
         if (any { $_ =~ qr/^($broker)\d+$/ } ($user->loginid)) {
             return {error => 'duplicate email'};
