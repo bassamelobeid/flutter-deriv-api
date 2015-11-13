@@ -286,15 +286,14 @@ sub ticks_history {
         return $c->new_error('ticks_history', 'InvalidStyle', localize("Style [_1] invalid", $style));
     }
 
-
     if ($args->{subscribe} eq '1') {
-        $c->stash->{feed_channels}->{"$symbol;$publish"}=1;
+        $c->stash->{feed_channels}->{"$symbol;$publish"} = 1;
     }
     if ($args->{subscribe} eq '0') {
         delete $c->stash->{feed_channels}->{_candle_channel_name("$symbol;$publish")};
     }
 
-    if (scalar keys @{$c->stash->{feed_channels}}>0) {
+    if (scalar keys @{$c->stash->{feed_channels}} > 0) {
         $c->stash('redis')->subscribe("FEED::$symbol", sub { });
     } else {
         $c->stash('redis')->unsubscribe("FEED::$symbol", sub { });
@@ -305,49 +304,51 @@ sub ticks_history {
 sub _candle_channel_name {
     my $granularity = shift;
     my $n;
-    $n->{'M1'}=60;
-    $n->{'M2'}=120;
-    $n->{'M5'}=300;
-    $n->{'M10'}=600;
-    $n->{'M15'}=900;
-    $n->{'M30'}=1800;
-    $n->{'H1'}=3600;
-    $n->{'H2'}=7200;
-    $n->{'H4'}=14400;
-    $n->{'H8'}=28800;
-    $n->{'D'}=86400;
+    $n->{'M1'}  = 60;
+    $n->{'M2'}  = 120;
+    $n->{'M5'}  = 300;
+    $n->{'M10'} = 600;
+    $n->{'M15'} = 900;
+    $n->{'M30'} = 1800;
+    $n->{'H1'}  = 3600;
+    $n->{'H2'}  = 7200;
+    $n->{'H4'}  = 14400;
+    $n->{'H8'}  = 28800;
+    $n->{'D'}   = 86400;
     return $n{$granularity} || $n->{'M1'};
 }
-
 
 sub send_realtime_ticks {
     my ($c, $message) = @_;
 
-    my @m = split(';',$message);
+    my @m = split(';', $message);
 
-    foreach my $listen (%{$c->stash->{feed_channels}}) {
-        $listen =~ /(.*);(.*)/;
-        my $symbol = $1;
+    foreach my $feed_channels (%{$c->stash->{feed_channels}}) {
+        $feed_channels =~ /(.*);(.*)/;
+        my $symbol      = $1;
         my $granularity = $2;
         if ($granularity eq 'tick' and $m[0] eq $2) {
-                               $c->send({
-                            json => {
-                                msg_type => 'candles',
-                                echo_req => $c->stah->('args'),
-                                tick     => {
-                                    epoch => $m[1],
-                                    quote => $m[2]}}});
-                }
+            $c->send({
+                    json => {
+                        msg_type => 'candles',
+                        echo_req => $c->stah->('args'),
+                        tick     => {
+                            epoch => $m[1],
+                            quote => $m[2]}}});
         } elsif ($m[0] eq $2) {
             $message =~ /;$granularity:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
-            
-                               $c->send({
-                            json => {
-                                msg_type => 'ohlc',
-                                echo_req => $c->stah->('args'),
-                                candles     => {epoch => $m[1], open => $1, high => $2, low => $3, close => $4}
-                              }});
-        }  
+            $c->send({
+                    json => {
+                        msg_type => 'ohlc',
+                        echo_req => $c->stah->('args'),
+                        candles  => {
+                            epoch => $m[1],
+                            open  => $1,
+                            high  => $2,
+                            low   => $3,
+                            close => $4
+                        }}});
+        }
     }
 
     return 0;
