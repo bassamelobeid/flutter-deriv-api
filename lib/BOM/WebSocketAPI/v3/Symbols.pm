@@ -193,27 +193,20 @@ sub ticks {
 
 sub candles {
     my ($c, $args) = @_;
-    my $interval_map = {
-        M => 60,
-        H => 3600,
-        D => 86400,
-        S => 1,
-    };
 
     $args = _validate_start_end($c, $args);
 
     my $ul          = $args->{ul} || die 'no underlying';
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
-    my $granularity = uc($args->{granularity} || 'M1');
+    my $granularity = $args->{granularity};
     my $count       = $args->{count};
 
     my ($unit, $size) = $granularity =~ /^([DHMS])(\d+)$/ or return;
-    my $interval = $size * $interval_map->{$unit};
     my @all_ohlc;
 
     # This ohlc_daily_list is the only one will get ohlc from feed.tick for a period
-    if ($end_time - $start_time <= $interval) {
+    if ($end_time - $start_time <= $granularity) {
         my $ohlc = $ul->feed_api->ohlc_daily_list({
                 start_time => $start_time,
                 end_time   => $end_time,
@@ -230,12 +223,12 @@ sub candles {
                 $ul->feed_api->ohlc_start_end({
                         start_time         => $start_time,
                         end_time           => $end_time,
-                        aggregation_period => $interval,
+                        aggregation_period => $granularity,
                     })});
 
     } else {
-        my $first_stop = $start_time + ($interval - $start_time % $interval);
-        my $last_stop = $first_stop + $interval * int(($end_time - $first_stop) / $interval);
+        my $first_stop = $start_time + ($granularity - $start_time % $granularity);
+        my $last_stop = $first_stop + $granularity * int(($end_time - $first_stop) / $granularity);
 
         my $first_ohlc = $ul->feed_api->ohlc_daily_list({
                 start_time => $start_time,
@@ -250,7 +243,7 @@ sub candles {
                 $ul->feed_api->ohlc_start_end({
                         start_time         => $first_stop,
                         end_time           => $last_stop,
-                        aggregation_period => $interval,
+                        aggregation_period => $granularity,
                     })});
         my $last_ohlc = $ul->feed_api->ohlc_daily_list({
                 start_time => $last_stop,

@@ -278,7 +278,7 @@ sub ticks_history {
                 msg_type => 'candles',
                 candles  => \@candles,
             };
-            $publish = _candle_channel_name($granularity);
+            $publish = $granularity;
         } else {
             return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
         }
@@ -301,40 +301,24 @@ sub ticks_history {
 
 }
 
-sub _candle_channel_name {
-    my $granularity = shift;
-    my $n;
-    $n->{'M1'}  = 60;
-    $n->{'M2'}  = 120;
-    $n->{'M5'}  = 300;
-    $n->{'M10'} = 600;
-    $n->{'M15'} = 900;
-    $n->{'M30'} = 1800;
-    $n->{'H1'}  = 3600;
-    $n->{'H2'}  = 7200;
-    $n->{'H4'}  = 14400;
-    $n->{'H8'}  = 28800;
-    $n->{'D'}   = 86400;
-    return $n{$granularity} || $n->{'M1'};
-}
-
 sub send_realtime_ticks {
     my ($c, $message) = @_;
 
     my @m = split(';', $message);
 
     foreach my $feed_channels (%{$c->stash->{feed_channels}}) {
-        $feed_channels =~ /(.*);(.*)/;
+        $feed_channels =~ /(.*);(.*);/;
         my $symbol      = $1;
         my $granularity = $2;
         if ($granularity eq 'tick' and $m[0] eq $2) {
             $c->send({
                     json => {
-                        msg_type => 'candles',
+                        msg_type => 'tick',
                         echo_req => $c->stah->('args'),
                         tick     => {
-                            epoch => $m[1],
-                            quote => $m[2]}}});
+                            symbol => $symbol,
+                            epoch  => $m[1],
+                            quote  => $m[2]}}});
         } elsif ($m[0] eq $2) {
             $message =~ /;$granularity:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             $c->send({
@@ -342,7 +326,8 @@ sub send_realtime_ticks {
                         msg_type => 'ohlc',
                         echo_req => $c->stah->('args'),
                         candles  => {
-                            epoch => $m[1],
+                            epoch  => $symbol,
+                            granularity => $granularity,
                             open  => $1,
                             high  => $2,
                             low   => $3,
