@@ -56,19 +56,17 @@ Given a category, name and timestamp returns version of data under "category::na
 
 =head1 Example
 
-```
-my $d = get_some_data();
+ my $d = get_some_data();
 
-#store data into Chronicle
-BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d);
+ #store data into Chronicle
+  BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d);
 
-#retrieve latest data stored for "vol_surface" and "frxUSDJPY"
-my $dt = BOM::System::Chronicle::set("vol_surface", "frxUSDJPY");
+ #retrieve latest data stored for "vol_surface" and "frxUSDJPY"
+ my $dt = BOM::System::Chronicle::set("vol_surface", "frxUSDJPY");
 
-#find vol_surface for frxUSDJPY as of Jan 15, 2015.
-my $some_old_data = get_for("vol_surface", "frxUSDJPY", 
-                            DateTime::Format::Pg->format_timestamp(DateTime->new(year => 2015, month => 1, day => 10)));
-```
+ #find vol_surface for frxUSDJPY as of Jan 15, 2015.
+ my $some_old_data = get_for("vol_surface", "frxUSDJPY", 
+                              DateTime::Format::Pg->format_timestamp(DateTime->new(year => 2015, month => 1, day => 10)));
 
 =head1 Future directions
 
@@ -82,11 +80,18 @@ use warnings;
 #we cache connections to Redis and Postgres so we use state feature.
 use feature "state";
 
+#used for loading chronicle config file which contains connection information
 use YAML::XS;
 use RedisDB;
 use DBI;
 use DateTime::Format::Pg;
 use DateTime;
+
+=head3 C<< set("category1", "name1", "value1")  >>
+
+Store a piece of data "value1" under key "category1::name1" in Pg and Redis.
+
+=cut
 
 sub set {
     my $category = shift;
@@ -99,6 +104,12 @@ sub set {
 
     return 1;
 }
+
+=head3 C<< my $data = get("category1", "name1") >>
+
+Query for the latest data under "category1::name1" from Redis (fall-back to Pg if not found in Redis)
+
+=cut
 
 sub get {
     my $category = shift;
@@ -123,10 +134,16 @@ sub get {
     return;
 }
 
+=head3 C<< my $data = get_for("category1", "name1", 1447401505) >>
+
+Query Pg archive for the data under "category1::name1" 
+
+=cut
+
 sub get_for {
     my $category = shift;
     my $name     = shift;
-    my $date_for = shift; #epoch
+    my $date_for = shift;    #epoch
 
     my $db_date = DateTime::Format::Pg->format_timestamp(DateTime->from_epoch(epoch => $date_for));
 
