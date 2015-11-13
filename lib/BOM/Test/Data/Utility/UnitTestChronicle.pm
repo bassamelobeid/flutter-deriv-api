@@ -2,10 +2,18 @@ package BOM::Test::Data::Utility::UnitTestChronicle;
 
 =head1 NAME
 
+BOM::Test::Data::Utility::UnitTestChronicle - Utils to set-up environment for testing Chronicle
 
 =head1 SYNOPSIS
 
+ use BOM::Test::Data::Utility::UnitTestChronicle qw(init_chronicle);
+
+ init_chronicle;
+
 =head1 DESCRIPTION
+
+This module has a single function called 'init_chronicle' which when called empties chronicle storages (Redis and Pg) which
+has to be called before running any unit test on chronicle.
 
 =cut
 
@@ -21,14 +29,14 @@ our @EXPORT_OK = qw(init_chronicle);
 
 sub _get_redis_connection {
     state $redis;
-    
+
     $redis //= RedisDB->new(
-                host               => "127.0.0.1",
-                port               => 6380,
-                reconnect_attempts => 3,
-                on_connect_error   => sub {
-                    confess "Cannot connect to redis server for chronicle";
-                });
+        host               => "127.0.0.1",
+        port               => 6380,
+        reconnect_attempts => 3,
+        on_connect_error   => sub {
+            confess "Cannot connect to redis server for chronicle";
+        });
 
     return $redis;
 }
