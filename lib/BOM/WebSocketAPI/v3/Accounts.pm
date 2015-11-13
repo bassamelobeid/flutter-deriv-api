@@ -8,7 +8,7 @@ use Try::Tiny;
 use Mojo::DOM;
 use Date::Utility;
 
-use BOM::Product::ContractFactory;
+use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use BOM::System::Password;
@@ -99,69 +99,80 @@ sub statement {
 
 sub get_transactions {
     my ($c, $args) = @_;
-
     BOM::Platform::Context::request($c->stash('request'));
 
-    my $log = $c->app->log;
     my $acc = $c->stash('account');
 
-    # note, there seems to be a big performance penalty associated with the 'description' option..
+    return {
+        transactions => [],
+        count        => 0
+    } unless ($acc);
 
-    my $and_description = $args->{description};
+    my $sql = q{
+            SELECT
+                t.*,
+                EXTRACT(EPOCH FROM date_trunc('s', t.transaction_time)) as t_epoch,
+                b.short_code,
+                p.remark AS payment_remark
+            FROM
+                (
+                    SELECT * FROM transaction.transaction
+                    WHERE
+                        account_id = ?
+                        AND transaction_time < ?
+                        AND transaction_time >= ?
+                        ##ACTION_TYPE##
+                    ORDER BY transaction_time DESC
+                    LIMIT ?
+                    OFFSET ?
+                ) t
+                LEFT JOIN bet.financial_market_bet b
+                    ON (t.financial_market_bet_id = b.id)
+                LEFT JOIN payment.payment p
+                    ON (t.payment_id = p.id)
+                ORDER BY t.transaction_time DESC
+    };
 
-    $args->{sort_by} = 'transaction_time desc';
-    $args->{limit}  ||= 100;
-    $args->{offset} ||= 0;
-    my $dt_fm = $args->{date_from};
-    my $dt_to = $args->{date_to};
+    my $limit  = $args->{limit}  || 100;
+    my $offset = $args->{offset} || 0;
+    my $dt_fm  = $args->{date_from};
+    my $dt_to  = $args->{date_to};
 
     for ($dt_fm, $dt_to) {
-        next unless $_;
-        $_ = eval { DateTime->from_epoch(epoch => $_) };
+        $_ = eval { Date::Utility->new($_)->datetime } if ($_);
     }
+    $dt_fm ||= '1970-01-01';
+    $dt_to ||= Date::Utility->today->plus_time_interval('1d')->datetime;
 
-    my $query = [];
-    push @$query, action_type => $args->{action_type} if $args->{action_type};
-    push @$query, transaction_time => {ge => $dt_fm} if $dt_fm;
-    push @$query, transaction_time => {lt => $dt_to} if $dt_to;
-    $args->{query} = $query if @$query;
+    my $action_type = ($args->{action_type}) ? 'AND action_type = ?' : '';
+    $sql =~ s/##ACTION_TYPE##/$action_type/;
 
-    $log->debug("transaction query opts are " . $c->dumper($args));
+    my @binds = ($acc->id, $dt_to, $dt_fm, ($action_type) ? $action_type : (), $limit, $offset);
+    my $results = $acc->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
 
-    my $count = 0;
-    my @trxs;
-    if ($acc) {
-        @trxs  = $acc->find_transaction(%$args);    # Rose
-        $count = scalar(@trxs);
+    my @txns;
+    foreach my $txn (@$results) {
+        my $struct = {
+            transaction_id   => $txn->{id},
+            transaction_time => $txn->{t_epoch},
+            amount           => $txn->{amount},
+            action_type      => $txn->{action_type},
+            balance_after    => $txn->{balance_after},
+            contract_id      => $txn->{financial_market_bet_id},
+            shortcode        => $txn->{short_code},
+            longcode         => $txn->{payment_remark},
+        };
+
+        if ($txn->{short_code}) {
+            ($struct->{longcode}, undef, undef) = try { simple_contract_info($txn->{short_code}, $acc->currency_code) };
+            $struct->{longcode} = Mojo::DOM->new->parse($struct->{longcode})->all_text;
+        }
+        push @txns, $struct;
     }
-
-    my $trxs = [
-        map {
-            my $trx    = $_;
-            my $struct = {
-                contract_id      => $trx->financial_market_bet_id,
-                transaction_time => $trx->transaction_time->epoch,
-                amount           => $trx->amount,
-                action_type      => $trx->action_type,
-                balance_after    => $trx->balance_after,
-                transaction_id   => $trx->id,
-            };
-            if ($and_description) {
-                $struct->{longcode} = '';
-                if (my $fmb = $trx->financial_market_bet) {
-                    if (my $con = eval { BOM::Product::ContractFactory::produce_contract($fmb->short_code, $acc->currency_code) }) {
-                        $struct->{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
-                        $struct->{shortcode} = $con->shortcode;
-                    }
-                }
-            }
-            $struct
-        } @trxs
-    ];
 
     return {
-        transactions => $trxs,
-        count        => $count
+        transactions => [@txns],
+        count        => scalar @txns
     };
 }
 
