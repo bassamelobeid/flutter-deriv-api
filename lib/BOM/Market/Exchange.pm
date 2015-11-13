@@ -230,31 +230,31 @@ sub BUILDARGS {
     }
 
     $params_ref->{holidays} = \%holidays;
-    my $extended_trading_breaks = $params_ref->{market_times}->{day_of_week_extended_trading_breaks};
-    my $extended_lunch_hour = ($extended_trading_breaks and Date::Utility->new->day_of_week == $extended_trading_breaks) ? 1 : 0;
-    delete $params_ref->{market_times}->{day_of_week_extended_trading_breaks};
-
-    foreach my $dst_maybe (keys %{$params_ref->{market_times}}) {
+   foreach my $dst_maybe (keys %{$params_ref->{market_times}}) {
         foreach my $trading_segment (keys %{$params_ref->{market_times}->{$dst_maybe}}) {
-            if ($trading_segment ne 'trading_breaks') {
+            if ($trading_segment eq 'day_of_week_extended_trading_breaks') { 
+                next;
+            }elsif ($trading_segment ne 'trading_breaks') {
                 $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = Time::Duration::Concise::Localize->new(
                     interval => $params_ref->{market_times}->{$dst_maybe}->{$trading_segment},
                     locale   => BOM::Platform::Context::request()->language
                 );
             } else {
                 my $break_intervals = $params_ref->{market_times}->{$dst_maybe}->{$trading_segment};
-                # For extended lunch hour, we use the second trading break
-                my $trading_breaks = $extended_lunch_hour ? @$break_intervals[1] : @$break_intervals[0];
-                my $open_int = Time::Duration::Concise::Localize->new(
-                    interval => $trading_breaks->[0],
-                    locale   => BOM::Platform::Context::request()->language
-                );
-                my $close_int = Time::Duration::Concise::Localize->new(
-                    interval => $trading_breaks->[1],
-                    locale   => BOM::Platform::Context::request()->language
-                );
-                $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = [[$open_int, $close_int]];
-            }
+                my @converted;
+                foreach my $int (@$break_intervals) {
+                    my $open_int = Time::Duration::Concise::Localize->new(
+                        interval => $int->[0],
+                        locale   => BOM::Platform::Context::request()->language
+                    );
+                    my $close_int = Time::Duration::Concise::Localize->new(
+                        interval => $int->[1],
+                        locale   => BOM::Platform::Context::request()->language
+                    );
+                    push @converted, [$open_int, $close_int];
+                }
+                $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = \@converted;
+           }
         }
     }
 
