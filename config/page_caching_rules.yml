@@ -125,6 +125,7 @@
 "/home":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+  exclude_appcache: true
 "/resources":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
