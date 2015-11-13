@@ -162,7 +162,7 @@ ok $res->{error}->{message} =~ /you have excluded yourself until/;
 my $client = BOM::Platform::Client->new({loginid => $test_client->loginid});
 my $self_excl = $client->get_self_exclusion;
 is $self_excl->max_balance, 9998, 'set correct in db';
-is $self_excl->exclude_until, $exclude_until, 'exclude_until in db is right';
+is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
 is $self_excl->session_duration_limit, 1440, 'all good';
 
 $t->finish_ok;
