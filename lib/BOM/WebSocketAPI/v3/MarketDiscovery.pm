@@ -287,7 +287,10 @@ sub ticks_history {
         return $c->new_error('ticks_history', 'InvalidStyle', localize("Style [_1] invalid", $style));
     }
 
-    if ($args->{subscribe} eq '1') {
+    if ($args->{subscribe} eq '1' and $ul->feed_license ne 'realtime') {
+        return $c->new_error('ticks', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
+    }
+    if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
         $c->stash->{feed_channels}->{"$symbol;$publish"} = 1;
     }
     if ($args->{subscribe} eq '0') {
