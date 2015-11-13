@@ -41,7 +41,7 @@ There are three important methods this module provides:
 
 =item C<set>
 
-Given a category, name and value stores the given value (after JSONifying) in Redis and PostgreSQL database under "category::name" group and also stored current
+Given a category, name and value stores the value in Redis and PostgreSQL database under "category::name" group and also stores current
 system time as the timestamp for the data (Which can be used for future retrieval if we want to get data as of a specific time)
 
 =item C<get>
@@ -83,7 +83,6 @@ use warnings;
 use feature "state";
 
 use YAML::XS;
-use JSON;
 use RedisDB;
 use DBI;
 use DateTime::Format::Pg;
@@ -93,8 +92,6 @@ sub set {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
-
-    $value = JSON::to_json($value);
 
     my $key = $category . '::' . $name;
     _redis_write()->set($key, $value);
@@ -110,9 +107,7 @@ sub get {
     my $key         = $category . '::' . $name;
     my $cached_data = _redis_read()->get($key);
 
-    if ($cached_data) {
-        return JSON::from_json($cached_data);
-    }
+    return $cached_data if defined $cached_data;
 
     my $db_data = get_for($category, $name, time);
 
@@ -122,8 +117,10 @@ sub get {
 
         _redis_write()->set($key, $db_value);
 
-        return JSON::from_json($db_value);
+        return $db_value;
     }
+
+    return;
 }
 
 sub get_for {
