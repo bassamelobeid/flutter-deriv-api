@@ -5,11 +5,13 @@ use warnings;
 
 use List::MoreUtils qw(any);
 use BOM::Platform::Runtime;
+use Crypt::ScryptKDF;
 
 sub get_real_acc_opening_type {
     my $args        = shift;
     my $from_client = $args->{from_client};
 
+    return unless ($from_client->residence);
     my $gaming_company    = BOM::Platform::Runtime->instance->gaming_company_for_country($from_client->residence);
     my $financial_company = BOM::Platform::Runtime->instance->financial_company_for_country($from_client->residence);
 
@@ -39,6 +41,19 @@ sub invalid_japan_access_check {
     if ($residence eq 'jp' and $email !~ /\@binary\.com$/) {
         die "NOT authorized JAPAN access: $residence , $email";
     }
+}
+
+sub get_verification_code {
+    my $email = shift;
+
+    # default params: (N=2^14, r=8, p=1, len=32)
+    # change len=9 (scrypt_raw), so len=12 (scrypt_b64)
+    return Crypt::ScryptKDF::scrypt_b64($email, '&*%hHKDJHI$#%^@_+?><!~', 16384, 8, 1, 9);
+}
+
+sub validate_verification_code {
+    my ($email, $code) = @_;
+    return ($code eq get_verification_code($email));
 }
 
 1;

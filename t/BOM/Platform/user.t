@@ -214,7 +214,7 @@ subtest 'User Login' => sub {
     };
 
     subtest 'Invalid Password' => sub {
-        $status = $user->login(password => 'letmein');
+        $status = $user->login(password => 'mRX1E3Mi00oS8LG');
         ok !$status->{success}, 'Bad password; cannot login';
         ok $status->{error} =~ /Incorrect email or password/;
     };

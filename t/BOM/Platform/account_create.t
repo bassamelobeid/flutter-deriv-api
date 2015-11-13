@@ -23,7 +23,7 @@ lives_ok {
     });
 }
 'create VR acc';
-is($vr_acc->{error}, 'invalid', 'create VR acc failed: restricted country');
+is($vr_acc->{error}, 'invalid residence', 'create VR acc failed: restricted country');
 
 BOM::Platform::Runtime->instance->app_config->system->on_production(0);
 
