@@ -294,7 +294,7 @@ sub ticks_history {
         delete $c->stash->{feed_channels}->{"$symbol;$publish"};
     }
 
-    my $redis = $c->stash('redis');
+    my $redis         = $c->stash('redis');
     my $feed_channels = $c->stash('feed_channels');
 
     if (scalar keys %{$feed_channels} > 0) {
@@ -332,12 +332,12 @@ sub send_realtime_ticks {
                         msg_type => 'ohlc',
                         echo_req => $c->stash('args'),
                         candles  => {
-                            epoch  => $symbol,
+                            epoch       => $symbol,
                             granularity => $granularity,
-                            open  => $1,
-                            high  => $2,
-                            low   => $3,
-                            close => $4
+                            open        => $1,
+                            high        => $2,
+                            low         => $3,
+                            close       => $4
                         }}});
         }
     }
