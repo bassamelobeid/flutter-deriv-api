@@ -278,7 +278,7 @@ sub ticks_history {
                 msg_type => 'candles',
                 candles  => \@candles,
             };
-            $publish = $granularity;
+            $publish = $args->{granularity};
         } else {
             return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
         }
