@@ -334,7 +334,7 @@ sub send_realtime_ticks {
                     json => {
                         msg_type => 'ohlc',
                         echo_req => $c->stash('args'),
-                        ohlc  => {
+                        ohlc     => {
                             epoch       => $symbol,
                             granularity => $granularity,
                             open        => $1,
