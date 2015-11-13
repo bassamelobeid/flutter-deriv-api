@@ -293,10 +293,11 @@ sub ticks_history {
         delete $c->stash->{feed_channels}->{_candle_channel_name("$symbol;$publish")};
     }
 
+    my $redis = $c->stash('redis');
     if (scalar keys @{$c->stash->{feed_channels}} > 0) {
-        $c->stash('redis')->subscribe("FEED::$symbol", sub { });
+        $redis->subscribe("FEED::$symbol", sub { });
     } else {
-        $c->stash('redis')->unsubscribe("FEED::$symbol", sub { });
+        $redis->unsubscribe("FEED::$symbol", sub { });
     }
 
 }
