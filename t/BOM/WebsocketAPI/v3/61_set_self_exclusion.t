@@ -152,16 +152,19 @@ $res = decode_json($t->message->[1]);
 ok($res->{set_self_exclusion});
 test_schema('set_self_exclusion', $res);
 
-# re-get should be get what saved
+# re-get should be exclude yourself
 $t = $t->send_ok({json => {get_self_exclusion => 1}})->message_ok;
 $res = decode_json($t->message->[1]);
-ok($res->{get_self_exclusion});
-test_schema('get_self_exclusion', $res);
-%data = %{$res->{get_self_exclusion}};
-is $data{max_balance},            9998, 'max_balance is updated';
-is $data{max_turnover},           1000, 'max_turnover is untouched';
-is $data{session_duration_limit}, 1440, 'session_duration_limit is good';
-is $data{exclude_until}, $exclude_until, 'exclude_until is good';
+is $res->{error}->{code},  'ClientSelfExclusion';
+ok $res->{error}->{message} =~ /you have excluded yourself until/;
+
+## try read from db
+my $client = BOM::Platform::Client->new({loginid => $test_client->loginid});
+my $self_excl = $client->get_self_exclusion;
+is $self_excl->max_balance, 9998, 'set correct in db';
+is $self_excl->exclude_until, $exclude_until, 'exclude_until in db is right';
+is $self_excl->session_duration_limit, 1440, 'all good';
+
 
 $t->finish_ok;
 

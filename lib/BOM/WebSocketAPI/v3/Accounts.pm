@@ -18,6 +18,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
+use BOM::Database::Model::AccessToken;
 
 sub landing_company {
     my ($c, $args) = @_;
@@ -630,6 +631,10 @@ sub set_self_exclusion {
     if ($args{exclude_until}) {
         my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
         $message .= "- Exclude from website until: $ret\n";
+
+        ## remove all tokens (FIX for SessionCookie which do not have remove by loginid now)
+        ## but it should be OK since we check self_exclusion on every call
+        BOM::Database::Model::AccessToken->new->remove_by_loginid($client->loginid);
     }
     if ($message) {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
