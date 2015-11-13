@@ -62,10 +62,7 @@ sub entry_point {
                 BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::MarketDiscovery::send_realtime_ticks($c, $msg) if $channel =~ /^FEED::/;
             });
-        $log->info("before:");
         $c->stash->{redis} = $redis;
-        $log->info("after:");
-
     }
 
     $c->on(
