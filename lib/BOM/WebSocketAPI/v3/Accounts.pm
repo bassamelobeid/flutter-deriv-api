@@ -101,7 +101,6 @@ sub get_transactions {
     my ($c, $args) = @_;
     BOM::Platform::Context::request($c->stash('request'));
 
-    $c->app->log->debug("transaction query opts are " . $c->dumper($args));
     my $acc = $c->stash('account');
 
     return {
