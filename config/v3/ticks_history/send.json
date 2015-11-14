@@ -35,7 +35,7 @@
       "description": "The tick-output style: must be one of 'ticks' or 'candles' (default: 'ticks')"
     },
     "granularity": {
-      "enum": [60,120, 300, 600, 900, 1800, 3600, 7200, 14400, 28800, 86400],
+      "type": "integer",
       "sample": "60",
       "description": "Provide for style: 'candles'. Candle time-dimension width setting: typically '60', '120', '300', '600', '900', '1800', '3600', '14400', or '86400' (default: '60')."
     },
