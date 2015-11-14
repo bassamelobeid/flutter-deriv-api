@@ -336,6 +336,7 @@ sub send_realtime_ticks {
                         echo_req => $c->stash('args'),
                         ohlc     => {
                             epoch       => $m[1],
+                            open_time   => $m[1] - $m[1] % $granularity,
                             symbol      => $symbol,
                             granularity => $granularity,
                             open        => $1,
