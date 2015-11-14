@@ -258,30 +258,95 @@ sub ticks_history {
     }
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
+    my $publish;
+    my $result;
     if ($style eq 'ticks') {
         my $ticks = $c->BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
         my $history = {
             prices => [map { $_->{price} } @$ticks],
             times  => [map { $_->{time} } @$ticks],
         };
-        return {
+        $result = {
             msg_type => 'history',
             history  => $history
         };
+        $publish = 'tick';
     } elsif ($style eq 'candles') {
+
         my @candles = @{$c->BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
         if (@candles) {
-
-            return {
+            $result = {
                 msg_type => 'candles',
                 candles  => \@candles,
             };
+            $publish = $args->{granularity};
         } else {
             return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
         }
     } else {
         return $c->new_error('ticks_history', 'InvalidStyle', localize("Style [_1] invalid", $style));
     }
+
+    if ($args->{subscribe} eq '1' and $ul->feed_license ne 'realtime') {
+        return $c->new_error('ticks', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
+    }
+    if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
+        $c->stash->{feed_channels}->{"$symbol;$publish"} = 1;
+    }
+    if ($args->{subscribe} eq '0') {
+        delete $c->stash->{feed_channels}->{"$symbol;$publish"};
+    }
+
+    my $redis         = $c->stash('redis');
+    my $feed_channels = $c->stash('feed_channels');
+
+    if (scalar keys %{$feed_channels} > 0) {
+        $redis->subscribe(["FEED::$symbol"], sub { });
+    } else {
+        $redis->unsubscribe(["FEED::$symbol"], sub { });
+    }
+    return $result;
+}
+
+sub send_realtime_ticks {
+    my ($c, $message) = @_;
+
+    my @m = split(';', $message);
+    my $feed_channels = $c->stash('feed_channels');
+
+    foreach my $channel (keys %{$feed_channels}) {
+        $channel =~ /(.*);(.*)/;
+        my $symbol      = $1;
+        my $granularity = $2;
+
+        if ($granularity eq 'tick' and $m[0] eq $symbol) {
+            $c->send({
+                    json => {
+                        msg_type => 'tick',
+                        echo_req => $c->stash('args'),
+                        tick     => {
+                            symbol => $symbol,
+                            epoch  => $m[1],
+                            quote  => $m[2]}}});
+        } elsif ($m[0] eq $symbol) {
+            $message =~ /;$granularity:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
+            $c->send({
+                    json => {
+                        msg_type => 'ohlc',
+                        echo_req => $c->stash('args'),
+                        ohlc     => {
+                            epoch       => $m[1],
+                            symbol      => $symbol,
+                            granularity => $granularity,
+                            open        => $1,
+                            high        => $2,
+                            low         => $3,
+                            close       => $4
+                        }}});
+        }
+    }
+
+    return 0;
 }
 
 sub proposal {
