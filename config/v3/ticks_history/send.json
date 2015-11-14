@@ -51,7 +51,7 @@
     },
     "subscribe": {
       "type": "integer",
-      "description": "If set to 1, will send updates whenever the balance changes. If set to 0, will unsubscribe from updates.",
+      "description": "If set to 1, will send updates whenever the price changes",
       "pattern": "^1|0$"
     }
   },
