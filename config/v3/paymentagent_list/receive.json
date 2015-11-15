@@ -14,7 +14,7 @@
       "description": "Payment Agent List",
       "properties": {
         "available_countries": {
-          "type": "object"
+          "type": "array"
         },
         "list": {
           "type": "array",
