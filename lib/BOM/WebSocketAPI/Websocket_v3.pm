@@ -60,6 +60,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
                 BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
+                BOM::WebSocketAPI::v3::MarketDiscovery::send_realtime_ticks($c, $msg) if $channel =~ /^FEED::/;
             });
         $c->stash->{redis} = $redis;
     }
