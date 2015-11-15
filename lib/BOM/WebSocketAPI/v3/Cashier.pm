@@ -93,9 +93,8 @@ sub paymentagent_list {
 
     my $payment_agent_table_row = __ListPaymentAgents($c, {target_country => $target_country});
 
-
     return {
-        msg_type   => 'paymentagent_list',
+        msg_type          => 'paymentagent_list',
         paymentagent_list => {
             available_countries => $countries,
         },
@@ -114,7 +113,7 @@ sub __ListPaymentAgents {
     my $authenticated_paymentagent_agents =
         $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{target_country}});
 
-    my %payment_agent_banks = %{ BOM::Platform::Locale::get_payment_agent_banks() };
+    my %payment_agent_banks = %{BOM::Platform::Locale::get_payment_agent_banks()};
 
     my $payment_agent_table_row = [];
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
