@@ -55,10 +55,11 @@ subtest 'Initialization' => sub {
     'Initial accounts to test deposit & withdrawal via PA';
 };
 
-# landing_company_details
+# paymentagent_list
 $t = $t->send_ok({json => {paymentagent_list => 'au'}})->message_ok;
 my $res = decode_json($t->message->[1]);
-diag Dumper(\$res);
+ok(grep { $_->[0] eq 'au' } @{$res->{available_countries}});
+ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
 test_schema('paymentagent_list', $res);
 
 $t->finish_ok;
