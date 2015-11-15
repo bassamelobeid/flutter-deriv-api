@@ -97,6 +97,7 @@ sub paymentagent_list {
         msg_type          => 'paymentagent_list',
         paymentagent_list => {
             available_countries => $countries,
+            list                => $payment_agent_table_row
         },
     };
 }

@@ -6,6 +6,7 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use Test::Exception;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
@@ -13,6 +14,7 @@ use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 my $t = build_mojo_test();
 
 my ($client,         $pa_client);
+my ($client_account, $pa_account);
 subtest 'Initialization' => sub {
     plan tests => 1;
 
