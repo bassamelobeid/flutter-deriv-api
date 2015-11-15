@@ -169,7 +169,7 @@ sub error_map {
 }
 
 sub get_payment_agent_banks {
-    return (
+    return {
         LibertyReserve => {
             name  => 'LibertyReserve',
             image => 'images/pages/payment_agent/banks/libertyreserve.png',
@@ -280,7 +280,7 @@ sub get_payment_agent_banks {
             image => 'images/pages/payment_agent/cards/verve.png',
             url   => 'https://www.verveinternational.com/',
         },
-    );
+    };
 }
 
 1;
