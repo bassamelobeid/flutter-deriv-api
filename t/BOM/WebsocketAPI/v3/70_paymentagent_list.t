@@ -38,11 +38,11 @@ subtest 'Initialization' => sub {
         # make him a payment agent, this will turn the transfer into a paymentagent transfer.
         $pa_client->payment_agent({
             payment_agent_name    => 'Joe',
-            url                   => '',
-            email                 => '',
-            phone                 => '',
-            information           => '',
-            summary               => '',
+            url                   => 'http://www.example.com/',
+            email                 => 'joe@example.com',
+            phone                 => '+12345678',
+            information           => 'Test Info',
+            summary               => 'Test Summary',
             commission_deposit    => 0,
             commission_withdrawal => 0,
             is_authenticated      => 't',
@@ -58,8 +58,8 @@ subtest 'Initialization' => sub {
 # paymentagent_list
 $t = $t->send_ok({json => {paymentagent_list => 'au'}})->message_ok;
 my $res = decode_json($t->message->[1]);
-ok(grep { $_->[0] eq 'au' } @{$res->{available_countries}});
-ok(grep { $_->{name} eq 'Joe' } @{$res->{list}});
+ok(grep { $_->[0] eq 'au' } @{$res->{paymentagent_list}{available_countries}});
+ok(grep { $_->{name} eq 'Joe' } @{$res->{paymentagent_list}{list}});
 test_schema('paymentagent_list', $res);
 
 $t->finish_ok;
