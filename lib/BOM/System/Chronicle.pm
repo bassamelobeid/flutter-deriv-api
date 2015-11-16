@@ -41,8 +41,9 @@ There are three important methods this module provides:
 
 =item C<set>
 
-Given a category, name and value stores the value in Redis and PostgreSQL database under "category::name" group and also stores current
-system time as the timestamp for the data (Which can be used for future retrieval if we want to get data as of a specific time)
+Given a category, name and value stores the JSONified value in Redis and PostgreSQL database under "category::name" group and also stores current
+system time as the timestamp for the data (Which can be used for future retrieval if we want to get data as of a specific time). Note that the value
+MUST be either hash-ref or array-ref.
 
 =item C<get>
 
@@ -59,7 +60,7 @@ Given a category, name and timestamp returns version of data under "category::na
  my $d = get_some_data();
 
  #store data into Chronicle
-  BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d);
+ BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d);
 
  #retrieve latest data stored for "vol_surface" and "frxUSDJPY"
  my $dt = BOM::System::Chronicle::set("vol_surface", "frxUSDJPY");
@@ -82,6 +83,7 @@ use feature "state";
 
 #used for loading chronicle config file which contains connection information
 use YAML::XS;
+use JSON;
 use RedisDB;
 use DBI;
 use DateTime::Format::Pg;
@@ -97,6 +99,11 @@ sub set {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
+
+    die "Cannot store undefined values in Chronicle!" unless defined $value;
+    die "You can only store hash-ref or array-ref in Chronicle!" unless ref $value eq 'ARRAY' or ref $value eq 'HASH';
+
+    $value = JSON::to_json($value);
 
     my $key = $category . '::' . $name;
     _redis_write()->set($key, $value);
@@ -118,17 +125,12 @@ sub get {
     my $key         = $category . '::' . $name;
     my $cached_data = _redis_read()->get($key);
 
-    return $cached_data if defined $cached_data;
+    return JSON::from_json($cached_data) if defined $cached_data;
 
     my $db_data = get_for($category, $name, time);
-
-    if (defined $db_data && keys %{$db_data}) {
-        my $id_value = (sort keys %{$db_data})[0];
-        my $db_value = $db_data->{$id_value}->{value};
-
-        _redis_write()->set($key, $db_value);
-
-        return $db_value;
+    if (defined $db_data) {
+        _redis_write()->set($key, $db_data);
+        return $db_data;
     }
 
     return;
@@ -147,8 +149,13 @@ sub get_for {
 
     my $db_date = DateTime::Format::Pg->format_timestamp(DateTime->from_epoch(epoch => $date_for));
 
-    return _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
+    my $db_data = _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
         'id', {}, $category, $name, $db_date);
+
+    my $id_value = (sort keys %{$db_data})[0];
+    my $db_value = $db_data->{$id_value}->{value};
+
+    return JSON::from_json($db_value);
 }
 
 sub _archive {
