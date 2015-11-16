@@ -74,4 +74,104 @@ sub get_limits {
     };
 }
 
+sub paymentagent_withdraw {
+    my ($c, $args) = @_;
+
+    my $r      = $c->stash('request');
+    my $client = $c->stash('client');
+    my $currency = $args->{currency};
+    my $amount   = $args->{amount};
+
+    if (   $c->app_config->system->suspend->payments
+        or $c->app_config->system->suspend->payment_agents)
+    {
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
+    } elsif (not $client->landing_company->allows_payment_agents) {
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Payment Agents are not available on this site.'));
+    } elsif (not $client->allow_paymentagent_withdrawal()) {
+        # check whether allow to withdraw via payment agent
+        return __output_payments_error_message(
+            $c,
+            {
+                client       => $client,
+                action       => 'Withdrawal via payment agent, client [' . $client->loginid . ']',
+                error_msg    => localize('You are not authorized for withdrawal via payment agent.'),
+                payment_type => 'Payment Agent Withdrawal',
+                currency     => $currency,
+                amount       => $amount,
+            });
+    } elsif ($client->cashier_setting_password) {
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Your cashier is locked as per your request.'));
+    }
+
+
+
+
+}
+
+sub __output_payments_error_message {
+    my $c            = shift;
+    my $args         = shift;
+    my $r            = $c->stash('request');
+    my $client       = $args->{'client'};
+    my $action       = $args->{'action'};
+    my $error_code   = $args->{'error_code'};
+    my $payment_type = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
+    my $currency     = $args->{'currency'};
+    my $amount       = $args->{'amount'};
+    my $error_msg    = $args->{'error_msg'};
+    my $hide_options = $args->{'hide_options'};
+
+    my $email_msg = $error_msg;
+    $email_msg =~ s/<br\s*\/?>/\n/ig;
+    $email_msg =~ s/<[^>]+>/$1/ig;
+
+    my $error_message = ($error_msg) ? $error_msg : localize('Sorry, your payment could not be processed at this time.');
+
+    my $error_message_with_code = '';
+    if ($error_code) {
+        $error_message_with_code = localize('Mentioning error code [_1] in any correspondence may help us resolve the issue more quickly.', $error_code);
+    }
+
+    # amount is not always exist because error may happen before client submit the form
+    # or when redirected from 3rd party site to failure script where no data is returned
+    my $email_amount = $amount ? "Amount : $currency $amount" : '';
+
+    my $now     = Date::Utility->new;
+    my $message = [
+        "Details of the payment error :\n",
+        "Date/Time : " . $now->datetime,
+        "Action : " . ucfirst $action . " via $payment_type",
+        "Login ID : " . $client->loginid,
+        $email_amount,
+        "Error message : $email_msg $error_message_with_code",
+    ];
+    my $email_from = $r->website->config->get('customer_support.email');
+
+    send_email({
+        from    => $email_from,
+        to      => $c->app_config->payments->email,
+        subject => 'Payment Error: ' . $payment_type . ' [' . $client->loginid . ']',
+        message => $message,
+    });
+
+    # write error to deposit-failure.log
+    if ($action eq 'deposit') {
+        Path::Tiny::path('/var/log/fixedodds/deposit-error.log')
+            ->append($now->datetime
+                . ' LoginID:'
+                . $client->loginid
+                . ' Method:'
+                . $payment_type
+                . ' Amount:'
+                . $currency
+                . $amount
+                . ' Error:'
+                . $email_msg . ' '
+                . $error_message_with_code);
+    }
+
+    return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', "$error_message $error_message_with_code");
+}
+
 1;
