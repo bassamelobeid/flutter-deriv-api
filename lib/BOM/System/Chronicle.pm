@@ -151,7 +151,7 @@ sub get_for {
     my $db_data = _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
         'id', {}, $category, $name, $db_date);
 
-    return undef if not %$db_data;
+    return if not %$db_data;
 
     my $id_value = (sort keys %{$db_data})[0];
     my $db_value = $db_data->{$id_value}->{value};
