@@ -18,6 +18,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
+use BOM::Database::Model::AccessToken;
 
 sub landing_company {
     my ($c, $args) = @_;
@@ -481,6 +482,178 @@ sub set_settings {
     return {
         msg_type     => 'set_settings',
         set_settings => 1,
+    };
+}
+
+sub get_self_exclusion {
+    my ($c, $args) = @_;
+
+    my $r      = $c->stash('request');
+    my $client = $c->stash('client');
+
+    my $self_exclusion     = $client->get_self_exclusion;
+    my $get_self_exclusion = {};
+
+    if ($self_exclusion) {
+        $get_self_exclusion->{max_balance} = $self_exclusion->max_balance
+            if $self_exclusion->max_balance;
+        $get_self_exclusion->{max_turnover} = $self_exclusion->max_turnover
+            if $self_exclusion->max_turnover;
+        $get_self_exclusion->{max_open_bets} = $self_exclusion->max_open_bets
+            if $self_exclusion->max_open_bets;
+        $get_self_exclusion->{max_losses} = $self_exclusion->max_losses
+            if $self_exclusion->max_losses;
+        $get_self_exclusion->{max_7day_losses} = $self_exclusion->max_7day_losses
+            if $self_exclusion->max_7day_losses;
+        $get_self_exclusion->{max_7day_turnover} = $self_exclusion->max_7day_turnover
+            if $self_exclusion->max_7day_turnover;
+        $get_self_exclusion->{max_30day_losses} = $self_exclusion->max_30day_losses
+            if $self_exclusion->max_30day_losses;
+        $get_self_exclusion->{max_30day_turnover} = $self_exclusion->max_30day_turnover
+            if $self_exclusion->max_30day_turnover;
+        $get_self_exclusion->{session_duration_limit} = $self_exclusion->session_duration_limit
+            if $self_exclusion->session_duration_limit;
+
+        if (my $until = $self_exclusion->exclude_until) {
+            $until = Date::Utility->new($until);
+            if (Date::Utility::today->days_between($until) < 0) {
+                $get_self_exclusion->{exclude_until} = $until->date;
+            }
+        }
+    }
+
+    return {
+        msg_type           => 'get_self_exclusion',
+        get_self_exclusion => $get_self_exclusion,
+    };
+}
+
+sub set_self_exclusion {
+    my ($c, $args) = @_;
+
+    my $r      = $c->stash('request');
+    my $client = $c->stash('client');
+
+    # get old from above sub get_self_exclusion
+    my $self_exclusion = get_self_exclusion($c)->{'get_self_exclusion'};
+
+    ## validate
+    my $error_sub = sub {
+        my ($c, $error, $field) = @_;
+        my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $error);
+        $err->{error}->{field} = $field;
+        return $err;
+    };
+
+    my %args = %$args;
+    foreach my $field (
+        qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
+        )
+    {
+        my $val = $args{$field};
+        next unless defined $val;
+        unless ($val =~ /^\d+/ and $val > 0) {
+            delete $args{$field};
+            next;
+        }
+        if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
+            return $error_sub->($c, localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+        }
+    }
+
+    if (my $session_duration_limit = $args{session_duration_limit}) {
+        if ($session_duration_limit > 1440 * 42) {
+            return $error_sub->($c, localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
+        }
+    }
+
+    my $exclude_until = $args{exclude_until};
+    if (defined $exclude_until && $exclude_until =~ /^\d{4}\-\d{2}\-\d{2}$/) {
+        my $now           = Date::Utility->new;
+        my $exclusion_end = Date::Utility->new($exclude_until);
+        my $six_month     = Date::Utility->new(DateTime->now()->add(months => 6)->ymd);
+
+        # checking for the exclude until date which must be larger than today's date
+        if (not $exclusion_end->is_after($now)) {
+            return $error_sub->($c, localize('Exclude time must be after today.'), 'exclude_until');
+        }
+
+        # checking for the exclude until date could not be less than 6 months
+        elsif ($exclusion_end->epoch < $six_month->epoch) {
+            return $error_sub->($c, localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
+        }
+
+        # checking for the exclude until date could not be more than 5 years
+        elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
+            return $error_sub->($c, localize('Exclude time cannot be for more than five years.'), 'exclude_until');
+        }
+    } else {
+        delete $args{exclude_until};
+    }
+
+    my $message = '';
+    if ($args{max_open_bets}) {
+        my $ret = $client->set_exclusion->max_open_bets($args{max_open_bets});
+        $message .= "- Maximum number of open positions: $ret\n";
+    }
+    if ($args{max_turnover}) {
+        my $ret = $client->set_exclusion->max_turnover($args{max_turnover});
+        $message .= "- Daily turnover: $ret\n";
+    }
+    if ($args{max_losses}) {
+        my $ret = $client->set_exclusion->max_losses($args{max_losses});
+        $message .= "- Daily losses: $ret\n";
+    }
+    if ($args{max_7day_turnover}) {
+        my $ret = $client->set_exclusion->max_7day_turnover($args{max_7day_turnover});
+        $message .= "- 7-Day turnover: $ret\n";
+    }
+    if ($args{max_7day_losses}) {
+        my $ret = $client->set_exclusion->max_7day_losses($args{max_7day_losses});
+        $message .= "- 7-Day losses: $ret\n";
+    }
+    if ($args{max_30day_turnover}) {
+        my $ret = $client->set_exclusion->max_30day_turnover($args{max_30day_turnover});
+        $message .= "- 30-Day turnover: $ret\n";
+    }
+    if ($args{max_30day_losses}) {
+        my $ret = $client->set_exclusion->max_30day_losses($args{max_30day_losses});
+        $message .= "- 30-Day losses: $ret\n";
+    }
+    if ($args{max_balance}) {
+        my $ret = $client->set_exclusion->max_balance($args{max_balance});
+        $message .= "- Maximum account balance: $ret\n";
+    }
+    if ($args{session_duration_limit}) {
+        my $ret = $client->set_exclusion->session_duration_limit($args{session_duration_limit});
+        $message .= "- Maximum session duration: $ret\n";
+    }
+    if ($args{exclude_until}) {
+        my $ret = $client->set_exclusion->exclude_until($args{exclude_until});
+        $message .= "- Exclude from website until: $ret\n";
+
+        ## remove all tokens (FIX for SessionCookie which do not have remove by loginid now)
+        ## but it should be OK since we check self_exclusion on every call
+        BOM::Database::Model::AccessToken->new->remove_by_loginid($client->loginid);
+    }
+    if ($message) {
+        $message = "Client $client set the following self-exclusion limits:\n\n$message";
+        my $compliance_email = $c->app_config->compliance->email;
+        send_email({
+            from    => $compliance_email,
+            to      => $compliance_email . ',' . $r->website->config->get('customer_support.email'),
+            subject => "Client set self-exclusion limits",
+            message => [$message],
+        });
+    } else {
+        return $c->new_error('set_self_exclusion', 'SetSelfExclusionError', localize('Please provide at least one self-exclusion setting.'));
+    }
+
+    $client->save();
+
+    return {
+        msg_type           => 'set_self_exclusion',
+        set_self_exclusion => 1,
     };
 }
 
