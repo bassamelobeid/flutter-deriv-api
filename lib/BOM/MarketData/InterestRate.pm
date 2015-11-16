@@ -1,5 +1,7 @@
 package BOM::MarketData::InterestRate;
 
+use BOM::System::Chronicle;
+
 =head1 NAME
 
 BOM::MarketData::InterestRate
@@ -29,7 +31,26 @@ around _document_content => sub {
     };
 };
 
-with 'BOM::MarketData::Role::VersionedSymbolData';
+=head2 VersionedSymbolData
+
+As this module inherits from VersionedSymbolData we need to manipulate the inheritance so that we can "inject"
+our Chronicle saving code in the inherited "save" subroutine.
+
+=cut
+
+with 'BOM::MarketData::Role::VersionedSymbolData' => {
+    -alias    => {save => '_save'},
+    -excludes => ['save']};
+
+sub save {
+    my $self = shift;
+
+    #first call original save method to save all data into CouchDB just like before
+    my $result = $self->_save();
+
+    BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content);
+    return $result;
+}
 
 has type => (
     is      => 'ro',
