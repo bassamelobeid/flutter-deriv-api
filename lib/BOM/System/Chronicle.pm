@@ -88,7 +88,7 @@ use DBI;
 use DateTime::Format::Pg;
 use DateTime;
 
-=head3 C<< set("category1", "name1", "value1")  >>
+=head3 C<< set("category1", "name1", $value1)  >>
 
 Store a piece of data "value1" under key "category1::name1" in Pg and Redis.
 
@@ -113,7 +113,7 @@ sub set {
 
 =head3 C<< my $data = get("category1", "name1") >>
 
-Query for the latest data under "category1::name1" from Redis (fall-back to Pg if not found in Redis)
+Query for the latest data under "category1::name1" from Redis (fall-back to Pg if not found in Redis).
 
 =cut
 
@@ -137,7 +137,7 @@ sub get {
 
 =head3 C<< my $data = get_for("category1", "name1", 1447401505) >>
 
-Query Pg archive for the data under "category1::name1" 
+Query Pg archive for the data under "category1::name1" at or exactly before the given epoch.
 
 =cut
 
