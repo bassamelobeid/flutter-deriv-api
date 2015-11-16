@@ -165,6 +165,8 @@ sub __handle {
         ['change_password',         \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
         ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
         ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
+        ['get_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::get_self_exclusion,                1],
+        ['set_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::set_self_exclusion,                1],
         ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Cashier::paymentagent_list,                  0],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
@@ -204,6 +206,13 @@ sub __handle {
                 client  => $client,
                 account => $client->default_account // undef
             );
+
+            my $self_excl = $client->get_self_exclusion;
+            my $lim;
+            if ($self_excl and $lim = $self_excl->exclude_until and Date::Utility->new->is_before(Date::Utility->new($lim))) {
+                return $c->new_error('error', 'ClientSelfExclusion',
+                    BOM::Platform::Context::localize('Sorry, you have excluded yourself until [_1].', $lim));
+            }
         }
 
         if ($dispatch->[2] and not $c->stash('client')) {
