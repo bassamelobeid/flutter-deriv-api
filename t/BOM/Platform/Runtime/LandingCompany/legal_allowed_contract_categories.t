@@ -32,5 +32,5 @@ subtest 'legal allowed contract categories' => sub {
         cmp_bag($cc, $all, $_ . ' has all contract categories');
     }
     my $cc = BOM::Platform::Runtime->instance->broker_codes->landing_company_for('MF123123')->legal_allowed_contract_categories;
-    cmp_bag($cc, $no_spreads, $_ . ' has contract categories except spreads');
+    cmp_bag($cc, $no_spreads, 'MF has contract categories except spreads');
 };
