@@ -65,9 +65,8 @@ Given a category, name and timestamp returns version of data under "category::na
  #retrieve latest data stored for "vol_surface" and "frxUSDJPY"
  my $dt = BOM::System::Chronicle::set("vol_surface", "frxUSDJPY");
 
- #find vol_surface for frxUSDJPY as of Jan 15, 2015.
- my $some_old_data = get_for("vol_surface", "frxUSDJPY", 
-                              DateTime::Format::Pg->format_timestamp(DateTime->new(year => 2015, month => 1, day => 10)));
+ #find vol_surface for frxUSDJPY as of a specific date
+ my $some_old_data = get_for("vol_surface", "frxUSDJPY", $epoch1);
 
 =head1 Future directions
 
