@@ -2,7 +2,7 @@ package BOM::WebSocketAPI::v3::Cashier;
 
 use strict;
 use warnings;
-
+use HTML::Entities;
 use List::Util qw( min first );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Locale;
@@ -122,8 +122,8 @@ sub __ListPaymentAgents {
 
         push @{$payment_agent_table_row},
             {
-            'name'                  => $payment_agent->{payment_agent_name},
-            'summary'               => $payment_agent->{summary},
+            'name'                  => encode_entities($payment_agent->{payment_agent_name}),
+            'summary'               => encode_entities($payment_agent->{summary}),
             'url'                   => $payment_agent->{url},
             'email'                 => $payment_agent->{email},
             'telephone'             => $payment_agent->{phone},
