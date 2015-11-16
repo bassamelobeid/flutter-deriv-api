@@ -51,7 +51,7 @@
         },
         "withdrawal_since_inception_monetary": {
           "type": "integer",
-          "description": "Withdrawal since"
+          "description": "Withdrawal since inception"
         }
       }
     },
