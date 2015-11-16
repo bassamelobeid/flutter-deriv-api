@@ -99,7 +99,7 @@ sub new {    ## no critic RequireArgUnpack
             if @valid;
 
         @valid = grep { !$self->{$_} } @ALLOWED;
-        croak "Error adding new session, contains keys outside allowed keys" if @valid;
+        croak "Error adding new session, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
         # NOTE, we need to use the object interface here. Bytes::Random::Secure
         # also offers a function interface but that uses a RNG which is
