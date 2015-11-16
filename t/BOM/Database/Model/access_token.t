@@ -38,4 +38,11 @@ ok $ok;
 $client_loginid = $m->get_loginid_by_token($token);
 is $client_loginid, undef; # it should be undef since removed
 
+$m->create_token($test_loginid, 'Test Token');
+$tokens = $m->get_tokens_by_loginid($test_loginid);
+is scalar @$tokens, 1;
+ok $m->remove_by_loginid($test_loginid), 'remove ok';
+$tokens = $m->get_tokens_by_loginid($test_loginid);
+is scalar @$tokens, 0, 'all removed';
+
 done_testing();
