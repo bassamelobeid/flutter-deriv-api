@@ -96,7 +96,7 @@ sub new {    ## no critic RequireArgUnpack
     } else {
         my @valid = grep { !$self->{$_} } @REQUIRED;
         croak "Error adding new session, missing: " . join(',', @valid)
-            if @missing;
+            if @valid;
 
         @valid = grep { !$self->{$_} } @ALLOWED;
         croak "Error adding new session, contains keys outside allowed keys" if @valid;
