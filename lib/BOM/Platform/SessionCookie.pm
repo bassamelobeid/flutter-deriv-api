@@ -31,7 +31,7 @@ Very commonly used and stable (over api version) attributes have accesssors.
 
 =head2 ACCESSORS (READ ONLY)
 
-=over 
+=over
 
 =item loginid
 
@@ -75,6 +75,7 @@ Creates a new session and stores it in redis.
 # default token parameters
 my $STRING       = join '', 'a' .. 'z', 'A' .. 'Z', '0' .. '9';
 my @REQUIRED     = qw(email);
+my @ALLOWED      = qw(email token expires_in loginat created_for);
 my $EXPIRES_IN   = 3600 * 24;
 my $TOKEN_LENGTH = 48;
 
@@ -93,9 +94,12 @@ sub new {    ## no critic RequireArgUnpack
         $self = eval { JSON::from_json(rr->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
     } else {
-        my @missing = grep { !$self->{$_} } @REQUIRED;
-        croak "Error adding new session, missing: " . join(',', @missing)
+        my @valid = grep { !$self->{$_} } @REQUIRED;
+        croak "Error adding new session, missing: " . join(',', @valid)
             if @missing;
+
+        @valid = grep { !$self->{$_} } @ALLOWED;
+        croak "Error adding new session, contains keys outside allowed keys" if @valid;
 
         # NOTE, we need to use the object interface here. Bytes::Random::Secure
         # also offers a function interface but that uses a RNG which is
