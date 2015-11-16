@@ -124,7 +124,6 @@ sub __ListPaymentAgents {
             {
             'name'                  => $payment_agent->{payment_agent_name},
             'summary'               => $payment_agent->{summary},
-            'commission'            => $payment_agent->{commission_deposit} . '% / ' . $payment_agent->{commission_withdrawal} . '%',
             'url'                   => $payment_agent->{url},
             'email'                 => $payment_agent->{email},
             'telephone'             => $payment_agent->{phone},
