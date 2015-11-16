@@ -175,7 +175,7 @@ sub asset_index {
 sub ticks {
     my ($c, $args) = @_;
 
-    my @symbols = (ref $args->{ticks})? @{$args->{ticks}} : ($args->{ticks});
+    my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     my @offerings = get_offerings_with_filter('underlying_symbol');
     foreach my $symbol (@symbols) {
         if (not $symbol_offered = any { $symbol eq $_ } @offerings) {
@@ -195,7 +195,8 @@ sub ticks {
                         tick     => {
                             symbol => $symbol,
                             epoch  => $u->spot_tick->epoch,
-                            quote  => $u->spot_tick->quote}}});
+                            quote  => $u->spot_tick->quote
+                        }}});
 
         }
         if ($args->{subscribe} eq '0') {
@@ -262,25 +263,25 @@ sub ticks_history {
 }
 
 sub _feed_channel {
-   my ($c, $subs ,$symbol, $type) = @_;
+    my ($c, $subs, $symbol, $type) = @_;
 
-    my $redis              = $c->stash('redis');
+    my $redis = $c->stash('redis');
 
     if ($subs eq 'subscribe') {
-        $c->stash->{feed_channel}->{$symbol} +=1;
-        $c->stash->{feed_channel_type}->{"$symbol;$type"} +=1;
+        $c->stash->{feed_channel}->{$symbol} += 1;
+        $c->stash->{feed_channel_type}->{"$symbol;$type"} += 1;
         $redis->subscribe(["FEED::$symbol"], sub { });
     }
 
     if ($subs eq 'unsubscribe') {
-        $c->stash->{feed_channel}->{$symbol} -=1;
-        $c->stash->{feed_channel_type}->{"$symbol;$type"} -=1;
-        if ($c->stash->{feed_channel}->{$symbol}<=0) {
+        $c->stash->{feed_channel}->{$symbol} -= 1;
+        $c->stash->{feed_channel_type}->{"$symbol;$type"} -= 1;
+        if ($c->stash->{feed_channel}->{$symbol} <= 0) {
             $redis->subscribe(["FEED::$symbol"], sub { });
-            delete $c->stash->{feed_channel}->{$symbol}
+            delete $c->stash->{feed_channel}->{$symbol};
         }
-        if ($c->stash->{feed_channel_type}->{"$symbol;$type"}<=0) {
-            delete $c->stash->{feed_channel_type}->{$symbol}
+        if ($c->stash->{feed_channel_type}->{"$symbol;$type"} <= 0) {
+            delete $c->stash->{feed_channel_type}->{$symbol};
         }
     }
     return;
