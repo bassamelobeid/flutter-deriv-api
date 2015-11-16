@@ -188,11 +188,23 @@ sub ticks {
         }
         if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
             _feed_channel($c, 'subscribe', $symbol, 'tick');
+            $c->send({
+                    json => {
+                        msg_type => 'tick',
+                        echo_req => $c->stash('args'),
+                        tick     => {
+                            symbol => $symbol,
+                            epoch  => $u->spot_tick->epoch,
+                            quote  => $u->spot_tick->quote}}});
+
         }
         if ($args->{subscribe} eq '0') {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
         }
     }
+
+    return;
+
 }
 
 sub ticks_history {
@@ -271,6 +283,7 @@ sub _feed_channel {
             delete $c->stash->{feed_channel_type}->{$symbol}
         }
     }
+    return;
 }
 
 sub send_realtime_ticks {
@@ -312,7 +325,7 @@ sub send_realtime_ticks {
         }
     }
 
-    return 0;
+    return;
 }
 
 sub proposal {
