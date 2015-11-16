@@ -23,6 +23,7 @@ use warnings FATAL => 'all';
 use Carp;
 use RedisDB 2.14;
 use DBI;
+use YAML::XS;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(init_chronicle);
