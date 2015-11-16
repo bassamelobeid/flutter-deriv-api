@@ -41,6 +41,7 @@ sub contracts_for {
     if ($contracts_for->{hit_count} == 0) {
         return $c->new_error('contracts_for', 'InvalidSymbol', localize('The symbol is invalid.'));
     } else {
+        $contracts_for->{'spot'} = BOM::Market::Underlying->new($symbol)->spot();
         return {
             msg_type      => 'contracts_for',
             contracts_for => $contracts_for,
