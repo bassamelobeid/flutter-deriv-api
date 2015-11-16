@@ -9,7 +9,7 @@
       "description":"Echo of the request made"
     },
     "get_limits": {
-      "type": "object"
+      "type": "object",
       "title": "Get Limits",
       "description": "Trading limits of real account user",
       "properties": {
