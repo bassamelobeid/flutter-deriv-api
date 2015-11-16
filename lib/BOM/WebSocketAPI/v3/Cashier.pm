@@ -81,7 +81,7 @@ sub paymentagent_list {
 
     my $r = $c->stash('request');
 
-    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => 'CR'});
+    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => ($r->loginid ? $r->broker->code : 'CR')});
     my $countries = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
 
     my $target_country = $args->{paymentagent_list};
