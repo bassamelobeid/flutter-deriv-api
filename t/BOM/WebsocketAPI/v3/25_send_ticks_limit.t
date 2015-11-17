@@ -1,3 +1,5 @@
+#!perl
+
 use strict;
 use warnings;
 use Test::More;
@@ -27,7 +29,7 @@ my $port = empty_port;
     sub add_callback {
         my ($self, %args) = @_;
         my ($symbol, $start, $end, $cb) = @args{qw(symbol start_time end_time callback)};
-        $self->{"$cb"}{timer} = AE::timer 0.1, 1, sub {
+        $self->{"$cb"}{timer} = AE::timer 0.1, 0.5, sub {
             $cb->({
                 epoch => time,
                 quote => "42"
@@ -52,9 +54,10 @@ unless ($pid) {
 build_test_R_50_data();
 
 my $t = build_mojo_test();
-my (@ticks, %ticks, @proposals, %proposals);
+my @ticks;
+my %ticks;
 
-for (1 .. 25) {
+for (1 .. 50) {
     $t->send_ok({json => {ticks => 'R_50'}});
     while (1) {
         $t->message_ok;
@@ -65,33 +68,6 @@ for (1 .. 25) {
         unless (exists $ticks{$m->{tick}->{id}}) {
             push @ticks, $m;
             $ticks{$m->{tick}->{id}} = $m;
-            last;
-        }
-    }
-}
-
-for (1 .. 25) {
-    $t->send_ok({
-            json => {
-                "proposal"      => 1,
-                "amount"        => "10",
-                "basis"         => "payout",
-                "contract_type" => "CALL",
-                "currency"      => "USD",
-                "symbol"        => "R_50",
-                "duration"      => "2",
-                "duration_unit" => "m"
-            }});
-    while (1) {
-        $t->message_ok;
-        # diag $t->message->[1];
-        my $m = JSON::from_json $t->message->[1];
-        next if $m->{msg_type} eq 'tick';
-        is $m->{msg_type}, 'proposal', 'got msg_type proposal';
-        ok $m->{proposal}->{id}, 'got id';
-        unless (exists $proposals{$m->{proposal}->{id}}) {
-            push @proposals, $m;
-            $proposals{$m->{proposal}->{id}} = $m;
             last;
         }
     }
@@ -121,45 +97,9 @@ while (1) {
     }
 }
 
-my $dropped_id = $emsg->{error}->{details}->{id};
 ok $emsg->{error}, 'got an error message';
 is $emsg->{error}->{code}, 'EndOfTickStream', 'EndOfTickStream';
-is $dropped_id, $ticks[0]->{tick}->{id}, 'first opened stream has been canceled';
-shift @ticks;
-delete $ticks{$dropped_id};
-
-# at this point we have 25 tick streamer and 25 proposals. And we have proven that any new addition
-# triggers an error. Now, we'll forget them and see that we can add 50 streams again.
-
-$t->send_ok({json => {forget_all => 'ticks'}});
-while (1) {
-    $t = $t->message_ok;
-    my $m = JSON::from_json($t->message->[1]);
-    next if $m->{msg_type} eq 'tick' or $m->{msg_type} eq 'proposal';
-
-    ok $m->{forget_all};
-    is scalar(@{$m->{forget_all}}), 25;
-    test_schema('forget_all', $m);
-
-    is_deeply [sort @{$m->{forget_all}}], [sort map { $_->{tick}->{id} } @ticks], 'forgotten ids meet expectations';
-
-    last;
-}
-
-$t->send_ok({json => {forget_all => 'proposal'}});
-while (1) {
-    $t = $t->message_ok;
-    my $m = JSON::from_json($t->message->[1]);
-    next if $m->{msg_type} eq 'tick' or $m->{msg_type} eq 'proposal';
-
-    ok $m->{forget_all} or diag explain $m;
-    is scalar(@{$m->{forget_all}}), 25;
-    test_schema('forget_all', $m);
-
-    is_deeply [sort @{$m->{forget_all}}], [sort map { $_->{proposal}->{id} } @proposals], 'forgotten ids meet expectations';
-
-    last;
-}
+is $emsg->{error}->{details}->{id}, $ticks[0]->{tick}->{id}, 'first opened stream has been canceled';
 
 $t->finish_ok;
 kill 9, $pid;
