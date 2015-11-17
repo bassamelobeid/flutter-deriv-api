@@ -168,7 +168,7 @@ sub __handle {
         ['get_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::get_self_exclusion,                1],
         ['set_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::set_self_exclusion,                1],
         ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
-        ['paymentagent_withdraw', \&BOM::WebSocketAPI::v3::Cashier::paymentagent_withdraw, 1],
+        ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Cashier::paymentagent_withdraw,              1],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
     );
 

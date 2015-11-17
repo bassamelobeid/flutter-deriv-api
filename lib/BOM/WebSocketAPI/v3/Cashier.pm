@@ -77,15 +77,16 @@ sub get_limits {
 sub paymentagent_withdraw {
     my ($c, $args) = @_;
 
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my $r        = $c->stash('request');
+    my $client   = $c->stash('client');
     my $currency = $args->{currency};
     my $amount   = $args->{amount};
 
     if (   $c->app_config->system->suspend->payments
         or $c->app_config->system->suspend->payment_agents)
     {
-        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
+            localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Payment Agents are not available on this site.'));
     } elsif (not $client->allow_paymentagent_withdrawal()) {
@@ -103,9 +104,6 @@ sub paymentagent_withdraw {
     } elsif ($client->cashier_setting_password) {
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Your cashier is locked as per your request.'));
     }
-
-
-
 
 }
 
@@ -130,7 +128,8 @@ sub __output_payments_error_message {
 
     my $error_message_with_code = '';
     if ($error_code) {
-        $error_message_with_code = localize('Mentioning error code [_1] in any correspondence may help us resolve the issue more quickly.', $error_code);
+        $error_message_with_code =
+            localize('Mentioning error code [_1] in any correspondence may help us resolve the issue more quickly.', $error_code);
     }
 
     # amount is not always exist because error may happen before client submit the form
