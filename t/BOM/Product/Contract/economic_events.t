@@ -38,14 +38,17 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'economic_events',
-    {
-        symbol       => 'USD',
-        release_date => $now,
-        date         => Date::Utility->new(),
-    },
-);
+my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mocked->mock(
+    '_get_economic_events',
+    sub {
+        [{
+                'bias'         => 0.010000,
+                'duration'     => 60.000000,
+                'magnitude'    => 1.000000,
+                'release_time' => 1389096000,
+            }];
+    });
 
 my $bet = produce_contract({
     bet_type     => 'CALL',
@@ -59,13 +62,13 @@ my $bet = produce_contract({
     date_pricing => $now->minus_time_interval('10m'),
 });
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
-is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.0198959999973886, 'correct spot risk markup');
+is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.15, 'correct spot risk markup');
 cmp_ok(
     $bet->pricing_engine->economic_events_volatility_risk_markup->amount,
     '<',
     $bet->pricing_engine->economic_events_spot_risk_markup->amount,
     'vol risk markup is lower than higher range'
 );
-is($bet->pricing_engine->economic_events_markup->amount, 0.0198959999973886, 'economic events markup is max of spot or vol risk markup');
+is($bet->pricing_engine->economic_events_markup->amount, 0.15, 'economic events markup is max of spot or vol risk markup');
 
 done_testing;
