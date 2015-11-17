@@ -134,13 +134,13 @@ sub get_sold_bets_of_account {
     my $dbh = $self->db->dbh;
     my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $sql", undef, @binds);
 
-    my $sth = $self->db->dbh->prepare("
+    my $sth = $dbh->prepare("
         SELECT fmb.*, t.id txn_id
         $sql
         ORDER BY fmb.purchase_time $sort_dir
-        LIMIT $limit OFFSET $offset
+        LIMIT ? OFFSET ?
     ");
-    $sth->execute(@binds);
+    $sth->execute(@binds, $limit, $offset);
 
     return {
         total => $total,
