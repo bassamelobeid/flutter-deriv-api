@@ -178,15 +178,15 @@ sub ticks {
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     my @offerings = get_offerings_with_filter('underlying_symbol');
     foreach my $symbol (@symbols) {
-        if (not $symbol_offered = any { $symbol eq $_ } @offerings) {
+        if (not any { $symbol eq $_ } @offerings) {
             return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
         }
-        my $ul = BOM::Market::Underlying->new($symbol);
+        my $u = BOM::Market::Underlying->new($symbol);
 
-        if ($args->{subscribe} eq '1' and $ul->feed_license ne 'realtime') {
+        if ($args->{subscribe} eq '1' and $u->feed_license ne 'realtime') {
             return $c->new_error('ticks', 'NoRealtimeQuotes', localize("Realtime quotes not available for [_1]", $symbol));
         }
-        if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
+        if ($args->{subscribe} eq '1' and $u->feed_license eq 'realtime') {
             _feed_channel($c, 'subscribe', $symbol, 'tick');
             $c->send({
                     json => {
