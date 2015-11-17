@@ -584,11 +584,18 @@ sub _get_economic_events {
         my @keys = map {
             ($_ . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name, $_ . '_' . $event->symbol . '_' . $event->impact . '_default')
         } ($underlying->symbol, $default_underlying);
-        my $news_parameters = first { exists $news_categories->{$_} } @keys;
 
-        next unless $news_parameters;
-        $news_parameters->{release_time} = $event->release_date->epoch;
-        push @events, $news_parameters;
+        my $news_parameters;
+        foreach (@keys) {
+            if (exists $news_categories->{$_}) {
+                $news_parameters = $news_categories->{$_};
+                last;
+            }
+        }
+
+        next unless keys %news_parameters;
+        $news_parameters{release_time} = $event->release_date->epoch;
+        push @events, \%news_parameters;
     }
 
     return \@events;
@@ -606,7 +613,7 @@ sub _build_economic_events_spot_risk_markup {
     }
 
     my $contract_duration = $bet->remaining_time->seconds;
-    my $lookback          = $start->minus($contract_duration + 3600);
+    my $lookback          = $start->minus_time_interval($contract_duration + 3600);
     my $news_array        = $self->_get_economic_events($lookback, $end);
 
     my @combined = (0) x scalar(@time_samples);
