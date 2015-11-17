@@ -25,39 +25,30 @@ sub _description {
         $spot_time = $ul->spot_time;
         $spot_age  = $ul->spot_age;
     }
+    my $response = {
+        symbol                 => $symbol,
+        display_name           => $ul->display_name,
+        symbol_type            => $ul->instrument_type,
+        market_display_name    => $ul->market->translated_display_name,
+        market                 => $ul->market->name,
+        submarket              => $ul->submarket->name,
+        submarket_display_name => $ul->submarket->translated_display_name,
+        exchange_is_open       => $exchange_is_open || 0,
+        is_trading_suspended   => $ul->is_trading_suspended,
+        pip                    => $ul->pip_size
+    };
+
     if ($by eq 'full') {
-        return {
-            symbol                    => $symbol,
-            display_name              => $ul->display_name,
-            pip                       => $ul->pip_size,
-            symbol_type               => $ul->instrument_type,
-            exchange_name             => $ul->exchange_name,
-            delay_amount              => $ul->delay_amount,
-            exchange_is_open          => $exchange_is_open,
-            quoted_currency_symbol    => $ul->quoted_currency_symbol,
-            intraday_interval_minutes => $iim,
-            is_trading_suspended      => $ul->is_trading_suspended,
-            spot                      => $spot,
-            spot_time                 => $spot_time,
-            spot_age                  => $spot_age,
-            market_display_name       => $ul->market->translated_display_name,
-            market                    => $ul->market->name,
-            submarket                 => $ul->submarket->name,
-            submarket_display_name    => $ul->submarket->translated_display_name
-        };
-    } else {
-        return {
-            symbol                 => $symbol,
-            display_name           => $ul->display_name,
-            symbol_type            => $ul->instrument_type,
-            market_display_name    => $ul->market->translated_display_name,
-            market                 => $ul->market->name,
-            submarket              => $ul->submarket->name,
-            submarket_display_name => $ul->submarket->translated_display_name,
-            exchange_is_open       => $exchange_is_open || 0,
-            is_trading_suspended   => $ul->is_trading_suspended,
-        };
+        $reponse->{exchange_name}              = $ul->exchange_name;
+        $response->{delay_amount}              = $ul->delay_amount;
+        $response->{quoted_currency_symbol}    = $ul->quoted_currency_symbol;
+        $response->{intraday_interval_minutes} = $iim;
+        $response->{spot}                      = $spot;
+        $response->{spot_time}                 = $spot_time;
+        $response->{spot_age}                  = $spot_age;
     }
+
+    return $response;
 }
 
 sub active_symbols {
