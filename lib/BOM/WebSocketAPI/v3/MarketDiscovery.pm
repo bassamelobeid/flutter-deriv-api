@@ -288,8 +288,8 @@ sub _feed_channel {
         }
     }
 
-    $c->stash('feed_channel'=>$feed_channel);
-    $c->stash('feed_channel_type'=>$feed_channel_type);
+    $c->stash('feed_channel'      => $feed_channel);
+    $c->stash('feed_channel_type' => $feed_channel_type);
 
     return;
 }
