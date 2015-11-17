@@ -6,7 +6,6 @@
   "properties": {
     "ticks": {
       "sample": "frxUSDJPY",
-      "pattern": "^\\w{2,30}$",
       "description": "The short symbol name or array of symbols. E.x [\"frxUSDJPY\", \"R_50\"]",
       "required": "1"
     },
