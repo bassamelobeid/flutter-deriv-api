@@ -708,9 +708,8 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.627760976608482, '';
+            0.623643583174398, '';
         ok !$vs->error,                        'no error';
-        ok !$vs->uncategorized_economic_event, 'no uncategorized event';
     }
     'lives through process of getting seasonalized volatility';
     my $uncategorized = {
@@ -732,7 +731,6 @@ subtest 'seasonalized volatility with news' => sub {
             ),
             0.156466025941551, '';
         ok !$vs->error, 'no error';
-        ok $vs->uncategorized_economic_event, 'uncategorized event';
     }
     'lives through process of getting seasonalized volatility';
 };
