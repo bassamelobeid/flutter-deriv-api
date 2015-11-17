@@ -6,8 +6,8 @@
   "properties": {
     "paymentagent_withdraw": {
       "type": "integer",
-      "description": "If 1, withdrawal success.",
-      "pattern": "^(1|0)$"
+      "description": "If 1, withdrawal success. If 2, dry-run success.",
+      "pattern": "^(2|1|0)$"
     },
     "echo_req": {
       "title": "Echo request",
