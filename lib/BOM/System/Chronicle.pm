@@ -41,8 +41,9 @@ There are three important methods this module provides:
 
 =item C<set>
 
-Given a category, name and value stores the given value (after JSONifying) in Redis and PostgreSQL database under "category::name" group and also stored current
-system time as the timestamp for the data (Which can be used for future retrieval if we want to get data as of a specific time)
+Given a category, name and value stores the JSONified value in Redis and PostgreSQL database under "category::name" group and also stores current
+system time as the timestamp for the data (Which can be used for future retrieval if we want to get data as of a specific time). Note that the value
+MUST be either hash-ref or array-ref.
 
 =item C<get>
 
@@ -56,19 +57,16 @@ Given a category, name and timestamp returns version of data under "category::na
 
 =head1 Example
 
-```
-my $d = get_some_data();
+ my $d = get_some_data();
 
-#store data into Chronicle
-BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d);
+ #store data into Chronicle
+ BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d);
 
-#retrieve latest data stored for "vol_surface" and "frxUSDJPY"
-my $dt = BOM::System::Chronicle::set("vol_surface", "frxUSDJPY");
+ #retrieve latest data stored for "vol_surface" and "frxUSDJPY"
+ my $dt = BOM::System::Chronicle::set("vol_surface", "frxUSDJPY");
 
-#find vol_surface for frxUSDJPY as of Jan 15, 2015.
-my $some_old_data = get_for("vol_surface", "frxUSDJPY", 
-                            DateTime::Format::Pg->format_timestamp(DateTime->new(year => 2015, month => 1, day => 10)));
-```
+ #find vol_surface for frxUSDJPY as of a specific date
+ my $some_old_data = get_for("vol_surface", "frxUSDJPY", $epoch1);
 
 =head1 Future directions
 
@@ -82,6 +80,7 @@ use warnings;
 #we cache connections to Redis and Postgres so we use state feature.
 use feature "state";
 
+#used for loading chronicle config file which contains connection information
 use YAML::XS;
 use JSON;
 use RedisDB;
@@ -89,10 +88,19 @@ use DBI;
 use DateTime::Format::Pg;
 use DateTime;
 
+=head3 C<< set("category1", "name1", $value1)  >>
+
+Store a piece of data "value1" under key "category1::name1" in Pg and Redis.
+
+=cut
+
 sub set {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
+
+    die "Cannot store undefined values in Chronicle!" unless defined $value;
+    die "You can only store hash-ref or array-ref in Chronicle!" unless ref $value eq 'ARRAY' or ref $value eq 'HASH';
 
     $value = JSON::to_json($value);
 
@@ -103,6 +111,12 @@ sub set {
     return 1;
 }
 
+=head3 C<< my $data = get("category1", "name1") >>
+
+Query for the latest data under "category1::name1" from Redis (fall-back to Pg if not found in Redis).
+
+=cut
+
 sub get {
     my $category = shift;
     my $name     = shift;
@@ -110,29 +124,39 @@ sub get {
     my $key         = $category . '::' . $name;
     my $cached_data = _redis_read()->get($key);
 
-    if ($cached_data) {
-        return JSON::from_json($cached_data);
+    return JSON::from_json($cached_data) if defined $cached_data;
+
+    my $db_data = get_for($category, $name, time);
+    if (defined $db_data) {
+        _redis_write()->set($key, $db_data);
+        return $db_data;
     }
 
-    my $db_data = get_for($category, $name, DateTime::Format::Pg->format_timestamp(DateTime->now()));
-
-    if (defined $db_data && keys %{$db_data}) {
-        my $id_value = (sort keys %{$db_data})[0];
-        my $db_value = $db_data->{$id_value}->{value};
-
-        _redis_write()->set($key, $db_value);
-
-        return JSON::from_json($db_value);
-    }
+    return;
 }
+
+=head3 C<< my $data = get_for("category1", "name1", 1447401505) >>
+
+Query Pg archive for the data under "category1::name1" at or exactly before the given epoch.
+
+=cut
 
 sub get_for {
     my $category = shift;
     my $name     = shift;
-    my $date_for = shift;
+    my $date_for = shift;    #epoch
 
-    return _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
-        'id', {}, $category, $name, $date_for);
+    my $db_date = DateTime::Format::Pg->format_timestamp(DateTime->from_epoch(epoch => $date_for));
+
+    my $db_data = _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
+        'id', {}, $category, $name, $db_date);
+
+    return if not %$db_data;
+
+    my $id_value = (sort keys %{$db_data})[0];
+    my $db_value = $db_data->{$id_value}->{value};
+
+    return JSON::from_json($db_value);
 }
 
 sub _archive {
