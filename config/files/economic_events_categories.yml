@@ -24,7 +24,7 @@ frxAUDJPY_AUD_1_default:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDJPY_AUD_3_ANZ_Job_Advertisements_m/m:
-  bias: '0.000000'
+  bias: '0.195652'
   duration: '120.000000'
   magnitude: '4.921466'
 frxAUDJPY_AUD_3_Commodity_Prices_y/y:
@@ -73,7 +73,7 @@ frxAUDJPY_AUD_3_RBA_Deputy_Gov_Lowe_Speaks:
   magnitude: '1.000000'
 frxAUDJPY_AUD_3_Trimmed_Mean_CPI_q/q:
   bias: '0.000000'
-  duration: '151.633917'
+  duration: '720.000000'
   magnitude: '26.133265'
 frxAUDJPY_AUD_3_Wage_Price_Index_q/q:
   bias: '0.000000'
@@ -85,23 +85,23 @@ frxAUDJPY_AUD_3_default:
   magnitude: '1.000000'
 frxAUDJPY_AUD_5_Building_Approvals_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.502917'
 frxAUDJPY_AUD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '151.633917'
+  duration: '720.000000'
   magnitude: '26.133265'
 frxAUDJPY_AUD_5_Cash_Rate:
   bias: '0.000000'
-  duration: '600.749116'
+  duration: '720.000000'
   magnitude: '13.324749'
 frxAUDJPY_AUD_5_Employment_Change:
   bias: '0.000000'
-  duration: '294.451770'
+  duration: '540.000000'
   magnitude: '27.796266'
 frxAUDJPY_AUD_5_Monetary_Policy_Meeting_Minutes:
   bias: '0.000000'
-  duration: '182.550900'
+  duration: '360.000000'
   magnitude: '6.546377'
 frxAUDJPY_AUD_5_NAB_Business_Confidence:
   bias: '0.000000'
@@ -117,15 +117,15 @@ frxAUDJPY_AUD_5_RBA_Gov_Stevens_Speaks:
   magnitude: '3.281396'
 frxAUDJPY_AUD_5_RBA_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '215.125936'
+  duration: '360.000000'
   magnitude: '7.467932'
 frxAUDJPY_AUD_5_RBA_Rate_Statement:
   bias: '0.000000'
-  duration: '600.749116'
+  duration: '720.000000'
   magnitude: '13.324749'
 frxAUDJPY_AUD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '167.962922'
+  duration: '300.000000'
   magnitude: '12.506501'
 frxAUDJPY_AUD_5_Trade_Balance:
   bias: '0.000000'
@@ -133,11 +133,11 @@ frxAUDJPY_AUD_5_Trade_Balance:
   magnitude: '7.816663'
 frxAUDJPY_AUD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '294.451770'
+  duration: '540.000000'
   magnitude: '27.796266'
 frxAUDJPY_AUD_5_default:
   bias: '0.000000'
-  duration: '203.839228'
+  duration: '420.000000'
   magnitude: '10.876413'
 frxAUDJPY_CAD_1_BOC_Review:
   bias: '0.000000'
@@ -193,7 +193,7 @@ frxAUDJPY_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxAUDJPY_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '490.827005'
+  duration: '1260.000000'
   magnitude: '11.813809'
 frxAUDJPY_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -253,7 +253,7 @@ frxAUDJPY_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxAUDJPY_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '7.475112'
 frxAUDJPY_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -277,7 +277,7 @@ frxAUDJPY_CAD_5_Trade_Balance:
   magnitude: '1.000000'
 frxAUDJPY_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '7.475112'
 frxAUDJPY_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -425,7 +425,7 @@ frxAUDJPY_CNY_1_M2_Money_Supply_y/y:
   magnitude: '1.000000'
 frxAUDJPY_CNY_1_Retail_Sales_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '6.050721'
 frxAUDJPY_CNY_1_default:
   bias: '0.000000'
@@ -433,7 +433,7 @@ frxAUDJPY_CNY_1_default:
   magnitude: '1.000000'
 frxAUDJPY_CNY_3_Fixed_Asset_Investment_ytd/y:
   bias: '0.000000'
-  duration: '131.213234'
+  duration: '300.000000'
   magnitude: '6.274262'
 frxAUDJPY_CNY_3_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -445,11 +445,11 @@ frxAUDJPY_CNY_3_HSBC_Services_PMI:
   magnitude: '1.000000'
 frxAUDJPY_CNY_3_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '7.397272'
 frxAUDJPY_CNY_3_NBS_Press_Conference:
   bias: '0.000000'
-  duration: '127.138194'
+  duration: '480.000000'
   magnitude: '9.983657'
 frxAUDJPY_CNY_3_New_Loans:
   bias: '0.000000'
@@ -457,7 +457,7 @@ frxAUDJPY_CNY_3_New_Loans:
   magnitude: '1.000000'
 frxAUDJPY_CNY_3_PPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.381674'
 frxAUDJPY_CNY_3_default:
   bias: '0.000000'
@@ -465,11 +465,11 @@ frxAUDJPY_CNY_3_default:
   magnitude: '3.672030'
 frxAUDJPY_CNY_5_CPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.142533'
 frxAUDJPY_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '177.864074'
+  duration: '600.000000'
   magnitude: '11.036294'
 frxAUDJPY_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -477,15 +477,15 @@ frxAUDJPY_CNY_5_HSBC_Final_Manufacturing_PMI:
   magnitude: '1.000000'
 frxAUDJPY_CNY_5_HSBC_Flash_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '13.091686'
 frxAUDJPY_CNY_5_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '121.422915'
+  duration: '420.000000'
   magnitude: '5.549803'
 frxAUDJPY_CNY_5_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '60.000000'
+  duration: '240.000000'
   magnitude: '3.864220'
 frxAUDJPY_CNY_5_Trade_Balance:
   bias: '0.000000'
@@ -493,7 +493,7 @@ frxAUDJPY_CNY_5_Trade_Balance:
   magnitude: '3.088721'
 frxAUDJPY_CNY_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.158234'
 frxAUDJPY_EUR_1_Belgian_NBB_Business_Climate:
   bias: '0.000000'
@@ -869,7 +869,7 @@ frxAUDJPY_EUR_5_ECB_President_Draghi_Speaks:
   magnitude: '1.000000'
 frxAUDJPY_EUR_5_ECB_Press_Conference:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.288520'
 frxAUDJPY_EUR_5_French_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -1245,7 +1245,7 @@ frxAUDJPY_JPY_5_BOJ_Press_Conference:
   magnitude: '1.000000'
 frxAUDJPY_JPY_5_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '120.053299'
+  duration: '240.000000'
   magnitude: '5.160758'
 frxAUDJPY_JPY_5_default:
   bias: '0.000000'
@@ -1269,7 +1269,7 @@ frxAUDJPY_NZD_1_FPI_m/m:
   magnitude: '1.000000'
 frxAUDJPY_NZD_1_Labor_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '195.594960'
+  duration: '240.000000'
   magnitude: '3.820460'
 frxAUDJPY_NZD_1_PPI_Output_q/q:
   bias: '0.000000'
@@ -1325,7 +1325,7 @@ frxAUDJPY_NZD_5_ANZ_Business_Confidence:
   magnitude: '1.000000'
 frxAUDJPY_NZD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.574159'
 frxAUDJPY_NZD_5_Employment_Change_q/q:
   bias: '0.000000'
@@ -1345,7 +1345,7 @@ frxAUDJPY_NZD_5_NZIER_Business_Confidence:
   magnitude: '1.000000'
 frxAUDJPY_NZD_5_Official_Cash_Rate:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '240.000000'
   magnitude: '3.165312'
 frxAUDJPY_NZD_5_RBNZ_Press_Conference:
   bias: '0.000000'
@@ -1353,7 +1353,7 @@ frxAUDJPY_NZD_5_RBNZ_Press_Conference:
   magnitude: '4.103761'
 frxAUDJPY_NZD_5_RBNZ_Rate_Statement:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '240.000000'
   magnitude: '3.165312'
 frxAUDJPY_NZD_5_Trade_Balance:
   bias: '0.000000'
@@ -1405,7 +1405,7 @@ frxAUDJPY_USD_1_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxAUDJPY_USD_1_Final_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.604552'
 frxAUDJPY_USD_1_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -1456,8 +1456,8 @@ frxAUDJPY_USD_1_Personal_Income_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDJPY_USD_1_Prelim_GDP_Price_Index_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.264706'
+  duration: '180.000000'
   magnitude: '3.299286'
 frxAUDJPY_USD_1_Prelim_UoM_Inflation_Expectations:
   bias: '0.000000'
@@ -1501,11 +1501,11 @@ frxAUDJPY_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxAUDJPY_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '6.759573'
 frxAUDJPY_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '620.425853'
+  duration: '2220.000000'
   magnitude: '17.106666'
 frxAUDJPY_USD_3_Beige_Book:
   bias: '0.000000'
@@ -1549,7 +1549,7 @@ frxAUDJPY_USD_3_Durable_Goods_Orders_m/m:
   magnitude: '4.853488'
 frxAUDJPY_USD_3_Empire_State_Manufacturing_Index:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.291294'
 frxAUDJPY_USD_3_Employment_Cost_Index_q/q:
   bias: '0.000000'
@@ -1629,7 +1629,7 @@ frxAUDJPY_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxAUDJPY_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '948.965230'
+  duration: '2640.000000'
   magnitude: '7.951307'
 frxAUDJPY_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -1705,11 +1705,11 @@ frxAUDJPY_USD_3_default:
   magnitude: '1.000000'
 frxAUDJPY_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.337066'
 frxAUDJPY_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '6.759573'
 frxAUDJPY_USD_5_Building_Permits:
   bias: '0.000000'
@@ -1720,7 +1720,7 @@ frxAUDJPY_USD_5_CB_Consumer_Confidence:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDJPY_USD_5_CPI_m/m:
-  bias: '0.000000'
+  bias: '0.300000'
   duration: '300.000000'
   magnitude: '3.781955'
 frxAUDJPY_USD_5_Core_CPI_m/m:
@@ -1733,7 +1733,7 @@ frxAUDJPY_USD_5_Core_Durable_Goods_Orders_m/m:
   magnitude: '4.769996'
 frxAUDJPY_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '6.076446'
 frxAUDJPY_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -1741,11 +1741,11 @@ frxAUDJPY_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxAUDJPY_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '527.259885'
+  duration: '840.000000'
   magnitude: '7.029687'
 frxAUDJPY_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '522.431028'
+  duration: '840.000000'
   magnitude: '4.925327'
 frxAUDJPY_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -1753,7 +1753,7 @@ frxAUDJPY_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxAUDJPY_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '944.493189'
+  duration: '1560.000000'
   magnitude: '8.781435'
 frxAUDJPY_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -1773,7 +1773,7 @@ frxAUDJPY_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxAUDJPY_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '727.945204'
+  duration: '1440.000000'
   magnitude: '8.298597'
 frxAUDJPY_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
@@ -1789,7 +1789,7 @@ frxAUDJPY_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxAUDJPY_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '620.425853'
+  duration: '2220.000000'
   magnitude: '17.106666'
 frxAUDJPY_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -1804,8 +1804,8 @@ frxAUDJPY_USD_5_Philly_Fed_Manufacturing_Index:
   duration: '120.000000'
   magnitude: '3.144848'
 frxAUDJPY_USD_5_Prelim_GDP_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.264706'
+  duration: '180.000000'
   magnitude: '3.299286'
 frxAUDJPY_USD_5_Prelim_UoM_Consumer_Sentiment:
   bias: '0.000000'
@@ -1813,7 +1813,7 @@ frxAUDJPY_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxAUDJPY_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '6.076446'
 frxAUDJPY_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -1829,11 +1829,11 @@ frxAUDJPY_USD_5_Unemployment_Claims:
   magnitude: '3.438003'
 frxAUDJPY_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '620.425853'
+  duration: '2220.000000'
   magnitude: '17.106666'
 frxAUDJPY_USD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.559116'
 frxAUDUSD_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
@@ -1913,7 +1913,7 @@ frxAUDUSD_AUD_3_RBA_Deputy_Gov_Lowe_Speaks:
   magnitude: '1.000000'
 frxAUDUSD_AUD_3_Trimmed_Mean_CPI_q/q:
   bias: '0.000000'
-  duration: '207.506169'
+  duration: '780.000000'
   magnitude: '33.747549'
 frxAUDUSD_AUD_3_Wage_Price_Index_q/q:
   bias: '0.000000'
@@ -1925,23 +1925,23 @@ frxAUDUSD_AUD_3_default:
   magnitude: '1.000000'
 frxAUDUSD_AUD_5_Building_Approvals_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.761885'
 frxAUDUSD_AUD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '207.506169'
+  duration: '780.000000'
   magnitude: '33.747549'
 frxAUDUSD_AUD_5_Cash_Rate:
   bias: '0.000000'
-  duration: '678.326502'
+  duration: '1320.000000'
   magnitude: '16.589360'
 frxAUDUSD_AUD_5_Employment_Change:
   bias: '0.000000'
-  duration: '437.988442'
+  duration: '780.000000'
   magnitude: '34.565580'
 frxAUDUSD_AUD_5_Monetary_Policy_Meeting_Minutes:
   bias: '0.000000'
-  duration: '240.780892'
+  duration: '420.000000'
   magnitude: '6.655451'
 frxAUDUSD_AUD_5_NAB_Business_Confidence:
   bias: '0.000000'
@@ -1957,28 +1957,28 @@ frxAUDUSD_AUD_5_RBA_Gov_Stevens_Speaks:
   magnitude: '1.000000'
 frxAUDUSD_AUD_5_RBA_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '187.942700'
+  duration: '420.000000'
   magnitude: '9.199953'
 frxAUDUSD_AUD_5_RBA_Rate_Statement:
   bias: '0.000000'
-  duration: '678.326502'
+  duration: '1320.000000'
   magnitude: '16.589360'
 frxAUDUSD_AUD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '183.806973'
+  duration: '300.000000'
   magnitude: '15.323237'
 frxAUDUSD_AUD_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '9.329638'
 frxAUDUSD_AUD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '437.988442'
+  duration: '780.000000'
   magnitude: '34.565580'
 frxAUDUSD_AUD_5_default:
   bias: '0.000000'
-  duration: '252.049109'
-  magnitude: '13.240160'
+  duration: '720.000000'
+  magnitude: '13.243581'
 frxAUDUSD_CAD_1_BOC_Review:
   bias: '0.000000'
   duration: '60.000000'
@@ -2032,16 +2032,16 @@ frxAUDUSD_CAD_3_Housing_Starts:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDUSD_CAD_3_Labor_Productivity_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.205882'
+  duration: '1320.000000'
   magnitude: '19.501199'
 frxAUDUSD_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.967640'
 frxAUDUSD_CAD_3_NHPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '3.631385'
 frxAUDUSD_CAD_3_RMPI_m/m:
   bias: '0.000000'
@@ -2060,7 +2060,7 @@ frxAUDUSD_CAD_3_default:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDUSD_CAD_5_BOC_Gov_Carney_Speaks:
-  bias: '0.000000'
+  bias: '0.400000'
   duration: '480.000000'
   magnitude: '3.254135'
 frxAUDUSD_CAD_5_BOC_Gov_Poloz_Speaks:
@@ -2093,7 +2093,7 @@ frxAUDUSD_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxAUDUSD_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '600.000000'
   magnitude: '10.307123'
 frxAUDUSD_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -2105,7 +2105,7 @@ frxAUDUSD_CAD_5_Ivey_PMI:
   magnitude: '1.000000'
 frxAUDUSD_CAD_5_Manufacturing_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.482640'
 frxAUDUSD_CAD_5_Overnight_Rate:
   bias: '0.000000'
@@ -2117,7 +2117,7 @@ frxAUDUSD_CAD_5_Trade_Balance:
   magnitude: '1.000000'
 frxAUDUSD_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '600.000000'
   magnitude: '10.307123'
 frxAUDUSD_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -2269,7 +2269,7 @@ frxAUDUSD_CNY_1_Non-Manufacturing_PMI:
   magnitude: '1.000000'
 frxAUDUSD_CNY_1_Retail_Sales_y/y:
   bias: '0.000000'
-  duration: '151.143807'
+  duration: '420.000000'
   magnitude: '6.006208'
 frxAUDUSD_CNY_1_default:
   bias: '0.000000'
@@ -2277,7 +2277,7 @@ frxAUDUSD_CNY_1_default:
   magnitude: '1.000000'
 frxAUDUSD_CNY_3_Fixed_Asset_Investment_ytd/y:
   bias: '0.000000'
-  duration: '172.476464'
+  duration: '420.000000'
   magnitude: '6.710353'
 frxAUDUSD_CNY_3_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -2289,11 +2289,11 @@ frxAUDUSD_CNY_3_HSBC_Services_PMI:
   magnitude: '1.000000'
 frxAUDUSD_CNY_3_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '149.902766'
+  duration: '420.000000'
   magnitude: '6.930558'
 frxAUDUSD_CNY_3_NBS_Press_Conference:
   bias: '0.000000'
-  duration: '165.858130'
+  duration: '420.000000'
   magnitude: '9.679760'
 frxAUDUSD_CNY_3_New_Loans:
   bias: '0.000000'
@@ -2301,7 +2301,7 @@ frxAUDUSD_CNY_3_New_Loans:
   magnitude: '1.000000'
 frxAUDUSD_CNY_3_PPI_y/y:
   bias: '0.000000'
-  duration: '121.473125'
+  duration: '180.000000'
   magnitude: '6.130783'
 frxAUDUSD_CNY_3_default:
   bias: '0.000000'
@@ -2309,11 +2309,11 @@ frxAUDUSD_CNY_3_default:
   magnitude: '4.341141'
 frxAUDUSD_CNY_5_CPI_y/y:
   bias: '0.000000'
-  duration: '124.674294'
+  duration: '180.000000'
   magnitude: '6.086633'
 frxAUDUSD_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '196.623056'
+  duration: '480.000000'
   magnitude: '10.761445'
 frxAUDUSD_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -2321,23 +2321,23 @@ frxAUDUSD_CNY_5_HSBC_Final_Manufacturing_PMI:
   magnitude: '1.000000'
 frxAUDUSD_CNY_5_HSBC_Flash_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '13.706216'
 frxAUDUSD_CNY_5_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '143.300309'
+  duration: '480.000000'
   magnitude: '6.762913'
 frxAUDUSD_CNY_5_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.799060'
 frxAUDUSD_CNY_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.274638'
 frxAUDUSD_CNY_5_default:
   bias: '0.000000'
-  duration: '122.154945'
+  duration: '300.000000'
   magnitude: '6.956485'
 frxAUDUSD_EUR_1_Belgian_NBB_Business_Climate:
   bias: '0.000000'
@@ -3041,7 +3041,7 @@ frxAUDUSD_JPY_1_Final_Manufacturing_PMI:
   magnitude: '1.000000'
 frxAUDUSD_JPY_1_Flash_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '777.113953'
+  duration: '660.000000'
   magnitude: '4.092931'
 frxAUDUSD_JPY_1_Housing_Starts_y/y:
   bias: '0.000000'
@@ -3113,7 +3113,7 @@ frxAUDUSD_NZD_1_FPI_m/m:
   magnitude: '1.000000'
 frxAUDUSD_NZD_1_Labor_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '360.000000'
   magnitude: '4.279312'
 frxAUDUSD_NZD_1_PPI_Output_q/q:
   bias: '0.000000'
@@ -3149,7 +3149,7 @@ frxAUDUSD_NZD_3_Inflation_Expectations_q/q:
   magnitude: '1.000000'
 frxAUDUSD_NZD_3_RBNZ_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '300.000000'
+  duration: '540.000000'
   magnitude: '4.428578'
 frxAUDUSD_NZD_3_REINZ_HPI_m/m:
   bias: '0.000000'
@@ -3168,8 +3168,8 @@ frxAUDUSD_NZD_5_ANZ_Business_Confidence:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDUSD_NZD_5_CPI_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.300000'
+  duration: '240.000000'
   magnitude: '4.724673'
 frxAUDUSD_NZD_5_Employment_Change_q/q:
   bias: '0.000000'
@@ -3189,15 +3189,15 @@ frxAUDUSD_NZD_5_NZIER_Business_Confidence:
   magnitude: '1.000000'
 frxAUDUSD_NZD_5_Official_Cash_Rate:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '360.000000'
   magnitude: '3.382186'
 frxAUDUSD_NZD_5_RBNZ_Press_Conference:
   bias: '0.000000'
-  duration: '401.320342'
+  duration: '300.000000'
   magnitude: '5.124634'
 frxAUDUSD_NZD_5_RBNZ_Rate_Statement:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '360.000000'
   magnitude: '3.382186'
 frxAUDUSD_NZD_5_Trade_Balance:
   bias: '0.000000'
@@ -3216,7 +3216,7 @@ frxAUDUSD_USD_1_30-y_Bond_Auction:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDUSD_USD_1_CB_Leading_Index_m/m:
-  bias: '0.000000'
+  bias: '0.160377'
   duration: '120.000000'
   magnitude: '3.007445'
 frxAUDUSD_USD_1_Challenger_Job_Cuts_y/y:
@@ -3225,7 +3225,7 @@ frxAUDUSD_USD_1_Challenger_Job_Cuts_y/y:
   magnitude: '1.000000'
 frxAUDUSD_USD_1_Construction_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.666444'
 frxAUDUSD_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -3249,7 +3249,7 @@ frxAUDUSD_USD_1_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxAUDUSD_USD_1_Final_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '6.894510'
 frxAUDUSD_USD_1_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -3273,7 +3273,7 @@ frxAUDUSD_USD_1_IBD/TIPP_Economic_Optimism:
   magnitude: '1.000000'
 frxAUDUSD_USD_1_ISM_Manufacturing_Prices:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '5.151494'
 frxAUDUSD_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -3301,7 +3301,7 @@ frxAUDUSD_USD_1_Personal_Income_m/m:
   magnitude: '3.167323'
 frxAUDUSD_USD_1_Prelim_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.402196'
 frxAUDUSD_USD_1_Prelim_UoM_Inflation_Expectations:
   bias: '0.000000'
@@ -3345,11 +3345,11 @@ frxAUDUSD_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxAUDUSD_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '174.341844'
+  duration: '720.000000'
   magnitude: '10.100784'
 frxAUDUSD_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '957.491556'
+  duration: '2340.000000'
   magnitude: '28.476051'
 frxAUDUSD_USD_3_Beige_Book:
   bias: '0.000000'
@@ -3360,8 +3360,8 @@ frxAUDUSD_USD_3_Business_Inventories_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxAUDUSD_USD_3_CPI_m/m:
-  bias: '0.000000'
-  duration: '146.056822'
+  bias: '0.158537'
+  duration: '420.000000'
   magnitude: '4.758952'
 frxAUDUSD_USD_3_Capacity_Utilization_Rate:
   bias: '0.000000'
@@ -3377,7 +3377,7 @@ frxAUDUSD_USD_3_Core_PCE_Price_Index_m/m:
   magnitude: '3.153156'
 frxAUDUSD_USD_3_Core_PPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.036955'
 frxAUDUSD_USD_3_Crude_Oil_Inventories:
   bias: '0.000000'
@@ -3385,7 +3385,7 @@ frxAUDUSD_USD_3_Crude_Oil_Inventories:
   magnitude: '1.000000'
 frxAUDUSD_USD_3_Current_Account:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.310240'
 frxAUDUSD_USD_3_Durable_Goods_Orders_m/m:
   bias: '0.000000'
@@ -3473,11 +3473,11 @@ frxAUDUSD_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxAUDUSD_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '1067.006389'
+  duration: '3120.000000'
   magnitude: '14.742686'
 frxAUDUSD_USD_3_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '6.135907'
 frxAUDUSD_USD_3_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -3517,11 +3517,11 @@ frxAUDUSD_USD_3_Personal_Spending_m/m:
   magnitude: '3.167323'
 frxAUDUSD_USD_3_Prelim_Nonfarm_Productivity_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.043846'
 frxAUDUSD_USD_3_Prelim_Unit_Labor_Costs_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.043846'
 frxAUDUSD_USD_3_Revised_Nonfarm_Productivity_q/q:
   bias: '0.000000'
@@ -3549,11 +3549,11 @@ frxAUDUSD_USD_3_default:
   magnitude: '1.000000'
 frxAUDUSD_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.229097'
 frxAUDUSD_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '174.341844'
+  duration: '720.000000'
   magnitude: '10.100784'
 frxAUDUSD_USD_5_Building_Permits:
   bias: '0.000000'
@@ -3565,11 +3565,11 @@ frxAUDUSD_USD_5_CB_Consumer_Confidence:
   magnitude: '3.104339'
 frxAUDUSD_USD_5_CPI_m/m:
   bias: '0.000000'
-  duration: '309.338949'
+  duration: '360.000000'
   magnitude: '10.293358'
 frxAUDUSD_USD_5_Core_CPI_m/m:
-  bias: '0.000000'
-  duration: '144.275189'
+  bias: '0.166667'
+  duration: '420.000000'
   magnitude: '4.875960'
 frxAUDUSD_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
@@ -3577,7 +3577,7 @@ frxAUDUSD_USD_5_Core_Durable_Goods_Orders_m/m:
   magnitude: '5.728334'
 frxAUDUSD_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '8.397978'
 frxAUDUSD_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -3585,11 +3585,11 @@ frxAUDUSD_USD_5_Existing_Home_Sales:
   magnitude: '3.241225'
 frxAUDUSD_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '746.946066'
+  duration: '1620.000000'
   magnitude: '14.491253'
 frxAUDUSD_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '564.733529'
+  duration: '1020.000000'
   magnitude: '8.376947'
 frxAUDUSD_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -3597,7 +3597,7 @@ frxAUDUSD_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxAUDUSD_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '1502.555406'
+  duration: '3060.000000'
   magnitude: '15.921346'
 frxAUDUSD_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -3613,15 +3613,15 @@ frxAUDUSD_USD_5_Fed_Chairman_Bernanke_Speaks:
   magnitude: '1.000000'
 frxAUDUSD_USD_5_Fed_Chairman_Bernanke_Testifies:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.618348'
 frxAUDUSD_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '770.607359'
+  duration: '3240.000000'
   magnitude: '19.371594'
 frxAUDUSD_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '5.151494'
 frxAUDUSD_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -3633,11 +3633,11 @@ frxAUDUSD_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxAUDUSD_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '957.491556'
+  duration: '2340.000000'
   magnitude: '28.476051'
 frxAUDUSD_USD_5_PPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.036955'
 frxAUDUSD_USD_5_Pending_Home_Sales_m/m:
   bias: '0.000000'
@@ -3649,7 +3649,7 @@ frxAUDUSD_USD_5_Philly_Fed_Manufacturing_Index:
   magnitude: '4.429362'
 frxAUDUSD_USD_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.402196'
 frxAUDUSD_USD_5_Prelim_UoM_Consumer_Sentiment:
   bias: '0.000000'
@@ -3657,7 +3657,7 @@ frxAUDUSD_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxAUDUSD_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '8.397978'
 frxAUDUSD_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -3669,15 +3669,15 @@ frxAUDUSD_USD_5_Trade_Balance:
   magnitude: '1.000000'
 frxAUDUSD_USD_5_Unemployment_Claims:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.661796'
 frxAUDUSD_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '957.491556'
+  duration: '2340.000000'
   magnitude: '28.476051'
 frxAUDUSD_USD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '4.278192'
 frxEURAUD_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
@@ -3753,7 +3753,7 @@ frxEURAUD_AUD_3_RBA_Deputy_Gov_Lowe_Speaks:
   magnitude: '1.000000'
 frxEURAUD_AUD_3_Trimmed_Mean_CPI_q/q:
   bias: '0.000000'
-  duration: '199.436813'
+  duration: '720.000000'
   magnitude: '30.931599'
 frxEURAUD_AUD_3_Wage_Price_Index_q/q:
   bias: '0.000000'
@@ -3765,23 +3765,23 @@ frxEURAUD_AUD_3_default:
   magnitude: '1.000000'
 frxEURAUD_AUD_5_Building_Approvals_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '9.443682'
 frxEURAUD_AUD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '199.436813'
+  duration: '720.000000'
   magnitude: '30.931599'
 frxEURAUD_AUD_5_Cash_Rate:
   bias: '0.000000'
-  duration: '662.931897'
+  duration: '1140.000000'
   magnitude: '16.648955'
 frxEURAUD_AUD_5_Employment_Change:
   bias: '0.000000'
-  duration: '438.755439'
+  duration: '840.000000'
   magnitude: '34.894811'
 frxEURAUD_AUD_5_Monetary_Policy_Meeting_Minutes:
   bias: '0.000000'
-  duration: '142.326936'
+  duration: '360.000000'
   magnitude: '6.723298'
 frxEURAUD_AUD_5_NAB_Business_Confidence:
   bias: '0.000000'
@@ -3797,27 +3797,27 @@ frxEURAUD_AUD_5_RBA_Gov_Stevens_Speaks:
   magnitude: '1.000000'
 frxEURAUD_AUD_5_RBA_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '164.978382'
+  duration: '360.000000'
   magnitude: '10.171179'
 frxEURAUD_AUD_5_RBA_Rate_Statement:
   bias: '0.000000'
-  duration: '662.931897'
+  duration: '1140.000000'
   magnitude: '16.648955'
 frxEURAUD_AUD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '200.784938'
+  duration: '300.000000'
   magnitude: '14.945575'
 frxEURAUD_AUD_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '9.384008'
 frxEURAUD_AUD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '438.755439'
+  duration: '840.000000'
   magnitude: '34.894811'
 frxEURAUD_AUD_5_default:
   bias: '0.000000'
-  duration: '236.829610'
+  duration: '720.000000'
   magnitude: '13.062641'
 frxEURAUD_CAD_1_BOC_Review:
   bias: '0.000000'
@@ -3825,7 +3825,7 @@ frxEURAUD_CAD_1_BOC_Review:
   magnitude: '1.000000'
 frxEURAUD_CAD_1_Capacity_Utilization_Rate:
   bias: '0.000000'
-  duration: '130.969113'
+  duration: '180.000000'
   magnitude: '4.464208'
 frxEURAUD_CAD_1_Corporate_Profits_q/q:
   bias: '0.000000'
@@ -3933,7 +3933,7 @@ frxEURAUD_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxEURAUD_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '4.572506'
 frxEURAUD_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -3957,7 +3957,7 @@ frxEURAUD_CAD_5_Trade_Balance:
   magnitude: '1.000000'
 frxEURAUD_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '4.572506'
 frxEURAUD_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -4105,7 +4105,7 @@ frxEURAUD_CNY_1_M2_Money_Supply_y/y:
   magnitude: '1.000000'
 frxEURAUD_CNY_1_Retail_Sales_y/y:
   bias: '0.000000'
-  duration: '159.847716'
+  duration: '420.000000'
   magnitude: '5.262799'
 frxEURAUD_CNY_1_default:
   bias: '0.000000'
@@ -4113,7 +4113,7 @@ frxEURAUD_CNY_1_default:
   magnitude: '1.000000'
 frxEURAUD_CNY_3_Fixed_Asset_Investment_ytd/y:
   bias: '0.000000'
-  duration: '156.331510'
+  duration: '420.000000'
   magnitude: '4.819569'
 frxEURAUD_CNY_3_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -4125,11 +4125,11 @@ frxEURAUD_CNY_3_HSBC_Services_PMI:
   magnitude: '1.000000'
 frxEURAUD_CNY_3_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '137.304287'
+  duration: '180.000000'
   magnitude: '6.176867'
 frxEURAUD_CNY_3_NBS_Press_Conference:
   bias: '0.000000'
-  duration: '151.739374'
+  duration: '420.000000'
   magnitude: '7.304200'
 frxEURAUD_CNY_3_New_Loans:
   bias: '0.000000'
@@ -4141,19 +4141,19 @@ frxEURAUD_CNY_3_Non-Manufacturing_PMI:
   magnitude: '3.383155'
 frxEURAUD_CNY_3_PPI_y/y:
   bias: '0.000000'
-  duration: '125.076596'
+  duration: '180.000000'
   magnitude: '5.690194'
 frxEURAUD_CNY_3_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.807482'
 frxEURAUD_CNY_5_CPI_y/y:
   bias: '0.000000'
-  duration: '126.070814'
+  duration: '180.000000'
   magnitude: '5.578601'
 frxEURAUD_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '159.623271'
+  duration: '600.000000'
   magnitude: '8.174165'
 frxEURAUD_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -4161,11 +4161,11 @@ frxEURAUD_CNY_5_HSBC_Final_Manufacturing_PMI:
   magnitude: '3.179272'
 frxEURAUD_CNY_5_HSBC_Flash_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '145.794526'
+  duration: '180.000000'
   magnitude: '14.854327'
 frxEURAUD_CNY_5_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '215.946222'
+  duration: '660.000000'
   magnitude: '6.908852'
 frxEURAUD_CNY_5_Manufacturing_PMI:
   bias: '0.000000'
@@ -4173,12 +4173,12 @@ frxEURAUD_CNY_5_Manufacturing_PMI:
   magnitude: '5.744908'
 frxEURAUD_CNY_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.569962'
 frxEURAUD_CNY_5_default:
   bias: '0.000000'
-  duration: '139.277813'
-  magnitude: '6.143826'
+  duration: '180.000000'
+  magnitude: '6.147115'
 frxEURAUD_EUR_1_Belgian_NBB_Business_Climate:
   bias: '0.000000'
   duration: '60.000000'
@@ -4553,7 +4553,7 @@ frxEURAUD_EUR_5_ECB_President_Draghi_Speaks:
   magnitude: '1.000000'
 frxEURAUD_EUR_5_ECB_Press_Conference:
   bias: '0.000000'
-  duration: '300.000000'
+  duration: '360.000000'
   magnitude: '3.273820'
 frxEURAUD_EUR_5_French_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -4880,8 +4880,8 @@ frxEURAUD_JPY_1_Final_Manufacturing_PMI:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURAUD_JPY_1_Flash_Manufacturing_PMI:
-  bias: '0.000000'
-  duration: '776.735864'
+  bias: '0.233333'
+  duration: '660.000000'
   magnitude: '3.577190'
 frxEURAUD_JPY_1_Housing_Starts_y/y:
   bias: '0.000000'
@@ -4953,7 +4953,7 @@ frxEURAUD_NZD_1_FPI_m/m:
   magnitude: '1.000000'
 frxEURAUD_NZD_1_Labor_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '191.295929'
+  duration: '420.000000'
   magnitude: '4.345727'
 frxEURAUD_NZD_1_PPI_Output_q/q:
   bias: '0.000000'
@@ -4989,7 +4989,7 @@ frxEURAUD_NZD_3_Inflation_Expectations_q/q:
   magnitude: '1.000000'
 frxEURAUD_NZD_3_RBNZ_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '300.000000'
+  duration: '540.000000'
   magnitude: '4.076019'
 frxEURAUD_NZD_3_REINZ_HPI_m/m:
   bias: '0.000000'
@@ -5009,11 +5009,11 @@ frxEURAUD_NZD_5_ANZ_Business_Confidence:
   magnitude: '1.000000'
 frxEURAUD_NZD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '120.089988'
+  duration: '180.000000'
   magnitude: '4.206303'
 frxEURAUD_NZD_5_Employment_Change_q/q:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '300.000000'
   magnitude: '3.423705'
 frxEURAUD_NZD_5_GDP_q/q:
   bias: '0.000000'
@@ -5029,15 +5029,15 @@ frxEURAUD_NZD_5_NZIER_Business_Confidence:
   magnitude: '1.000000'
 frxEURAUD_NZD_5_Official_Cash_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '3.255668'
 frxEURAUD_NZD_5_RBNZ_Press_Conference:
   bias: '0.000000'
-  duration: '329.422289'
+  duration: '420.000000'
   magnitude: '4.046828'
 frxEURAUD_NZD_5_RBNZ_Rate_Statement:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '3.255668'
 frxEURAUD_NZD_5_Trade_Balance:
   bias: '0.000000'
@@ -5045,7 +5045,7 @@ frxEURAUD_NZD_5_Trade_Balance:
   magnitude: '1.000000'
 frxEURAUD_NZD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '300.000000'
   magnitude: '3.423705'
 frxEURAUD_NZD_5_default:
   bias: '0.000000'
@@ -5064,8 +5064,8 @@ frxEURAUD_USD_1_Challenger_Job_Cuts_y/y:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURAUD_USD_1_Construction_Spending_m/m:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.230769'
+  duration: '180.000000'
   magnitude: '3.046413'
 frxEURAUD_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -5112,8 +5112,8 @@ frxEURAUD_USD_1_IBD/TIPP_Economic_Optimism:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURAUD_USD_1_ISM_Manufacturing_Prices:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.198113'
+  duration: '180.000000'
   magnitude: '3.226296'
 frxEURAUD_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -5189,7 +5189,7 @@ frxEURAUD_USD_3_Advance_GDP_Price_Index_q/q:
   magnitude: '3.049712'
 frxEURAUD_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '528.997336'
+  duration: '1320.000000'
   magnitude: '13.777853'
 frxEURAUD_USD_3_Beige_Book:
   bias: '0.000000'
@@ -5228,7 +5228,7 @@ frxEURAUD_USD_3_Current_Account:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURAUD_USD_3_Durable_Goods_Orders_m/m:
-  bias: '0.000000'
+  bias: '0.180000'
   duration: '120.000000'
   magnitude: '3.251723'
 frxEURAUD_USD_3_Empire_State_Manufacturing_Index:
@@ -5313,7 +5313,7 @@ frxEURAUD_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURAUD_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '449.095240'
+  duration: '1560.000000'
   magnitude: '6.912658'
 frxEURAUD_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -5412,12 +5412,12 @@ frxEURAUD_USD_5_Core_CPI_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURAUD_USD_5_Core_Durable_Goods_Orders_m/m:
-  bias: '0.000000'
+  bias: '0.153846'
   duration: '120.000000'
   magnitude: '3.340537'
 frxEURAUD_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.649148'
 frxEURAUD_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -5425,11 +5425,11 @@ frxEURAUD_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxEURAUD_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '570.294658'
+  duration: '780.000000'
   magnitude: '8.608002'
 frxEURAUD_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '279.108541'
+  duration: '540.000000'
   magnitude: '3.791435'
 frxEURAUD_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -5437,7 +5437,7 @@ frxEURAUD_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxEURAUD_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '473.710648'
+  duration: '2280.000000'
   magnitude: '7.292761'
 frxEURAUD_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -5457,11 +5457,11 @@ frxEURAUD_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxEURAUD_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '563.378143'
+  duration: '900.000000'
   magnitude: '6.946242'
 frxEURAUD_USD_5_ISM_Manufacturing_PMI:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.198113'
+  duration: '180.000000'
   magnitude: '3.226296'
 frxEURAUD_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -5473,7 +5473,7 @@ frxEURAUD_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxEURAUD_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '528.997336'
+  duration: '1320.000000'
   magnitude: '13.777853'
 frxEURAUD_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -5497,7 +5497,7 @@ frxEURAUD_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxEURAUD_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.649148'
 frxEURAUD_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -5513,7 +5513,7 @@ frxEURAUD_USD_5_Unemployment_Claims:
   magnitude: '1.000000'
 frxEURAUD_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '528.997336'
+  duration: '1320.000000'
   magnitude: '13.777853'
 frxEURAUD_USD_5_default:
   bias: '0.000000'
@@ -5613,7 +5613,7 @@ frxEURCAD_AUD_5_CPI_q/q:
   magnitude: '1.000000'
 frxEURCAD_AUD_5_Cash_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.240117'
 frxEURCAD_AUD_5_Employment_Change:
   bias: '0.000000'
@@ -5641,7 +5641,7 @@ frxEURCAD_AUD_5_RBA_Monetary_Policy_Statement:
   magnitude: '1.000000'
 frxEURCAD_AUD_5_RBA_Rate_Statement:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.240117'
 frxEURCAD_AUD_5_Retail_Sales_m/m:
   bias: '0.000000'
@@ -5665,7 +5665,7 @@ frxEURCAD_CAD_1_BOC_Review:
   magnitude: '1.000000'
 frxEURCAD_CAD_1_Capacity_Utilization_Rate:
   bias: '0.000000'
-  duration: '135.453765'
+  duration: '240.000000'
   magnitude: '5.600360'
 frxEURCAD_CAD_1_Corporate_Profits_q/q:
   bias: '0.000000'
@@ -5680,7 +5680,7 @@ frxEURCAD_CAD_1_Housing_Starts:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURCAD_CAD_1_IPPI_m/m:
-  bias: '0.000000'
+  bias: '0.192308'
   duration: '120.000000'
   magnitude: '3.643704'
 frxEURCAD_CAD_1_default:
@@ -5697,7 +5697,7 @@ frxEURCAD_CAD_3_BOC_Gov_Carney_Speaks:
   magnitude: '1.000000'
 frxEURCAD_CAD_3_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '9.697680'
 frxEURCAD_CAD_3_Current_Account:
   bias: '0.000000'
@@ -5713,7 +5713,7 @@ frxEURCAD_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxEURCAD_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '483.731086'
+  duration: '1020.000000'
   magnitude: '18.561808'
 frxEURCAD_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -5724,12 +5724,12 @@ frxEURCAD_CAD_3_NHPI_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURCAD_CAD_3_RMPI_m/m:
-  bias: '0.000000'
+  bias: '0.192308'
   duration: '120.000000'
   magnitude: '3.643704'
 frxEURCAD_CAD_3_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '8.590672'
 frxEURCAD_CAD_3_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -5749,7 +5749,7 @@ frxEURCAD_CAD_5_BOC_Gov_Poloz_Speaks:
   magnitude: '1.000000'
 frxEURCAD_CAD_5_BOC_Monetary_Policy_Report:
   bias: '0.000000'
-  duration: '155.848592'
+  duration: '240.000000'
   magnitude: '7.838847'
 frxEURCAD_CAD_5_BOC_Press_Conference:
   bias: '0.000000'
@@ -5757,7 +5757,7 @@ frxEURCAD_CAD_5_BOC_Press_Conference:
   magnitude: '1.000000'
 frxEURCAD_CAD_5_BOC_Rate_Statement:
   bias: '0.000000'
-  duration: '238.172692'
+  duration: '600.000000'
   magnitude: '14.218538'
 frxEURCAD_CAD_5_Building_Permits_m/m:
   bias: '0.000000'
@@ -5765,19 +5765,19 @@ frxEURCAD_CAD_5_Building_Permits_m/m:
   magnitude: '3.852397'
 frxEURCAD_CAD_5_Core_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '9.697680'
 frxEURCAD_CAD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '8.590672'
 frxEURCAD_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '365.151600'
+  duration: '840.000000'
   magnitude: '19.624753'
 frxEURCAD_CAD_5_GDP_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '8.660002'
 frxEURCAD_CAD_5_Ivey_PMI:
   bias: '0.000000'
@@ -5789,15 +5789,15 @@ frxEURCAD_CAD_5_Manufacturing_Sales_m/m:
   magnitude: '5.496622'
 frxEURCAD_CAD_5_Overnight_Rate:
   bias: '0.000000'
-  duration: '243.923249'
+  duration: '600.000000'
   magnitude: '14.609322'
 frxEURCAD_CAD_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '4.430881'
 frxEURCAD_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '365.151600'
+  duration: '840.000000'
   magnitude: '19.624753'
 frxEURCAD_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -5805,7 +5805,7 @@ frxEURCAD_CAD_5_Wholesale_Sales_m/m:
   magnitude: '1.000000'
 frxEURCAD_CAD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '6.988764'
 frxEURCAD_CHF_1_SECO_Economic_Forecasts:
   bias: '0.000000'
@@ -6092,7 +6092,7 @@ frxEURCAD_EUR_1_German_Industrial_Production_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURCAD_EUR_1_German_PPI_m/m:
-  bias: '0.000000'
+  bias: '0.269231'
   duration: '180.000000'
   magnitude: '3.128343'
 frxEURCAD_EUR_1_German_Trade_Balance:
@@ -6385,15 +6385,15 @@ frxEURCAD_EUR_3_default:
   magnitude: '1.000000'
 frxEURCAD_EUR_5_CPI_Flash_Estimate_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.665822'
 frxEURCAD_EUR_5_ECB_President_Draghi_Speaks:
   bias: '0.000000'
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURCAD_EUR_5_ECB_Press_Conference:
-  bias: '0.000000'
-  duration: '300.000000'
+  bias: '0.132653'
+  duration: '540.000000'
   magnitude: '3.735567'
 frxEURCAD_EUR_5_French_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -6405,7 +6405,7 @@ frxEURCAD_EUR_5_German_Flash_Manufacturing_PMI:
   magnitude: '1.000000'
 frxEURCAD_EUR_5_German_Ifo_Business_Climate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.263946'
 frxEURCAD_EUR_5_German_ZEW_Economic_Sentiment:
   bias: '0.000000'
@@ -6417,7 +6417,7 @@ frxEURCAD_EUR_5_Italian_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURCAD_EUR_5_Minimum_Bid_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.428725'
 frxEURCAD_EUR_5_Spanish_10-y_Bond_Auction:
   bias: '0.000000'
@@ -6901,7 +6901,7 @@ frxEURCAD_USD_1_Challenger_Job_Cuts_y/y:
   magnitude: '1.000000'
 frxEURCAD_USD_1_Construction_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.984209'
 frxEURCAD_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -6949,7 +6949,7 @@ frxEURCAD_USD_1_IBD/TIPP_Economic_Optimism:
   magnitude: '1.000000'
 frxEURCAD_USD_1_ISM_Manufacturing_Prices:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.871266'
 frxEURCAD_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -7020,12 +7020,12 @@ frxEURCAD_USD_3_10-y_Bond_Auction:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURCAD_USD_3_Advance_GDP_Price_Index_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.277778'
+  duration: '240.000000'
   magnitude: '4.764976'
 frxEURCAD_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '726.051298'
+  duration: '1620.000000'
   magnitude: '20.163418'
 frxEURCAD_USD_3_Beige_Book:
   bias: '0.000000'
@@ -7037,7 +7037,7 @@ frxEURCAD_USD_3_Business_Inventories_m/m:
   magnitude: '1.000000'
 frxEURCAD_USD_3_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.538805'
 frxEURCAD_USD_3_Capacity_Utilization_Rate:
   bias: '0.000000'
@@ -7061,7 +7061,7 @@ frxEURCAD_USD_3_Crude_Oil_Inventories:
   magnitude: '1.000000'
 frxEURCAD_USD_3_Current_Account:
   bias: '0.000000'
-  duration: '140.097934'
+  duration: '180.000000'
   magnitude: '3.743474'
 frxEURCAD_USD_3_Durable_Goods_Orders_m/m:
   bias: '0.000000'
@@ -7073,7 +7073,7 @@ frxEURCAD_USD_3_Empire_State_Manufacturing_Index:
   magnitude: '4.485731'
 frxEURCAD_USD_3_Employment_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '6.859084'
 frxEURCAD_USD_3_Existing_Home_Sales:
   bias: '0.000000'
@@ -7149,7 +7149,7 @@ frxEURCAD_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURCAD_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '632.856156'
+  duration: '1560.000000'
   magnitude: '8.015138'
 frxEURCAD_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -7165,7 +7165,7 @@ frxEURCAD_USD_3_Housing_Starts:
   magnitude: '3.690623'
 frxEURCAD_USD_3_Import_Prices_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.827650'
 frxEURCAD_USD_3_Industrial_Production_m/m:
   bias: '0.000000'
@@ -7225,11 +7225,11 @@ frxEURCAD_USD_3_default:
   magnitude: '1.000000'
 frxEURCAD_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '4.094387'
 frxEURCAD_USD_5_Advance_GDP_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.277778'
+  duration: '240.000000'
   magnitude: '4.764976'
 frxEURCAD_USD_5_Building_Permits:
   bias: '0.000000'
@@ -7240,12 +7240,12 @@ frxEURCAD_USD_5_CB_Consumer_Confidence:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURCAD_USD_5_CPI_m/m:
-  bias: '0.000000'
-  duration: '210.377428'
+  bias: '0.400000'
+  duration: '540.000000'
   magnitude: '9.389103'
 frxEURCAD_USD_5_Core_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '3.711272'
 frxEURCAD_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
@@ -7253,7 +7253,7 @@ frxEURCAD_USD_5_Core_Durable_Goods_Orders_m/m:
   magnitude: '4.257018'
 frxEURCAD_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.668821'
 frxEURCAD_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -7261,11 +7261,11 @@ frxEURCAD_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxEURCAD_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '397.574637'
+  duration: '840.000000'
   magnitude: '6.191857'
 frxEURCAD_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '141.246929'
+  duration: '540.000000'
   magnitude: '4.005750'
 frxEURCAD_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -7273,7 +7273,7 @@ frxEURCAD_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxEURCAD_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '613.637135'
+  duration: '1560.000000'
   magnitude: '7.785436'
 frxEURCAD_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -7293,11 +7293,11 @@ frxEURCAD_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '3.067164'
 frxEURCAD_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '439.282887'
+  duration: '1560.000000'
   magnitude: '8.191107'
 frxEURCAD_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.871266'
 frxEURCAD_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -7309,7 +7309,7 @@ frxEURCAD_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxEURCAD_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '726.051298'
+  duration: '1620.000000'
   magnitude: '20.163418'
 frxEURCAD_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -7333,7 +7333,7 @@ frxEURCAD_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxEURCAD_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.668821'
 frxEURCAD_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -7341,7 +7341,7 @@ frxEURCAD_USD_5_TIC_Long-Term_Purchases:
   magnitude: '1.000000'
 frxEURCAD_USD_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '4.385512'
 frxEURCAD_USD_5_Unemployment_Claims:
   bias: '0.000000'
@@ -7349,11 +7349,11 @@ frxEURCAD_USD_5_Unemployment_Claims:
   magnitude: '3.299330'
 frxEURCAD_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '726.051298'
+  duration: '1620.000000'
   magnitude: '20.163418'
 frxEURCAD_USD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.560853'
 frxEURCHF_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
@@ -7685,7 +7685,7 @@ frxEURCHF_CHF_5_Foreign_Currency_Reserves:
   magnitude: '1.000000'
 frxEURCHF_CHF_5_Libor_Rate:
   bias: '0.000000'
-  duration: '165.954633'
+  duration: '240.000000'
   magnitude: '9.999790'
 frxEURCHF_CHF_5_SNB_Chairman_Jordan_Speaks:
   bias: '0.000000'
@@ -7693,7 +7693,7 @@ frxEURCHF_CHF_5_SNB_Chairman_Jordan_Speaks:
   magnitude: '1.000000'
 frxEURCHF_CHF_5_SNB_Monetary_Policy_Assessment:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.649449'
 frxEURCHF_CHF_5_default:
   bias: '0.000000'
@@ -7853,7 +7853,7 @@ frxEURCHF_EUR_1_German_Industrial_Production_m/m:
   magnitude: '1.000000'
 frxEURCHF_EUR_1_German_PPI_m/m:
   bias: '0.000000'
-  duration: '60.879465'
+  duration: '180.000000'
   magnitude: '4.449621'
 frxEURCHF_EUR_1_German_Trade_Balance:
   bias: '0.000000'
@@ -8757,7 +8757,7 @@ frxEURCHF_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURCHF_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.767983'
 frxEURCHF_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
@@ -8873,7 +8873,7 @@ frxEURCHF_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURCHF_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '540.000000'
   magnitude: '4.943777'
 frxEURCHF_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -8953,7 +8953,7 @@ frxEURCHF_USD_5_ADP_Non-Farm_Employment_Change:
   magnitude: '3.285398'
 frxEURCHF_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.767983'
 frxEURCHF_USD_5_Building_Permits:
   bias: '0.000000'
@@ -8964,7 +8964,7 @@ frxEURCHF_USD_5_CB_Consumer_Confidence:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURCHF_USD_5_CPI_m/m:
-  bias: '0.000000'
+  bias: '0.300000'
   duration: '120.000000'
   magnitude: '3.371002'
 frxEURCHF_USD_5_Core_CPI_m/m:
@@ -8985,7 +8985,7 @@ frxEURCHF_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxEURCHF_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '134.301679'
+  duration: '240.000000'
   magnitude: '4.032702'
 frxEURCHF_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
@@ -8997,7 +8997,7 @@ frxEURCHF_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxEURCHF_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '236.531445'
+  duration: '600.000000'
   magnitude: '5.325431'
 frxEURCHF_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -9265,7 +9265,7 @@ frxEURGBP_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxEURGBP_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '324.757152'
+  duration: '720.000000'
   magnitude: '5.765777'
 frxEURGBP_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -9637,7 +9637,7 @@ frxEURGBP_EUR_1_German_Import_Prices_m/m:
   magnitude: '1.000000'
 frxEURGBP_EUR_1_German_Industrial_Production_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.499155'
 frxEURGBP_EUR_1_German_PPI_m/m:
   bias: '0.000000'
@@ -9837,7 +9837,7 @@ frxEURGBP_EUR_3_German_Prelim_GDP_q/q:
   magnitude: '3.557864'
 frxEURGBP_EUR_3_German_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.014469'
 frxEURGBP_EUR_3_German_Trade_Balance:
   bias: '0.000000'
@@ -9940,8 +9940,8 @@ frxEURGBP_EUR_5_ECB_President_Draghi_Speaks:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURGBP_EUR_5_ECB_Press_Conference:
-  bias: '0.000000'
-  duration: '300.000000'
+  bias: '0.153061'
+  duration: '360.000000'
   magnitude: '3.445750'
 frxEURGBP_EUR_5_French_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -9989,7 +9989,7 @@ frxEURGBP_GBP_1_30-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURGBP_GBP_1_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '7.701388'
 frxEURGBP_GBP_1_CB_Leading_Index_m/m:
   bias: '0.000000'
@@ -10001,11 +10001,11 @@ frxEURGBP_GBP_1_Construction_Output_m/m:
   magnitude: '1.000000'
 frxEURGBP_GBP_1_Core_CPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '10.050305'
 frxEURGBP_GBP_1_HPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '7.870943'
 frxEURGBP_GBP_1_Housing_Equity_Withdrawal_q/q:
   bias: '0.000000'
@@ -10029,11 +10029,11 @@ frxEURGBP_GBP_1_Mortgage_Approvals:
   magnitude: '1.000000'
 frxEURGBP_GBP_1_PPI_Output_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '7.434713'
 frxEURGBP_GBP_1_Revised_Business_Investment_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.081696'
 frxEURGBP_GBP_1_default:
   bias: '0.000000'
@@ -10045,7 +10045,7 @@ frxEURGBP_GBP_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURGBP_GBP_3_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '163.217130'
+  duration: '300.000000'
   magnitude: '16.776579'
 frxEURGBP_GBP_3_BBA_Mortgage_Approvals:
   bias: '0.000000'
@@ -10069,7 +10069,7 @@ frxEURGBP_GBP_3_Consumer_Inflation_Expectations:
   magnitude: '3.311240'
 frxEURGBP_GBP_3_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.081696'
 frxEURGBP_GBP_3_Halifax_HPI_m/m:
   bias: '0.000000'
@@ -10113,7 +10113,7 @@ frxEURGBP_GBP_3_Net_Lending_to_Individuals_m/m:
   magnitude: '1.000000'
 frxEURGBP_GBP_3_PPI_Input_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '11.751503'
 frxEURGBP_GBP_3_Prelim_Business_Investment_q/q:
   bias: '0.000000'
@@ -10125,7 +10125,7 @@ frxEURGBP_GBP_3_Public_Sector_Net_Borrowing:
   magnitude: '4.541802'
 frxEURGBP_GBP_3_RPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '10.050305'
 frxEURGBP_GBP_3_Trade_Balance:
   bias: '0.000000'
@@ -10133,7 +10133,7 @@ frxEURGBP_GBP_3_Trade_Balance:
   magnitude: '1.000000'
 frxEURGBP_GBP_3_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '11.540803'
 frxEURGBP_GBP_3_default:
   bias: '0.000000'
@@ -10141,11 +10141,11 @@ frxEURGBP_GBP_3_default:
   magnitude: '1.000000'
 frxEURGBP_GBP_5_Asset_Purchase_Facility:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '6.487448'
 frxEURGBP_GBP_5_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '14.483219'
 frxEURGBP_GBP_5_BOE_Gov_Carney_Speaks:
   bias: '0.000000'
@@ -10157,15 +10157,15 @@ frxEURGBP_GBP_5_BOE_Gov_King_Speaks:
   magnitude: '1.000000'
 frxEURGBP_GBP_5_BOE_Inflation_Report:
   bias: '0.000000'
-  duration: '221.762367'
+  duration: '720.000000'
   magnitude: '14.576727'
 frxEURGBP_GBP_5_CPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '9.721751'
 frxEURGBP_GBP_5_Claimant_Count_Change:
   bias: '0.000000'
-  duration: '130.320475'
+  duration: '360.000000'
   magnitude: '13.114070'
 frxEURGBP_GBP_5_Construction_PMI:
   bias: '0.000000'
@@ -10173,7 +10173,7 @@ frxEURGBP_GBP_5_Construction_PMI:
   magnitude: '5.666378'
 frxEURGBP_GBP_5_Current_Account:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.892175'
 frxEURGBP_GBP_5_Halifax_HPI_m/m:
   bias: '0.000000'
@@ -10185,15 +10185,15 @@ frxEURGBP_GBP_5_Inflation_Report_Hearings:
   magnitude: '1.000000'
 frxEURGBP_GBP_5_MPC_Asset_Purchase_Facility_Votes:
   bias: '0.000000'
-  duration: '230.298794'
+  duration: '300.000000'
   magnitude: '17.057276'
 frxEURGBP_GBP_5_MPC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '10.638789'
 frxEURGBP_GBP_5_MPC_Official_Bank_Rate_Votes:
   bias: '0.000000'
-  duration: '208.441196'
+  duration: '240.000000'
   magnitude: '15.909362'
 frxEURGBP_GBP_5_Manufacturing_PMI:
   bias: '0.000000'
@@ -10213,7 +10213,7 @@ frxEURGBP_GBP_5_PPI_Input_m/m:
   magnitude: '1.000000'
 frxEURGBP_GBP_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '15.657628'
 frxEURGBP_GBP_5_Public_Sector_Net_Borrowing:
   bias: '0.000000'
@@ -10221,7 +10221,7 @@ frxEURGBP_GBP_5_Public_Sector_Net_Borrowing:
   magnitude: '4.108096'
 frxEURGBP_GBP_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '9.068343'
 frxEURGBP_GBP_5_Second_Estimate_GDP_q/q:
   bias: '0.000000'
@@ -10233,12 +10233,12 @@ frxEURGBP_GBP_5_Services_PMI:
   magnitude: '3.111851'
 frxEURGBP_GBP_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '194.287459'
+  duration: '420.000000'
   magnitude: '19.950646'
 frxEURGBP_GBP_5_default:
   bias: '0.000000'
-  duration: '120.000000'
-  magnitude: '5.952252'
+  duration: '180.000000'
+  magnitude: '5.952923'
 frxEURGBP_JPY_1_10-y_Bond_Auction:
   bias: '0.000000'
   duration: '60.000000'
@@ -10569,11 +10569,11 @@ frxEURGBP_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURGBP_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.754593'
 frxEURGBP_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '469.402962'
+  duration: '1200.000000'
   magnitude: '7.383903'
 frxEURGBP_USD_3_Beige_Book:
   bias: '0.000000'
@@ -10697,7 +10697,7 @@ frxEURGBP_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURGBP_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '641.279382'
+  duration: '2160.000000'
   magnitude: '8.245462'
 frxEURGBP_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -10773,11 +10773,11 @@ frxEURGBP_USD_3_default:
   magnitude: '1.000000'
 frxEURGBP_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.047346'
 frxEURGBP_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.754593'
 frxEURGBP_USD_5_Building_Permits:
   bias: '0.000000'
@@ -10809,11 +10809,11 @@ frxEURGBP_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxEURGBP_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '316.740216'
+  duration: '900.000000'
   magnitude: '12.674246'
 frxEURGBP_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '6.905014'
 frxEURGBP_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -10821,7 +10821,7 @@ frxEURGBP_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxEURGBP_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '602.636842'
+  duration: '1140.000000'
   magnitude: '9.497640'
 frxEURGBP_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -10840,8 +10840,8 @@ frxEURGBP_USD_5_Fed_Chairman_Bernanke_Testifies:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURGBP_USD_5_Federal_Funds_Rate:
-  bias: '0.000000'
-  duration: '329.838132'
+  bias: '0.318182'
+  duration: '540.000000'
   magnitude: '10.324896'
 frxEURGBP_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
@@ -10857,7 +10857,7 @@ frxEURGBP_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxEURGBP_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '469.402962'
+  duration: '1200.000000'
   magnitude: '7.383903'
 frxEURGBP_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -10897,7 +10897,7 @@ frxEURGBP_USD_5_Unemployment_Claims:
   magnitude: '1.000000'
 frxEURGBP_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '469.402962'
+  duration: '1200.000000'
   magnitude: '7.383903'
 frxEURGBP_USD_5_default:
   bias: '0.000000'
@@ -11049,7 +11049,7 @@ frxEURJPY_CAD_1_BOC_Review:
   magnitude: '1.000000'
 frxEURJPY_CAD_1_Capacity_Utilization_Rate:
   bias: '0.000000'
-  duration: '196.099541'
+  duration: '180.000000'
   magnitude: '3.831534'
 frxEURJPY_CAD_1_Corporate_Profits_q/q:
   bias: '0.000000'
@@ -11097,7 +11097,7 @@ frxEURJPY_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxEURJPY_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '288.860727'
+  duration: '780.000000'
   magnitude: '9.869560'
 frxEURJPY_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -11105,7 +11105,7 @@ frxEURJPY_CAD_3_Manufacturing_Sales_m/m:
   magnitude: '1.000000'
 frxEURJPY_CAD_3_NHPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.092804'
 frxEURJPY_CAD_3_RMPI_m/m:
   bias: '0.000000'
@@ -11157,7 +11157,7 @@ frxEURJPY_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxEURJPY_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '154.242204'
+  duration: '240.000000'
   magnitude: '4.361021'
 frxEURJPY_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -11181,7 +11181,7 @@ frxEURJPY_CAD_5_Trade_Balance:
   magnitude: '1.000000'
 frxEURJPY_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '154.242204'
+  duration: '240.000000'
   magnitude: '4.361021'
 frxEURJPY_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -11353,7 +11353,7 @@ frxEURJPY_CNY_3_Industrial_Production_y/y:
   magnitude: '4.452523'
 frxEURJPY_CNY_3_NBS_Press_Conference:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '3.882231'
 frxEURJPY_CNY_3_New_Loans:
   bias: '0.000000'
@@ -11373,7 +11373,7 @@ frxEURJPY_CNY_5_CPI_y/y:
   magnitude: '1.000000'
 frxEURJPY_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '147.762484'
+  duration: '420.000000'
   magnitude: '4.516427'
 frxEURJPY_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -11665,7 +11665,7 @@ frxEURJPY_EUR_3_German_PPI_m/m:
   magnitude: '1.000000'
 frxEURJPY_EUR_3_German_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.082069'
 frxEURJPY_EUR_3_German_Retail_Sales_m/m:
   bias: '0.000000'
@@ -11765,7 +11765,7 @@ frxEURJPY_EUR_3_default:
   magnitude: '1.000000'
 frxEURJPY_EUR_5_CPI_Flash_Estimate_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.572567'
 frxEURJPY_EUR_5_ECB_President_Draghi_Speaks:
   bias: '0.000000'
@@ -11773,7 +11773,7 @@ frxEURJPY_EUR_5_ECB_President_Draghi_Speaks:
   magnitude: '1.000000'
 frxEURJPY_EUR_5_ECB_Press_Conference:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '3.086744'
 frxEURJPY_EUR_5_French_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -11797,7 +11797,7 @@ frxEURJPY_EUR_5_Italian_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURJPY_EUR_5_Minimum_Bid_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.536171'
 frxEURJPY_EUR_5_Spanish_10-y_Bond_Auction:
   bias: '0.000000'
@@ -12149,7 +12149,7 @@ frxEURJPY_JPY_5_BOJ_Press_Conference:
   magnitude: '1.000000'
 frxEURJPY_JPY_5_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '216.729612'
+  duration: '480.000000'
   magnitude: '7.568144'
 frxEURJPY_JPY_5_default:
   bias: '0.000000'
@@ -12285,7 +12285,7 @@ frxEURJPY_USD_1_Challenger_Job_Cuts_y/y:
   magnitude: '1.000000'
 frxEURJPY_USD_1_Construction_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.158460'
 frxEURJPY_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -12309,7 +12309,7 @@ frxEURJPY_USD_1_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURJPY_USD_1_Final_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '139.474228'
+  duration: '180.000000'
   magnitude: '5.132570'
 frxEURJPY_USD_1_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -12333,7 +12333,7 @@ frxEURJPY_USD_1_IBD/TIPP_Economic_Optimism:
   magnitude: '1.000000'
 frxEURJPY_USD_1_ISM_Manufacturing_Prices:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.052517'
 frxEURJPY_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -12361,7 +12361,7 @@ frxEURJPY_USD_1_Personal_Income_m/m:
   magnitude: '1.000000'
 frxEURJPY_USD_1_Prelim_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.611318'
 frxEURJPY_USD_1_Prelim_UoM_Inflation_Expectations:
   bias: '0.000000'
@@ -12405,11 +12405,11 @@ frxEURJPY_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURJPY_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '7.816086'
 frxEURJPY_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '762.099092'
+  duration: '1440.000000'
   magnitude: '16.474253'
 frxEURJPY_USD_3_Beige_Book:
   bias: '0.000000'
@@ -12533,7 +12533,7 @@ frxEURJPY_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURJPY_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '943.533046'
+  duration: '1980.000000'
   magnitude: '6.122753'
 frxEURJPY_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -12613,7 +12613,7 @@ frxEURJPY_USD_5_ADP_Non-Farm_Employment_Change:
   magnitude: '6.435857'
 frxEURJPY_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '7.816086'
 frxEURJPY_USD_5_Building_Permits:
   bias: '0.000000'
@@ -12624,12 +12624,12 @@ frxEURJPY_USD_5_CB_Consumer_Confidence:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURJPY_USD_5_CPI_m/m:
-  bias: '0.000000'
-  duration: '157.998113'
+  bias: '0.400000'
+  duration: '300.000000'
   magnitude: '6.904402'
 frxEURJPY_USD_5_Core_CPI_m/m:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.147059'
+  duration: '300.000000'
   magnitude: '3.070728'
 frxEURJPY_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
@@ -12637,19 +12637,19 @@ frxEURJPY_USD_5_Core_Durable_Goods_Orders_m/m:
   magnitude: '3.388916'
 frxEURJPY_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '166.050522'
+  duration: '300.000000'
   magnitude: '4.783625'
 frxEURJPY_USD_5_Existing_Home_Sales:
   bias: '0.000000'
   duration: '120.000000'
   magnitude: '3.013641'
 frxEURJPY_USD_5_FOMC_Economic_Projections:
-  bias: '0.000000'
-  duration: '627.849588'
+  bias: '0.300000'
+  duration: '900.000000'
   magnitude: '6.850574'
 frxEURJPY_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '136.432727'
+  duration: '720.000000'
   magnitude: '3.366106'
 frxEURJPY_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -12657,7 +12657,7 @@ frxEURJPY_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxEURJPY_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '768.771116'
+  duration: '2160.000000'
   magnitude: '5.544524'
 frxEURJPY_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -12677,11 +12677,11 @@ frxEURJPY_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxEURJPY_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '515.726587'
+  duration: '480.000000'
   magnitude: '6.177165'
 frxEURJPY_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.052517'
 frxEURJPY_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -12693,7 +12693,7 @@ frxEURJPY_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxEURJPY_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '762.099092'
+  duration: '1440.000000'
   magnitude: '16.474253'
 frxEURJPY_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -12709,7 +12709,7 @@ frxEURJPY_USD_5_Philly_Fed_Manufacturing_Index:
   magnitude: '3.864067'
 frxEURJPY_USD_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.611318'
 frxEURJPY_USD_5_Prelim_UoM_Consumer_Sentiment:
   bias: '0.000000'
@@ -12717,7 +12717,7 @@ frxEURJPY_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxEURJPY_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '166.050522'
+  duration: '300.000000'
   magnitude: '4.783625'
 frxEURJPY_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -12729,15 +12729,15 @@ frxEURJPY_USD_5_Trade_Balance:
   magnitude: '1.000000'
 frxEURJPY_USD_5_Unemployment_Claims:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.401614'
 frxEURJPY_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '762.099092'
+  duration: '1440.000000'
   magnitude: '16.474253'
 frxEURJPY_USD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.329179'
 frxEURUSD_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
@@ -12813,7 +12813,7 @@ frxEURUSD_AUD_3_RBA_Deputy_Gov_Lowe_Speaks:
   magnitude: '1.000000'
 frxEURUSD_AUD_3_Trimmed_Mean_CPI_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.783731'
 frxEURUSD_AUD_3_Wage_Price_Index_q/q:
   bias: '0.000000'
@@ -12829,7 +12829,7 @@ frxEURUSD_AUD_5_Building_Approvals_m/m:
   magnitude: '1.000000'
 frxEURUSD_AUD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.783731'
 frxEURUSD_AUD_5_Cash_Rate:
   bias: '0.000000'
@@ -12837,7 +12837,7 @@ frxEURUSD_AUD_5_Cash_Rate:
   magnitude: '1.000000'
 frxEURUSD_AUD_5_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.639273'
 frxEURUSD_AUD_5_Monetary_Policy_Meeting_Minutes:
   bias: '0.000000'
@@ -12873,7 +12873,7 @@ frxEURUSD_AUD_5_Trade_Balance:
   magnitude: '1.000000'
 frxEURUSD_AUD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.639273'
 frxEURUSD_AUD_5_default:
   bias: '0.000000'
@@ -12885,7 +12885,7 @@ frxEURUSD_CAD_1_BOC_Review:
   magnitude: '1.000000'
 frxEURUSD_CAD_1_Capacity_Utilization_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '6.746721'
 frxEURUSD_CAD_1_Corporate_Profits_q/q:
   bias: '0.000000'
@@ -12932,8 +12932,8 @@ frxEURUSD_CAD_3_Housing_Starts:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURUSD_CAD_3_Labor_Productivity_q/q:
-  bias: '0.000000'
-  duration: '508.776432'
+  bias: '0.205882'
+  duration: '1320.000000'
   magnitude: '14.942723'
 frxEURUSD_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -12941,7 +12941,7 @@ frxEURUSD_CAD_3_Manufacturing_Sales_m/m:
   magnitude: '1.000000'
 frxEURUSD_CAD_3_NHPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '4.036525'
 frxEURUSD_CAD_3_RMPI_m/m:
   bias: '0.000000'
@@ -12993,7 +12993,7 @@ frxEURUSD_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxEURUSD_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '248.446627'
+  duration: '600.000000'
   magnitude: '8.484454'
 frxEURUSD_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -13017,7 +13017,7 @@ frxEURUSD_CAD_5_Trade_Balance:
   magnitude: '1.000000'
 frxEURUSD_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '248.446627'
+  duration: '600.000000'
   magnitude: '8.484454'
 frxEURUSD_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -13185,7 +13185,7 @@ frxEURUSD_CNY_3_HSBC_Services_PMI:
   magnitude: '1.000000'
 frxEURUSD_CNY_3_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.074941'
 frxEURUSD_CNY_3_NBS_Press_Conference:
   bias: '0.000000'
@@ -13213,7 +13213,7 @@ frxEURUSD_CNY_5_CPI_y/y:
   magnitude: '1.000000'
 frxEURUSD_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '3.689442'
 frxEURUSD_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -13300,7 +13300,7 @@ frxEURUSD_EUR_1_German_Final_CPI_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURUSD_EUR_1_German_Final_GDP_q/q:
-  bias: '0.000000'
+  bias: '0.264706'
   duration: '660.000000'
   magnitude: '3.347004'
 frxEURUSD_EUR_1_German_Import_Prices_m/m:
@@ -13405,7 +13405,7 @@ frxEURUSD_EUR_3_CPI_y/y:
   magnitude: '1.000000'
 frxEURUSD_EUR_3_Core_CPI_Flash_Estimate_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.872762'
 frxEURUSD_EUR_3_Core_CPI_y/y:
   bias: '0.000000'
@@ -13505,7 +13505,7 @@ frxEURUSD_EUR_3_German_PPI_m/m:
   magnitude: '1.000000'
 frxEURUSD_EUR_3_German_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.170057'
 frxEURUSD_EUR_3_German_Retail_Sales_m/m:
   bias: '0.000000'
@@ -13597,7 +13597,7 @@ frxEURUSD_EUR_3_Unemployment_Rate:
   magnitude: '3.244468'
 frxEURUSD_EUR_3_ZEW_Economic_Sentiment:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.367114'
 frxEURUSD_EUR_3_default:
   bias: '0.000000'
@@ -13605,15 +13605,15 @@ frxEURUSD_EUR_3_default:
   magnitude: '1.000000'
 frxEURUSD_EUR_5_CPI_Flash_Estimate_y/y:
   bias: '0.000000'
-  duration: '124.170867'
+  duration: '240.000000'
   magnitude: '4.227582'
 frxEURUSD_EUR_5_ECB_President_Draghi_Speaks:
   bias: '0.000000'
   duration: '60.000000'
   magnitude: '1.000000'
 frxEURUSD_EUR_5_ECB_Press_Conference:
-  bias: '0.000000'
-  duration: '420.000000'
+  bias: '0.153061'
+  duration: '1140.000000'
   magnitude: '3.844868'
 frxEURUSD_EUR_5_French_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -13625,11 +13625,11 @@ frxEURUSD_EUR_5_German_Flash_Manufacturing_PMI:
   magnitude: '1.000000'
 frxEURUSD_EUR_5_German_Ifo_Business_Climate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.435066'
 frxEURUSD_EUR_5_German_ZEW_Economic_Sentiment:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.367114'
 frxEURUSD_EUR_5_Italian_10-y_Bond_Auction:
   bias: '0.000000'
@@ -13637,7 +13637,7 @@ frxEURUSD_EUR_5_Italian_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURUSD_EUR_5_Minimum_Bid_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '4.070610'
 frxEURUSD_EUR_5_Spanish_10-y_Bond_Auction:
   bias: '0.000000'
@@ -14125,7 +14125,7 @@ frxEURUSD_USD_1_Challenger_Job_Cuts_y/y:
   magnitude: '1.000000'
 frxEURUSD_USD_1_Construction_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.944395'
 frxEURUSD_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -14149,7 +14149,7 @@ frxEURUSD_USD_1_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURUSD_USD_1_Final_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '160.157874'
+  duration: '300.000000'
   magnitude: '3.613044'
 frxEURUSD_USD_1_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -14173,7 +14173,7 @@ frxEURUSD_USD_1_IBD/TIPP_Economic_Optimism:
   magnitude: '1.000000'
 frxEURUSD_USD_1_ISM_Manufacturing_Prices:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.906464'
 frxEURUSD_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -14201,7 +14201,7 @@ frxEURUSD_USD_1_Personal_Income_m/m:
   magnitude: '1.000000'
 frxEURUSD_USD_1_Prelim_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.165337'
 frxEURUSD_USD_1_Prelim_UoM_Inflation_Expectations:
   bias: '0.000000'
@@ -14213,7 +14213,7 @@ frxEURUSD_USD_1_President_Obama_Speaks:
   magnitude: '1.000000'
 frxEURUSD_USD_1_Revised_Unit_Labor_Costs_q/q:
   bias: '0.000000'
-  duration: '281.692022'
+  duration: '300.000000'
   magnitude: '3.850115'
 frxEURUSD_USD_1_Revised_UoM_Inflation_Expectations:
   bias: '0.000000'
@@ -14245,11 +14245,11 @@ frxEURUSD_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxEURUSD_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '225.544024'
+  duration: '600.000000'
   magnitude: '11.096339'
 frxEURUSD_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '1269.002668'
+  duration: '2520.000000'
   magnitude: '22.153566'
 frxEURUSD_USD_3_Beige_Book:
   bias: '0.000000'
@@ -14261,7 +14261,7 @@ frxEURUSD_USD_3_Business_Inventories_m/m:
   magnitude: '1.000000'
 frxEURUSD_USD_3_CPI_m/m:
   bias: '0.000000'
-  duration: '120.798709'
+  duration: '300.000000'
   magnitude: '3.838505'
 frxEURUSD_USD_3_Capacity_Utilization_Rate:
   bias: '0.000000'
@@ -14277,7 +14277,7 @@ frxEURUSD_USD_3_Core_PCE_Price_Index_m/m:
   magnitude: '1.000000'
 frxEURUSD_USD_3_Core_PPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.144453'
 frxEURUSD_USD_3_Crude_Oil_Inventories:
   bias: '0.000000'
@@ -14289,7 +14289,7 @@ frxEURUSD_USD_3_Current_Account:
   magnitude: '5.331293'
 frxEURUSD_USD_3_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.770746'
 frxEURUSD_USD_3_Empire_State_Manufacturing_Index:
   bias: '0.000000'
@@ -14297,7 +14297,7 @@ frxEURUSD_USD_3_Empire_State_Manufacturing_Index:
   magnitude: '3.297040'
 frxEURUSD_USD_3_Employment_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '193.430562'
+  duration: '300.000000'
   magnitude: '5.997352'
 frxEURUSD_USD_3_Existing_Home_Sales:
   bias: '0.000000'
@@ -14373,11 +14373,11 @@ frxEURUSD_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxEURUSD_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '1058.157559'
+  duration: '2700.000000'
   magnitude: '14.150372'
 frxEURUSD_USD_3_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '3.532427'
 frxEURUSD_USD_3_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -14388,8 +14388,8 @@ frxEURUSD_USD_3_Housing_Starts:
   duration: '120.000000'
   magnitude: '3.197331'
 frxEURUSD_USD_3_Import_Prices_m/m:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.134615'
+  duration: '240.000000'
   magnitude: '3.321663'
 frxEURUSD_USD_3_Industrial_Production_m/m:
   bias: '0.000000'
@@ -14425,7 +14425,7 @@ frxEURUSD_USD_3_Prelim_Unit_Labor_Costs_q/q:
   magnitude: '3.079283'
 frxEURUSD_USD_3_Revised_Nonfarm_Productivity_q/q:
   bias: '0.000000'
-  duration: '281.692022'
+  duration: '300.000000'
   magnitude: '3.850115'
 frxEURUSD_USD_3_Revised_UoM_Consumer_Sentiment:
   bias: '0.000000'
@@ -14449,11 +14449,11 @@ frxEURUSD_USD_3_default:
   magnitude: '1.000000'
 frxEURUSD_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '4.916418'
 frxEURUSD_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '225.544024'
+  duration: '600.000000'
   magnitude: '11.096339'
 frxEURUSD_USD_5_Building_Permits:
   bias: '0.000000'
@@ -14465,19 +14465,19 @@ frxEURUSD_USD_5_CB_Consumer_Confidence:
   magnitude: '1.000000'
 frxEURUSD_USD_5_CPI_m/m:
   bias: '0.000000'
-  duration: '338.182432'
+  duration: '1380.000000'
   magnitude: '10.789157'
 frxEURUSD_USD_5_Core_CPI_m/m:
-  bias: '0.000000'
-  duration: '144.860602'
+  bias: '0.127451'
+  duration: '360.000000'
   magnitude: '3.815198'
 frxEURUSD_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.728879'
 frxEURUSD_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '136.586906'
+  duration: '480.000000'
   magnitude: '5.956839'
 frxEURUSD_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -14485,11 +14485,11 @@ frxEURUSD_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxEURUSD_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '823.215858'
+  duration: '1020.000000'
   magnitude: '15.349122'
 frxEURUSD_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '606.500260'
+  duration: '1020.000000'
   magnitude: '8.597448'
 frxEURUSD_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -14497,7 +14497,7 @@ frxEURUSD_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxEURUSD_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '1062.114578'
+  duration: '2700.000000'
   magnitude: '15.122363'
 frxEURUSD_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -14517,11 +14517,11 @@ frxEURUSD_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxEURUSD_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '584.153654'
+  duration: '1620.000000'
   magnitude: '14.105900'
 frxEURUSD_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.906464'
 frxEURUSD_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -14533,11 +14533,11 @@ frxEURUSD_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxEURUSD_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '1269.002668'
+  duration: '2520.000000'
   magnitude: '22.153566'
 frxEURUSD_USD_5_PPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.144453'
 frxEURUSD_USD_5_Pending_Home_Sales_m/m:
   bias: '0.000000'
@@ -14549,7 +14549,7 @@ frxEURUSD_USD_5_Philly_Fed_Manufacturing_Index:
   magnitude: '3.223554'
 frxEURUSD_USD_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.165337'
 frxEURUSD_USD_5_Prelim_UoM_Consumer_Sentiment:
   bias: '0.000000'
@@ -14557,7 +14557,7 @@ frxEURUSD_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxEURUSD_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '136.586906'
+  duration: '480.000000'
   magnitude: '5.956839'
 frxEURUSD_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -14569,15 +14569,15 @@ frxEURUSD_USD_5_Trade_Balance:
   magnitude: '1.000000'
 frxEURUSD_USD_5_Unemployment_Claims:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.130524'
 frxEURUSD_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '1269.002668'
+  duration: '2520.000000'
   magnitude: '22.153566'
 frxEURUSD_USD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '3.834439'
 frxGBPAUD_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
@@ -14605,7 +14605,7 @@ frxGBPAUD_AUD_1_default:
   magnitude: '1.000000'
 frxGBPAUD_AUD_3_ANZ_Job_Advertisements_m/m:
   bias: '0.000000'
-  duration: '128.596133'
+  duration: '180.000000'
   magnitude: '6.152300'
 frxGBPAUD_AUD_3_Commodity_Prices_y/y:
   bias: '0.000000'
@@ -14653,7 +14653,7 @@ frxGBPAUD_AUD_3_RBA_Deputy_Gov_Lowe_Speaks:
   magnitude: '1.000000'
 frxGBPAUD_AUD_3_Trimmed_Mean_CPI_q/q:
   bias: '0.000000'
-  duration: '316.745190'
+  duration: '720.000000'
   magnitude: '34.202238'
 frxGBPAUD_AUD_3_Wage_Price_Index_q/q:
   bias: '0.000000'
@@ -14665,23 +14665,23 @@ frxGBPAUD_AUD_3_default:
   magnitude: '1.000000'
 frxGBPAUD_AUD_5_Building_Approvals_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '9.641518'
 frxGBPAUD_AUD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '316.745190'
+  duration: '720.000000'
   magnitude: '34.202238'
 frxGBPAUD_AUD_5_Cash_Rate:
   bias: '0.000000'
-  duration: '682.027946'
+  duration: '1140.000000'
   magnitude: '17.886643'
 frxGBPAUD_AUD_5_Employment_Change:
   bias: '0.000000'
-  duration: '443.071691'
+  duration: '900.000000'
   magnitude: '36.799438'
 frxGBPAUD_AUD_5_Monetary_Policy_Meeting_Minutes:
   bias: '0.000000'
-  duration: '202.183418'
+  duration: '360.000000'
   magnitude: '7.051863'
 frxGBPAUD_AUD_5_NAB_Business_Confidence:
   bias: '0.000000'
@@ -14696,28 +14696,28 @@ frxGBPAUD_AUD_5_RBA_Gov_Stevens_Speaks:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPAUD_AUD_5_RBA_Monetary_Policy_Statement:
-  bias: '0.000000'
-  duration: '222.338595'
+  bias: '0.300000'
+  duration: '360.000000'
   magnitude: '9.761895'
 frxGBPAUD_AUD_5_RBA_Rate_Statement:
   bias: '0.000000'
-  duration: '682.027946'
+  duration: '1140.000000'
   magnitude: '17.886643'
 frxGBPAUD_AUD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '204.069958'
+  duration: '300.000000'
   magnitude: '14.421947'
 frxGBPAUD_AUD_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '9.403859'
 frxGBPAUD_AUD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '443.071691'
+  duration: '900.000000'
   magnitude: '36.799438'
 frxGBPAUD_AUD_5_default:
   bias: '0.000000'
-  duration: '266.177993'
+  duration: '720.000000'
   magnitude: '13.797842'
 frxGBPAUD_CAD_1_BOC_Review:
   bias: '0.000000'
@@ -14773,7 +14773,7 @@ frxGBPAUD_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxGBPAUD_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '296.959085'
+  duration: '840.000000'
   magnitude: '8.215000'
 frxGBPAUD_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -15005,7 +15005,7 @@ frxGBPAUD_CNY_1_M2_Money_Supply_y/y:
   magnitude: '1.000000'
 frxGBPAUD_CNY_1_Retail_Sales_y/y:
   bias: '0.000000'
-  duration: '152.105026'
+  duration: '420.000000'
   magnitude: '5.770013'
 frxGBPAUD_CNY_1_default:
   bias: '0.000000'
@@ -15013,7 +15013,7 @@ frxGBPAUD_CNY_1_default:
   magnitude: '1.000000'
 frxGBPAUD_CNY_3_Fixed_Asset_Investment_ytd/y:
   bias: '0.000000'
-  duration: '155.341391'
+  duration: '600.000000'
   magnitude: '5.939741'
 frxGBPAUD_CNY_3_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -15025,11 +15025,11 @@ frxGBPAUD_CNY_3_HSBC_Services_PMI:
   magnitude: '1.000000'
 frxGBPAUD_CNY_3_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.395083'
 frxGBPAUD_CNY_3_NBS_Press_Conference:
   bias: '0.000000'
-  duration: '138.398647'
+  duration: '420.000000'
   magnitude: '8.345972'
 frxGBPAUD_CNY_3_New_Loans:
   bias: '0.000000'
@@ -15037,7 +15037,7 @@ frxGBPAUD_CNY_3_New_Loans:
   magnitude: '1.000000'
 frxGBPAUD_CNY_3_PPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.165047'
 frxGBPAUD_CNY_3_default:
   bias: '0.000000'
@@ -15045,11 +15045,11 @@ frxGBPAUD_CNY_3_default:
   magnitude: '4.125128'
 frxGBPAUD_CNY_5_CPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.598122'
 frxGBPAUD_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '158.027620'
+  duration: '600.000000'
   magnitude: '10.715116'
 frxGBPAUD_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -15057,11 +15057,11 @@ frxGBPAUD_CNY_5_HSBC_Final_Manufacturing_PMI:
   magnitude: '3.141064'
 frxGBPAUD_CNY_5_HSBC_Flash_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '137.951436'
+  duration: '300.000000'
   magnitude: '13.888607'
 frxGBPAUD_CNY_5_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '216.640651'
+  duration: '600.000000'
   magnitude: '7.466233'
 frxGBPAUD_CNY_5_Manufacturing_PMI:
   bias: '0.000000'
@@ -15073,7 +15073,7 @@ frxGBPAUD_CNY_5_Trade_Balance:
   magnitude: '4.187597'
 frxGBPAUD_CNY_5_default:
   bias: '0.000000'
-  duration: '121.853783'
+  duration: '240.000000'
   magnitude: '6.351077'
 frxGBPAUD_EUR_1_Belgian_NBB_Business_Climate:
   bias: '0.000000'
@@ -15513,7 +15513,7 @@ frxGBPAUD_GBP_1_Core_CPI_y/y:
   magnitude: '7.503370'
 frxGBPAUD_GBP_1_HPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.046610'
 frxGBPAUD_GBP_1_Housing_Equity_Withdrawal_q/q:
   bias: '0.000000'
@@ -15544,7 +15544,7 @@ frxGBPAUD_GBP_1_Revised_Business_Investment_q/q:
   duration: '120.000000'
   magnitude: '5.268351'
 frxGBPAUD_GBP_1_default:
-  bias: '0.000000'
+  bias: '0.058261'
   duration: '120.000000'
   magnitude: '3.146766'
 frxGBPAUD_GBP_3_10-y_Bond_Auction:
@@ -15553,7 +15553,7 @@ frxGBPAUD_GBP_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxGBPAUD_GBP_3_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '126.946117'
+  duration: '240.000000'
   magnitude: '11.331937'
 frxGBPAUD_GBP_3_BBA_Mortgage_Approvals:
   bias: '0.000000'
@@ -15621,7 +15621,7 @@ frxGBPAUD_GBP_3_Net_Lending_to_Individuals_m/m:
   magnitude: '1.000000'
 frxGBPAUD_GBP_3_PPI_Input_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '8.879910'
 frxGBPAUD_GBP_3_Prelim_Business_Investment_q/q:
   bias: '0.000000'
@@ -15641,7 +15641,7 @@ frxGBPAUD_GBP_3_Trade_Balance:
   magnitude: '1.000000'
 frxGBPAUD_GBP_3_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '8.594167'
 frxGBPAUD_GBP_3_default:
   bias: '0.000000'
@@ -15649,11 +15649,11 @@ frxGBPAUD_GBP_3_default:
   magnitude: '1.000000'
 frxGBPAUD_GBP_5_Asset_Purchase_Facility:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.489552'
 frxGBPAUD_GBP_5_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '13.589291'
 frxGBPAUD_GBP_5_BOE_Gov_Carney_Speaks:
   bias: '0.000000'
@@ -15665,7 +15665,7 @@ frxGBPAUD_GBP_5_BOE_Gov_King_Speaks:
   magnitude: '1.000000'
 frxGBPAUD_GBP_5_BOE_Inflation_Report:
   bias: '0.000000'
-  duration: '171.644171'
+  duration: '240.000000'
   magnitude: '15.006205'
 frxGBPAUD_GBP_5_CPI_y/y:
   bias: '0.000000'
@@ -15673,7 +15673,7 @@ frxGBPAUD_GBP_5_CPI_y/y:
   magnitude: '7.391860'
 frxGBPAUD_GBP_5_Claimant_Count_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '9.588515'
 frxGBPAUD_GBP_5_Construction_PMI:
   bias: '0.000000'
@@ -15681,7 +15681,7 @@ frxGBPAUD_GBP_5_Construction_PMI:
   magnitude: '4.251915'
 frxGBPAUD_GBP_5_Current_Account:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.622139'
 frxGBPAUD_GBP_5_Halifax_HPI_m/m:
   bias: '0.000000'
@@ -15693,15 +15693,15 @@ frxGBPAUD_GBP_5_Inflation_Report_Hearings:
   magnitude: '1.000000'
 frxGBPAUD_GBP_5_MPC_Asset_Purchase_Facility_Votes:
   bias: '0.000000'
-  duration: '157.946834'
+  duration: '180.000000'
   magnitude: '11.004940'
 frxGBPAUD_GBP_5_MPC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '7.220589'
 frxGBPAUD_GBP_5_MPC_Official_Bank_Rate_Votes:
   bias: '0.000000'
-  duration: '151.422431'
+  duration: '180.000000'
   magnitude: '11.504265'
 frxGBPAUD_GBP_5_Manufacturing_PMI:
   bias: '0.000000'
@@ -15713,7 +15713,7 @@ frxGBPAUD_GBP_5_Manufacturing_Production_m/m:
   magnitude: '4.274018'
 frxGBPAUD_GBP_5_Official_Bank_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.082665'
 frxGBPAUD_GBP_5_PPI_Input_m/m:
   bias: '0.000000'
@@ -15721,7 +15721,7 @@ frxGBPAUD_GBP_5_PPI_Input_m/m:
   magnitude: '1.000000'
 frxGBPAUD_GBP_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '123.064275'
+  duration: '120.000000'
   magnitude: '11.576709'
 frxGBPAUD_GBP_5_Public_Sector_Net_Borrowing:
   bias: '0.000000'
@@ -15741,12 +15741,12 @@ frxGBPAUD_GBP_5_Services_PMI:
   magnitude: '1.000000'
 frxGBPAUD_GBP_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '146.902166'
+  duration: '240.000000'
   magnitude: '12.697011'
 frxGBPAUD_GBP_5_default:
   bias: '0.000000'
   duration: '120.000000'
-  magnitude: '4.423204'
+  magnitude: '4.423927'
 frxGBPAUD_JPY_1_10-y_Bond_Auction:
   bias: '0.000000'
   duration: '60.000000'
@@ -15777,7 +15777,7 @@ frxGBPAUD_JPY_1_Final_Manufacturing_PMI:
   magnitude: '1.000000'
 frxGBPAUD_JPY_1_Flash_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '791.256897'
+  duration: '660.000000'
   magnitude: '4.568846'
 frxGBPAUD_JPY_1_Housing_Starts_y/y:
   bias: '0.000000'
@@ -15849,7 +15849,7 @@ frxGBPAUD_NZD_1_FPI_m/m:
   magnitude: '1.000000'
 frxGBPAUD_NZD_1_Labor_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '183.679114'
+  duration: '420.000000'
   magnitude: '4.186147'
 frxGBPAUD_NZD_1_PPI_Output_q/q:
   bias: '0.000000'
@@ -15885,7 +15885,7 @@ frxGBPAUD_NZD_3_Inflation_Expectations_q/q:
   magnitude: '1.000000'
 frxGBPAUD_NZD_3_RBNZ_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '300.000000'
+  duration: '540.000000'
   magnitude: '4.113014'
 frxGBPAUD_NZD_3_REINZ_HPI_m/m:
   bias: '0.000000'
@@ -15901,14 +15901,14 @@ frxGBPAUD_NZD_3_default:
   magnitude: '1.000000'
 frxGBPAUD_NZD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '157.395861'
+  duration: '240.000000'
   magnitude: '4.366788'
 frxGBPAUD_NZD_5_Employment_Change_q/q:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '420.000000'
   magnitude: '3.417126'
 frxGBPAUD_NZD_5_GDP_q/q:
-  bias: '0.000000'
+  bias: '0.264706'
   duration: '120.000000'
   magnitude: '3.625529'
 frxGBPAUD_NZD_5_GDT_Price_Index:
@@ -15921,15 +15921,15 @@ frxGBPAUD_NZD_5_NZIER_Business_Confidence:
   magnitude: '1.000000'
 frxGBPAUD_NZD_5_Official_Cash_Rate:
   bias: '0.000000'
-  duration: '139.459053'
+  duration: '420.000000'
   magnitude: '3.698711'
 frxGBPAUD_NZD_5_RBNZ_Press_Conference:
   bias: '0.000000'
-  duration: '338.095302'
+  duration: '300.000000'
   magnitude: '4.506119'
 frxGBPAUD_NZD_5_RBNZ_Rate_Statement:
   bias: '0.000000'
-  duration: '139.459053'
+  duration: '420.000000'
   magnitude: '3.698711'
 frxGBPAUD_NZD_5_Trade_Balance:
   bias: '0.000000'
@@ -15937,7 +15937,7 @@ frxGBPAUD_NZD_5_Trade_Balance:
   magnitude: '1.000000'
 frxGBPAUD_NZD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '420.000000'
   magnitude: '3.417126'
 frxGBPAUD_NZD_5_default:
   bias: '0.000000'
@@ -15956,7 +15956,7 @@ frxGBPAUD_USD_1_Challenger_Job_Cuts_y/y:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPAUD_USD_1_Construction_Spending_m/m:
-  bias: '0.000000'
+  bias: '0.211538'
   duration: '120.000000'
   magnitude: '3.425417'
 frxGBPAUD_USD_1_Consumer_Credit_m/m:
@@ -15981,7 +15981,7 @@ frxGBPAUD_USD_1_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxGBPAUD_USD_1_Final_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '5.110957'
 frxGBPAUD_USD_1_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -16004,7 +16004,7 @@ frxGBPAUD_USD_1_IBD/TIPP_Economic_Optimism:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPAUD_USD_1_ISM_Manufacturing_Prices:
-  bias: '0.000000'
+  bias: '0.179245'
   duration: '120.000000'
   magnitude: '3.410918'
 frxGBPAUD_USD_1_Labor_Market_Conditions_Index_m/m:
@@ -16081,7 +16081,7 @@ frxGBPAUD_USD_3_Advance_GDP_Price_Index_q/q:
   magnitude: '3.075950'
 frxGBPAUD_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '504.335085'
+  duration: '900.000000'
   magnitude: '16.648184'
 frxGBPAUD_USD_3_Beige_Book:
   bias: '0.000000'
@@ -16205,11 +16205,11 @@ frxGBPAUD_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxGBPAUD_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '715.756167'
+  duration: '1620.000000'
   magnitude: '8.118827'
 frxGBPAUD_USD_3_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.530389'
 frxGBPAUD_USD_3_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -16297,11 +16297,11 @@ frxGBPAUD_USD_5_CB_Consumer_Confidence:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_CPI_m/m:
   bias: '0.000000'
-  duration: '177.627279'
+  duration: '240.000000'
   magnitude: '5.172958'
 frxGBPAUD_USD_5_Core_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.712001'
 frxGBPAUD_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
@@ -16309,7 +16309,7 @@ frxGBPAUD_USD_5_Core_Durable_Goods_Orders_m/m:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.050317'
 frxGBPAUD_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -16317,11 +16317,11 @@ frxGBPAUD_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '739.134647'
+  duration: '840.000000'
   magnitude: '7.582873'
 frxGBPAUD_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '206.085189'
+  duration: '540.000000'
   magnitude: '5.895151'
 frxGBPAUD_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -16329,7 +16329,7 @@ frxGBPAUD_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '759.307931'
+  duration: '1560.000000'
   magnitude: '9.870475'
 frxGBPAUD_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -16349,10 +16349,10 @@ frxGBPAUD_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '357.311675'
+  duration: '1440.000000'
   magnitude: '10.600267'
 frxGBPAUD_USD_5_ISM_Manufacturing_PMI:
-  bias: '0.000000'
+  bias: '0.179245'
   duration: '120.000000'
   magnitude: '3.410918'
 frxGBPAUD_USD_5_ISM_Non-Manufacturing_PMI:
@@ -16365,7 +16365,7 @@ frxGBPAUD_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '504.335085'
+  duration: '900.000000'
   magnitude: '16.648184'
 frxGBPAUD_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -16389,7 +16389,7 @@ frxGBPAUD_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.050317'
 frxGBPAUD_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -16405,7 +16405,7 @@ frxGBPAUD_USD_5_Unemployment_Claims:
   magnitude: '1.000000'
 frxGBPAUD_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '504.335085'
+  duration: '900.000000'
   magnitude: '16.648184'
 frxGBPAUD_USD_5_default:
   bias: '0.000000'
@@ -16605,7 +16605,7 @@ frxGBPJPY_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxGBPJPY_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '195.400237'
+  duration: '300.000000'
   magnitude: '12.097677'
 frxGBPJPY_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -16613,7 +16613,7 @@ frxGBPJPY_CAD_3_Manufacturing_Sales_m/m:
   magnitude: '1.000000'
 frxGBPJPY_CAD_3_NHPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.255955'
 frxGBPJPY_CAD_3_RMPI_m/m:
   bias: '0.000000'
@@ -16665,7 +16665,7 @@ frxGBPJPY_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxGBPJPY_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.004475'
 frxGBPJPY_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -16689,7 +16689,7 @@ frxGBPJPY_CAD_5_Trade_Balance:
   magnitude: '1.000000'
 frxGBPJPY_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.004475'
 frxGBPJPY_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -16857,11 +16857,11 @@ frxGBPJPY_CNY_3_HSBC_Services_PMI:
   magnitude: '1.000000'
 frxGBPJPY_CNY_3_Industrial_Production_y/y:
   bias: '0.000000'
-  duration: '133.371056'
+  duration: '120.000000'
   magnitude: '3.553615'
 frxGBPJPY_CNY_3_NBS_Press_Conference:
   bias: '0.000000'
-  duration: '123.973987'
+  duration: '180.000000'
   magnitude: '4.942363'
 frxGBPJPY_CNY_3_New_Loans:
   bias: '0.000000'
@@ -16881,7 +16881,7 @@ frxGBPJPY_CNY_5_CPI_y/y:
   magnitude: '1.000000'
 frxGBPJPY_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '144.372647'
+  duration: '180.000000'
   magnitude: '5.820098'
 frxGBPJPY_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -16969,7 +16969,7 @@ frxGBPJPY_EUR_1_German_Final_CPI_m/m:
   magnitude: '1.000000'
 frxGBPJPY_EUR_1_German_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.131077'
 frxGBPJPY_EUR_1_German_Import_Prices_m/m:
   bias: '0.000000'
@@ -17340,11 +17340,11 @@ frxGBPJPY_GBP_1_Construction_Output_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPJPY_GBP_1_Core_CPI_y/y:
-  bias: '0.000000'
+  bias: '0.134615'
   duration: '120.000000'
   magnitude: '7.951866'
 frxGBPJPY_GBP_1_HPI_y/y:
-  bias: '0.000000'
+  bias: '0.127451'
   duration: '120.000000'
   magnitude: '7.177312'
 frxGBPJPY_GBP_1_Housing_Equity_Withdrawal_q/q:
@@ -17372,11 +17372,11 @@ frxGBPJPY_GBP_1_PPI_Output_m/m:
   duration: '120.000000'
   magnitude: '5.607989'
 frxGBPJPY_GBP_1_Revised_Business_Investment_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.205882'
+  duration: '240.000000'
   magnitude: '6.289636'
 frxGBPJPY_GBP_1_default:
-  bias: '0.000000'
+  bias: '0.044348'
   duration: '120.000000'
   magnitude: '3.536012'
 frxGBPJPY_GBP_3_10-y_Bond_Auction:
@@ -17385,7 +17385,7 @@ frxGBPJPY_GBP_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxGBPJPY_GBP_3_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '137.755317'
+  duration: '240.000000'
   magnitude: '12.022344'
 frxGBPJPY_GBP_3_BBA_Mortgage_Approvals:
   bias: '0.000000'
@@ -17408,8 +17408,8 @@ frxGBPJPY_GBP_3_Consumer_Inflation_Expectations:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPJPY_GBP_3_Final_GDP_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.205882'
+  duration: '240.000000'
   magnitude: '6.289636'
 frxGBPJPY_GBP_3_Halifax_HPI_m/m:
   bias: '0.000000'
@@ -17452,7 +17452,7 @@ frxGBPJPY_GBP_3_Net_Lending_to_Individuals_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPJPY_GBP_3_PPI_Input_m/m:
-  bias: '0.000000'
+  bias: '0.166667'
   duration: '120.000000'
   magnitude: '9.538147'
 frxGBPJPY_GBP_3_Prelim_Business_Investment_q/q:
@@ -17464,7 +17464,7 @@ frxGBPJPY_GBP_3_Public_Sector_Net_Borrowing:
   duration: '120.000000'
   magnitude: '3.842214'
 frxGBPJPY_GBP_3_RPI_y/y:
-  bias: '0.000000'
+  bias: '0.134615'
   duration: '120.000000'
   magnitude: '7.951866'
 frxGBPJPY_GBP_3_Trade_Balance:
@@ -17473,7 +17473,7 @@ frxGBPJPY_GBP_3_Trade_Balance:
   magnitude: '1.000000'
 frxGBPJPY_GBP_3_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '8.515953'
 frxGBPJPY_GBP_3_default:
   bias: '0.000000'
@@ -17481,11 +17481,11 @@ frxGBPJPY_GBP_3_default:
   magnitude: '1.000000'
 frxGBPJPY_GBP_5_Asset_Purchase_Facility:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.589450'
 frxGBPJPY_GBP_5_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '14.798261'
 frxGBPJPY_GBP_5_BOE_Gov_Carney_Speaks:
   bias: '0.000000'
@@ -17497,23 +17497,23 @@ frxGBPJPY_GBP_5_BOE_Gov_King_Speaks:
   magnitude: '1.000000'
 frxGBPJPY_GBP_5_BOE_Inflation_Report:
   bias: '0.000000'
-  duration: '205.113861'
+  duration: '300.000000'
   magnitude: '14.716822'
 frxGBPJPY_GBP_5_CPI_y/y:
-  bias: '0.000000'
+  bias: '0.141509'
   duration: '120.000000'
   magnitude: '7.615566'
 frxGBPJPY_GBP_5_Claimant_Count_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '10.357356'
 frxGBPJPY_GBP_5_Construction_PMI:
   bias: '0.000000'
   duration: '120.000000'
   magnitude: '4.581460'
 frxGBPJPY_GBP_5_Current_Account:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.205882'
+  duration: '240.000000'
   magnitude: '5.989735'
 frxGBPJPY_GBP_5_Halifax_HPI_m/m:
   bias: '0.000000'
@@ -17525,15 +17525,15 @@ frxGBPJPY_GBP_5_Inflation_Report_Hearings:
   magnitude: '1.000000'
 frxGBPJPY_GBP_5_MPC_Asset_Purchase_Facility_Votes:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '12.302837'
 frxGBPJPY_GBP_5_MPC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '6.938090'
 frxGBPJPY_GBP_5_MPC_Official_Bank_Rate_Votes:
   bias: '0.000000'
-  duration: '158.749841'
+  duration: '240.000000'
   magnitude: '13.098199'
 frxGBPJPY_GBP_5_Manufacturing_PMI:
   bias: '0.000000'
@@ -17545,7 +17545,7 @@ frxGBPJPY_GBP_5_Manufacturing_Production_m/m:
   magnitude: '4.529213'
 frxGBPJPY_GBP_5_Official_Bank_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.069763'
 frxGBPJPY_GBP_5_PPI_Input_m/m:
   bias: '0.000000'
@@ -17553,7 +17553,7 @@ frxGBPJPY_GBP_5_PPI_Input_m/m:
   magnitude: '1.000000'
 frxGBPJPY_GBP_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '140.919045'
+  duration: '180.000000'
   magnitude: '13.255101'
 frxGBPJPY_GBP_5_Public_Sector_Net_Borrowing:
   bias: '0.000000'
@@ -17573,12 +17573,12 @@ frxGBPJPY_GBP_5_Services_PMI:
   magnitude: '1.000000'
 frxGBPJPY_GBP_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '152.189751'
+  duration: '300.000000'
   magnitude: '15.669334'
 frxGBPJPY_GBP_5_default:
   bias: '0.000000'
   duration: '120.000000'
-  magnitude: '4.927303'
+  magnitude: '4.928449'
 frxGBPJPY_JPY_1_10-y_Bond_Auction:
   bias: '0.000000'
   duration: '60.000000'
@@ -17656,8 +17656,8 @@ frxGBPJPY_JPY_5_BOJ_Press_Conference:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPJPY_JPY_5_Monetary_Policy_Statement:
-  bias: '0.000000'
-  duration: '215.238111'
+  bias: '0.139344'
+  duration: '540.000000'
   magnitude: '8.270710'
 frxGBPJPY_JPY_5_default:
   bias: '0.000000'
@@ -17917,7 +17917,7 @@ frxGBPJPY_USD_3_Advance_GDP_Price_Index_q/q:
   magnitude: '6.571808'
 frxGBPJPY_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '568.658272'
+  duration: '1260.000000'
   magnitude: '14.554968'
 frxGBPJPY_USD_3_Beige_Book:
   bias: '0.000000'
@@ -18041,7 +18041,7 @@ frxGBPJPY_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxGBPJPY_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '527.945395'
+  duration: '1440.000000'
   magnitude: '7.851852'
 frxGBPJPY_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -18145,7 +18145,7 @@ frxGBPJPY_USD_5_Core_Durable_Goods_Orders_m/m:
   magnitude: '3.538898'
 frxGBPJPY_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.667634'
 frxGBPJPY_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -18153,11 +18153,11 @@ frxGBPJPY_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxGBPJPY_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '487.735866'
+  duration: '780.000000'
   magnitude: '8.878568'
 frxGBPJPY_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '660.000000'
   magnitude: '4.285148'
 frxGBPJPY_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -18165,7 +18165,7 @@ frxGBPJPY_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxGBPJPY_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '522.760169'
+  duration: '1500.000000'
   magnitude: '7.251340'
 frxGBPJPY_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -18185,7 +18185,7 @@ frxGBPJPY_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxGBPJPY_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '293.407131'
+  duration: '600.000000'
   magnitude: '5.851563'
 frxGBPJPY_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
@@ -18201,7 +18201,7 @@ frxGBPJPY_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxGBPJPY_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '568.658272'
+  duration: '1260.000000'
   magnitude: '14.554968'
 frxGBPJPY_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -18225,7 +18225,7 @@ frxGBPJPY_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxGBPJPY_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.667634'
 frxGBPJPY_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -18241,10 +18241,10 @@ frxGBPJPY_USD_5_Unemployment_Claims:
   magnitude: '3.817528'
 frxGBPJPY_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '568.658272'
+  duration: '1260.000000'
   magnitude: '14.554968'
 frxGBPJPY_USD_5_default:
-  bias: '0.000000'
+  bias: '0.039223'
   duration: '120.000000'
   magnitude: '3.802768'
 frxGBPUSD_AUD_1_AIG_Construction_Index:
@@ -18325,7 +18325,7 @@ frxGBPUSD_AUD_3_RBA_Deputy_Gov_Lowe_Speaks:
   magnitude: '1.000000'
 frxGBPUSD_AUD_3_Trimmed_Mean_CPI_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.234874'
 frxGBPUSD_AUD_3_Wage_Price_Index_q/q:
   bias: '0.000000'
@@ -18341,11 +18341,11 @@ frxGBPUSD_AUD_5_Building_Approvals_m/m:
   magnitude: '1.000000'
 frxGBPUSD_AUD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.234874'
 frxGBPUSD_AUD_5_Cash_Rate:
   bias: '0.000000'
-  duration: '132.344152'
+  duration: '180.000000'
   magnitude: '3.194603'
 frxGBPUSD_AUD_5_Employment_Change:
   bias: '0.000000'
@@ -18373,7 +18373,7 @@ frxGBPUSD_AUD_5_RBA_Monetary_Policy_Statement:
   magnitude: '1.000000'
 frxGBPUSD_AUD_5_RBA_Rate_Statement:
   bias: '0.000000'
-  duration: '132.344152'
+  duration: '180.000000'
   magnitude: '3.194603'
 frxGBPUSD_AUD_5_Retail_Sales_m/m:
   bias: '0.000000'
@@ -18444,8 +18444,8 @@ frxGBPUSD_CAD_3_Housing_Starts:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPUSD_CAD_3_Labor_Productivity_q/q:
-  bias: '0.000000'
-  duration: '312.149261'
+  bias: '0.264706'
+  duration: '1260.000000'
   magnitude: '10.130129'
 frxGBPUSD_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -18505,7 +18505,7 @@ frxGBPUSD_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxGBPUSD_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '186.656299'
+  duration: '540.000000'
   magnitude: '6.651398'
 frxGBPUSD_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -18529,7 +18529,7 @@ frxGBPUSD_CAD_5_Trade_Balance:
   magnitude: '1.000000'
 frxGBPUSD_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '186.656299'
+  duration: '540.000000'
   magnitude: '6.651398'
 frxGBPUSD_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -18676,7 +18676,7 @@ frxGBPUSD_CNY_1_M2_Money_Supply_y/y:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPUSD_CNY_1_Non-Manufacturing_PMI:
-  bias: '0.000000'
+  bias: '0.318182'
   duration: '120.000000'
   magnitude: '3.042721'
 frxGBPUSD_CNY_1_Retail_Sales_y/y:
@@ -18817,7 +18817,7 @@ frxGBPUSD_EUR_1_German_Final_CPI_m/m:
   magnitude: '1.000000'
 frxGBPUSD_EUR_1_German_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '240.000000'
   magnitude: '3.202437'
 frxGBPUSD_EUR_1_German_Import_Prices_m/m:
   bias: '0.000000'
@@ -19177,7 +19177,7 @@ frxGBPUSD_GBP_1_30-y_Bond_Auction:
   magnitude: '1.000000'
 frxGBPUSD_GBP_1_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '6.978757'
 frxGBPUSD_GBP_1_CB_Leading_Index_m/m:
   bias: '0.000000'
@@ -19189,11 +19189,11 @@ frxGBPUSD_GBP_1_Construction_Output_m/m:
   magnitude: '1.000000'
 frxGBPUSD_GBP_1_Core_CPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '10.379351'
 frxGBPUSD_GBP_1_HPI_y/y:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.127451'
+  duration: '300.000000'
   magnitude: '9.971823'
 frxGBPUSD_GBP_1_Housing_Equity_Withdrawal_q/q:
   bias: '0.000000'
@@ -19201,10 +19201,10 @@ frxGBPUSD_GBP_1_Housing_Equity_Withdrawal_q/q:
   magnitude: '1.000000'
 frxGBPUSD_GBP_1_Index_of_Services_3m/3m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '6.362557'
 frxGBPUSD_GBP_1_Industrial_Production_m/m:
-  bias: '0.000000'
+  bias: '0.153846'
   duration: '120.000000'
   magnitude: '5.663178'
 frxGBPUSD_GBP_1_M4_Money_Supply_m/m:
@@ -19217,14 +19217,14 @@ frxGBPUSD_GBP_1_Mortgage_Approvals:
   magnitude: '1.000000'
 frxGBPUSD_GBP_1_PPI_Output_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '9.000979'
 frxGBPUSD_GBP_1_Revised_Business_Investment_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.205882'
+  duration: '360.000000'
   magnitude: '7.893547'
 frxGBPUSD_GBP_1_default:
-  bias: '0.000000'
+  bias: '0.051304'
   duration: '120.000000'
   magnitude: '4.616392'
 frxGBPUSD_GBP_3_10-y_Bond_Auction:
@@ -19233,7 +19233,7 @@ frxGBPUSD_GBP_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxGBPUSD_GBP_3_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '186.806441'
+  duration: '480.000000'
   magnitude: '15.766035'
 frxGBPUSD_GBP_3_BBA_Mortgage_Approvals:
   bias: '0.000000'
@@ -19256,8 +19256,8 @@ frxGBPUSD_GBP_3_Consumer_Inflation_Expectations:
   duration: '120.000000'
   magnitude: '3.147089'
 frxGBPUSD_GBP_3_Final_GDP_q/q:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.205882'
+  duration: '360.000000'
   magnitude: '7.893547'
 frxGBPUSD_GBP_3_Halifax_HPI_m/m:
   bias: '0.000000'
@@ -19301,7 +19301,7 @@ frxGBPUSD_GBP_3_Net_Lending_to_Individuals_m/m:
   magnitude: '1.000000'
 frxGBPUSD_GBP_3_PPI_Input_m/m:
   bias: '0.000000'
-  duration: '130.712477'
+  duration: '360.000000'
   magnitude: '12.996971'
 frxGBPUSD_GBP_3_Prelim_Business_Investment_q/q:
   bias: '0.000000'
@@ -19313,15 +19313,15 @@ frxGBPUSD_GBP_3_Public_Sector_Net_Borrowing:
   magnitude: '4.630321'
 frxGBPUSD_GBP_3_RPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '10.379351'
 frxGBPUSD_GBP_3_Trade_Balance:
   bias: '0.000000'
   duration: '120.000000'
   magnitude: '3.108810'
 frxGBPUSD_GBP_3_Unemployment_Rate:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.205882'
+  duration: '360.000000'
   magnitude: '11.659012'
 frxGBPUSD_GBP_3_default:
   bias: '0.000000'
@@ -19329,11 +19329,11 @@ frxGBPUSD_GBP_3_default:
   magnitude: '1.000000'
 frxGBPUSD_GBP_5_Asset_Purchase_Facility:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '6.374939'
 frxGBPUSD_GBP_5_Average_Earnings_Index_3m/y:
   bias: '0.000000'
-  duration: '166.616813'
+  duration: '240.000000'
   magnitude: '16.743423'
 frxGBPUSD_GBP_5_BOE_Gov_Carney_Speaks:
   bias: '0.000000'
@@ -19345,23 +19345,23 @@ frxGBPUSD_GBP_5_BOE_Gov_King_Speaks:
   magnitude: '1.000000'
 frxGBPUSD_GBP_5_BOE_Inflation_Report:
   bias: '0.000000'
-  duration: '254.409041'
+  duration: '420.000000'
   magnitude: '18.380019'
 frxGBPUSD_GBP_5_CPI_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '10.278273'
 frxGBPUSD_GBP_5_Claimant_Count_Change:
   bias: '0.000000'
-  duration: '166.377157'
+  duration: '300.000000'
   magnitude: '13.102374'
 frxGBPUSD_GBP_5_Construction_PMI:
   bias: '0.000000'
   duration: '120.000000'
   magnitude: '6.668432'
 frxGBPUSD_GBP_5_Current_Account:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.264706'
+  duration: '360.000000'
   magnitude: '7.876883'
 frxGBPUSD_GBP_5_Halifax_HPI_m/m:
   bias: '0.000000'
@@ -19373,27 +19373,27 @@ frxGBPUSD_GBP_5_Inflation_Report_Hearings:
   magnitude: '1.000000'
 frxGBPUSD_GBP_5_MPC_Asset_Purchase_Facility_Votes:
   bias: '0.000000'
-  duration: '224.368805'
+  duration: '240.000000'
   magnitude: '15.015439'
 frxGBPUSD_GBP_5_MPC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '11.131500'
 frxGBPUSD_GBP_5_MPC_Official_Bank_Rate_Votes:
   bias: '0.000000'
-  duration: '221.579851'
+  duration: '240.000000'
   magnitude: '13.861887'
 frxGBPUSD_GBP_5_Manufacturing_PMI:
   bias: '0.000000'
   duration: '120.000000'
   magnitude: '3.938205'
 frxGBPUSD_GBP_5_Manufacturing_Production_m/m:
-  bias: '0.000000'
+  bias: '0.153846'
   duration: '120.000000'
   magnitude: '5.663178'
 frxGBPUSD_GBP_5_Official_Bank_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.621813'
 frxGBPUSD_GBP_5_PPI_Input_m/m:
   bias: '0.000000'
@@ -19401,7 +19401,7 @@ frxGBPUSD_GBP_5_PPI_Input_m/m:
   magnitude: '1.000000'
 frxGBPUSD_GBP_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '179.385535'
+  duration: '360.000000'
   magnitude: '18.074204'
 frxGBPUSD_GBP_5_Public_Sector_Net_Borrowing:
   bias: '0.000000'
@@ -19409,7 +19409,7 @@ frxGBPUSD_GBP_5_Public_Sector_Net_Borrowing:
   magnitude: '1.000000'
 frxGBPUSD_GBP_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '10.334163'
 frxGBPUSD_GBP_5_Second_Estimate_GDP_q/q:
   bias: '0.000000'
@@ -19421,12 +19421,12 @@ frxGBPUSD_GBP_5_Services_PMI:
   magnitude: '1.000000'
 frxGBPUSD_GBP_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '212.925089'
+  duration: '540.000000'
   magnitude: '17.408005'
 frxGBPUSD_GBP_5_default:
   bias: '0.000000'
-  duration: '120.000000'
-  magnitude: '6.248416'
+  duration: '180.000000'
+  magnitude: '6.249568'
 frxGBPUSD_JPY_1_10-y_Bond_Auction:
   bias: '0.000000'
   duration: '60.000000'
@@ -19641,7 +19641,7 @@ frxGBPUSD_USD_1_Challenger_Job_Cuts_y/y:
   magnitude: '1.000000'
 frxGBPUSD_USD_1_Construction_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.328476'
 frxGBPUSD_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -19689,7 +19689,7 @@ frxGBPUSD_USD_1_IBD/TIPP_Economic_Optimism:
   magnitude: '1.000000'
 frxGBPUSD_USD_1_ISM_Manufacturing_Prices:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.342330'
 frxGBPUSD_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -19761,11 +19761,11 @@ frxGBPUSD_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxGBPUSD_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '160.603180'
+  duration: '240.000000'
   magnitude: '9.464813'
 frxGBPUSD_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '582.349539'
+  duration: '1260.000000'
   magnitude: '14.429526'
 frxGBPUSD_USD_3_Beige_Book:
   bias: '0.000000'
@@ -19805,7 +19805,7 @@ frxGBPUSD_USD_3_Current_Account:
   magnitude: '4.405168'
 frxGBPUSD_USD_3_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.102974'
 frxGBPUSD_USD_3_Empire_State_Manufacturing_Index:
   bias: '0.000000'
@@ -19889,7 +19889,7 @@ frxGBPUSD_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxGBPUSD_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '627.535390'
+  duration: '1500.000000'
   magnitude: '13.688815'
 frxGBPUSD_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -19965,11 +19965,11 @@ frxGBPUSD_USD_3_default:
   magnitude: '1.000000'
 frxGBPUSD_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '4.561747'
 frxGBPUSD_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '160.603180'
+  duration: '240.000000'
   magnitude: '9.464813'
 frxGBPUSD_USD_5_Building_Permits:
   bias: '0.000000'
@@ -19980,20 +19980,20 @@ frxGBPUSD_USD_5_CB_Consumer_Confidence:
   duration: '60.000000'
   magnitude: '1.000000'
 frxGBPUSD_USD_5_CPI_m/m:
-  bias: '0.000000'
-  duration: '148.503491'
+  bias: '0.300000'
+  duration: '300.000000'
   magnitude: '8.170620'
 frxGBPUSD_USD_5_Core_CPI_m/m:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.127451'
+  duration: '180.000000'
   magnitude: '3.382081'
 frxGBPUSD_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.013562'
 frxGBPUSD_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '5.418958'
 frxGBPUSD_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -20001,11 +20001,11 @@ frxGBPUSD_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxGBPUSD_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '762.818480'
+  duration: '1020.000000'
   magnitude: '14.730731'
 frxGBPUSD_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '363.562890'
+  duration: '1260.000000'
   magnitude: '8.938165'
 frxGBPUSD_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -20013,7 +20013,7 @@ frxGBPUSD_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxGBPUSD_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '655.553510'
+  duration: '1680.000000'
   magnitude: '13.290778'
 frxGBPUSD_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -20033,11 +20033,11 @@ frxGBPUSD_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxGBPUSD_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '628.019047'
+  duration: '1080.000000'
   magnitude: '9.662499'
 frxGBPUSD_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.342330'
 frxGBPUSD_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -20049,7 +20049,7 @@ frxGBPUSD_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxGBPUSD_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '582.349539'
+  duration: '1260.000000'
   magnitude: '14.429526'
 frxGBPUSD_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -20073,7 +20073,7 @@ frxGBPUSD_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxGBPUSD_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '5.418958'
 frxGBPUSD_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -20089,11 +20089,11 @@ frxGBPUSD_USD_5_Unemployment_Claims:
   magnitude: '1.000000'
 frxGBPUSD_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '582.349539'
+  duration: '1260.000000'
   magnitude: '14.429526'
 frxGBPUSD_USD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.464323'
 frxUSDCAD_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
@@ -20173,7 +20173,7 @@ frxUSDCAD_AUD_3_RBA_Deputy_Gov_Lowe_Speaks:
   magnitude: '1.000000'
 frxUSDCAD_AUD_3_Trimmed_Mean_CPI_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '8.277019'
 frxUSDCAD_AUD_3_Wage_Price_Index_q/q:
   bias: '0.000000'
@@ -20189,15 +20189,15 @@ frxUSDCAD_AUD_5_Building_Approvals_m/m:
   magnitude: '1.000000'
 frxUSDCAD_AUD_5_CPI_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '8.277019'
 frxUSDCAD_AUD_5_Cash_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.933453'
 frxUSDCAD_AUD_5_Employment_Change:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.117579'
 frxUSDCAD_AUD_5_Monetary_Policy_Meeting_Minutes:
   bias: '0.000000'
@@ -20221,7 +20221,7 @@ frxUSDCAD_AUD_5_RBA_Monetary_Policy_Statement:
   magnitude: '1.000000'
 frxUSDCAD_AUD_5_RBA_Rate_Statement:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.933453'
 frxUSDCAD_AUD_5_Retail_Sales_m/m:
   bias: '0.000000'
@@ -20233,19 +20233,19 @@ frxUSDCAD_AUD_5_Trade_Balance:
   magnitude: '3.250376'
 frxUSDCAD_AUD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.117579'
 frxUSDCAD_AUD_5_default:
   bias: '0.000000'
   duration: '120.000000'
-  magnitude: '3.024845'
+  magnitude: '3.026620'
 frxUSDCAD_CAD_1_BOC_Review:
   bias: '0.000000'
   duration: '60.000000'
   magnitude: '1.000000'
 frxUSDCAD_CAD_1_Capacity_Utilization_Rate:
   bias: '0.000000'
-  duration: '180.000000'
+  duration: '240.000000'
   magnitude: '3.445869'
 frxUSDCAD_CAD_1_Corporate_Profits_q/q:
   bias: '0.000000'
@@ -20261,7 +20261,7 @@ frxUSDCAD_CAD_1_Housing_Starts:
   magnitude: '1.000000'
 frxUSDCAD_CAD_1_IPPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.108566'
 frxUSDCAD_CAD_1_default:
   bias: '0.000000'
@@ -20277,7 +20277,7 @@ frxUSDCAD_CAD_3_BOC_Gov_Carney_Speaks:
   magnitude: '1.000000'
 frxUSDCAD_CAD_3_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '11.885934'
 frxUSDCAD_CAD_3_Current_Account:
   bias: '0.000000'
@@ -20293,23 +20293,23 @@ frxUSDCAD_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxUSDCAD_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '355.352437'
+  duration: '900.000000'
   magnitude: '16.882036'
 frxUSDCAD_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '4.045136'
 frxUSDCAD_CAD_3_NHPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.726897'
 frxUSDCAD_CAD_3_RMPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.108566'
 frxUSDCAD_CAD_3_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '11.590960'
 frxUSDCAD_CAD_3_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -20329,7 +20329,7 @@ frxUSDCAD_CAD_5_BOC_Gov_Poloz_Speaks:
   magnitude: '1.000000'
 frxUSDCAD_CAD_5_BOC_Monetary_Policy_Report:
   bias: '0.000000'
-  duration: '211.189035'
+  duration: '300.000000'
   magnitude: '9.280798'
 frxUSDCAD_CAD_5_BOC_Press_Conference:
   bias: '0.000000'
@@ -20337,27 +20337,27 @@ frxUSDCAD_CAD_5_BOC_Press_Conference:
   magnitude: '1.000000'
 frxUSDCAD_CAD_5_BOC_Rate_Statement:
   bias: '0.000000'
-  duration: '306.425419'
+  duration: '660.000000'
   magnitude: '16.895471'
 frxUSDCAD_CAD_5_Building_Permits_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '5.086444'
 frxUSDCAD_CAD_5_Core_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '11.885934'
 frxUSDCAD_CAD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '11.590960'
 frxUSDCAD_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '317.477690'
+  duration: '720.000000'
   magnitude: '23.123644'
 frxUSDCAD_CAD_5_GDP_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '10.653340'
 frxUSDCAD_CAD_5_Ivey_PMI:
   bias: '0.000000'
@@ -20365,27 +20365,27 @@ frxUSDCAD_CAD_5_Ivey_PMI:
   magnitude: '4.778910'
 frxUSDCAD_CAD_5_Manufacturing_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '8.038508'
 frxUSDCAD_CAD_5_Overnight_Rate:
   bias: '0.000000'
-  duration: '319.867523'
+  duration: '660.000000'
   magnitude: '17.447133'
 frxUSDCAD_CAD_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '8.043179'
 frxUSDCAD_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '317.477690'
+  duration: '720.000000'
   magnitude: '23.123644'
 frxUSDCAD_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
-  duration: '150.064365'
+  duration: '180.000000'
   magnitude: '4.223693'
 frxUSDCAD_CAD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '8.536129'
 frxUSDCAD_CHF_1_SECO_Economic_Forecasts:
   bias: '0.000000'
@@ -20573,7 +20573,7 @@ frxUSDCAD_CNY_5_CPI_y/y:
   magnitude: '1.000000'
 frxUSDCAD_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '145.472662'
+  duration: '180.000000'
   magnitude: '7.372481'
 frxUSDCAD_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -21509,7 +21509,7 @@ frxUSDCAD_USD_1_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxUSDCAD_USD_1_Final_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '5.934598'
 frxUSDCAD_USD_1_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -21605,11 +21605,11 @@ frxUSDCAD_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxUSDCAD_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '142.482652'
+  duration: '360.000000'
   magnitude: '8.594112'
 frxUSDCAD_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '685.727565'
+  duration: '1500.000000'
   magnitude: '23.813144'
 frxUSDCAD_USD_3_Beige_Book:
   bias: '0.000000'
@@ -21621,7 +21621,7 @@ frxUSDCAD_USD_3_Business_Inventories_m/m:
   magnitude: '1.000000'
 frxUSDCAD_USD_3_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '4.471528'
 frxUSDCAD_USD_3_Capacity_Utilization_Rate:
   bias: '0.000000'
@@ -21637,7 +21637,7 @@ frxUSDCAD_USD_3_Core_PCE_Price_Index_m/m:
   magnitude: '3.956741'
 frxUSDCAD_USD_3_Core_PPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.380539'
 frxUSDCAD_USD_3_Crude_Oil_Inventories:
   bias: '0.000000'
@@ -21653,11 +21653,11 @@ frxUSDCAD_USD_3_Durable_Goods_Orders_m/m:
   magnitude: '4.213179'
 frxUSDCAD_USD_3_Empire_State_Manufacturing_Index:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '4.997766'
 frxUSDCAD_USD_3_Employment_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '8.104773'
 frxUSDCAD_USD_3_Existing_Home_Sales:
   bias: '0.000000'
@@ -21733,11 +21733,11 @@ frxUSDCAD_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxUSDCAD_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '874.421726'
+  duration: '1620.000000'
   magnitude: '11.581684'
 frxUSDCAD_USD_3_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.227527'
 frxUSDCAD_USD_3_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -21749,7 +21749,7 @@ frxUSDCAD_USD_3_Housing_Starts:
   magnitude: '4.964026'
 frxUSDCAD_USD_3_Import_Prices_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.608637'
 frxUSDCAD_USD_3_Industrial_Production_m/m:
   bias: '0.000000'
@@ -21813,7 +21813,7 @@ frxUSDCAD_USD_5_ADP_Non-Farm_Employment_Change:
   magnitude: '5.383072'
 frxUSDCAD_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '142.482652'
+  duration: '360.000000'
   magnitude: '8.594112'
 frxUSDCAD_USD_5_Building_Permits:
   bias: '0.000000'
@@ -21825,11 +21825,11 @@ frxUSDCAD_USD_5_CB_Consumer_Confidence:
   magnitude: '1.000000'
 frxUSDCAD_USD_5_CPI_m/m:
   bias: '0.000000'
-  duration: '279.638029'
+  duration: '1500.000000'
   magnitude: '16.328638'
 frxUSDCAD_USD_5_Core_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '5.640354'
 frxUSDCAD_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
@@ -21837,7 +21837,7 @@ frxUSDCAD_USD_5_Core_Durable_Goods_Orders_m/m:
   magnitude: '4.505123'
 frxUSDCAD_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '153.514049'
+  duration: '360.000000'
   magnitude: '6.679972'
 frxUSDCAD_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -21845,11 +21845,11 @@ frxUSDCAD_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxUSDCAD_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '746.151912'
+  duration: '1500.000000'
   magnitude: '17.337702'
 frxUSDCAD_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '900.000000'
   magnitude: '5.667507'
 frxUSDCAD_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -21857,7 +21857,7 @@ frxUSDCAD_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxUSDCAD_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '945.524727'
+  duration: '1740.000000'
   magnitude: '12.582215'
 frxUSDCAD_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -21877,7 +21877,7 @@ frxUSDCAD_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '3.110219'
 frxUSDCAD_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '1131.576955'
+  duration: '2040.000000'
   magnitude: '13.825869'
 frxUSDCAD_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
@@ -21893,11 +21893,11 @@ frxUSDCAD_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxUSDCAD_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '685.727565'
+  duration: '1500.000000'
   magnitude: '23.813144'
 frxUSDCAD_USD_5_PPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.380539'
 frxUSDCAD_USD_5_Pending_Home_Sales_m/m:
   bias: '0.000000'
@@ -21917,7 +21917,7 @@ frxUSDCAD_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxUSDCAD_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '153.514049'
+  duration: '360.000000'
   magnitude: '6.679972'
 frxUSDCAD_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
@@ -21925,19 +21925,19 @@ frxUSDCAD_USD_5_TIC_Long-Term_Purchases:
   magnitude: '1.000000'
 frxUSDCAD_USD_5_Trade_Balance:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '7.526750'
 frxUSDCAD_USD_5_Unemployment_Claims:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.108137'
 frxUSDCAD_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '685.727565'
+  duration: '1500.000000'
   magnitude: '23.813144'
 frxUSDCAD_USD_5_default:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '4.473868'
 frxUSDCHF_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
@@ -22049,7 +22049,7 @@ frxUSDCHF_CAD_1_BOC_Review:
   magnitude: '1.000000'
 frxUSDCHF_CAD_1_Capacity_Utilization_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '840.000000'
   magnitude: '8.983667'
 frxUSDCHF_CAD_1_Corporate_Profits_q/q:
   bias: '0.000000'
@@ -22081,7 +22081,7 @@ frxUSDCHF_CAD_3_CPI_m/m:
   magnitude: '1.000000'
 frxUSDCHF_CAD_3_Current_Account:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.761891'
 frxUSDCHF_CAD_3_Foreign_Securities_Purchases:
   bias: '0.000000'
@@ -22093,7 +22093,7 @@ frxUSDCHF_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxUSDCHF_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '530.603477'
+  duration: '2220.000000'
   magnitude: '18.975411'
 frxUSDCHF_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -22101,7 +22101,7 @@ frxUSDCHF_CAD_3_Manufacturing_Sales_m/m:
   magnitude: '1.000000'
 frxUSDCHF_CAD_3_NHPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '3.918739'
 frxUSDCHF_CAD_3_RMPI_m/m:
   bias: '0.000000'
@@ -22148,8 +22148,8 @@ frxUSDCHF_CAD_5_Core_Retail_Sales_m/m:
   duration: '60.000000'
   magnitude: '1.000000'
 frxUSDCHF_CAD_5_Employment_Change:
-  bias: '0.000000'
-  duration: '514.545990'
+  bias: '0.181818'
+  duration: '840.000000'
   magnitude: '11.092414'
 frxUSDCHF_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -22172,8 +22172,8 @@ frxUSDCHF_CAD_5_Trade_Balance:
   duration: '60.000000'
   magnitude: '1.000000'
 frxUSDCHF_CAD_5_Unemployment_Rate:
-  bias: '0.000000'
-  duration: '514.545990'
+  bias: '0.181818'
+  duration: '840.000000'
   magnitude: '11.092414'
 frxUSDCHF_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -22269,7 +22269,7 @@ frxUSDCHF_CHF_5_Foreign_Currency_Reserves:
   magnitude: '1.000000'
 frxUSDCHF_CHF_5_Libor_Rate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '5.097576'
 frxUSDCHF_CHF_5_SNB_Chairman_Jordan_Speaks:
   bias: '0.000000'
@@ -22277,7 +22277,7 @@ frxUSDCHF_CHF_5_SNB_Chairman_Jordan_Speaks:
   magnitude: '1.000000'
 frxUSDCHF_CHF_5_SNB_Monetary_Policy_Assessment:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.139625'
 frxUSDCHF_CHF_5_default:
   bias: '0.000000'
@@ -22441,7 +22441,7 @@ frxUSDCHF_EUR_1_German_Import_Prices_m/m:
   magnitude: '1.000000'
 frxUSDCHF_EUR_1_German_Industrial_Production_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.683568'
 frxUSDCHF_EUR_1_German_PPI_m/m:
   bias: '0.000000'
@@ -22733,7 +22733,7 @@ frxUSDCHF_EUR_3_default:
   magnitude: '1.000000'
 frxUSDCHF_EUR_5_CPI_Flash_Estimate_y/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.739173'
 frxUSDCHF_EUR_5_ECB_President_Draghi_Speaks:
   bias: '0.000000'
@@ -22753,7 +22753,7 @@ frxUSDCHF_EUR_5_German_Flash_Manufacturing_PMI:
   magnitude: '1.000000'
 frxUSDCHF_EUR_5_German_Ifo_Business_Climate:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.910296'
 frxUSDCHF_EUR_5_German_ZEW_Economic_Sentiment:
   bias: '0.000000'
@@ -23233,7 +23233,7 @@ frxUSDCHF_USD_1_Challenger_Job_Cuts_y/y:
   magnitude: '1.000000'
 frxUSDCHF_USD_1_Construction_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.876790'
 frxUSDCHF_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -23277,7 +23277,7 @@ frxUSDCHF_USD_1_IBD/TIPP_Economic_Optimism:
   magnitude: '1.000000'
 frxUSDCHF_USD_1_ISM_Manufacturing_Prices:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.791673'
 frxUSDCHF_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -23333,7 +23333,7 @@ frxUSDCHF_USD_1_S&P/CS_Composite-20_HPI_y/y:
   magnitude: '1.000000'
 frxUSDCHF_USD_1_TIC_Long-Term_Purchases:
   bias: '0.000000'
-  duration: '60.000000'
+  duration: '180.000000'
   magnitude: '3.186587'
 frxUSDCHF_USD_1_Wholesale_Inventories_m/m:
   bias: '0.000000'
@@ -23349,11 +23349,11 @@ frxUSDCHF_USD_3_10-y_Bond_Auction:
   magnitude: '1.000000'
 frxUSDCHF_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '154.456498'
+  duration: '180.000000'
   magnitude: '9.283923'
 frxUSDCHF_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '882.855864'
+  duration: '2520.000000'
   magnitude: '22.242954'
 frxUSDCHF_USD_3_Beige_Book:
   bias: '0.000000'
@@ -23365,7 +23365,7 @@ frxUSDCHF_USD_3_Business_Inventories_m/m:
   magnitude: '1.000000'
 frxUSDCHF_USD_3_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '360.000000'
   magnitude: '4.140950'
 frxUSDCHF_USD_3_Capacity_Utilization_Rate:
   bias: '0.000000'
@@ -23393,7 +23393,7 @@ frxUSDCHF_USD_3_Current_Account:
   magnitude: '6.540952'
 frxUSDCHF_USD_3_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '4.717020'
 frxUSDCHF_USD_3_Empire_State_Manufacturing_Index:
   bias: '0.000000'
@@ -23401,7 +23401,7 @@ frxUSDCHF_USD_3_Empire_State_Manufacturing_Index:
   magnitude: '3.426113'
 frxUSDCHF_USD_3_Employment_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.585438'
 frxUSDCHF_USD_3_Existing_Home_Sales:
   bias: '0.000000'
@@ -23465,11 +23465,11 @@ frxUSDCHF_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxUSDCHF_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '779.786733'
+  duration: '1740.000000'
   magnitude: '16.672404'
 frxUSDCHF_USD_3_Final_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.848687'
 frxUSDCHF_USD_3_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -23481,7 +23481,7 @@ frxUSDCHF_USD_3_Housing_Starts:
   magnitude: '3.137996'
 frxUSDCHF_USD_3_Import_Prices_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.486530'
 frxUSDCHF_USD_3_Industrial_Production_m/m:
   bias: '0.000000'
@@ -23508,11 +23508,11 @@ frxUSDCHF_USD_3_Personal_Spending_m/m:
   duration: '180.000000'
   magnitude: '3.102583'
 frxUSDCHF_USD_3_Prelim_Nonfarm_Productivity_q/q:
-  bias: '0.000000'
+  bias: '0.233333'
   duration: '300.000000'
   magnitude: '3.617504'
 frxUSDCHF_USD_3_Prelim_Unit_Labor_Costs_q/q:
-  bias: '0.000000'
+  bias: '0.233333'
   duration: '300.000000'
   magnitude: '3.617504'
 frxUSDCHF_USD_3_Revised_Nonfarm_Productivity_q/q:
@@ -23541,11 +23541,11 @@ frxUSDCHF_USD_3_default:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '124.152764'
+  duration: '480.000000'
   magnitude: '6.582214'
 frxUSDCHF_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '154.456498'
+  duration: '180.000000'
   magnitude: '9.283923'
 frxUSDCHF_USD_5_Building_Permits:
   bias: '0.000000'
@@ -23557,19 +23557,19 @@ frxUSDCHF_USD_5_CB_Consumer_Confidence:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_CPI_m/m:
   bias: '0.000000'
-  duration: '267.764897'
+  duration: '300.000000'
   magnitude: '6.425228'
 frxUSDCHF_USD_5_Core_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '4.937547'
 frxUSDCHF_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '4.582221'
 frxUSDCHF_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '166.062534'
+  duration: '300.000000'
   magnitude: '9.108904'
 frxUSDCHF_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -23577,11 +23577,11 @@ frxUSDCHF_USD_5_Existing_Home_Sales:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '777.228437'
+  duration: '1020.000000'
   magnitude: '13.936553'
 frxUSDCHF_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '508.376490'
+  duration: '1320.000000'
   magnitude: '8.073749'
 frxUSDCHF_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -23589,7 +23589,7 @@ frxUSDCHF_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '939.562823'
+  duration: '1740.000000'
   magnitude: '16.417667'
 frxUSDCHF_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -23609,7 +23609,7 @@ frxUSDCHF_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.791673'
 frxUSDCHF_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -23621,7 +23621,7 @@ frxUSDCHF_USD_5_New_Home_Sales:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '882.855864'
+  duration: '2520.000000'
   magnitude: '22.242954'
 frxUSDCHF_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -23645,7 +23645,7 @@ frxUSDCHF_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '166.062534'
+  duration: '300.000000'
   magnitude: '9.108904'
 frxUSDCHF_USD_5_Trade_Balance:
   bias: '0.000000'
@@ -23653,16 +23653,16 @@ frxUSDCHF_USD_5_Trade_Balance:
   magnitude: '1.000000'
 frxUSDCHF_USD_5_Unemployment_Claims:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.695794'
 frxUSDCHF_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '882.855864'
+  duration: '2520.000000'
   magnitude: '22.242954'
 frxUSDCHF_USD_5_default:
-  bias: '0.000000'
-  duration: '120.000000'
-  magnitude: '4.173007'
+  bias: '0.032599'
+  duration: '360.000000'
+  magnitude: '4.173695'
 frxUSDJPY_AUD_1_AIG_Construction_Index:
   bias: '0.000000'
   duration: '60.000000'
@@ -23813,7 +23813,7 @@ frxUSDJPY_CAD_1_BOC_Review:
   magnitude: '1.000000'
 frxUSDJPY_CAD_1_Capacity_Utilization_Rate:
   bias: '0.000000'
-  duration: '166.434106'
+  duration: '240.000000'
   magnitude: '11.270618'
 frxUSDJPY_CAD_1_Corporate_Profits_q/q:
   bias: '0.000000'
@@ -23861,7 +23861,7 @@ frxUSDJPY_CAD_3_Housing_Starts:
   magnitude: '1.000000'
 frxUSDJPY_CAD_3_Labor_Productivity_q/q:
   bias: '0.000000'
-  duration: '838.332310'
+  duration: '2160.000000'
   magnitude: '35.916852'
 frxUSDJPY_CAD_3_Manufacturing_Sales_m/m:
   bias: '0.000000'
@@ -23869,7 +23869,7 @@ frxUSDJPY_CAD_3_Manufacturing_Sales_m/m:
   magnitude: '3.837831'
 frxUSDJPY_CAD_3_NHPI_m/m:
   bias: '0.000000'
-  duration: '133.865771'
+  duration: '480.000000'
   magnitude: '6.442004'
 frxUSDJPY_CAD_3_RMPI_m/m:
   bias: '0.000000'
@@ -23909,7 +23909,7 @@ frxUSDJPY_CAD_5_BOC_Rate_Statement:
   magnitude: '1.000000'
 frxUSDJPY_CAD_5_Building_Permits_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '3.203235'
 frxUSDJPY_CAD_5_Core_CPI_m/m:
   bias: '0.000000'
@@ -23921,7 +23921,7 @@ frxUSDJPY_CAD_5_Core_Retail_Sales_m/m:
   magnitude: '1.000000'
 frxUSDJPY_CAD_5_Employment_Change:
   bias: '0.000000'
-  duration: '239.812007'
+  duration: '960.000000'
   magnitude: '15.728562'
 frxUSDJPY_CAD_5_GDP_m/m:
   bias: '0.000000'
@@ -23933,19 +23933,19 @@ frxUSDJPY_CAD_5_Ivey_PMI:
   magnitude: '1.000000'
 frxUSDJPY_CAD_5_Manufacturing_Sales_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '7.758790'
 frxUSDJPY_CAD_5_Overnight_Rate:
   bias: '0.000000'
   duration: '60.000000'
   magnitude: '1.000000'
 frxUSDJPY_CAD_5_Trade_Balance:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.230769'
+  duration: '180.000000'
   magnitude: '4.902317'
 frxUSDJPY_CAD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '239.812007'
+  duration: '960.000000'
   magnitude: '15.728562'
 frxUSDJPY_CAD_5_Wholesale_Sales_m/m:
   bias: '0.000000'
@@ -24145,7 +24145,7 @@ frxUSDJPY_CNY_5_CPI_y/y:
   magnitude: '1.000000'
 frxUSDJPY_CNY_5_GDP_q/y:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '4.492545'
 frxUSDJPY_CNY_5_HSBC_Final_Manufacturing_PMI:
   bias: '0.000000'
@@ -24544,8 +24544,8 @@ frxUSDJPY_EUR_5_ECB_President_Draghi_Speaks:
   duration: '60.000000'
   magnitude: '1.000000'
 frxUSDJPY_EUR_5_ECB_Press_Conference:
-  bias: '0.000000'
-  duration: '143.233599'
+  bias: '0.153061'
+  duration: '300.000000'
   magnitude: '5.282971'
 frxUSDJPY_EUR_5_French_Flash_Manufacturing_PMI:
   bias: '0.000000'
@@ -24921,7 +24921,7 @@ frxUSDJPY_JPY_5_BOJ_Press_Conference:
   magnitude: '1.000000'
 frxUSDJPY_JPY_5_Monetary_Policy_Statement:
   bias: '0.000000'
-  duration: '235.805019'
+  duration: '540.000000'
   magnitude: '9.423031'
 frxUSDJPY_JPY_5_default:
   bias: '0.000000'
@@ -25057,7 +25057,7 @@ frxUSDJPY_USD_1_Challenger_Job_Cuts_y/y:
   magnitude: '1.000000'
 frxUSDJPY_USD_1_Construction_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '9.593413'
 frxUSDJPY_USD_1_Consumer_Credit_m/m:
   bias: '0.000000'
@@ -25105,7 +25105,7 @@ frxUSDJPY_USD_1_IBD/TIPP_Economic_Optimism:
   magnitude: '1.000000'
 frxUSDJPY_USD_1_ISM_Manufacturing_Prices:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '9.623359'
 frxUSDJPY_USD_1_Labor_Market_Conditions_Index_m/m:
   bias: '0.000000'
@@ -25129,11 +25129,11 @@ frxUSDJPY_USD_1_Natural_Gas_Storage:
   magnitude: '1.000000'
 frxUSDJPY_USD_1_Personal_Income_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.447151'
 frxUSDJPY_USD_1_Prelim_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '9.521975'
 frxUSDJPY_USD_1_Prelim_UoM_Inflation_Expectations:
   bias: '0.000000'
@@ -25177,11 +25177,11 @@ frxUSDJPY_USD_3_10-y_Bond_Auction:
   magnitude: '3.105149'
 frxUSDJPY_USD_3_Advance_GDP_Price_Index_q/q:
   bias: '0.000000'
-  duration: '377.341058'
+  duration: '600.000000'
   magnitude: '15.828981'
 frxUSDJPY_USD_3_Average_Hourly_Earnings_m/m:
   bias: '0.000000'
-  duration: '1087.765473'
+  duration: '2820.000000'
   magnitude: '44.517936'
 frxUSDJPY_USD_3_Beige_Book:
   bias: '0.000000'
@@ -25193,7 +25193,7 @@ frxUSDJPY_USD_3_Business_Inventories_m/m:
   magnitude: '1.000000'
 frxUSDJPY_USD_3_CPI_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '480.000000'
   magnitude: '5.577369'
 frxUSDJPY_USD_3_Capacity_Utilization_Rate:
   bias: '0.000000'
@@ -25205,7 +25205,7 @@ frxUSDJPY_USD_3_Chicago_PMI:
   magnitude: '1.000000'
 frxUSDJPY_USD_3_Core_PCE_Price_Index_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.438151'
 frxUSDJPY_USD_3_Core_PPI_m/m:
   bias: '0.000000'
@@ -25221,19 +25221,19 @@ frxUSDJPY_USD_3_Current_Account:
   magnitude: '8.321581'
 frxUSDJPY_USD_3_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '7.213538'
 frxUSDJPY_USD_3_Empire_State_Manufacturing_Index:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.638220'
 frxUSDJPY_USD_3_Employment_Cost_Index_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '6.300207'
 frxUSDJPY_USD_3_Existing_Home_Sales:
   bias: '0.000000'
-  duration: '131.236094'
+  duration: '120.000000'
   magnitude: '3.658300'
 frxUSDJPY_USD_3_FOMC_Member_Bullard_Speaks:
   bias: '0.000000'
@@ -25305,7 +25305,7 @@ frxUSDJPY_USD_3_Federal_Budget_Balance:
   magnitude: '1.000000'
 frxUSDJPY_USD_3_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '1151.296893'
+  duration: '2220.000000'
   magnitude: '16.922113'
 frxUSDJPY_USD_3_Final_GDP_q/q:
   bias: '0.000000'
@@ -25317,11 +25317,11 @@ frxUSDJPY_USD_3_Flash_Manufacturing_PMI:
   magnitude: '1.000000'
 frxUSDJPY_USD_3_Housing_Starts:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.690708'
 frxUSDJPY_USD_3_Import_Prices_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '5.755077'
 frxUSDJPY_USD_3_Industrial_Production_m/m:
   bias: '0.000000'
@@ -25345,7 +25345,7 @@ frxUSDJPY_USD_3_Pending_Home_Sales_m/m:
   magnitude: '3.154828'
 frxUSDJPY_USD_3_Personal_Spending_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '240.000000'
   magnitude: '3.447151'
 frxUSDJPY_USD_3_Prelim_Nonfarm_Productivity_q/q:
   bias: '0.000000'
@@ -25381,15 +25381,15 @@ frxUSDJPY_USD_3_default:
   magnitude: '1.000000'
 frxUSDJPY_USD_5_ADP_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '174.674225'
+  duration: '480.000000'
   magnitude: '11.573465'
 frxUSDJPY_USD_5_Advance_GDP_q/q:
   bias: '0.000000'
-  duration: '377.341058'
+  duration: '600.000000'
   magnitude: '15.828981'
 frxUSDJPY_USD_5_Building_Permits:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '6.690708'
 frxUSDJPY_USD_5_CB_Consumer_Confidence:
   bias: '0.000000'
@@ -25397,19 +25397,19 @@ frxUSDJPY_USD_5_CB_Consumer_Confidence:
   magnitude: '4.226007'
 frxUSDJPY_USD_5_CPI_m/m:
   bias: '0.000000'
-  duration: '314.120167'
+  duration: '600.000000'
   magnitude: '14.814000'
 frxUSDJPY_USD_5_Core_CPI_m/m:
   bias: '0.000000'
-  duration: '166.509729'
+  duration: '540.000000'
   magnitude: '7.506453'
 frxUSDJPY_USD_5_Core_Durable_Goods_Orders_m/m:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '420.000000'
   magnitude: '7.534407'
 frxUSDJPY_USD_5_Core_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '154.402286'
+  duration: '420.000000'
   magnitude: '11.876943'
 frxUSDJPY_USD_5_Existing_Home_Sales:
   bias: '0.000000'
@@ -25417,11 +25417,11 @@ frxUSDJPY_USD_5_Existing_Home_Sales:
   magnitude: '4.167328'
 frxUSDJPY_USD_5_FOMC_Economic_Projections:
   bias: '0.000000'
-  duration: '1013.486152'
+  duration: '1200.000000'
   magnitude: '15.951909'
 frxUSDJPY_USD_5_FOMC_Meeting_Minutes:
   bias: '0.000000'
-  duration: '334.214782'
+  duration: '1320.000000'
   magnitude: '8.327859'
 frxUSDJPY_USD_5_FOMC_Press_Conference:
   bias: '0.000000'
@@ -25429,7 +25429,7 @@ frxUSDJPY_USD_5_FOMC_Press_Conference:
   magnitude: '1.000000'
 frxUSDJPY_USD_5_FOMC_Statement:
   bias: '0.000000'
-  duration: '1157.801430'
+  duration: '3060.000000'
   magnitude: '19.766657'
 frxUSDJPY_USD_5_Fed_Chair_Yellen_Speaks:
   bias: '0.000000'
@@ -25449,11 +25449,11 @@ frxUSDJPY_USD_5_Fed_Chairman_Bernanke_Testifies:
   magnitude: '1.000000'
 frxUSDJPY_USD_5_Federal_Funds_Rate:
   bias: '0.000000'
-  duration: '643.315108'
+  duration: '3000.000000'
   magnitude: '19.461724'
 frxUSDJPY_USD_5_ISM_Manufacturing_PMI:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '300.000000'
   magnitude: '9.623359'
 frxUSDJPY_USD_5_ISM_Non-Manufacturing_PMI:
   bias: '0.000000'
@@ -25465,7 +25465,7 @@ frxUSDJPY_USD_5_New_Home_Sales:
   magnitude: '4.547324'
 frxUSDJPY_USD_5_Non-Farm_Employment_Change:
   bias: '0.000000'
-  duration: '1087.765473'
+  duration: '2820.000000'
   magnitude: '44.517936'
 frxUSDJPY_USD_5_PPI_m/m:
   bias: '0.000000'
@@ -25481,7 +25481,7 @@ frxUSDJPY_USD_5_Philly_Fed_Manufacturing_Index:
   magnitude: '5.313581'
 frxUSDJPY_USD_5_Prelim_GDP_q/q:
   bias: '0.000000'
-  duration: '120.000000'
+  duration: '180.000000'
   magnitude: '9.521975'
 frxUSDJPY_USD_5_Prelim_UoM_Consumer_Sentiment:
   bias: '0.000000'
@@ -25489,25 +25489,25 @@ frxUSDJPY_USD_5_Prelim_UoM_Consumer_Sentiment:
   magnitude: '3.500083'
 frxUSDJPY_USD_5_Retail_Sales_m/m:
   bias: '0.000000'
-  duration: '154.402286'
+  duration: '420.000000'
   magnitude: '11.876943'
 frxUSDJPY_USD_5_TIC_Long-Term_Purchases:
   bias: '0.000000'
   duration: '60.000000'
   magnitude: '1.000000'
 frxUSDJPY_USD_5_Trade_Balance:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.216981'
+  duration: '180.000000'
   magnitude: '4.888871'
 frxUSDJPY_USD_5_Unemployment_Claims:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.092920'
+  duration: '240.000000'
   magnitude: '6.665575'
 frxUSDJPY_USD_5_Unemployment_Rate:
   bias: '0.000000'
-  duration: '1087.765473'
+  duration: '2820.000000'
   magnitude: '44.517936'
 frxUSDJPY_USD_5_default:
-  bias: '0.000000'
-  duration: '120.000000'
+  bias: '0.040254'
+  duration: '300.000000'
   magnitude: '6.924201'
