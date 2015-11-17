@@ -284,12 +284,12 @@ sub _feed_channel {
             delete $feed_channel->{$symbol};
         }
         if ($feed_channel_type->{"$symbol;$type"} <= 0) {
-            delete $feed_channel_type->{$symbol};
+            delete $feed_channel_type->{"$symbol;$type"};
         }
     }
 
-    $c->stash('feed_channel'      => $feed_channel);
-    $c->stash('feed_channel_type' => $feed_channel_type);
+    $c->stash('feed_channel'=>$feed_channel);
+    $c->stash('feed_channel_type'=>$feed_channel_type);
 
     return;
 }
