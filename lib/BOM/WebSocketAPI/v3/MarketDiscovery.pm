@@ -10,7 +10,7 @@ use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
 use JSON;
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any none);
 
 use BOM::Platform::Context qw(request localize);
 use BOM::Market::Registry;
@@ -178,7 +178,7 @@ sub ticks {
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     my @offerings = get_offerings_with_filter('underlying_symbol');
     foreach my $symbol (@symbols) {
-        if (not any { $symbol eq $_ } @offerings) {
+        if (none { $symbol eq $_ } @offerings) {
             return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
         }
         my $u = BOM::Market::Underlying->new($symbol);
