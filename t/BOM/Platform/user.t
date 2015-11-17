@@ -175,7 +175,7 @@ subtest 'user / email from loginid' => sub {
 
 subtest 'User Login' => sub {
     subtest 'cannot login if disabled' => sub {
-        $client_vr->set_status('disabled', 'ystem', 'testing');
+        $client_vr->set_status('disabled', 'system', 'testing');
         $client_vr->save;
         $status = $user->login(%pass);
         ok !$status->{success}, 'All account disabled, user cannot login';
