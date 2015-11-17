@@ -138,9 +138,9 @@ sub get_sold_bets_of_account {
         SELECT fmb.*, t.id txn_id
         $sql
         ORDER BY fmb.purchase_time $sort_dir
-        LIMIT $limit OFFSET $offset
+        LIMIT ? OFFSET ?
     ");
-    $sth->execute(@binds);
+    $sth->execute(@binds, $limit, $offset);
 
     return {
         total => $total,
