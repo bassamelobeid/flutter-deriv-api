@@ -83,6 +83,9 @@ sub login {
 
         $error = localize('Incorrect email or password.');
         BOM::System::AuditLog::log('incorrect email or password', $self->email);
+    } elsif (!$self->clients) {
+        $error = localize('This account is unavailable. For any questions please contact Customer Support.');
+        BOM::System::AuditLog::log('Account disabled', $self->email);
     }
 
     $self->add_login_history({
