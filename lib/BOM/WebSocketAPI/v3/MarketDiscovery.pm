@@ -183,21 +183,22 @@ sub ticks {
         }
         my $u = BOM::Market::Underlying->new($symbol);
 
-        if ($args->{subscribe} eq '1' and $u->feed_license ne 'realtime') {
+        if ($u->feed_license ne 'realtime') {
             return $c->new_error('ticks', 'NoRealtimeQuotes', localize("Realtime quotes not available for [_1]", $symbol));
         }
+
+        $c->send({
+                json => {
+                    msg_type => 'tick',
+                    echo_req => $c->stash('args'),
+                    tick     => {
+                        symbol => $symbol,
+                        epoch  => $u->spot_tick->epoch,
+                        quote  => $u->spot_tick->quote
+                    }}});
+
         if ($args->{subscribe} eq '1' and $u->feed_license eq 'realtime') {
             _feed_channel($c, 'subscribe', $symbol, 'tick');
-            $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $c->stash('args'),
-                        tick     => {
-                            symbol => $symbol,
-                            epoch  => $u->spot_tick->epoch,
-                            quote  => $u->spot_tick->quote
-                        }}});
-
         }
         if ($args->{subscribe} eq '0') {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
@@ -205,7 +206,6 @@ sub ticks {
     }
 
     return;
-
 }
 
 sub ticks_history {
