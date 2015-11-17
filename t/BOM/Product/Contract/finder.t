@@ -59,14 +59,14 @@ subtest "available contracts for symbol" => sub {
             touchnotouch => 4,    # intraday and daily separated
             staysinout   => 4,
             endsinout    => 4,
-            digits       => 2,
+            digits       => 6,
             asian        => 2,
             spreads      => 2
         },
         RDMARS => {
             callput   => 8,
             endsinout => 2,
-            digits    => 2,
+            digits    => 6,
             asian     => 2,
         },
         RDBEAR => {
@@ -74,7 +74,7 @@ subtest "available contracts for symbol" => sub {
             touchnotouch => 2,    # intraday and daily separated
             staysinout   => 2,
             endsinout    => 2,
-            digits       => 2,
+            digits       => 6,
             asian        => 2,
         },
         frxUSDJPY => {

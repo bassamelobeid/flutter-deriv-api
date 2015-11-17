@@ -66,7 +66,7 @@ subtest 'get_offerings_with_filter' => sub {
     $filtration->{expiry_type} = 'tick';
     eq_or_diff(
         [sort(get_offerings_with_filter($to, $filtration))],
-        [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF )],
+        [sort qw(CALL PUT ASIAND ASIANU DIGITMATCH DIGITDIFF DIGITODD DIGITEVEN DIGITOVER DIGITUNDER)],
         '... and switches up for tick expiries.'
     );
 
