@@ -265,14 +265,8 @@ sub _sanity_failed {
         if (not ref $arg->{$k}) {
             last OUTER if (@failed = _failed_key_value($k, $arg->{$k}));
         } else {
-            if (ref $arg->{$k} eq 'HASH') {
-                foreach my $l (keys %{$arg->{$k}}) {
-                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
-                }
-            } elsif (ref $arg->{$k} eq 'ARRAY') {
-                foreach my $l (keys @{$arg->{$k}}) {
-                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->[$l]));
-                }
+            foreach my $l (keys %{$arg->{$k}}) {
+                last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
             }
         }
     }
