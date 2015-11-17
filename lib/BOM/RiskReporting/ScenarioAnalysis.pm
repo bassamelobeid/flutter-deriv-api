@@ -74,14 +74,14 @@ sub generate {
     foreach my $open_fmb_id (@keys) {
         my $open_fmb = $open_bets_ref->{$open_fmb_id};
         my ($broker_code) = $open_fmb->{client_loginid} =~ /^([A-Z]+)/;
-        next if !grep { $broker_code =~ $_ } qw(CR MLT MX);
+        next if !grep { $broker_code =~ $_ } qw(CR MLT MX MF);
         my $bet_params = shortcode_to_parameters($open_fmb->{short_code}, $open_fmb->{currency_code});
         $bet_params->{date_pricing} = $pricing_date;
         my $underlying_symbol = $bet_params->{underlying}->symbol;
         $bet_params->{underlying} = $cached_underlyings{$underlying_symbol}
             if ($cached_underlyings{$underlying_symbol});
         my $bet = produce_contract($bet_params);
-
+        if ($bet->is_spread) { next ;}
         $cached_underlyings{$underlying_symbol} ||= $bet->underlying;
 
         if (   not $bet->underlying->spot
