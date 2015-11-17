@@ -193,6 +193,7 @@ sub ticks {
                     echo_req => $c->stash('args'),
                     tick     => {
                         symbol => $symbol,
+                        id     => $symbol,
                         epoch  => $u->spot_tick->epoch,
                         quote  => $u->spot_tick->quote
                     }}});
@@ -312,6 +313,7 @@ sub send_realtime_ticks {
                         echo_req => $c->stash('args'),
                         tick     => {
                             symbol => $symbol,
+                            id     => $symbol,
                             epoch  => $m[1],
                             quote  => $m[2]}}});
         } elsif ($m[0] eq $symbol) {
