@@ -2,12 +2,14 @@ package BOM::WebSocketAPI::v3::Cashier;
 
 use strict;
 use warnings;
-
+use HTML::Entities;
 use List::Util qw( min first );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
 use BOM::Platform::Context qw(localize request);
+use BOM::Database::DataMapper::PaymentAgent;
 
 sub get_limits {
     my ($c, $args) = @_;
@@ -72,6 +74,70 @@ sub get_limits {
         msg_type   => 'get_limits',
         get_limits => $limit,
     };
+}
+
+sub paymentagent_list {
+    my ($c, $args) = @_;
+
+    my $r = $c->stash('request');
+
+    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => ($r->loginid ? $r->broker->code : 'CR')});
+    my $countries = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
+
+    my $target_country = $args->{paymentagent_list};
+
+    # add country name plus code
+    foreach (@{$countries}) {
+        $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $r->language);
+    }
+
+    my $payment_agent_table_row = __ListPaymentAgents($c, {target_country => $target_country});
+
+    return {
+        msg_type          => 'paymentagent_list',
+        paymentagent_list => {
+            available_countries => $countries,
+            list                => $payment_agent_table_row
+        },
+    };
+}
+
+sub __ListPaymentAgents {
+    my ($c, $args) = @_;
+
+    my $r = $c->stash('request');
+
+    my @allow_broker = map { $_->code } @{$r->website->broker_codes};
+
+    my $payment_agent_mapper =
+        BOM::Database::DataMapper::PaymentAgent->new({broker_code => (($r->loginid) ? $r->broker->code : 'CR')});
+    my $authenticated_paymentagent_agents =
+        $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{target_country}});
+
+    my %payment_agent_banks = %{BOM::Platform::Locale::get_payment_agent_banks()};
+
+    my $payment_agent_table_row = [];
+    foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
+        my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
+
+        push @{$payment_agent_table_row},
+            {
+            'name'                  => encode_entities($payment_agent->{payment_agent_name}),
+            'summary'               => encode_entities($payment_agent->{summary}),
+            'url'                   => $payment_agent->{url},
+            'email'                 => $payment_agent->{email},
+            'telephone'             => $payment_agent->{phone},
+            'currencies'            => $payment_agent->{currency_code},
+            'deposit_commission'    => $payment_agent->{commission_deposit},
+            'withdrawal_commission' => $payment_agent->{commission_withdrawal},
+            'further_information'   => $payment_agent->{information},
+            'supported_banks'       => $payment_agent->{supported_banks},
+            };
+    }
+
+    @$payment_agent_table_row = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_table_row;
+
+    return $payment_agent_table_row;
 }
 
 1;
