@@ -168,4 +168,119 @@ sub error_map {
     };
 }
 
+sub get_payment_agent_banks {
+    return {
+        LibertyReserve => {
+            name  => 'LibertyReserve',
+            image => 'images/pages/payment_agent/banks/libertyreserve.png',
+            url   => 'http://www.libertyreserve.com',
+        },
+        BankBRI => {
+            name  => 'BankBRI',
+            image => 'images/pages/payment_agent/banks/bankbri.png',
+            url   => 'http://www.bri.co.id',
+        },
+        GrupBCA => {
+            name  => 'GrupBCA',
+            image => 'images/pages/payment_agent/banks/grupbca.png',
+            url   => 'http://www.klikbca.com',
+        },
+        CIMBNIAGA => {
+            name  => 'CIMBNIAGA',
+            image => 'images/pages/payment_agent/banks/cimbniaga.png',
+            url   => 'http://www.cimbniaga.com',
+        },
+        BNI => {
+            name  => 'BNI',
+            image => 'images/pages/payment_agent/banks/bni.png',
+            url   => 'http://www.bni.co.id',
+        },
+        Mandiri => {
+            name  => 'Mandiri',
+            image => 'images/pages/payment_agent/banks/mandiri.png',
+            url   => 'http://www.bankmandiri.co.id',
+        },
+        MandiriSyariah => {
+            name  => 'MandiriSyariah',
+            image => 'images/pages/payment_agent/banks/mandiri_syariah.png',
+            url   => 'http://www.syariahmandiri.co.id',
+        },
+        PermataBank => {
+            name  => 'PermataBank',
+            image => 'images/pages/payment_agent/banks/permatabank.png',
+            url   => 'http://www.permatabank.com',
+        },
+        MoneyGram => {
+            name  => 'MoneyGram',
+            image => 'images/pages/payment_agent/banks/moneygram.png',
+            url   => 'https://www.moneygram.com',
+        },
+        GTBank => {
+            name  => 'GTBank',
+            image => 'images/pages/payment_agent/banks/gtbank.png',
+            url   => 'http://www.gtbank.com',
+        },
+        FirstBank => {
+            name  => 'FirstBank',
+            image => 'images/pages/payment_agent/banks/firstbank.png',
+            url   => 'http://www.firstbanknigeria.com',
+        },
+        DiamondBank => {
+            name  => 'DiamondBank',
+            image => 'images/pages/payment_agent/banks/diamondbank.png',
+            url   => 'http://www.diamondbank.com',
+        },
+        ZenithBank => {
+            name  => 'ZenithBank',
+            image => 'images/pages/payment_agent/banks/zenithbank.png',
+            url   => 'http://www.zenithbank.com',
+        },
+        EGold => {
+            name  => 'EGold',
+            image => 'images/pages/payment_agent/banks/egold.png',
+            url   => 'http://www.e-gold.com',
+        },
+        PerfectMoney => {
+            name  => 'PerfectMoney',
+            image => 'images/pages/payment_agent/banks/perfectmoney.png',
+            url   => 'http://www.perfectmoney.com',
+        },
+        AlertPay => {
+            name  => 'AlertPay',
+            image => 'images/pages/payment_agent/banks/alertpay.png',
+            url   => 'https://www.alertpay.com',
+        },
+        PayPal => {
+            name  => 'PayPal',
+            image => 'images/pages/payment_agent/banks/paypal.png',
+            url   => 'https://www.paypal.com',
+        },
+        SolidTrustPay => {
+            name  => 'Solid Trust Pay',
+            image => 'images/pages/payment_agent/banks/solidtrustpay.png',
+            url   => 'http://www.solidtrustpay.com',
+        },
+        ICBC => {
+            name  => 'ICBC',
+            image => 'images/pages/payment_agent/banks/icbc.png',
+            url   => 'http://juraganegold.com/cn/',
+        },
+        VISA => {
+            name  => 'VISA',
+            image => 'images/pages/payment_agent/cards/visa.png',
+            url   => 'http://www.visa.com/',
+        },
+        MasterCard => {
+            name  => 'MasterCard',
+            image => 'images/pages/payment_agent/cards/mastercard.png',
+            url   => 'http://www.mastercard.com/',
+        },
+        Verve => {
+            name  => 'Verve',
+            image => 'images/pages/payment_agent/cards/verve.png',
+            url   => 'https://www.verveinternational.com/',
+        },
+    };
+}
+
 1;
