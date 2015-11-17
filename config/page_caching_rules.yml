@@ -155,3 +155,9 @@
 "/cashier/payment_methods":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/profit_table":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/statementws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
