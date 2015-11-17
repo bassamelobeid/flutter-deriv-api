@@ -185,7 +185,7 @@ subtest 'User Login' => sub {
         $client_vr->save;
         $status = $user->login(%pass);
         ok !$status->{success}, 'All account disabled, user cannot login';
-        ok $status->{error} =~ /Account disabled/;
+        ok $status->{error} =~ /account is unavailable/;
     };
 
     subtest 'support login with loginid, for backward compatible' => sub {
