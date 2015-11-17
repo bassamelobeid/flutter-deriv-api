@@ -593,9 +593,9 @@ sub _get_economic_events {
             }
         }
 
-        next unless keys %news_parameters;
-        $news_parameters{release_time} = $event->release_date->epoch;
-        push @events, \%news_parameters;
+        next unless $news_parameters;
+        $news_parameters->{release_time} = $event->release_date->epoch;
+        push @events, $news_parameters;
     }
 
     return \@events;
