@@ -570,7 +570,7 @@ sub _get_economic_events {
     my ($self, $start, $end) = @_;
 
     state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
-    my $underlying = $self->underlying;
+    my $underlying = $self->bet->underlying;
 
     my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => Date::Utility->new($start),
@@ -606,7 +606,7 @@ sub _build_economic_events_spot_risk_markup {
     }
 
     my $contract_duration = $bet->remaining_time->seconds;
-    my $lookback          = $start->minus($contract_durati0n + 3600);
+    my $lookback          = $start->minus($contract_duration + 3600);
     my $news_array        = $self->_get_economic_events($lookback, $end);
 
     my @combined = (0) x scalar(@time_samples);
