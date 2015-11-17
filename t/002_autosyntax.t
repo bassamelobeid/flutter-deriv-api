@@ -17,4 +17,11 @@ subtest "Check modules in lib" => sub {
     }
 };
 
+subtest "Check scripts in bin" => sub {
+    for (sort File::Find::Rule->file->name(qr/\.p[lm]$/)->in(Cwd::abs_path . '/bin')) {
+        /$pattern/ || next if $pattern;
+        syntax_ok($_) if $_ =~ /\.pl$/;
+    }
+};
+
 done_testing;
