@@ -270,7 +270,7 @@ sub _sanity_failed {
                     last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
                 }
             } elsif (ref $arg->{$k} eq 'ARRAY') {
-                foreach my $l (keys @{$arg->{$k}}) {
+                foreach my $l (@{$arg->{$k}}) {
                     last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->[$l]));
                 }
             }
