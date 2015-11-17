@@ -14,10 +14,12 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 =cut
 
 package BOM::Platform::SessionCookie;
-use BOM::System::Chronicle;
 use Bytes::Random::Secure;
 use JSON;
 use Carp;
+use Array::Utils qw (array_minus);
+
+use BOM::System::Chronicle;
 
 use strict;
 use warnings;
@@ -98,7 +100,8 @@ sub new {    ## no critic RequireArgUnpack
         croak "Error adding new session, missing: " . join(',', @valid)
             if @valid;
 
-        @valid = grep { !$self->{$_} } @ALLOWED;
+        my @passed = keys $self;
+        @valid = array_minus(@passed, @ALLOWED);
         croak "Error adding new session, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
         # NOTE, we need to use the object interface here. Bytes::Random::Secure
