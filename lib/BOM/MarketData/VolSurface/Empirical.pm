@@ -103,7 +103,7 @@ sub get_volatility {
 
     my $past_sum           = sum(map { ($seasonality_past->[$_] * $news_past->[$_])**2 * $weights->[$_] } (0 .. $#time_samples_past));
     my $past_seasonality   = sqrt($past_sum / sum(@$weights));
-    my $future_sum         = sum(map { ($seasonality_fut->[$_] * $news_fut->[0])**2 } (0 .. $#time_samples_fut));
+    my $future_sum         = sum(map { ($seasonality_fut->[$_] * $news_fut->[$_])**2 } (0 .. $#time_samples_fut));
     my $future_seasonality = sqrt($future_sum / scalar(@time_samples_fut));
 
     return $self->_seasonalize({
