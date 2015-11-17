@@ -197,10 +197,10 @@ sub ticks {
                         quote  => $u->spot_tick->quote
                     }}});
 
-        if ($args->{subscribe} eq '1' and $u->feed_license eq 'realtime') {
+        if ($args->{subscribe} and $args->{subscribe} eq '1' and $u->feed_license eq 'realtime') {
             _feed_channel($c, 'subscribe', $symbol, 'tick');
         }
-        if ($args->{subscribe} eq '0') {
+        if ($args->{subscribe} and $args->{subscribe} eq '0') {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
         }
     }
