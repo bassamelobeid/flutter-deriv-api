@@ -197,7 +197,7 @@ sub ticks {
                         quote  => $u->spot_tick->quote
                     }}});
 
-        if ($args->{subscribe} and $args->{subscribe} eq '1' and $u->feed_license eq 'realtime') {
+        if ((not exists $args->{subscribe} or $args->{subscribe} eq '1') and $u->feed_license eq 'realtime') {
             _feed_channel($c, 'subscribe', $symbol, 'tick');
         }
         if ($args->{subscribe} and $args->{subscribe} eq '0') {
@@ -265,25 +265,32 @@ sub ticks_history {
 sub _feed_channel {
     my ($c, $subs, $symbol, $type) = @_;
 
-    my $redis = $c->stash('redis');
+    my $feed_channel      = $c->stash('feed_channel');
+    my $feed_channel_type = $c->stash('feed_channel_type');
 
+    my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
-        $c->stash->{feed_channel}->{$symbol} += 1;
-        $c->stash->{feed_channel_type}->{"$symbol;$type"} += 1;
+        $feed_channel->{$symbol} += 1;
+        $feed_channel_type->{"$symbol;$type"} += 1;
         $redis->subscribe(["FEED::$symbol"], sub { });
+
     }
 
     if ($subs eq 'unsubscribe') {
-        $c->stash->{feed_channel}->{$symbol} -= 1;
-        $c->stash->{feed_channel_type}->{"$symbol;$type"} -= 1;
-        if ($c->stash->{feed_channel}->{$symbol} <= 0) {
+        $feed_channel->{$symbol} -= 1;
+        $feed_channel_type->{"$symbol;$type"} -= 1;
+        if ($feed_channel->{$symbol} <= 0) {
             $redis->subscribe(["FEED::$symbol"], sub { });
-            delete $c->stash->{feed_channel}->{$symbol};
+            delete $feed_channel->{$symbol};
         }
-        if ($c->stash->{feed_channel_type}->{"$symbol;$type"} <= 0) {
-            delete $c->stash->{feed_channel_type}->{$symbol};
+        if ($feed_channel_type->{"$symbol;$type"} <= 0) {
+            delete $feed_channel_type->{$symbol};
         }
     }
+
+    $c->stash('feed_channel'=>$feed_channel);
+    $c->stash('feed_channel_type'=>$feed_channel_type);
+
     return;
 }
 
@@ -291,7 +298,7 @@ sub send_realtime_ticks {
     my ($c, $message) = @_;
 
     my @m = split(';', $message);
-    my $feed_channels_type = $c->stash('feed_channels_type');
+    my $feed_channels_type = $c->stash('feed_channel_type');
 
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
