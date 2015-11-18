@@ -43,7 +43,7 @@ my $link = request()->url_for(
         verify_token => BOM::Platform::SessionCookie->new({
                 email       => $email,
                 expires_in  => 3600,
-                created_for => 'verify_email'
+                created_for => 'reset_password'
             }
         )->token,
     });
