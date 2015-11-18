@@ -161,3 +161,6 @@
 "/user/statementws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/change_passwordws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
