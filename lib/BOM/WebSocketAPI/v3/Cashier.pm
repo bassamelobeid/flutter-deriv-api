@@ -8,6 +8,7 @@ use Data::UUID;
 use Path::Tiny;
 use DateTime;
 use Date::Utility;
+use Try::Tiny;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_count);
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Locale;
