@@ -5,7 +5,7 @@ use warnings;
 
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 24;
+use Test::More tests => 26;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use Guard;
@@ -1911,6 +1911,98 @@ subtest 'max_7day_turnover validation', sub {
     'survived';
 };
 
+subtest 'max_30day_turnover validation', sub {
+    plan tests => 12;
+    lives_ok {
+        my $cl = create_client;
+
+        top_up $cl, 'USD', 100;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract_up = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'FLASHU',
+            currency     => 'USD',
+            payout       => 10.00,
+            duration     => '15m',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $contract_down = produce_contract({
+            underlying   => $underlying_r100,
+            bet_type     => 'FLASHD',
+            currency     => 'USD',
+            payout       => 10.00,
+            duration     => '15m',
+            current_tick => $tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $cl,
+            contract    => $contract_up,
+            price       => 5.20,
+            payout      => $contract_up->payout,
+            amount_type => 'payout',
+        });
+
+        my $error = do {
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(
+                get_limit_for_30day_turnover => sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 }
+            );
+
+            is +BOM::Product::Transaction->new({
+                    client      => $cl,
+                    contract    => $contract_up,
+                    price       => 5.20,
+                    payout      => $contract_up->payout,
+                    amount_type => 'payout',
+                })->buy, undef, 'FLASHU bet bought';
+
+            is +BOM::Product::Transaction->new({
+                    client      => $cl,
+                    contract    => $contract_down,
+                    price       => 5.20,
+                    payout      => $contract_down->payout,
+                    amount_type => 'payout',
+                })->buy, undef, 'FLASHD bet bought';
+
+            $txn->buy;
+        };
+        SKIP: {
+            skip 'no error', 5
+                unless isa_ok $error, 'Error::Base';
+
+            is $error->get_type, '30DayTurnoverLimitExceeded', 'error is 30DayTurnoverLimitExceeded';
+
+            like $error->{-message_to_client}, qr/30-day turnover limit of USD15\.59/, 'message_to_client contains limit';
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+
+        # retry with a slightly higher limit should succeed
+        $error = do {
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(
+                get_limit_for_30day_turnover => sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20); 3 * 5.20 });
+
+            $txn->buy;
+        };
+
+        is $error, undef, 'no error';
+    }
+    'survived';
+};
+
 subtest 'max_losses validation', sub {
     plan tests => 14;
     lives_ok {
@@ -2151,6 +2243,131 @@ subtest 'max_7day_losses validation', sub {
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
             $mock_client->mock(get_limit_for_7day_losses => sub { note "mocked Client->get_limit_for_7day_losses returning " . (3 * 5.20); 3 * 5.20 }
+            );
+
+            $txn->buy;
+        };
+
+        is $error, undef, 'no error';
+    }
+    'survived';
+};
+
+subtest 'max_30day_losses validation', sub {
+    plan tests => 14;
+    lives_ok {
+        my $cl = create_client;
+
+        top_up $cl, 'USD', 100;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract_up = produce_contract({
+            underlying   => $underlying,
+            bet_type     => 'FLASHU',
+            currency     => 'USD',
+            payout       => 10.00,
+            duration     => '15m',
+            current_tick => $tick,
+            barrier      => 'S0P',
+            date_pricing => Date::Utility->new(time + 10),
+        });
+
+        my $contract_down = produce_contract({
+            underlying   => $underlying_r100,
+            bet_type     => 'FLASHD',
+            currency     => 'USD',
+            payout       => 10.00,
+            duration     => '15m',
+            current_tick => $tick,
+            barrier      => 'S0P',
+            date_pricing => Date::Utility->new(time + 10),
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $cl,
+            contract    => $contract_up,
+            price       => 5.20,
+            payout      => $contract_up->payout,
+            amount_type => 'payout',
+        });
+
+        my $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(
+                get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
+
+            my $t = BOM::Product::Transaction->new({
+                client      => $cl,
+                contract    => $contract_up,
+                price       => 5.20,
+                payout      => $contract_up->payout,
+                amount_type => 'payout',
+            });
+            is $t->buy, undef, 'FLASHU bet bought';
+            $t = BOM::Product::Transaction->new({
+                client      => $cl,
+                contract    => $contract_up,
+                contract_id => $t->contract_id,
+                price       => 0,
+            });
+            is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
+
+            $t = BOM::Product::Transaction->new({
+                client      => $cl,
+                contract    => $contract_down,
+                price       => 5.20,
+                payout      => $contract_down->payout,
+                amount_type => 'payout',
+            });
+            is $t->buy, undef, 'FLASHD bet bought';
+            $t = BOM::Product::Transaction->new({
+                client      => $cl,
+                contract    => $contract_down,
+                contract_id => $t->contract_id,
+                price       => 0,
+            });
+            is $t->sell(skip_validation => 1), undef, 'FLASHU bet sold';
+
+            $txn->buy;
+        };
+        SKIP: {
+            skip 'no error', 5
+                unless isa_ok $error, 'Error::Base';
+
+            is $error->get_type, '30DayLossLimitExceeded', 'error is 30DayLossLimitExceeded';
+
+            like $error->{-message_to_client}, qr/30-day limit on losses of USD15\.59/, 'message_to_client contains limit';
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+
+        # retry with a slightly higher limit should succeed
+        $error = do {
+            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
+
+            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
+            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
+            $mock_transaction->mock(
+                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
+            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20); 3 * 5.20 }
             );
 
             $txn->buy;

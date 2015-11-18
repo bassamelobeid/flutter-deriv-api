@@ -326,39 +326,9 @@ sub risk_markup {
     return $risk_markup;
 }
 
-sub commission_markup {
+around '_build_commission_markup' => sub {
+    my $orig = shift;
     my $self = shift;
-
-    return 0    if $self->error;
-    return 0.03 if $self->is_forward_starting;
-
-    my $comm_file        = LoadFile('/home/git/regentmarkets/bom/lib/BOM/Product/Pricing/Engine/commission.yml');
-    my $commission_level = $comm_file->{commission_level}->{$self->underlying_symbol};
-    my $dsp_amount       = $comm_file->{digital_spread_base}->{$self->underlying_config->{market}}->{$self->contract_type} // 0;
-    $dsp_amount /= 100;
-    # this is added so that we match the commission of tick trades
-    $dsp_amount /= 2 if $self->timeindays * 86400 <= 20 and $self->is_atm_contract;
-    # 1.4 is the hard-coded level multiplier
-    my $level_multiplier          = 1.4**($commission_level - 1);
-    my $digital_spread_percentage = $dsp_amount * $level_multiplier;
-    my $fixed_scaling             = $comm_file->{digital_scaling_factor}->{$self->underlying_symbol};
-    my $dsp_interp                = Math::Function::Interpolator->new(
-        points => {
-            0   => 1.5,
-            1   => 1.5,
-            10  => 1.2,
-            20  => 1,
-            365 => 1,
-        });
-    my $dsp_scaling           = $fixed_scaling || $dsp_interp->linear($self->timeinyears);
-    my $digital_spread_markup = $digital_spread_percentage * $dsp_scaling;
-    my $commission_markup     = $digital_spread_markup / 2;
-
-    return $commission_markup;
-}
-
-sub _calculate_probability {
-    my ($self, $modified) = @_;
 
     my $contract_type = delete $modified->{contract_type} || $self->contract_type;
 

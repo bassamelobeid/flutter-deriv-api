@@ -316,21 +316,6 @@ sub adjust {
     );
 }
 
-sub list_adjustment_descriptions {
-    my $self = shift;
-
-    my @adjustment_descriptions;
-
-    my $strike = $self;
-
-    while ($strike->has_adjustments) {
-        push @adjustment_descriptions, $self->adjustment->{desc};
-        $strike = $self->adjustment->{prev_obj};
-    }
-
-    return @adjustment_descriptions;
-}
-
 sub strike_string {
     my ($class, $string, $underlying, $bet_type_code, $when) = @_;
 

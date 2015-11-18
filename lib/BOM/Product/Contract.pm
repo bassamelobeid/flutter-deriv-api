@@ -27,6 +27,7 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::MarketData::VolSurface::Utils;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -737,11 +738,15 @@ sub _build_volsurface {
         major_pairs => 1,
         minor_pairs => 1
     );
+    my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
-        my $exchange    = $self->exchange;
-        my $when        = $exchange->trades_on($self->date_pricing) ? $self->date_pricing : $exchange->representative_trading_date;
-        my $cutoff_date = $self->is_intraday ? $exchange->closing_on($when) : $self->date_expiry;
+        my $exchange = $self->exchange;
+        my $when = $exchange->trades_on($self->date_pricing) ? $self->date_pricing : $exchange->representative_trading_date;
+
+        my $effective_date = $vol_utils->effective_date_for($when);
+        my $cutoff_date    = $exchange->closing_on($effective_date);
+
         $cutoff_str = $cutoff_date->time_cutoff;
     }
 
@@ -955,15 +960,14 @@ sub _build_ask_probability {
     my $minimum;
     if ($self->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         $minimum = 0.4;
-    } elsif ($self->tick_expiry and $self->category->code eq 'digits') {
-        $minimum = ($self->sentiment eq 'match') ? 0.1 : 0.9;
-    } elsif ($self->tick_expiry and $self->market->name ne 'random') {
-        $minimum = 0.5;
     } elsif ($self->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
         $minimum = 0.5 + $self->model_markup->amount;
     } else {
         $minimum = $self->theo_probability->amount;
     }
+
+    # The above is a pretty unacceptable way to acheive this result. You do that stuff at the
+    # Engine level.. or work it into your markup.  This is nonsense.
 
     my $marked_up = Math::Util::CalculatedValue::Validatable->new({
         name        => 'ask_probability',
@@ -1466,7 +1470,8 @@ sub _build_staking_limits {
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
     my $stake_max = $payout_max;
 
-    my $payout_min = 1;
+    # Client likes lower stake/payout limit on random market.
+    my $payout_min = $self->underlying->market->name eq 'random' ? 0.7 : 1;
     my $stake_min = ($self->built_with_bom_parameters) ? $payout_min / 20 : $payout_min / 2;
 
     # err is included here to allow the web front-end access to the same message generated in the back-end.
@@ -2809,6 +2814,18 @@ sub _validate_volsurface {
                     message_to_client => $standard_message,
                     };
             }
+        }
+
+        if (abs($surface->spot_reference - $self->current_spot) / $self->current_spot * 100 > 5) {
+            push @errors,
+                {
+                alert    => 1,
+                severity => 100,
+                set_by   => __PACKAGE__,
+                message =>
+                    format_error_string('spot reference[' . $surface->spot_reference . '] too far from current spot[' . $self->current_spot . ']'),
+                message_to_client => $standard_message,
+                };
         }
     }
 

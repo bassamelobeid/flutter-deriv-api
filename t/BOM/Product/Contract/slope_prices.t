@@ -102,6 +102,18 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     quote      => 100
 });
+delete $params->{date_pricing};
+$c = produce_contract({
+    %$params,
+    underlying   => 'frxUSDJPY',
+    date_pricing => $now,
+    bet_type     => 'CALL',
+    duration     => '10d',
+});
+is $c->bs_probability->amount, 0.502986454371735, 'correct bs probability';
+is roundnear(0.0001, $c->pricing_engine->skew_adjustment->amount), 0.0334, 'correct skew adjustment';
+is roundnear(0.0001, $c->total_markup->amount),    0.0245, 'correct total markup';
+is roundnear(0.0001, $c->ask_probability->amount), 0.561, 'correct ask probability';
 
 delete $params->{date_pricing};
 lives_ok {
