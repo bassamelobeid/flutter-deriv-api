@@ -110,7 +110,7 @@ sub get_transactions {
         count        => 0
     } unless ($acc);
 
-    my $results = BOM::Database::DataMapper::Transaction->new({db => $acc->db})->get_transactions_ws($args);
+    my $results = BOM::Database::DataMapper::Transaction->new({db => $acc->db})->get_transactions_ws($args, $acc);
 
     my @txns;
     foreach my $txn (@$results) {
