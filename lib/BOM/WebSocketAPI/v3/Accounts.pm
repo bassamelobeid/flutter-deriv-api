@@ -214,9 +214,9 @@ sub __get_sold {
     delete $args->{before};
 
     ## remove useless and plus new
-    $data->{transactions} = [];
+    my @transactions;
     my $and_description = $args->{description};
-    foreach my $row (@{delete $data->{rows}}) {
+    foreach my $row (@{$data}) {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
@@ -230,10 +230,12 @@ sub __get_sold {
                 $trx{shortcode} = $con->shortcode;
             }
         }
-        push @{$data->{transactions}}, \%trx;
+        push @transactions, \%trx;
     }
 
-    return $data;
+    return {
+        transactions => \@transactions,
+        count        => scalar(@transactions)};
 }
 
 sub send_realtime_balance {
