@@ -292,6 +292,7 @@ sub get_bid {
         $returnhash{exit_tick_time}  = $contract->exit_tick->epoch;
     } else {
         $returnhash{current_spot} = $contract->current_spot;
+        $returnhash{entry_spot}   = $contract->entry_spot;
     }
 
     if ($contract->two_barriers) {

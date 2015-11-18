@@ -49,6 +49,10 @@
           "type": "epoch",
           "description": "Example: 1439999052"
         },
+        "entry_spot": {
+          "type": ["number", "null"],
+          "description": "Example: 9874.52"
+        },
         "date_expiry": {
           "type": "epoch",
           "description": "Example: 1446629000"
