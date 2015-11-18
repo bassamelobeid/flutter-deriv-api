@@ -648,15 +648,17 @@ sub _build_economic_events_spot_risk_markup {
 sub _shift {
     my ($news_time, $contract_start, $contract_duration) = @_;
 
+    my $five_minutes_in_seconds = 5 * 60;
     my $shift_seconds = 0;
     my $contract_end  = $contract_start + $contract_duration;
-    if ($news_time > $contract_start - 5 * 60 and $news_time < $contract_start) {
+    if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
         $shift_seconds = $contract_start - $news_time;
-    } elsif ($news_time < $contract_end + 5 * 60 and $news_time > $contract_end - 5 * 60) {
-        $shift_seconds = $news_time - $contract_end + 5 * 60;
+    } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
+        $shift_seconds = $news_time - $contract_end + $five_minutes_in_seconds;
     }
 
-    return $shift_seconds;
+    # Always shifts to the contract start time if duration is less than 5 minutes.
+    return min($shift_seconds, $contract_duration);
 }
 
 # Generally for indices and stocks the minimum available tenor for smile is 30 days.
