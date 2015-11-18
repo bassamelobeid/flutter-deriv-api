@@ -367,7 +367,6 @@ sub proposal {
         {
             id      => $id,
             type    => 'proposal',
-            data    => {%$p2},
             cleanup => sub {
                 my $reason = shift;
 

@@ -144,7 +144,6 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             my $data = {
                 id      => $id,
                 type    => 'proposal_open_contract',
-                data    => {%$p2},
                 cleanup => sub {
                     Mojo::IOLoop->remove($id);
                     delete $fmb_map->{$fmb->id};
