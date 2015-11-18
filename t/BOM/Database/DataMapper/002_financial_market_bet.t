@@ -350,46 +350,37 @@ subtest 'digits' => sub {
 ## test get_sold_bets_of_account
 subtest 'get_sold_bets_of_account' => sub {
     my $data = $fmb_mapper->get_sold_bets_of_account();
-    ok $data->{total} > 0;
-    ok $data->{rows};
+    ok $data;
 
     my $bets = $fmb_mapper->get_sold_bets_of_account({limit => 1});
-    is $data->{total}, $bets->{total}, 'total is the same regardless limit';
-    is_deeply $data->{row}->[0], $bets->{row}->[0], 'first row is the same';
-    is scalar(@{$bets->{rows}}), 1;
+    is_deeply $data->[0], $bets->[0], 'first row is the same';
+    is scalar(@{$bets}), 1;
 
     $bets = $fmb_mapper->get_sold_bets_of_account({
         limit  => 2,
         offset => 1
     });
-    is $data->{total}, $bets->{total}, 'total is the same regardless offset';
-    is_deeply $data->{row}->[1], $bets->{row}->[0], 'first row is the same';
-    is_deeply $data->{row}->[2], $bets->{row}->[1], 'second row is the same';
-    is scalar(@{$bets->{rows}}), 2;
+    is_deeply $data->[1], $bets->[0], 'first row is the same';
+    is_deeply $data->[2], $bets->[1], 'second row is the same';
+    is scalar(@{$bets}), 2;
 
     $bets = $fmb_mapper->get_sold_bets_of_account({
         limit  => 1,
-        offset => 1,
         sort   => 'ASC'
     });
-    is $data->{total}, $bets->{total}, 'total is the same regardless sort';
-    is_deeply $data->{row}->[$data->{total} - 1], $bets->{row}->[0], 'first row is last row due to sort';
-    is scalar(@{$bets->{rows}}), 1;
+    is_deeply @{$data}[-1], $bets->[0], 'first row is last row due to sort';
+    is scalar(@{$bets}), 1;
 
     # old database rows
     $bets = $fmb_mapper->get_sold_bets_of_account({
-        limit  => 1,
-        offset => 1,
         before => '2005-09-21 06:18:00'
     });
-    is $bets->{total}, 2, 'sold rows == 2 before 2005-09-21 06:18:00';
+    is scalar(@{$bets}), 2, 'sold rows == 2 before 2005-09-21 06:18:00';
 
     $bets = $fmb_mapper->get_sold_bets_of_account({
-        limit  => 1,
-        offset => 1,
         after  => '2011-07-25 14:29:16'
     });
-    is $bets->{total}, 8, 'sold rows == 2 afer 2011-07-25 14:29:16';
+    is scalar(@{$bets}), 8, 'sold rows == 2 afer 2011-07-25 14:29:16';
 };
 
 1;
