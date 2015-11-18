@@ -32,8 +32,8 @@ use BOM::MarketData::VolSurface::Utils;
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
-require BOM::Product::Pricing::Engine::Slope;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
+require Pricing::Engine::EuropeanDigitalSlope;
 require Pricing::Engine::TickExpiry;
 
 require BOM::Product::Pricing::Greeks::BlackScholes;
@@ -506,7 +506,7 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope';
+    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
         my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
