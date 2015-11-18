@@ -132,8 +132,6 @@ sub get_sold_bets_of_account {
     }
 
     my $dbh = $self->db->dbh;
-    my ($total) = $dbh->selectrow_array("SELECT COUNT(*) $sql", undef, @binds);
-
     my $sth = $dbh->prepare("
         SELECT fmb.*, t.id txn_id
         $sql
@@ -142,10 +140,7 @@ sub get_sold_bets_of_account {
     ");
     $sth->execute(@binds, $limit, $offset);
 
-    return {
-        total => $total,
-        rows  => $sth->fetchall_arrayref({}),
-    };
+    return $sth->fetchall_arrayref({});
 }
 
 sub get_fmbs_by_loginid_and_currency {
