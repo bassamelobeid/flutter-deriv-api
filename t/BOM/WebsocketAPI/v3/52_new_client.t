@@ -73,7 +73,7 @@ $t = $t->send_ok({
         }})->message_ok;
 my $profit_table = decode_json($t->message->[1]);
 ok($profit_table->{profit_table});
-is($profit_table->{profit_table}->{total}, 0);
+is($profit_table->{profit_table}->{count}, 0);
 is_deeply $profit_table->{profit_table}->{transactions}, [];
 test_schema('profit_table', $profit_table);
 
