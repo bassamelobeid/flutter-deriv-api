@@ -189,7 +189,7 @@ sub ticks {
 
         if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
-        } elsif ($u->feed_license eq 'realtime') {
+        } else {
             _feed_channel($c, 'subscribe', $symbol, 'tick');
             $c->send({
                     json => {
