@@ -384,7 +384,7 @@ sub get_payments {
 }
 
 sub get_transactions_ws {
-    my ($self, $args) = @_;
+    my ($self, $args, $acc) = @_;
 
     my $sql = q{
             SELECT
