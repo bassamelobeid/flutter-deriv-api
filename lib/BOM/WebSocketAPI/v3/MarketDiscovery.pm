@@ -187,23 +187,22 @@ sub ticks {
             return $c->new_error('ticks', 'NoRealtimeQuotes', localize("Realtime quotes not available for [_1]", $symbol));
         }
 
-        $c->send({
-                json => {
-                    msg_type => 'tick',
-                    echo_req => $c->stash('args'),
-                    tick     => {
-                        symbol => $symbol,
-                        id     => $symbol,
-                        epoch  => $u->spot_tick->epoch,
-                        quote  => $u->spot_tick->quote
-                    }}});
-
-        if ((not exists $args->{subscribe} or $args->{subscribe} eq '1') and $u->feed_license eq 'realtime') {
-            _feed_channel($c, 'subscribe', $symbol, 'tick');
-        }
-        if ($args->{subscribe} and $args->{subscribe} eq '0') {
+        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
+        } elsif ($u->feed_license eq 'realtime') {
+            _feed_channel($c, 'subscribe', $symbol, 'tick');
+            $c->send({
+                    json => {
+                        msg_type => 'tick',
+                        echo_req => $c->stash('args'),
+                        tick     => {
+                            symbol => $symbol,
+                            id     => $symbol,
+                            epoch  => $u->spot_tick->epoch,
+                            quote  => $u->spot_tick->quote
+                        }}});
         }
+
     }
 
     return;
