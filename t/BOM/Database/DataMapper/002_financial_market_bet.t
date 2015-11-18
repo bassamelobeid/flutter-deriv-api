@@ -360,7 +360,6 @@ subtest 'get_sold_bets_of_account' => sub {
         limit  => 2,
         offset => 1
     });
-    is $data->{total}, $bets->{total}, 'total is the same regardless offset';
     is_deeply $data->[1], $bets->[0], 'first row is the same';
     is_deeply $data->[2], $bets->[1], 'second row is the same';
     is scalar(@{$bets}), 2;
