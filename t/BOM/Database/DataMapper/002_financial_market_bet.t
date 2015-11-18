@@ -366,7 +366,6 @@ subtest 'get_sold_bets_of_account' => sub {
 
     $bets = $fmb_mapper->get_sold_bets_of_account({
         limit  => 1,
-        offset => 1,
         sort   => 'ASC'
     });
     is_deeply @{$data}[-1], $bets->[0], 'first row is last row due to sort';
@@ -374,15 +373,11 @@ subtest 'get_sold_bets_of_account' => sub {
 
     # old database rows
     $bets = $fmb_mapper->get_sold_bets_of_account({
-        limit  => 1,
-        offset => 1,
         before => '2005-09-21 06:18:00'
     });
     is scalar(@{$bets}), 2, 'sold rows == 2 before 2005-09-21 06:18:00';
 
     $bets = $fmb_mapper->get_sold_bets_of_account({
-        limit  => 1,
-        offset => 1,
         after  => '2011-07-25 14:29:16'
     });
     is scalar(@{$bets}), 8, 'sold rows == 2 afer 2011-07-25 14:29:16';
