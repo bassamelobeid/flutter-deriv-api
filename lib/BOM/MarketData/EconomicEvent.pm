@@ -132,32 +132,6 @@ sub has_identical_event {
     return (@docs) ? $docs[0] : '';
 }
 
-sub get_scaling_factor {
-    my ($self, $underlying, $risk_type) = @_;
-
-    my $impact            = $self->impact;
-    my $event_symbol      = $self->symbol;
-    my $underlying_symbol = $underlying->symbol;
-
-    my $scaling_factor;
-    if ($risk_type eq 'spot') {
-        if ($underlying_symbol =~ /$event_symbol/) {
-            $scaling_factor = 0.12;
-        } elsif (
-            first {
-                $event_symbol eq $_
-            }
-            ('USD', 'AUD', 'CAD', 'CNY', 'NZD'))
-        {
-            $scaling_factor = 0.06;
-        } else {
-            $scaling_factor = 0;
-        }
-    }
-
-    return $scaling_factor;
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
