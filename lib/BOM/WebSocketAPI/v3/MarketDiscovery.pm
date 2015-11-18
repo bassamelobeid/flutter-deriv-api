@@ -193,6 +193,7 @@ sub ticks {
                     echo_req => $c->stash('args'),
                     tick     => {
                         symbol => $symbol,
+                        id     => $symbol,
                         epoch  => $u->spot_tick->epoch,
                         quote  => $u->spot_tick->quote
                     }}});
@@ -280,7 +281,7 @@ sub _feed_channel {
         $feed_channel->{$symbol} -= 1;
         $feed_channel_type->{"$symbol;$type"} -= 1;
         if ($feed_channel->{$symbol} <= 0) {
-            $redis->subscribe(["FEED::$symbol"], sub { });
+            $redis->unsubscribe(["FEED::$symbol"], sub { });
             delete $feed_channel->{$symbol};
         }
         if ($feed_channel_type->{"$symbol;$type"} <= 0) {
