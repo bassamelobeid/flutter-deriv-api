@@ -37,8 +37,9 @@ sub startup {
                 {expires => 1});
 
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+            $request = BOM::Platform::Context::request($request);
             $c->stash(request => $request);
-            if (my $lang = lc $c->stash('request')->language) {
+            if (my $lang = lc $request->language) {
                 $c->stash(language => uc $lang);
                 $c->res->headers->header('Content-Language' => $lang);
             }
@@ -50,7 +51,6 @@ sub startup {
             state $app_config = BOM::Platform::Runtime->instance->app_config;
             return $app_config;
         });
-
 
     $app->helper(
         l => sub {

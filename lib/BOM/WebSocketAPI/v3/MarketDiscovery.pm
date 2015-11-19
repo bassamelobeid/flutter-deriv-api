@@ -67,7 +67,7 @@ sub trading_times {
 sub asset_index {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
+    my $r    = $c->stash('request');
     my $lang = $r->language;
 
     if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
