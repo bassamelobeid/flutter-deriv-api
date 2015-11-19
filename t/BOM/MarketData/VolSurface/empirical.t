@@ -709,7 +709,7 @@ subtest 'seasonalized volatility with news' => sub {
             }
             ),
             0.623643583174398, '';
-        ok !$vs->error,                        'no error';
+        ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
     my $uncategorized = {

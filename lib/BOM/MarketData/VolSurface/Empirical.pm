@@ -214,8 +214,8 @@ sub _shift {
     my ($news_time, $contract_start, $contract_duration) = @_;
 
     my $five_minutes_in_seconds = 5 * 60;
-    my $shift_seconds = 0;
-    my $contract_end  = $contract_start + $contract_duration;
+    my $shift_seconds           = 0;
+    my $contract_end            = $contract_start + $contract_duration;
     if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
         $shift_seconds = $contract_start - $news_time;
     } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
