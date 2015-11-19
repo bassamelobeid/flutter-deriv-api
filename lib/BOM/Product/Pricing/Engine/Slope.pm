@@ -214,6 +214,13 @@ around '_build_commission_markup' => sub {
             set_by      => __PACKAGE__,
             base_amount => 0.03,
         });
+    } elsif ($self->bet->is_forward_starting and $self->bet->underlying->submarket->name eq 'middle_east') {
+        return Math::Util::CalculatedValue::Validatable->new({
+            name        => 'commission_markup',
+            description => 'A fixed 5% markup on middle east forward starting ',
+            set_by      => __PACKAGE__,
+            base_amount => 0.05,
+        });
     } else {
         return $self->$orig;
     }
