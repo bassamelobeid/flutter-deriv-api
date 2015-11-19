@@ -134,10 +134,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
             my $id = '';
-            $args->{fmb} = $fmb;
-            my $p2 = prepare_bid($c, $args);
-            $p2->{contract_id} = $fmb->id;
-            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
+            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $fmb) });
             my $fmb_map = ($c->{fmb_ids}{$ws_id} //= {});
             $fmb_map->{$fmb->id} = $id;
 
@@ -267,11 +264,11 @@ sub get_bid {
 }
 
 sub send_bid {
-    my ($c, $id, $p0, $p2) = @_;
+    my ($c, $id, $p0, $fmb) = @_;
 
     BOM::Platform::Context::request($c->stash('request'));
 
-    my $latest = get_bid($c, $p2);
+    my $latest = get_bid($c, $fmb);
 
     my $response = {
         msg_type => 'proposal_open_contract',
