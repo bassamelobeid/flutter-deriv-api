@@ -31,7 +31,7 @@ $tick_notify$
     my $ts              = $_[1];
     my $spot            = $_[2];
     my $time_adjustment = 0;
-    my @grans           = qw(60 120 300 600 900 1800 3600 7200 14400 28800 86400);
+    my @grans           = qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400);
     my $MAX_CHANNELS    = 20; # Listener must listen to all these.
 
     $rv = spi_exec_query("SELECT * FROM feed.realtime_ohlc where underlying='$underlying'", 1);
