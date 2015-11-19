@@ -1633,9 +1633,11 @@ sub _market_data {
             return $volsurface->get_volatility($args);
         },
         get_economic_event => sub {
-            my $args       = shift;
-            my $underlying = $underlyings{$args->{underlying_symbol}}
-                // BOM::Market::Underlying->new({$args->{underlying_symbol}, for_date => $for_date});
+            my $args = shift;
+            my $underlying = $underlyings{$args->{underlying_symbol}} // BOM::Market::Underlying->new({
+                symbol   => $args->{underlying_symbol},
+                for_date => $for_date
+            });
             my ($from, $to) = map { Date::Utility->new($args->{$_}) } qw(start end);
             my %applicable_symbols = (
                 USD                                 => 1,
