@@ -17,6 +17,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
     {
         symbol           => $_,
         date             => Date::Utility->new,
+        trading_days     => 'everyday',
         open_on_weekends => 1
     }) for @exchange;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
