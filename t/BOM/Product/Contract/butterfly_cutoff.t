@@ -82,7 +82,7 @@ subtest 'ON 25D BF > 1.' => sub {
     lives_ok {
         my $pe = $shortterm_bet->pricing_engine;
         ok $pe->risk_markup, 'call risk_markup';
-        ok !exists $pe->debug_information->{risk_markup}{butterfly_markup}, 'did not apply butterfly markup';
+        ok !exists $pe->debug_information->{risk_markup}{parameters}{butterfly_markup}, 'did not apply butterfly markup';
     }
 
     $surface = _sample_surface(
@@ -100,8 +100,8 @@ subtest 'ON 25D BF > 1.' => sub {
     lives_ok {
         my $pe = $shortterm_bet->pricing_engine;
         ok $pe->risk_markup, 'call risk_markup';
-        ok exists $pe->debug_information->{risk_markup}{butterfly_markup}, 'apply butterfly markup';
-        ok $pe->debug_information->{risk_markup}{butterfly_markup} > 0, 'butterfly markup > 0';
+        ok exists $pe->debug_information->{risk_markup}{parameters}{butterfly_markup}, 'apply butterfly markup';
+        ok $pe->debug_information->{risk_markup}{parameters}{butterfly_markup} > 0, 'butterfly markup > 0';
     }
 
     my $surface_original  = $shortterm_bet->volsurface;
