@@ -190,17 +190,20 @@ sub ticks {
         if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
         } else {
-            _feed_channel($c, 'subscribe', $symbol, 'tick');
-            my $spot_tick = $u->spot_tick;
-            $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $c->stash('args'),
-                        tick     => {
-                            symbol => $symbol,
-                            epoch  => $spot_tick->epoch,
-                            quote  => $spot_tick->quote
-                        }}});
+            if (not _feed_channel($c, 'subscribe', $symbol, 'tick')) {
+                $c->new_error('ticks', 'AlreadySubscribed', localize('You are already subscribed to [_1]', $symbol));
+            } else {
+                my $spot_tick = $u->spot_tick;
+                    $c->send({
+                            json => {
+                                msg_type => 'tick',
+                                echo_req => $c->stash('args'),
+                                tick     => {
+                                    symbol => $symbol,
+                                    epoch  => $spot_tick->epoch,
+                                    quote  => $spot_tick->quote
+                                }}});
+            }
         }
 
     }
@@ -253,7 +256,9 @@ sub ticks_history {
     }
 
     if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
-        _feed_channel($c, 'subscribe', $symbol, $publish);
+        if (not _feed_channel($c, 'subscribe', $symbol, $publish)) {
+            $c->new_error('ticks_history', 'AlreadySubscribed', localize('You are already subscribed to [_1]', $symbol));
+        }
     }
     if ($args->{subscribe} eq '0') {
         _feed_channel($c, 'unsubscribe', $symbol, $publish);
@@ -271,28 +276,28 @@ sub _feed_channel {
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
+        if (exists $feed_channel_type->{"$symbol;$type"}) {
+            return;
+        }
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"} += 1;
+        $feed_channel_type->{"$symbol;$type"} = $args;
         $redis->subscribe(["FEED::$symbol"], sub { });
 
     }
 
     if ($subs eq 'unsubscribe') {
         $feed_channel->{$symbol} -= 1;
-        $feed_channel_type->{"$symbol;$type"} -= 1;
+        delete $feed_channel_type->{"$symbol;$type"};
         if ($feed_channel->{$symbol} <= 0) {
             $redis->unsubscribe(["FEED::$symbol"], sub { });
             delete $feed_channel->{$symbol};
-        }
-        if ($feed_channel_type->{"$symbol;$type"} <= 0) {
-            delete $feed_channel_type->{"$symbol;$type"};
         }
     }
 
     $c->stash('feed_channel'      => $feed_channel);
     $c->stash('feed_channel_type' => $feed_channel_type);
 
-    return;
+    return 1;
 }
 
 sub send_realtime_ticks {
@@ -310,7 +315,7 @@ sub send_realtime_ticks {
             $c->send({
                     json => {
                         msg_type => 'tick',
-                        echo_req => $c->stash('args'),
+                        echo_req => $feed_channels_type->{$channel},
                         tick     => {
                             symbol => $symbol,
                             epoch  => $m[1],
@@ -320,7 +325,7 @@ sub send_realtime_ticks {
             $c->send({
                     json => {
                         msg_type => 'ohlc',
-                        echo_req => $c->stash('args'),
+                        echo_req => $feed_channels_type->{$channel},
                         ohlc     => {
                             epoch       => $m[1],
                             open_time   => $m[1] - $m[1] % $granularity,
