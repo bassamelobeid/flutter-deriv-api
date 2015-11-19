@@ -191,6 +191,7 @@ sub ticks {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
         } else {
             _feed_channel($c, 'subscribe', $symbol, 'tick');
+            my $spot_tick = $u->spot_tick;
             $c->send({
                     json => {
                         msg_type => 'tick',
@@ -198,8 +199,8 @@ sub ticks {
                         tick     => {
                             symbol => $symbol,
                             id     => $symbol,
-                            epoch  => $u->spot_tick->epoch,
-                            quote  => $u->spot_tick->quote
+                            epoch  => $spot_tick->epoch,
+                            quote  => $spot_tick->quote
                         }}});
         }
 
