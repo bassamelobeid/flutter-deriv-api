@@ -212,7 +212,7 @@ around '_build_commission_markup' => sub {
 
         return Math::Util::CalculatedValue::Validatable->new({
             name        => 'commission_markup',
-            description => 'A fixed 5% markup on middle east forward starting ',
+            description => 'A fixed markup on forward starting indices',
             set_by      => __PACKAGE__,
             base_amount => $base_amount,
         });
