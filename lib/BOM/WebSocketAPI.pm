@@ -5,7 +5,7 @@ use Mojo::Redis2;
 use Try::Tiny;
 
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
+use BOM::Platform::Context ();
 use BOM::Platform::Context::Request;
 
 sub startup {
@@ -29,11 +29,33 @@ sub startup {
     $log->info("Log Level        is " . $log->level);
     $log->debug("Server config    is " . $app->dumper($app->config));
 
+    $app->hook(
+        before_dispatch => sub {
+            my $c = shift;
+            $c->cookie(
+                language => '',
+                {expires => 1});
+
+            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
+            $c->stash(request => $request);
+            if (my $lang = lc $c->stash('request')->language) {
+                $c->stash(language => uc $lang);
+                $c->res->headers->header('Content-Language' => $lang);
+            }
+        });
+
     # add few helpers
     $app->helper(
         app_config => sub {
             state $app_config = BOM::Platform::Runtime->instance->app_config;
             return $app_config;
+        });
+
+
+    $app->helper(
+        l => sub {
+            my $self = shift;
+            return BOM::Platform::Context::localize(@_);
         });
 
     $app->helper(
@@ -51,20 +73,6 @@ sub startup {
                 msg_type => $msg_type,
                 error    => $error,
             };
-        });
-
-    $app->hook(
-        before_dispatch => sub {
-            my $c = shift;
-            $c->cookie(
-                language => '',
-                {expires => 1});
-
-            my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
-            $c->stash(request => $request);
-            my $lang = lc $c->stash('request')->language;
-            $c->stash(language => uc $lang) if $lang;
-            $c->res->headers->header('Content-Language' => $lang);
         });
 
     my $r = $app->routes;

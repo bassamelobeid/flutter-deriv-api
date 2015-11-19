@@ -8,7 +8,6 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
-use BOM::Platform::Context qw(localize request);
 use BOM::Database::DataMapper::PaymentAgent;
 
 sub get_limits {
@@ -17,11 +16,9 @@ sub get_limits {
     my $r      = $c->stash('request');
     my $client = $c->stash('client');
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
-        return $c->new_error('get_limits', 'FeatureNotAvailable', localize('Sorry, this feature is not available.'));
+        return $c->new_error('get_limits', 'FeatureNotAvailable', $c->l('Sorry, this feature is not available.'));
     }
 
     my $limit = +{
@@ -88,7 +85,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $r->language);
+        $_->[1] = BOM::Platform::Runtime->instance->countries->$c->ld_code2country($_->[0], $r->language);
     }
 
     my $payment_agent_table_row = __ListPaymentAgents($c, {target_country => $target_country});
