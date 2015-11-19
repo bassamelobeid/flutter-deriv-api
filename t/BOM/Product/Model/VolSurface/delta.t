@@ -30,6 +30,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'RANDOM',
+        trading_days     => 'everyday',
         open_on_weekends => 1,
         date             => Date::Utility->new,
     });
