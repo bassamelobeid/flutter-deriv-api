@@ -58,6 +58,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         display_name             => 'Randoms',
         trading_timezone         => 'UTC',
         tenfore_trading_timezone => 'NA',
+        trading_days             => 'everyday',
         open_on_weekends         => 1,
         currency                 => 'NA',
         bloomberg_calendar_code  => 'NA',

@@ -46,6 +46,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'RANDOM',
         open_on_weekends => 1,
+        trading_days     => 'everyday',
         holidays         => {},
         market_times     => {
             early_closes => {},
