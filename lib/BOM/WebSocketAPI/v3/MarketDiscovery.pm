@@ -258,6 +258,7 @@ sub ticks_history {
     }
     if ($args->{subscribe} eq '0') {
         _feed_channel($c, 'unsubscribe', $symbol, $publish);
+        return;
     }
 
     return $result;
