@@ -19,6 +19,7 @@ use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
 use BOM::Database::Model::AccessToken;
+use BOM::Database::DataMapper::Transaction;
 
 sub landing_company {
     my ($c, $args) = @_;
@@ -109,47 +110,7 @@ sub get_transactions {
         count        => 0
     } unless ($acc);
 
-    my $sql = q{
-            SELECT
-                t.*,
-                EXTRACT(EPOCH FROM date_trunc('s', t.transaction_time)) as t_epoch,
-                b.short_code,
-                p.remark AS payment_remark
-            FROM
-                (
-                    SELECT * FROM transaction.transaction
-                    WHERE
-                        account_id = ?
-                        AND transaction_time < ?
-                        AND transaction_time >= ?
-                        ##ACTION_TYPE##
-                    ORDER BY transaction_time DESC
-                    LIMIT ?
-                    OFFSET ?
-                ) t
-                LEFT JOIN bet.financial_market_bet b
-                    ON (t.financial_market_bet_id = b.id)
-                LEFT JOIN payment.payment p
-                    ON (t.payment_id = p.id)
-                ORDER BY t.transaction_time DESC
-    };
-
-    my $limit  = $args->{limit}  || 100;
-    my $offset = $args->{offset} || 0;
-    my $dt_fm  = $args->{date_from};
-    my $dt_to  = $args->{date_to};
-
-    for ($dt_fm, $dt_to) {
-        $_ = eval { Date::Utility->new($_)->datetime } if ($_);
-    }
-    $dt_fm ||= '1970-01-01';
-    $dt_to ||= Date::Utility->today->plus_time_interval('1d')->datetime;
-
-    my $action_type = ($args->{action_type}) ? 'AND action_type = ?' : '';
-    $sql =~ s/##ACTION_TYPE##/$action_type/;
-
-    my @binds = ($acc->id, $dt_to, $dt_fm, ($action_type) ? $action_type : (), $limit, $offset);
-    my $results = $acc->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
+    my $results = BOM::Database::DataMapper::Transaction->new({db => $acc->db})->get_transactions_ws($args, $acc);
 
     my @txns;
     foreach my $txn (@$results) {
