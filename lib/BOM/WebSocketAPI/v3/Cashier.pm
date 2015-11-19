@@ -85,7 +85,7 @@ sub paymentagent_list {
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = BOM::Platform::Runtime->instance->countries->$c->ld_code2country($_->[0], $r->language);
+        $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $r->language);
     }
 
     my $payment_agent_table_row = __ListPaymentAgents($c, {target_country => $target_country});
