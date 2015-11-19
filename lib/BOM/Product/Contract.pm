@@ -1162,18 +1162,34 @@ sub _build_model_markup {
 
     my $model_markup;
     if ($self->new_interface_engine) {
-        my $risk_markup       = $self->pricing_engine->risk_markup;
-        my $commission_markup = $self->pricing_engine->commission_markup;
+        my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'risk_markup',
+            description => 'Risk markup for a pricing model',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->risk_markup,
+        });
+        my $commission_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'commission_markup',
+            description => 'Commission markup for a pricing model',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->commission_markup,
+        });
         if ($self->built_with_bom_parameters) {
-            my $sell_discount = BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor;
-            $commission_markup *= $sell_discount;
+            my $sell_discount = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'sell_discount',
+                description => 'Discount on sell',
+                set_by      => __PACKAGE__,
+                base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor,
+            });
+            $commission_markup->include_adjustment('multiply', $sell_discount);
         }
         $model_markup = Math::Util::CalculatedValue::Validatable->new({
             name        => 'model_markup',
             description => 'Risk and commission markup for a pricing model',
             set_by      => $self->pricing_engine_name,
-            base_amount => $risk_markup + $commission_markup,
         });
+        $model_markup->include_adjustment('reset', $risk_markup);
+        $model_markup->include_adjustment('add',   $commission_markup);
     } else {
         $model_markup = $self->pricing_engine->model_markup;
     }

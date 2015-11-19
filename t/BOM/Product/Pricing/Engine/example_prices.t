@@ -35,7 +35,7 @@ my $recorded_date = Date::Utility->new($date_start);
 # This test are benchmarked againsts market rates.
 # The intermittent failure of the test is due to the switching between implied and market rates in app settings.
 my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-$mocked->mock('uses_implied_rate', sub { return 0});
+$mocked->mock('uses_implied_rate', sub { return 0 });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',

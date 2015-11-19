@@ -13,6 +13,7 @@ use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
+use Pricing::Engine::EuropeanDigitalSlope;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
@@ -198,8 +199,8 @@ subtest 'Intraday::Forex' => sub {
 subtest 'Slope' => sub {
     plan tests => 6;
 
-    my %params = map { $_ => $expiry_range->_pricing_parameters->{$_} } @{BOM::Product::Pricing::Engine::Slope->required_args};
-    my $engine = BOM::Product::Pricing::Engine::Slope->new(%params);
+    my %params = map { $_ => $expiry_range->_pricing_parameters->{$_} } @{Pricing::Engine::EuropeanDigitalSlope->required_args};
+    my $engine = Pricing::Engine::EuropeanDigitalSlope->new(%params);
 
     ok $engine->probability > 0, 'probability > 0';
     ok $engine->probability < 1, 'probability < 1';
