@@ -18,6 +18,7 @@ before_install:
     - sudo mkdir -p /home/git/regentmarkets
 
     - /tmp/travis-scripts/couchdb.sh
+    - /home/git/regentmarkets/bom-market/setup_chronicle.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
