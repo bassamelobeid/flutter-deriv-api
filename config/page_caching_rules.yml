@@ -158,7 +158,7 @@
 "/user/profit_table":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/user/statementws":
+"/user/statement":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user/change_passwordws":
