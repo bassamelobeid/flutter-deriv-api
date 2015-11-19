@@ -25,6 +25,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => 'RANDOM',
         date   => Date::Utility->new,
+        trading_days => 'everyday',
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
