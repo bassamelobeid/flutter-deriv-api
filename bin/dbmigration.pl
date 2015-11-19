@@ -108,6 +108,10 @@ sub script_run {
 
         # version table = dbix_migration_collector
         $tablename_extension = 'collector';
+    } elsif ($dbset eq 'chronicle') {
+        $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/chronicledb';
+        $port     = '5437';
+        $database = 'chronicle';
     } elsif ($dbset eq 'feed') {
         $dir      = '/home/git/regentmarkets/bom-postgres/config/sql/feeddb';
         $port     = '5433';
