@@ -198,7 +198,6 @@ sub ticks {
                         echo_req => $c->stash('args'),
                         tick     => {
                             symbol => $symbol,
-                            id     => $symbol,
                             epoch  => $spot_tick->epoch,
                             quote  => $spot_tick->quote
                         }}});
