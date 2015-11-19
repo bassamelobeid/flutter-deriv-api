@@ -15,9 +15,9 @@ REATE TABLE chronicle (
       CONSTRAINT search_index UNIQUE(category,name,timestamp)
 );
 
-GRANT USAGE ON SCHEMA feed TO read;
-GRANT USAGE ON SCHEMA feed TO write;
-GRANT USAGE ON SCHEMA feed TO monitor;
+GRANT USAGE ON SCHEMA chronicle TO read;
+GRANT USAGE ON SCHEMA chronicle TO write;
+GRANT USAGE ON SCHEMA chronicle TO monitor;
 GRANT USAGE on chronicle_id_seq to write;
 
 COMMIT;
