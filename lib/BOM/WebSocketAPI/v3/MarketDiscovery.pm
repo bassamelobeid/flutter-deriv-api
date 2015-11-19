@@ -191,7 +191,7 @@ sub ticks {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
         } else {
             if (not _feed_channel($c, 'subscribe', $symbol, 'tick')) {
-                $c->new_error('ticks', 'AlreadySubscribed', localize('You are already subscribed to [_1]', $symbol));
+                return $c->new_error('ticks', 'AlreadySubscribed', localize('You are already subscribed to [_1]', $symbol));
             } else {
                 my $spot_tick = $u->spot_tick;
                 $c->send({
