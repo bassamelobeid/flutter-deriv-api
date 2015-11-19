@@ -335,6 +335,13 @@ correlation_matrix:
           6M: 0.49
           9M: 0.477
           12M: 0.467
+      SASEIDX:
+        USD:
+          3M: 0.506
+          6M: 0.49
+          9M: 0.477
+          12M: 0.467
+
 
 volsurface_delta:
   class_name: 'BOM::MarketData::VolSurface::Delta'
