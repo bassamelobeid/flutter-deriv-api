@@ -1636,8 +1636,7 @@ sub _market_data {
                 to   => $to
             });
             my @applicable_news =
-                map {
-                {
+                map { {
                     release_date => $_->[0],
                     vol_factor   => $_->[1]->get_scaling_factor($underlying->symbol, 'vol'),
                     spot_factor  => $_->[1]->get_scaling_factor($underlying->symbol, 'spot')}
