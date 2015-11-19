@@ -1532,8 +1532,8 @@ sub _build_new_interface_engine {
     my $self = shift;
 
     my %engines = (
-        'Pricing::Engine::TickExpiry'          => 1,
-        'BOM::Product::Pricing::Engine::Slope' => 1,
+        'Pricing::Engine::TickExpiry'           => 1,
+        'Pricing::Engine::EuropeanDigitalSlope' => 1,
     );
 
     return $engines{$self->pricing_engine_name} // 0;
