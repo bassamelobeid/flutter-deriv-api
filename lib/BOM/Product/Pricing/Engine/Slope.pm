@@ -208,18 +208,13 @@ around '_build_commission_markup' => sub {
     my $self = shift;
 
     if ($self->bet->is_forward_starting and $self->bet->underlying->market->name eq 'indices') {
-        return Math::Util::CalculatedValue::Validatable->new({
-            name        => 'commission_markup',
-            description => 'A fixed 3% markup on forward starting indices',
-            set_by      => __PACKAGE__,
-            base_amount => 0.03,
-        });
-    } elsif ($self->bet->is_forward_starting and $self->bet->underlying->submarket->name eq 'middle_east') {
+        my $base_amount = ($self->bet->underlying->submarket->name eq 'middle_east') ? 0.05 : 0.03;
+
         return Math::Util::CalculatedValue::Validatable->new({
             name        => 'commission_markup',
             description => 'A fixed 5% markup on middle east forward starting ',
             set_by      => __PACKAGE__,
-            base_amount => 0.05,
+            base_amount => $base_amount,
         });
     } else {
         return $self->$orig;
