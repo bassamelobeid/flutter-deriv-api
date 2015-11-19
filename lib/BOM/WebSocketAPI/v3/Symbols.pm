@@ -39,7 +39,7 @@ sub _description {
     };
 
     if ($by eq 'full') {
-        $reponse->{exchange_name}              = $ul->exchange_name;
+        $response->{exchange_name}             = $ul->exchange_name;
         $response->{delay_amount}              = $ul->delay_amount;
         $response->{quoted_currency_symbol}    = $ul->quoted_currency_symbol;
         $response->{intraday_interval_minutes} = $iim;
