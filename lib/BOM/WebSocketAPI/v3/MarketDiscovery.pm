@@ -280,7 +280,7 @@ sub _feed_channel {
             return;
         }
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"} = $args;
+        $feed_channel_type->{"$symbol;$type"} = $c->stash('args');
         $redis->subscribe(["FEED::$symbol"], sub { });
 
     }
