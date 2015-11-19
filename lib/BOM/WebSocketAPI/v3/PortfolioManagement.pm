@@ -213,60 +213,18 @@ sub __get_open_contracts {
     return $fmb_dm->get_open_bets_of_account();
 }
 
-sub prepare_bid {
-    my ($c, $p1) = @_;
-    my $app      = $c->app;
-    my $log      = $app->log;
-    my $fmb      = delete $p1->{fmb};
-    my $currency = $fmb->account->currency_code;
-    my $contract = produce_contract($fmb->short_code, $currency);
-    %$p1 = (
-        contract_id   => $fmb->id,
-        purchase_time => $fmb->purchase_time->epoch,
-        symbol        => $fmb->underlying_symbol,
-        payout        => $fmb->payout_price,
-        buy_price     => $fmb->buy_price,
-        date_start    => $fmb->start_time->epoch,
-        expiry_time   => $fmb->expiry_time->epoch,
-        contract_type => $fmb->bet_type,
-        currency      => $currency,
-        longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
-    );
-    return {
-        fmb      => $fmb,
-        contract => $contract,
-    };
-}
-
 sub get_bid {
-    my ($c, $p2) = @_;
+    my ($c, $fmb) = @_;
     my $app = $c->app;
     my $log = $app->log;
 
-    my @similar_args = ($p2->{contract}, {priced_at => 'now'});
-    my $contract = try { make_similar_contract(@similar_args) } || do {
-        my $err = $@;
-        $log->info("contract for sale creation failure: $err");
-        return {
-            error => {
-                message => localize("Cannot create sell contract"),
-                code    => "ContractSellCreateError"
-            }};
-    };
-    if (!$contract->is_valid_to_sell) {
-        $log->error("primary error: " . $contract->primary_validation_error->message);
-        return {
-            error => {
-                message => $contract->primary_validation_error->message_to_client,
-                code    => "ContractSellValidationError"
-            }};
-    }
+    my $contract = produce_contract($fmb->short_code, $c->stash('client')->currency);
 
     my %returnhash = (
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $p2->{contract_id},
+        contract_id         => $fmb->id,
         underlying          => $contract->underlying->symbol,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
