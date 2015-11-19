@@ -326,7 +326,7 @@ sub get_settings {
         get_settings => {
             email         => $client->email,
             date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
-            country       => BOM::Platform::Runtime->instance->countries->$c->ld_code2country($client->residence, $r->language),
+            country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
             $client->is_virtual
             ? ()
             : (
