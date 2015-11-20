@@ -52,8 +52,8 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol       => 'SAS',
-    }) ;
+        symbol => 'SAS',
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
@@ -66,8 +66,8 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
-        symbol   => 'SAR',
-    }) ;
+        symbol => 'SAR',
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -81,7 +81,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol => $_,
     }) for qw( SAR SAR-USD);
 
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
@@ -89,7 +88,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $recorded_date,
         surface       => $volsurface->{$_}{surfaces},
     }) for qw(frxUSDJPY frxEURUSD frxGBPUSD);
-
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
@@ -102,9 +100,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
-        symbol        => 'SASEIDX',
-        recorded_date => $recorded_date,
-        flat_vol      => 0.2,
+        symbol          => 'SASEIDX',
+        recorded_date   => $recorded_date,
+        flat_vol        => 0.2,
         flat_atm_spread => 0.07,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -118,7 +116,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
-        symbol        => 'SASEIDX',
+        symbol => 'SASEIDX',
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
@@ -126,8 +124,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => 'frxUSDSAR',
         recorded_date => $recorded_date,
     });
-
-
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {date => Date::Utility->new()});
 
