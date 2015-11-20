@@ -14,10 +14,12 @@ BOM::Platform::SessionCookie - Session and Cookie Handling for Binary.com
 =cut
 
 package BOM::Platform::SessionCookie;
-use BOM::System::Chronicle;
 use Bytes::Random::Secure;
 use JSON;
 use Carp;
+use Array::Utils qw (array_minus);
+
+use BOM::System::Chronicle;
 
 use strict;
 use warnings;
@@ -31,7 +33,7 @@ Very commonly used and stable (over api version) attributes have accesssors.
 
 =head2 ACCESSORS (READ ONLY)
 
-=over 
+=over
 
 =item loginid
 
@@ -75,6 +77,7 @@ Creates a new session and stores it in redis.
 # default token parameters
 my $STRING       = join '', 'a' .. 'z', 'A' .. 'Z', '0' .. '9';
 my @REQUIRED     = qw(email);
+my @ALLOWED      = qw(email loginid token expires_in loginat created_for scopes clerk auth_token);
 my $EXPIRES_IN   = 3600 * 24;
 my $TOKEN_LENGTH = 48;
 
@@ -93,9 +96,13 @@ sub new {    ## no critic RequireArgUnpack
         $self = eval { JSON::from_json(rr->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
     } else {
-        my @missing = grep { !$self->{$_} } @REQUIRED;
-        croak "Error adding new session, missing: " . join(',', @missing)
-            if @missing;
+        my @valid = grep { !$self->{$_} } @REQUIRED;
+        croak "Error adding new session, missing: " . join(',', @valid)
+            if @valid;
+
+        my @passed = keys $self;
+        @valid = array_minus(@passed, @ALLOWED);
+        croak "Error adding new session, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
         # NOTE, we need to use the object interface here. Bytes::Random::Secure
         # also offers a function interface but that uses a RNG which is
