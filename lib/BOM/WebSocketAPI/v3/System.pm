@@ -41,6 +41,13 @@ sub forget_all {
 sub forget_one {
     my ($c, $id, $reason) = @_;
 
+    if ($id =~ /-/ and $c->stash('feed_channel_type')) {
+        foreach my $k (keys %{$c->stash('feed_channel_type')}){
+            $k =~/(.*);(.*)/;
+            BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2) if ($c->stash('feed_channel_type')->{uuid} eq $id);
+        }
+    }
+
     my $ws_id  = $c->tx->connection;
     my $this_c = ($c->{ws}{$ws_id} //= {});
     my $list   = ($this_c->{l} //= []);
