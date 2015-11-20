@@ -90,6 +90,5 @@ if (exists $res->{proposal_open_contract}) {
 }
 
 $t->finish_ok;
-kill 9, $pid;
 
 done_testing();
