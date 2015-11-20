@@ -196,6 +196,7 @@ sub _redis_read {
 }
 
 sub _dbh {
+    die "config chronicle is not defined "if not defined _config()->{chronicle}
     return if not defined _config()->{chronicle};
 
     state $dbh = DBI->connect_cached(
