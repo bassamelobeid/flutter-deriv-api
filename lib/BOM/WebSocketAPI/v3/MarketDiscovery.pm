@@ -194,18 +194,6 @@ sub ticks {
             my $uuid;
             if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick')) {
                 return $c->new_error('ticks', 'AlreadySubscribed', localize('You are already subscribed to [_1]', $symbol));
-            } else {
-                my $spot_tick = $u->spot_tick;
-                $c->send({
-                        json => {
-                            msg_type => 'tick',
-                            echo_req => $c->stash('args'),
-                            tick     => {
-                                id     => $uuid,
-                                symbol => $symbol,
-                                epoch  => $spot_tick->epoch,
-                                quote  => $spot_tick->quote
-                            }}});
             }
         }
 
