@@ -10,7 +10,7 @@ use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
 use JSON;
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any none);
 
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
@@ -19,6 +19,7 @@ use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
 use BOM::Feed::Dictator::Client;
+use Data::UUID;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -170,76 +171,30 @@ sub asset_index {
 sub ticks {
     my ($c, $args) = @_;
 
-    my $symbol = $args->{ticks};
-    my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
-    my $ul;
-    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
-        return $c->new_error('ticks', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
+    my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
+    my @offerings = get_offerings_with_filter('underlying_symbol');
+    foreach my $symbol (@symbols) {
+        if (none { $symbol eq $_ } @offerings) {
+            return $c->new_error('ticks', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
+        }
+        my $u = BOM::Market::Underlying->new($symbol);
+
+        if ($u->feed_license ne 'realtime') {
+            return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l("Realtime quotes not available for [_1]", $symbol));
+        }
+
+        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
+            _feed_channel($c, 'unsubscribe', $symbol, 'tick');
+        } else {
+            my $uuid;
+            if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick')) {
+                return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+            }
+        }
+
     }
 
-    if ($ul->feed_license eq 'realtime') {
-        my ($dictator_client, $id);
-
-        my $data = {
-            type    => 'ticks',
-            cleanup => sub {
-                my $reason = shift;
-
-                $dictator_client && $dictator_client->stop;
-                $c->send({
-                        json => $c->new_error(
-                            'ticks',
-                            'EndOfTickStream',
-                            $c->l('This tick stream was canceled due to resource limitations'),
-                            {
-                                id     => $id,
-                                symbol => $symbol,
-                            })}) if $reason;
-            },
-        };
-
-        $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
-
-        $dictator_client = BOM::Feed::Dictator::Client->new(
-            $ENV{TEST_DICTATOR_HOST} ? (host => $ENV{TEST_DICTATOR_HOST}) : (),
-            $ENV{TEST_DICTATOR_PORT} ? (port => $ENV{TEST_DICTATOR_PORT}) : (),
-            symbol     => $symbol,
-            start_time => time,
-            on_message => sub {
-                my $tick = shift;
-
-                if (not $tick or ref($tick) eq 'HASH' and exists $tick->{error}) {
-                    $c->send({
-                            json => $c->new_error(
-                                'ticks',
-                                'EndOfTickStream',
-                                $c->l('This tick stream has been disrupted. Please try again later.'),
-                                {
-                                    id     => $id,
-                                    symbol => $symbol,
-                                })});
-                    BOM::WebSocketAPI::v3::System::forget_one $c, $id;
-                    return;
-                }
-
-                $tick = [$tick] unless ref($tick) eq 'ARRAY';
-
-                for (@$tick) {
-                    $c->send({
-                            json => {
-                                msg_type => 'tick',
-                                echo_req => $args,
-                                tick     => {
-                                    id    => $id,
-                                    epoch => $_->{epoch},
-                                    quote => $_->{quote}}}});
-                }
-            });
-
-        return 0;
-    } else {
-        return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l('Realtime quotes not available'));
-    }
+    return;
 }
 
 sub ticks_history {
@@ -285,31 +240,61 @@ sub ticks_history {
     if ($args->{subscribe} eq '1' and $ul->feed_license ne 'realtime') {
         return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l('Realtime quotes not available'));
     }
+
     if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
-        $c->stash->{feed_channels}->{"$symbol;$publish"} = 1;
+        if (not _feed_channel($c, 'subscribe', $symbol, $publish)) {
+            $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+        }
     }
     if ($args->{subscribe} eq '0') {
-        delete $c->stash->{feed_channels}->{"$symbol;$publish"};
+        _feed_channel($c, 'unsubscribe', $symbol, $publish);
+        return;
     }
 
-    my $redis         = $c->stash('redis');
-    my $feed_channels = $c->stash('feed_channels');
-
-    if (scalar keys %{$feed_channels} > 0) {
-        $redis->subscribe(["FEED::$symbol"], sub { });
-    } else {
-        $redis->unsubscribe(["FEED::$symbol"], sub { });
-    }
     return $result;
+}
+
+sub _feed_channel {
+    my ($c, $subs, $symbol, $type) = @_;
+    my $uuid;
+
+    my $feed_channel      = $c->stash('feed_channel');
+    my $feed_channel_type = $c->stash('feed_channel_type');
+
+    my $redis = $c->stash('redis');
+    if ($subs eq 'subscribe') {
+        if (exists $feed_channel_type->{"$symbol;$type"}) {
+            return;
+        }
+        $uuid = Data::UUID->new->create_str();
+        $feed_channel->{$symbol} += 1;
+        $feed_channel_type->{"$symbol;$type"}->{args} = $c->stash('args');
+        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
+        $redis->subscribe(["FEED::$symbol"], sub { });
+    }
+
+    if ($subs eq 'unsubscribe') {
+        $feed_channel->{$symbol} -= 1;
+        delete $feed_channel_type->{"$symbol;$type"};
+        if ($feed_channel->{$symbol} <= 0) {
+            $redis->unsubscribe(["FEED::$symbol"], sub { });
+            delete $feed_channel->{$symbol};
+        }
+    }
+
+    $c->stash('feed_channel'      => $feed_channel);
+    $c->stash('feed_channel_type' => $feed_channel_type);
+
+    return $uuid;
 }
 
 sub send_realtime_ticks {
     my ($c, $message) = @_;
 
     my @m = split(';', $message);
-    my $feed_channels = $c->stash('feed_channels');
+    my $feed_channels_type = $c->stash('feed_channel_type');
 
-    foreach my $channel (keys %{$feed_channels}) {
+    foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
         my $symbol      = $1;
         my $granularity = $2;
@@ -318,8 +303,9 @@ sub send_realtime_ticks {
             $c->send({
                     json => {
                         msg_type => 'tick',
-                        echo_req => $c->stash('args'),
+                        echo_req => $feed_channels_type->{$channel}->{args},
                         tick     => {
+                            id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => $m[2]}}});
@@ -328,8 +314,9 @@ sub send_realtime_ticks {
             $c->send({
                     json => {
                         msg_type => 'ohlc',
-                        echo_req => $c->stash('args'),
+                        echo_req => $feed_channels_type->{$channel},
                         ohlc     => {
+                            id          => $feed_channels_type->{$channel}->{uuid},
                             epoch       => $m[1],
                             open_time   => $m[1] - $m[1] % $granularity,
                             symbol      => $symbol,
@@ -342,7 +329,7 @@ sub send_realtime_ticks {
         }
     }
 
-    return 0;
+    return;
 }
 
 sub proposal {
