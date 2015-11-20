@@ -54,6 +54,7 @@
                     "type": "string",
                     "description": "Compact description of the contract purchased if description is set to 1"
                   }
+                }
               },
               "description":"Array of returned transactions"
             }
