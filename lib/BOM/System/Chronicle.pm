@@ -205,6 +205,7 @@ sub _dbh {
         {
             RaiseError => 1,
         });
+    die "<><><> dbh is undefined. config_chronicle_ip is " . _config()->{chronicle}->{ip} . "" if not defined $dbh;
     return $dbh;
 }
 
