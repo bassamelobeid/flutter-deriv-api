@@ -172,6 +172,7 @@ sub __handle {
         ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Cashier::paymentagent_list,                  0],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
+        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,         1],
     );
 
     foreach my $dispatch (@dispatch) {
