@@ -177,6 +177,7 @@ sub _redis_write {
     state $redis_write = RedisDB->new(
         host => _config()->{write}->{host},
         port => _config()->{write}->{port},
+    );
     return $redis_write;
 }
 
@@ -184,6 +185,7 @@ sub _redis_read {
     state $redis_read = RedisDB->new(
         host => _config()->{read}->{host},
         port => _config()->{read}->{port},
+    );
     return $redis_read;
 }
 
