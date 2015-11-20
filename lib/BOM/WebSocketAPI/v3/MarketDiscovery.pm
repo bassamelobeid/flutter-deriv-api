@@ -20,6 +20,7 @@ use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
 use BOM::Feed::Dictator::Client;
+use Data::UUID;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -270,6 +271,7 @@ sub ticks_history {
 
 sub _feed_channel {
     my ($c, $subs, $symbol, $type) = @_;
+    my $uuid;
 
     my $feed_channel      = $c->stash('feed_channel');
     my $feed_channel_type = $c->stash('feed_channel_type');
@@ -279,10 +281,11 @@ sub _feed_channel {
         if (exists $feed_channel_type->{"$symbol;$type"}) {
             return;
         }
+        $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"} = $c->stash('args');
+        $feed_channel_type->{"$symbol;$type"}->{args} = $c->stash('args');
+        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
         $redis->subscribe(["FEED::$symbol"], sub { });
-
     }
 
     if ($subs eq 'unsubscribe') {
@@ -297,7 +300,7 @@ sub _feed_channel {
     $c->stash('feed_channel'      => $feed_channel);
     $c->stash('feed_channel_type' => $feed_channel_type);
 
-    return 1;
+    return $uuid;
 }
 
 sub send_realtime_ticks {
@@ -315,8 +318,9 @@ sub send_realtime_ticks {
             $c->send({
                     json => {
                         msg_type => 'tick',
-                        echo_req => $feed_channels_type->{$channel},
+                        echo_req => $feed_channels_type->{$channel}->{args},
                         tick     => {
+                            id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => $m[2]}}});
@@ -327,6 +331,7 @@ sub send_realtime_ticks {
                         msg_type => 'ohlc',
                         echo_req => $feed_channels_type->{$channel},
                         ohlc     => {
+                            id          => $feed_channels_type->{$channel}->{uuid},
                             epoch       => $m[1],
                             open_time   => $m[1] - $m[1] % $granularity,
                             symbol      => $symbol,
