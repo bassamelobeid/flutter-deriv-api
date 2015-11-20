@@ -58,7 +58,7 @@ is_deeply $res->{residence_list}->[0],
     value => 'af',
     text  => 'Afghanistan'
     };
-test_schema('states_list', $res);
+test_schema('residence_list', $res);
 
 ## states_list
 $t = $t->send_ok({json => {states_list => 'MY'}})->message_ok;

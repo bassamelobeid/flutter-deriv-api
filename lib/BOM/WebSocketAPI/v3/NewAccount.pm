@@ -12,12 +12,10 @@ use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Account;
-use BOM::Platform::Context qw(localize);
 use BOM::Platform::Context::Request;
 
 sub new_account_virtual {
     my ($c, $args) = @_;
-    BOM::Platform::Context::request($c->stash('request'));
 
     my %details = %{$args};
     my $code    = delete $details{verification_code};
@@ -52,7 +50,6 @@ sub new_account_virtual {
 sub verify_email {
     my ($c, $args) = @_;
     my $email = $args->{verify_email};
-    BOM::Platform::Context::request($c->stash('request'));
 
     if (BOM::Platform::User->new({email => $email})) {
         $c->app->log->warn("verify_email, [$email] already a Binary.com user, no email sent");
@@ -63,8 +60,8 @@ sub verify_email {
         send_email({
             from    => $website->config->get('customer_support.email'),
             to      => $email,
-            subject => localize('Verify your email address - [_1]', $website->display_name),
-            message => [localize('Your email address verification code is: ' . $code)],
+            subject => $c->l('Verify your email address - [_1]', $website->display_name),
+            message => [$c->l('Your email address verification code is: ' . $code)],
         });
     }
 
@@ -77,7 +74,6 @@ sub verify_email {
 sub new_account_real {
     my ($c, $args) = @_;
     my $client = $c->stash('client');
-    BOM::Platform::Context::request($c->stash('request'));
 
     my $error_map = BOM::Platform::Locale::error_map();
 

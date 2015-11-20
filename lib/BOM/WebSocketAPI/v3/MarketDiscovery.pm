@@ -12,7 +12,6 @@ use Cache::RedisDB;
 use JSON;
 use List::MoreUtils qw(any);
 
-use BOM::Platform::Context qw(request localize);
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -23,8 +22,6 @@ use BOM::Feed::Dictator::Client;
 
 sub trading_times {
     my ($c, $args) = @_;
-
-    BOM::Platform::Context::request($c->stash('request'));
 
     my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
@@ -70,10 +67,8 @@ sub trading_times {
 sub asset_index {
     my ($c, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
-    my $request = $c->stash('request');
-    my $lang    = $request->language;
+    my $r    = $c->stash('request');
+    my $lang = $r->language;
 
     if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
         return {
@@ -130,7 +125,7 @@ sub asset_index {
                             } else {
                                 $included->{$key} = Time::Duration::Concise::Localize->new(
                                     interval => $included->{$key},
-                                    locale   => BOM::Platform::Context::request()->language
+                                    locale   => $r->language
                                 ) unless (ref $included->{$key});
                                 push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
                             }
@@ -179,7 +174,7 @@ sub ticks {
     my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
     my $ul;
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
-        return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+        return $c->new_error('ticks', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
     }
 
     if ($ul->feed_license eq 'realtime') {
@@ -195,7 +190,7 @@ sub ticks {
                         json => $c->new_error(
                             'ticks',
                             'EndOfTickStream',
-                            localize('This tick stream was canceled due to resource limitations'),
+                            $c->l('This tick stream was canceled due to resource limitations'),
                             {
                                 id     => $id,
                                 symbol => $symbol,
@@ -218,7 +213,7 @@ sub ticks {
                             json => $c->new_error(
                                 'ticks',
                                 'EndOfTickStream',
-                                localize('This tick stream has been disrupted. Please try again later.'),
+                                $c->l('This tick stream has been disrupted. Please try again later.'),
                                 {
                                     id     => $id,
                                     symbol => $symbol,
@@ -243,7 +238,7 @@ sub ticks {
 
         return 0;
     } else {
-        return $c->new_error('ticks', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
+        return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l('Realtime quotes not available'));
     }
 }
 
@@ -254,7 +249,7 @@ sub ticks_history {
     my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
     my $ul;
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
-        return $c->new_error('ticks_history', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
     }
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
@@ -281,14 +276,14 @@ sub ticks_history {
             };
             $publish = $args->{granularity};
         } else {
-            return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
+            return $c->new_error('candles', 'InvalidCandlesRequest', $c->l('Invalid candles request'));
         }
     } else {
-        return $c->new_error('ticks_history', 'InvalidStyle', localize("Style [_1] invalid", $style));
+        return $c->new_error('ticks_history', 'InvalidStyle', $c->l("Style [_1] invalid", $style));
     }
 
     if ($args->{subscribe} eq '1' and $ul->feed_license ne 'realtime') {
-        return $c->new_error('ticks', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
+        return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l('Realtime quotes not available'));
     }
     if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
         $c->stash->{feed_channels}->{"$symbol;$publish"} = 1;
@@ -375,7 +370,7 @@ sub proposal {
                         json => $c->new_error(
                             'ticks',
                             'EndOfStream',
-                            localize('This stream has been canceled due to resource limitations'),
+                            $c->l('This stream has been canceled due to resource limitations'),
                             {
                                 id => $id,
                             })}) if $reason;
@@ -432,7 +427,7 @@ sub get_ask {
         $log->info("contract creation failure: $err");
         return {
             error => {
-                message => localize("Cannot create contract"),
+                message => $c->l("Cannot create contract"),
                 code    => "ContractCreationFailure"
             }};
     };
@@ -451,7 +446,7 @@ sub get_ask {
         $log->error("contract invalid but no error!");
         return {
             error => {
-                message => localize("Cannot validate contract"),
+                message => $c->l("Cannot validate contract"),
                 code    => "ContractValidationError"
             }};
     }
@@ -475,8 +470,6 @@ sub get_ask {
 
 sub send_ask {
     my ($c, $id, $p1, $p2) = @_;
-
-    BOM::Platform::Context::request($c->stash('request'));
 
     my $latest = get_ask($c, $p2);
     if ($latest->{error}) {
