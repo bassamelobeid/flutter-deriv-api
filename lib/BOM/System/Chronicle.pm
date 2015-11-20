@@ -210,6 +210,8 @@ sub _dbh {
 
 sub _config {
     state $config = YAML::XS::LoadFile('/etc/chronicle.yml');
+    use Data::Dumper;
+    print STDERR "<><><>" . Dumper($config);
     return $config;
 }
 
