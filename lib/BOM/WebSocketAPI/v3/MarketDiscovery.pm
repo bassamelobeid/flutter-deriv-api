@@ -191,7 +191,8 @@ sub ticks {
         if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
             _feed_channel($c, 'unsubscribe', $symbol, 'tick');
         } else {
-            if (not _feed_channel($c, 'subscribe', $symbol, 'tick')) {
+            my $uuid;
+            if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick')) {
                 return $c->new_error('ticks', 'AlreadySubscribed', localize('You are already subscribed to [_1]', $symbol));
             } else {
                 my $spot_tick = $u->spot_tick;
@@ -200,6 +201,7 @@ sub ticks {
                             msg_type => 'tick',
                             echo_req => $c->stash('args'),
                             tick     => {
+                                id     => $uuid,
                                 symbol => $symbol,
                                 epoch  => $spot_tick->epoch,
                                 quote  => $spot_tick->quote
