@@ -266,25 +266,14 @@ sub send_bid {
         echo_req => $p0,
     };
 
-    if ($latest->{error}) {
-        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
-        $c->send({
-                json => {
-                    %$response,
-                    proposal_open_contract => {
-                        id => $id,
-                    },
-                    %$latest,
-                }});
-    } else {
-        $c->send({
-                json => {
-                    %$response,
-                    proposal_open_contract => {
-                        id => $id,
-                        %$latest
-                    }}});
-    }
+    $c->send({
+            json => {
+                %$response,
+                proposal_open_contract => {
+                    id => $id,
+                    %$latest
+                }}});
+
     return;
 }
 
