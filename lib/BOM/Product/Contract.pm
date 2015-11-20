@@ -1628,8 +1628,7 @@ sub _market_data {
         },
         get_atm_volatility => sub {
             my $args      = shift;
-            my $atm_point = $volsurface->atm_spread_point;
-            $args->{$volsurface->type} = $atm_point;
+            $args->{delta} = 50;
             return $volsurface->get_volatility($args);
         },
         get_economic_event => sub {

@@ -97,10 +97,17 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {date => Date::Utility->new()});
 
+
 foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
     foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {
         my $expectations = $expected_result->{$underlying}->{$bet_type};
         next unless scalar keys %$expectations;
+
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $underlying,
+            epoch => $date_pricing,
+            quote => $expectations->{spot},
+        });
 
         my %barriers =
             $expectations->{barrier2}
@@ -116,7 +123,6 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             underlying   => $underlying,
             payout       => 100,
             currency     => 'USD',
-            current_spot => $expectations->{spot},
             %barriers,
         };
         my $bet;
@@ -137,6 +143,8 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         is(roundnear(1e-4, $ask->peek_amount('total_markup')),      $expectations->{total_markup},      'Total markup is correct.');
         is(roundnear(1e-4, $ask->peek_amount('commission_markup')), $expectations->{commission_markup}, 'Commission markup is correct.');
         is(roundnear(1e-4, $ask->peek_amount('risk_markup')),       $expectations->{risk_markup},       'Risk markup is correct.');
+        $date_pricing++;
+        $date_start++;
     }
 }
 
