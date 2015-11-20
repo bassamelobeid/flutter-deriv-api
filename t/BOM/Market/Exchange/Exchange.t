@@ -24,6 +24,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol           => 'LSE',
         currency         => 'GBP',
         delay_amount     => 15,
+        trading_days     => 'weekdays',
         trading_timezone => 'Europe/London',
         holidays         => {
             "1-Jan-2013"  => "New Year's Day",
@@ -81,6 +82,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'RANDOM',
         open_on_weekends => 1,
+        trading_days     => 'everyday',
         holidays         => {},
         market_times     => {
             early_closes => {},
@@ -99,6 +101,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'RANDOM_NOCTURNE',
         open_on_weekends => 1,
+        trading_days     => 'everyday',
         holidays         => {},
         market_times     => {
             early_closes => {},
@@ -117,6 +120,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol       => 'FSE',
         currency     => 'EUR',
+        trading_days => 'weekdays',
         delay_amount => 15,
         market_times => {
             early_closes => {},
@@ -139,6 +143,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'ASX',
         currency         => 'AUD',
+        trading_days => 'weekdays',
         trading_timezone => 'Australia/Sydney',
         market_times     => {
             dst => {
@@ -160,6 +165,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'ISE',
         currency         => 'EUR',
+        trading_days => 'weekdays',
         trading_timezone => 'Europe/Dublin',
         market_times     => {
             dst => {
@@ -181,6 +187,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'NYSE',
         currency         => 'USD',
+        trading_days => 'weekdays',
         trading_timezone => 'America/New_York',
         market_times     => {
             dst => {
@@ -202,6 +209,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'HKSE',
         currency         => 'HKD',
+        trading_days => 'weekdays',
         delay_amount     => 60,
         trading_timezone => 'Asia/Hong_Kong',
         holidays         => {
