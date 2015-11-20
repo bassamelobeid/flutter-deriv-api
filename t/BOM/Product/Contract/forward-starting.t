@@ -22,14 +22,14 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'RANDOM',
-        trading_day => 'everyday',
+        trading_days => 'everyday',
         date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'RANDOM_NOCTURNE',
-        trading_day => 'everyday',
+        trading_days => 'everyday',
         date   => $now,
         market_times             => {
             early_closes => {},
@@ -45,7 +45,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
-        trading_day => 'weekdays',
+        trading_days => 'weekdays',
         date   => $now,
     });
 subtest 'forward starting with payout/stake' => sub {
