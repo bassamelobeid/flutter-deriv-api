@@ -7,7 +7,7 @@ CREATE SCHEMA chronicle;
 
 CREATE TABLE chronicle (
       id bigserial,
-      timestamp TIMESTAMPTZ DEFAULT NOW(),
+      timestamp TIMESTAMP DEFAULT NOW(),
       category VARCHAR(255),
       name VARCHAR(255),
       value TEXT,
