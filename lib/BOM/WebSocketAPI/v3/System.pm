@@ -35,7 +35,7 @@ sub forget_all {
     if ($c->stash('feed_channel_type')) {
         foreach my $k (keys %{$c->stash('feed_channel_type')}) {
             $k =~ /(.*);(.*)/;
-            push @removed_ids, $c->stash('feed_channel_type')->{$key}->{uuid};
+            push @removed_ids, $c->stash('feed_channel_type')->{$k}->{uuid};
             BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2);
         }
     }
@@ -53,7 +53,7 @@ sub forget_one {
         foreach my $k (keys %{$c->stash('feed_channel_type')}) {
             $k =~ /(.*);(.*)/;
             BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2)
-                if ($c->stash('feed_channel_type')->{$key}->{uuid} eq $id);
+                if ($c->stash('feed_channel_type')->{$k}->{uuid} eq $id);
         }
     }
 
