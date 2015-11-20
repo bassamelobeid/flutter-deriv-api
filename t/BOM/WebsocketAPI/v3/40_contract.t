@@ -67,18 +67,6 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
-$t = $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
-my $tick = decode_json($t->message->[1]);
-ok $tick->{tick}->{id};
-ok $tick->{tick}->{quote};
-ok $tick->{tick}->{epoch};
-test_schema('ticks', $tick);
-
-# stop tick
-$t = $t->send_ok({json => {forget => $tick->{tick}->{id}}})->message_ok;
-my $forget = decode_json($t->message->[1]);
-ok $forget->{forget};
-test_schema('forget', $forget);
 
 $t = $t->send_ok({
         json => {
@@ -118,7 +106,7 @@ while (1) {
 }
 
 $t = $t->send_ok({json => {forget => $proposal->{proposal}->{id}}})->message_ok;
-$forget = decode_json($t->message->[1]);
+my $forget = decode_json($t->message->[1]);
 note explain $forget;
 is $forget->{forget}, 0, 'buying a proposal deletes the stream';
 
