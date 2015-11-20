@@ -47,7 +47,7 @@ MUST be either hash-ref or array-ref.
 
 =item C<get>
 
-Given a category and name returns the latest version of the data according to current Redis cache (If data is not found in the cache falls back to PostgresSQL)
+Given a category and name returns the latest version of the data according to current Redis cache
 
 =item C<get_for>
 
@@ -106,14 +106,14 @@ sub set {
 
     my $key = $category . '::' . $name;
     _redis_write()->set($key, $value);
-    _archive($category, $name, $value);
+    _archive($category, $name, $value) if _dbh();
 
     return 1;
 }
 
 =head3 C<< my $data = get("category1", "name1") >>
 
-Query for the latest data under "category1::name1" from Redis (fall-back to Pg if not found in Redis).
+Query for the latest data under "category1::name1" from Redis.
 
 =cut
 
@@ -125,13 +125,6 @@ sub get {
     my $cached_data = _redis_read()->get($key);
 
     return JSON::from_json($cached_data) if defined $cached_data;
-
-    my $db_data = get_for($category, $name, time);
-    if (defined $db_data) {
-        _redis_write()->set($key, $db_data);
-        return $db_data;
-    }
-
     return;
 }
 
@@ -195,8 +188,13 @@ sub _redis_read {
     return $redis_read;
 }
 
+#According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
+#The assumption is that we have Redis for all data which is important for continutation of our services
+#We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
+#And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
+#But by re-running population scripts
 sub _dbh {
-    die "config chronicle is not defined "if not defined _config()->{chronicle};
+    #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return if not defined _config()->{chronicle};
 
     state $dbh = DBI->connect_cached(
@@ -206,7 +204,6 @@ sub _dbh {
         {
             RaiseError => 1,
         });
-    die "<><><> dbh is undefined. config_chronicle_ip is " . _config()->{chronicle}->{ip} . "" if not defined $dbh;
     return $dbh;
 }
 
