@@ -1627,7 +1627,7 @@ sub _market_data {
             return $vol;
         },
         get_atm_volatility => sub {
-            my $args      = shift;
+            my $args = shift;
             $args->{delta} = 50;
             return $volsurface->get_volatility($args);
         },
