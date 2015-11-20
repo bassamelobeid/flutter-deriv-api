@@ -106,7 +106,7 @@ sub set {
 
     my $key = $category . '::' . $name;
     _redis_write()->set($key, $value);
-    _archive($category, $name, $value) if _dbh();
+    _archive($category, $name, $value);
 
     return 1;
 }
