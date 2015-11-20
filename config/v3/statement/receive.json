@@ -51,7 +51,7 @@
                     "description": "The description of contract purchased if description is set to 1"
                   },
                   "shortcode": {
-                    "type": "string",
+                    "type": ["string", "null"],
                     "description": "Compact description of the contract purchased if description is set to 1"
                   }
                 }
