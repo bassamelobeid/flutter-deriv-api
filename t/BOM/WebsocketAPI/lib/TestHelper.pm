@@ -23,14 +23,16 @@ my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
 
 sub build_mojo_test {
-    my ($args) = @_;
+    my $args = shift || {};
 
     my $headers = {};
-    if (($args // {})->{deflate}) {
+    if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
     }
+    my $url = "/websockets/$version";
+    $url .= '?l=' . $args->{language} if $args->{language};
     my $t = Test::Mojo->new('BOM::WebSocketAPI');
-    $t->websocket_ok("/websockets/$version" => $headers);
+    $t->websocket_ok($url => $headers);
 
     return $t;
 }

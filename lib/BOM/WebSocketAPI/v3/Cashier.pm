@@ -8,7 +8,6 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
-use BOM::Platform::Context qw(localize request);
 use BOM::Database::DataMapper::PaymentAgent;
 
 sub get_limits {
@@ -17,11 +16,9 @@ sub get_limits {
     my $r      = $c->stash('request');
     my $client = $c->stash('client');
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
-        return $c->new_error('get_limits', 'FeatureNotAvailable', localize('Sorry, this feature is not available.'));
+        return $c->new_error('get_limits', 'FeatureNotAvailable', $c->l('Sorry, this feature is not available.'));
     }
 
     my $limit = +{
