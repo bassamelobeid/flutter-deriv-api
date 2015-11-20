@@ -202,7 +202,7 @@ sub change_password {
         $client->save;
     }
 
-    my $r = $c->stash('r');
+    my $r = $c->stash('request');
     BOM::System::AuditLog::log('password has been changed', $client_obj->email);
     send_email({
             from    => $r->website->config->get('customer_support.email'),
