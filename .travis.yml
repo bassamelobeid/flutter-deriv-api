@@ -5,6 +5,7 @@ env:
     - TEST_SUITE=unit_test_platform_client
     - TEST_SUITE=unit_test_platform_all
     - TEST_SUITE=unit_test_myaffiliates_extended
+    - TEST_SUITE=unit_test_system
     - TEST_SUITE=syntax_lib
 services:
     - redis-server
