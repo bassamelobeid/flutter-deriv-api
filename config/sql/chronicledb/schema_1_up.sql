@@ -5,7 +5,7 @@ BEGIN;
 
 CREATE SCHEMA chronicle;
 
-REATE TABLE chronicle (
+CREATE TABLE chronicle (
       id bigserial,
       timestamp TIMESTAMPTZ DEFAULT NOW(),
       category VARCHAR(255),
