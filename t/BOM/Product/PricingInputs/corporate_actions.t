@@ -15,9 +15,11 @@ use Date::Utility;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestChronicle qw(init_chronicle);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
+init_chronicle;
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -89,7 +91,7 @@ subtest 'invalid operation' => sub {
             type           => 'DVD_STOCK',
         }};
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_action', {actions => $invalid_action});
+    BOM::Test::Data::Utility::UnitTestChronicle::create_doc('corporate_action', {actions => $invalid_action});
 
     lives_ok {
         my $date_pricing = $starting->plus_time_interval('1d');
