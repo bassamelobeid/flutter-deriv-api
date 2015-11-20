@@ -67,11 +67,6 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
-$t = $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
-my $tick = decode_json($t->message->[1]);
-ok $tick->{tick}->{quote};
-ok $tick->{tick}->{epoch};
-test_schema('ticks', $tick);
 
 $t = $t->send_ok({
         json => {
