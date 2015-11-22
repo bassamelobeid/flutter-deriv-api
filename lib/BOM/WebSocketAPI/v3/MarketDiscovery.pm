@@ -337,7 +337,7 @@ sub proposal {
 
     # this is a recurring contract-price watch ("price streamer")
     # p2 is a manipulated copy of p1 suitable for produce_contract.
-    my $p2 = prepare_ask($c, $args);
+    my $p2 = prepare_ask($args);
     my $id;
     $id = Mojo::IOLoop->recurring(
         1 => sub {
@@ -371,12 +371,7 @@ sub proposal {
 }
 
 sub prepare_ask {
-    my ($c, $p1) = @_;
-
-    my $app = $c->app;
-    my $log = $app->log;
-
-    $log->debug("prepare_ask got p1 " . $c->dumper($p1));
+    my $p1 = shift;
 
     # this has two deliverables:
     # 1) apply default values inline to the given $p1,
