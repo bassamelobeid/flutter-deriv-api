@@ -18,7 +18,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
-use BOM::Feed::Dictator::Client;
 use Data::UUID;
 
 sub trading_times {
@@ -288,7 +287,7 @@ sub _feed_channel {
     return $uuid;
 }
 
-sub send_realtime_ticks {
+sub process_realtime_events {
     my ($c, $message) = @_;
 
     my @m = split(';', $message);
@@ -296,10 +295,10 @@ sub send_realtime_ticks {
 
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
-        my $symbol      = $1;
-        my $granularity = $2;
+        my $symbol = $1;
+        my $type   = $2;
 
-        if ($granularity eq 'tick' and $m[0] eq $symbol) {
+        if ($type eq 'tick' and $m[0] eq $symbol) {
             $c->send({
                     json => {
                         msg_type => 'tick',
@@ -309,8 +308,12 @@ sub send_realtime_ticks {
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => $m[2]}}});
+        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
+        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
         } elsif ($m[0] eq $symbol) {
-            $message =~ /;$granularity:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
+            $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             $c->send({
                     json => {
                         msg_type => 'ohlc',
@@ -318,9 +321,9 @@ sub send_realtime_ticks {
                         ohlc     => {
                             id          => $feed_channels_type->{$channel}->{uuid},
                             epoch       => $m[1],
-                            open_time   => $m[1] - $m[1] % $granularity,
+                            open_time   => $m[1] - $m[1] % $type,
                             symbol      => $symbol,
-                            granularity => $granularity,
+                            granularity => $type,
                             open        => $1,
                             high        => $2,
                             low         => $3,
@@ -335,52 +338,20 @@ sub send_realtime_ticks {
 sub proposal {
     my ($c, $args) = @_;
 
-    # this is a recurring contract-price watch ("price streamer")
-    # p2 is a manipulated copy of p1 suitable for produce_contract.
-    my $p2 = prepare_ask($c, $args);
-    my $id;
-    $id = Mojo::IOLoop->recurring(
-        1 => sub {
-            send_ask($c, $id, $args, $p2);
-        });
+    my $symbol_offered = any { $args->{symbol} eq $_ } get_offerings_with_filter('underlying_symbol');
+    my $ul;
+    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($args->{symbol})) {
+        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $args->{symbol}));
+    }
+    my $id = _feed_channel($c, 'subscribe', $args->{symbol}, 'proposal:' . JSON::to_json($args));
 
-    BOM::WebSocketAPI::v3::System::limit_stream_count(
-        $c,
-        {
-            id      => $id,
-            type    => 'proposal',
-            data    => {%$p2},
-            cleanup => sub {
-                my $reason = shift;
-
-                Mojo::IOLoop->remove($id);
-                $c->send({
-                        json => $c->new_error(
-                            'ticks',
-                            'EndOfStream',
-                            $c->l('This stream has been canceled due to resource limitations'),
-                            {
-                                id => $id,
-                            })}) if $reason;
-            },
-        });
-
-    send_ask($c, $id, $args, $p2);
+    send_ask($c, $id, $args);
 
     return;
 }
 
 sub prepare_ask {
-    my ($c, $p1) = @_;
-
-    my $app = $c->app;
-    my $log = $app->log;
-
-    $log->debug("prepare_ask got p1 " . $c->dumper($p1));
-
-    # this has two deliverables:
-    # 1) apply default values inline to the given $p1,
-    # 2) return a manipulated copy suitable for produce_contract
+    my $p1 = shift;
 
     $p1->{date_start} //= 0;
     if ($p1->{date_expiry}) {
@@ -457,9 +428,9 @@ sub get_ask {
 }
 
 sub send_ask {
-    my ($c, $id, $p1, $p2) = @_;
+    my ($c, $id, $args) = @_;
 
-    my $latest = get_ask($c, $p2);
+    my $latest = get_ask($c, prepare_ask($args));
     if ($latest->{error}) {
         BOM::WebSocketAPI::v3::System::forget_one $c, $id;
 
@@ -469,7 +440,7 @@ sub send_ask {
         $c->send({
                 json => {
                     msg_type => 'proposal',
-                    echo_req => $p1,
+                    echo_req => $args,
                     proposal => $proposal,
                     %$latest
                 }});
@@ -477,7 +448,7 @@ sub send_ask {
         $c->send({
                 json => {
                     msg_type => 'proposal',
-                    echo_req => $p1,
+                    echo_req => $args,
                     proposal => {
                         id => $id,
                         %$latest
