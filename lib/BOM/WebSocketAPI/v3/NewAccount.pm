@@ -8,6 +8,7 @@ use Try::Tiny;
 use List::MoreUtils qw(any);
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
+use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
@@ -89,8 +90,7 @@ sub _get_client_details {
     my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
                     address_city address_state address_postcode phone secret_question secret_answer);
 
-    if ($client->is_virtual) {
-        $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/;
+    if ($args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
         try {
             my $dob = DateTime->new(
                 year  => $1,
@@ -100,16 +100,19 @@ sub _get_client_details {
             $args->{date_of_birth} = $dob->ymd;
         }
         catch { return; } or return { error => 'invalid DOB' };
+    }
 
-        foreach my $key (@fields) {
-            $details->{$key} = $args->{$key} || '';
-            # optional fields
-            next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
-            return { error => 'invalid' } if (not $details->{$key});
+    foreach my $key (@fields) {
+        my $value = $args->{$key};
+        #$value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+
+        if (not $client->is_virtual) {
+            $value ||= $client->$key;
         }
-    } else {
-        $details->{$_} = $client->$_ for @fields;
-        $details->{secret_answer} = BOM::Platform::Client::Utility::decrypt_secret_answer($details->{secret_answer});
+        $details->{$key} = $value || '';
+
+        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
+        return { error => 'invalid' } if (not $details->{$key});
     }
     return { details => $details };
 }
