@@ -6,6 +6,9 @@ use warnings;
 use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
+use Crypt::NamedKeys;
+Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
+
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
@@ -104,7 +107,7 @@ sub _get_client_details {
 
     foreach my $key (@fields) {
         my $value = $args->{$key};
-        #$value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
 
         if (not $client->is_virtual) {
             $value ||= $client->$key;
