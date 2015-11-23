@@ -26,7 +26,6 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR2002';
 
-
 $t = $t->send_ok({
         json => {
             "proposal"      => 1,

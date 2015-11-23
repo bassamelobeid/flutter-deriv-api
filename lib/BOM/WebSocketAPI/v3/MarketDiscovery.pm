@@ -309,7 +309,7 @@ sub send_realtime_ticks {
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => $m[2]}}});
-        } elsif ($type =~/^proposal:/ and $m[0] eq $symbol) {
+        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
         } elsif ($m[0] eq $symbol) {
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
@@ -342,7 +342,7 @@ sub proposal {
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($args->{symbol})) {
         return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
     }
-    _feed_channel($c, 'unsubscribe', $args->{symbol}, 'proposal:'.JSON::to_json($args));
+    _feed_channel($c, 'unsubscribe', $args->{symbol}, 'proposal:' . JSON::to_json($args));
 
     return;
 }
