@@ -127,7 +127,8 @@ sub __ListPaymentAgents {
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
         my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
 
-        push @{$payment_agent_table_row}, {
+        push @{$payment_agent_table_row},
+            {
             'paymentagent_loginid'  => $loginid,
             'name'                  => encode_entities($payment_agent->{payment_agent_name}),
             'summary'               => encode_entities($payment_agent->{summary}),
@@ -139,7 +140,7 @@ sub __ListPaymentAgents {
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
             'supported_banks'       => $payment_agent->{supported_banks},
-        };
+            };
     }
 
     @$payment_agent_table_row = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_table_row;
@@ -203,8 +204,7 @@ sub paymentagent_withdraw {
         or return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Sorry, the Payment Agent does not exist.'));
 
     if ($client->broker ne $paymentagent->broker) {
-        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            $c->l('Sorry, the Payment Agent is unavailable for your region.'));
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Sorry, the Payment Agent is unavailable for your region.'));
     }
 
     my $pa_client = $paymentagent->client;
@@ -444,8 +444,7 @@ sub __output_payments_error_message {
 
     my $error_message_with_code = '';
     if ($error_code) {
-        $error_message_with_code =
-            $c->l('Mentioning error code [_1] in any correspondence may help us resolve the issue more quickly.', $error_code);
+        $error_message_with_code = $c->l('Mentioning error code [_1] in any correspondence may help us resolve the issue more quickly.', $error_code);
     }
 
     # amount is not always exist because error may happen before client submit the form
