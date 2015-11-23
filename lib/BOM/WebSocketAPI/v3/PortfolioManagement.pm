@@ -127,10 +127,10 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
             $args->{short_code} = $fmb->short_code;
-            $args->{fmb_id} = $fmb->id;
-            $args->{currency} = $client->currency;
+            $args->{fmb_id}     = $fmb->id;
+            $args->{currency}   = $client->currency;
 
-            my $id = _feed_channel($c, 'subscribe', $args->{symbol} , 'proposal_open_contract:' . JSON::to_json($args));
+            my $id = _feed_channel($c, 'subscribe', $args->{symbol}, 'proposal_open_contract:' . JSON::to_json($args));
             send_bid($c, $id, $args);
         }
     } else {
