@@ -18,7 +18,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
-use BOM::Feed::Dictator::Client;
 use Data::UUID;
 
 sub trading_times {
