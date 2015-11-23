@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Runtime;
+use BOM::WebSocketAPI::v3::MarketDiscovery;
 
 sub buy {
     my ($c, $args) = @_;
@@ -18,12 +19,11 @@ sub buy {
     my $purchase_date = time;                  # Purchase is considered to have happened at the point of request.
     my $id            = $args->{buy};
     my $source        = $c->stash('source');
-    my $ws_id         = $c->tx->connection;
 
     my $client = $c->stash('client');
     my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
         or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
-    $p2 = $p2->{data};
+    $p2 = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($p2);
 
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;

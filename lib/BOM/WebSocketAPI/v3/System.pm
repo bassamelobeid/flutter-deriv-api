@@ -57,8 +57,11 @@ sub forget_one {
     if ($id =~ /-/ and $c->stash('feed_channel_type')) {
         foreach my $k (keys %{$c->stash('feed_channel_type')}) {
             $k =~ /(.*);(.*)/;
-            BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2)
-                if ($c->stash('feed_channel_type')->{$k}->{uuid} eq $id);
+            if ($c->stash('feed_channel_type')->{$k}->{uuid} eq $id) {
+                my $args = $c->stash('feed_channel_type')->{$k}->{args};
+                BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2);
+                return $args;
+            }
         }
     }
 
