@@ -93,7 +93,7 @@ sub _get_client_details {
     my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
         address_city address_state address_postcode phone secret_question secret_answer);
 
-    if ($args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
+    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
         try {
             my $dob = DateTime->new(
                 year  => $1,
