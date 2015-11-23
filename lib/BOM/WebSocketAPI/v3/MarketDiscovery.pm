@@ -337,7 +337,7 @@ sub send_realtime_ticks {
 sub proposal {
     my ($c, $args) = @_;
 
-    my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
+    my $symbol_offered = any { $args->{symbol} eq $_ } get_offerings_with_filter('underlying_symbol');
     my $ul;
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($args->{symbol})) {
         return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $args->{symbol}));
