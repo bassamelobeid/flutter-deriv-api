@@ -129,17 +129,13 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
             my $id = '';
-            $args->{fmb} = $fmb;
-            my $p2 = prepare_bid($c, $args);
-            $p2->{contract_id} = $fmb->id;
-            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
+            $id = Mojo::IOLoop->recurring(3 => sub { send_bid($c, $id, $p0, $fmb) });
             my $fmb_map = ($c->{fmb_ids}{$ws_id} //= {});
             $fmb_map->{$fmb->id} = $id;
 
             my $data = {
                 id      => $id,
                 type    => 'proposal_open_contract',
-                data    => {%$p2},
                 cleanup => sub {
                     Mojo::IOLoop->remove($id);
                     delete $fmb_map->{$fmb->id};
@@ -149,6 +145,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
                 },
             };
             BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
+            send_bid($c, $id, $p0, $fmb);
         }
     } else {
         return {
@@ -207,60 +204,18 @@ sub __get_open_contracts {
     return $fmb_dm->get_open_bets_of_account();
 }
 
-sub prepare_bid {
-    my ($c, $p1) = @_;
-    my $app      = $c->app;
-    my $log      = $app->log;
-    my $fmb      = delete $p1->{fmb};
-    my $currency = $fmb->account->currency_code;
-    my $contract = produce_contract($fmb->short_code, $currency);
-    %$p1 = (
-        contract_id   => $fmb->id,
-        purchase_time => $fmb->purchase_time->epoch,
-        symbol        => $fmb->underlying_symbol,
-        payout        => $fmb->payout_price,
-        buy_price     => $fmb->buy_price,
-        date_start    => $fmb->start_time->epoch,
-        expiry_time   => $fmb->expiry_time->epoch,
-        contract_type => $fmb->bet_type,
-        currency      => $currency,
-        longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
-    );
-    return {
-        fmb      => $fmb,
-        contract => $contract,
-    };
-}
-
 sub get_bid {
-    my ($c, $p2) = @_;
+    my ($c, $fmb) = @_;
     my $app = $c->app;
     my $log = $app->log;
 
-    my @similar_args = ($p2->{contract}, {priced_at => 'now'});
-    my $contract = try { make_similar_contract(@similar_args) } || do {
-        my $err = $@;
-        $log->info("contract for sale creation failure: $err");
-        return {
-            error => {
-                message => $c->l("Cannot create sell contract"),
-                code    => "ContractSellCreateError"
-            }};
-    };
-    if (!$contract->is_valid_to_sell) {
-        $log->error("primary error: " . $contract->primary_validation_error->message);
-        return {
-            error => {
-                message => $contract->primary_validation_error->message_to_client,
-                code    => "ContractSellValidationError"
-            }};
-    }
+    my $contract = produce_contract($fmb->short_code, $c->stash('client')->currency);
 
     my %returnhash = (
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $p2->{contract_id},
+        contract_id         => $fmb->id,
         underlying          => $contract->underlying->symbol,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
@@ -285,6 +240,7 @@ sub get_bid {
         $returnhash{exit_tick_time}  = $contract->exit_tick->epoch;
     } else {
         $returnhash{current_spot} = $contract->current_spot;
+        $returnhash{entry_spot}   = $contract->entry_spot;
     }
 
     if ($contract->two_barriers) {
@@ -302,34 +258,23 @@ sub get_bid {
 }
 
 sub send_bid {
-    my ($c, $id, $p0, $p2) = @_;
+    my ($c, $id, $p0, $fmb) = @_;
 
-    my $latest = get_bid($c, $p2);
+    my $latest = get_bid($c, $fmb);
 
     my $response = {
         msg_type => 'proposal_open_contract',
         echo_req => $p0,
     };
 
-    if ($latest->{error}) {
-        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
-        $c->send({
-                json => {
-                    %$response,
-                    proposal_open_contract => {
-                        id => $id,
-                    },
-                    %$latest,
-                }});
-    } else {
-        $c->send({
-                json => {
-                    %$response,
-                    proposal_open_contract => {
-                        id => $id,
-                        %$latest
-                    }}});
-    }
+    $c->send({
+            json => {
+                %$response,
+                proposal_open_contract => {
+                    id => $id,
+                    %$latest
+                }}});
+
     return;
 }
 
