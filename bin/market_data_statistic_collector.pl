@@ -49,7 +49,7 @@ sub _collect_vol_ages {
     my %skip_list =
         map { $_ => 1 } (
         @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
-        qw(OMXS30 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD)
+        qw(OMXS30 IBOV KOSPI2 SPTSX60 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
         );
     my @offered_forex = grep {not $skip_list{$_}} BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market => 'forex',
@@ -142,6 +142,9 @@ sub _collect_rates_ages {
 
     my @currencies_to_update = @{BOM::MarketData::CurrencyConfig->new->{currency_list}};
     foreach my $currency_symbol_to_update (@currencies_to_update) {
+        if ($currency_symbol_to_update eq 'XAU' or $currency_symbol_to_update eq 'XAG'){
+            next;
+        }
         my $currency_in_used = BOM::MarketData::InterestRate->new(symbol => $currency_symbol_to_update);
         my $currency_rate_age = (time - $currency_in_used->recorded_date->epoch)/3600;
 
