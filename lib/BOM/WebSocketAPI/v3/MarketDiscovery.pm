@@ -340,7 +340,7 @@ sub proposal {
     my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
     my $ul;
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($args->{symbol})) {
-        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
+        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $args->{symbol}));
     }
     _feed_channel($c, 'unsubscribe', $args->{symbol}, 'proposal:' . JSON::to_json($args));
 
