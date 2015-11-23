@@ -3,7 +3,7 @@ package BOM::System::Chronicle;
 =head1 NAME
 
 BOM::System::Chronicle - Provides efficient data storage for volatile and time-based data
- 
+
 =head1 DESCRIPTION
 
 This module contains helper methods which can be used to store and retrieve information
@@ -102,9 +102,6 @@ sub set {
     die "Cannot store undefined values in Chronicle!" unless defined $value;
     die "You can only store hash-ref or array-ref in Chronicle!" unless ref $value eq 'ARRAY' or ref $value eq 'HASH';
 
-    print "begins et for $category and $name\n";
-    print STDERR "begins et for $category and $name\n";
-
     $value = JSON::to_json($value);
 
     my $key = $category . '::' . $name;
@@ -176,36 +173,19 @@ SQL
 }
 
 sub _redis_write {
-    print "redis_Write \n";
-    print STDERR "redis_wrute\n";
-
-    state $redis_write = (
-        _config()->{write}->{password}
-        ? (
-            RedisDB->new(
-                host => _config()->{write}->{host},
-                port => _config()->{write}->{port},
-            ))
-        : (
-            RedisDB->new(
-                host => _config()->{write}->{host},
-                port => _config()->{write}->{port})));
+    state $redis_write = RedisDB->new(
+        host => _config()->{write}->{host},
+        port => _config()->{write}->{port},
+        (_config()->{write}->{password} ? ('password', _config()->{write}->{password}) : ()));
 
     return $redis_write;
 }
 
 sub _redis_read {
-    state $redis_read = (
-        _config()->{read}->{password}
-        ? (
-            RedisDB->new(
-                host => _config()->{read}->{host},
-                port => _config()->{read}->{port},
-            ))
-        : (
-            RedisDB->new(
-                host => _config()->{read}->{host},
-                port => _config()->{read}->{port})));
+    state $redis_read = RedisDB->new(
+        host => _config()->{read}->{host},
+        port => _config()->{read}->{port},
+        (_config()->{read}->{password} ? ('password', _config()->{read}->{password}) : ()));
 
     return $redis_read;
 }
