@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most 0.22 (tests => 162);
+use Test::Most 0.22 (tests => 165);
 use Test::NoWarnings;
 use Test::MockModule;
 use File::Spec;
@@ -54,21 +54,36 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw( LSE FSE);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'exchange',
+    {
+        symbol => 'SAS',
+    });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
         symbol   => $_,
         daycount => $currency_config->{$_}->{daycount},
         holidays => $currency_config->{$_}->{holidays},
         date     => Date::Utility->new,
-    }) for qw( GBP JPY USD EUR );
+    }) for qw( GBP JPY USD EUR);
 
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency_config',
+    {
+        symbol => 'SAR',
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
         rates  => $interest_rate->{$_}->{rates},
         date   => Date::Utility->new,
-    }) for qw( GBP JPY USD EUR JPY-USD EUR-USD GBP-USD );
+    }) for qw( GBP JPY USD EUR JPY-USD EUR-USD GBP-USD);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol => $_,
+    }) for qw( SAR SAR-USD);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
@@ -87,6 +102,14 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw(FTSE GDAXI);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_flat',
+    {
+        symbol          => 'SASEIDX',
+        recorded_date   => $recorded_date,
+        flat_vol        => 0.2,
+        flat_atm_spread => 0.07,
+    });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol        => $_,
@@ -94,6 +117,17 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
     }) for qw( FTSE GDAXI);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol => 'SASEIDX',
+    });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxUSDSAR',
+        recorded_date => $recorded_date,
+    });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {date => Date::Utility->new()});
 
@@ -139,5 +173,18 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         is(roundnear(1e-4, $ask->peek_amount('risk_markup')),       $expectations->{risk_markup},       'Risk markup is correct.');
     }
 }
+
+my $middle_east_intraday = produce_contract('CALL_SASEIDX_10_1447921800F_1447929000_S0P_0', 'USD');
+my $middle_east_intraday_ask = $middle_east_intraday->ask_probability;
+is(roundnear(1e-4, $middle_east_intraday_ask->peek_amount('commission_markup')), 0.05, 'Commission markup for middle east is 5%');
+
+my $middle_east_daily = produce_contract('CALL_SASEIDX_10_1447921800_1448022600F_S0P_0', 'USD');
+my $middle_east_daily_ask = $middle_east_daily->ask_probability;
+is(roundnear(1e-4, $middle_east_daily_ask->peek_amount('commission_markup')), 0.05, 'Commission markup for middle east is 5%');
+
+my $GDAXI_intraday = produce_contract('CALL_GDAXI_10_1448013600F_1448020800_S0P_0', 'USD');
+my$GDAXI_intraday_ask = $GDAXI_intraday->ask_probability;
+is(roundnear(1e-4, $GDAXI_intraday_ask->peek_amount('commission_markup')), 0.03, 'Commission markup for indices is 3%');
+
 
 1;
