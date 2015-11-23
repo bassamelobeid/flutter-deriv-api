@@ -31,7 +31,7 @@ our @EXPORT_OK = qw(init_chronicle create_doc);
 
 sub init_chronicle {
     #flushall on redis-cli -p 6380
-    
+
     BOM::System::Chronicle::_redis_write()->flushall;
 
     #delete from chronicle o pg chronicle
