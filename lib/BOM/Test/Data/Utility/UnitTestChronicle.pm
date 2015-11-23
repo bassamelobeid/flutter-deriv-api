@@ -27,7 +27,7 @@ use YAML::XS;
 use BOM::System::Chronicle;
 
 use base qw( Exporter );
-our @EXPORT_OK = qw(init_chronicle);
+our @EXPORT_OK = qw(init_chronicle create_doc);
 
 sub init_chronicle {
     #flushall on redis-cli -p 6380
