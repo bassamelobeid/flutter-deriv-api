@@ -126,9 +126,12 @@ sub _predefined_trading_period {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         if ($now_hour > 0) {
             my $even_hour = $now_hour - ($now_hour % 2);
-            push @$trading_periods, map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => '2h'}) }
-                grep { $_->is_after($today) }
-                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2);
+            push @$trading_periods,
+                _get_combination_of_date_expiry_date_start({
+                    now        => $now,
+                    date_start => $today->plus_time_interval($even_hour . 'h'),
+                    duration   => '2h'
+                });
 
             my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
             $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
