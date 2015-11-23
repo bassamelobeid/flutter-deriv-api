@@ -35,7 +35,7 @@ sub init_chronicle {
     BOM::System::Chronicle::_redis_write()->flushall;
 
     #delete from chronicle o pg chronicle
-    BOM::System::Chronicle::_dbh()->do('delete from chronicle;');
+    BOM::System::Chronicle::_dbh()->do('delete from chronicle;') if BOM::System::Chronicle::_dbh();
 }
 
 =head2 create doc()
