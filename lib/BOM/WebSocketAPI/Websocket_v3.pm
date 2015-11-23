@@ -173,6 +173,7 @@ sub __handle {
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Cashier::paymentagent_list,                  0],
         ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Cashier::paymentagent_withdraw,              1],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
+        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,         1],
     );
 
     foreach my $dispatch (@dispatch) {
@@ -252,7 +253,7 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    if ($key !~ /^[A-Za-z0-9_-]{1,25}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/=']{0,256}$/) {
+    if ($key !~ /^[A-Za-z0-9_-]{1,50}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/='&\$]{0,256}$/) {
         return ($key, $value);
     }
     return;
