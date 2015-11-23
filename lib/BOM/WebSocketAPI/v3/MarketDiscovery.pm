@@ -310,6 +310,8 @@ sub process_realtime_events {
                             quote  => $m[2]}}});
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
+        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
         } elsif ($m[0] eq $symbol) {
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             $c->send({

@@ -37,7 +37,7 @@ sub forget_all {
                 my $fsymbol = $1;
                 my $ftype   = $2;
                 # . 's' while we are still using tickS in this calls. backward compatibility that must be removed.
-                if ($ftype . 's' =~ /^$type/) {
+                if (($ftype . 's') =~ /^$type/) {
                     push @removed_ids, $c->stash('feed_channel_type')->{$k}->{uuid};
                     BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
                 }
