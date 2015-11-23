@@ -177,9 +177,9 @@ sub _redis_write {
         _config()->{write}->{password}
         ? (
             RedisDB->new(
-                host     => _config()->{write}->{host},
-                port     => _config()->{write}->{port},
-                password => _config()->{write}->{password}))
+                host => _config()->{write}->{host},
+                port => _config()->{write}->{port},
+            ))
         : (
             RedisDB->new(
                 host => _config()->{write}->{host},
@@ -193,9 +193,9 @@ sub _redis_read {
         _config()->{read}->{password}
         ? (
             RedisDB->new(
-                host     => _config()->{read}->{host},
-                port     => _config()->{read}->{port},
-                password => _config()->{read}->{password}))
+                host => _config()->{read}->{host},
+                port => _config()->{read}->{port},
+            ))
         : (
             RedisDB->new(
                 host => _config()->{read}->{host},
