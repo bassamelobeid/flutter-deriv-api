@@ -30,6 +30,19 @@ sub forget_all {
                 push @removed_ids, $v->{id};
             }
         }
+
+        if ($c->stash('feed_channel_type')) {
+            foreach my $k (keys %{$c->stash('feed_channel_type')}) {
+                $k =~ /(.*);(.*)/;
+                my $fsymbol = $1;
+                my $ftype   = $2;
+                # . 's' while we are still using tickS in this calls. backward compatibility that must be removed.
+                if (($ftype . 's') =~ /^$type/) {
+                    push @removed_ids, $c->stash('feed_channel_type')->{$k}->{uuid};
+                    BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
+                }
+            }
+        }
     }
 
     return {
@@ -40,6 +53,17 @@ sub forget_all {
 
 sub forget_one {
     my ($c, $id, $reason) = @_;
+
+    if ($id =~ /-/ and $c->stash('feed_channel_type')) {
+        foreach my $k (keys %{$c->stash('feed_channel_type')}) {
+            $k =~ /(.*);(.*)/;
+            if ($c->stash('feed_channel_type')->{$k}->{uuid} eq $id) {
+                my $args = $c->stash('feed_channel_type')->{$k}->{args};
+                BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2);
+                return $args;
+            }
+        }
+    }
 
     my $ws_id  = $c->tx->connection;
     my $this_c = ($c->{ws}{$ws_id} //= {});

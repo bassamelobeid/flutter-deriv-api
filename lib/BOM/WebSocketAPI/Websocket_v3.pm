@@ -17,7 +17,6 @@ use JSON::Schema;
 use File::Slurp;
 use JSON;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize);
 use BOM::Product::Transaction;
 use Time::HiRes;
 
@@ -60,7 +59,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
                 BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
-                BOM::WebSocketAPI::v3::MarketDiscovery::send_realtime_ticks($c, $msg) if $channel =~ /^FEED::/;
+                BOM::WebSocketAPI::v3::MarketDiscovery::process_realtime_events($c, $msg) if $channel =~ /^FEED::/;
             });
         $c->stash->{redis} = $redis;
     }
@@ -68,6 +67,9 @@ sub entry_point {
     $c->on(
         json => sub {
             my ($c, $p1) = @_;
+
+            BOM::Platform::Context::request($c->stash('request'));
+            # $BOM::Platform::Context::current_request = $c->stash('request');
 
             my $tag = 'origin:';
             my $data;
@@ -94,14 +96,14 @@ sub entry_point {
                 }
             } else {
                 # for invalid call, eg: not json
-                $data = $c->new_error('error', 'BadRequest', BOM::Platform::Context::localize('The application sent an invalid request.'));
+                $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
                 $data->{echo_req} = {};
             }
             $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                $data = $c->new_error('error', 'ResponseTooLarge', BOM::Platform::Context::localize('Response too large.'));
+                $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
                 $data->{echo_req} = $p1;
             }
             $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
@@ -190,7 +192,7 @@ sub __handle {
                     push @general, $err->message;
                 }
             }
-            my $message = BOM::Platform::Context::localize('Input validation failed: ') . join(', ', (keys %$details, @general));
+            my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
@@ -200,8 +202,8 @@ sub __handle {
         ## refetch account b/c stash client won't get updated in websocket
         if ($dispatch->[2] and my $loginid = $c->stash('loginid')) {
             my $client = BOM::Platform::Client->new({loginid => $loginid});
-            return $c->new_error('error', 'InvalidClient', BOM::Platform::Context::localize('Invalid client account.')) unless $client;
-            return $c->new_error('error', 'DisabledClient', BOM::Platform::Context::localize('This account is unavailable.'))
+            return $c->new_error('error', 'InvalidClient', $c->l('Invalid client account.')) unless $client;
+            return $c->new_error('error', 'DisabledClient', $c->l('This account is unavailable.'))
                 if $client->get_status('disabled');
             $c->stash(
                 client  => $client,
@@ -211,13 +213,12 @@ sub __handle {
             my $self_excl = $client->get_self_exclusion;
             my $lim;
             if ($self_excl and $lim = $self_excl->exclude_until and Date::Utility->new->is_before(Date::Utility->new($lim))) {
-                return $c->new_error('error', 'ClientSelfExclusion',
-                    BOM::Platform::Context::localize('Sorry, you have excluded yourself until [_1].', $lim));
+                return $c->new_error('error', 'ClientSelfExclusion', $c->l('Sorry, you have excluded yourself until [_1].', $lim));
             }
         }
 
         if ($dispatch->[2] and not $c->stash('client')) {
-            return $c->new_error($dispatch->[0], 'AuthorizationRequired', BOM::Platform::Context::localize('Please log in.'));
+            return $c->new_error($dispatch->[0], 'AuthorizationRequired', $c->l('Please log in.'));
         }
 
         ## sell expired
@@ -238,14 +239,14 @@ sub __handle {
             my $error;
             $error .= " - $_" foreach $validation_errors->errors;
             $log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-            return $c->new_error('OutputValidationFailed', BOM::Platform::Context::localize("Output validation failed: ") . $error);
+            return $c->new_error('OutputValidationFailed', $c->l("Output validation failed: ") . $error);
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
     $log->debug("unrecognised request: " . $c->dumper($p1));
-    return $c->new_error('error', 'UnrecognisedRequest', BOM::Platform::Context::localize('Unrecognised request.'));
+    return $c->new_error('error', 'UnrecognisedRequest', $c->l('Unrecognised request.'));
 }
 
 sub _failed_key_value {
@@ -266,15 +267,21 @@ sub _sanity_failed {
         if (not ref $arg->{$k}) {
             last OUTER if (@failed = _failed_key_value($k, $arg->{$k}));
         } else {
-            foreach my $l (keys %{$arg->{$k}}) {
-                last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
+            if (ref $arg->{$k} eq 'HASH') {
+                foreach my $l (keys %{$arg->{$k}}) {
+                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
+                }
+            } elsif (ref $arg->{$k} eq 'ARRAY') {
+                foreach my $l (@{$arg->{$k}}) {
+                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->[$l]));
+                }
             }
         }
     }
 
     if (@failed) {
         $c->app->log->warn("Sanity check failed: $failed[0] -> $failed[1]");
-        return $c->new_error('sanity_check', 'SanityCheckFailed', BOM::Platform::Context::localize("Parameters sanity check failed."));
+        return $c->new_error('sanity_check', 'SanityCheckFailed', $c->l("Parameters sanity check failed."));
     }
     return;
 }

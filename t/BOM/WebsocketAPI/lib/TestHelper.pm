@@ -23,14 +23,16 @@ my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
 
 sub build_mojo_test {
-    my ($args) = @_;
+    my $args = shift || {};
 
     my $headers = {};
-    if (($args // {})->{deflate}) {
+    if ($args->{deflate}) {
         $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
     }
+    my $url = "/websockets/$version";
+    $url .= '?l=' . $args->{language} if $args->{language};
     my $t = Test::Mojo->new('BOM::WebSocketAPI');
-    $t->websocket_ok("/websockets/$version" => $headers);
+    $t->websocket_ok($url => $headers);
 
     return $t;
 }
@@ -56,6 +58,7 @@ sub build_test_R_50_data {
         {
             symbol           => $_,
             date             => Date::Utility->new,
+            trading_days     => 'everyday',
             open_on_weekends => 1
         }) for @exchange;
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);

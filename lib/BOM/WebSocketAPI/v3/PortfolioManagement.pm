@@ -11,27 +11,24 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(localize request);
+use BOM::WebSocketAPI::v3::MarketDiscovery;
 
 sub buy {
     my ($c, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     my $purchase_date = time;                  # Purchase is considered to have happened at the point of request.
     my $id            = $args->{buy};
     my $source        = $c->stash('source');
-    my $ws_id         = $c->tx->connection;
 
     my $client = $c->stash('client');
     my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
-        or return $c->new_error('buy', 'InvalidContractProposal', localize("Unknown contract proposal"));
-    $p2 = $p2->{data};
+        or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
+    $p2 = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($p2);
 
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         $c->app->log->debug("contract creation failure: $err");
-        return $c->new_error('buy', 'ContractCreationFailure', localize('Cannot create contract'));
+        return $c->new_error('buy', 'ContractCreationFailure', $c->l('Cannot create contract'));
     };
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
@@ -70,8 +67,6 @@ sub buy {
 sub sell {
     my ($c, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     my $id     = $args->{sell};
     my $source = $c->stash('source');
     my $client = $c->stash('client');
@@ -87,7 +82,7 @@ sub sell {
         });
 
     my $fmb = $fmb_dm->get_fmb_by_id([$id]);
-    return $c->new_error('sell', 'InvalidSellContractProposal', localize('Unknown contract sell proposal')) unless $fmb;
+    return $c->new_error('sell', 'InvalidSellContractProposal', $c->l('Unknown contract sell proposal')) unless $fmb;
 
     my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
     my $trx = BOM::Product::Transaction->new({
@@ -121,7 +116,6 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
     my $client = $c->stash('client');
     my $source = $c->stash('source');
-    my $ws_id  = $c->tx->connection;
 
     my @fmbs = ();
     if ($args->{contract_id}) {
@@ -130,30 +124,15 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         @fmbs = $client->open_bets;
     }
 
-    my $p0 = {%$args};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id = '';
-            $args->{fmb} = $fmb;
-            my $p2 = prepare_bid($c, $args);
-            $p2->{contract_id} = $fmb->id;
-            $id = Mojo::IOLoop->recurring(2 => sub { send_bid($c, $id, $p0, $p2) });
-            my $fmb_map = ($c->{fmb_ids}{$ws_id} //= {});
-            $fmb_map->{$fmb->id} = $id;
+            $args->{short_code} = $fmb->short_code;
+            $args->{fmb_id}     = $fmb->id;
+            $args->{currency}   = $client->currency;
 
-            my $data = {
-                id      => $id,
-                type    => 'proposal_open_contract',
-                data    => {%$p2},
-                cleanup => sub {
-                    Mojo::IOLoop->remove($id);
-                    delete $fmb_map->{$fmb->id};
-                    # TODO: we might want to send an error to the client
-                    # if this function is called with a parameter indicating
-                    # the proposal stream was closed due to an error.
-                },
-            };
-            BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
+            my $id = BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'subscribe', $args->{symbol},
+                'proposal_open_contract:' . JSON::to_json($args));
+            send_bid($c, $id, $args);
         }
     } else {
         return {
@@ -165,8 +144,6 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
 sub portfolio {
     my ($c, $args) = @_;
-
-    BOM::Platform::Context::request($c->stash('request'));
 
     my $client = $c->stash('client');
     my $portfolio = {contracts => []};
@@ -214,60 +191,16 @@ sub __get_open_contracts {
     return $fmb_dm->get_open_bets_of_account();
 }
 
-sub prepare_bid {
-    my ($c, $p1) = @_;
-    my $app      = $c->app;
-    my $log      = $app->log;
-    my $fmb      = delete $p1->{fmb};
-    my $currency = $fmb->account->currency_code;
-    my $contract = produce_contract($fmb->short_code, $currency);
-    %$p1 = (
-        contract_id   => $fmb->id,
-        purchase_time => $fmb->purchase_time->epoch,
-        symbol        => $fmb->underlying_symbol,
-        payout        => $fmb->payout_price,
-        buy_price     => $fmb->buy_price,
-        date_start    => $fmb->start_time->epoch,
-        expiry_time   => $fmb->expiry_time->epoch,
-        contract_type => $fmb->bet_type,
-        currency      => $currency,
-        longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
-    );
-    return {
-        fmb      => $fmb,
-        contract => $contract,
-    };
-}
-
 sub get_bid {
-    my ($c, $p2) = @_;
-    my $app = $c->app;
-    my $log = $app->log;
+    my ($short_code, $fmb_id, $currency) = @_;
 
-    my @similar_args = ($p2->{contract}, {priced_at => 'now'});
-    my $contract = try { make_similar_contract(@similar_args) } || do {
-        my $err = $@;
-        $log->info("contract for sale creation failure: $err");
-        return {
-            error => {
-                message => localize("Cannot create sell contract"),
-                code    => "ContractSellCreateError"
-            }};
-    };
-    if (!$contract->is_valid_to_sell) {
-        $log->error("primary error: " . $contract->primary_validation_error->message);
-        return {
-            error => {
-                message => $contract->primary_validation_error->message_to_client,
-                code    => "ContractSellValidationError"
-            }};
-    }
+    my $contract = produce_contract($short_code, $currency);
 
     my %returnhash = (
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $p2->{contract_id},
+        contract_id         => $fmb_id,
         underlying          => $contract->underlying->symbol,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
@@ -292,6 +225,7 @@ sub get_bid {
         $returnhash{exit_tick_time}  = $contract->exit_tick->epoch;
     } else {
         $returnhash{current_spot} = $contract->current_spot;
+        $returnhash{entry_spot}   = $contract->entry_spot;
     }
 
     if ($contract->two_barriers) {
@@ -309,36 +243,23 @@ sub get_bid {
 }
 
 sub send_bid {
-    my ($c, $id, $p0, $p2) = @_;
+    my ($c, $id, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
-    my $latest = get_bid($c, $p2);
+    my $latest = get_bid($args->{short_code}, $args->{fmb_id}, $args->{currency});
 
     my $response = {
         msg_type => 'proposal_open_contract',
-        echo_req => $p0,
+        echo_req => $args,
     };
 
-    if ($latest->{error}) {
-        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
-        $c->send({
-                json => {
-                    %$response,
-                    proposal_open_contract => {
-                        id => $id,
-                    },
-                    %$latest,
-                }});
-    } else {
-        $c->send({
-                json => {
-                    %$response,
-                    proposal_open_contract => {
-                        id => $id,
-                        %$latest
-                    }}});
-    }
+    $c->send({
+            json => {
+                %$response,
+                proposal_open_contract => {
+                    id => $id,
+                    %$latest
+                }}});
+
     return;
 }
 

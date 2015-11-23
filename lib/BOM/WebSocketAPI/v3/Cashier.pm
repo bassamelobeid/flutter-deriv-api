@@ -14,7 +14,6 @@ use Format::Util::Numbers qw(to_monetary_number_format roundnear);
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
-use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Transaction;
 use BOM::Database::DataMapper::Payment;
 use BOM::Database::DataMapper::PaymentAgent;
@@ -27,11 +26,9 @@ sub get_limits {
     my $r      = $c->stash('request');
     my $client = $c->stash('client');
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
-        return $c->new_error('get_limits', 'FeatureNotAvailable', localize('Sorry, this feature is not available.'));
+        return $c->new_error('get_limits', 'FeatureNotAvailable', $c->l('Sorry, this feature is not available.'));
     }
 
     my $limit = +{
@@ -162,9 +159,9 @@ sub paymentagent_withdraw {
         or $c->app_config->system->suspend->payment_agents)
     {
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
+            $c->l('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
-        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Payment Agents are not available on this site.'));
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Payment Agents are not available on this site.'));
     } elsif (not $client->allow_paymentagent_withdrawal()) {
         # check whether allow to withdraw via payment agent
         return __output_payments_error_message(
@@ -172,13 +169,13 @@ sub paymentagent_withdraw {
             {
                 client       => $client,
                 action       => 'Withdrawal via payment agent, client [' . $client->loginid . ']',
-                error_msg    => localize('You are not authorized for withdrawal via payment agent.'),
+                error_msg    => $c->l('You are not authorized for withdrawal via payment agent.'),
                 payment_type => 'Payment Agent Withdrawal',
                 currency     => $currency,
                 amount       => $amount,
             });
     } elsif ($client->cashier_setting_password) {
-        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Your cashier is locked as per your request.'));
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Your cashier is locked as per your request.'));
     }
 
     my $authenticated_pa;
@@ -189,12 +186,12 @@ sub paymentagent_withdraw {
 
     if (not $client->residence or scalar keys %{$authenticated_pa} == 0) {
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            localize('The Payment Agent facility is currently not available in your country.'));
+            $c->l('The Payment Agent facility is currently not available in your country.'));
     }
 
     ## validate amount
     if ($amount < 10 || $amount > 2000) {
-        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Invalid amount. 10-2000 USD'));
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Invalid amount. 10-2000 USD'));
     }
 
     my $further_instruction  = $args->{description} // '';
@@ -203,11 +200,11 @@ sub paymentagent_withdraw {
     my $client_loginid       = $client->loginid;
 
     my $paymentagent = BOM::Platform::Client::PaymentAgent->new({'loginid' => $paymentagent_loginid})
-        or return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', localize('Sorry, the Payment Agent does not exist.'));
+        or return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Sorry, the Payment Agent does not exist.'));
 
     if ($client->broker ne $paymentagent->broker) {
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            localize('Sorry, the Payment Agent is unavailable for your region.'));
+            $c->l('Sorry, the Payment Agent is unavailable for your region.'));
     }
 
     my $pa_client = $paymentagent->client;
@@ -215,12 +212,12 @@ sub paymentagent_withdraw {
     # check that the currency is in correct format
     if ($client->currency ne $currency) {
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            localize('Sorry, your currency of ' . $client->currency . ' is unavailable for Payment Agent Withdrawal'));
+            $c->l('Sorry, your currency of ' . $client->currency . ' is unavailable for Payment Agent Withdrawal'));
     }
 
     if ($pa_client->currency ne $currency) {
         return $c->client_message(
-            localize("Sorry, the Payment Agent's currency " . $pa_client->currency . " is unavailable for Payment Agent Withdrawal"));
+            $c->l("Sorry, the Payment Agent's currency " . $pa_client->currency . " is unavailable for Payment Agent Withdrawal"));
     }
 
     # check that the amount is in correct format
@@ -230,7 +227,7 @@ sub paymentagent_withdraw {
             {
                 client       => $client,
                 action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                error_msg    => localize('There was an error processing the request.'),
+                error_msg    => $c->l('There was an error processing the request.'),
                 payment_type => 'Payment Agent Withdrawal',
                 currency     => $currency,
                 amount       => $amount,
@@ -244,7 +241,7 @@ sub paymentagent_withdraw {
             {
                 client       => $client,
                 action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                error_msg    => localize('Further instructions must not exceed [_1] characters.', 300),
+                error_msg    => $c->l('Further instructions must not exceed [_1] characters.', 300),
                 payment_type => 'Payment Agent Withdrawal',
                 currency     => $currency,
                 amount       => $amount,
@@ -258,7 +255,7 @@ sub paymentagent_withdraw {
             {
                 client       => $client,
                 action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                error_msg    => localize('There was an error processing the request.'),
+                error_msg    => $c->l('There was an error processing the request.'),
                 payment_type => 'Payment Agent Withdrawal',
                 currency     => $currency,
                 amount       => $amount,
@@ -270,7 +267,7 @@ sub paymentagent_withdraw {
             {
                 client       => $client,
                 action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                error_msg    => localize('This Payment Agent cashier section is locked.'),
+                error_msg    => $c->l('This Payment Agent cashier section is locked.'),
                 payment_type => 'Payment Agent Withdrawal',
                 currency     => $currency,
                 amount       => $amount,
@@ -288,13 +285,13 @@ sub paymentagent_withdraw {
     if (not BOM::Platform::Transaction->freeze_client($client_loginid)) {
         $c->app->log->error("Account stuck in previous transaction $client_loginid");
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            localize('An error occurred while processing request. If this error persists, please contact customer support'));
+            $c->l('An error occurred while processing request. If this error persists, please contact customer support'));
     }
     if (not BOM::Platform::Transaction->freeze_client($paymentagent_loginid)) {
         BOM::Platform::Transaction->unfreeze_client($client_loginid);
         $c->app->log->error("Account stuck in previous transaction $paymentagent_loginid");
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            localize('An error occurred while processing request. If this error persists, please contact customer support'));
+            $c->l('An error occurred while processing request. If this error persists, please contact customer support'));
     }
 
     my $withdraw_error;
@@ -337,7 +334,7 @@ sub paymentagent_withdraw {
             {
                 client       => $client,
                 action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                error_msg    => localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit),
+                error_msg    => $c->l('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit),
                 payment_type => 'Payment Agent Withdrawal',
                 currency     => $currency,
                 amount       => $amount,
@@ -365,7 +362,7 @@ sub paymentagent_withdraw {
             {
                 client       => $client,
                 action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                error_msg    => localize('Sorry, you have exceeded the maximum allowable transactions for today.'),
+                error_msg    => $c->l('Sorry, you have exceeded the maximum allowable transactions for today.'),
                 payment_type => 'Payment Agent Withdrawal',
                 currency     => $currency,
                 amount       => $amount,
@@ -399,23 +396,23 @@ sub paymentagent_withdraw {
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent
     my $clientmessage = [
-        localize('Dear [_1] [_2] [_3],', $pa_client->salutation, $pa_client->first_name, $pa_client->last_name),
+        $c->l('Dear [_1] [_2] [_3],', $pa_client->salutation, $pa_client->first_name, $pa_client->last_name),
         '',
-        localize(
+        $c->l(
             'We would like to inform you that the withdrawal request of [_1][_2] by [_3] [_4] has been processed. The funds have been credited into your account [_5] at [_6].',
             $currency, $amount, $client_name, $client_loginid, $paymentagent_loginid, $website->display_name
         ),
         '',
         $further_instruction,
         '',
-        localize('Kind Regards,'),
+        $c->l('Kind Regards,'),
         '',
-        localize('The [_1] team.', $website->display_name),
+        $c->l('The [_1] team.', $website->display_name),
     ];
     send_email({
         from               => $r->website->config->get('customer_support.email'),
         to                 => $paymentagent->email,
-        subject            => localize('Acknowledgement of Withdrawal Request'),
+        subject            => $c->l('Acknowledgement of Withdrawal Request'),
         message            => $clientmessage,
         use_email_template => 1,
     });
@@ -443,12 +440,12 @@ sub __output_payments_error_message {
     $email_msg =~ s/<br\s*\/?>/\n/ig;
     $email_msg =~ s/<[^>]+>/$1/ig;
 
-    my $error_message = ($error_msg) ? $error_msg : localize('Sorry, your payment could not be processed at this time.');
+    my $error_message = ($error_msg) ? $error_msg : $c->l('Sorry, your payment could not be processed at this time.');
 
     my $error_message_with_code = '';
     if ($error_code) {
         $error_message_with_code =
-            localize('Mentioning error code [_1] in any correspondence may help us resolve the issue more quickly.', $error_code);
+            $c->l('Mentioning error code [_1] in any correspondence may help us resolve the issue more quickly.', $error_code);
     }
 
     # amount is not always exist because error may happen before client submit the form
@@ -504,7 +501,7 @@ sub __client_withdrawal_notes {
     my $balance = $client->default_account ? $client->default_account->balance : 0;
     if ($error =~ /exceeds client balance/) {
         return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError',
-            localize('Sorry, you cannot withdraw.') . "\n" . localize('Your account balance') . ': ' . $currency . $balance);
+            $c->l('Sorry, you cannot withdraw.') . "\n" . $c->l('Your account balance') . ': ' . $currency . $balance);
     }
 
     my $withdrawal_limits = $client->get_withdrawal_limits();
@@ -512,17 +509,17 @@ sub __client_withdrawal_notes {
     # At this point, the Client is not allowed to withdraw. Return error message.
     $c->app->log->warn("Client $client is not allowed to withdraw");
     my $error_message =
-          localize('Your account balance') . ' '
+          $c->l('Your account balance') . ' '
         . $currency
         . $balance . ' '
-        . localize('Maximum withdrawal by all other means:')
+        . $c->l('Maximum withdrawal by all other means:')
         . $currency
         . $withdrawal_limits->{'max_withdrawal'};
 
     if ($withdrawal_limits->{'frozen_free_gift'} > 0) {
         # Insert turnover limit as a parameter depends on the promocode type
         $error_message .= "\n"
-            . localize(
+            . $c->l(
             'Note: You will be able to withdraw your bonus of [_1][_2] only once your aggregate volume of trades exceeds [_1][_3]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
             $currency,
             $withdrawal_limits->{'frozen_free_gift'},

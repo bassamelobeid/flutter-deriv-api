@@ -10,21 +10,18 @@ use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::System;
 use Cache::RedisDB;
 use JSON;
-use List::MoreUtils qw(any);
+use List::MoreUtils qw(any none);
 
-use BOM::Platform::Context qw(request localize);
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
-use BOM::Feed::Dictator::Client;
+use Data::UUID;
 
 sub trading_times {
     my ($c, $args) = @_;
-
-    BOM::Platform::Context::request($c->stash('request'));
 
     my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
@@ -70,10 +67,8 @@ sub trading_times {
 sub asset_index {
     my ($c, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
-    my $request = $c->stash('request');
-    my $lang    = $request->language;
+    my $r    = $c->stash('request');
+    my $lang = $r->language;
 
     if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
         return {
@@ -130,7 +125,7 @@ sub asset_index {
                             } else {
                                 $included->{$key} = Time::Duration::Concise::Localize->new(
                                     interval => $included->{$key},
-                                    locale   => BOM::Platform::Context::request()->language
+                                    locale   => $r->language
                                 ) unless (ref $included->{$key});
                                 push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
                             }
@@ -175,76 +170,30 @@ sub asset_index {
 sub ticks {
     my ($c, $args) = @_;
 
-    my $symbol = $args->{ticks};
-    my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
-    my $ul;
-    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
-        return $c->new_error('ticks', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+    my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
+    my @offerings = get_offerings_with_filter('underlying_symbol');
+    foreach my $symbol (@symbols) {
+        if (none { $symbol eq $_ } @offerings) {
+            return $c->new_error('ticks', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
+        }
+        my $u = BOM::Market::Underlying->new($symbol);
+
+        if ($u->feed_license ne 'realtime') {
+            return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l("Realtime quotes not available for [_1]", $symbol));
+        }
+
+        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
+            _feed_channel($c, 'unsubscribe', $symbol, 'tick');
+        } else {
+            my $uuid;
+            if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick')) {
+                return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+            }
+        }
+
     }
 
-    if ($ul->feed_license eq 'realtime') {
-        my ($dictator_client, $id);
-
-        my $data = {
-            type    => 'ticks',
-            cleanup => sub {
-                my $reason = shift;
-
-                $dictator_client && $dictator_client->stop;
-                $c->send({
-                        json => $c->new_error(
-                            'ticks',
-                            'EndOfTickStream',
-                            localize('This tick stream was canceled due to resource limitations'),
-                            {
-                                id     => $id,
-                                symbol => $symbol,
-                            })}) if $reason;
-            },
-        };
-
-        $id = BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
-
-        $dictator_client = BOM::Feed::Dictator::Client->new(
-            $ENV{TEST_DICTATOR_HOST} ? (host => $ENV{TEST_DICTATOR_HOST}) : (),
-            $ENV{TEST_DICTATOR_PORT} ? (port => $ENV{TEST_DICTATOR_PORT}) : (),
-            symbol     => $symbol,
-            start_time => time,
-            on_message => sub {
-                my $tick = shift;
-
-                if (not $tick or ref($tick) eq 'HASH' and exists $tick->{error}) {
-                    $c->send({
-                            json => $c->new_error(
-                                'ticks',
-                                'EndOfTickStream',
-                                localize('This tick stream has been disrupted. Please try again later.'),
-                                {
-                                    id     => $id,
-                                    symbol => $symbol,
-                                })});
-                    BOM::WebSocketAPI::v3::System::forget_one $c, $id;
-                    return;
-                }
-
-                $tick = [$tick] unless ref($tick) eq 'ARRAY';
-
-                for (@$tick) {
-                    $c->send({
-                            json => {
-                                msg_type => 'tick',
-                                echo_req => $args,
-                                tick     => {
-                                    id    => $id,
-                                    epoch => $_->{epoch},
-                                    quote => $_->{quote}}}});
-                }
-            });
-
-        return 0;
-    } else {
-        return $c->new_error('ticks', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
-    }
+    return;
 }
 
 sub ticks_history {
@@ -254,7 +203,7 @@ sub ticks_history {
     my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
     my $ul;
     unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
-        return $c->new_error('ticks_history', 'InvalidSymbol', localize("Symbol [_1] invalid", $symbol));
+        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
     }
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
@@ -281,64 +230,100 @@ sub ticks_history {
             };
             $publish = $args->{granularity};
         } else {
-            return $c->new_error('candles', 'InvalidCandlesRequest', localize('Invalid candles request'));
+            return $c->new_error('candles', 'InvalidCandlesRequest', $c->l('Invalid candles request'));
         }
     } else {
-        return $c->new_error('ticks_history', 'InvalidStyle', localize("Style [_1] invalid", $style));
+        return $c->new_error('ticks_history', 'InvalidStyle', $c->l("Style [_1] invalid", $style));
     }
 
     if ($args->{subscribe} eq '1' and $ul->feed_license ne 'realtime') {
-        return $c->new_error('ticks', 'NoRealtimeQuotes', localize('Realtime quotes not available'));
+        return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l('Realtime quotes not available'));
     }
+
     if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
-        $c->stash->{feed_channels}->{"$symbol;$publish"} = 1;
+        if (not _feed_channel($c, 'subscribe', $symbol, $publish)) {
+            $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+        }
     }
     if ($args->{subscribe} eq '0') {
-        delete $c->stash->{feed_channels}->{"$symbol;$publish"};
+        _feed_channel($c, 'unsubscribe', $symbol, $publish);
+        return;
     }
 
-    my $redis         = $c->stash('redis');
-    my $feed_channels = $c->stash('feed_channels');
-
-    if (scalar keys %{$feed_channels} > 0) {
-        $redis->subscribe(["FEED::$symbol"], sub { });
-    } else {
-        $redis->unsubscribe(["FEED::$symbol"], sub { });
-    }
     return $result;
 }
 
-sub send_realtime_ticks {
+sub _feed_channel {
+    my ($c, $subs, $symbol, $type) = @_;
+    my $uuid;
+
+    my $feed_channel      = $c->stash('feed_channel');
+    my $feed_channel_type = $c->stash('feed_channel_type');
+
+    my $redis = $c->stash('redis');
+    if ($subs eq 'subscribe') {
+        if (exists $feed_channel_type->{"$symbol;$type"}) {
+            return;
+        }
+        $uuid = Data::UUID->new->create_str();
+        $feed_channel->{$symbol} += 1;
+        $feed_channel_type->{"$symbol;$type"}->{args} = $c->stash('args');
+        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
+        $redis->subscribe(["FEED::$symbol"], sub { });
+    }
+
+    if ($subs eq 'unsubscribe') {
+        $feed_channel->{$symbol} -= 1;
+        delete $feed_channel_type->{"$symbol;$type"};
+        if ($feed_channel->{$symbol} <= 0) {
+            $redis->unsubscribe(["FEED::$symbol"], sub { });
+            delete $feed_channel->{$symbol};
+        }
+    }
+
+    $c->stash('feed_channel'      => $feed_channel);
+    $c->stash('feed_channel_type' => $feed_channel_type);
+
+    return $uuid;
+}
+
+sub process_realtime_events {
     my ($c, $message) = @_;
 
     my @m = split(';', $message);
-    my $feed_channels = $c->stash('feed_channels');
+    my $feed_channels_type = $c->stash('feed_channel_type');
 
-    foreach my $channel (keys %{$feed_channels}) {
+    foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
-        my $symbol      = $1;
-        my $granularity = $2;
+        my $symbol = $1;
+        my $type   = $2;
 
-        if ($granularity eq 'tick' and $m[0] eq $symbol) {
+        if ($type eq 'tick' and $m[0] eq $symbol) {
             $c->send({
                     json => {
                         msg_type => 'tick',
-                        echo_req => $c->stash('args'),
+                        echo_req => $feed_channels_type->{$channel}->{args},
                         tick     => {
+                            id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => $m[2]}}});
+        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
+        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
         } elsif ($m[0] eq $symbol) {
-            $message =~ /;$granularity:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
+            $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             $c->send({
                     json => {
                         msg_type => 'ohlc',
-                        echo_req => $c->stash('args'),
+                        echo_req => $feed_channels_type->{$channel},
                         ohlc     => {
+                            id          => $feed_channels_type->{$channel}->{uuid},
                             epoch       => $m[1],
-                            open_time   => $m[1] - $m[1] % $granularity,
+                            open_time   => $m[1] - $m[1] % $type,
                             symbol      => $symbol,
-                            granularity => $granularity,
+                            granularity => $type,
                             open        => $1,
                             high        => $2,
                             low         => $3,
@@ -347,58 +332,26 @@ sub send_realtime_ticks {
         }
     }
 
-    return 0;
+    return;
 }
 
 sub proposal {
     my ($c, $args) = @_;
 
-    # this is a recurring contract-price watch ("price streamer")
-    # p2 is a manipulated copy of p1 suitable for produce_contract.
-    my $p2 = prepare_ask($c, $args);
-    my $id;
-    $id = Mojo::IOLoop->recurring(
-        1 => sub {
-            send_ask($c, $id, $args, $p2);
-        });
+    my $symbol_offered = any { $args->{symbol} eq $_ } get_offerings_with_filter('underlying_symbol');
+    my $ul;
+    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($args->{symbol})) {
+        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $args->{symbol}));
+    }
+    my $id = _feed_channel($c, 'subscribe', $args->{symbol}, 'proposal:' . JSON::to_json($args));
 
-    BOM::WebSocketAPI::v3::System::limit_stream_count(
-        $c,
-        {
-            id      => $id,
-            type    => 'proposal',
-            data    => {%$p2},
-            cleanup => sub {
-                my $reason = shift;
-
-                Mojo::IOLoop->remove($id);
-                $c->send({
-                        json => $c->new_error(
-                            'ticks',
-                            'EndOfStream',
-                            localize('This stream has been canceled due to resource limitations'),
-                            {
-                                id => $id,
-                            })}) if $reason;
-            },
-        });
-
-    send_ask($c, $id, $args, $p2);
+    send_ask($c, $id, $args);
 
     return;
 }
 
 sub prepare_ask {
-    my ($c, $p1) = @_;
-
-    my $app = $c->app;
-    my $log = $app->log;
-
-    $log->debug("prepare_ask got p1 " . $c->dumper($p1));
-
-    # this has two deliverables:
-    # 1) apply default values inline to the given $p1,
-    # 2) return a manipulated copy suitable for produce_contract
+    my $p1 = shift;
 
     $p1->{date_start} //= 0;
     if ($p1->{date_expiry}) {
@@ -433,7 +386,7 @@ sub get_ask {
         $log->info("contract creation failure: $err");
         return {
             error => {
-                message => localize("Cannot create contract"),
+                message => $c->l("Cannot create contract"),
                 code    => "ContractCreationFailure"
             }};
     };
@@ -452,7 +405,7 @@ sub get_ask {
         $log->error("contract invalid but no error!");
         return {
             error => {
-                message => localize("Cannot validate contract"),
+                message => $c->l("Cannot validate contract"),
                 code    => "ContractValidationError"
             }};
     }
@@ -475,11 +428,9 @@ sub get_ask {
 }
 
 sub send_ask {
-    my ($c, $id, $p1, $p2) = @_;
+    my ($c, $id, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
-    my $latest = get_ask($c, $p2);
+    my $latest = get_ask($c, prepare_ask($args));
     if ($latest->{error}) {
         BOM::WebSocketAPI::v3::System::forget_one $c, $id;
 
@@ -489,7 +440,7 @@ sub send_ask {
         $c->send({
                 json => {
                     msg_type => 'proposal',
-                    echo_req => $p1,
+                    echo_req => $args,
                     proposal => $proposal,
                     %$latest
                 }});
@@ -497,7 +448,7 @@ sub send_ask {
         $c->send({
                 json => {
                     msg_type => 'proposal',
-                    echo_req => $p1,
+                    echo_req => $args,
                     proposal => {
                         id => $id,
                         %$latest

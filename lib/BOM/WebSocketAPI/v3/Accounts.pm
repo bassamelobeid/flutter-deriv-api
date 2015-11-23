@@ -12,18 +12,16 @@ use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use BOM::System::Password;
-use BOM::Platform::Context qw(localize request);
 use BOM::Platform::Email qw(send_email);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
 use BOM::Database::Model::AccessToken;
+use BOM::Database::DataMapper::Transaction;
 
 sub landing_company {
     my ($c, $args) = @_;
-
-    BOM::Platform::Context::request($c->stash('request'));
 
     my $country  = $args->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
@@ -32,7 +30,7 @@ sub landing_company {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
     }
 
-    return $c->new_error('landing_company', 'UnknownLandingCompany', localize('Unknown landing company.'))
+    return $c->new_error('landing_company', 'UnknownLandingCompany', $c->l('Unknown landing company.'))
         unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
@@ -60,10 +58,8 @@ sub landing_company {
 sub landing_company_details {
     my ($c, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
-    return $c->new_error('landing_company_details', 'UnknownLandingCompany', localize('Unknown landing company.'))
+    return $c->new_error('landing_company_details', 'UnknownLandingCompany', $c->l('Unknown landing company.'))
         unless $lc;
 
     return {
@@ -100,7 +96,6 @@ sub statement {
 
 sub get_transactions {
     my ($c, $args) = @_;
-    BOM::Platform::Context::request($c->stash('request'));
 
     my $acc = $c->stash('account');
 
@@ -109,47 +104,7 @@ sub get_transactions {
         count        => 0
     } unless ($acc);
 
-    my $sql = q{
-            SELECT
-                t.*,
-                EXTRACT(EPOCH FROM date_trunc('s', t.transaction_time)) as t_epoch,
-                b.short_code,
-                p.remark AS payment_remark
-            FROM
-                (
-                    SELECT * FROM transaction.transaction
-                    WHERE
-                        account_id = ?
-                        AND transaction_time < ?
-                        AND transaction_time >= ?
-                        ##ACTION_TYPE##
-                    ORDER BY transaction_time DESC
-                    LIMIT ?
-                    OFFSET ?
-                ) t
-                LEFT JOIN bet.financial_market_bet b
-                    ON (t.financial_market_bet_id = b.id)
-                LEFT JOIN payment.payment p
-                    ON (t.payment_id = p.id)
-                ORDER BY t.transaction_time DESC
-    };
-
-    my $limit  = $args->{limit}  || 100;
-    my $offset = $args->{offset} || 0;
-    my $dt_fm  = $args->{date_from};
-    my $dt_to  = $args->{date_to};
-
-    for ($dt_fm, $dt_to) {
-        $_ = eval { Date::Utility->new($_)->datetime } if ($_);
-    }
-    $dt_fm ||= '1970-01-01';
-    $dt_to ||= Date::Utility->today->plus_time_interval('1d')->datetime;
-
-    my $action_type = ($args->{action_type}) ? 'AND action_type = ?' : '';
-    $sql =~ s/##ACTION_TYPE##/$action_type/;
-
-    my @binds = ($acc->id, $dt_to, $dt_fm, ($action_type) ? $action_type : (), $limit, $offset);
-    my $results = $acc->db->dbh->selectall_arrayref($sql, {Slice => {}}, @binds);
+    my $results = BOM::Database::DataMapper::Transaction->new({db => $acc->db})->get_transactions_ws($args, $acc);
 
     my @txns;
     foreach my $txn (@$results) {
@@ -191,8 +146,6 @@ sub profit_table {
 sub __get_sold {
     my ($c, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     my $client = $c->stash('client');
     my $acc    = $c->stash('account');
 
@@ -214,9 +167,9 @@ sub __get_sold {
     delete $args->{before};
 
     ## remove useless and plus new
-    $data->{transactions} = [];
+    my @transactions;
     my $and_description = $args->{description};
-    foreach my $row (@{delete $data->{rows}}) {
+    foreach my $row (@{$data}) {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
@@ -230,10 +183,12 @@ sub __get_sold {
                 $trx{shortcode} = $con->shortcode;
             }
         }
-        push @{$data->{transactions}}, \%trx;
+        push @transactions, \%trx;
     }
 
-    return $data;
+    return {
+        transactions => \@transactions,
+        count        => scalar(@transactions)};
 }
 
 sub send_realtime_balance {
@@ -271,10 +226,10 @@ sub balance {
     my $redis   = $c->stash('redis');
     my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
 
-    if ($args->{subscribe} eq '1') {
+    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         $redis->subscribe($channel, sub { });
     }
-    if ($args->{subscribe} eq '0') {
+    if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
         $redis->unsubscribe($channel, sub { });
     }
 
@@ -311,10 +266,8 @@ sub get_account_status {
 sub change_password {
     my ($c, $args) = @_;
 
-    BOM::Platform::Context::request($c->stash('request'));
-
     ## only allow for Session Token
-    return $c->new_error('change_password', 'PermissionDenied', localize('Permission denied.'))
+    return $c->new_error('change_password', 'PermissionDenied', $c->l('Permission denied.'))
         unless ($c->stash('token_type') // '') eq 'session_token';
 
     my $client_obj = $c->stash('client');
@@ -326,9 +279,9 @@ sub change_password {
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    return $err->(localize('New password is same as old password.'))
+    return $err->($c->l('New password is same as old password.'))
         if $args->{new_password} eq $args->{old_password};
-    return $err->(localize("Old password is wrong."))
+    return $err->($c->l("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
@@ -345,9 +298,9 @@ sub change_password {
     send_email({
             from    => $r->website->config->get('customer_support.email'),
             to      => $client_obj->email,
-            subject => localize('Your password has been changed.'),
+            subject => $c->l('Your password has been changed.'),
             message => [
-                localize(
+                $c->l(
                     'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
                     $client_obj->email,
                     $r->client_ip
@@ -371,8 +324,9 @@ sub get_settings {
     return {
         msg_type     => 'get_settings',
         get_settings => {
-            email   => $client->email,
-            country => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
+            email         => $client->email,
+            date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
+            country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
             $client->is_virtual
             ? ()
             : (
@@ -393,9 +347,7 @@ sub set_settings {
     my $now    = Date::Utility->new;
     my $client = $c->stash('client');
 
-    BOM::Platform::Context::request($c->stash('request'));
-
-    return $c->new_error('set_settings', 'PermissionDenied', localize('Permission denied.')) if $client->is_virtual;
+    return $c->new_error('set_settings', 'PermissionDenied', $c->l('Permission denied.')) if $client->is_virtual;
 
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -430,7 +382,7 @@ sub set_settings {
     $client->latest_environment(
         $now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
     if (not $client->save()) {
-        return $c->new_error('set_settings', 'InternalServerError', localize('Sorry, an error occurred while processing your account.'));
+        return $c->new_error('set_settings', 'InternalServerError', $c->l('Sorry, an error occurred while processing your account.'));
     }
 
     if ($cil_message) {
@@ -438,17 +390,17 @@ sub set_settings {
     }
 
     my $message =
-        localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
+        $c->l('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
         . "\n\n";
-    $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
+    $message .= $c->l('Please note that your settings have been updated as follows:') . "\n\n";
 
     my $residence_country = Locale::Country::code2country($client->residence);
 
     my @updated_fields = (
-        [localize('Email address'),        $client->email],
-        [localize('Country of Residence'), $residence_country],
+        [$c->l('Email address'),        $client->email],
+        [$c->l('Country of Residence'), $residence_country],
         [
-            localize('Address'),
+            $c->l('Address'),
             $client->address_1 . ', '
                 . $client->address_2 . ', '
                 . $client->city . ', '
@@ -456,7 +408,7 @@ sub set_settings {
                 . $client->postcode . ', '
                 . $residence_country
         ],
-        [localize('Telephone'), $client->phone],
+        [$c->l('Telephone'), $client->phone],
     );
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
@@ -468,12 +420,12 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . localize('The [_1] team.', $r->website->display_name);
+    $message .= "\n" . $c->l('The [_1] team.', $r->website->display_name);
 
     send_email({
         from               => $r->website->config->get('customer_support.email'),
         to                 => $client->email,
-        subject            => $client->loginid . ' ' . localize('Change in account settings'),
+        subject            => $client->loginid . ' ' . $c->l('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
     });
@@ -557,13 +509,13 @@ sub set_self_exclusion {
             next;
         }
         if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
-            return $error_sub->($c, localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+            return $error_sub->($c, $c->l('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         }
     }
 
     if (my $session_duration_limit = $args{session_duration_limit}) {
         if ($session_duration_limit > 1440 * 42) {
-            return $error_sub->($c, localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
+            return $error_sub->($c, $c->l('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
         }
     }
 
@@ -575,17 +527,17 @@ sub set_self_exclusion {
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
-            return $error_sub->($c, localize('Exclude time must be after today.'), 'exclude_until');
+            return $error_sub->($c, $c->l('Exclude time must be after today.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be less than 6 months
         elsif ($exclusion_end->epoch < $six_month->epoch) {
-            return $error_sub->($c, localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
+            return $error_sub->($c, $c->l('Exclude time cannot be less than 6 months.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be more than 5 years
         elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-            return $error_sub->($c, localize('Exclude time cannot be for more than five years.'), 'exclude_until');
+            return $error_sub->($c, $c->l('Exclude time cannot be for more than five years.'), 'exclude_until');
         }
     } else {
         delete $args{exclude_until};
@@ -646,7 +598,7 @@ sub set_self_exclusion {
             message => [$message],
         });
     } else {
-        return $c->new_error('set_self_exclusion', 'SetSelfExclusionError', localize('Please provide at least one self-exclusion setting.'));
+        return $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $c->l('Please provide at least one self-exclusion setting.'));
     }
 
     $client->save();

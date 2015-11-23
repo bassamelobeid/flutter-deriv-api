@@ -126,8 +126,9 @@ sub __get_sold {
     my $data = $fmb_dm->get_sold_bets_of_account($args);
 
     ## remove useless and plus new
+    my @transactions;
     my $and_description = $args->{description};
-    foreach my $row (@{delete $data->{rows}}) {
+    foreach my $row (@{$data}) {
         my %trx = map { $_ => $row->{$_} } (qw/sell_price buy_price purchase_time sell_time/);
         $trx{contract_id}    = $row->{id};
         $trx{transaction_id} = $row->{txn_id};
@@ -138,10 +139,12 @@ sub __get_sold {
                 $trx{shortcode} = $con->shortcode;
             }
         }
-        push @{$data->{transactions}}, \%trx;
+        push @transactions, \%trx;
     }
 
-    return $data;
+    return {
+        transactions => \@transactions,
+        count        => scalar(@transactions)};
 }
 
 sub balance {
@@ -199,7 +202,7 @@ sub change_password {
         $client->save;
     }
 
-    my $r = $c->stash('r');
+    my $r = $c->stash('request');
     BOM::System::AuditLog::log('password has been changed', $client_obj->email);
     send_email({
             from    => $r->website->config->get('customer_support.email'),

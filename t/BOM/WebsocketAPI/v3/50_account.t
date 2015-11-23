@@ -47,7 +47,7 @@ $t = $t->send_ok({
         }})->message_ok;
 my $profit_table = decode_json($t->message->[1]);
 ok($profit_table->{profit_table});
-ok($profit_table->{profit_table}->{total});
+ok($profit_table->{profit_table}->{count});
 my $trx = $profit_table->{profit_table}->{transactions}->[0];
 ok($trx);
 ok($trx->{$_}, "got $_") foreach (qw/sell_price buy_price purchase_time contract_id transaction_id/);
