@@ -8,9 +8,11 @@ use Test::Exception;
 use Test::NoWarnings;
 
 use BOM::MarketData::Fetcher::CorporateAction;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestChronicle qw(init_chronicle create_doc);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_action');
+init_chronicle;
+
+BOM::Test::Data::Utility::UnitTestChronicle::create_doc('corporate_action');
 
 lives_ok {
     my $corp    = BOM::MarketData::Fetcher::CorporateAction->new;
