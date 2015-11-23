@@ -177,7 +177,7 @@ sub _redis_write {
     state $redis_write = RedisDB->new(
         host => _config()->{write}->{host},
         port => _config()->{write}->{port},
-        password => _config()->{write}->{password},
+        (_config()->{write}->{password} ? ('password', _config()->{write}->{password}):()),
     );
     return $redis_write;
 }
@@ -186,7 +186,7 @@ sub _redis_read {
     state $redis_read = RedisDB->new(
         host => _config()->{read}->{host},
         port => _config()->{read}->{port},
-        password => _config()->{read}->{password},
+        (_config()->{read}->{password} ? ('password', _config()->{read}->{password}):()),
     );
     return $redis_read;
 }
