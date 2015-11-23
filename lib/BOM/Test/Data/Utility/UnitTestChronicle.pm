@@ -24,44 +24,18 @@ use Carp;
 use RedisDB 2.14;
 use DBI;
 use YAML::XS;
+use BOM::System::Chronicle;
 
 use base qw( Exporter );
 our @EXPORT_OK = qw(init_chronicle create_doc);
 
-sub _get_redis_connection {
-    state $redis;
-
-    $redis //= RedisDB->new(
-        host               => "127.0.0.1",
-        port               => 6380,
-        reconnect_attempts => 3,
-        on_connect_error   => sub {
-            confess "Cannot connect to redis server for chronicle";
-        });
-
-    return $redis;
-}
-
-sub _get_db_handler {
-    state $pg;
-
-    $pg //= DBI->connect('dbi:Pg:dbname=chronicle;host=localhost;port=5437', 'postgres', 'picabo')
-        or croak $DBI::errstr;
-
-    return $pg;
-}
-
 sub init_chronicle {
     #flushall on redis-cli -p 6380
-    my $redis = _get_redis_connection;
-    $redis->auth('w09XKchis3YoP^fPJ2FQ2PjI@DfMgB5taPNIDFlQTfRQPr#L729aE33mMSIxO5n%');
-    $redis->flushall;
+
+    BOM::System::Chronicle::_redis_write()->flushall;
 
     #delete from chronicle o pg chronicle
-    my $pg = _get_db_handler;
-
-    $pg->do('delete from chronicle;');
-    $pg->disconnect();
+    BOM::System::Chronicle::_dbh()->do('delete from chronicle;') if BOM::System::Chronicle::_dbh();
 }
 
 =head2 create doc()
