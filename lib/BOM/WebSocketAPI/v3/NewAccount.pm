@@ -91,7 +91,7 @@ sub _get_client_details {
     };
 
     my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-                    address_city address_state address_postcode phone secret_question secret_answer);
+        address_city address_state address_postcode phone secret_question secret_answer);
 
     if ($args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
         try {
@@ -102,7 +102,7 @@ sub _get_client_details {
             );
             $args->{date_of_birth} = $dob->ymd;
         }
-        catch { return; } or return { error => 'invalid DOB' };
+        catch { return; } or return {error => 'invalid DOB'};
     }
 
     foreach my $key (@fields) {
@@ -115,9 +115,9 @@ sub _get_client_details {
         $details->{$key} = $value || '';
 
         next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
-        return { error => 'invalid' } if (not $details->{$key});
+        return {error => 'invalid'} if (not $details->{$key});
     }
-    return { details => $details };
+    return {details => $details};
 }
 
 sub new_account_real {
@@ -131,7 +131,8 @@ sub new_account_real {
         return $c->new_error($response, 'invalid', $error_map->{'invalid'});
     }
 
-    my $details_ref = _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
+    my $details_ref =
+        _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
         return $c->new_error($response, $err, $error_map->{$err});
     }
@@ -148,8 +149,8 @@ sub new_account_real {
 
     my $landing_company = $acc->{client}->landing_company;
     return {
-        msg_type         => $response,
-        $response        => {
+        msg_type  => $response,
+        $response => {
             client_id                 => $acc->{client}->loginid,
             landing_company           => $landing_company->name,
             landing_company_shortcode => $landing_company->short,
@@ -160,7 +161,7 @@ sub new_account_maltainvest {
     my ($c, $args) = @_;
     my $client = $c->stash('client');
 
-    my $response = 'new_account_maltainvest';
+    my $response  = 'new_account_maltainvest';
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($args->{accept_risk} == 1 and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
@@ -180,11 +181,11 @@ sub new_account_maltainvest {
         other_instruments_trading_frequency employment_industry education_level income_source net_income estimated_worth );
 
     my $acc = BOM::Platform::Account::Real::maltainvest::create_account({
-        from_client     => $client,
-        user            => BOM::Platform::User->new({email => $client->email}),
-        details         => $details_ref->{details},
-        accept_risk     => 1,
-        financial_data  => $financial_data,
+        from_client    => $client,
+        user           => BOM::Platform::User->new({email => $client->email}),
+        details        => $details_ref->{details},
+        accept_risk    => 1,
+        financial_data => $financial_data,
     });
 
     if (my $err_code = $acc->{error}) {
@@ -193,8 +194,8 @@ sub new_account_maltainvest {
 
     my $landing_company = $acc->{client}->landing_company;
     return {
-        msg_type         => $response,
-        $response        => {
+        msg_type  => $response,
+        $response => {
             client_id                 => $acc->{client}->loginid,
             landing_company           => $landing_company->name,
             landing_company_shortcode => $landing_company->short,
