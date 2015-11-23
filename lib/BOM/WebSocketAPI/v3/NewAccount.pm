@@ -101,10 +101,12 @@ sub _get_client_details {
         }
         catch { return; } or return { error => 'invalid DOB' };
 
-        $details->{$_} = $args->{$_} for @fields;
-        $details->{address_line_2}   ||= '';
-        $details->{address_state}    ||= '';
-        $details->{address_postcode} ||= '';
+        foreach my $key (@fields) {
+            $details->{$key} = $args->{$key} || '';
+            # optional fields
+            next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
+            return { error => 'invalid' } if (not $details->{$key});
+        }
     } else {
         $details->{$_} = $client->$_ for @fields;
         $details->{secret_answer} = BOM::Platform::Client::Utility::decrypt_secret_answer($details->{secret_answer});
@@ -155,7 +157,7 @@ sub new_account_maltainvest {
     my $response = 'new_account_maltainvest';
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($args->{accept_risk} == 1 and BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
+    unless ($args->{accept_risk} == 1 and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
         return $c->new_error($response, 'invalid', $error_map->{'invalid'});
     }
 
