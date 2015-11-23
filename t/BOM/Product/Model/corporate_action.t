@@ -11,7 +11,9 @@ use Test::NoWarnings;
 use Date::Utility;
 
 use BOM::MarketData::CorporateAction;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestChronicle qw(init_chronicle);
+
+init_chronicle;
 
 subtest 'general' => sub {
     plan tests => 5;
@@ -25,7 +27,7 @@ subtest 'general' => sub {
     'does not die if no actions are present on couch';
 };
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_action');
+BOM::Test::Data::Utility::UnitTestChronicle::create_doc('corporate_action');
 
 subtest 'save new corporate actions' => sub {
     plan tests => 7;
