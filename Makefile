@@ -11,10 +11,10 @@ PROVE=p () { $M; echo '$P' "$$@"; BOM_LOG4PERLCONFIG=/home/git/regentmarkets/bom
 test: $(TESTS)
 
 unit_test_product_contract:
-	@$(PROVE) -v -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFactory/
+	@$(PROVE) -r t/BOM/Product/Contract/ -r t/BOM/Product/ContractFactory/
 
 unit_test_product_all:
-	@$(PROVE) -v -r $$(ls -1d t/BOM/Persistence/* t/BOM/*.t t/BOM/Product/* | grep -v -e Product/Contract)
+	@$(PROVE) -r $$(ls -1d t/BOM/Persistence/* t/BOM/*.t t/BOM/Product/* | grep -v -e Product/Contract)
 
 tidy:
 	find . -name '*.p?.bak' -delete
