@@ -97,7 +97,7 @@ middle_east:
     asset_type: 'index'
     market: indices
     explanation: 'Middle East Indices'
-    volatility_surface_type: "moneyness"
+    volatility_surface_type: "flat"
 major_pairs:
     name: major_pairs
     display_name: "Major Pairs"
