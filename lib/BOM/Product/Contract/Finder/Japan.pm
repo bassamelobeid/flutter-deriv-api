@@ -72,10 +72,20 @@ sub available_contracts_for_symbol {
 =head2 _predefined_trading_period
 
 We set the predefined trading periods based on Japan requirement:
-1) Start at 00:00GMT and expire with duration of 2, and 4 hours
-2) Start at 15 min before closest even hour and expire with duration of 2,and 4 hours. Example: Current hour is 3GMT, you will have trading period of 0145-04GMT, 0045-0400GMT 0145-06GMT.
-3) Start at 15 min before closest odd hour and expire with duration of 3,and 5 hours. Example: Current hour is 3GMT, you will have trading period of 0045-04GMT, 0245-06GMT, 0045-06GMT,0245-08GMT.
-4) Start at 00:00GMT and expire with duration of 1,2,3,7,30,60,180,365 days
+Intraday contract:
+1) Starts at 00:00GMT and expires with duration of 2 hour.
+2) Starts at 15 min before closest even hour and expires with duration of 2 hours and 15 min.
+Example: 01:45-04:00, 03:45-06:00, 05:45-08:00, 09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00, 17:45-20:00, 19:45-22:00, 21:45-00:00
+3) Starts at 00:45 and expires with durarion of 5 hours and 15 min and spaces the next available trading window by 4 hours.
+Example:
+00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00 ; 16:45-22:00 ; 20:45-02:00 ;
+
+Daily contract:
+1) Daily contract: Start at 00:00GMT and end at 23:59:59GMT of the day
+2) Weekly contract: Start at 00:00GMT first trading day of the week and end at the close of last trading day of the week
+3) Monthly contract: Start at 00:00GMT of the first trading day of the calendar month and end at the close of the last trading day of the month
+4) Quarterly contract: Start at 00:00GMT of the first trading day of the quarter and end at the close of the last trading day of the quarter.
+6) Yearly contract: Start at 00:00GMT of the first trading day of the year and end at the close the last trading day of the year.
 
 =cut
 
@@ -97,68 +107,34 @@ sub _predefined_trading_period {
         my $today        = $now->truncate_to_day;    # Start of the day object.
         my $start_of_day = $today->datetime;         # As a string.
 
-        # Starting at midnight, running through these times.
-        my @even_hourly_durations = qw(2h 4h);
-
-        $trading_periods = [
-            map {
-                +{
+        if ($now_hour < 2) {
+            my $first_duration = $today->plus_time_interval('2h');
+            $trading_periods = [{
                     date_start => {
                         date  => $start_of_day,
                         epoch => $today->epoch
                     },
                     date_expiry => {
-                        date  => $_->datetime,
-                        epoch => $_->epoch
+                        date  => $first_duration->datetime,
+                        epoch => $first_duration->epoch
                     },
-                    duration => ($_->hour - $today->hour) . 'h'
-                    }
+                    duration => '2h'
                 }
-                grep {
-                $now->is_before($_)
-                } map {
-                $today->plus_time_interval($_)
-                } @even_hourly_durations
-        ];
 
-        # Starting at midnight, running through these dates.
-        my @daily_durations = qw(1d 2d 3d 7d 30d 60d 180d 365d);
-        my %added;
-
-        foreach my $date (map { $today->plus_time_interval($_) } @daily_durations) {
-            $date = $exchange->trade_date_after($date) unless ($exchange->trades_on($date));
-            my $actual_day_string = $date->days_between($today) . 'd';
-            next if ($added{$actual_day_string});    # We already saw this date in a previous iteration.
-            $added{$actual_day_string} = 1;
-            my $exchange_close_of_day = $exchange->closing_on($date);
-            push @$trading_periods,
-                +{
-                date_start => {
-                    date  => $start_of_day,
-                    epoch => $today->epoch,
-                },
-                date_expiry => {
-                    date  => $exchange_close_of_day->datetime,
-                    epoch => $exchange_close_of_day->epoch,
-                },
-                duration => $actual_day_string,
-                };
+            ];
         }
-
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         if ($now_hour > 0) {
             my $even_hour = $now_hour - ($now_hour % 2);
-            push @$trading_periods,
-                map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@even_hourly_durations}) }
+            push @$trading_periods, map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => '2h'}) }
                 grep { $_->is_after($today) }
-                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2, $even_hour - 4);
+                map { $today->plus_time_interval($_ . 'h') } ($even_hour, $even_hour - 2);
 
-            my $odd_hour = $now_hour % 2 ? $now_hour : $now_hour - 1;
-            my @odd_hourly_durations = qw(3h 5h);
-            push @$trading_periods,
-                map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => \@odd_hourly_durations}) }
+            my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
+            $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
+            push @$trading_periods, map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => '5h'}) }
                 grep { $_->is_after($today) }
-                map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 2, $odd_hour - 4);
+                map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
 
         }
         my $key_expiry = $now_minute < 45 ? $now_date . ' ' . $now_hour . ':45:00' : $now_date . ' ' . $now_hour . ':00:00';
@@ -200,31 +176,24 @@ To get the date_start and date_expiry for a give trading duration
 sub _get_combination_of_date_expiry_date_start {
     my $args             = shift;
     my $date_start       = $args->{date_start};
-    my @duration         = @{$args->{duration}};
+    my $duration         = $args->{duration};
     my $now              = $args->{now};
     my $early_date_start = $date_start->minus_time_interval('15m');
-    my $start_date       = {
-        date  => $early_date_start->datetime,
-        epoch => $early_date_start->epoch
-    };
+    my $date_expiry      = $date_start->plus_time_interval($duration);
 
-    return (
-        map {
-            +{
-                date_start  => $start_date,
-                date_expiry => {
-                    date  => $_->datetime,
-                    epoch => $_->epoch,
-                },
-                duration => ($_->hour - $date_start->hour) . 'h',
-                }
-            }
-            grep {
-            $now->is_before($_)
-            } map {
-            $date_start->plus_time_interval($_)
-            } @duration
-    );
+    if ($now->is_before($date_expiry)) {
+        return (
+            date_start => {
+                date  => $early_date_start->datetime,
+                epoch => $early_date_start->epoch
+            },
+            date_expiry => {
+                date  => $date_expiry->datetime,
+                epoch => $date_expiry->epoch,
+            },
+            duration => $duration,
+        );
+    }
 }
 
 =head2 _set_predefined_barriers
