@@ -177,6 +177,7 @@ sub _redis_write {
     state $redis_write = RedisDB->new(
         host => _config()->{write}->{host},
         port => _config()->{write}->{port},
+        password => _config()->{write}->{password},
     );
     return $redis_write;
 }
@@ -185,6 +186,7 @@ sub _redis_read {
     state $redis_read = RedisDB->new(
         host => _config()->{read}->{host},
         port => _config()->{read}->{port},
+        password => _config()->{read}->{password},
     );
     return $redis_read;
 }
@@ -210,8 +212,6 @@ sub _dbh {
 
 sub _config {
     state $config = YAML::XS::LoadFile('/etc/chronicle.yml');
-    use Data::Dumper;
-    die "<><><>" . Dumper($config);
     return $config;
 }
 
