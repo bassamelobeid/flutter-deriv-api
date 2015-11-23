@@ -102,6 +102,9 @@ sub set {
     die "Cannot store undefined values in Chronicle!" unless defined $value;
     die "You can only store hash-ref or array-ref in Chronicle!" unless ref $value eq 'ARRAY' or ref $value eq 'HASH';
 
+    print "begins et for $category and $name\n";
+    print STDERR "begins et for $category and $name\n";
+
     $value = JSON::to_json($value);
 
     my $key = $category . '::' . $name;
@@ -173,6 +176,9 @@ SQL
 }
 
 sub _redis_write {
+    print "redis_Write \n";
+    print STDERR "redis_wrute\n";
+
     state $redis_write = (
         _config()->{write}->{password}
         ? (
