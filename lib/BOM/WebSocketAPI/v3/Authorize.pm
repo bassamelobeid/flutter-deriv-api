@@ -26,22 +26,13 @@ sub authorize {
         if (!$session || !$session->validate_session()) {
             return $err;
         }
-
         $loginid = $session->loginid;
     }
 
     my $client = BOM::Platform::Client->new({loginid => $loginid});
     return $err unless $client;
 
-    my $email   = $client->email;
     my $account = $client->default_account;
-
-    $c->stash(
-        loginid    => $loginid,
-        token_type => $token_type,
-        client     => $client,
-        account    => $account,
-    );
 
     return {
         msg_type  => 'authorize',
@@ -50,7 +41,7 @@ sub authorize {
             loginid  => $client->loginid,
             balance  => ($account ? $account->balance : 0),
             currency => ($account ? $account->currency_code : ''),
-            email    => $email,
+            email    => $client->email,
         },
     };
 }

@@ -69,7 +69,6 @@ sub entry_point {
             my ($c, $p1) = @_;
 
             BOM::Platform::Context::request($c->stash('request'));
-            # $BOM::Platform::Context::current_request = $c->stash('request');
 
             my $tag = 'origin:';
             my $data;
