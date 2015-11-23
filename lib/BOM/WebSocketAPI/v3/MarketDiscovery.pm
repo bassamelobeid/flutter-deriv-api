@@ -288,7 +288,7 @@ sub _feed_channel {
     return $uuid;
 }
 
-sub send_realtime_ticks {
+sub process_realtime_events {
     my ($c, $message) = @_;
 
     my @m = split(';', $message);
