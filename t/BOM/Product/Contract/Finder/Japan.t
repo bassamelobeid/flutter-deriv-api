@@ -29,12 +29,12 @@ subtest "predefined contracts for symbol" => sub {
     my %expected = (
         frxUSDJPY => {
             contract_count => {
-                callput      => 40,
-                touchnotouch => 24,
-                staysinout   => 12,
-                endsinout    => 12,
+                callput      => 16,
+                touchnotouch => 10,
+                staysinout   => 10,
+                endsinout    => 10,
             },
-            hit_count => 88,
+            hit_count => 46,
         },
         frxAUDCAD => {hit_count => 0},
     );
@@ -58,31 +58,26 @@ subtest "predefined contracts for symbol" => sub {
 subtest "predefined trading_period" => sub {
     my %expected_count = (
         offering                                => 12,
-        offering_with_predefined_trading_period => 86,
+        offering_with_predefined_trading_period => 44,
         trading_period                          => {
-            call_intraday => 13,
-            call_daily    => 6,
-            range_daily   => 6,
+            call_intraday => 3,
+            call_daily    => 5,
+            range_daily   => 5,
         });
 
     my %expected_trading_period = (
         call_intraday => {
-            duration    => ['3d', '7d', '31d', '60d', '180d', '367d', '2h', '4h', '4h', '3h', '3h', '5h', '5h'],
+            duration    => ['0d', '1d', '26d', '26d', '117d','2h', '5h', '5h'],
             date_expiry => [
                 map { Date::Utility->new($_)->epoch } (
+                    '2015-09-04 21:00:00',
                     '2015-09-07 23:59:59',
-                    '2015-09-11 21:00:00',
-                    '2015-10-05 23:59:59',
-                    '2015-11-03 23:59:59',
-                    '2016-03-02 23:59:59',
-                    '2016-09-05 23:59:59',
+                    '2015-09-30 23:59:59',
+                    '2015-09-30 23:59:59',
+                    '2015-12-31 23:59:59',
                     '2015-09-04 18:00:00',
-                    '2015-09-04 20:00:00',
                     '2015-09-04 18:00:00',
-                    '2015-09-04 20:00:00',
-                    '2015-09-04 18:00:00',
-                    '2015-09-04 20:00:00',
-                    '2015-09-04 18:00:00'
+                    '2015-09-04 22:00:00',
                 )
             ],
             date_start => [
@@ -92,27 +87,21 @@ subtest "predefined trading_period" => sub {
                     '2015-09-04 00:00:00',
                     '2015-09-04 00:00:00',
                     '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
                     '2015-09-04 15:45:00',
-                    '2015-09-04 15:45:00',
-                    '2015-09-04 13:45:00',
+                    '2015-09-04 12:45:00',
                     '2015-09-04 16:45:00',
-                    '2015-09-04 14:45:00',
-                    '2015-09-04 14:45:00',
-                    '2015-09-04 12:45:00'
                 )
             ],
         },
         range_daily => {
-            duration    => ['3d', '7d', '31d', '60d', '180d', '367d'],
+            duration    => ['0d', '1d', '26d', '117d'],
             date_expiry => [
                 map { Date::Utility->new($_)->epoch } (
+                    '2015-09-04 21:00:00',
                     '2015-09-07 23:59:59',
-                    '2015-09-11 21:00:00',
-                    '2015-10-05 23:59:59',
-                    '2015-11-03 23:59:59',
-                    '2016-03-02 23:59:59',
-                    '2016-09-05 23:59:59'
+                    '2015-09-30 23:59:59',
+                    '2015-09-30 23:59:59',
+                    '2015-12-31 23:59:59',
                 )
             ],
             date_start => [
@@ -122,7 +111,6 @@ subtest "predefined trading_period" => sub {
                     '2015-09-04 00:00:00',
                     '2015-09-04 00:00:00',
                     '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00'
                 )
             ],
         },
@@ -195,11 +183,11 @@ subtest "predefined barriers" => sub {
         trading_period => {
             date_start => {
                 epoch => 1440374400,
-                date  => '2015-08-24 00:00:00'
+                date  => '2015-08-24 00:45:00'
             },
             date_expiry => {
                 epoch => 1440392400,
-                date  => '2015-08-24 05:00:00'
+                date  => '2015-08-24 06:00:00'
             },
             duration => '5h',
         },
