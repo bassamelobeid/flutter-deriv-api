@@ -335,13 +335,11 @@ sub send_realtime_ticks {
 sub proposal {
     my ($c, $args) = @_;
 
-    # this is a recurring contract-price watch ("price streamer")
-    # p2 is a manipulated copy of p1 suitable for produce_contract.
     my $p2 = prepare_ask($args);
     my $id;
     $id = Mojo::IOLoop->recurring(
         1 => sub {
-            send_ask($c, $id, $args, $p2);
+            send_ask($c, $id, $args);
         });
 
     BOM::WebSocketAPI::v3::System::limit_stream_count(
@@ -365,17 +363,13 @@ sub proposal {
             },
         });
 
-    send_ask($c, $id, $args, $p2);
+    send_ask($c, $id, $args);
 
     return;
 }
 
 sub prepare_ask {
     my $p1 = shift;
-
-    # this has two deliverables:
-    # 1) apply default values inline to the given $p1,
-    # 2) return a manipulated copy suitable for produce_contract
 
     $p1->{date_start} //= 0;
     if ($p1->{date_expiry}) {
@@ -452,9 +446,9 @@ sub get_ask {
 }
 
 sub send_ask {
-    my ($c, $id, $p1, $p2) = @_;
+    my ($c, $id, $args) = @_;
 
-    my $latest = get_ask($c, $p2);
+    my $latest = get_ask($c, prepare_ask($args));
     if ($latest->{error}) {
         BOM::WebSocketAPI::v3::System::forget_one $c, $id;
 
@@ -464,7 +458,7 @@ sub send_ask {
         $c->send({
                 json => {
                     msg_type => 'proposal',
-                    echo_req => $p1,
+                    echo_req => $args,
                     proposal => $proposal,
                     %$latest
                 }});
@@ -472,7 +466,7 @@ sub send_ask {
         $c->send({
                 json => {
                     msg_type => 'proposal',
-                    echo_req => $p1,
+                    echo_req => $args,
                     proposal => {
                         id => $id,
                         %$latest
