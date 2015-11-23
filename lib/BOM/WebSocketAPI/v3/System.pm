@@ -31,11 +31,15 @@ sub forget_all {
             }
         }
 
-        if ($type eq 'ticks' and $c->stash('feed_channel_type')) {
+        if ($c->stash('feed_channel_type')) {
             foreach my $k (keys %{$c->stash('feed_channel_type')}) {
                 $k =~ /(.*);(.*)/;
-                push @removed_ids, $c->stash('feed_channel_type')->{$k}->{uuid};
-                BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2);
+                my $fsymbol = $1;
+                my $ftype   = $2;
+                if ($type =~ /^$ftype/) {
+                    push @removed_ids, $c->stash('feed_channel_type')->{$k}->{uuid};
+                    BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
+                }
             }
         }
     }
