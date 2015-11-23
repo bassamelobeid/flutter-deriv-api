@@ -173,21 +173,34 @@ SQL
 }
 
 sub _redis_write {
+    state $redis_write = (
+        _config()->{write}->{password}
+        ? (
+            RedisDB->new(
+                host     => _config()->{write}->{host},
+                port     => _config()->{write}->{port},
+                password => _config()->{write}->{password}))
+        : (
+            RedisDB->new(
+                host => _config()->{write}->{host},
+                port => _config()->{write}->{port})));
 
-    state $redis_write = RedisDB->new(
-        host => _config()->{write}->{host},
-        port => _config()->{write}->{port},
-        (_config()->{write}->{password} ? ('password', _config()->{write}->{password}):()),
-    );
     return $redis_write;
 }
 
 sub _redis_read {
-    state $redis_read = RedisDB->new(
-        host => _config()->{read}->{host},
-        port => _config()->{read}->{port},
-        (_config()->{read}->{password} ? ('password', _config()->{read}->{password}):()),
-    );
+    state $redis_read = (
+        _config()->{read}->{password}
+        ? (
+            RedisDB->new(
+                host     => _config()->{read}->{host},
+                port     => _config()->{read}->{port},
+                password => _config()->{read}->{password}))
+        : (
+            RedisDB->new(
+                host => _config()->{read}->{host},
+                port => _config()->{read}->{port})));
+
     return $redis_read;
 }
 
