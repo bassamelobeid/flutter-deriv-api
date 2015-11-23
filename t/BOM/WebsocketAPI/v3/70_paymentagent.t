@@ -8,6 +8,7 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use Test::Exception;
 
+use BOM::Database::Model::AccessToken;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 
@@ -48,7 +49,7 @@ subtest 'Initialization' => sub {
             is_authenticated      => 't',
             currency_code         => 'USD',
             currency_code_2       => 'USD',
-            target_country        => 'au',
+            target_country        => 'id',
         });
         $pa_client->save;
     }
@@ -56,11 +57,36 @@ subtest 'Initialization' => sub {
 };
 
 # paymentagent_list
-$t = $t->send_ok({json => {paymentagent_list => 'au'}})->message_ok;
+$t = $t->send_ok({json => {paymentagent_list => 'id'}})->message_ok;
 my $res = decode_json($t->message->[1]);
-ok(grep { $_->[0] eq 'au' } @{$res->{paymentagent_list}{available_countries}});
+ok(grep { $_->[0] eq 'id' } @{$res->{paymentagent_list}{available_countries}});
 ok(grep { $_->{name} eq 'Joe' } @{$res->{paymentagent_list}{list}});
 test_schema('paymentagent_list', $res);
+
+my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'Test Token');
+$t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
+## paymentagent_withdraw
+{
+    $client = BOM::Platform::Client->new({loginid => $client->loginid});
+    my $client_b_balance = $client->default_account->balance;
+    my $pa_client_b_balance = $pa_client->default_account->balance;
+
+    $t = $t->send_ok({json => {
+        paymentagent_withdraw => 1,
+        paymentagent_loginid => $pa_client->loginid,
+        currency => 'USD',
+        amount => 100
+    }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is $res->{paymentagent_withdraw}, 1, 'paymentagent_withdraw ok';
+
+    ## after withdraw, check both balance
+    $client = BOM::Platform::Client->new({loginid => $client->loginid});
+    ok $client->default_account->balance == $client_b_balance - 100, '- 100';
+    $pa_client = BOM::Platform::Client->new({loginid => $pa_client->loginid});
+    ok $pa_client->default_account->balance == $pa_client_b_balance + 100, '+ 100';
+}
 
 $t->finish_ok;
 

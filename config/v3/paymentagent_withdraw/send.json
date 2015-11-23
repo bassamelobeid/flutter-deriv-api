@@ -9,9 +9,10 @@
       "pattern": "^1$",
       "required": "1"
     },
-    "payment_agent": {
+    "paymentagent_loginid": {
       "type": "string",
       "pattern": "\\w+",
+      "description": "The paymentagent loginid from paymentagent_list",
       "required": "1"
     },
     "currency": {
@@ -28,8 +29,8 @@
     },
     "dry_run": {
       "type": "integer",
-      "pattern": "^(0|1)$"
-      "description": "If 1, just do validation",
+      "pattern": "^(0|1)$",
+      "description": "If 1, just do validation"
     },
     "passthrough": {
       "type": "object",

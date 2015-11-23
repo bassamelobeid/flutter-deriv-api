@@ -127,8 +127,8 @@ sub __ListPaymentAgents {
     foreach my $loginid (keys %{$authenticated_paymentagent_agents}) {
         my $payment_agent = $authenticated_paymentagent_agents->{$loginid};
 
-        push @{$payment_agent_table_row},
-            {
+        push @{$payment_agent_table_row}, {
+            'paymentagent_loginid'  => $loginid,
             'name'                  => encode_entities($payment_agent->{payment_agent_name}),
             'summary'               => encode_entities($payment_agent->{summary}),
             'url'                   => $payment_agent->{url},
@@ -139,7 +139,7 @@ sub __ListPaymentAgents {
             'withdrawal_commission' => $payment_agent->{commission_withdrawal},
             'further_information'   => $payment_agent->{information},
             'supported_banks'       => $payment_agent->{supported_banks},
-            };
+        };
     }
 
     @$payment_agent_table_row = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_table_row;
@@ -195,7 +195,7 @@ sub paymentagent_withdraw {
     }
 
     my $further_instruction  = $args->{description} // '';
-    my $paymentagent_loginid = $args->{payment_agent};            ## fix with Crypted
+    my $paymentagent_loginid = $args->{paymentagent_loginid};
     my $reference            = Data::UUID->new()->create_str();
     my $client_loginid       = $client->loginid;
 
