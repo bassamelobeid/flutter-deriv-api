@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Platform::Runtime;
+use BOM::WebSocketAPI::v3::MarketDiscovery;
 
 sub buy {
     my ($c, $args) = @_;
@@ -18,12 +19,11 @@ sub buy {
     my $purchase_date = time;                  # Purchase is considered to have happened at the point of request.
     my $id            = $args->{buy};
     my $source        = $c->stash('source');
-    my $ws_id         = $c->tx->connection;
 
     my $client = $c->stash('client');
     my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
         or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
-    $p2 = $p2->{data};
+    $p2 = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($p2);
 
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
@@ -116,7 +116,6 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
     my $client = $c->stash('client');
     my $source = $c->stash('source');
-    my $ws_id  = $c->tx->connection;
 
     my @fmbs = ();
     if ($args->{contract_id}) {
@@ -125,27 +124,15 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         @fmbs = $client->open_bets;
     }
 
-    my $p0 = {%$args};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id = '';
-            $id = Mojo::IOLoop->recurring(3 => sub { send_bid($c, $id, $p0, $fmb) });
-            my $fmb_map = ($c->{fmb_ids}{$ws_id} //= {});
-            $fmb_map->{$fmb->id} = $id;
+            $args->{short_code} = $fmb->short_code;
+            $args->{fmb_id}     = $fmb->id;
+            $args->{currency}   = $client->currency;
 
-            my $data = {
-                id      => $id,
-                type    => 'proposal_open_contract',
-                cleanup => sub {
-                    Mojo::IOLoop->remove($id);
-                    delete $fmb_map->{$fmb->id};
-                    # TODO: we might want to send an error to the client
-                    # if this function is called with a parameter indicating
-                    # the proposal stream was closed due to an error.
-                },
-            };
-            BOM::WebSocketAPI::v3::System::limit_stream_count($c, $data);
-            send_bid($c, $id, $p0, $fmb);
+            my $id = BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'subscribe', $args->{symbol},
+                'proposal_open_contract:' . JSON::to_json($args));
+            send_bid($c, $id, $args);
         }
     } else {
         return {
@@ -205,17 +192,15 @@ sub __get_open_contracts {
 }
 
 sub get_bid {
-    my ($c, $fmb) = @_;
-    my $app = $c->app;
-    my $log = $app->log;
+    my ($short_code, $fmb_id, $currency) = @_;
 
-    my $contract = produce_contract($fmb->short_code, $c->stash('client')->currency);
+    my $contract = produce_contract($short_code, $currency);
 
     my %returnhash = (
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $fmb->id,
+        contract_id         => $fmb_id,
         underlying          => $contract->underlying->symbol,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
@@ -258,13 +243,13 @@ sub get_bid {
 }
 
 sub send_bid {
-    my ($c, $id, $p0, $fmb) = @_;
+    my ($c, $id, $args) = @_;
 
-    my $latest = get_bid($c, $fmb);
+    my $latest = get_bid($args->{short_code}, $args->{fmb_id}, $args->{currency});
 
     my $response = {
         msg_type => 'proposal_open_contract',
-        echo_req => $p0,
+        echo_req => $args,
     };
 
     $c->send({
