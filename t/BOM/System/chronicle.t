@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 6;
+use Test::More tests => 5;
 use Test::NoWarnings;
 use Time::HiRes;
 use BOM::Test::Data::Utility::UnitTestChronicle qw(init_chronicle);
@@ -31,5 +31,3 @@ is BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d3), 1, "new version
 my $d4 = BOM::System::Chronicle::get("vol_surface", "frxUSDJPY");
 is_deeply $d3, $d4, "data retrieval works for the new version";
 
-my $old_version = BOM::System::Chronicle::get_for("vol_surface", "frxUSDJPY", $first_save_epoch);
-is_deeply $old_version, $d, "old data retrieved correctly";
