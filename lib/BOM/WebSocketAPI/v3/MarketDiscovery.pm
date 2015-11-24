@@ -329,8 +329,7 @@ sub process_realtime_events {
                             open        => $u->pipsized_value($1),
                             high        => $u->pipsized_value($2),
                             low         => $u->pipsized_value($3),
-                            close       => $u->pipsized_value($4)
-                        }}});
+                            close       => $u->pipsized_value($4)}}});
         }
     }
 
