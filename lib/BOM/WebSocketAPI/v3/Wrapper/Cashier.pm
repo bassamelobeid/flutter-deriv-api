@@ -31,7 +31,7 @@ sub paymentagent_list {
 
     return {
         msg_type => 'paymentagent_list',
-        paymentagent_list => {%BOM::WebSocketAPI::v3::Cashier::paymentagent_list ($client, $request->language, $request->website)}};
+        paymentagent_list => {%BOM::WebSocketAPI::v3::Cashier::paymentagent_list ($client, $request->language, $request->website, $args)}};
 }
 
 1;
