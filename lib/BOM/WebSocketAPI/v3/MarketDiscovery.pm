@@ -383,7 +383,6 @@ sub get_ask {
     my $log      = $app->log;
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
-        $log->info("contract creation failure: $err");
         return {
             error => {
                 message => $c->l("Cannot create contract"),

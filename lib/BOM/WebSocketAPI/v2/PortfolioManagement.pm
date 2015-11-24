@@ -245,7 +245,6 @@ sub get_bid {
     my @similar_args = ($p2->{contract}, {priced_at => 'now'});
     my $contract = try { make_similar_contract(@similar_args) } || do {
         my $err = $@;
-        $log->info("contract for sale creation failure: $err");
         return {
             error => {
                 message => "cannot create sell contract",
