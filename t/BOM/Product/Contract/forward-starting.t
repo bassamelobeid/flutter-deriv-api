@@ -39,8 +39,8 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 daily_settlement => '11h59m59s',
             },
             partial_trading => {},
-        },   
-      });
+        },
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {

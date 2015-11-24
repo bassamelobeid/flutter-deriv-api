@@ -1955,9 +1955,8 @@ subtest 'max_30day_turnover validation', sub {
 
         my $error = do {
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(
-                get_limit_for_30day_turnover => sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 }
-            );
+            $mock_client->mock(get_limit_for_30day_turnover =>
+                    sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -2368,8 +2367,8 @@ subtest 'max_30day_losses validation', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20); 3 * 5.20 }
-            );
+            $mock_client->mock(
+                get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20); 3 * 5.20 });
 
             $txn->buy;
         };

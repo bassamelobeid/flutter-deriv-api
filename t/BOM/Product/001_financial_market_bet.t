@@ -45,11 +45,11 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 daily_open       => '8h',
                 daily_settlement => '19h30m',
             },
-            dst     => {
-	    daily_close      => '15h30m',
-	    daily_open       => '7h',
-	    daily_settlement => '18h30m',
-	    },
+            dst => {
+                daily_close      => '15h30m',
+                daily_open       => '7h',
+                daily_settlement => '18h30m',
+            },
             partial_trading => {},
         },
         date => Date::Utility->new,
@@ -128,11 +128,11 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 daily_open       => '8h',
                 daily_settlement => '19h30m',
             },
-            dst     => {
-	    daily_close      => '15h30m',
-	    daily_open       => '7h',
-	    daily_settlement => '18h30m',
-	    },
+            dst => {
+                daily_close      => '15h30m',
+                daily_open       => '7h',
+                daily_settlement => '18h30m',
+            },
 
             partial_trading => {},
         },

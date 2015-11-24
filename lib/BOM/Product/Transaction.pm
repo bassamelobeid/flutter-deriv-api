@@ -1139,7 +1139,11 @@ sub _validate_trade_pricing_adjustment {
     my $move              = $requested - $recomputed;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
-        $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
+        if ($contract->new_interface_engine) {
+            $commission_markup = $contract->pricing_engine->commission_markup;
+        } else {
+            $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
+        }
     }
     my $allowed_move = $commission_markup * 0.5;
     $allowed_move = 0 if $recomputed == 1;

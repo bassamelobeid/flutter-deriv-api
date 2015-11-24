@@ -14,7 +14,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'RANDOM',
-        trading_day => 'everyday',
+        trading_days => 'everyday',
         date   => Date::Utility->new,
     });
 my $time   = time;
