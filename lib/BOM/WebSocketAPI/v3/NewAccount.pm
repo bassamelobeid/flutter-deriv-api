@@ -45,7 +45,6 @@ sub new_account_virtual {
         }
         $err_code = $acc->{error};
     } else {
-        $c->app->log->info("invalid email verification code: $details{email}, $code");
         $err_code = 'email unverified';
     }
 
