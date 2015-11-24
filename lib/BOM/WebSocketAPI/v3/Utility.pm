@@ -11,3 +11,5 @@ sub create_error {
             message => $message,
             $details ? (details => $details) : ()}};
 }
+
+1;
