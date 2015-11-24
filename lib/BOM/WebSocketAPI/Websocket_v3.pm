@@ -10,7 +10,7 @@ use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
-use BOM::WebSocketAPI::v3::Cashier;
+use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::NewAccount;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
@@ -168,8 +168,8 @@ sub __handle {
         ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
         ['get_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::get_self_exclusion,                1],
         ['set_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::set_self_exclusion,                1],
-        ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
-        ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Cashier::paymentagent_list,                  0],
+        ['get_limits',              \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                1],
+        ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,         0],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
         ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,         1],
     );
