@@ -52,7 +52,6 @@ sub entry_point {
         $redis->on(
             error => sub {
                 my ($self, $err) = @_;
-                $log->info("error: $err");
                 warn("error: $err");
             });
         $redis->on(
@@ -110,7 +109,6 @@ sub entry_point {
                 $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
                 $data->{echo_req} = $p1;
             }
-            $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
             if ($send) {
                 $c->send({json => $data});
             } else {
