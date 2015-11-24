@@ -36,25 +36,25 @@ my %client_details = (
 );
 
 my $mf_details = {
-    new_account_maltainvest                 => 1,
-    forex_trading_experience                => '1-2 years',
-    forex_trading_frequency                 => '0-5 transactions in the past 12 months',
-    indices_trading_experience              => '1-2 years',
-    indices_trading_frequency               => '0-5 transactions in the past 12 months',
-    commodities_trading_experience          => '1-2 years',
-    commodities_trading_frequency           => '0-5 transactions in the past 12 months',
-    stocks_trading_experience               => '1-2 years',
-    stocks_trading_frequency                => '0-5 transactions in the past 12 months',
-    other_derivatives_trading_experience    => '1-2 years',
-    other_derivatives_trading_frequency     => '0-5 transactions in the past 12 months',
-    other_instruments_trading_frequency     => '0-5 transactions in the past 12 months',
-    other_instruments_trading_experience    => '1-2 years',
-    employment_industry                     => 'Construction',
-    education_level                         => 'Secondary',
-    income_source                           => 'Investments & Dividends',
-    net_income                              => '$25,000 - $100,000',
-    estimated_worth                         => '$250,000 - $1,000,000',
-    accept_risk                             => 1
+    new_account_maltainvest              => 1,
+    forex_trading_experience             => '1-2 years',
+    forex_trading_frequency              => '0-5 transactions in the past 12 months',
+    indices_trading_experience           => '1-2 years',
+    indices_trading_frequency            => '0-5 transactions in the past 12 months',
+    commodities_trading_experience       => '1-2 years',
+    commodities_trading_frequency        => '0-5 transactions in the past 12 months',
+    stocks_trading_experience            => '1-2 years',
+    stocks_trading_frequency             => '0-5 transactions in the past 12 months',
+    other_derivatives_trading_experience => '1-2 years',
+    other_derivatives_trading_frequency  => '0-5 transactions in the past 12 months',
+    other_instruments_trading_frequency  => '0-5 transactions in the past 12 months',
+    other_instruments_trading_experience => '1-2 years',
+    employment_industry                  => 'Construction',
+    education_level                      => 'Secondary',
+    income_source                        => 'Investments & Dividends',
+    net_income                           => '$25,000 - $100,000',
+    estimated_worth                      => '$250,000 - $1,000,000',
+    accept_risk                          => 1
 };
 
 subtest 'MLT upgrade to MF account' => sub {
@@ -117,7 +117,7 @@ subtest 'VR upgrade to MF - Germany' => sub {
         my %details = (%client_details, %$mf_details);
         delete $details{new_account_real};
         $details{first_name} = 'first name DE';
-        $details{residence} = 'de';
+        $details{residence}  = 'de';
 
         $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
@@ -135,14 +135,14 @@ subtest 'VR upgrade to MF - Germany' => sub {
 subtest 'CR / MX client cannot upgrade to MF' => sub {
     my %broker_map = (
         'CR' => {
-            residence   => 'id',
-            email       => 'test+id@binary.com',
-            first_name  => 'first name ID',
+            residence  => 'id',
+            email      => 'test+id@binary.com',
+            first_name => 'first name ID',
         },
         'MX' => {
-            residence   => 'gb',
-            email       => 'test+gb@binary.com',
-            first_name  => 'first name GB',
+            residence  => 'gb',
+            email      => 'test+gb@binary.com',
+            first_name => 'first name GB',
         },
     );
 
@@ -163,7 +163,7 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
         subtest 'create MX / CR acc, authorize' => sub {
             my %details = %client_details;
             $details{first_name} = $map->{first_name};
-            $details{residence} = $map->{residence};
+            $details{residence}  = $map->{residence};
 
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
@@ -184,8 +184,8 @@ subtest 'CR / MX client cannot upgrade to MF' => sub {
             $t = $t->send_ok({json => $mf_details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code}, 'invalid', "no MF upgrade for $broker");
-            is($res->{new_account_maltainvest}, undef, 'NO account created');
+            is($res->{error}->{code},           'invalid', "no MF upgrade for $broker");
+            is($res->{new_account_maltainvest}, undef,     'NO account created');
         };
     }
 };

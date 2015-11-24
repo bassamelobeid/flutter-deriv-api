@@ -58,6 +58,11 @@ sub entry_point {
         $redis->on(
             message => sub {
                 my ($self, $msg, $channel) = @_;
+
+                # set correct request context for localize
+                BOM::Platform::Context::request($c->stash('request'))
+                    if $channel =~ /^FEED::/;
+
                 BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::MarketDiscovery::process_realtime_events($c, $msg) if $channel =~ /^FEED::/;
             });
