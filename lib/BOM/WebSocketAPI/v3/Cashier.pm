@@ -71,27 +71,17 @@ sub get_limits {
 }
 
 sub paymentagent_list {
-    my ($client, $language, $website, $args) = @_;
+    my ($client, $language, $args) = @_;
 
     my $broker_code = $client ? $client->broker_code : 'CR';
 
     my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
     my $countries = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
 
-    my $target_country = $args->{paymentagent_list};
-
     # add country name plus code
     foreach (@{$countries}) {
         $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $language);
     }
-
-    return __ListPaymentAgents($broker_code, {target_country => $target_country}, $website);
-}
-
-sub __ListPaymentAgents {
-    my ($broker_code, $args, $website) = @_;
-
-    my @allow_broker = map { $_->code } @{$website->broker_codes};
 
     my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
     my $authenticated_paymentagent_agents =
@@ -120,7 +110,10 @@ sub __ListPaymentAgents {
 
     @$payment_agent_table_row = sort { lc($a->{name}) cmp lc($b->{name}) } @$payment_agent_table_row;
 
-    return $payment_agent_table_row;
+    return {
+        available_countries => $countries,
+        list                => $payment_agent_table_row
+    };
 }
 
 1;

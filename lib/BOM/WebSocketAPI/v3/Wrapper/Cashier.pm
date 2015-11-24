@@ -26,12 +26,11 @@ sub get_limits {
 sub paymentagent_list {
     my ($c, $args) = @_;
 
-    my $client  = $c->stash('client');
-    my $request = $c->stash('request');
+    my $response = BOM::WebSocketAPI::v3::Cashier::paymentagent_list($c->stash('client'), $c->stash('request')->language, $args);
 
     return {
-        msg_type => 'paymentagent_list',
-        paymentagent_list => {%BOM::WebSocketAPI::v3::Cashier::paymentagent_list ($client, $request->language, $request->website, $args)}};
+        msg_type          => 'paymentagent_list',
+        paymentagent_list => {%$response}};
 }
 
 1;
