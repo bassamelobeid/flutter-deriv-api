@@ -83,7 +83,6 @@ sub paymentagent_list {
         $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $language);
     }
 
-    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
     my $authenticated_paymentagent_agents =
         $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{target_country}});
 
