@@ -30,6 +30,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'RANDOM',
+        trading_days     => 'everyday',
         open_on_weekends => 1,
         date             => Date::Utility->new,
     });
@@ -217,18 +218,6 @@ subtest get_day_for_tenor => sub {
     my $surface2 = _get_surface({recorded_date => Date::Utility->new('12-Jun-12')});
     lives_ok { $day = $surface2->get_day_for_tenor('1W') } "can get day for tenor that does not exist on the surface";
     is($day, 7, "returns the calculated day for tenor");
-};
-
-subtest get_strike_slope => sub {
-    plan tests => 1;
-
-    my $surface = _get_surface();
-
-    my $slope = $surface->get_strike_slope({
-        days   => 7,
-        strike => 25
-    });
-    ok(looks_like_number($slope), 'strike_slope returns a number.');
 };
 
 subtest get_market_rr_bf => sub {

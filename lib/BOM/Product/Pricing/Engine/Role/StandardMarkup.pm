@@ -35,7 +35,7 @@ has [
     lazy_build => 1,
     );
 
-has [qw( commission_level commission_market commission_bet_type uses_dst_shifted_seasonality)] => (
+has [qw( commission_level uses_dst_shifted_seasonality)] => (
     is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
@@ -94,20 +94,6 @@ sub _build_eod_market_risk_markup {
         set_by      => __PACKAGE__,
         base_amount => $eod_base,
     });
-
-    # Only allow sale with this commission in the ATM case.
-    if ($eod_base and not $bet->is_atm_bet) {
-        my $message =
-            ($bet->built_with_bom_parameters)
-            ? localize('Resale of this contract is not offered.')
-            : localize('The contract is not available after [_1] GMT.', $ny_1600->time_hhmm);
-        $eod_market_risk_markup->add_errors({
-            message           => 'Underlying buying suspended between NY1600 and GMT0000',
-            message_to_client => $message . ' ',
-            info_link         => request()->url_for('/resources/asset_index'),
-            info_text         => localize('View Asset Index'),
-        });
-    }
 
     return $eod_market_risk_markup;
 }
@@ -418,11 +404,9 @@ sub _build_digital_spread_markup {
         base_amount => 0,
     });
 
-    my $comm_market = $self->commission_market;
-    my $bet_type    = $self->commission_bet_type;
-    my $level       = $self->commission_level;
-    my $key         = join '.', ($comm_market, $bet_type);
-    my $dsp_amount  = $self->bet->underlying->market->markups->digital_spread->{$bet_type} / 100;
+    my $bet_type   = $bet->code;
+    my $level      = $self->commission_level;
+    my $dsp_amount = $self->bet->underlying->market->markups->digital_spread->{$bet_type} / 100;
     # this is added so that we match the commission of tick trades
     $dsp_amount /= 2 if $bet->timeinyears->amount * 86400 * 365 <= 20 and $bet->is_atm_bet;
 
@@ -457,42 +441,6 @@ sub _build_digital_spread_markup {
     $dsm->include_adjustment('multiply', $dsp_scaling);
 
     return $dsm;
-}
-
-=head2 commission_market
-
-Under which market do we look up commission values?
-
-=cut
-
-sub _build_commission_market {
-    my $self = shift;
-
-    my $market = $self->bet->underlying->market;
-
-    # Equities covers multiple markets.
-    my $commission_market = $self->bet->underlying->market->name;
-    $commission_market = 'equities'
-        if ($self->bet->underlying->market->equity);
-
-    return $commission_market;
-}
-
-=head2 commission_bet_type
-
-Under which bet type do we look up commission values?
-
-=cut
-
-sub _build_commission_bet_type {
-    my $self = shift;
-
-    my $bet = $self->bet;
-
-    return
-          (not $bet->is_path_dependent) ? 'european'
-        : ($bet->two_barriers)          ? 'double_barrier'
-        :                                 'single_barrier';
 }
 
 =head2 commission_level

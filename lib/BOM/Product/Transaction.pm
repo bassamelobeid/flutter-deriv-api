@@ -1139,7 +1139,11 @@ sub _validate_trade_pricing_adjustment {
     my $move              = $requested - $recomputed;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
-        $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
+        if ($contract->new_interface_engine) {
+            $commission_markup = $contract->pricing_engine->commission_markup;
+        } else {
+            $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
+        }
     }
     my $allowed_move = $commission_markup * 0.5;
     $allowed_move = 0 if $recomputed == 1;
@@ -1384,14 +1388,6 @@ sub _validate_jurisdictional_restrictions {
         );
     }
 
-    if (not grep { $market_name eq $_ } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_markets}) {
-        return Error::Base->cuss(
-            -type              => 'NotLegalMarket',
-            -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
-            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this market.'),
-        );
-    }
-
     my %legal_allowed_cc =
         map { $_ => 1 } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_contract_categories};
     if (not $legal_allowed_cc{$contract->category_code}) {
@@ -1399,6 +1395,14 @@ sub _validate_jurisdictional_restrictions {
             -type              => 'NotLegalContractCategory',
             -mesg              => 'Clients are not allowed to trade on this contract category as its restricted for this landing company',
             -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this contract.'),
+        );
+    }
+
+    if (not grep { $market_name eq $_ } @{BOM::Platform::Runtime->instance->broker_codes->landing_company_for($loginid)->legal_allowed_markets}) {
+        return Error::Base->cuss(
+            -type              => 'NotLegalMarket',
+            -mesg              => 'Clients are not allowed to trade on this markets as its restricted for this landing company',
+            -message_to_client => BOM::Platform::Context::localize('Please switch accounts to trade this market.'),
         );
     }
 

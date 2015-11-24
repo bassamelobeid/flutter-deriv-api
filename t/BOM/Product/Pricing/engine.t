@@ -13,6 +13,7 @@ use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
+use Pricing::Engine::EuropeanDigitalSlope;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
@@ -196,12 +197,17 @@ subtest 'Intraday::Forex' => sub {
 };
 
 subtest 'Slope' => sub {
-    plan tests => 2;
+    plan tests => 6;
 
-    my $engine = BOM::Product::Pricing::Engine::Slope->new(bet => $expiry_range);
+    my %params = map { $_ => $expiry_range->_pricing_parameters->{$_} } @{Pricing::Engine::EuropeanDigitalSlope->required_args};
+    my $engine = Pricing::Engine::EuropeanDigitalSlope->new(%params);
 
-    isa_ok($engine->probability, 'Math::Util::CalculatedValue::Validatable', 'Slope prob is a CalcVal.');
-    isa_ok($engine->skew,        'Math::Util::CalculatedValue::Validatable', 'Slope skew is a CalcVal.');
+    ok $engine->theo_probability > 0, 'probability > 0';
+    ok $engine->theo_probability < 1, 'probability < 1';
+    is scalar keys %{$engine->debug_information}, 3;
+    ok exists $engine->debug_information->{CALL};
+    ok exists $engine->debug_information->{PUT};
+    ok exists $engine->debug_information->{discounted_probability};
 };
 
 sub _surface_with_10_deltas {
