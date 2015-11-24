@@ -523,23 +523,16 @@ sub _get_economic_events {
     my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
-    # static duration that needs to be replaced.
     my $default_underlying = 'frxUSDJPY';
     my @events;
     foreach my $event (@$raw_events) {
         my $event_name = $event->event_name;
         $event_name =~ s/\s/_/g;
-        my @keys = map {
-            ($_ . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name, $_ . '_' . $event->symbol . '_' . $event->impact . '_default')
-        } ($underlying->symbol, $default_underlying);
-
-        my $news_parameters;
-        foreach (@keys) {
-            if (exists $news_categories->{$_}) {
-                $news_parameters = $news_categories->{$_};
-                last;
-            }
-        }
+        my $news_parameters =
+            map { $news_categories->{$_} }
+            first { exists $news_categories->{$_} }
+        map { ($_ . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name, $_ . '_' . $event->symbol . '_' . $event->impact . '_default') }
+            ($underlying->symbol, $default_underlying);
 
         next unless $news_parameters;
         $news_parameters->{release_time} = $event->release_date->epoch;
