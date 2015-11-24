@@ -59,6 +59,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
 
+                # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
 
