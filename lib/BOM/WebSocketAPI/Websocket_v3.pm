@@ -9,7 +9,7 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
-use BOM::WebSocketAPI::v3::Static;
+use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Cashier;
 use BOM::WebSocketAPI::v3::NewAccount;
 use DataDog::DogStatsd::Helper;
@@ -149,8 +149,8 @@ sub __handle {
         ['contracts_for',           \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
         ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
         ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
-        ['residence_list',          \&BOM::WebSocketAPI::v3::Static::residence_list,                      0],
-        ['states_list',             \&BOM::WebSocketAPI::v3::Static::states_list,                         0],
+        ['residence_list',          \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,             0],
+        ['states_list',             \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                0],
         ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
         ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
         ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                    0],
