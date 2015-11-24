@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use strict;
 use warnings;
 
+use BOM::WebSocketAPI::v3::Cashier;
+
 sub get_limits {
     my ($c, $args) = @_;
 
