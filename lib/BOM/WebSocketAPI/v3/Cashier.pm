@@ -2,23 +2,25 @@ package BOM::WebSocketAPI::v3::Cashier;
 
 use strict;
 use warnings;
+
 use HTML::Entities;
 use List::Util qw( min first );
 use Format::Util::Numbers qw(to_monetary_number_format roundnear);
+
+use BOM::WebSocketAPI::v3::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(localize);
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
 use BOM::Database::DataMapper::PaymentAgent;
 
 sub get_limits {
-    my ($c, $args) = @_;
-
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my ($client, $config) = @_;
 
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
-        return $c->new_error('get_limits', 'FeatureNotAvailable', $c->l('Sorry, this feature is not available.'));
+        return BOM::WebSocketAPI::v3::Utility::create_error('FeatureNotAvailable',
+            BOM::Platform::Context::localize('Sorry, this feature is not available.'));
     }
 
     my $limit = +{
@@ -28,11 +30,9 @@ sub get_limits {
         open_positions => $client->get_limit_for_open_positions,
     };
 
-    my $landing_company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short;
-    my $wl_config       = $c->app_config->payments->withdrawal_limits->$landing_company;
-    my $numdays         = $wl_config->for_days;
-    my $numdayslimit    = $wl_config->limit_for_days;
-    my $lifetimelimit   = $wl_config->lifetime_limit;
+    my $numdays       = $config->for_days;
+    my $numdayslimit  = $config->limit_for_days;
+    my $lifetimelimit = $config->lifetime_limit;
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -67,47 +67,33 @@ sub get_limits {
         $limit->{remainder} = $remainder;
     }
 
-    return {
-        msg_type   => 'get_limits',
-        get_limits => $limit,
-    };
+    return $limit;
 }
 
 sub paymentagent_list {
-    my ($c, $args) = @_;
+    my ($client, $language, $website, $args) = @_;
 
-    my $r = $c->stash('request');
+    my $broker_code = $client ? $client->broker_code : 'CR';
 
-    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => ($r->loginid ? $r->broker->code : 'CR')});
+    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
     my $countries = $payment_agent_mapper->get_all_authenticated_payment_agent_countries();
 
     my $target_country = $args->{paymentagent_list};
 
     # add country name plus code
     foreach (@{$countries}) {
-        $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $r->language);
+        $_->[1] = BOM::Platform::Runtime->instance->countries->localized_code2country($_->[0], $language);
     }
 
-    my $payment_agent_table_row = __ListPaymentAgents($c, {target_country => $target_country});
-
-    return {
-        msg_type          => 'paymentagent_list',
-        paymentagent_list => {
-            available_countries => $countries,
-            list                => $payment_agent_table_row
-        },
-    };
+    return __ListPaymentAgents($broker_code, {target_country => $target_country}, $website);
 }
 
 sub __ListPaymentAgents {
-    my ($c, $args) = @_;
+    my ($broker_code, $args, $website) = @_;
 
-    my $r = $c->stash('request');
+    my @allow_broker = map { $_->code } @{$website->broker_codes};
 
-    my @allow_broker = map { $_->code } @{$r->website->broker_codes};
-
-    my $payment_agent_mapper =
-        BOM::Database::DataMapper::PaymentAgent->new({broker_code => (($r->loginid) ? $r->broker->code : 'CR')});
+    my $payment_agent_mapper = BOM::Database::DataMapper::PaymentAgent->new({broker_code => $broker_code});
     my $authenticated_paymentagent_agents =
         $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{target_country}});
 
