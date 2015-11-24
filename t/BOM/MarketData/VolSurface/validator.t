@@ -13,6 +13,9 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::MarketData::VolSurface::Validator;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestChronicle qw(init_chronicle create_doc);
+
+init_chronicle;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
@@ -46,7 +49,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+BOM::Test::Data::Utility::UnitTestChronicle::create_doc(
     'randomindex',
     {
         symbol => 'R_100',
