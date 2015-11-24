@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::Websocket_v3;
 use Mojo::Base 'Mojolicious::Controller';
 
 use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::Authorize;
+use BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use BOM::WebSocketAPI::v3::ContractDiscovery;
 use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
@@ -69,7 +69,6 @@ sub entry_point {
             my ($c, $p1) = @_;
 
             BOM::Platform::Context::request($c->stash('request'));
-            # $BOM::Platform::Context::current_request = $c->stash('request');
 
             my $tag = 'origin:';
             my $data;
@@ -137,7 +136,7 @@ sub __handle {
 
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
-        ['authorize',               \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
+        ['authorize',               \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,               0],
         ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
         ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,              0],
         ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
