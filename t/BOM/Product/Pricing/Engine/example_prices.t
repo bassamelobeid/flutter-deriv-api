@@ -35,7 +35,7 @@ my $recorded_date = Date::Utility->new($date_start);
 # This test are benchmarked againsts market rates.
 # The intermittent failure of the test is due to the switching between implied and market rates in app settings.
 my $mocked = Test::MockModule->new('BOM::Market::Underlying');
-$mocked->mock('uses_implied_rate', sub { return 0});
+$mocked->mock('uses_implied_rate', sub { return 0 });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
@@ -136,6 +136,12 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         my $expectations = $expected_result->{$underlying}->{$bet_type};
         next unless scalar keys %$expectations;
 
+        BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+            underlying => $underlying,
+            epoch      => $date_pricing,
+            quote      => $expectations->{spot},
+        });
+
         my %barriers =
             $expectations->{barrier2}
             ? (
@@ -150,7 +156,6 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             underlying   => $underlying,
             payout       => 100,
             currency     => 'USD',
-            current_spot => $expectations->{spot},
             %barriers,
         };
         my $bet;
@@ -171,6 +176,8 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         is(roundnear(1e-4, $ask->peek_amount('total_markup')),      $expectations->{total_markup},      'Total markup is correct.');
         is(roundnear(1e-4, $ask->peek_amount('commission_markup')), $expectations->{commission_markup}, 'Commission markup is correct.');
         is(roundnear(1e-4, $ask->peek_amount('risk_markup')),       $expectations->{risk_markup},       'Risk markup is correct.');
+        $date_pricing++;
+        $date_start++;
     }
 }
 
