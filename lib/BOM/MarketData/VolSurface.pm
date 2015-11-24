@@ -522,31 +522,6 @@ sub _is_tenor {
     return ($day =~ /^(?:ON|\d{1,2}[WMY])$/) ? 1 : 0;
 }
 
-=head2 get_strike_slope
-
-USAGE:
-
-    my $slope = $vol_surface->get_strike_slope({days => $days, strike => $K});
-
-Get the slope at a given strike on a given day.
-
-=cut
-
-sub get_strike_slope {
-    my ($self, $args) = @_;
-
-    # Move by 0.5% of strike either way.
-    my $epsilon = $self->underlying->pip_size;
-
-    $args->{strike} -= $epsilon;
-    my $down_vol = $self->get_volatility($args);
-
-    $args->{strike} += 2 * $epsilon;
-    my $up_vol = $self->get_volatility($args);
-
-    return ($up_vol - $down_vol) / (2 * $epsilon);
-}
-
 =head2 get_spread
 
 USAGE:
