@@ -226,10 +226,10 @@ sub balance {
     my $redis   = $c->stash('redis');
     my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
 
-    if ($args->{subscribe} eq '1') {
+    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
         $redis->subscribe($channel, sub { });
     }
-    if ($args->{subscribe} eq '0') {
+    if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
         $redis->unsubscribe($channel, sub { });
     }
 

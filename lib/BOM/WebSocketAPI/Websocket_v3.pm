@@ -59,7 +59,7 @@ sub entry_point {
             message => sub {
                 my ($self, $msg, $channel) = @_;
                 BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
-                BOM::WebSocketAPI::v3::MarketDiscovery::send_realtime_ticks($c, $msg) if $channel =~ /^FEED::/;
+                BOM::WebSocketAPI::v3::MarketDiscovery::process_realtime_events($c, $msg) if $channel =~ /^FEED::/;
             });
         $c->stash->{redis} = $redis;
     }
@@ -171,6 +171,7 @@ sub __handle {
         ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Cashier::paymentagent_list,                  0],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
+        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,         1],
     );
 
     foreach my $dispatch (@dispatch) {
@@ -250,7 +251,7 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    if ($key !~ /^[A-Za-z0-9_-]{1,25}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/=']{0,256}$/) {
+    if ($key !~ /^[A-Za-z0-9_-]{1,50}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/='&\$]{0,256}$/) {
         return ($key, $value);
     }
     return;
