@@ -23,7 +23,7 @@ sub authorize {
         }
 
         $c->stash(
-            loginid    => $loginid,
+            loginid    => $response->{loginid},
             token_type => $token_type,
             client     => $client,
             account    => $client->default_account,
