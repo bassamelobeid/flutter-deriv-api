@@ -3,7 +3,7 @@ package BOM::System::Chronicle;
 =head1 NAME
 
 BOM::System::Chronicle - Provides efficient data storage for volatile and time-based data
- 
+
 =head1 DESCRIPTION
 
 This module contains helper methods which can be used to store and retrieve information
@@ -47,7 +47,7 @@ MUST be either hash-ref or array-ref.
 
 =item C<get>
 
-Given a category and name returns the latest version of the data according to current Redis cache (If data is not found in the cache falls back to PostgresSQL)
+Given a category and name returns the latest version of the data according to current Redis cache
 
 =item C<get_for>
 
@@ -113,7 +113,7 @@ sub set {
 
 =head3 C<< my $data = get("category1", "name1") >>
 
-Query for the latest data under "category1::name1" from Redis (fall-back to Pg if not found in Redis).
+Query for the latest data under "category1::name1" from Redis.
 
 =cut
 
@@ -125,13 +125,6 @@ sub get {
     my $cached_data = _redis_read()->get($key);
 
     return JSON::from_json($cached_data) if defined $cached_data;
-
-    my $db_data = get_for($category, $name, time);
-    if (defined $db_data) {
-        _redis_write()->set($key, $db_data);
-        return $db_data;
-    }
-
     return;
 }
 
@@ -181,21 +174,29 @@ SQL
 
 sub _redis_write {
     state $redis_write = RedisDB->new(
-        host     => _config()->{write}->{host},
-        port     => _config()->{write}->{port},
-        password => _config()->{write}->{password});
+        host => _config()->{write}->{host},
+        port => _config()->{write}->{port},
+        (_config()->{write}->{password} ? ('password', _config()->{write}->{password}) : ()));
+
     return $redis_write;
 }
 
 sub _redis_read {
     state $redis_read = RedisDB->new(
-        host     => _config()->{read}->{host},
-        port     => _config()->{read}->{port},
-        password => _config()->{read}->{password});
+        host => _config()->{read}->{host},
+        port => _config()->{read}->{port},
+        (_config()->{read}->{password} ? ('password', _config()->{read}->{password}) : ()));
+
     return $redis_read;
 }
 
+#According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
+#The assumption is that we have Redis for all data which is important for continutation of our services
+#We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
+#And in case for any reason, Redis has problems, we will need to re-populate its information not from Pg
+#But by re-running population scripts
 sub _dbh {
+    #silently ignore if there is not configuration for Pg chronicle (e.g. in Travis)
     return if not defined _config()->{chronicle};
 
     state $dbh = DBI->connect_cached(
