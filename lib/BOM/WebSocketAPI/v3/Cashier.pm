@@ -84,7 +84,7 @@ sub paymentagent_list {
     }
 
     my $authenticated_paymentagent_agents =
-        $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{target_country}});
+        $payment_agent_mapper->get_authenticated_payment_agents({target_country => $args->{paymentagent_list}});
 
     my %payment_agent_banks = %{BOM::Platform::Locale::get_payment_agent_banks()};
 
