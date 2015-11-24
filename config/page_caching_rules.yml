@@ -164,3 +164,6 @@
 "/user/change_passwordws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/settings/detailsws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
