@@ -97,25 +97,20 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
     ok $pa_client->default_account->balance == $pa_client_b_balance + 100, '+ 100';
 
     ## test for failure
-    $t = $t->send_ok({
-            json => {
-                paymentagent_withdraw => 1,
-                paymentagent_loginid  => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 1
-            }})->message_ok;
-    $res = decode_json($t->message->[1]);
-    ok $res->{error}->{message} =~ /Invalid amount/, 'failed amount 1';
-
-    $t = $t->send_ok({
-            json => {
-                paymentagent_withdraw => 1,
-                paymentagent_loginid  => $pa_client->loginid,
-                currency              => 'USD',
-                amount                => 2001
-            }})->message_ok;
-    $res = decode_json($t->message->[1]);
-    ok $res->{error}->{message} =~ /Invalid amount/, 'failed amount 2001';
+    foreach my $amount (undef, '', -1, 1, 2001) {
+        $t = $t->send_ok({
+                json => {
+                    paymentagent_withdraw => 1,
+                    paymentagent_loginid  => $pa_client->loginid,
+                    currency              => 'USD',
+                    (defined $amount) ? (amount => $amount) : ()}})->message_ok;
+        $res = decode_json($t->message->[1]);
+        if (defined $amount and $amount ne '') {
+            ok $res->{error}->{message} =~ /Invalid amount/, "test amount $amount";
+        } else {
+            ok $res->{error}->{message} =~ /Input validation failed: amount/, "test amount " . ($amount // 'undef');
+        }
+    }
 
     $t = $t->send_ok({
             json => {
