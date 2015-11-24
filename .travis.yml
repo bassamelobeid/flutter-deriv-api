@@ -45,4 +45,4 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - make $TEST_SUITE
+    - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
