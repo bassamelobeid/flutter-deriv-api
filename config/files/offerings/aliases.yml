@@ -89,6 +89,18 @@ forward_and_daily:
         euro_atm:
           max: 1d
           min: 5m
+forward_15m_and_daily:
+  callput:
+    daily:
+      spot:
+        euro_atm:
+          max: 365d
+          min: 1d
+    intraday:
+      forward:
+        euro_atm:
+          max: 1d
+          min: 15m
 forward_only:
   callput:
     intraday:
