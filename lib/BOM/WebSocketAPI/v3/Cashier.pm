@@ -192,7 +192,7 @@ sub paymentagent_withdraw {
 
     ## validate amount
     if ($amount < 10 || $amount > 2000) {
-        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Invalid amount. 10-2000 USD'));
+        return $c->new_error('paymentagent_withdraw', 'PaymentAgentWithdrawError', $c->l('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
     my $further_instruction  = $args->{description} // '';
