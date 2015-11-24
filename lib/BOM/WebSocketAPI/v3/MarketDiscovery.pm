@@ -19,6 +19,7 @@ use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
 use Data::UUID;
+use BOM::Market::Underlying;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -307,12 +308,13 @@ sub process_realtime_events {
                             id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
                             epoch  => $m[1],
-                            quote  => $m[2]}}});
+                            quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}});
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
             send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
         } elsif ($m[0] eq $symbol) {
+            my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             $c->send({
                     json => {
@@ -324,11 +326,10 @@ sub process_realtime_events {
                             open_time   => $m[1] - $m[1] % $type,
                             symbol      => $symbol,
                             granularity => $type,
-                            open        => $1,
-                            high        => $2,
-                            low         => $3,
-                            close       => $4
-                        }}});
+                            open        => $u->pipsized_value($1),
+                            high        => $u->pipsized_value($2),
+                            low         => $u->pipsized_value($3),
+                            close       => $u->pipsized_value($4)}}});
         }
     }
 
