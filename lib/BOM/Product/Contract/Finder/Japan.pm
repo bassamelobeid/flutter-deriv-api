@@ -158,7 +158,7 @@ sub _predefined_trading_period {
                 next;
             } elsif ($now->day_of_week == 5
                 and $trading_duration < 86400
-                and ($date_expiry > $today_close or $date_start > $today_close))
+                and ($date_expiry > $today_close or $date_start > $today_close or ($today_close - $date_expiry) < 7200))
             {
                 next;
             } else {
