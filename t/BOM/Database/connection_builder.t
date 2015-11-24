@@ -72,34 +72,6 @@ throws_ok { $connection_builder = BOM::Database::ClientDB->new($init_info); $con
 qr/Invalid operation for DB/,
     'Successfully caught invalid init params, operation [' . $init_info->{'operation'} . ']';
 
-subtest 'test caching ability' => sub {
-    plan tests => 2;
-    $init_info = {
-        broker_code => 'FOG',
-    };
-
-    is(
-        BOM::Database::ClientDB->new($init_info)->db,
-        BOM::Database::ClientDB->new($init_info)->db,
-        'asking for a connection gives you a cached one.'
-    );
-    isa_ok(
-        BOM::Database::ClientDB->new($init_info)->db,
-        'BOM::Database::Rose::DB',
-        "and it's a valid instance"
-    );
-
-    my $db = BOM::Database::ClientDB->new($init_info)->db;
-    $db->dbh->disconnect;    # say that we, ooops, disconnect the db.. :-)
-#    isnt(BOM::Database::ClientDB->new($init_info)->db, $db, 'and the cache should never handle you a disconnected db');
-#    is(BOM::Database::ClientDB->new($init_info)->db->dbh->ping, 1, "but create a new live connection if someone closes the cached one");
-#    is(
-#        BOM::Database::ClientDB->new($init_info)->db,
-#        BOM::Database::ClientDB->new($init_info)->db,
-#        '..and once it creates a new one, it should cache it from that point on'
-#    );
-};
-
 $init_info = {
     broker_code => 'FOG',
 };
