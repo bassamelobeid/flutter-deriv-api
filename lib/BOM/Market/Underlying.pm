@@ -1997,6 +1997,7 @@ sub _build_corporate_actions {
 
            print  STDERR Dumper($corp);
            print STDERR $self->symbol;
+           die "ERROR effective_date is undefined! " . Dumper($corp);
 
         }
 
