@@ -271,7 +271,7 @@ sub paymentagent_withdraw {
     }
 
     if ($args->{dry_run}) {
-        return 2;
+        return {status => 2};
     }
 
     # freeze loginID to avoid a race condition
@@ -416,7 +416,7 @@ sub paymentagent_withdraw {
         use_email_template => 1,
     });
 
-    return 1;
+    return {status => 1};
 }
 
 sub __output_payments_error_message {

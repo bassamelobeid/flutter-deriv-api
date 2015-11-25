@@ -45,8 +45,7 @@ sub paymentagent_withdraw {
     } else {
         return {
             msg_type              => 'paymentagent_withdraw',
-            paymentagent_withdraw => $response
-        };
+            paymentagent_withdraw => $response->{status}};
     }
     return;
 
