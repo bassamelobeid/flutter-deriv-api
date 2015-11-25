@@ -13,7 +13,9 @@ use BOM::Database::Model::AccessToken;
 sub authorize {
     my $token = shift;
 
-    my $err = BOM::WebSocketAPI::v3::Utility::create_error('InvalidToken', BOM::Platform::Context::localize('The token is invalid.'));
+    my $err = BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'InvalidToken',
+            message_to_client => BOM::Platform::Context::localize('The token is invalid.')});
 
     my $loginid;
     if (length $token == 15) {    # access token
