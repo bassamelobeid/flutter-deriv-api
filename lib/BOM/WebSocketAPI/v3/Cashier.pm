@@ -156,7 +156,7 @@ sub paymentagent_transfer {
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
     my $loginid_fm = $client_fm->loginid;
-    my $loginid_to = uc $args->{transfter_to};
+    my $loginid_to = uc $args->{transfer_to};
 
     my $payment_agent = $client_fm->payment_agent;
 
