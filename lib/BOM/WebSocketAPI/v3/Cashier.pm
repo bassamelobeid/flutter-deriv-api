@@ -148,6 +148,198 @@ sub __ListPaymentAgents {
     return $payment_agent_table_row;
 }
 
+sub paymentagent_transfer {
+    my ($c, $args) = @_;
+
+    my $r          = $c->stash('request');
+    my $client_fm  = $c->stash('client');
+    my $currency   = $args->{currency};
+    my $amount     = $args->{amount};
+    my $loginid_fm = $client_fm->loginid;
+    my $loginid_to = uc $args->{transfter_to};
+
+    my $payment_agent = $client_fm->payment_agent;
+
+    my $error_msg;
+    if (   $c->app_config->system->suspend->payments
+        or $c->app_config->system->suspend->payment_agents)
+    {
+        $error_msg = $c->l('Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+    } elsif (not $client_fm->landing_company->allows_payment_agents) {
+        $error_msg = $c->l('Payment Agents are not available on this site.');
+    } elsif (not $payment_agent) {
+        $error_msg = $c->l('You are not a Payment Agent');
+    } elsif (not $payment_agent->is_authenticated) {
+        $error_msg = $c->l('Payment Agent activity not currently authorized');
+    } elsif ($client_fm->cashier_setting_password) {
+        $error_msg = $c->l('Your cashier is locked as per your request');
+    }
+
+    if ($error_msg) {
+        return $c->new_error('paymentagent_transfer', 'PaymentAgentTransferError', $error_msg);
+    }
+
+    ## validate amount
+    if ($amount < 10 || $amount > 2000) {
+        return $c->new_error('paymentagent_transfer', 'PaymentAgentTransferError', $c->l('Invalid amount. minimum is 10, maximum is 2000.'));
+    }
+
+    my $reject = sub {
+        my $msg = shift;
+        return __output_payments_error_message(
+            $c,
+            {
+                client       => $client_fm,
+                action       => "transfer - from $loginid_fm to $loginid_to",
+                error_msg    => $msg,
+                payment_type => 'Payment Agent transfer',
+                currency     => $currency,
+                amount       => $amount,
+            });
+    };
+
+    my $client_to = BOM::Platform::Client->new({loginid => $loginid_to});
+    unless ($client_to) {
+        return $reject->($c->l('Login ID ([_1]) does not exist.', $loginid_to));
+    }
+
+    if ($args->{dry_run}) {
+        return {
+            msg_type              => 'paymentagent_transfer',
+            paymentagent_transfer => 2
+        };
+    }
+
+    unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
+        return $reject->($c->l('Cross-company payment agent transfers are not allowed.'));
+    }
+
+    for ($currency) {
+        /^\w\w\w$/ || return $reject->($c->l('Sorry, the currency format is incorrect.'));
+        /^USD$/    || return $reject->($c->l('Sorry, only USD is allowed.'));
+    }
+
+    unless ($client_fm->currency eq $currency) {
+        return $reject->($c->l("Sorry, $currency is not default currency for payment agent " . $client_fm->loginid));
+    }
+    unless ($client_to->currency eq $currency) {
+        return $reject->($c->l("Sorry, $currency is not default currency for client " . $client_to->loginid));
+    }
+
+    if ($client_to->get_status('disabled')) {
+        return $reject->($c->l('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to));
+    }
+
+    if ($client_to->get_status('cashier_locked') || $client_to->documents_expired) {
+        return $reject->($c->l('There was an error processing the request.') . ' ' . $c->l('This client cashier section is locked.'));
+    }
+
+    if ($client_fm->get_status('cashier_locked') || $client_fm->documents_expired) {
+        return $reject->($c->l('There was an error processing the request.') . ' ' . $c->l('Your cashier section is locked.'));
+    }
+
+    # freeze loginID to avoid a race condition
+    if (not BOM::Platform::Transaction->freeze_client($loginid_fm)) {
+        $c->app->log->error("Account stuck in previous transaction $loginid_fm");
+        return $c->new_error('paymentagent_transfer', 'PaymentAgentTransferError',
+            $c->l('An error occurred while processing request. If this error persists, please contact customer support'));
+    }
+
+    if (not BOM::Platform::Transaction->freeze_client($loginid_to)) {
+        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
+        $c->app->log->error("Account stuck in previous transaction $loginid_to");
+        return $c->new_error('paymentagent_transfer', 'PaymentAgentTransferError',
+            $c->l('An error occurred while processing request. If this error persists, please contact customer support'));
+    }
+
+    my $withdraw_error;
+    try {
+        $client_fm->validate_payment(
+            currency => $currency,
+            amount   => -$amount,    #withdraw action use negtive amount
+        );
+    }
+    catch {
+        $withdraw_error = $_;
+    };
+
+    if ($withdraw_error) {
+        return __client_withdrawal_notes(
+            $c,
+            {
+                client => $client_fm,
+                amount => $amount,
+                error  => $withdraw_error
+            });
+    }
+
+    # check that there's no identical transaction
+    my $datamapper = BOM::Database::DataMapper::Payment::PaymentAgentTransfer->new({client_loginid => $loginid_fm});
+    my ($amount_transferred, $count) = $datamapper->get_today_payment_agent_withdrawal_sum_count;
+
+    # maximum amount USD 100000 per day
+    if (($amount_transferred + $amount) >= 100000) {
+        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
+        BOM::Platform::Transaction->unfreeze_client($loginid_to);
+
+        return $reject->($c->l('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
+    }
+
+    # do not allow more than 1000 transactions per day
+    if ($count > 1000) {
+        BOM::Platform::Transaction->unfreeze_client($loginid_fm);
+        BOM::Platform::Transaction->unfreeze_client($loginid_to);
+
+        return $reject->($c->l('Sorry, you have exceeded the maximum allowable transactions for today.'));
+    }
+
+    # execute the transfer
+    my $now       = Date::Utility->new;
+    my $today     = $now->datetime_ddmmmyy_hhmmss_TZ;
+    my $reference = Data::UUID->new()->create_str();
+    my $comment =
+        'Transfer from Payment Agent ' . $payment_agent->payment_agent_name . " to $loginid_to. Transaction reference: $reference. Timestamp: $today";
+
+    $client_fm->payment_account_transfer(
+        toClient => $client_to,
+        currency => $currency,
+        amount   => $amount,
+        fmStaff  => $loginid_fm,
+        toStaff  => $loginid_to,
+        remark   => $comment,
+    );
+
+    BOM::Platform::Transaction->unfreeze_client($loginid_fm);
+    BOM::Platform::Transaction->unfreeze_client($loginid_to);
+
+    stats_count('business.usd_deposit.paymentagent', int(in_USD($amount, $currency) * 100));
+    stats_inc('business.paymentagent');
+
+    # sent email notification to client
+    my $clientmessage = $c->l('Dear [_1] [_2] [_3],', $client_to->salutation, $client_to->first_name, $client_to->last_name,) . "\n\n" . $c->l(
+        'We would like to inform you that the transfer of [_1] [_2] via [_3] has been processed.
+The funds have been credited into your account.
+
+Kind Regards,
+
+The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $r->website->display_name
+    );
+
+    send_email({
+        'from'               => $r->website->config->get('customer_support.email'),
+        'to'                 => $client_to->email,
+        'subject'            => $c->l('Acknowledgement of Money Transfer'),
+        'message'            => [$clientmessage],
+        'use_email_template' => 1,
+        'template_loginid'   => $client_to->loginid
+    });
+
+    return {
+        msg_type              => 'paymentagent_transfer',
+        paymentagent_transfer => 1
+    };
+}
+
 sub paymentagent_withdraw {
     my ($c, $args) = @_;
 
