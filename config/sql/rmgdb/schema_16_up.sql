@@ -5,7 +5,10 @@ CREATE TABLE payment.inter_cluster_transfer_queue (
                               REFERENCES payment.payment(id)
                                   ON DELETE RESTRICT
                                   ON UPDATE RESTRICT,
-    recipient_loginid  VARCHAR(12)
+    recipient_loginid  VARCHAR(12),
+    staff_loginid      VARCHAR(12),
+    remark             VARCHAR(800),
+    limits             JSON
 );
 
 CREATE OR REPLACE FUNCTION payment.inter_cluster_transfer_queue_notify () RETURNS trigger AS $def$

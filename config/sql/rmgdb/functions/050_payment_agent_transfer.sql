@@ -45,7 +45,7 @@ $def$ LANGUAGE plpgsql STABLE;
 
 
 
-CREATE OR REPLACE FUNCTION payment.payment_account_transfer(
+CREATE OR REPLACE FUNCTION payment.local_payment_account_transfer(
         p_from_loginid      VARCHAR(12),
         p_to_loginid        VARCHAR(12),
         p_currency          VARCHAR(3),
@@ -122,6 +122,96 @@ BEGIN
     RETURNING * INTO v_to_trans;
 
     RETURN NEXT;
+END
+$def$ LANGUAGE plpgsql VOLATILE;
+
+
+
+CREATE OR REPLACE FUNCTION payment.inter_cluster_payment_account_transfer(
+        p_from_loginid      VARCHAR(12), -- this one must be local
+        p_to_loginid        VARCHAR(12),
+        p_currency          VARCHAR(3),
+        p_amount            NUMERIC(3),
+        p_from_staff        VARCHAR(12),
+        p_to_staff          VARCHAR(12),
+        p_from_remark       VARCHAR(800),
+        p_to_remark         VARCHAR(800),
+        p_limits            JSON,
+    OUT v_from_payment      payment.payment,
+    OUT v_from_trans        transaction.transaction)
+RETURNS SETOF RECORD AS $def$
+DECLARE
+    v_from_account     transaction.account;
+BEGIN
+    v_from_account := payment.lock_account(p_from_loginid, p_currency);
+
+    INSERT INTO payment.payment (account_id, amount, payment_gateway_code,
+                                 payment_type_code, status, staff_loginid, remark)
+    VALUES (v_from_account.id, -p_amount, 'inter_cluster_transfer',
+            'internal_transfer', 'OK', p_from_staff, p_from_remark)
+    RETURNING * INTO v_from_payment;
+
+    INSERT INTO transaction.transaction (payment_id, account_id, amount, staff_loginid,
+                                         referrer_type, action_type, quantity)
+    VALUES (v_from_payment.id, v_from_account.id, -p_amount, p_from_staff,
+            'payment', 'withdrawal', 1)
+    RETURNING * INTO v_from_trans;
+
+    INSERT INTO payment.inter_cluster_transfer_queue (payment_id, recipient_loginid,
+                                                      staff_loginid, remark, limits)
+    VALUES (v_from_payment.id, p_to_loginid, p_to_staff, p_to_remark, p_limits);
+
+    RETURN NEXT;
+END
+$def$ LANGUAGE plpgsql VOLATILE;
+
+
+
+CREATE OR REPLACE FUNCTION payment.payment_account_transfer(
+        p_from_loginid      VARCHAR(12), -- this one must be local
+        p_to_loginid        VARCHAR(12),
+        p_currency          VARCHAR(3),
+        p_amount            NUMERIC(3),
+        p_from_staff        VARCHAR(12),
+        p_to_staff          VARCHAR(12),
+        p_from_remark       VARCHAR(800),
+        p_to_remark         VARCHAR(800),
+        p_limits            JSON,
+    OUT v_from_payment      payment.payment,
+    OUT v_to_payment        payment.payment,
+    OUT v_from_trans        transaction.transaction,
+    OUT v_to_trans          transaction.transaction)
+RETURNS SETOF RECORD AS $def$
+BEGIN
+    PERFORM 1
+       FROM betonmarkets.broker_code br
+      WHERE br.broker_code = substring(p_to_loginid, '^(\D+)');
+
+    IF FOUND THEN
+        RETURN QUERY
+        SELECT *
+          FROM payment.local_payment_account_transfer(p_from_loginid,
+                                                      p_to_loginid,
+                                                      p_currency,
+                                                      p_amount,
+                                                      p_from_staff,
+                                                      p_to_staff,
+                                                      p_from_remark,
+                                                      p_to_remark,
+                                                      p_limits);
+    ELSE
+        RETURN QUERY
+        SELECT v_from_payment, NULL, v_from_transaction, NULL
+          FROM payment.inter_cluster_payment_account_transfer(p_from_loginid,
+                                                              p_to_loginid,
+                                                              p_currency,
+                                                              p_amount,
+                                                              p_from_staff,
+                                                              p_to_staff,
+                                                              p_from_remark,
+                                                              p_to_remark,
+                                                              p_limits);
+    END IF;
 END
 $def$ LANGUAGE plpgsql VOLATILE SECURITY definer SET log_min_messages = LOG;
 
