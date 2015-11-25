@@ -1123,6 +1123,8 @@ sub _build_theo_probability {
             name        => 'theo_probability',
             description => 'theorectical value of a contract',
             set_by      => $self->pricing_engine_name,
+            minimum     => 0,
+            maximum     => 1,
             base_amount => $self->pricing_engine->theo_probability,
         });
     } else {

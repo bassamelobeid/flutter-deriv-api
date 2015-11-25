@@ -336,16 +336,6 @@ subtest 'valid bet passing and stuff' => sub {
 
     ok($bet->is_valid_to_buy,  'Valid for purchase');
     ok($bet->is_valid_to_sell, '..and for sale-back');
-
-    $bet_params->{bet_type}   = 'CALL';
-    $bet_params->{date_start} = $oft_used_date->plus_time_interval('-1d');    # We didn't insert any data here.
-    delete $bet_params->{date_pricing};
-    $bet_params->{barrier}  = 'S100P';
-    $bet_params->{duration} = '15m';
-    $bet                    = produce_contract($bet_params);
-
-    my $expected_reasons = [qr/Missing settlement/];
-    test_error_list('sell', $bet, $expected_reasons);
 };
 
 subtest 'invalid underlying is a weak foundation' => sub {
@@ -717,13 +707,7 @@ subtest 'invalid start times' => sub {
 
     $bet = produce_contract($bet_params);
 
-    $expected_reasons = [
-        qr/stake same as payout/,
-        qr/^Start must be before expiry/,
-        qr/Intraday duration.*not acceptable/,
-        qr/Missing settlement/,
-        qr/already expired/
-    ];
+    $expected_reasons = [qr/stake same as payout/, qr/^Start must be before expiry/, qr/Intraday duration.*not acceptable/,];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '6d';
@@ -1015,34 +999,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
 };
-
-subtest 'missing ticks check' => sub {
-    plan tests => 2;
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
-    my $starting   = $oft_used_date->epoch;
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch => $starting,
-        quote => 100.012,
-        bid   => 100.015,
-        ask   => 100.021
-    });
-    my $bet_params = {
-        underlying   => $underlying,
-        bet_type     => 'INTRADD',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $starting,
-        duration     => '30m',
-        barrier      => 'S0P',
-        current_tick => $tick,
-    };
-    my $bet              = produce_contract($bet_params);
-    my $expected_reasons = [qr/Missing settlement/];
-    test_error_list('sell', $bet, $expected_reasons);
-    ok(!$bet->initialized_correctly, 'Considering the errors, we can not settle without intervention.');
-};
-
 subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
