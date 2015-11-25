@@ -26,7 +26,7 @@ sub authorize {
             loginid    => $response->{loginid},
             token_type => $token_type,
             client     => $client,
-            account    => $client->default_account,
+            account    => $client->default_account // undef,
         );
 
         return {
