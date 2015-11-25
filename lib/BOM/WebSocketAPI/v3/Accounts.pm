@@ -198,7 +198,6 @@ sub send_realtime_balance {
     my $args   = $c->stash('args');
 
     my $payload = JSON::from_json($message);
-
     $c->send({
             json => {
                 msg_type => 'balance',
@@ -206,7 +205,7 @@ sub send_realtime_balance {
                 balance  => {
                     loginid  => $client->loginid,
                     currency => $client->default_account->currency_code,
-                    balance  => $payload->{balance_after}}}}) if $c->tx;
+                    balance  => $payload->{balance_after}}}});
     return;
 }
 
