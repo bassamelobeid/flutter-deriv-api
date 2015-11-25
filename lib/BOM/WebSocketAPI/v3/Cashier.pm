@@ -147,13 +147,14 @@ sub paymentagent_withdraw {
     } elsif (not $client->allow_paymentagent_withdrawal()) {
         # check whether allow to withdraw via payment agent
         return __output_payments_error_message({
-            client       => $client,
-            website      => $website,
-            action       => 'Withdrawal via payment agent, client [' . $client->loginid . ']',
-            error_msg    => BOM::Platform::Context::localize('You are not authorized for withdrawal via payment agent.'),
-            payment_type => 'Payment Agent Withdrawal',
-            currency     => $currency,
-            amount       => $amount,
+            client         => $client,
+            cs_email       => $website->config->get('customer_support.email'),
+            payments_email => $app_config->payments->email,
+            action         => 'Withdrawal via payment agent, client [' . $client->loginid . ']',
+            error_msg      => BOM::Platform::Context::localize('You are not authorized for withdrawal via payment agent.'),
+            payment_type   => 'Payment Agent Withdrawal',
+            currency       => $currency,
+            amount         => $amount,
         });
     } elsif ($client->cashier_setting_password) {
         return BOM::WebSocketAPI::v3::Utility::create_error({
@@ -218,50 +219,54 @@ sub paymentagent_withdraw {
     # check that the amount is in correct format
     if ($amount !~ /^\d*\.?\d*$/) {
         return __output_payments_error_message({
-            client       => $client,
-            website      => $website,
-            action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-            error_msg    => BOM::Platform::Context::localize('There was an error processing the request.'),
-            payment_type => 'Payment Agent Withdrawal',
-            currency     => $currency,
-            amount       => $amount,
+            client         => $client,
+            cs_email       => $website->config->get('customer_support.email'),
+            payments_email => $app_config->payments->email,
+            action         => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
+            error_msg      => BOM::Platform::Context::localize('There was an error processing the request.'),
+            payment_type   => 'Payment Agent Withdrawal',
+            currency       => $currency,
+            amount         => $amount,
         });
     }
 
     # check that the additional information does not exceeded the allowed limits
     if (length($further_instruction) > 300) {
         return __output_payments_error_message({
-            client       => $client,
-            website      => $website,
-            action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-            error_msg    => BOM::Platform::Context::localize('Further instructions must not exceed [_1] characters.', 300),
-            payment_type => 'Payment Agent Withdrawal',
-            currency     => $currency,
-            amount       => $amount,
+            client         => $client,
+            cs_email       => $website->config->get('customer_support.email'),
+            payments_email => $app_config->payments->email,
+            action         => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
+            error_msg      => BOM::Platform::Context::localize('Further instructions must not exceed [_1] characters.', 300),
+            payment_type   => 'Payment Agent Withdrawal',
+            currency       => $currency,
+            amount         => $amount,
         });
     }
 
     # check that both the client payment agent cashier is not locked
     if ($client->get_status('cashier_locked') || $client->get_status('withdrawal_locked') || $client->documents_expired) {
         return __output_payments_error_message({
-            client       => $client,
-            website      => $website,
-            action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-            error_msg    => BOM::Platform::Context::localize('There was an error processing the request.'),
-            payment_type => 'Payment Agent Withdrawal',
-            currency     => $currency,
-            amount       => $amount,
+            client         => $client,
+            cs_email       => $website->config->get('customer_support.email'),
+            payments_email => $app_config->payments->email,
+            action         => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
+            error_msg      => BOM::Platform::Context::localize('There was an error processing the request.'),
+            payment_type   => 'Payment Agent Withdrawal',
+            currency       => $currency,
+            amount         => $amount,
         });
     }
     if ($pa_client->get_status('cashier_locked') || $client->documents_expired) {
         return __output_payments_error_message({
-            client       => $client,
-            website      => $website,
-            action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-            error_msg    => BOM::Platform::Context::localize('This Payment Agent cashier section is locked.'),
-            payment_type => 'Payment Agent Withdrawal',
-            currency     => $currency,
-            amount       => $amount,
+            client         => $client,
+            cs_email       => $website->config->get('customer_support.email'),
+            payments_email => $app_config->payments->email,
+            action         => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
+            error_msg      => BOM::Platform::Context::localize('This Payment Agent cashier section is locked.'),
+            payment_type   => 'Payment Agent Withdrawal',
+            currency       => $currency,
+            amount         => $amount,
         });
     }
 
@@ -322,10 +327,11 @@ sub paymentagent_withdraw {
         BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
 
         return __output_payments_error_message({
-                client    => $client,
-                website   => $website,
-                action    => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                error_msg => BOM::Platform::Context::localize(
+                client         => $client,
+                cs_email       => $website->config->get('customer_support.email'),
+                payments_email => $app_config->payments->email,
+                action         => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
+                error_msg      => BOM::Platform::Context::localize(
                     'Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.',
                     $currency . $daily_limit
                 ),
@@ -352,14 +358,14 @@ sub paymentagent_withdraw {
         BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
 
         return __output_payments_error_message({
-            client       => $client,
-            website      => $website,
-            website      => $website,
-            action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-            error_msg    => BOM::Platform::Context::localize('Sorry, you have exceeded the maximum allowable transactions for today.'),
-            payment_type => 'Payment Agent Withdrawal',
-            currency     => $currency,
-            amount       => $amount,
+            client         => $client,
+            cs_email       => $website->config->get('customer_support.email'),
+            payments_email => $app_config->payments->email,
+            action         => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
+            error_msg      => BOM::Platform::Context::localize('Sorry, you have exceeded the maximum allowable transactions for today.'),
+            payment_type   => 'Payment Agent Withdrawal',
+            currency       => $currency,
+            amount         => $amount,
         });
     }
 
@@ -414,16 +420,17 @@ sub paymentagent_withdraw {
 }
 
 sub __output_payments_error_message {
-    my $args         = shift;
-    my $client       = $args->{'client'};
-    my $website      = $args->{'website'};
-    my $action       = $args->{'action'};
-    my $error_code   = $args->{'error_code'};
-    my $payment_type = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
-    my $currency     = $args->{'currency'};
-    my $amount       = $args->{'amount'};
-    my $error_msg    = $args->{'error_msg'};
-    my $hide_options = $args->{'hide_options'};
+    my $args           = shift;
+    my $client         = $args->{'client'};
+    my $cs_email       = $args->{'cs_email'};
+    my $payments_email = $args->{'payments_email'};
+    my $action         = $args->{'action'};
+    my $error_code     = $args->{'error_code'};
+    my $payment_type   = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
+    my $currency       = $args->{'currency'};
+    my $amount         = $args->{'amount'};
+    my $error_msg      = $args->{'error_msg'};
+    my $hide_options   = $args->{'hide_options'};
 
     my $email_msg = $error_msg;
     $email_msg =~ s/<br\s*\/?>/\n/ig;
@@ -451,11 +458,10 @@ sub __output_payments_error_message {
         $email_amount,
         "Error message : $email_msg $error_message_with_code",
     ];
-    my $email_from = $website->config->get('customer_support.email');
 
     send_email({
-        from    => $email_from,
-        to      => $app_config->payments->email,
+        from    => $cs_email,
+        to      => $payments_email,
         subject => 'Payment Error: ' . $payment_type . ' [' . $client->loginid . ']',
         message => $message,
     });
