@@ -2,7 +2,6 @@
 
 use strict;
 use warnings;
-use feature 'state';
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More tests => 26;
