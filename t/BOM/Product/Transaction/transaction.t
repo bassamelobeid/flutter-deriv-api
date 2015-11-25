@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-
+use feature 'state';
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More tests => 26;
@@ -119,9 +119,10 @@ my $underlying      = BOM::Market::Underlying->new('R_50');
 my $underlying_r100 = BOM::Market::Underlying->new('R_100');
 
 sub db {
-    return BOM::Database::ClientDB->new({
+    state $db = BOM::Database::ClientDB->new({
             broker_code => 'CR',
         })->db;
+    return $db;
 }
 
 sub create_client {
