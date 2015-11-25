@@ -2,7 +2,6 @@
 
 use strict;
 use warnings;
-use feature 'state';
 use Test::More tests => 33;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
@@ -15,10 +14,9 @@ use BOM::Database::Model::FinancialMarketBet::Factory;
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
 sub db {
-    state $db = BOM::Database::ClientDB->new({
+    return BOM::Database::ClientDB->new({
             broker_code => 'CR',
         })->db;
-    return $db;
 }
 
 sub create_client {
@@ -261,7 +259,8 @@ lives_ok {
     # need to date the timestamps back at least for 1 second because
     # Date::Utility->new->epoch rounds down fractions of seconds.
     # Hence, "now()" might come after purchase_time.
-    db->dbh->do(<<'SQL');
+    my $db = db;
+    $db->dbh->do(<<'SQL');
 INSERT INTO data_collection.exchange_rate (source_currency, target_currency, date, rate)
 VALUES ('USD', 'USD', now()-'1s'::INTERVAL, 1),
        ('AUD', 'USD', now()-'1s'::INTERVAL, 2),
@@ -269,7 +268,7 @@ VALUES ('USD', 'USD', now()-'1s'::INTERVAL, 1),
        ('EUR', 'USD', now()-'1s'::INTERVAL, 8)
 SQL
 
-    my $stmt = db->dbh->prepare(<<'SQL');
+    my $stmt = $db->dbh->prepare(<<'SQL');
 SELECT t.cur, t.val * exch.rate
 FROM (VALUES ('USD', 80),
              ('AUD', 40),
