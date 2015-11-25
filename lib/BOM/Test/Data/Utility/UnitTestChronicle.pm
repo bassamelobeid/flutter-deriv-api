@@ -57,8 +57,10 @@ sub create_doc {
     }
 
     # get data to insert
-    my $fixture = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/couch_unit_test.yml');
+    my $fixture = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/chronicle_unit_test.yml');
     my $data    = $fixture->{$yaml_db}{data};
+
+    die "Invalid yaml db name: $yaml_db" if not defined $data;
 
     # modify data?
     for (keys %$data_mod) {

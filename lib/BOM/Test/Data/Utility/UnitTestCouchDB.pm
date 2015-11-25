@@ -206,6 +206,8 @@ sub create_doc {
     my $fixture = YAML::XS::LoadFile('/home/git/regentmarkets/bom-test/data/couch_unit_test.yml');
     my $data    = $fixture->{$yaml_couch_db}{data};
 
+    die "Invalid yaml couch db name: $yaml_couch_db" if not defined $data;
+
     # modify data?
     for (keys %$data_mod) {
         $data->{$_} = $data_mod->{$_};
