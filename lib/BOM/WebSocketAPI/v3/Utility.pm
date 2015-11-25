@@ -4,12 +4,13 @@ use strict;
 use warnings;
 
 sub create_error {
-    my ($code, $message, $details) = @_;
+    my $args = shift;
     return {
         error => {
-            code    => $code,
-            message => $message,
-            $details ? (details => $details) : ()}};
+            code              => $args->{code},
+            message_to_client => $args->{message_to_client},
+            $args->{message} ? (message => $args->{message}) : (),
+            $args->{details} ? (details => $args->{details}) : ()}};
 }
 
 1;

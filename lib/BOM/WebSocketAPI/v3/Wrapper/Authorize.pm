@@ -13,7 +13,7 @@ sub authorize {
     my $response = BOM::WebSocketAPI::v3::Authorize::authorize($token);
 
     if (exists $response->{error}) {
-        return $c->new_error('authorize', $response->{error}->{code}, $response->{error}->{message});
+        return $c->new_error('authorize', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         my $client = BOM::Platform::Client->new({loginid => $response->{loginid}});
 
