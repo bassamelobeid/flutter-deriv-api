@@ -9,8 +9,8 @@ use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
-use BOM::WebSocketAPI::v3::Static;
-use BOM::WebSocketAPI::v3::Cashier;
+use BOM::WebSocketAPI::v3::Wrapper::Static;
+use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::NewAccount;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
@@ -152,8 +152,8 @@ sub __handle {
         ['contracts_for',           \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
         ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
         ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
-        ['residence_list',          \&BOM::WebSocketAPI::v3::Static::residence_list,                      0],
-        ['states_list',             \&BOM::WebSocketAPI::v3::Static::states_list,                         0],
+        ['residence_list',          \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,             0],
+        ['states_list',             \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                0],
         ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
         ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
         ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                    0],
@@ -171,9 +171,9 @@ sub __handle {
         ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
         ['get_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::get_self_exclusion,                1],
         ['set_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::set_self_exclusion,                1],
-        ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
-        ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Cashier::paymentagent_list,                  0],
-        ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Cashier::paymentagent_withdraw,              1],
+        ['get_limits',              \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                1],
+        ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,         0],
+        ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,     1],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
         ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,         1],
     );
