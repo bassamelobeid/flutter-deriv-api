@@ -116,12 +116,12 @@ sub get_transactions {
             balance_after    => $txn->{balance_after},
             contract_id      => $txn->{financial_market_bet_id},
             shortcode        => $txn->{short_code},
-            longcode         => $txn->{payment_remark},
+            longcode         => $txn->{payment_remark} || '',
         };
 
         if ($txn->{short_code}) {
-            ($struct->{longcode}, undef, undef) = try { simple_contract_info($txn->{short_code}, $acc->currency_code) };
-            $struct->{longcode} = Mojo::DOM->new->parse($struct->{longcode})->all_text;
+            my ($longcode, undef, undef) = try { simple_contract_info($txn->{short_code}, $acc->currency_code) };
+            $struct->{longcode} = Mojo::DOM->new->parse($longcode)->all_text if $longcode;
         }
         push @txns, $struct;
     }
@@ -198,6 +198,7 @@ sub send_realtime_balance {
     my $args   = $c->stash('args');
 
     my $payload = JSON::from_json($message);
+
     $c->send({
             json => {
                 msg_type => 'balance',
@@ -205,7 +206,7 @@ sub send_realtime_balance {
                 balance  => {
                     loginid  => $client->loginid,
                     currency => $client->default_account->currency_code,
-                    balance  => $payload->{balance_after}}}});
+                    balance  => $payload->{balance_after}}}}) if $c->tx;
     return;
 }
 
