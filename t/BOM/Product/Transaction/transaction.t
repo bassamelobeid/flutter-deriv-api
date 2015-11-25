@@ -119,10 +119,9 @@ my $underlying      = BOM::Market::Underlying->new('R_50');
 my $underlying_r100 = BOM::Market::Underlying->new('R_100');
 
 sub db {
-    state $db = BOM::Database::ClientDB->new({
+    return BOM::Database::ClientDB->new({
             broker_code => 'CR',
         })->db;
-    return $db;
 }
 
 sub create_client {
@@ -263,7 +262,8 @@ SELECT t.*, b.*, c.*, v1.*, v2.*, t2.*
  WHERE t.id=\$1
 SQL
 
-    $stmt = db->dbh->prepare($stmt);
+    my $db = db;
+    $stmt = $db->dbh->prepare($stmt);
     $stmt->execute($txnid);
 
     my $res = $stmt->fetchrow_arrayref;
@@ -1781,7 +1781,7 @@ subtest 'max_turnover validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            # by a bet yesterday. It should not interfere.
+            # buy a bet yesterday. It should not interfere.
             lives_ok {
                 BOM::Database::Helper::FinancialMarketBet->new({
                         bet_data => +{
