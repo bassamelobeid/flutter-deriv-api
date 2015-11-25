@@ -1990,17 +1990,6 @@ sub _build_corporate_actions {
     foreach my $id (keys %$available_actions) {
         my $act      = $available_actions->{$id};
         my $eff_date = $act->{effective_date};
-
-        if ( not defined $eff_date ) {
-           print STDERR "err_date is not defined!";
-           use Data::Dumper;
-
-           print  STDERR Dumper($corp);
-           print STDERR $self->symbol;
-           die "ERROR effective_date is undefined! " . Dumper($corp);
-
-        }
-
         push @{$grouped_by_date{$eff_date}}, $act;
     }
 
