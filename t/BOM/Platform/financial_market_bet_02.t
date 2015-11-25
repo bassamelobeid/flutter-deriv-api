@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-
+use feature 'state';
 use Test::More tests => 33;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
@@ -15,9 +15,10 @@ use BOM::Database::Model::FinancialMarketBet::Factory;
 Crypt::NamedKeys->keyfile('/etc/rmg/aes_keys.yml');
 
 sub db {
-    return BOM::Database::ClientDB->new({
+    state $db = BOM::Database::ClientDB->new({
             broker_code => 'CR',
         })->db;
+    return $db;
 }
 
 sub create_client {
