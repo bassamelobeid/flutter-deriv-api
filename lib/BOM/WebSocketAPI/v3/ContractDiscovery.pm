@@ -3,47 +3,46 @@ package BOM::WebSocketAPI::v3::ContractDiscovery;
 use strict;
 use warnings;
 
-use BOM::Product::Contract::Finder;
 use BOM::Platform::Runtime::LandingCompany::Registry;
+use BOM::Platform::Context qw (localize);
+use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Finder::Japan;
 
 sub payout_currencies {
-    my $c = shift;
+    my $account = shift;
 
     my $currencies;
-    if (my $account = $c->stash('account')) {
+    if ($account) {
         $currencies = [$account->currency_code];
     } else {
         my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
         $currencies = $lc->legal_allowed_currencies;
     }
 
-    return {
-        msg_type          => 'payout_currencies',
-        payout_currencies => $currencies,
-    };
+    return $currencies,;
 }
 
 sub contracts_for {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $symbol = $args->{contracts_for};
-    my $region = $args->{region} || 'other';
     my $contracts_for;
-    if ($region eq 'japan') {
+    if ($args->{region} and $args->{region} eq 'japan') {
         $contracts_for = BOM::Product::Contract::Finder::Japan::available_contracts_for_symbol({symbol => $symbol});
     } else {
         $contracts_for = BOM::Product::Contract::Finder::available_contracts_for_symbol({symbol => $symbol});
     }
-    if ($contracts_for->{hit_count} == 0) {
-        return $c->new_error('contracts_for', 'InvalidSymbol', $c->l('The symbol is invalid.'));
+
+    if (not $contracts_for or $contracts_for->{hit_count} == 0) {
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'InvalidSymbol',
+                message_to_client => BOM::Platform::Context::localize('The symbol is invalid.')});
     } else {
         $contracts_for->{'spot'} = BOM::Market::Underlying->new($symbol)->spot();
-        return {
-            msg_type      => 'contracts_for',
-            contracts_for => $contracts_for,
-        };
+        return $contracts_for,;
     }
+
+    return;
 }
 
 1;
