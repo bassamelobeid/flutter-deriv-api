@@ -128,7 +128,7 @@ has discrete_points => (
 sub _build_discrete_points {
     my $self = shift;
 
-    return undef if not defined $self->document;
+    return if not defined $self->document;
     return $self->document->{discrete_points} || undef;
 }
 
