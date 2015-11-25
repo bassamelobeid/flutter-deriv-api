@@ -34,6 +34,7 @@ use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Flat;
 use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
+use BOM::System::Chronicle;
 
 # For the unit_test_couchdb.t test case, we limit the dabase name to three characters
 # ie 'bom', 'vol', 'int, etc. all have three characters each
@@ -67,6 +68,10 @@ sub _init {
     $env->couchdb_databases(\%couchdb_databases);
 
     _bootstrap($couch);
+
+    #delete chronicle data too (Redis and Pg)
+    BOM::System::Chronicle::_redis_write()->flushall;
+    BOM::System::Chronicle::_dbh()->do('delete from chronicle;') if BOM::System::Chronicle::_dbh();
 
     return 1;
 }
