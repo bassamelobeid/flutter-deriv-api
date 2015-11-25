@@ -27,7 +27,6 @@ sub startup {
     $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
-    $log->debug("Server config    is " . $app->dumper($app->config));
 
     $app->hook(
         before_dispatch => sub {

@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::Websocket_v3;
 use Mojo::Base 'Mojolicious::Controller';
 
 use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::Authorize;
+use BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use BOM::WebSocketAPI::v3::ContractDiscovery;
 use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
@@ -52,12 +52,16 @@ sub entry_point {
         $redis->on(
             error => sub {
                 my ($self, $err) = @_;
-                $log->info("error: $err");
                 warn("error: $err");
             });
         $redis->on(
             message => sub {
                 my ($self, $msg, $channel) = @_;
+
+                # set correct request context for localize
+                BOM::Platform::Context::request($c->stash('request'))
+                    if $channel =~ /^FEED::/;
+
                 BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::MarketDiscovery::process_realtime_events($c, $msg) if $channel =~ /^FEED::/;
             });
@@ -69,7 +73,6 @@ sub entry_point {
             my ($c, $p1) = @_;
 
             BOM::Platform::Context::request($c->stash('request'));
-            # $BOM::Platform::Context::current_request = $c->stash('request');
 
             my $tag = 'origin:';
             my $data;
@@ -106,7 +109,6 @@ sub entry_point {
                 $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
                 $data->{echo_req} = $p1;
             }
-            $log->info("Call from $tag, " . JSON::to_json(($data->{error}) ? $data : $data->{echo_req}));
             if ($send) {
                 $c->send({json => $data});
             } else {
@@ -137,7 +139,7 @@ sub __handle {
 
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
-        ['authorize',               \&BOM::WebSocketAPI::v3::Authorize::authorize,                        0],
+        ['authorize',               \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,               0],
         ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
         ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,              0],
         ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
@@ -171,6 +173,7 @@ sub __handle {
         ['set_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::set_self_exclusion,                1],
         ['get_limits',              \&BOM::WebSocketAPI::v3::Cashier::get_limits,                         1],
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Cashier::paymentagent_list,                  0],
+        ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Cashier::paymentagent_withdraw,              1],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
         ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,         1],
     );
