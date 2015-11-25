@@ -167,7 +167,7 @@ sub query {
     $results->{selectors} = $selectors if $send_selectors;
     $results->{contracts} = $contracts if $send_contracts;
 
-    return $results if $c->tx->is_websocket;
+    return $results if ($c->tx and $c->tx->is_websocket);
 
     # by default, results are logged
     return $c->_pass($results) if $also_dumptolog;
