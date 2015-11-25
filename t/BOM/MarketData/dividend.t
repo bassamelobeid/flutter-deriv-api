@@ -7,12 +7,10 @@ use Test::More tests => 2;
 use Test::Exception;
 use Test::NoWarnings;
 
-use BOM::Test::Data::Utility::UnitTestChronicle qw(create_doc init_chronicle);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 use BOM::MarketData::Dividend;
 use Date::Utility;
-
-init_chronicle;
 
 subtest 'save dividend' => sub {
     lives_ok {
