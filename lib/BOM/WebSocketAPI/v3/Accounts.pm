@@ -116,7 +116,7 @@ sub get_transactions {
             balance_after    => $txn->{balance_after},
             contract_id      => $txn->{financial_market_bet_id},
             shortcode        => $txn->{short_code},
-            longcode         => $txn->{payment_remark},
+            longcode         => $txn->{payment_remark} || '',
         };
 
         if ($txn->{short_code}) {
