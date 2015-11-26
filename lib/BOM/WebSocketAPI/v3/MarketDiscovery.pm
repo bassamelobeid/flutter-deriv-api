@@ -308,11 +308,11 @@ sub process_realtime_events {
                             id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
                             epoch  => $m[1],
-                            quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}});
+                            quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
-            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args});
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
         } elsif ($m[0] eq $symbol) {
             my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
@@ -329,7 +329,7 @@ sub process_realtime_events {
                             open        => $u->pipsized_value($1),
                             high        => $u->pipsized_value($2),
                             low         => $u->pipsized_value($3),
-                            close       => $u->pipsized_value($4)}}});
+                            close       => $u->pipsized_value($4)}}}) if $c->tx;
         }
     }
 
@@ -392,7 +392,6 @@ sub get_ask {
     };
     if (!$contract->is_valid_to_buy) {
         if (my $pve = $contract->primary_validation_error) {
-            $log->error("primary error: " . $pve->message);
             return {
                 error => {
                     message => $pve->message_to_client,

@@ -178,7 +178,6 @@ sub get_bid {
             }};
     };
     if (!$contract->is_valid_to_sell) {
-        $log->error("primary error: " . $contract->primary_validation_error->message);
         return {
             error => {
                 message => $contract->primary_validation_error->message_to_client,
