@@ -109,7 +109,7 @@ sub _predefined_trading_period {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
         $trading_periods = [
-            _get_intrday_trading_window({
+            _get_intraday_trading_window({
                     now        => $now,
                     date_start => $today->plus_time_interval($even_hour . 'h'),
                     duration   => '2h'
@@ -183,7 +183,7 @@ sub _get_intraday_trading_window {
     my $early_date_start = $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
 
-    if ($now->is_before($date_expiry) and $date_expiry->hour < 18) {
+    if ($now->is_before($date_expiry) and $date_expiry->hour < 18 or ($now->day_of_week ==1 and $early_date_start > 0)) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
