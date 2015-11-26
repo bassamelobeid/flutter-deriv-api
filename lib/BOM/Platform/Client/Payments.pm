@@ -298,11 +298,10 @@ sub payment_account_transfer {
     my $inter_db_transfer;
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
 
-
     if (not $inter_db_transfer) {
         my $dbh = BOM::Database::ClientDB->new({broker_code => $fmClient->broker_code})->db->dbh;
         my $sth = $dbh->prepare('SELECT * FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,?)');
-        $sth->execute($fmClient->loginid,$toClient->loginid,$currency,$amount,$fmStaff,$toStaff,$fmRemark,$toRemark);
+        $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
         $sth->fetchall_arrayref();
     } else {
 
@@ -310,7 +309,6 @@ sub payment_account_transfer {
         my $toAccount = $toClient->set_default_account($currency);
 
         my $gateway_code = 'account_transfer';
-
 
         my ($fmPayment) = $fmAccount->add_payment({
             amount               => -$amount,
