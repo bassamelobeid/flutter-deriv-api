@@ -54,11 +54,17 @@ sub configs_for {
     my $version = shift;
     my $config  = {};
 
-    my $locales_dir = path($website->static_path)->child('/config/locales/');
+    my $locales_dir = path($website->static_path)->child('config');
     carp("Unable to locate locales directory. Looking in $locales_dir") unless (-d $locales_dir);
 
     foreach my $language (@{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}) {
-        my $po_file_path = path($locales_dir)->child(lc $language . '.po');
+        my $po_file_path;
+        if ($language eq 'EN') {
+            $po_file_path = path($locales_dir)->child(lc $language . '.po');
+        } else {
+            $po_file_path = path($locales_dir)->child("locales")->child(lc $language . '.po');
+
+        }
         $config->{$language} = [Gettext => "$po_file_path"];
     }
 
