@@ -168,7 +168,6 @@ sub get_ask {
     };
     if (!$contract->is_valid_to_buy) {
         if (my $pve = $contract->primary_validation_error) {
-            $log->error("primary error: " . $pve->message);
             return {
                 error => {
                     message => $pve->message_to_client,

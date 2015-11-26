@@ -174,6 +174,7 @@ sub __handle {
         ['get_limits',              \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                  1],
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,           0],
         ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,       1],
+        ['paymentagent_transfer',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,       1],
         ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                  1],
         ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,           1],
     );

@@ -42,12 +42,27 @@ sub paymentagent_withdraw {
     if (exists $response->{error}) {
         $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
         return $c->new_error('paymentagent_withdraw', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type              => 'paymentagent_withdraw',
-            paymentagent_withdraw => $response->{status}};
     }
-    return;
 
+    return {
+        msg_type              => 'paymentagent_withdraw',
+        paymentagent_withdraw => $response->{status},
+    };
 }
+
+sub paymentagent_transfer {
+    my ($c, $args) = @_;
+
+    my $response = BOM::WebSocketAPI::v3::Cashier::paymentagent_transfer($c->stash('client'), $c->app_config, $c->stash('request')->website, $args);
+    if (exists $response->{error}) {
+        $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
+        return $c->new_error('paymentagent_transfer', $response->{error}->{code}, $response->{error}->{message_to_client});
+    }
+
+    return {
+        msg_type              => 'paymentagent_transfer',
+        paymentagent_transfer => $response->{status},
+    };
+}
+
 1;
