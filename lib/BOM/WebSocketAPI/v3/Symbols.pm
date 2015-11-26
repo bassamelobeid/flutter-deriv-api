@@ -9,6 +9,7 @@ use JSON;
 
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
+use BOM::Platform::Context qw (localize);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 
@@ -51,45 +52,29 @@ sub _description {
 }
 
 sub active_symbols {
-    my ($c, $args) = @_;
-
-    my $return_type = $args->{active_symbols};
-    $return_type =~ /^(brief|full)$/
-        or return $c->new_error('active_symbols', 'InvalidValue', $c->l("Value must be 'brief' or 'full'"));
+    my ($client, $args) = @_;
 
     my $landing_company_name = 'costarica';
-    if (my $client = $c->stash('client')) {
+    if ($client) {
         $landing_company_name = $client->landing_company->short;
     }
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    my $lang = $c->stash('language');
-
-    # we need put $lang as part of the key b/c market translated_display_name
-    my $cache_key = join('::', $landing_company_name, $return_type, $lang);
-
-    my $result;
-    return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", $cache_key);
-
-    $result = {
-        msg_type       => 'active_symbols',
-        active_symbols => [
-            map { $_ }
-                grep {
-                my $market = $_->{market};
-                grep { $market eq $_ } @{$legal_allowed_markets}
-                }
-                map {
-                _description($_, $return_type)
-                } get_offerings_with_filter('underlying_symbol')
+    return [
+        map { $_ }
+            grep {
+            my $market = $_->{market};
+            grep { $market eq $_ } @{$legal_allowed_markets}
+            }
+            map {
+            _description($_, $args->{active_symbols})
+            } get_offerings_with_filter('underlying_symbol')
         ],
-    };
-    Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300));
-    return $result;
+        ;
 }
 
 sub _validate_start_end {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $ul    = $args->{ul} || die 'no underlying';
     my $start = $args->{start};
@@ -126,17 +111,14 @@ sub _validate_start_end {
             my $shift_back = $end - $licensed_epoch;
             if ($ul->feed_license ne 'delayed' or $ul->delay_amount > 0) {
                 $end = $licensed_epoch;
-                $c->app->log->debug("Due to feed license end_time has been changed to $licensed_epoch");
             }
             if ($args->{adjust_start_time}) {
                 $start -= $shift_back;
-                $c->app->log->debug("start_time has been changed to $start");
             }
         }
     }
     if ($args->{adjust_start_time}) {
         unless ($ul->exchange->is_open_at($end)) {
-            $c->app->log->debug("Exchange is closed at $end, adjusting start_time");
             my $shift_back = $ul->exchange->seconds_since_close_at($end);
             unless (defined $shift_back) {
                 my $last_day = $ul->exchange->trade_date_before(Date::Utility->new($end));
@@ -148,7 +130,6 @@ sub _validate_start_end {
             if ($shift_back) {
                 $start -= $shift_back;
                 $end   -= $shift_back;
-                $c->app->log->debug("Adjusted time range: $start - " . ($end // 'disconnect'));
             }
         }
     }
@@ -160,9 +141,9 @@ sub _validate_start_end {
 }
 
 sub ticks {
-    my ($c, $args) = @_;
+    my $args = shift;
 
-    $args = _validate_start_end($c, $args);
+    $args = _validate_start_end($args);
 
     my $ul    = $args->{ul} || die 'no underlying';
     my $start = $args->{start};
@@ -179,9 +160,9 @@ sub ticks {
 }
 
 sub candles {
-    my ($c, $args) = @_;
+    my $args = shift;
 
-    $args = _validate_start_end($c, $args);
+    $args = _validate_start_end($args);
 
     my $ul          = $args->{ul} || die 'no underlying';
     my $start_time  = $args->{start};
