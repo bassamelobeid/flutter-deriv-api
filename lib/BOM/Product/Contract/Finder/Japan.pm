@@ -106,13 +106,13 @@ sub _predefined_trading_period {
         my $today = $now->truncate_to_day;    # Start of the day object.
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
-        push @$trading_periods,
+        $trading_periods = [
             _get_combination_of_date_expiry_date_start({
                 now        => $now,
                 date_start => $today->plus_time_interval($even_hour . 'h'),
                 duration   => '2h'
-            });
-
+            })
+         ];
         if ($now_hour > 0) {
             my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
             $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
@@ -165,7 +165,7 @@ sub _get_combination_of_date_expiry_date_start {
     my $date_expiry      = $date_start->plus_time_interval($duration);
 
     if ($now->is_before($date_expiry)) {
-        return (
+        return {
             date_start => {
                 date  => $early_date_start->datetime,
                 epoch => $early_date_start->epoch
@@ -175,7 +175,7 @@ sub _get_combination_of_date_expiry_date_start {
                 epoch => $date_expiry->epoch,
             },
             duration => $duration,
-        );
+        };
     }
 }
 
