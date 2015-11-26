@@ -298,69 +298,58 @@ sub payment_account_transfer {
     my $inter_db_transfer;
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
 
-    my $fmAccount = $fmClient->set_default_account($currency);
-    my $toAccount = $toClient->set_default_account($currency);
-
-    my $gateway_code = 'account_transfer';
-
-    # special-case:  if either side is a paymentagent, use link table
-    # 'payment_agent_transfer' not 'account_transfer'.  Structure is identical.
-    if (not $inter_db_transfer and ($fmClient->payment_agent || $toClient->payment_agent)) {
-        $gateway_code = 'payment_agent_transfer';
-    }
-
-    my ($fmPayment) = $fmAccount->add_payment({
-        amount               => -$amount,
-        payment_gateway_code => $gateway_code,
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $fmStaff,
-        remark               => $fmRemark,
-    });
-    my ($toPayment) = $toAccount->add_payment({
-        amount               => $amount,
-        payment_gateway_code => $gateway_code,
-        payment_type_code    => 'internal_transfer',
-        status               => 'OK',
-        staff_loginid        => $toStaff,
-        remark               => $toRemark,
-    });
-    my ($fmTrx) = $fmPayment->add_transaction({
-        account_id    => $fmAccount->id,
-        amount        => -$amount,
-        staff_loginid => $fmStaff,
-        referrer_type => 'payment',
-        action_type   => 'withdrawal',
-        quantity      => 1,
-    });
-    my ($toTrx) = $toPayment->add_transaction({
-        account_id    => $toAccount->id,
-        amount        => $amount,
-        staff_loginid => $toStaff,
-        referrer_type => 'payment',
-        action_type   => 'deposit',
-        quantity      => 1,
-    });
 
     if (not $inter_db_transfer) {
-        $fmAccount->save(cascade => 1);
-        $toAccount->save(cascade => 1);
-
-        $fmPayment->$gateway_code({corresponding_payment_id => $toPayment->id});
-        $toPayment->$gateway_code({corresponding_payment_id => $fmPayment->id});
-        $fmPayment->save(cascade => 1);
-        $toPayment->save(cascade => 1);
-
-        return ($fmTrx, $toTrx);
+        $dbh = BOM::Database::ClientDB->new({broker_code => $fmClient->broker_code})->db->dbh;
+        my $sth = $dbh->prepare('SELECT * FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,?)');
+        $sth->execute($fmClient->loginid,$toClient->loginid,$currency,$amount,$fromStaff,$toStaff,$fmRemark,$toRemark);
+        $sth->fetchall_arrayref();
     } else {
 
+        my $fmAccount = $fmClient->set_default_account($currency);
+        my $toAccount = $toClient->set_default_account($currency);
+
+        my $gateway_code = 'account_transfer';
+
+
+        my ($fmPayment) = $fmAccount->add_payment({
+            amount               => -$amount,
+            payment_gateway_code => $gateway_code,
+            payment_type_code    => 'internal_transfer',
+            status               => 'OK',
+            staff_loginid        => $fmStaff,
+            remark               => $fmRemark,
+        });
+        my ($toPayment) = $toAccount->add_payment({
+            amount               => $amount,
+            payment_gateway_code => $gateway_code,
+            payment_type_code    => 'internal_transfer',
+            status               => 'OK',
+            staff_loginid        => $toStaff,
+            remark               => $toRemark,
+        });
+        my ($fmTrx) = $fmPayment->add_transaction({
+            account_id    => $fmAccount->id,
+            amount        => -$amount,
+            staff_loginid => $fmStaff,
+            referrer_type => 'payment',
+            action_type   => 'withdrawal',
+            quantity      => 1,
+        });
+        my ($toTrx) = $toPayment->add_transaction({
+            account_id    => $toAccount->id,
+            amount        => $amount,
+            staff_loginid => $toStaff,
+            referrer_type => 'payment',
+            action_type   => 'deposit',
+            quantity      => 1,
+        });
+
         $fmAccount->save(cascade => 1);
         $fmPayment->save(cascade => 1);
 
         $toAccount->save(cascade => 1);
         $toPayment->save(cascade => 1);
-
-        return ($fmTrx, $toTrx);
     }
     return;
 }
