@@ -71,11 +71,11 @@ ok(grep { $_->[0] eq 'id' } @{$res->{paymentagent_list}{available_countries}});
 ok(grep { $_->{name} eq 'Joe' } @{$res->{paymentagent_list}{list}});
 test_schema('paymentagent_list', $res);
 
-my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'Test Token');
-$t = $t->send_ok({json => {authorize => $token}})->message_ok;
-
 ## paymentagent_withdraw
 {
+    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'Test Token');
+    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
     $client = BOM::Platform::Client->new({loginid => $client->loginid});
     my $client_b_balance    = $client->default_account->balance;
     my $pa_client_b_balance = $pa_client->default_account->balance;
@@ -214,6 +214,155 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     is $res->{paymentagent_withdraw}, 1, 'paymentagent_withdraw ok again';
+}
+
+## transfer
+{
+    $pa_client = BOM::Platform::Client->new({loginid => $pa_client->loginid});
+    $client    = BOM::Platform::Client->new({loginid => $client->loginid});
+    my $client_b_balance    = $client->default_account->balance;
+    my $pa_client_b_balance = $pa_client->default_account->balance;
+
+    # from client to pa_client is not allowed
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $pa_client->loginid,
+                currency              => 'USD',
+                amount                => 100
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /You are not a Payment Agent/, 'You are not a Payment Agent';
+
+    $t->finish_ok;
+    $t = build_mojo_test();
+
+    my $token = BOM::Database::Model::AccessToken->new->create_token($pa_client->loginid, 'Test Token');
+    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is $res->{paymentagent_transfer}, 1, 'paymentagent_transfer ok';
+
+    ## after withdraw, check both balance
+    $client = BOM::Platform::Client->new({loginid => $client->loginid});
+    ok $client->default_account->balance == $client_b_balance + 100, '+ 100';
+    $pa_client = BOM::Platform::Client->new({loginid => $pa_client->loginid});
+    ok $pa_client->default_account->balance == $pa_client_b_balance - 100, '- 100';
+
+    ## test for failure
+    foreach my $amount (undef, '', -1, 1, 2001) {
+        $t = $t->send_ok({
+                json => {
+                    paymentagent_transfer => 1,
+                    transfer_to           => $client->loginid,
+                    currency              => 'USD',
+                    (defined $amount) ? (amount => $amount) : ()}})->message_ok;
+        $res = decode_json($t->message->[1]);
+        if (defined $amount and $amount ne '') {
+            ok $res->{error}->{message} =~ /Invalid amount/, "test amount $amount";
+        } else {
+            ok $res->{error}->{message} =~ /Input validation failed: amount/, "test amount " . ($amount // 'undef');
+        }
+    }
+
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => 'VRTC000001',
+                currency              => 'USD',
+                amount                => 100
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /Login ID \(VRTC000001\) does not exist/, 'Login ID (VRTC000001) does not exist';
+
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'RMB',
+                amount                => 100
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /only USD is allowed/, 'only USD is allowed';
+
+    $client->set_status('disabled', 'test.t', "just for test");
+    $client->save();
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /account is currently disabled/, 'error';
+
+    $client->clr_status('disabled');
+    $client->save();
+    $pa_client->set_status('cashier_locked', 'test.t', 'just for test');
+    $pa_client->save();
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /Your cashier section is locked/, 'Your cashier section is locked';
+
+    $pa_client->clr_status('cashier_locked');
+    $pa_client->save();
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 1500,
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /you cannot withdraw./, 'you cannot withdraw.';
+
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+                dry_run               => 1,
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is $res->{paymentagent_transfer}, 2, 'paymentagent_transfer dry_run ok';
+
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /An error occurred while processing request/, 'An error occurred while processing request';
+
+    # need unfreeze_client after transfer error
+    BOM::Platform::Transaction->unfreeze_client($client->loginid);
+    BOM::Platform::Transaction->unfreeze_client($pa_client->loginid);
+    $t = $t->send_ok({
+            json => {
+                paymentagent_transfer => 1,
+                transfer_to           => $client->loginid,
+                currency              => 'USD',
+                amount                => 100,
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is $res->{paymentagent_transfer}, 1, 'paymentagent_withdraw ok again';
 }
 
 $t->finish_ok;
