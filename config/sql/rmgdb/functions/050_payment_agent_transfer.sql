@@ -141,23 +141,20 @@ CREATE OR REPLACE FUNCTION payment.payment_account_transfer(
     OUT v_to_trans          transaction.transaction)
 RETURNS SETOF RECORD AS $def$
 BEGIN
-    PERFORM 1
-       FROM betonmarkets.broker_code br
-      WHERE br.broker_code = substring(p_to_loginid, '^(\D+)');
-
-    IF FOUND THEN
-        RETURN QUERY
-        SELECT *
-          FROM payment.local_payment_account_transfer(p_from_loginid,
-                                                      p_to_loginid,
-                                                      p_currency,
-                                                      p_amount,
-                                                      p_from_staff,
-                                                      p_to_staff,
-                                                      p_from_remark,
-                                                      p_to_remark,
-                                                      p_limits);
-    END IF;
+    -- for now, payment.payment_account_transfer is just a wrapper for
+    -- the local transfer. Later it will also be able to handle inter-cluster
+    -- transfers.
+    RETURN QUERY
+    SELECT *
+      FROM payment.local_payment_account_transfer(p_from_loginid,
+                                                  p_to_loginid,
+                                                  p_currency,
+                                                  p_amount,
+                                                  p_from_staff,
+                                                  p_to_staff,
+                                                  p_from_remark,
+                                                  p_to_remark,
+                                                  p_limits);
 END
 $def$ LANGUAGE plpgsql VOLATILE SECURITY definer SET log_min_messages = LOG;
 
