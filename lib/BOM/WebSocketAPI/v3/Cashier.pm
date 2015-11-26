@@ -31,7 +31,7 @@ sub get_limits {
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
         return BOM::WebSocketAPI::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
-                message_to_client => BOM::Platform::Context::localize('Sorry, this feature is not available.')});
+                message_to_client => localize('Sorry, this feature is not available.')});
     }
 
     my $limit = +{
@@ -163,16 +163,15 @@ sub paymentagent_transfer {
     if (   $app_config->system->suspend->payments
         or $app_config->system->suspend->payment_agents)
     {
-        $error_msg = BOM::Platform::Context::localize(
-            'Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
+        $error_msg = localize('Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
-        $error_msg = BOM::Platform::Context::localize('Payment Agents are not available on this site.');
+        $error_msg = localize('Payment Agents are not available on this site.');
     } elsif (not $payment_agent) {
-        $error_msg = BOM::Platform::Context::localize('You are not a Payment Agent');
+        $error_msg = localize('You are not a Payment Agent');
     } elsif (not $payment_agent->is_authenticated) {
-        $error_msg = BOM::Platform::Context::localize('Payment Agent activity not currently authorized');
+        $error_msg = localize('Payment Agent activity not currently authorized');
     } elsif ($client_fm->cashier_setting_password) {
-        $error_msg = BOM::Platform::Context::localize('Your cashier is locked as per your request');
+        $error_msg = localize('Your cashier is locked as per your request');
     }
 
     if ($error_msg) {
@@ -181,12 +180,12 @@ sub paymentagent_transfer {
 
     ## validate amount
     if ($amount < 10 || $amount > 2000) {
-        return $error_sub->(BOM::Platform::Context::localize('Invalid amount. minimum is 10, maximum is 2000.'));
+        return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
     my $client_to = BOM::Platform::Client->new({loginid => $loginid_to});
     unless ($client_to) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('Login ID ([_1]) does not exist.', $loginid_to));
+        return $reject_error_sub->(localize('Login ID ([_1]) does not exist.', $loginid_to));
     }
 
     if ($args->{dry_run}) {
@@ -194,42 +193,37 @@ sub paymentagent_transfer {
     }
 
     unless ($client_fm->landing_company->short eq $client_to->landing_company->short) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('Cross-company payment agent transfers are not allowed.'));
+        return $reject_error_sub->(localize('Cross-company payment agent transfers are not allowed.'));
     }
 
     for ($currency) {
-        /^\w\w\w$/ || return $reject_error_sub->(BOM::Platform::Context::localize('Sorry, the currency format is incorrect.'));
-        /^USD$/    || return $reject_error_sub->(BOM::Platform::Context::localize('Sorry, only USD is allowed.'));
+        /^\w\w\w$/ || return $reject_error_sub->(localize('Sorry, the currency format is incorrect.'));
+        /^USD$/    || return $reject_error_sub->(localize('Sorry, only USD is allowed.'));
     }
 
     unless ($client_fm->currency eq $currency) {
-        return $reject_error_sub->(
-            BOM::Platform::Context::localize("Sorry, [_1] is not default currency for payment agent [_2]", $currency, $client_fm->loginid));
+        return $reject_error_sub->(localize("Sorry, [_1] is not default currency for payment agent [_2]", $currency, $client_fm->loginid));
     }
     unless ($client_to->currency eq $currency) {
-        return $reject_error_sub->(
-            BOM::Platform::Context::localize("Sorry, [_1] is not default currency for client [_2]", $currency, $client_to->loginid));
+        return $reject_error_sub->(localize("Sorry, [_1] is not default currency for client [_2]", $currency, $client_to->loginid));
     }
 
     if ($client_to->get_status('disabled')) {
-        return $reject_error_sub->(
-            BOM::Platform::Context::localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to));
+        return $reject_error_sub->(localize('You cannot transfer to account [_1], as their account is currently disabled.', $loginid_to));
     }
 
     if ($client_to->get_status('cashier_locked') || $client_to->documents_expired) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('There was an error processing the request.') . ' '
-                . BOM::Platform::Context::localize('This client cashier section is locked.'));
+        return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('This client cashier section is locked.'));
     }
 
     if ($client_fm->get_status('cashier_locked') || $client_fm->documents_expired) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('There was an error processing the request.') . ' '
-                . BOM::Platform::Context::localize('Your cashier section is locked.'));
+        return $reject_error_sub->(localize('There was an error processing the request.') . ' ' . localize('Your cashier section is locked.'));
     }
 
     # freeze loginID to avoid a race condition
     if (not BOM::Platform::Transaction->freeze_client($loginid_fm)) {
         return $error_sub->(
-            BOM::Platform::Context::localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $loginid_fm"
         );
     }
@@ -237,7 +231,7 @@ sub paymentagent_transfer {
     if (not BOM::Platform::Transaction->freeze_client($loginid_to)) {
         BOM::Platform::Transaction->unfreeze_client($loginid_fm);
         return $error_sub->(
-            BOM::Platform::Context::localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $loginid_to"
         );
     }
@@ -271,7 +265,7 @@ sub paymentagent_transfer {
         BOM::Platform::Transaction->unfreeze_client($loginid_fm);
         BOM::Platform::Transaction->unfreeze_client($loginid_to);
 
-        return $reject_error_sub->(BOM::Platform::Context::localize('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
+        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transfer amount for today.'));
     }
 
     # do not allow more than 1000 transactions per day
@@ -279,7 +273,7 @@ sub paymentagent_transfer {
         BOM::Platform::Transaction->unfreeze_client($loginid_fm);
         BOM::Platform::Transaction->unfreeze_client($loginid_to);
 
-        return $reject_error_sub->(BOM::Platform::Context::localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
+        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
     # execute the transfer
@@ -305,21 +299,19 @@ sub paymentagent_transfer {
     stats_inc('business.paymentagent');
 
     # sent email notification to client
-    my $clientmessage =
-        BOM::Platform::Context::localize('Dear [_1] [_2] [_3],', $client_to->salutation, $client_to->first_name, $client_to->last_name,) . "\n\n"
-        . BOM::Platform::Context::localize(
+    my $clientmessage = localize('Dear [_1] [_2] [_3],', $client_to->salutation, $client_to->first_name, $client_to->last_name,) . "\n\n" . localize(
         'We would like to inform you that the transfer of [_1] [_2] via [_3] has been processed.
 The funds have been credited into your account.
 
 Kind Regards,
 
 The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website->display_name
-        );
+    );
 
     send_email({
         'from'               => $website->config->get('customer_support.email'),
         'to'                 => $client_to->email,
-        'subject'            => BOM::Platform::Context::localize('Acknowledgement of Money Transfer'),
+        'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$clientmessage],
         'use_email_template' => 1,
         'template_loginid'   => $client_to->loginid
@@ -364,15 +356,14 @@ sub paymentagent_withdraw {
         or $app_config->system->suspend->payment_agents)
     {
         return $error_sub->(
-            BOM::Platform::Context::localize(
-                'Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
+            localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
     } elsif (not $client->landing_company->allows_payment_agents) {
-        return $error_sub->(BOM::Platform::Context::localize('Payment Agents are not available on this site.'));
+        return $error_sub->(localize('Payment Agents are not available on this site.'));
     } elsif (not $client->allow_paymentagent_withdrawal()) {
         # check whether allow to withdraw via payment agent
-        return $reject_error_sub->(BOM::Platform::Context::localize('You are not authorized for withdrawal via payment agent.'));
+        return $reject_error_sub->(localize('You are not authorized for withdrawal via payment agent.'));
     } elsif ($client->cashier_setting_password) {
-        return $error_sub->(BOM::Platform::Context::localize('Your cashier is locked as per your request.'));
+        return $error_sub->(localize('Your cashier is locked as per your request.'));
     }
 
     my $authenticated_pa;
@@ -382,53 +373,48 @@ sub paymentagent_withdraw {
     }
 
     if (not $client->residence or scalar keys %{$authenticated_pa} == 0) {
-        return $error_sub->(BOM::Platform::Context::localize('The Payment Agent facility is currently not available in your country.'));
+        return $error_sub->(localize('The Payment Agent facility is currently not available in your country.'));
     }
 
     ## validate amount
     if ($amount < 10 || $amount > 2000) {
-        return $error_sub->(BOM::Platform::Context::localize('Invalid amount. minimum is 10, maximum is 2000.'));
+        return $error_sub->(localize('Invalid amount. minimum is 10, maximum is 2000.'));
     }
 
     my $paymentagent = BOM::Platform::Client::PaymentAgent->new({'loginid' => $paymentagent_loginid})
-        or return $error_sub->(BOM::Platform::Context::localize('Sorry, the Payment Agent does not exist.'));
+        or return $error_sub->(localize('Sorry, the Payment Agent does not exist.'));
 
     if ($client->broker ne $paymentagent->broker) {
-        return $error_sub->(BOM::Platform::Context::localize('Sorry, the Payment Agent is unavailable for your region.'));
+        return $error_sub->(localize('Sorry, the Payment Agent is unavailable for your region.'));
     }
 
     my $pa_client = $paymentagent->client;
 
     # check that the currency is in correct format
     if ($client->currency ne $currency) {
-        return $error_sub->(
-            BOM::Platform::Context::localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $client->currency));
+        return $error_sub->(localize('Sorry, your currency of [_1] is unavailable for Payment Agent Withdrawal', $client->currency));
     }
 
     if ($pa_client->currency ne $currency) {
-        return $error_sub->(
-            BOM::Platform::Context::localize(
-                "Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal",
-                $pa_client->currency
-            ));
+        return $error_sub->(localize("Sorry, the Payment Agent's currency [_1] is unavailable for Payment Agent Withdrawal", $pa_client->currency));
     }
 
     # check that the amount is in correct format
     if ($amount !~ /^\d*\.?\d*$/) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('There was an error processing the request.'));
+        return $reject_error_sub->(localize('There was an error processing the request.'));
     }
 
     # check that the additional information does not exceeded the allowed limits
     if (length($further_instruction) > 300) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('Further instructions must not exceed [_1] characters.', 300));
+        return $reject_error_sub->(localize('Further instructions must not exceed [_1] characters.', 300));
     }
 
     # check that both the client payment agent cashier is not locked
     if ($client->get_status('cashier_locked') || $client->get_status('withdrawal_locked') || $client->documents_expired) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('There was an error processing the request.'));
+        return $reject_error_sub->(localize('There was an error processing the request.'));
     }
     if ($pa_client->get_status('cashier_locked') || $client->documents_expired) {
-        return $reject_error_sub->(BOM::Platform::Context::localize('This Payment Agent cashier section is locked.'));
+        return $reject_error_sub->(localize('This Payment Agent cashier section is locked.'));
     }
 
     if ($args->{dry_run}) {
@@ -438,14 +424,14 @@ sub paymentagent_withdraw {
     # freeze loginID to avoid a race condition
     if (not BOM::Platform::Transaction->freeze_client($client_loginid)) {
         return $error_sub->(
-            BOM::Platform::Context::localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $client_loginid"
         );
     }
     if (not BOM::Platform::Transaction->freeze_client($paymentagent_loginid)) {
         BOM::Platform::Transaction->unfreeze_client($client_loginid);
         return $error_sub->(
-            BOM::Platform::Context::localize('An error occurred while processing request. If this error persists, please contact customer support'),
+            localize('An error occurred while processing request. If this error persists, please contact customer support'),
             "Account stuck in previous transaction $paymentagent_loginid"
         );
     }
@@ -485,10 +471,7 @@ sub paymentagent_withdraw {
         BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
 
         return $reject_error_sub->(
-            BOM::Platform::Context::localize(
-                'Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.',
-                $currency . $daily_limit
-            ));
+            localize('Sorry, you have exceeded the maximum allowable transfer amount [_1] for today.', $currency . $daily_limit));
     }
 
     if ($amount_transferred > 1500) {
@@ -507,7 +490,7 @@ sub paymentagent_withdraw {
         BOM::Platform::Transaction->unfreeze_client($client_loginid);
         BOM::Platform::Transaction->unfreeze_client($paymentagent_loginid);
 
-        return $reject_error_sub->(BOM::Platform::Context::localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
+        return $reject_error_sub->(localize('Sorry, you have exceeded the maximum allowable transactions for today.'));
     }
 
     my $comment =
@@ -536,23 +519,23 @@ sub paymentagent_withdraw {
     my $client_name = $client->first_name . ' ' . $client->last_name;
     # sent email notification to Payment Agent
     my $clientmessage = [
-        BOM::Platform::Context::localize('Dear [_1] [_2] [_3],', $pa_client->salutation, $pa_client->first_name, $pa_client->last_name),
+        localize('Dear [_1] [_2] [_3],', $pa_client->salutation, $pa_client->first_name, $pa_client->last_name),
         '',
-        BOM::Platform::Context::localize(
+        localize(
             'We would like to inform you that the withdrawal request of [_1][_2] by [_3] [_4] has been processed. The funds have been credited into your account [_5] at [_6].',
             $currency, $amount, $client_name, $client_loginid, $paymentagent_loginid, $website->display_name
         ),
         '',
         $further_instruction,
         '',
-        BOM::Platform::Context::localize('Kind Regards,'),
+        localize('Kind Regards,'),
         '',
-        BOM::Platform::Context::localize('The [_1] team.', $website->display_name),
+        localize('The [_1] team.', $website->display_name),
     ];
     send_email({
         from               => $website->config->get('customer_support.email'),
         to                 => $paymentagent->email,
-        subject            => BOM::Platform::Context::localize('Acknowledgement of Withdrawal Request'),
+        subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $clientmessage,
         use_email_template => 1,
     });
@@ -609,18 +592,18 @@ sub __client_withdrawal_notes {
 
     my $balance = $client->default_account ? $client->default_account->balance : 0;
     if ($error =~ /exceeds client balance/) {
-        return (BOM::Platform::Context::localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
+        return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
     }
 
     my $withdrawal_limits = $client->get_withdrawal_limits();
 
     # At this point, the Client is not allowed to withdraw. Return error message.
-    my $error_message = BOM::Platform::Context::localize('Your account balance is [_1] [_2]. Maximum withdrawal by all other means is [_1] [_3].',
+    my $error_message = localize('Your account balance is [_1] [_2]. Maximum withdrawal by all other means is [_1] [_3].',
         $currency, $balance, $withdrawal_limits->{'max_withdrawal'});
 
     if ($withdrawal_limits->{'frozen_free_gift'} > 0) {
         # Insert turnover limit as a parameter depends on the promocode type
-        $error_message .= BOM::Platform::Context::localize(
+        $error_message .= localize(
             'Note: You will be able to withdraw your bonus of [_1][_2] only once your aggregate volume of trades exceeds [_1][_3]. This restriction applies only to the bonus and profits derived therefrom.  All other deposits and profits derived therefrom can be withdrawn at any time.',
             $currency,
             $withdrawal_limits->{'frozen_free_gift'},
@@ -628,6 +611,55 @@ sub __client_withdrawal_notes {
     }
 
     return ($error_message, "Client $client is not allowed to withdraw");
+}
+
+## This endpoint is only available for MLT/MF accounts
+sub transfer_between_accounts {
+    my $arg_ref    = shift;
+    my $client     = $arg_ref->{'client'};
+    my $app_config = $arg_ref->{app_config};
+    my $args       = $arg_ref->{args};
+
+    my $error_sub = sub {
+        my ($message_to_client, $message) = @_;
+        BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'TransferBetweenAccountsError',
+            message_to_client => $message_to_client,
+            ($message) ? (message => $message) : (),
+        });
+    };
+
+    if ($client->get_status('disabled') or $client->get_status('cashier_locked') or $client->get_status('withdrawal_locked')) {
+        return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
+    }
+
+    my $account_from = $args->{account_from};
+    my $account_to   = $args->{account_to};
+    my $currency     = $args->{currency};
+    my $amount       = $args->{amount};
+
+    my $err_msg = "from[$account_from], to[$account_to], curr[$currency], amount[$amount], ";
+
+    my %siblings = map { $_->loginid => $_ } $client->siblings;
+
+    my $is_good = 0;
+    if ($siblings{$account_from} && $siblings{$account_to}) {
+        my %landing_companies = (
+            $siblings{$account_from}->landing_company->short => 1,
+            $siblings{$account_to}->landing_company->short   => 1,
+        );
+
+        # check for transfer between malta & maltainvest
+        $is_good = $landing_companies{malta} && $landing_companies{maltainvest};
+    }
+
+    unless ($is_good) {
+        return $error_sub->(localize('The account transfer is unavailable for you.'));
+    }
+
+    my $client_from = $siblings{$account_from};
+    my $client_to   = $siblings{$account_to};
+
 }
 
 1;
