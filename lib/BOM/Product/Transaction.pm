@@ -11,6 +11,9 @@ use JSON qw( from_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction );
 use Format::Util::Numbers qw(roundnear to_monetary_number_format);
+use RateLimitations qw(within_rate_limits);
+use Try::Tiny;
+
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
@@ -29,7 +32,6 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
-use Try::Tiny;
 use BOM::Utility::Log4perl qw/get_logger/;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
 
@@ -513,9 +515,13 @@ sub buy {    ## no critic (RequireArgUnpacking)
         # all these validations MUST NOT use the database
         # database related validations MUST be implemented in the database
         # ask your friendly DBA team if in doubt
+        #
+        # Keep the transaction rate test first to limit the impact of abusive buyers
         $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
-            qw/_validate_iom_withdrawal_limit
+            qw/
+            _validate_buy_transaction_rate
+            _validate_iom_withdrawal_limit
             _validate_payout_limit
             _is_valid_to_buy
             _validate_date_pricing
@@ -1252,6 +1258,39 @@ sub _validate_date_pricing {
             -mesg              => 'Bet was validated for a time [' . $contract->date_pricing->epoch . '] too far from now[' . time . ']',
             -message_to_client => BOM::Platform::Context::localize('This contract cannot be properly validated at this time.'));
     }
+    return;
+}
+
+=head2 $self->_validate_buy_transaction_rate
+
+Validate the client's buy transaction rate does not exceed our limits
+
+=cut
+
+sub _validate_buy_transaction_rate {
+    my $self   = shift;
+    my $client = $self->client;
+
+    # Define the appropriate rates in `bom-platform/config/environments/*/perl_rate_limitations.yml`
+    # before attempting to apply them here.
+
+    return unless $client->is_virtual;    # We only limit virtual accounts at this point
+
+    my $service = 'virtual_buy_transaction';
+    my $loginid = $client->loginid;
+
+    if (
+        not within_rate_limits({
+                service  => $service,
+                consumer => $loginid,
+            }))
+    {
+        return Error::Base->cuss(
+            -type              => 'BuyRateExceeded',
+            -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
+            -message_to_client => BOM::Platform::Context::localize('Too many recent attempts.  Try again later.'));
+    }
+
     return;
 }
 
