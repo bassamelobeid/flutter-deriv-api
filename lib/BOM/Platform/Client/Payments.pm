@@ -303,8 +303,7 @@ sub payment_account_transfer {
         $dbh = BOM::Database::ClientDB->new({broker_code => $fmClient->broker_code})->db->dbh;
         my $sth = $dbh->prepare('SELECT * FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,?)');
         $sth->execute($fmClient->loginid,$toClient->loginid,$currency,$amount,$fromStaff,$toStaff,$fmRemark,$toRemark);
-        my $result = $sth->fetchall_arrayref();
-        return ($result->[2]->id, $result->[3]->id);
+        $sth->fetchall_arrayref();
     } else {
 
         my $fmAccount = $fmClient->set_default_account($currency);
@@ -351,8 +350,6 @@ sub payment_account_transfer {
 
         $toAccount->save(cascade => 1);
         $toPayment->save(cascade => 1);
-
-        return ($fmTrx, $toTrx);
     }
     return;
 }
