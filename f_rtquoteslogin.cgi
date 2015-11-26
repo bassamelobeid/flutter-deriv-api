@@ -95,7 +95,7 @@ foreach my $i (@instrumentlist) {
             $price     = $tick->{quote};
         } else {
             my $quote = try { Cache::RedisDB->get('PROVIDER_LAST_QUOTE', "$p/" . $underlying->symbol) };
-            ($timestamp, $price) = ($quote->epoch, $quote->price) if $quote and ref $quote eq 'BOM::Feed::Listener::Quote';
+            ($timestamp, $price) = ($quote->epoch, $quote->price) if $quote and ref $quote eq 'Feed::Listener::Quote';
         }
         unless (defined $timestamp and defined $price) {
             print "<td bgcolor=#FFFFCE>&nbsp;</td>";
