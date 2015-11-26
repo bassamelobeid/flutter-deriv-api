@@ -95,95 +95,71 @@ sub _do_proveid {
 
     my $prove_id_result = $self->_fetch_proveid || {};
 
-    if ( $prove_id_result->{deceased} or $prove_id_result->{fraud} ) {
+    if ($prove_id_result->{deceased} or $prove_id_result->{fraud}) {
 
         my $reason = $prove_id_result->{deceased} ? "deceased" : "fraud";
 
         my $note_subject = '192 PROVE ID INDICATES ' . uc($reason) . '!';
-        my $note_message =
-            'Please note that client ['
-          . $client->loginid
-          . "] was flagged as $reason by Experian Prove ID check";
+        my $note_message = 'Please note that client [' . $client->loginid . "] was flagged as $reason by Experian Prove ID check";
 
-        $self->_notify( $note_subject, $note_message );
+        $self->_notify($note_subject, $note_message);
 
-    }
-    elsif ( $prove_id_result->{deny}
+    } elsif ($prove_id_result->{deny}
         and defined $prove_id_result->{matches}
-        and ( scalar @{ $prove_id_result->{matches} } > 0 ) )
+        and (scalar @{$prove_id_result->{matches}} > 0))
     {
-        if ( grep { /PEP/ }
-            @{ $prove_id_result->{matches} }
-            && $prove_id_result->{num_verifications} >= 2 )
+        if (grep { /PEP/ } @{$prove_id_result->{matches}}
+            && $prove_id_result->{num_verifications} >= 2)
         {
 
             # Set age verfied
-            $client->set_status( 'age_verification', 'system',
-                'Successfully authenticated identity via Experian Prove ID' );
+            $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
             $client->save;
 
-            $self->_notify(
-                'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [PEP]',
-                'PEP match. Could only get enough score for age verification.'
-            );
-        }
-        elsif ( grep { /Directors/ } @{ $prove_id_result->{matches} }
-            && $prove_id_result->{num_verifications} >= 2 )
+            $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [PEP]',
+                'PEP match. Could only get enough score for age verification.');
+        } elsif (
+            grep {
+                /Directors/
+            } @{$prove_id_result->{matches}}
+            && $prove_id_result->{num_verifications} >= 2
+            )
         {
 
             # Set age verfied
-            $client->set_status( 'age_verification', 'system',
-                'Successfully authenticated identity via Experian Prove ID' );
+            $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
             $client->save;
 
             $self->_notify(
                 'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION [Director]',
-'Director match. Could only get enough score for age verification.'
+                'Director match. Could only get enough score for age verification.'
             );
-        }
-        else {
+        } else {
 
-            $client->set_status( 'unwelcome', 'system',
-                'Failed identity test via Experian' );
+            $client->set_status('unwelcome', 'system', 'Failed identity test via Experian');
             $client->save();
 
-            $self->_notify(
-                'EXPERIAN PROVE ID KYC CLIENT FLAGGED! ',
-                'flagged as ['
-                  . join( ', ', @{ $prove_id_result->{matches} } ) . '] .'
-            );
+            $self->_notify('EXPERIAN PROVE ID KYC CLIENT FLAGGED! ', 'flagged as [' . join(', ', @{$prove_id_result->{matches}}) . '] .');
         }
-    }
-    elsif ( $prove_id_result->{fully_authenticated} ) {
+    } elsif ($prove_id_result->{fully_authenticated}) {
 
         # Set age verfied
-        $client->set_status( 'age_verification', 'system',
-            'Successfully authenticated identity via Experian Prove ID' );
+        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
 
         $client->set_authentication('ID_192')->status('pass');
         $client->save;
 
-        $self->_notify(
-            'EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT',
-            'passed PROVE ID KYC on first deposit and is fully authenticated.'
-        );
+        $self->_notify('EXPERIAN PROVE ID KYC PASSED ON FIRST DEPOSIT', 'passed PROVE ID KYC on first deposit and is fully authenticated.');
 
-    }
-    elsif ( $prove_id_result->{age_verified} ) {
+    } elsif ($prove_id_result->{age_verified}) {
 
         # Set age verfied
-        $client->set_status( 'age_verification', 'system',
-            'Successfully authenticated identity via Experian Prove ID' );
+        $client->set_status('age_verification', 'system', 'Successfully authenticated identity via Experian Prove ID');
         $client->save;
 
-        $self->_notify(
-            'EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION',
-            'could only get enough score for age verification.'
-        );
-    }
-    else {
-        $self->_notify( '192_PROVEID_AUTH_FAILED',
-            'Failed to authenticate this user via PROVE ID through Experian' );
+        $self->_notify('EXPERIAN PROVE ID KYC PASSED ONLY AGE VERIFICATION', 'could only get enough score for age verification.');
+    } else {
+        $self->_notify('192_PROVEID_AUTH_FAILED', 'Failed to authenticate this user via PROVE ID through Experian');
         return $self->_request_id_authentication;
     }
 
@@ -249,7 +225,7 @@ EOM
 sub _notify {
     my ($self, $id, $msg) = @_;
 
-    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     my $client = $self->client;
     $client->add_note($id, $client->loginid . ' ' . $msg);
@@ -268,7 +244,7 @@ sub _premise {
 sub _fetch_proveid {
     my $self = shift;
 
-    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     return BOM::Platform::ProveID->new(
         client        => $self->client,
@@ -281,7 +257,7 @@ sub _fetch_proveid {
 sub _fetch_checkid {
     my $self = shift;
 
-    #return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
+    return unless BOM::Platform::Runtime->instance->app_config->system->on_production;
 
     return BOM::Platform::ProveID->new(
         client        => $self->client,
