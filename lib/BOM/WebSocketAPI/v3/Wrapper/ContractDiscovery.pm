@@ -16,8 +16,8 @@ sub payout_currencies {
 
 sub contracts_for {
     my ($c, $args) = @_;
-    my $reponse = BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for($args);
-    if ($reponse->{error}) {
+    my $response = BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for($args);
+    if ($response->{error}) {
         return $c->new_error('contracts_for', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         return {
