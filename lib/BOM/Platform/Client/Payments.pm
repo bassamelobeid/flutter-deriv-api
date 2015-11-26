@@ -295,19 +295,31 @@ sub payment_account_transfer {
     my $toRemark = delete $args{toRemark} || $remark || ("Transfer from " . $fmClient->loginid);
     my $fmRemark = delete $args{fmRemark} || $remark || ("Transfer to " . $toClient->loginid);
 
+    my $fmAccount = $fmClient->set_default_account($currency);
+    my $toAccount = $toClient->set_default_account($currency);
+
     my $inter_db_transfer;
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
 
     unless ($inter_db_transfer) {
-        my $dbh = BOM::Database::ClientDB->new({broker_code => $fmClient->broker_code})->db->dbh;
-        my $sth = $dbh->prepare('SELECT 1 FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
-        $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
-        $sth->fetchall_arrayref();
+        # don't try to optimize $db away. Rose::DB explicitly closes
+        # handles when the Rose::DB object goes out of scope
+        my $db  = BOM::Database::ClientDB->new({broker_code => $fmClient->broker_code})->db;
+        my $dbh = $db->dbh;
+        try {
+            my $sth = $dbh->prepare('SELECT 1 FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
+            $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
+            $sth->fetchall_arrayref();
+        }
+        catch {
+            if (ref eq 'ARRAY') {
+                die "@$_";
+            } else {
+                die $_;
+            }
+        };
         return;
     }
-
-    my $fmAccount = $fmClient->set_default_account($currency);
-    my $toAccount = $toClient->set_default_account($currency);
 
     my $gateway_code = 'account_transfer';
 
