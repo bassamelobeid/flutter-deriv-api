@@ -2,9 +2,9 @@ package BOM::WebSocketAPI::Websocket_v3;
 
 use Mojo::Base 'Mojolicious::Controller';
 
-use BOM::WebSocketAPI::v3::Symbols;
+use BOM::WebSocketAPI::v3::Wrapper::Symbols;
 use BOM::WebSocketAPI::v3::Wrapper::Authorize;
-use BOM::WebSocketAPI::v3::ContractDiscovery;
+use BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery;
 use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
@@ -139,44 +139,44 @@ sub __handle {
 
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
-        ['authorize',               \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,               0],
-        ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                      0],
-        ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,              0],
-        ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                   0],
-        ['forget',                  \&BOM::WebSocketAPI::v3::System::forget,                              0],
-        ['forget_all',              \&BOM::WebSocketAPI::v3::System::forget_all,                          0],
-        ['ping',                    \&BOM::WebSocketAPI::v3::System::ping,                                0],
-        ['time',                    \&BOM::WebSocketAPI::v3::System::server_time,                         0],
-        ['payout_currencies',       \&BOM::WebSocketAPI::v3::ContractDiscovery::payout_currencies,        0],
-        ['active_symbols',          \&BOM::WebSocketAPI::v3::Symbols::active_symbols,                     0],
-        ['contracts_for',           \&BOM::WebSocketAPI::v3::ContractDiscovery::contracts_for,            0],
-        ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,              0],
-        ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                0],
-        ['residence_list',          \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,             0],
-        ['states_list',             \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                0],
-        ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                   0],
-        ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,           0],
-        ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                    0],
-        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,             0],
-        ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                    1],
-        ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                   1],
-        ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,              1],
-        ['proposal_open_contract',  \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract, 1],
-        ['balance',                 \&BOM::WebSocketAPI::v3::Accounts::balance,                           1],
-        ['statement',               \&BOM::WebSocketAPI::v3::Accounts::statement,                         1],
-        ['profit_table',            \&BOM::WebSocketAPI::v3::Accounts::profit_table,                      1],
-        ['get_account_status',      \&BOM::WebSocketAPI::v3::Accounts::get_account_status,                1],
-        ['change_password',         \&BOM::WebSocketAPI::v3::Accounts::change_password,                   1],
-        ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                      1],
-        ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                      1],
-        ['get_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::get_self_exclusion,                1],
-        ['set_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::set_self_exclusion,                1],
-        ['get_limits',              \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                1],
-        ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,         0],
-        ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,     1],
-        ['paymentagent_transfer',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,     1],
-        ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                1],
-        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,         1],
+        ['authorize',               \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,                 0],
+        ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                        0],
+        ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,                0],
+        ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                     0],
+        ['forget',                  \&BOM::WebSocketAPI::v3::System::forget,                                0],
+        ['forget_all',              \&BOM::WebSocketAPI::v3::System::forget_all,                            0],
+        ['ping',                    \&BOM::WebSocketAPI::v3::System::ping,                                  0],
+        ['time',                    \&BOM::WebSocketAPI::v3::System::server_time,                           0],
+        ['payout_currencies',       \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::payout_currencies, 0],
+        ['active_symbols',          \&BOM::WebSocketAPI::v3::Wrapper::Symbols::active_symbols,              0],
+        ['contracts_for',           \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::contracts_for,     0],
+        ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,                0],
+        ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                  0],
+        ['residence_list',          \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,               0],
+        ['states_list',             \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                  0],
+        ['landing_company',         \&BOM::WebSocketAPI::v3::Accounts::landing_company,                     0],
+        ['landing_company_details', \&BOM::WebSocketAPI::v3::Accounts::landing_company_details,             0],
+        ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                      0],
+        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,               0],
+        ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                      1],
+        ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                     1],
+        ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,                1],
+        ['proposal_open_contract',  \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract,   1],
+        ['balance',                 \&BOM::WebSocketAPI::v3::Accounts::balance,                             1],
+        ['statement',               \&BOM::WebSocketAPI::v3::Accounts::statement,                           1],
+        ['profit_table',            \&BOM::WebSocketAPI::v3::Accounts::profit_table,                        1],
+        ['get_account_status',      \&BOM::WebSocketAPI::v3::Accounts::get_account_status,                  1],
+        ['change_password',         \&BOM::WebSocketAPI::v3::Accounts::change_password,                     1],
+        ['get_settings',            \&BOM::WebSocketAPI::v3::Accounts::get_settings,                        1],
+        ['set_settings',            \&BOM::WebSocketAPI::v3::Accounts::set_settings,                        1],
+        ['get_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::get_self_exclusion,                  1],
+        ['set_self_exclusion',      \&BOM::WebSocketAPI::v3::Accounts::set_self_exclusion,                  1],
+        ['get_limits',              \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                  1],
+        ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,           0],
+        ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,       1],
+        ['paymentagent_transfer',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,       1],
+        ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                  1],
+        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,           1],
     );
 
     foreach my $dispatch (@dispatch) {
