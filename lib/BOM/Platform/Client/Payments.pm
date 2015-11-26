@@ -343,64 +343,22 @@ sub payment_account_transfer {
     });
 
     if (not $inter_db_transfer) {
-        my $db = $fmAccount->db;
-        my $err;
+        $fmAccount->save(cascade => 1);
+        $toAccount->save(cascade => 1);
 
-        try {
-            $db->begin_work;
+        $fmPayment->$gateway_code({corresponding_payment_id => $toPayment->id});
+        $toPayment->$gateway_code({corresponding_payment_id => $fmPayment->id});
+        $fmPayment->save(cascade => 1);
+        $toPayment->save(cascade => 1);
 
-            # we can't write the account_transfer records until we have
-            # the payment id's, which are generated on save..
-
-            $fmAccount->save(cascade => 1);
-            $toAccount->save(cascade => 1);
-
-            $fmPayment->$gateway_code({corresponding_payment_id => $toPayment->id});
-            $toPayment->$gateway_code({corresponding_payment_id => $fmPayment->id});
-            $fmPayment->save(cascade => 1);
-            $toPayment->save(cascade => 1);
-
-            $db->commit;
-        }
-        catch {
-            $err = $_;
-        };
-
-        return ($fmTrx, $toTrx) unless $err;
-        $db->rollback;
-        die $err;
+        return ($fmTrx, $toTrx);
     } else {
-        my $db = $fmAccount->db;
-        my $err;
 
-        try {
-            $db->begin_work;
-            $fmAccount->save(cascade => 1);
-            $fmPayment->save(cascade => 1);
-            $db->commit;
-        }
-        catch {
-            $err = $_;
-        };
-        if ($err) {
-            $db->rollback;
-            die $err;
-        }
+        $fmAccount->save(cascade => 1);
+        $fmPayment->save(cascade => 1);
 
-        $db = $toAccount->db;
-        try {
-            $db->begin_work;
-            $toAccount->save(cascade => 1);
-            $toPayment->save(cascade => 1);
-            $db->commit;
-        }
-        catch {
-            $err = $_;
-        };
-        if ($err) {
-            $db->rollback;
-            die $err;
-        }
+        $toAccount->save(cascade => 1);
+        $toPayment->save(cascade => 1);
 
         return ($fmTrx, $toTrx);
     }
