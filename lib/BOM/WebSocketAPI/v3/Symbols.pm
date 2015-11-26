@@ -68,9 +68,7 @@ sub active_symbols {
             }
             map {
             _description($_, $args->{active_symbols})
-            } get_offerings_with_filter('underlying_symbol')
-        ],
-        ;
+            } get_offerings_with_filter('underlying_symbol')];
 }
 
 sub _validate_start_end {

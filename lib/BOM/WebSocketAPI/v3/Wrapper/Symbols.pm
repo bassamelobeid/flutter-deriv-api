@@ -19,18 +19,12 @@ sub active_symbols {
     my $result;
     return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", $cache_key);
 
-    my $response = BOM::WebSocketAPI::v3::Symbols::active_symbols($client, $args);
-    if ($response->{error}) {
-        return $c->new_error('active_symbols', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        $result = {
-            msg_type       => 'active_symbols',
-            active_symbols => $response
-        } Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300));
+    $result = {
+        msg_type => 'active_symbols',
+        active_symbols => BOM::WebSocketAPI::v3::Symbols::active_symbols($client, $args)};
+    Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300));
 
-        return $result;
-    }
-    return;
+    return $result;
 }
 
 1;
