@@ -2,7 +2,7 @@ BEGIN;
 
 SELECT r.*
   FROM (
-    VALUES ('BI100', '% is not a known loginid or % is not the default currency for this account'),
+    VALUES ('BI100', '%s is not a known loginid or %s is not the default currency for this account'),
            ('BI101', 'attempt to payment-agent-transfer to the same account')
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
