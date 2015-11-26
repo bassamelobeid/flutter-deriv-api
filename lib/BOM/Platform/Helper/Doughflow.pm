@@ -50,11 +50,7 @@ sub get_sportsbook {
 sub get_doughflow_language_code_for {
     my $lang = shift;
 
-    my $code = 'en';
-
-    my %lang_code_for = (
-        ZH_CN => 'zh_CHS'
-    );
+    my %lang_code_for = (ZH_CN => 'zh_CHS');
 
     my $code = 'en';
     if (exists $lang_code_for{$lang}) {
@@ -66,6 +62,7 @@ sub get_doughflow_language_code_for {
     {
         $code = lc $lang;
     }
+
     return $code;
 }
 
