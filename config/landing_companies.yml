@@ -26,6 +26,7 @@
       - endsinout
       - staysinout
       - touchnotouch
+      - spreads
     legal_default_currency: GBP
     has_reality_check: 1
 'Binary (Europe) Ltd':
