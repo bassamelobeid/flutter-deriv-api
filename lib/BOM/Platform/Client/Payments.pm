@@ -302,7 +302,7 @@ sub payment_account_transfer {
     if (not $inter_db_transfer) {
         my $dbh = BOM::Database::ClientDB->new({broker_code => $fmClient->broker_code})->db->dbh;
         my $sth = $dbh->prepare('SELECT * FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,?)');
-        $sth->execute($fmClient->loginid,$toClient->loginid,$currency,$amount,$fromStaff,$toStaff,$fmRemark,$toRemark);
+        $sth->execute($fmClient->loginid,$toClient->loginid,$currency,$amount,$fmStaff,$toStaff,$fmRemark,$toRemark);
         $sth->fetchall_arrayref();
     } else {
 
