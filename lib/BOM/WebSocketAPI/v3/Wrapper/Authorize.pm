@@ -31,7 +31,8 @@ sub authorize {
 
         return {
             msg_type  => 'authorize',
-            authorize => {%$response}};
+            authorize => $response
+        };
     }
 
     return;

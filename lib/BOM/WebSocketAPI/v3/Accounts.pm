@@ -21,7 +21,7 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 
 sub landing_company {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $country  = $args->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
@@ -30,8 +30,9 @@ sub landing_company {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
     }
 
-    return $c->new_error('landing_company', 'UnknownLandingCompany', $c->l('Unknown landing company.'))
-        unless $c_config;
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'UnknownLandingCompany',
+            message_to_client => BOM::Platform::Context::localize('Unknown landing company.')}) unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
     my %landing_company = %{$c_config};
@@ -49,23 +50,18 @@ sub landing_company {
         delete $landing_company{financial_company};
     }
 
-    return {
-        msg_type        => 'landing_company',
-        landing_company => {%landing_company},
-    };
+    return \%landing_company;
 }
 
 sub landing_company_details {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
-    return $c->new_error('landing_company_details', 'UnknownLandingCompany', $c->l('Unknown landing company.'))
-        unless $lc;
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'UnknownLandingCompany',
+            message_to_client => BOM::Platform::Context::localize('Unknown landing company.')}) unless $lc;
 
-    return {
-        msg_type                => 'landing_company_details',
-        landing_company_details => __build_landing_company($lc),
-    };
+    return __build_landing_company($lc);
 }
 
 sub __build_landing_company {
@@ -84,27 +80,14 @@ sub __build_landing_company {
 }
 
 sub statement {
-    my ($c, $args) = @_;
-
-    my $statement = get_transactions($c, $args);
-    return {
-        echo_req  => $args,
-        msg_type  => 'statement',
-        statement => $statement,
-    };
-}
-
-sub get_transactions {
-    my ($c, $args) = @_;
-
-    my $acc = $c->stash('account');
+    my ($account, $args) = @_;
 
     return {
         transactions => [],
         count        => 0
-    } unless ($acc);
+    } unless ($account);
 
-    my $results = BOM::Database::DataMapper::Transaction->new({db => $acc->db})->get_transactions_ws($args, $acc);
+    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($args, $account);
 
     my @txns;
     foreach my $txn (@$results) {
@@ -115,14 +98,18 @@ sub get_transactions {
             action_type      => $txn->{action_type},
             balance_after    => $txn->{balance_after},
             contract_id      => $txn->{financial_market_bet_id},
-            shortcode        => $txn->{short_code},
-            longcode         => $txn->{payment_remark} || '',
         };
 
-        if ($txn->{short_code}) {
-            my ($longcode, undef, undef) = try { simple_contract_info($txn->{short_code}, $acc->currency_code) };
-            $struct->{longcode} = Mojo::DOM->new->parse($longcode)->all_text if $longcode;
+        if ($args->{description}) {
+            $struct->{longcode}  = $txn->{payment_remark} // '';
+            $struct->{shortcode} = $txn->{short_code}     // '';
+
+            if ($txn->{short_code}) {
+                my ($longcode, undef, undef) = try { simple_contract_info($txn->{short_code}, $account->currency_code) };
+                $struct->{longcode} = $longcode if $longcode;
+            }
         }
+
         push @txns, $struct;
     }
 
@@ -133,21 +120,7 @@ sub get_transactions {
 }
 
 sub profit_table {
-    my ($c, $args) = @_;
-
-    my $profit_table = __get_sold($c, $args);
-    return {
-        echo_req     => $args,
-        msg_type     => 'profit_table',
-        profit_table => $profit_table,
-    };
-}
-
-sub __get_sold {
-    my ($c, $args) = @_;
-
-    my $client = $c->stash('client');
-    my $acc    = $c->stash('account');
+    my ($client, $args) = @_;
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
@@ -178,7 +151,7 @@ sub __get_sold {
 
         if ($and_description) {
             $trx{longcode} = '';
-            if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
+            if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency) }) {
                 $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
                 $trx{shortcode} = $con->shortcode;
             }
