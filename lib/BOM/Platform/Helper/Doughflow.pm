@@ -50,20 +50,20 @@ sub get_sportsbook {
 sub get_doughflow_language_code_for {
     my $lang = shift;
 
-    my %lang_code_for = (
-        AR    => 'ar',
-        DE    => 'de',
-        ES    => 'es',
-        FR    => 'fr',
-        JA    => 'ja',
-        PL    => 'pl',
-        PT    => 'pt',
-        RU    => 'ru',
-        ID    => 'id',
-        ZH_CN => 'zh_CHS',
-    );
+    my %lang_code_for = (ZH_CN => 'zh_CHS');
 
-    return $lang_code_for{$lang} || 'en';
+    my $code = 'en';
+    if (exists $lang_code_for{$lang}) {
+        $code = $lang_code_for{$lang};
+    } elsif (
+        grep {
+            $_ eq uc $lang
+        } @{BOM::Platform::Runtime->instance->app_config->cgi->allowed_languages})
+    {
+        $code = lc $lang;
+    }
+
+    return $code;
 }
 
 1;

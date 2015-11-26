@@ -4,11 +4,8 @@ use warnings;
 use Test::More tests => 5;
 use Test::NoWarnings;
 use Time::HiRes;
-use BOM::Test::Data::Utility::UnitTestChronicle qw(init_chronicle);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::System::Chronicle;
-
-#clear everything from chronicle
-init_chronicle;
 
 my $d = { sample1 => [1, 2, 3],
           sample2 => [4, 5, 6],
