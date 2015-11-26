@@ -92,34 +92,53 @@ my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
 my $cache_sep      = '==';
 
 sub _predefined_trading_period {
-    my $args            = shift;
-    my @offerings       = @{$args->{offerings}};
-    my $exchange        = $args->{exchange};
-    my $now             = $args->{date};
-    my $now_hour        = $now->hour;
-    my $now_minute      = $now->minute;
-    my $now_date        = $now->date;
-    my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
-    my $today_close     = $exchange->closing_on($now)->epoch;
-    my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
+    my $args                 = shift;
+    my @offerings            = @{$args->{offerings}};
+    my $exchange             = $args->{exchange};
+    my $now                  = $args->{date};
+    my $now_hour             = $now->hour;
+    my $now_minute           = $now->minute;
+    my $now_date             = $now->date;
+    my $trading_key          = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
+    my $today_close          = $exchange->closing_on($now);
+    my $today_close_datetime = $today_close->datetime;
+    my $today_close_epoch    = $today_close->epoch;
+    my $today                = $now->truncate_to_day;                                       # Start of the day object.
+    my $trading_periods      = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
-        my $today = $now->truncate_to_day;    # Start of the day object.
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
         $trading_periods = [
-            _get_combination_of_date_expiry_date_start({
-                now        => $now,
-                date_start => $today->plus_time_interval($even_hour . 'h'),
-                duration   => '2h'
-            })
-         ];
+            _get_intrday_trading_window({
+                    now        => $now,
+                    date_start => $today->plus_time_interval($even_hour . 'h'),
+                    duration   => '2h'
+                })];
         if ($now_hour > 0) {
             my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
             $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
-            push @$trading_periods, map { _get_combination_of_date_expiry_date_start({now => $now, date_start => $_, duration => '5h'}) }
+            push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h'}) }
                 grep { $_->is_after($today) }
                 map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
         }
+
+        push @$trading_periods,
+            {
+            date_start => {
+                date  => $today->datetime,
+                epoch => $today->epoch
+            },
+            date_expiry => {
+                date  => $today_close_datetime,
+                epoch => $today_close_epoch
+            },
+            duration => '0d'
+            };
+
+        my @long_term_durations = qw(weekly monthly quarterly yearly);
+
+        push @$trading_periods, map { _get_daily_trading_window({now => $now, date_start => $now, duration => $_}) } @long_term_durations;
+
         my $key_expiry = $now_minute < 45 ? $now_date . ' ' . $now_hour . ':45:00' : $now_date . ' ' . $now_hour . ':00:00';
         Cache::RedisDB->set($cache_keyspace, $trading_key, $trading_periods, Date::Utility->new($key_expiry)->epoch - $now->epoch);
 
@@ -138,7 +157,7 @@ sub _predefined_trading_period {
                 next;
             } elsif ($now->day_of_week == 5
                 and $trading_duration < 86400
-                and ($date_expiry > $today_close or $date_start > $today_close))
+                and ($date_expiry > $today_close_epoch or $date_start > $today_close_epoch))
             {
                 next;
             } else {
@@ -150,13 +169,13 @@ sub _predefined_trading_period {
     return @new_offerings;
 }
 
-=head2 _get_combination_of_date_expiry_date_start
+=head2 _get_intraday_trading_window
 
-To get the date_start and date_expiry for a give trading duration
+To get the intraday trading window of a trading duration
 
 =cut
 
-sub _get_combination_of_date_expiry_date_start {
+sub _get_intraday_trading_window {
     my $args             = shift;
     my $date_start       = $args->{date_start};
     my $duration         = $args->{duration};
@@ -177,6 +196,31 @@ sub _get_combination_of_date_expiry_date_start {
             duration => $duration,
         };
     }
+}
+
+=head2 _get_daily_trading_window
+
+To get the daily trading window of a trading duration
+
+=cut
+
+sub _get_daily_trading_window {
+    my $args       = shift;
+    my $date_start = $args->{date_start};
+    my $duration   = $args->{duration};
+    my $now        = $args->{now};
+
+    return {
+        date_start => {
+            date  => $early_date_start->datetime,
+            epoch => $early_date_start->epoch
+        },
+        date_expiry => {
+            date  => $date_expiry->datetime,
+            epoch => $date_expiry->epoch,
+        },
+        duration => $duration,
+    };
 }
 
 =head2 _set_predefined_barriers
