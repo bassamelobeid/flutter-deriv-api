@@ -302,10 +302,9 @@ sub payment_account_transfer {
     $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
 
     unless ($inter_db_transfer) {
-        # don't try to optimize $db away. Rose::DB explicitly closes
-        # handles when the Rose::DB object goes out of scope
-        my $db  = BOM::Database::ClientDB->new({broker_code => $fmClient->broker_code})->db;
-        my $dbh = $db->dbh;
+        # here we rely on ->set_default_account above
+        # which makes sure the `write` database is used.
+        my $dbh = $fmClient->db->dbh;
         try {
             my $sth = $dbh->prepare('SELECT 1 FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
             $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
