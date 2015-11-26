@@ -207,7 +207,8 @@ sub paymentagent_transfer {
             BOM::Platform::Context::localize("Sorry, [_1] is not default currency for payment agent [_2]", $currency, $client_fm->loginid));
     }
     unless ($client_to->currency eq $currency) {
-        return $reject_error_sub->(BOM::Platform::Context::localize("Sorry, [_1] is not default currency for client [_2]", $currency, $client_to->loginid));
+        return $reject_error_sub->(
+            BOM::Platform::Context::localize("Sorry, [_1] is not default currency for client [_2]", $currency, $client_to->loginid));
     }
 
     if ($client_to->get_status('disabled')) {
