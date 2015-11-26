@@ -92,11 +92,9 @@ smart_index:
     official_ohlc: 0
 middle_east:
     name: middle_east
-    display_name: 'Middle East Indices'
+    display_name: 'Middle East'
     display_order: 5
-    asset_type: 'index'
     market: indices
-    explanation: 'Middle East Indices'
     volatility_surface_type: "flat"
 major_pairs:
     name: major_pairs
