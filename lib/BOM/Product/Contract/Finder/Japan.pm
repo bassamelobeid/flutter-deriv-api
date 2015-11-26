@@ -138,7 +138,7 @@ sub _predefined_trading_period {
                 next;
             } elsif ($now->day_of_week == 5
                 and $trading_duration < 86400
-                and ($date_expiry > $today_close or $date_start > $today_close or ($today_close - $date_expiry) < 7200))
+                and ($date_expiry > $today_close or $date_start > $today_close))
             {
                 next;
             } else {
@@ -164,7 +164,7 @@ sub _get_combination_of_date_expiry_date_start {
     my $early_date_start = $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
 
-    if ($now->is_before($date_expiry)) {
+    if ($now->is_before($date_expiry) and $date_expiry->hour < 18) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
