@@ -15,7 +15,7 @@ sub landing_company {
     } else {
         return {
             msg_type        => 'landing_company',
-            landing_company => $response,
+            landing_company => $response
         };
     }
 }
@@ -40,9 +40,7 @@ sub statement {
     return {
         echo_req  => $args,
         msg_type  => 'statement',
-        statement => BOM::WebSocketAPI::v3::Accounts::statement($c->stash('account'));
-        ,
-    };
+        statement => BOM::WebSocketAPI::v3::Accounts::statement($c->stash('account'))};
 }
 
 sub profit_table {
@@ -51,8 +49,7 @@ sub profit_table {
     return {
         echo_req     => $args,
         msg_type     => 'profit_table',
-        profit_table => BOM::WebSocketAPI::v3::Accounts::profit_table($c->stash('client')),
-    };
+        profit_table => BOM::WebSocketAPI::v3::Accounts::profit_table($c->stash('client'))};
 }
 
 sub get_account_status {
@@ -61,8 +58,7 @@ sub get_account_status {
     return {
         echo_req           => $args,
         msg_type           => 'get_account_status',
-        get_account_status => BOM::WebSocketAPI::v3::Accounts::get_account_status($c->stash('client'));
-    };
+        get_account_status => BOM::WebSocketAPI::v3::Accounts::get_account_status($c->stash('client'))};
 }
 
 sub change_password {
@@ -93,8 +89,7 @@ sub get_settings {
     return {
         echo_req => $args,
         msg_type => 'get_settings',
-        get_settings => BOM::WebSocketAPI::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language);
-    };
+        get_settings => BOM::WebSocketAPI::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language)};
 }
 
 sub set_settings {
@@ -112,6 +107,35 @@ sub set_settings {
         return {
             msg_type     => 'set_settings',
             set_settings => $response->{status}};
+    }
+
+    return;
+}
+
+sub get_self_exclusion {
+    my ($c, $args) = @_;
+    return {
+        msg_type           => 'get_self_exclusion',
+        get_self_exclusion => BOM::WebSocketAPI::v3::Accounts::get_self_exclusion($c->stash('client'))};
+}
+
+sub set_self_exclusion {
+    my ($c, $args) = @_;
+
+    my $response = BOM::WebSocketAPI::v3::Accounts::set_self_exclusion(
+        $c->stash('client'),
+        $c->stash('request')->website->config->get('customer_support.email'),
+        $c->app_config->compliance->email, $args
+        )
+        if (exists $response->{error}) {
+        my $err = $c->new_error('set_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
+        $err->{error}->{field} = $response->{error}->{details} if (exists $response->{error}->{details});
+        return $err;
+    } else {
+        return {
+            msg_type           => 'set_self_exclusion',
+            set_self_exclusion => $response->{status},
+        };
     }
 
     return;

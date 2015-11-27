@@ -291,7 +291,7 @@ sub get_settings {
     return {
         email         => $client->email,
         date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
-        country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
+        country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $language),
         $client->is_virtual
         ? ()
         : (
@@ -403,10 +403,7 @@ sub set_settings {
 }
 
 sub get_self_exclusion {
-    my ($c, $args) = @_;
-
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my $client = shift;
 
     my $self_exclusion     = $client->get_self_exclusion;
     my $get_self_exclusion = {};
@@ -439,26 +436,24 @@ sub get_self_exclusion {
         }
     }
 
-    return {
-        msg_type           => 'get_self_exclusion',
-        get_self_exclusion => $get_self_exclusion,
-    };
+    return $get_self_exclusion,;
 }
 
 sub set_self_exclusion {
-    my ($c, $args) = @_;
-
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my ($client, $cs_email, $compliance_email, $args) = @_;
 
     # get old from above sub get_self_exclusion
-    my $self_exclusion = get_self_exclusion($c)->{'get_self_exclusion'};
+    my $self_exclusion = get_self_exclusion($client);
 
     ## validate
     my $error_sub = sub {
-        my ($c, $error, $field) = @_;
-        my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $error);
-        $err->{error}->{field} = $field;
+        my ($error, $field) = @_;
+        my $err = BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'SetSelfExclusionError',
+            message_to_client => $error,
+            message           => '',
+            details           => $field
+        });
         return $err;
     };
 
@@ -474,13 +469,13 @@ sub set_self_exclusion {
             next;
         }
         if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
-            return $error_sub->($c, $c->l('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+            return $error_sub->(BOM::Platform::Context::localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         }
     }
 
     if (my $session_duration_limit = $args{session_duration_limit}) {
         if ($session_duration_limit > 1440 * 42) {
-            return $error_sub->($c, $c->l('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
+            return $error_sub->(BOM::Platform::Context::localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
         }
     }
 
@@ -492,17 +487,17 @@ sub set_self_exclusion {
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
-            return $error_sub->($c, $c->l('Exclude time must be after today.'), 'exclude_until');
+            return $error_sub->(BOM::Platform::Context::localize('Exclude time must be after today.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be less than 6 months
         elsif ($exclusion_end->epoch < $six_month->epoch) {
-            return $error_sub->($c, $c->l('Exclude time cannot be less than 6 months.'), 'exclude_until');
+            return $error_sub->(BOM::Platform::Context::localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be more than 5 years
         elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-            return $error_sub->($c, $c->l('Exclude time cannot be for more than five years.'), 'exclude_until');
+            return $error_sub->(BOM::Platform::Context::localize('Exclude time cannot be for more than five years.'), 'exclude_until');
         }
     } else {
         delete $args{exclude_until};
@@ -555,23 +550,21 @@ sub set_self_exclusion {
     }
     if ($message) {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
-        my $compliance_email = $c->app_config->compliance->email;
         send_email({
             from    => $compliance_email,
-            to      => $compliance_email . ',' . $r->website->config->get('customer_support.email'),
+            to      => $compliance_email . ',' . $cs_email,
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
     } else {
-        return $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $c->l('Please provide at least one self-exclusion setting.'));
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'SetSelfExclusionError',
+                message_to_client => BOM::Platform::Context::localize('Please provide at least one self-exclusion setting.')});
     }
 
     $client->save();
 
-    return {
-        msg_type           => 'set_self_exclusion',
-        set_self_exclusion => 1,
-    };
+    return {status => 1};
 }
 
 1;
