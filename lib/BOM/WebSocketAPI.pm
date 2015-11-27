@@ -44,12 +44,25 @@ sub startup {
             }
         });
 
+    # pre-load controlleres to have more shared code among workers (COW)
+    
     # add few helpers
+    
+    for (qw/Websocket_v1 Websocket_v2 Websocket_v3/) {
+        my $module = __PACKAGE__ . "::$_";
+        eval "use $module;";
+        if ($@) {
+            my $msg = "Cannnot pre-load $module: $@, exiting";
+            $log->error($msg);
+            die($@)
+        }
+    }
+    
+    # pre-load config to be shared among workers
+    my $app_config = BOM::Platform::Runtime->instance->app_config;
     $app->helper(
-        app_config => sub {
-            state $app_config = BOM::Platform::Runtime->instance->app_config;
-            return $app_config;
-        });
+        app_config => sub { return $app_config }
+        );
 
     $app->helper(
         l => sub {
