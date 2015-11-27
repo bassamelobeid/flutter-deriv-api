@@ -46,11 +46,6 @@ Represents underlying symbol
 
 =cut
 
-has symbol => (
-    is       => 'ro',
-    required => 1,
-);
-
 has document => (
     is         => 'rw',
     lazy_build => 1,
