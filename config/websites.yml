@@ -502,6 +502,76 @@ Binaryqa35:
       - VRTJ
       - JP
   reality_check_interval: 60
+Binaryqa36:
+  primary_url: www.binaryqa36.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+      - VRTJ
+      - JP
+  reality_check_interval: 60
+Binaryqa37:
+  primary_url: www.binaryqa37.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+      - VRTJ
+      - JP
+  reality_check_interval: 60
+Binaryqa38:
+  primary_url: www.binaryqa38.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+      - VRTJ
+      - JP
+  reality_check_interval: 60
+Binaryqa39:
+  primary_url: www.binaryqa39.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+      - VRTJ
+      - JP
+  reality_check_interval: 60
+Binaryqa40:
+  primary_url: www.binaryqa40.com
+  default_language: EN
+  resource_subdir: Binary
+  broker_codes:
+      - MX
+      - MF
+      - VRTC
+      - MLT
+      - CR
+      - FOG
+      - VRTJ
+      - JP
+  reality_check_interval: 60
 Binary:
   primary_url: www.binary.com
   default_language: EN
