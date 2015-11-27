@@ -212,8 +212,8 @@ sub _get_daily_trading_window {
 
     return {
         date_start => {
-            date  => $early_date_start->datetime,
-            epoch => $early_date_start->epoch
+            date  => $date_start->datetime,
+            epoch => $date_start->epoch
         },
         date_expiry => {
             date  => $date_expiry->datetime,
