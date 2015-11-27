@@ -59,6 +59,7 @@ sub get_account_status {
     my ($c, $args) = @_;
 
     return {
+        echo_req           => $args,
         msg_type           => 'get_account_status',
         get_account_status => BOM::WebSocketAPI::v3::Accounts::get_account_status($c->stash('client'));
     };
@@ -75,6 +76,7 @@ sub change_password {
         $r->website->config->get('customer_support.email'),
         $r->client_ip
     );
+
     if (exists $response->{error}) {
         return $c->new_error('change_password', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -82,6 +84,37 @@ sub change_password {
             msg_type        => 'change_password',
             change_password => $response->{status}};
     }
+    return;
+}
+
+sub get_settings {
+    my ($c, $args) = @_;
+
+    return {
+        echo_req => $args,
+        msg_type => 'get_settings',
+        get_settings => BOM::WebSocketAPI::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language);
+    };
+}
+
+sub set_settings {
+    my ($c, $args) = @_;
+
+    my $r = $c->stash('request');
+
+    my $response =
+        BOM::WebSocketAPI::v3::Accounts::set_settings($c->stash('client'), $r->website, $r->client_ip, $c->req->headers->header('User-Agent'),
+        $r->language, $args);
+
+    if (exists $response->{error}) {
+        return $c->new_error('set_settings', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        return {
+            msg_type     => 'set_settings',
+            set_settings => $response->{status}};
+    }
+
+    return;
 }
 
 1;

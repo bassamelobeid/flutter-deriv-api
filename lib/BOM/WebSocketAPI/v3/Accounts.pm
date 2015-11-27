@@ -8,15 +8,17 @@ use Try::Tiny;
 use Mojo::DOM;
 use Date::Utility;
 
-use BOM::Product::ContractFactory qw( simple_contract_info );
+use BOM::WebSocketAPI::v3::Utility;
+use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
-use BOM::Product::Transaction;
-use BOM::System::Password;
 use BOM::Platform::Email qw(send_email);
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
+use BOM::Product::Transaction;
+use BOM::Product::ContractFactory qw( simple_contract_info );
+use BOM::System::Password;
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 
@@ -284,38 +286,33 @@ sub change_password {
 }
 
 sub get_settings {
-    my ($c, $args) = @_;
-
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my ($client, $language) = @_;
 
     return {
-        msg_type     => 'get_settings',
-        get_settings => {
-            email         => $client->email,
-            date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
-            country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
-            $client->is_virtual
-            ? ()
-            : (
-                address_line_1   => $client->address_1,
-                address_line_2   => $client->address_2,
-                address_city     => $client->city,
-                address_state    => $client->state,
-                address_postcode => $client->postcode,
-                phone            => $client->phone,
-            ),
-        }};
+        email         => $client->email,
+        date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
+        country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
+        $client->is_virtual
+        ? ()
+        : (
+            address_line_1   => $client->address_1,
+            address_line_2   => $client->address_2,
+            address_city     => $client->city,
+            address_state    => $client->state,
+            address_postcode => $client->postcode,
+            phone            => $client->phone,
+        ),
+    };
 }
 
 sub set_settings {
-    my ($c, $args) = @_;
+    my ($client, $website, $ip, $user_agent, $language, $args) = @_;
 
-    my $r      = $c->stash('request');
-    my $now    = Date::Utility->new;
-    my $client = $c->stash('client');
+    my $now = Date::Utility->new;
 
-    return $c->new_error('set_settings', 'PermissionDenied', $c->l('Permission denied.')) if $client->is_virtual;
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => BOM::Platform::Context::localize('Permission denied.')}) if $client->is_virtual;
 
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -347,28 +344,31 @@ sub set_settings {
     $client->postcode($addressPostcode);
     $client->phone($phone);
 
-    $client->latest_environment(
-        $now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
+    $client->latest_environment($now->datetime . ' ' . $ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
-        return $c->new_error('set_settings', 'InternalServerError', $c->l('Sorry, an error occurred while processing your account.'));
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your account.')});
     }
 
     if ($cil_message) {
         $client->add_note('Update Address Notification', $cil_message);
     }
 
-    my $message =
-        $c->l('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
-        . "\n\n";
-    $message .= $c->l('Please note that your settings have been updated as follows:') . "\n\n";
+    my $message = BOM::Platform::Context::localize(
+        'Dear [_1] [_2] [_3],',
+        BOM::Platform::Locale::translate_salutation($client->salutation),
+        $client->first_name, $client->last_name
+    ) . "\n\n";
+    $message .= BOM::Platform::Context::localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     my $residence_country = Locale::Country::code2country($client->residence);
 
     my @updated_fields = (
-        [$c->l('Email address'),        $client->email],
-        [$c->l('Country of Residence'), $residence_country],
+        [BOM::Platform::Context::localize('Email address'),        $client->email],
+        [BOM::Platform::Context::localize('Country of Residence'), $residence_country],
         [
-            $c->l('Address'),
+            BOM::Platform::Context::localize('Address'),
             $client->address_1 . ', '
                 . $client->address_2 . ', '
                 . $client->city . ', '
@@ -376,7 +376,7 @@ sub set_settings {
                 . $client->postcode . ', '
                 . $residence_country
         ],
-        [$c->l('Telephone'), $client->phone],
+        [BOM::Platform::Context::localize('Telephone'), $client->phone],
     );
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
@@ -388,21 +388,18 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . $c->l('The [_1] team.', $r->website->display_name);
+    $message .= "\n" . BOM::Platform::Context::localize('The [_1] team.', $website->display_name);
 
     send_email({
-        from               => $r->website->config->get('customer_support.email'),
+        from               => $website->config->get('customer_support.email'),
         to                 => $client->email,
-        subject            => $client->loginid . ' ' . $c->l('Change in account settings'),
+        subject            => $client->loginid . ' ' . BOM::Platform::Context::localize('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
-    return {
-        msg_type     => 'set_settings',
-        set_settings => 1,
-    };
+    return {status => 1};
 }
 
 sub get_self_exclusion {
