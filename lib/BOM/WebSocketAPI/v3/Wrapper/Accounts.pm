@@ -23,7 +23,7 @@ sub landing_company {
 sub landing_company_details {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::Accounts::landing_company($args);
+    my $response = BOM::WebSocketAPI::v3::Accounts::landing_company_details($args);
     if (exists $response->{error}) {
         return $c->new_error('landing_company_details', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -38,18 +38,18 @@ sub statement {
     my ($c, $args) = @_;
 
     return {
-        echo_req  => $args,
-        msg_type  => 'statement',
-        statement => BOM::WebSocketAPI::v3::Accounts::statement($c->stash('account'))};
+        echo_req => $args,
+        msg_type => 'statement',
+        statement => BOM::WebSocketAPI::v3::Accounts::statement($c->stash('account'), $args)};
 }
 
 sub profit_table {
     my ($c, $args) = @_;
 
     return {
-        echo_req     => $args,
-        msg_type     => 'profit_table',
-        profit_table => BOM::WebSocketAPI::v3::Accounts::profit_table($c->stash('client'))};
+        echo_req => $args,
+        msg_type => 'profit_table',
+        profit_table => BOM::WebSocketAPI::v3::Accounts::profit_table($c->stash('client'), $args)};
 }
 
 sub get_account_status {
@@ -67,7 +67,7 @@ sub change_password {
     my $r = $c->stash('request');
 
     my $response = BOM::WebSocketAPI::v3::Accounts::change_password(
-        $client,
+        $c->stash('client'),
         $c->stash('token_type'),
         $r->website->config->get('customer_support.email'),
         $r->client_ip
@@ -126,16 +126,15 @@ sub set_self_exclusion {
         $c->stash('client'),
         $c->stash('request')->website->config->get('customer_support.email'),
         $c->app_config->compliance->email, $args
-        )
-        if (exists $response->{error}) {
+    );
+    if (exists $response->{error}) {
         my $err = $c->new_error('set_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
         $err->{error}->{field} = $response->{error}->{details} if (exists $response->{error}->{details});
         return $err;
     } else {
         return {
             msg_type           => 'set_self_exclusion',
-            set_self_exclusion => $response->{status},
-        };
+            set_self_exclusion => $response->{status}};
     }
 
     return;
