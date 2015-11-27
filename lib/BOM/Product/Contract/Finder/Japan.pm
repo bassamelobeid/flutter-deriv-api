@@ -183,7 +183,7 @@ sub _get_intraday_trading_window {
     my $early_date_start = $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
 
-    if ($now->is_before($date_expiry) and $date_expiry->hour < 18 or ($now->day_of_week ==1 and $early_date_start->hour > 0)) {
+    if ($now->is_before($date_expiry) and $date_expiry->hour < 18 or ($now->day_of_week ==1 and $early_date_start->hour != 23)) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
