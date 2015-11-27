@@ -24,10 +24,10 @@ sub new_account_virtual {
     my ($c, $args) = @_;
 
     my %details = %{$args};
-    my $code    = delete $details{verification_code};
+    my $email   = $args->{email};
 
     my $err_code;
-    if (BOM::Platform::Account::validate_verification_code($details{email}, $code)) {
+    if (_is_session_cookie_valid($c, $email)) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => \%details,
             email_verified => 1
@@ -52,10 +52,21 @@ sub new_account_virtual {
     return $c->new_error('new_account_virtual', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
 }
 
+sub _is_session_cookie_valid {
+    my ($c, $email) = @_;
+
+    my $session_cookie = BOM::Platform::SessionCookie->new({token => $c->cookie('verify_token')});
+    unless ($session_cookie and $session_cookie->email and $session_cookie->email eq $email) {
+        return 0;
+    }
+
+    return 1;
+}
+
 sub verify_email {
     my ($c, $args) = @_;
-    my $s = shift;
-    my $r = $s->stash('request');
+
+    my $r     = $c->stash('request');
     my $email = $args->{verify_email};
 
     if (BOM::Platform::User->new({email => $email})) {
