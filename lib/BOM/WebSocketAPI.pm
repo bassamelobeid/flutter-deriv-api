@@ -53,18 +53,16 @@ sub startup {
             1;
         } or do {
             my $error = $@;
-            my $msg = "Cannnot pre-load $module: $@, exiting";
+            my $msg   = "Cannnot pre-load $module: $@, exiting";
             $log->error($msg);
             die($@);
-        }
+            }
     }
-    
+
     # add few helpers
     # pre-load config to be shared among workers
     my $app_config = BOM::Platform::Runtime->instance->app_config;
-    $app->helper(
-        app_config => sub { return $app_config }
-        );
+    $app->helper(app_config => sub { return $app_config });
 
     $app->helper(
         l => sub {
