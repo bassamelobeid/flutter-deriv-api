@@ -70,7 +70,7 @@ sub change_password {
         $c->stash('client'),
         $c->stash('token_type'),
         $r->website->config->get('customer_support.email'),
-        $r->client_ip
+        $r->client_ip, $args
     );
 
     if (exists $response->{error}) {
