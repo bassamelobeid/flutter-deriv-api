@@ -18,6 +18,7 @@ use BOM::Platform::User;
 use BOM::Platform::Account;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
+use BOM::Platform::SessionCookie;
 
 sub new_account_virtual {
     my ($c, $args) = @_;
@@ -53,19 +54,31 @@ sub new_account_virtual {
 
 sub verify_email {
     my ($c, $args) = @_;
+    my $s = shift;
+    my $r = $s->stash('request');
     my $email = $args->{verify_email};
 
     if (BOM::Platform::User->new({email => $email})) {
         $c->app->log->warn("verify_email, [$email] already a Binary.com user, no email sent");
     } else {
-        my $code = BOM::Platform::Account::get_verification_code($email);
+        my $code = BOM::Platform::SessionCookie->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'new_account'
+            })->token;
+
+        my $link = $r->url_for(
+            '/user/validate_link',
+            {
+                verify_token => $code,
+            });
 
         my $website = $c->stash('request')->website;
         send_email({
             from    => $website->config->get('customer_support.email'),
             to      => $email,
             subject => $c->l('Verify your email address - [_1]', $website->display_name),
-            message => [$c->l('Your email address verification code is: ' . $code)],
+            message => [$c->l('Click on the following link to proceed: ' . $link)],
         });
     }
 
