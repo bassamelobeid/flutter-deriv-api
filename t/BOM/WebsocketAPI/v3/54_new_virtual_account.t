@@ -24,7 +24,11 @@ my $create_vr = {
     email               => $email,
     client_password     => 'Ac0+-_:@. ',
     residence           => 'au',
-    verification_code   => BOM::Platform::Account::get_verification_code($email),
+    verification_code   => BOM::Platform::SessionCookie->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'new_account'
+            })->token;
 };
 
 subtest 'verify_email' => sub {
