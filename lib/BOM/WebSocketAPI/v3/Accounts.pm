@@ -218,9 +218,7 @@ sub balance {
 }
 
 sub get_account_status {
-    my ($c, $args) = @_;
-
-    my $client = $c->stash('client');
+    my $client = shift;
 
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
@@ -231,62 +229,58 @@ sub get_account_status {
         push @status, 'active';
     }
 
-    return {
-        msg_type           => 'get_account_status',
-        get_account_status => \@status
-    };
+    return \@status;
 }
 
 sub change_password {
-    my ($c, $args) = @_;
+    my ($client, $token_type, $cs_email, $ip, $args) = @_;
 
     ## only allow for Session Token
-    return $c->new_error('change_password', 'PermissionDenied', $c->l('Permission denied.'))
-        unless ($c->stash('token_type') // '') eq 'session_token';
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => BOM::Platform::Context::localize('Permission denied.')}) unless ($token_type // '') eq 'session_token';
 
-    my $client_obj = $c->stash('client');
-    my $user = BOM::Platform::User->new({email => $client_obj->email});
+    my $user = BOM::Platform::User->new({email => $client->email});
 
     my $err = sub {
         my ($message) = @_;
-        return $c->new_error('change_password', 'ChangePasswordError', $message);
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'ChangePasswordError',
+            message_to_client => $message
+        });
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    return $err->($c->l('New password is same as old password.'))
+    return $err->(BOM::Platform::Context::localize('New password is same as old password.'))
         if $args->{new_password} eq $args->{old_password};
-    return $err->($c->l("Old password is wrong."))
+    return $err->(BOM::Platform::Context::localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
-    foreach my $client ($user->clients) {
-        $client->password($new_password);
-        $client->save;
+    foreach my $obj ($user->clients) {
+        $obj->password($new_password);
+        $obj->save;
     }
 
-    my $r = $c->stash('request');
-    BOM::System::AuditLog::log('password has been changed', $client_obj->email);
+    BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => $r->website->config->get('customer_support.email'),
-            to      => $client_obj->email,
-            subject => $c->l('Your password has been changed.'),
+            from    => $cs_email,
+            to      => $client->email,
+            subject => BOM::Platform::Context::localize('Your password has been changed.'),
             message => [
-                $c->l(
+                BOM::Platform::Context::localize(
                     'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
-                    $client_obj->email,
-                    $r->client_ip
+                    $client->email,
+                    $ip
                 )
             ],
             use_email_template => 1,
         });
 
-    return {
-        msg_type        => 'change_password',
-        change_password => 1
-    };
+    return {status => 1};
 }
 
 sub get_settings {
