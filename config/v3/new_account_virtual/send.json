@@ -30,7 +30,7 @@
     },
     "residence": {
       "type": "string",
-      "description": "Calue receive from residence_list call (2-letter country code)",
+      "description": "Value received from residence_list call (2-letter country code)",
       "pattern": "^[a-z]{2}$",
       "required": "1"
     },
