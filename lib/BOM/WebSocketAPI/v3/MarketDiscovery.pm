@@ -6,20 +6,17 @@ use warnings;
 use Try::Tiny;
 use Mojo::DOM;
 use Time::HiRes;
-use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::System;
-use Cache::RedisDB;
-use JSON;
+use Data::UUID;
 use List::MoreUtils qw(any none);
 
+use BOM::WebSocketAPI::v3::Symbols;
+use BOM::WebSocketAPI::v3::System;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
-use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
-use Data::UUID;
-use BOM::Market::Underlying;
+use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 sub trading_times {
     my $args = shift;

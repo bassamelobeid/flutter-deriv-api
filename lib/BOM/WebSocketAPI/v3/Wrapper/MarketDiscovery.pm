@@ -3,6 +3,9 @@ package BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use strict;
 use warnings;
 
+use JSON;
+use Cache::RedisDB;
+
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 
 sub trading_times {
