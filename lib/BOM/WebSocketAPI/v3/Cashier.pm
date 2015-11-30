@@ -660,7 +660,7 @@ sub transfer_between_accounts {
     }
 
     unless ($is_good) {
-        return $error_sub->(localize('The account transfer is unavailable for you.'));
+        return $error_sub->(localize('The account transfer is unavailable for your account.'));
     }
 
     my $client_from = $siblings{$loginid_from} // '';
