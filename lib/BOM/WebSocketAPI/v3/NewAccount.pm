@@ -9,19 +9,21 @@ use List::MoreUtils qw(any);
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
+use BOM::WebSocketAPI::v3::Utility;
+use BOM::Platform::Account;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
-use BOM::Platform::Account;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::SessionCookie;
+use BOM::Platform::Context qw (localize);
 
 sub new_account_virtual {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my %details = %{$args};
     my $email   = $args->{email};
@@ -37,19 +39,19 @@ sub new_account_virtual {
             my $account = $client->default_account->load;
 
             return {
-                msg_type            => 'new_account_virtual',
-                new_account_virtual => {
-                    client_id => $client->loginid,
-                    currency  => $account->currency_code,
-                    balance   => $account->balance,
-                }};
+                client_id => $client->loginid,
+                currency  => $account->currency_code,
+                balance   => $account->balance
+            };
         }
         $err_code = $acc->{error};
     } else {
         $err_code = 'email unverified';
     }
 
-    return $c->new_error('new_account_virtual', $err_code, BOM::Platform::Locale::error_map()->{$err_code});
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => $err_code,
+            message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
 }
 
 sub _is_session_cookie_valid {
@@ -64,14 +66,10 @@ sub _is_session_cookie_valid {
 }
 
 sub verify_email {
-    my ($c, $args) = @_;
 
-    my $r     = $c->stash('request');
-    my $email = $args->{verify_email};
+    my ($email, $website) = @_;
 
-    if (BOM::Platform::User->new({email => $email})) {
-        $c->app->log->warn("verify_email, [$email] already a Binary.com user, no email sent");
-    } else {
+    unless (BOM::Platform::User->new({email => $email})) {
         my $code = BOM::Platform::SessionCookie->new({
                 email       => $email,
                 expires_in  => 3600,
@@ -84,20 +82,15 @@ sub verify_email {
                 verify_token => $code,
             });
 
-        my $website = $c->stash('request')->website;
         send_email({
             from    => $website->config->get('customer_support.email'),
             to      => $email,
-            subject => $c->l('Verify your email address - [_1]', $website->display_name),
-            message => [$c->l('Click on the following link to proceed: ' . $link)],
-            use_email_template => 1,
-        });
+            subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $website->display_name),
+            message => [BOM::Platform::Context::localize('Your email address verification code is: ' . $code)],
+            use_email_template => 1});
     }
 
-    return {
-        msg_type     => 'verify_email',
-        verify_email => 1                 # always return 1, so not to leak client's email
-    };
+    return {status => 1};    # always return 1, so not to leak client's email
 }
 
 sub _get_client_details {
@@ -111,7 +104,7 @@ sub _get_client_details {
         checked_affiliate_exposures   => 0,
         source                        => 'websocket-api',
         latest_environment            => '',
-        myaffiliates_token            => $client->myaffiliates_token || '',
+        myaffiliates_token            => $client->myaffiliates_token || ''
     };
 
     my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
@@ -145,20 +138,23 @@ sub _get_client_details {
 }
 
 sub new_account_real {
-    my ($c, $args) = @_;
-    my $client = $c->stash('client');
+    my ($client, $args) = @_;
 
     my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
-        return $c->new_error($response, 'invalid', $error_map->{'invalid'});
+    unless ($client and $client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'invalid',
+                message_to_client => $error_map->{'invalid'}});
     }
 
     my $details_ref =
         _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
-        return $c->new_error($response, $err, $error_map->{$err});
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my $acc = BOM::Platform::Account::Real::default::create_account({
@@ -168,33 +164,39 @@ sub new_account_real {
     });
 
     if (my $err_code = $acc->{error}) {
-        return $c->new_error($response, $err_code, $error_map->{$err_code});
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => $err_code,
+                message_to_client => $error_map->{$err_code}});
     }
 
     my $landing_company = $acc->{client}->landing_company;
     return {
-        msg_type  => $response,
-        $response => {
-            client_id                 => $acc->{client}->loginid,
-            landing_company           => $landing_company->name,
-            landing_company_shortcode => $landing_company->short,
-        }};
+        client_id                 => $acc->{client}->loginid,
+        landing_company           => $landing_company->name,
+        landing_company_shortcode => $landing_company->short
+    };
 }
 
 sub new_account_maltainvest {
-    my ($c, $args) = @_;
-    my $client = $c->stash('client');
+    my ($client, $args) = @_;
 
     my $response  = 'new_account_maltainvest';
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($args->{accept_risk} == 1 and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
-        return $c->new_error($response, 'invalid', $error_map->{'invalid'});
+    unless ($args->{accept_risk} == 1
+        and $client
+        and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest')
+    {
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'invalid',
+                message_to_client => $error_map->{'invalid'}});
     }
 
     my $details_ref = _get_client_details($args, $client, 'MF');
     if (my $err = $details_ref->{error}) {
-        return $c->new_error($response, $err, $error_map->{$err});
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => $err,
+                message_to_client => $error_map->{$err}});
     }
 
     my $financial_data = {};
@@ -213,16 +215,17 @@ sub new_account_maltainvest {
     });
 
     if (my $err_code = $acc->{error}) {
-        return $c->new_error($response, $err_code, $error_map->{$err_code});
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => $err_code,
+                message_to_client => $error_map->{$err_code}});
     }
 
     my $landing_company = $acc->{client}->landing_company;
     return {
-        msg_type  => $response,
-        $response => {
-            client_id                 => $acc->{client}->loginid,
-            landing_company           => $landing_company->name,
-            landing_company_shortcode => $landing_company->short,
-        }};
+        client_id                 => $acc->{client}->loginid,
+        landing_company           => $landing_company->name,
+        landing_company_shortcode => $landing_company->short
+    };
 }
+
 1;

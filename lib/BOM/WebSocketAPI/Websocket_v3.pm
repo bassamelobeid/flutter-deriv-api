@@ -12,7 +12,7 @@ use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
-use BOM::WebSocketAPI::v3::NewAccount;
+use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
@@ -141,6 +141,8 @@ sub __handle {
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
         ['authorize',               \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,                 0],
+        ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,                0],
+        ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                  0],
         ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                        0],
         ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,                0],
         ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                     0],
@@ -149,16 +151,12 @@ sub __handle {
         ['ping',                    \&BOM::WebSocketAPI::v3::System::ping,                                  0],
         ['time',                    \&BOM::WebSocketAPI::v3::System::server_time,                           0],
         ['payout_currencies',       \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::payout_currencies, 0],
-        ['active_symbols',          \&BOM::WebSocketAPI::v3::Wrapper::Symbols::active_symbols,              0],
         ['contracts_for',           \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::contracts_for,     0],
-        ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,                0],
-        ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                  0],
+        ['active_symbols',          \&BOM::WebSocketAPI::v3::Wrapper::Symbols::active_symbols,              0],
         ['residence_list',          \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,               0],
         ['states_list',             \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                  0],
         ['landing_company',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company,            0],
         ['landing_company_details', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details,    0],
-        ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                      0],
-        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,               0],
         ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                      1],
         ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                     1],
         ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,                1],
@@ -176,8 +174,10 @@ sub __handle {
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,           0],
         ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,       1],
         ['paymentagent_transfer',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,       1],
-        ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                  1],
-        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,           1],
+        ['verify_email',            \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email,             0],
+        ['new_account_real',        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real,         1],
+        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,  1],
+        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual,      0],
     );
 
     foreach my $dispatch (@dispatch) {
