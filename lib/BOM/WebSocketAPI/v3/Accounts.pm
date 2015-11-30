@@ -442,6 +442,10 @@ sub get_self_exclusion {
 sub set_self_exclusion {
     my ($client, $cs_email, $compliance_email, $args) = @_;
 
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+        code              => 'PermissionDenied',
+        message_to_client => BOM::Platform::Context::localize('Permission denied.')}) if $client->is_virtual;
+
     # get old from above sub get_self_exclusion
     my $self_exclusion = get_self_exclusion($client);
 
