@@ -5,6 +5,7 @@ use warnings;
 
 use HTML::Entities;
 use List::Util qw( min first );
+use Scalar::Util qw( looks_like_number );
 use Data::UUID;
 use Path::Tiny;
 use DateTime;
@@ -665,8 +666,8 @@ sub transfer_between_accounts {
     my $client_from = $siblings{$loginid_from} // '';
     my $client_to   = $siblings{$loginid_to}   // '';
 
-    my $currency_from = $client_from->default_account->currency_code;
-    my $currency_to   = $client_to->default_account->currency_code;
+    my $currency_from = $client_from->default_account ? $client_from->default_account->currency_code : '';
+    my $currency_to   = $client_to->default_account   ? $client_to->default_account->currency_code   : '';
     unless ($currency_from eq $currency and $currency_to eq $currency) {
         return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'));
     }
@@ -773,7 +774,7 @@ sub transfer_between_accounts {
             toStaff           => $client_to->loginid,
             remark            => 'Account transfer from ' . $client_from->loginid . ' to ' . $client_to->loginid,
             inter_db_transfer => 1,
-        ) || die "payment_account_transfer [no txns return]";
+        );
     }
     catch {
         $err = "$err_msg Account Transfer failed [$_]";

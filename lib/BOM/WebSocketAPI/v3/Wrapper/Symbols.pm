@@ -3,6 +3,9 @@ package BOM::WebSocketAPI::v3::Wrapper::Symbols;
 use strict;
 use warnings;
 
+use JSON;
+use Cache::RedisDB;
+
 use BOM::WebSocketAPI::v3::Symbols;
 
 sub active_symbols {
