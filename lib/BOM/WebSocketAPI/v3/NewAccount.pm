@@ -119,7 +119,7 @@ sub new_account_real {
     my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
+    unless ($client and $client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return BOM::WebSocketAPI::v3::Utility::create_error({
                 code              => 'invalid',
                 message_to_client => $error_map->{'invalid'}});
@@ -159,7 +159,10 @@ sub new_account_maltainvest {
     my $response  = 'new_account_maltainvest';
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($args->{accept_risk} == 1 and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest') {
+    unless ($args->{accept_risk} == 1
+        and $client
+        and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'maltainvest')
+    {
         return BOM::WebSocketAPI::v3::Utility::create_error({
                 code              => 'invalid',
                 message_to_client => $error_map->{'invalid'}});
@@ -200,4 +203,5 @@ sub new_account_maltainvest {
         landing_company_shortcode => $landing_company->short
     };
 }
+
 1;

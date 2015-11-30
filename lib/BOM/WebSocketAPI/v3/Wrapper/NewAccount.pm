@@ -14,18 +14,15 @@ sub new_account_virtual {
     } else {
         return {
             msg_type            => 'new_account_virtual',
-            new_account_virtual => {
-                client_id => $client->loginid,
-                currency  => $account->currency_code,
-                balance   => $account->balance
-            }};
+            new_account_virtual => $response
+        };
     }
 }
 
 sub verify_email {
     my ($c, $args) = @_;
-    my $email = $args->{verify_email};
 
+    my $email = $args->{verify_email};
     my $response = BOM::WebSocketAPI::v3::NewAccount::verify_email($email, $c->stash('request')->website);
     return {
         msg_type     => 'verify_email',

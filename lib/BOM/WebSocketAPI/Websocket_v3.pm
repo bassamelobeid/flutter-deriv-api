@@ -12,7 +12,7 @@ use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
-use BOM::WebSocketAPI::v3::NewAccount;
+use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
@@ -174,10 +174,10 @@ sub __handle {
         ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,           0],
         ['paymentagent_withdraw',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,       1],
         ['paymentagent_transfer',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,       1],
-        ['verify_email',            \&BOM::WebSocketAPI::v3::NewAccount::verify_email,                      0],
-        ['new_account_real',        \&BOM::WebSocketAPI::v3::NewAccount::new_account_real,                  1],
-        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest,           1],
-        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::NewAccount::new_account_virtual,               0],
+        ['verify_email',            \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email,             0],
+        ['new_account_real',        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real,         1],
+        ['new_account_maltainvest', \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,  1],
+        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual,      0],
     );
 
     foreach my $dispatch (@dispatch) {
