@@ -6,23 +6,20 @@ use warnings;
 use Try::Tiny;
 use Mojo::DOM;
 use Time::HiRes;
-use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::System;
-use Cache::RedisDB;
-use JSON;
+use Data::UUID;
 use List::MoreUtils qw(any none);
 
+use BOM::WebSocketAPI::v3::Symbols;
+use BOM::WebSocketAPI::v3::System;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
-use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
-use Data::UUID;
-use BOM::Market::Underlying;
+use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 sub trading_times {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
@@ -59,24 +56,11 @@ sub trading_times {
             }
         }
     }
-    return {
-        msg_type      => 'trading_times',
-        trading_times => $trading_times,
-    };
+    return $trading_times,;
 }
 
 sub asset_index {
-    my ($c, $args) = @_;
-
-    my $r    = $c->stash('request');
-    my $lang = $r->language;
-
-    if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
-        return {
-            msg_type    => 'asset_index',
-            asset_index => JSON::from_json($r),
-        };
-    }
+    my ($language, $args) = @_;
 
     my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
         markets => {
@@ -126,7 +110,7 @@ sub asset_index {
                             } else {
                                 $included->{$key} = Time::Duration::Concise::Localize->new(
                                     interval => $included->{$key},
-                                    locale   => $r->language
+                                    locale   => $language
                                 ) unless (ref $included->{$key});
                                 push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
                             }
@@ -159,13 +143,7 @@ sub asset_index {
         }
     }
 
-    # set cache
-    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json([@data]), 3600);
-
-    return {
-        msg_type    => 'asset_index',
-        asset_index => [@data],
-    };
+    return \@data;
 }
 
 sub ticks {
