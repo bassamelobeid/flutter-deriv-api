@@ -146,12 +146,10 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 }
 
 sub portfolio {
-    my ($c, $args) = @_;
+    my $client = shift;
 
-    my $client = $c->stash('client');
     my $portfolio = {contracts => []};
-
-    foreach my $row (@{__get_open_contracts($c)}) {
+    foreach my $row (@{__get_open_contracts($client)}) {
         my %trx = (
             contract_id    => $row->{id},
             transaction_id => $row->{buy_id},
@@ -170,16 +168,11 @@ sub portfolio {
         push $portfolio->{contracts}, \%trx;
     }
 
-    return {
-        msg_type  => 'portfolio',
-        portfolio => $portfolio,
-    };
+    return $portfolio,;
 }
 
 sub __get_open_contracts {
-    my $c = shift;
-
-    my $client = $c->stash('client');
+    my $client = shift;
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
