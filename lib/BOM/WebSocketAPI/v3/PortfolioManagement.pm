@@ -7,11 +7,13 @@ use Mojo::DOM;
 use Date::Utility;
 use Try::Tiny;
 
+use BOM::WebSocketAPI::v3::Utility;
 use BOM::WebSocketAPI::v3::System;
+use BOM::WebSocketAPI::v3::MarketDiscovery;
+use BOM::Platform::Runtime;
+use BOM::Platform::Context qw (localize);
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
-use BOM::Platform::Runtime;
-use BOM::WebSocketAPI::v3::MarketDiscovery;
 
 sub buy {
     my ($c, $args) = @_;
@@ -65,11 +67,9 @@ sub buy {
 }
 
 sub sell {
-    my ($c, $args) = @_;
+    my ($client, $source, $args) = @_;
 
-    my $id     = $args->{sell};
-    my $source = $c->stash('source');
-    my $client = $c->stash('client');
+    my $id = $args->{sell};
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
@@ -82,7 +82,9 @@ sub sell {
         });
 
     my $fmb = $fmb_dm->get_fmb_by_id([$id]);
-    return $c->new_error('sell', 'InvalidSellContractProposal', $c->l('Unknown contract sell proposal')) unless $fmb;
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'InvalidSellContractProposal',
+            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless $fmb;
 
     my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
     my $trx = BOM::Product::Transaction->new({
@@ -94,20 +96,21 @@ sub sell {
     });
 
     if (my $err = $trx->sell) {
-        $c->app->log->error("Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-        return $c->new_error('sell', $err->get_type, $err->{-message_to_client});
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+            message           => "Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
+        });
     }
 
     $trx = $trx->transaction_record;
 
     return {
-        msg_type => 'sell',
-        sell     => {
-            transaction_id => $trx->id,
-            contract_id    => $id,
-            balance_after  => $trx->balance_after,
-            sold_for       => abs($trx->amount),
-        }};
+        transaction_id => $trx->id,
+        contract_id    => $id,
+        balance_after  => $trx->balance_after,
+        sold_for       => abs($trx->amount),
+    };
 
 }
 
@@ -143,12 +146,10 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 }
 
 sub portfolio {
-    my ($c, $args) = @_;
+    my $client = shift;
 
-    my $client = $c->stash('client');
     my $portfolio = {contracts => []};
-
-    foreach my $row (@{__get_open_contracts($c)}) {
+    foreach my $row (@{__get_open_contracts($client)}) {
         my %trx = (
             contract_id    => $row->{id},
             transaction_id => $row->{buy_id},
@@ -167,16 +168,11 @@ sub portfolio {
         push $portfolio->{contracts}, \%trx;
     }
 
-    return {
-        msg_type  => 'portfolio',
-        portfolio => $portfolio,
-    };
+    return $portfolio,;
 }
 
 sub __get_open_contracts {
-    my $c = shift;
-
-    my $client = $c->stash('client');
+    my $client = shift;
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,

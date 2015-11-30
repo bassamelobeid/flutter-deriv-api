@@ -8,20 +8,22 @@ use Try::Tiny;
 use Mojo::DOM;
 use Date::Utility;
 
-use BOM::Product::ContractFactory qw( simple_contract_info );
+use BOM::WebSocketAPI::v3::Utility;
+use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
-use BOM::Product::Transaction;
-use BOM::System::Password;
 use BOM::Platform::Email qw(send_email);
-use BOM::Database::DataMapper::FinancialMarketBet;
-use BOM::Database::ClientDB;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
+use BOM::Product::Transaction;
+use BOM::Product::ContractFactory qw( simple_contract_info );
+use BOM::System::Password;
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 
 sub landing_company {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $country  = $args->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
@@ -30,8 +32,9 @@ sub landing_company {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
     }
 
-    return $c->new_error('landing_company', 'UnknownLandingCompany', $c->l('Unknown landing company.'))
-        unless $c_config;
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'UnknownLandingCompany',
+            message_to_client => BOM::Platform::Context::localize('Unknown landing company.')}) unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
     my %landing_company = %{$c_config};
@@ -49,23 +52,18 @@ sub landing_company {
         delete $landing_company{financial_company};
     }
 
-    return {
-        msg_type        => 'landing_company',
-        landing_company => {%landing_company},
-    };
+    return \%landing_company;
 }
 
 sub landing_company_details {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
-    return $c->new_error('landing_company_details', 'UnknownLandingCompany', $c->l('Unknown landing company.'))
-        unless $lc;
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'UnknownLandingCompany',
+            message_to_client => BOM::Platform::Context::localize('Unknown landing company.')}) unless $lc;
 
-    return {
-        msg_type                => 'landing_company_details',
-        landing_company_details => __build_landing_company($lc),
-    };
+    return __build_landing_company($lc);
 }
 
 sub __build_landing_company {
@@ -84,27 +82,14 @@ sub __build_landing_company {
 }
 
 sub statement {
-    my ($c, $args) = @_;
-
-    my $statement = get_transactions($c, $args);
-    return {
-        echo_req  => $args,
-        msg_type  => 'statement',
-        statement => $statement,
-    };
-}
-
-sub get_transactions {
-    my ($c, $args) = @_;
-
-    my $acc = $c->stash('account');
+    my ($account, $args) = @_;
 
     return {
         transactions => [],
         count        => 0
-    } unless ($acc);
+    } unless ($account);
 
-    my $results = BOM::Database::DataMapper::Transaction->new({db => $acc->db})->get_transactions_ws($args, $acc);
+    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($args, $account);
 
     my @txns;
     foreach my $txn (@$results) {
@@ -115,14 +100,18 @@ sub get_transactions {
             action_type      => $txn->{action_type},
             balance_after    => $txn->{balance_after},
             contract_id      => $txn->{financial_market_bet_id},
-            shortcode        => $txn->{short_code},
-            longcode         => $txn->{payment_remark} || '',
         };
 
-        if ($txn->{short_code}) {
-            my ($longcode, undef, undef) = try { simple_contract_info($txn->{short_code}, $acc->currency_code) };
-            $struct->{longcode} = Mojo::DOM->new->parse($longcode)->all_text if $longcode;
+        if ($args->{description}) {
+            $struct->{longcode}  = $txn->{payment_remark} // '';
+            $struct->{shortcode} = $txn->{short_code}     // '';
+
+            if ($txn->{short_code}) {
+                my ($longcode, undef, undef) = try { simple_contract_info($txn->{short_code}, $account->currency_code) };
+                $struct->{longcode} = $longcode if $longcode;
+            }
         }
+
         push @txns, $struct;
     }
 
@@ -133,21 +122,7 @@ sub get_transactions {
 }
 
 sub profit_table {
-    my ($c, $args) = @_;
-
-    my $profit_table = __get_sold($c, $args);
-    return {
-        echo_req     => $args,
-        msg_type     => 'profit_table',
-        profit_table => $profit_table,
-    };
-}
-
-sub __get_sold {
-    my ($c, $args) = @_;
-
-    my $client = $c->stash('client');
-    my $acc    = $c->stash('account');
+    my ($client, $args) = @_;
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
@@ -178,7 +153,7 @@ sub __get_sold {
 
         if ($and_description) {
             $trx{longcode} = '';
-            if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $acc->currency_code) }) {
+            if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency) }) {
                 $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
                 $trx{shortcode} = $con->shortcode;
             }
@@ -245,9 +220,7 @@ sub balance {
 }
 
 sub get_account_status {
-    my ($c, $args) = @_;
-
-    my $client = $c->stash('client');
+    my $client = shift;
 
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
@@ -258,97 +231,88 @@ sub get_account_status {
         push @status, 'active';
     }
 
-    return {
-        msg_type           => 'get_account_status',
-        get_account_status => \@status
-    };
+    return \@status;
 }
 
 sub change_password {
-    my ($c, $args) = @_;
+    my ($client, $token_type, $cs_email, $ip, $args) = @_;
 
     ## only allow for Session Token
-    return $c->new_error('change_password', 'PermissionDenied', $c->l('Permission denied.'))
-        unless ($c->stash('token_type') // '') eq 'session_token';
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => BOM::Platform::Context::localize('Permission denied.')}) unless ($token_type // '') eq 'session_token';
 
-    my $client_obj = $c->stash('client');
-    my $user = BOM::Platform::User->new({email => $client_obj->email});
+    my $user = BOM::Platform::User->new({email => $client->email});
 
     my $err = sub {
         my ($message) = @_;
-        return $c->new_error('change_password', 'ChangePasswordError', $message);
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'ChangePasswordError',
+            message_to_client => $message
+        });
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    return $err->($c->l('New password is same as old password.'))
+    return $err->(BOM::Platform::Context::localize('New password is same as old password.'))
         if $args->{new_password} eq $args->{old_password};
-    return $err->($c->l("Old password is wrong."))
+    return $err->(BOM::Platform::Context::localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
     $user->save;
 
-    foreach my $client ($user->clients) {
-        $client->password($new_password);
-        $client->save;
+    foreach my $obj ($user->clients) {
+        $obj->password($new_password);
+        $obj->save;
     }
 
-    my $r = $c->stash('request');
-    BOM::System::AuditLog::log('password has been changed', $client_obj->email);
+    BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => $r->website->config->get('customer_support.email'),
-            to      => $client_obj->email,
-            subject => $c->l('Your password has been changed.'),
+            from    => $cs_email,
+            to      => $client->email,
+            subject => BOM::Platform::Context::localize('Your password has been changed.'),
             message => [
-                $c->l(
+                BOM::Platform::Context::localize(
                     'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
-                    $client_obj->email,
-                    $r->client_ip
+                    $client->email,
+                    $ip
                 )
             ],
             use_email_template => 1,
         });
 
-    return {
-        msg_type        => 'change_password',
-        change_password => 1
-    };
+    return {status => 1};
 }
 
 sub get_settings {
-    my ($c, $args) = @_;
-
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my ($client, $language) = @_;
 
     return {
-        msg_type     => 'get_settings',
-        get_settings => {
-            email         => $client->email,
-            date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
-            country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $r->language),
-            $client->is_virtual
-            ? ()
-            : (
-                address_line_1   => $client->address_1,
-                address_line_2   => $client->address_2,
-                address_city     => $client->city,
-                address_state    => $client->state,
-                address_postcode => $client->postcode,
-                phone            => $client->phone,
-            ),
-        }};
+        email         => $client->email,
+        date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
+        country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $language),
+        $client->is_virtual
+        ? ()
+        : (
+            address_line_1   => $client->address_1,
+            address_line_2   => $client->address_2,
+            address_city     => $client->city,
+            address_state    => $client->state,
+            address_postcode => $client->postcode,
+            phone            => $client->phone,
+        ),
+    };
 }
 
 sub set_settings {
-    my ($c, $args) = @_;
+    my ($client, $website, $ip, $user_agent, $language, $args) = @_;
 
-    my $r      = $c->stash('request');
-    my $now    = Date::Utility->new;
-    my $client = $c->stash('client');
+    my $now = Date::Utility->new;
 
-    return $c->new_error('set_settings', 'PermissionDenied', $c->l('Permission denied.')) if $client->is_virtual;
+    return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'PermissionDenied',
+            message_to_client => BOM::Platform::Context::localize('Permission denied.')}) if $client->is_virtual;
 
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -380,28 +344,31 @@ sub set_settings {
     $client->postcode($addressPostcode);
     $client->phone($phone);
 
-    $client->latest_environment(
-        $now->datetime . ' ' . $r->client_ip . ' ' . $c->req->headers->header('User-Agent') . ' LANG=' . $r->language . ' SKIN=');
+    $client->latest_environment($now->datetime . ' ' . $ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
-        return $c->new_error('set_settings', 'InternalServerError', $c->l('Sorry, an error occurred while processing your account.'));
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'InternalServerError',
+                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your account.')});
     }
 
     if ($cil_message) {
         $client->add_note('Update Address Notification', $cil_message);
     }
 
-    my $message =
-        $c->l('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
-        . "\n\n";
-    $message .= $c->l('Please note that your settings have been updated as follows:') . "\n\n";
+    my $message = BOM::Platform::Context::localize(
+        'Dear [_1] [_2] [_3],',
+        BOM::Platform::Locale::translate_salutation($client->salutation),
+        $client->first_name, $client->last_name
+    ) . "\n\n";
+    $message .= BOM::Platform::Context::localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     my $residence_country = Locale::Country::code2country($client->residence);
 
     my @updated_fields = (
-        [$c->l('Email address'),        $client->email],
-        [$c->l('Country of Residence'), $residence_country],
+        [BOM::Platform::Context::localize('Email address'),        $client->email],
+        [BOM::Platform::Context::localize('Country of Residence'), $residence_country],
         [
-            $c->l('Address'),
+            BOM::Platform::Context::localize('Address'),
             $client->address_1 . ', '
                 . $client->address_2 . ', '
                 . $client->city . ', '
@@ -409,7 +376,7 @@ sub set_settings {
                 . $client->postcode . ', '
                 . $residence_country
         ],
-        [$c->l('Telephone'), $client->phone],
+        [BOM::Platform::Context::localize('Telephone'), $client->phone],
     );
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
@@ -421,28 +388,22 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . $c->l('The [_1] team.', $r->website->display_name);
+    $message .= "\n" . BOM::Platform::Context::localize('The [_1] team.', $website->display_name);
 
     send_email({
-        from               => $r->website->config->get('customer_support.email'),
+        from               => $website->config->get('customer_support.email'),
         to                 => $client->email,
-        subject            => $client->loginid . ' ' . $c->l('Change in account settings'),
+        subject            => $client->loginid . ' ' . BOM::Platform::Context::localize('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
     });
     BOM::System::AuditLog::log('Your settings have been updated successfully', $client->loginid);
 
-    return {
-        msg_type     => 'set_settings',
-        set_settings => 1,
-    };
+    return {status => 1};
 }
 
 sub get_self_exclusion {
-    my ($c, $args) = @_;
-
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my $client = shift;
 
     my $self_exclusion     = $client->get_self_exclusion;
     my $get_self_exclusion = {};
@@ -475,26 +436,24 @@ sub get_self_exclusion {
         }
     }
 
-    return {
-        msg_type           => 'get_self_exclusion',
-        get_self_exclusion => $get_self_exclusion,
-    };
+    return $get_self_exclusion,;
 }
 
 sub set_self_exclusion {
-    my ($c, $args) = @_;
-
-    my $r      = $c->stash('request');
-    my $client = $c->stash('client');
+    my ($client, $cs_email, $compliance_email, $args) = @_;
 
     # get old from above sub get_self_exclusion
-    my $self_exclusion = get_self_exclusion($c)->{'get_self_exclusion'};
+    my $self_exclusion = get_self_exclusion($client);
 
     ## validate
     my $error_sub = sub {
-        my ($c, $error, $field) = @_;
-        my $err = $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $error);
-        $err->{error}->{field} = $field;
+        my ($error, $field) = @_;
+        my $err = BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'SetSelfExclusionError',
+            message_to_client => $error,
+            message           => '',
+            details           => $field
+        });
         return $err;
     };
 
@@ -510,13 +469,13 @@ sub set_self_exclusion {
             next;
         }
         if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
-            return $error_sub->($c, $c->l('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+            return $error_sub->(BOM::Platform::Context::localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         }
     }
 
     if (my $session_duration_limit = $args{session_duration_limit}) {
         if ($session_duration_limit > 1440 * 42) {
-            return $error_sub->($c, $c->l('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
+            return $error_sub->(BOM::Platform::Context::localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
         }
     }
 
@@ -528,17 +487,17 @@ sub set_self_exclusion {
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
-            return $error_sub->($c, $c->l('Exclude time must be after today.'), 'exclude_until');
+            return $error_sub->(BOM::Platform::Context::localize('Exclude time must be after today.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be less than 6 months
         elsif ($exclusion_end->epoch < $six_month->epoch) {
-            return $error_sub->($c, $c->l('Exclude time cannot be less than 6 months.'), 'exclude_until');
+            return $error_sub->(BOM::Platform::Context::localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be more than 5 years
         elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-            return $error_sub->($c, $c->l('Exclude time cannot be for more than five years.'), 'exclude_until');
+            return $error_sub->(BOM::Platform::Context::localize('Exclude time cannot be for more than five years.'), 'exclude_until');
         }
     } else {
         delete $args{exclude_until};
@@ -591,23 +550,21 @@ sub set_self_exclusion {
     }
     if ($message) {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
-        my $compliance_email = $c->app_config->compliance->email;
         send_email({
             from    => $compliance_email,
-            to      => $compliance_email . ',' . $r->website->config->get('customer_support.email'),
+            to      => $compliance_email . ',' . $cs_email,
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
     } else {
-        return $c->new_error('set_self_exclusion', 'SetSelfExclusionError', $c->l('Please provide at least one self-exclusion setting.'));
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'SetSelfExclusionError',
+                message_to_client => BOM::Platform::Context::localize('Please provide at least one self-exclusion setting.')});
     }
 
     $client->save();
 
-    return {
-        msg_type           => 'set_self_exclusion',
-        set_self_exclusion => 1,
-    };
+    return {status => 1};
 }
 
 1;

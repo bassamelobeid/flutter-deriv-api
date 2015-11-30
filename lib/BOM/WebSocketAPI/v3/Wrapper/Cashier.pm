@@ -32,7 +32,8 @@ sub paymentagent_list {
 
     return {
         msg_type          => 'paymentagent_list',
-        paymentagent_list => {%$response}};
+        paymentagent_list => $response
+    };
 }
 
 sub paymentagent_withdraw {
