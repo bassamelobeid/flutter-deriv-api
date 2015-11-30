@@ -28,7 +28,7 @@ my $create_vr = {
                 email       => $email,
                 expires_in  => 3600,
                 created_for => 'new_account'
-            })->token;
+            })->token,
 };
 
 subtest 'verify_email' => sub {
