@@ -19,12 +19,12 @@ $email_mocked->mock('send_email', sub { return 1 });
 
 my $t = build_mojo_test();
 
-my $email     = 'test@binary.com';
-my $code   = BOM::Platform::SessionCookie->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'new_account'
-            })->token;
+my $email = 'test@binary.com';
+my $code  = BOM::Platform::SessionCookie->new({
+        email       => $email,
+        expires_in  => 3600,
+        created_for => 'new_account'
+    })->token;
 
 my $create_vr = {
     new_account_virtual => 1,

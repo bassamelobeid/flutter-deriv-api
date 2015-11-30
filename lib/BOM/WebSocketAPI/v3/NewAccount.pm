@@ -83,11 +83,12 @@ sub verify_email {
             });
 
         send_email({
-            from    => $website->config->get('customer_support.email'),
-            to      => $email,
-            subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $website->display_name),
-            message => [BOM::Platform::Context::localize('Your email address verification code is: ' . $code)],
-            use_email_template => 1});
+            from               => $website->config->get('customer_support.email'),
+            to                 => $email,
+            subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $website->display_name),
+            message            => [BOM::Platform::Context::localize('Your email address verification code is: ' . $code)],
+            use_email_template => 1
+        });
     }
 
     return {status => 1};    # always return 1, so not to leak client's email
