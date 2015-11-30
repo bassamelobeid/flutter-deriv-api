@@ -8,6 +8,7 @@ use BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery;
 use BOM::WebSocketAPI::v3::System;
 use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
+use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
@@ -142,8 +143,8 @@ sub __handle {
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
         ['authorize',               \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,                 0],
-        ['trading_times',           \&BOM::WebSocketAPI::v3::MarketDiscovery::trading_times,                0],
-        ['asset_index',             \&BOM::WebSocketAPI::v3::MarketDiscovery::asset_index,                  0],
+        ['trading_times',           \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,       0],
+        ['asset_index',             \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,         0],
         ['ticks',                   \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                        0],
         ['ticks_history',           \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,                0],
         ['proposal',                \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                     0],
