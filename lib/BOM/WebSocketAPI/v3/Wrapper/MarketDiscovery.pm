@@ -33,7 +33,8 @@ sub asset_index {
     return {
         echo_req    => $args,
         msg_type    => 'asset_index',
-        asset_index => JSON::from_json($response)};
+        asset_index => $response
+    };
 }
 
 1;
