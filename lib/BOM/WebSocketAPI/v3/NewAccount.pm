@@ -90,6 +90,7 @@ sub verify_email {
             to      => $email,
             subject => $c->l('Verify your email address - [_1]', $website->display_name),
             message => [$c->l('Click on the following link to proceed: ' . $link)],
+            use_email_template => 1,
         });
     }
 

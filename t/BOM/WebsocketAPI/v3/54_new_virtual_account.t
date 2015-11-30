@@ -5,6 +5,7 @@ use JSON;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use BOM::Platform::SessionCookie;
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -19,16 +20,18 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_mojo_test();
 
 my $email     = 'test@binary.com';
+my $code   = BOM::Platform::SessionCookie->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'new_account'
+            })->token;
+
 my $create_vr = {
     new_account_virtual => 1,
     email               => $email,
     client_password     => 'Ac0+-_:@. ',
     residence           => 'au',
-    verification_code   => BOM::Platform::SessionCookie->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'new_account'
-            })->token,
+    verification_code   => $code
 };
 
 subtest 'verify_email' => sub {
