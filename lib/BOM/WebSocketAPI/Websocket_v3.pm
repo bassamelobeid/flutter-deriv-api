@@ -10,6 +10,7 @@ use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::PortfolioManagement;
+use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
@@ -158,8 +159,8 @@ sub __handle {
         ['landing_company',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company,            0],
         ['landing_company_details', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details,    0],
         ['buy',                     \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                      1],
-        ['sell',                    \&BOM::WebSocketAPI::v3::PortfolioManagement::sell,                     1],
-        ['portfolio',               \&BOM::WebSocketAPI::v3::PortfolioManagement::portfolio,                1],
+        ['sell',                    \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell,            1],
+        ['portfolio',               \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio,       1],
         ['proposal_open_contract',  \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract,   1],
         ['balance',                 \&BOM::WebSocketAPI::v3::Accounts::balance,                             1],
         ['statement',               \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,                  1],
