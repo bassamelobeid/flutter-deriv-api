@@ -3,7 +3,8 @@
 use strict;
 use warnings;
 
-use Test::More;
+use Test::More tests => 13;
+use Test::NoWarnings;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
