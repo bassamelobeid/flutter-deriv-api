@@ -8,6 +8,11 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Context ();
 use BOM::Platform::Context::Request;
 
+# pre-load controlleres to have more shared code among workers (COW)
+use BOM::WebSocketAPI::Websocket_v1();
+use BOM::WebSocketAPI::Websocket_v2();
+use BOM::WebSocketAPI::Websocket_v3();
+
 sub startup {
     my $app = shift;
 
@@ -43,21 +48,6 @@ sub startup {
                 $c->res->headers->header('Content-Language' => $lang);
             }
         });
-
-    # pre-load controlleres to have more shared code among workers (COW)
-    for (qw/Websocket_v1 Websocket_v2 Websocket_v3/) {
-        my $module = __PACKAGE__ . "::$_";
-        eval {
-            (my $file = $module) =~ s|::|/|g;
-            require $file . '.pm';
-            1;
-        } or do {
-            my $error = $@;
-            my $msg   = "Cannnot pre-load $module: $@, exiting";
-            $log->error($msg);
-            die($@);
-            }
-    }
 
     # add few helpers
     # pre-load config to be shared among workers
