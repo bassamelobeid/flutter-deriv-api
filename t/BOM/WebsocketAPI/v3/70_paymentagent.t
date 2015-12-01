@@ -11,7 +11,6 @@ use Test::Exception;
 use BOM::Database::Model::AccessToken;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Platform::Transaction;
-use BOM::Database::DataMapper::Payment::PaymentAgentTransfer;
 
 ## do not send email
 use Test::MockModule;
