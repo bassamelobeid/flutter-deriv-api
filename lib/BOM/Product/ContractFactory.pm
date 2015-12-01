@@ -90,7 +90,6 @@ my %_preloaded_module_for_bet = map {
     Range
     Spreadd
     Spreadu
-    Strike
     Upordown
     Vanilla_call
     Vanilla_put
