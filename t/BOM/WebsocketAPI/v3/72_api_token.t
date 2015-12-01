@@ -34,6 +34,7 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{api_token});
+ok $res->{api_token}->{new_token};
 is scalar(@{$res->{api_token}->{tokens}}), 1, '1 token created';
 my $test_token = $res->{api_token}->{tokens}->[0];
 is $test_token->{display_name}, 'Test Token';
@@ -47,6 +48,7 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{api_token});
+ok $res->{api_token}->{delete_token};
 is_deeply($res->{api_token}->{tokens}, [], 'empty');
 test_schema('api_token', $res);
 
