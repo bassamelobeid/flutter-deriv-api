@@ -75,7 +75,6 @@ my %_preloaded_module_for_bet = map {
     Asiand
     Asianu
     Call
-    Category
     Digitdiff
     Digiteven
     Digitmatch
@@ -84,18 +83,13 @@ my %_preloaded_module_for_bet = map {
     Digitunder
     Expirymiss
     Expiryrange
-    Finder
-    Finder
     Invalid
     Notouch
-    Offerings
     Onetouch
     Put
     Range
     Spreadd
-    Spread
     Spreadu
-    Strike
     Strike
     Upordown
     Vanilla_call
