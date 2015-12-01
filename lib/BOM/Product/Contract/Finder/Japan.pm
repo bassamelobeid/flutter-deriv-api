@@ -113,12 +113,12 @@ sub _predefined_trading_period {
             _get_intraday_trading_window({
                     now        => $now,
                     date_start => $today->plus_time_interval($even_hour . 'h'),
-                    duration   => '2h15m'
+                    duration   => '2h'
                 })];
         if ($now_hour > 0) {
             my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
             $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
-            push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h15m'}) }
+            push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h'}) }
                 grep { $_->is_after($today) }
                 map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
         }
@@ -197,7 +197,7 @@ sub _get_intraday_trading_window {
                 date  => $date_expiry->datetime,
                 epoch => $date_expiry->epoch,
             },
-            duration => $duration,
+            duration => $duration .'15m',
         };
     }
 }
