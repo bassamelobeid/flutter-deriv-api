@@ -5,7 +5,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use BOM::WebSocketAPI::v3::Wrapper::Symbols;
 use BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery;
-use BOM::WebSocketAPI::v3::System;
+use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
@@ -148,10 +148,10 @@ sub __handle {
         ['ticks',                     \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                        0],
         ['ticks_history',             \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,                0],
         ['proposal',                  \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                     0],
-        ['forget',                    \&BOM::WebSocketAPI::v3::System::forget,                                0],
-        ['forget_all',                \&BOM::WebSocketAPI::v3::System::forget_all,                            0],
-        ['ping',                      \&BOM::WebSocketAPI::v3::System::ping,                                  0],
-        ['time',                      \&BOM::WebSocketAPI::v3::System::server_time,                           0],
+        ['forget',                    \&BOM::WebSocketAPI::v3::Wrapper::System::forget,                                0],
+        ['forget_all',                \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,                            0],
+        ['ping',                      \&BOM::WebSocketAPI::v3::Wrapper::System::ping,                                  0],
+        ['time',                      \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,                           0],
         ['payout_currencies',         \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::payout_currencies, 0],
         ['contracts_for',             \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::contracts_for,     0],
         ['active_symbols',            \&BOM::WebSocketAPI::v3::Wrapper::Symbols::active_symbols,              0],

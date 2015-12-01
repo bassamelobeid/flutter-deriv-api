@@ -10,7 +10,7 @@ use Data::UUID;
 use List::MoreUtils qw(any none);
 
 use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::System;
+use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -409,7 +409,7 @@ sub send_ask {
 
     my $latest = get_ask($c, prepare_ask($args));
     if ($latest->{error}) {
-        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id;
 
         my $proposal = {id => $id};
         $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
