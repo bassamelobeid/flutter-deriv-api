@@ -19,17 +19,15 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw (localize);
 
 sub new_account_virtual {
-    my $args = shift;
+    my ($args, $token, $email) = @_;
 
     my %details = %{$args};
-    my $email   = $args->{email};
 
     my $err_code;
-    if (_is_session_cookie_valid($c, $email)) {
+    if (_is_session_cookie_valid($token, $email)) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => \%details,
             email_verified => 1
@@ -55,9 +53,8 @@ sub new_account_virtual {
 }
 
 sub _is_session_cookie_valid {
-    my ($c, $email) = @_;
-
-    my $session_cookie = BOM::Platform::SessionCookie->new({token => $c->cookie('verify_token')});
+    my ($token, $email) = @_;
+    my $session_cookie = BOM::Platform::SessionCookie->new({token => $token});
     unless ($session_cookie and $session_cookie->email and $session_cookie->email eq $email) {
         return 0;
     }
@@ -66,27 +63,13 @@ sub _is_session_cookie_valid {
 }
 
 sub verify_email {
-
-    my ($email, $website) = @_;
-
+    my ($email, $website, $link) = @_;
     unless (BOM::Platform::User->new({email => $email})) {
-        my $code = BOM::Platform::SessionCookie->new({
-                email       => $email,
-                expires_in  => 3600,
-                created_for => 'new_account'
-            })->token;
-
-        my $link = $r->url_for(
-            '/user/validate_link',
-            {
-                verify_token => $code,
-            });
-
         send_email({
             from               => $website->config->get('customer_support.email'),
             to                 => $email,
             subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $website->display_name),
-            message            => [BOM::Platform::Context::localize('Your email address verification code is: ' . $code)],
+            message            => [BOM::Platform::Context::localize('Your email address verification code is: ' . $link)],
             use_email_template => 1
         });
     }
