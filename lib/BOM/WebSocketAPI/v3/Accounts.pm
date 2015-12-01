@@ -167,22 +167,12 @@ sub profit_table {
 }
 
 sub send_realtime_balance {
-    my ($c, $message) = @_;
+    my ($client, $message) = @_;
 
-    my $client = $c->stash('client');
-    my $args   = $c->stash('args');
-
-    my $payload = JSON::from_json($message);
-
-    $c->send({
-            json => {
-                msg_type => 'balance',
-                echo_req => $args,
-                balance  => {
-                    loginid  => $client->loginid,
-                    currency => $client->default_account->currency_code,
-                    balance  => $payload->{balance_after}}}}) if $c->tx;
-    return;
+    return {
+        loginid  => $client->loginid,
+        currency => $client->default_account->currency_code,
+        balance  => $message->{balance_after}};
 }
 
 sub balance {

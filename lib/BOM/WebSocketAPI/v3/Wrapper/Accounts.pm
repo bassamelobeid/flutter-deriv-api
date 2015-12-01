@@ -163,5 +163,21 @@ sub balance {
         balance  => BOM::WebSocketAPI::v3::Accounts::balance($client)};
 }
 
+sub send_realtime_balance {
+    my ($c, $message) = @_;
+
+    my $client = $c->stash('client');
+    my $args   = $c->stash('args');
+
+    my $payload = JSON::from_json($message);
+
+    $c->send({
+            json => {
+                msg_type => 'balance',
+                echo_req => $args,
+                balance => BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
+    return;
+}
+
 1;
 
