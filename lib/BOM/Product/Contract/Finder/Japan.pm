@@ -95,19 +95,17 @@ my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
 my $cache_sep      = '==';
 
 sub _predefined_trading_period {
-    my $args                 = shift;
-    my @offerings            = @{$args->{offerings}};
-    my $exchange             = $args->{exchange};
-    my $now                  = $args->{date};
-    my $now_hour             = $now->hour;
-    my $now_minute           = $now->minute;
-    my $now_date             = $now->date;
-    my $trading_key          = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
-    my $today_close          = $exchange->closing_on($now);
-    my $today_close_datetime = $today_close->datetime;
-    my $today_close_epoch    = $today_close->epoch;
-    my $today                = $now->truncate_to_day;                                       # Start of the day object.
-    my $trading_periods      = Cache::RedisDB->get($cache_keyspace, $trading_key);
+    my $args            = shift;
+    my @offerings       = @{$args->{offerings}};
+    my $exchange        = $args->{exchange};
+    my $now             = $args->{date};
+    my $now_hour        = $now->hour;
+    my $now_minute      = $now->minute;
+    my $now_date        = $now->date;
+    my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
+    my $today_close     = $exchange->closing_on($now);
+    my $today           = $now->truncate_to_day;                                       # Start of the day object.
+    my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
@@ -132,8 +130,8 @@ sub _predefined_trading_period {
                 epoch => $today->epoch
             },
             date_expiry => {
-                date  => $today_close_datetime,
-                epoch => $today_close_epoch
+                date  => $today_close->datetime,
+                epoch => $today_close->epoch
             },
             duration => '0d'
             };
@@ -189,7 +187,7 @@ sub _get_intraday_trading_window {
     my $early_date_start = $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
 
-    if ($now->is_before($date_expiry) and $date_expiry->hour < 18 or ($now->day_of_week ==1 and $early_date_start->hour != 23)) {
+    if ($now->is_before($date_expiry) and $date_expiry->hour < 18 or ($now->day_of_week == 1 and $early_date_start->hour != 23)) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
@@ -204,6 +202,36 @@ sub _get_intraday_trading_window {
     }
 }
 
+=head2 _get_trade_date_of_daily_window
+
+To get the trade date of supplied start and end of the window
+
+=cut
+
+sub _get_trade_date_of_daily_window {
+    my $args                    = shift;
+    my $start_of_current_window = $args->{current_date_start};
+    my $start_of_next_window    = $args->{next_date_start};
+    my $duration                = $args->{duration};
+    my $exchange                = $args->{exchange};
+
+    my $date_start =
+        $exchange->trades_on($start_of_current_window) ? $start_of_current_window : $exchange->trade_date_after($start_of_current_window);
+    my $date_expiry = $exchange->closing_on($exchange->trade_date_before($start_of_next_window));
+
+    return {
+        date_start => {
+            date  => $date_start->datetime,
+            epoch => $date_start->epoch
+        },
+        date_expiry => {
+            date  => $date_expiry->datetime,
+            epoch => $date_expiry->epoch,
+        },
+        duration => $duration,
+    };
+}
+
 =head2 _get_daily_trading_window
 
 To get the weekly, monthly , quarterly, and yearly trading window 
@@ -214,88 +242,55 @@ sub _get_daily_trading_window {
     my $args     = shift;
     my $duration = $args->{duration};
     my $now      = $args->{now};
+    my $exchange = $args->{exchange};
     my $now_dow  = $now->day_of_week;
     my $now_year = $now->year;
     my @daily_duration;
 
     # weekly contract
-    my $first_day_of_week = $now->truncate_to_day->minus_time_interval($now_dow - 1 . 'd');
-    my $last_day_of_week  = $now->truncate_to_day->plus_time_interval(5 - $now_dow . 'd');
-
-    my $weekly_date_start  = $exchange->trades_on($first_day_of_week) ? $first_day_of_week : $exchange->trade_date_after($first_day_of_week);
-    my $weekly_date_expiry = $exchange->trades_on($last_day_of_week)  ? $last_day_of_week  : $exchange->trade_date_before($last_day_of_week);
-
+    my $first_day_of_week      = $now->truncate_to_day->minus_time_interval($now_dow - 1 . 'd');
+    my $firsy_day_of_next_week = $first_day_of_week->plus_time_interval('7d');
     push @daily_duration,
-        {
-        date_start => {
-            date  => $weekly_date_start->datetime,
-            epoch => $weekly_date_start->epoch
-        },
-        date_expiry => {
-            date  => $weekly_date_expiry->datetime,
-            epoch => $weekly_date_expiry->epoch,
-        },
-        duration => '1W',
-        };
+        _get_trade_date_of_daily_window({
+            current_date_start => $first_day_of_week,
+            next_date_start    => $first_day_of_next_week,
+            duration           => '1W',
+            exchange           => $exchange
+        });
 
     # monthly contract
     my $first_day_of_month    = Date::Utility->new('1-' . $now->month_as_string . '-' . $now_year);
     my $first_day_of_next_mth = Date::Utility->new('1-' . $now->months_ahead(1));
-    my $monthly_date_start    = $exchange->trades_on($first_day_of_month) ? $first_day_of_month : $exchange->trade_date_after($first_day_of_month);
-    my $monthly_date_expiry   = $exchange->trade_date_before($first_day_of_next_mth);
-
     push @daily_duration,
-        {
-        date_start => {
-            date  => $monthly_date_start->datetime,
-            epoch => $monthly_date_start->epoch
-        },
-        date_expiry => {
-            date  => $monthly_date_expiry->datetime,
-            epoch => $monthly_date_expiry->epoch,
-        },
-        duration => '1M',
-        };
+        _get_trade_date_of_daily_window({
+            current_date_start => $first_day_of_month,
+            next_date_start    => $first_day_of_next_month,
+            duration           => '1M',
+            exchange           => $exchange
+        });
 
     # quarterly contract
-    my $current_quarter_month = $now->quarter * 3 - 2;
-    my $first_day_of_quarter  = Date::Utility->new($now_year . "-$current_quarter_month-01");
+    my $current_quarter_month     = $now->quarter * 3 - 2;
+    my $first_day_of_quarter      = Date::Utility->new($now_year . "-$current_quarter_month-01");
     my $first_day_of_next_quarter = Date::Utility->new('1-' . $first_day_of_quarter->months_ahead(3));
-    my $quarterly_date_start =
-        $exchange->trades_on($first_day_of_quarter) ? $first_day_of_quarter : $exchange->trade_date_after($first_day_of_quarter);
-    my $quarterly_date_expiry     = $exchange->trade_date_before($first_day_of_next_quarter);
-
     push @daily_duration,
-        {
-        date_start => {
-            date  => $quarterly_date_start->datetime,
-            epoch => $quarterly_date_start->epoch
-        },
-        date_expiry => {
-            date  => $quarterly_date_expiry->datetime,
-            epoch => $quarterly_date_expiry->epoch,
-        },
-        duration => '3M',
-        };
+        _get_trade_date_of_daily_window({
+            current_date_start => $first_day_of_quarter,
+            next_date_start    => $first_day_of_next_quarter,
+            duration           => '3M',
+            exchange           => $exchange
+        });
 
     # yearly contract
-    my $first_day_of_year  = Date::Utility->new('01-Jan-' . $now_year);
-    my $last_day_of_year   = Date::Utility->new('31-Dec' . $now_year);
-    my $yearly_date_start  = $exchange->trades_on($first_day_of_year) ? $first_day_of_year : $exchange->trade_date_after($first_day_of_year);
-    my $yearly_date_expiry = $exchange->trades_on($last_day_of_year) ? $last_day_of_year : $exchange->trade_date_before($last_day_of_year);
-
+    my $first_day_of_year      = Date::Utility->new('01-Jan-' . $now_year);
+    my $first_day_of_next_year = Date::Utility->new('01-Jan' . $now_year + 1);
     push @daily_duration,
-        {
-        date_start => {
-            date  => $yearly_date_start->datetime,
-            epoch => $yearly_date_start->epoch
-        },
-        date_expiry => {
-            date  => $yearly_date_expiry->datetime,
-            epoch => $yearly_date_expiry->epoch,
-        },
-        duration => '1Y',
-        };
+        _get_trade_date_of_daily_window({
+            current_date_start => $first_day_of_year,
+            next_date_start    => $first_day_of_next_year,
+            duration           => '1Y',
+            exchange           => $exchange
+        });
 
     return @daily_duration;
 
