@@ -66,6 +66,42 @@ my %OVERRIDE_LIST = (
     },
 );
 
+# key: bet_type (lower case), value: contract class
+my %_preloaded_module_for_bet = map {
+    my $contract_class = "BOM::Product::Contract::$_";
+    my $can_load = can_load(modules => {$contract_class => undef});
+    $can_load ? (lc $_ => $contract_class) : ();
+    } qw/
+    Asiand
+    Asianu
+    Call
+    Category
+    Digitdiff
+    Digiteven
+    Digitmatch
+    Digitodd
+    Digitover
+    Digitunder
+    Expirymiss
+    Expiryrange
+    Finder
+    Finder
+    Invalid
+    Notouch
+    Offerings
+    Onetouch
+    Put
+    Range
+    Spreadd
+    Spread
+    Spreadu
+    Strike
+    Strike
+    Upordown
+    Vanilla_call
+    Vanilla_put
+    /;
+
 sub produce_contract {
     my ($build_arg, $maybe_currency) = @_;
 
@@ -86,12 +122,7 @@ sub produce_contract {
         $input_params{$_} = $override_params->{$_} for keys %$override_params;
     }
 
-    my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $input_params{bet_type};
-
-    if (not can_load(modules => {$contract_class => undef})) {
-        $contract_class = 'BOM::Product::Contract::Invalid';
-        can_load(modules => {$contract_class => undef});    # No idea what to do if this fails.
-    }
+    my $contract_class = $_preloaded_module_for_bet{lc $input_params{bet_type}} // $_preloaded_module_for_bet{invalid};
 
     # We might need this for build so, pre-coerce;
     if ((ref $input_params{underlying}) !~ /BOM::Market::Underlying/) {
