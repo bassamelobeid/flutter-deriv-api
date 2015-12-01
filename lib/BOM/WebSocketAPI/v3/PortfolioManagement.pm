@@ -129,13 +129,14 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            $args->{short_code} = $fmb->short_code;
-            $args->{fmb_id}     = $fmb->id;
-            $args->{currency}   = $client->currency;
+            my $details = {%$args};
+            $details->{short_code} = $fmb->short_code;
+            $details->{fmb_id}     = $fmb->id;
+            $details->{currency}   = $client->currency;
 
             my $id = BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
                 'proposal_open_contract:' . JSON::to_json($args));
-            send_bid($c, $id, $args);
+            send_bid($c, $id, $args, $details);
         }
     } else {
         return {
@@ -239,9 +240,9 @@ sub get_bid {
 }
 
 sub send_bid {
-    my ($c, $id, $args) = @_;
+    my ($c, $id, $args, $details) = @_;
 
-    my $latest = get_bid($args->{short_code}, $args->{fmb_id}, $args->{currency});
+    my $latest = get_bid($details->{short_code}, $details->{fmb_id}, $details->{currency});
 
     my $response = {
         msg_type => 'proposal_open_contract',
