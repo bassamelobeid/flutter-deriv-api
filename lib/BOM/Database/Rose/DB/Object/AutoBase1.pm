@@ -75,8 +75,7 @@ sub _set_staff {
     my $self = shift;
     my $db   = $self->db;
     # db->type here is the "operation". We will not audit operation values such as 'collector'.
-    # db names are like costarica-backoffice_replica costarica-replica costarica-write
-    if ($db->database =~ /^\w+-\w+$/ && $db->type eq 'write') {
+    if ($db->database eq 'regentmarkets' && $db->type eq 'write') {
         $self->{_staff} ||= do {
             my $staff = $ENV{AUDIT_STAFF_NAME} || 'system';
             my $ip    = $ENV{AUDIT_STAFF_IP} || '127.0.0.1';
