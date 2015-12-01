@@ -332,11 +332,12 @@ sub proposal {
 sub prepare_ask {
     my $p1 = shift;
 
-    $p1->{date_start} //= 0;
-    if ($p1->{date_expiry}) {
-        $p1->{fixed_expiry} //= 1;
-    }
     my %p2 = %$p1;
+
+    $p2{date_start} //= 0;
+    if ($p2{date_expiry}) {
+        $p2{fixed_expiry} //= 1;
+    }
 
     if (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
