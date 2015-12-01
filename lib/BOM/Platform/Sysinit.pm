@@ -42,6 +42,7 @@ sub init {
         $http_handler->register_cleanup(
             sub {
                 delete @ENV{qw/BOM_ACCOUNT AUDIT_STAFF_NAME AUDIT_STAFF_IP/};    ## no critic
+                BOM::Database::Rose::DB->db_cache->finish_request_cycle;
                 alarm 0;
             });
 
