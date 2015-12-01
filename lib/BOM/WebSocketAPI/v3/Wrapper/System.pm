@@ -1,4 +1,4 @@
-package BOM::WebSocketAPI::v3::System;
+package BOM::WebSocketAPI::v3::Wrapper::System;
 
 use strict;
 use warnings;
