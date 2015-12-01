@@ -2395,10 +2395,10 @@ sub _validate_start_date {
                 };
         }
 
-    } elsif ($underlying->market->name eq 'forex' and ($self->timeindays->amount * 86400 <= 2 * 60 or $self->tick_expiry)) {
+    } elsif ($underlying->market->name eq 'forex' and ($self->timeindays->amount * 86400 < 2 * 60 or $self->tick_expiry)) {
         my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => $self->date_start->minus_time_interval('15m'),
-            to   => $self->date_start->plus_time_interval('15m'),
+            to   => $self->date_start,
         });
         if (my $event = first { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
             push @errors,
