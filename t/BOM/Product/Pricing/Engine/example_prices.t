@@ -123,7 +123,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol => 'SASEIDX',
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_delta',
+    'volsurface_flat',
     {
         symbol        => 'frxUSDSAR',
         recorded_date => $recorded_date,
