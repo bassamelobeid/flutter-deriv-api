@@ -11,12 +11,29 @@ use BOM::Market::Currency;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Platform::Runtime;
 
+my $historical_ir_date = Date::Utility->new;
+#Here currency means create an "InterestRate" data item in Chronicle
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol => 'USD',
+        rates  => {
+            1 => 0.2,
+            7 => 0.9
+        },
+        date => $historical_ir_date,
+    });
+#wait for two seconds so the next version of this interest rate will have a different timestamp
+sleep 2;
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'RUR',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     });
+
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -25,7 +42,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             1 => 0.1,
             7 => 0.7
         },
-        date => Date::Utility->new,
+        recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
@@ -35,14 +52,14 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             1 => 0.2,
             7 => 0.8
         },
-        date => Date::Utility->new,
+        recorded_date => Date::Utility->new,
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     }) for qw( JPY USD );
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -56,7 +73,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             "2012-01-03" => "0.4",
             "2012-01-07" => "Orthodox Chirstmas",
         },
-        date => Date::Utility->new,
+        recorded_date => Date::Utility->new,
     });
 
 subtest Holidays => sub {
@@ -80,7 +97,7 @@ subtest Holidays => sub {
 };
 
 subtest interest => sub {
-    plan tests => 4;
+    plan tests => 8;
 
     my $usd;
     lives_ok { $usd = BOM::Market::Currency->new('USD') } 'creates currency object';
@@ -94,6 +111,19 @@ subtest interest => sub {
         'market_rates returns hashref of rates for a currency'
     );
     is($usd->rate_for(1 / 365), 0.001, '->rate_for($tiy) returns rates for requested term');
+
+    lives_ok { $usd = BOM::Market::Currency->new({symbol => 'USD', for_date => $historical_ir_date}) } 'creates currency object';
+    can_ok($usd, 'interest');
+    is_deeply(
+        $usd->interest->rates,
+        {
+            1 => 0.2,
+            7 => 0.9
+        },
+        'historical market_rates returns hashref of rates for a currency'
+    );
+    is($usd->rate_for(1 / 365), 0.002, '->rate_for($tiy) returns rates for requested term in historical mode');
+
 };
 
 subtest implied_rates_from => sub {
