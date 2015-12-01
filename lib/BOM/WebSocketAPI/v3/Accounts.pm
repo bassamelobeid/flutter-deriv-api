@@ -186,36 +186,18 @@ sub send_realtime_balance {
 }
 
 sub balance {
-    my ($c, $args) = @_;
-    my $log    = $c->app->log;
-    my $client = $c->stash('client');
+    my $client = shift;
 
     return {
-        msg_type => 'balance',
-        balance  => {
-            currency => '',
-            loginid  => $client->loginid,
-            balance  => 0,
-        }}
-        unless ($client->default_account);
-
-    my $redis   = $c->stash('redis');
-    my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
-
-    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        $redis->subscribe($channel, sub { });
-    }
-    if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-        $redis->unsubscribe($channel, sub { });
-    }
+        currency => '',
+        loginid  => $client->loginid,
+        balance  => 0
+    } unless ($client->default_account);
 
     return {
-        msg_type => 'balance',
-        balance  => {
-            loginid  => $client->loginid,
-            currency => $client->default_account->currency_code,
-            balance  => $client->default_account->balance,
-        },
+        loginid  => $client->loginid,
+        currency => $client->default_account->currency_code,
+        balance  => $client->default_account->balance
     };
 }
 

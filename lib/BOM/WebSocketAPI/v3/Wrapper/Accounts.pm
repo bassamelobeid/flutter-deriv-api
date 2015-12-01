@@ -140,5 +140,28 @@ sub set_self_exclusion {
     return;
 }
 
+sub balance {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+
+    if ($client->default_account) {
+        my $redis   = $c->stash('redis');
+        my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
+
+        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+            $redis->subscribe($channel, sub { });
+        }
+        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
+            $redis->unsubscribe($channel, sub { });
+        }
+    }
+
+    return {
+        echo_req => $args,
+        msg_type => 'balance',
+        balance  => BOM::WebSocketAPI::v3::Accounts::balance($client)};
+}
+
 1;
 
