@@ -1619,9 +1619,7 @@ sub _market_data {
             my ($args, $surface_data) = @_;
             # if there's new surface data, calculate vol from that.
             my $vol;
-            if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($self->effective_start->epoch, $self->date_expiry->epoch);
-            } elsif ($surface_data) {
+            if ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
             } else {
@@ -1632,15 +1630,8 @@ sub _market_data {
         },
         get_atm_volatility => sub {
             my $args = shift;
-            my $vol;
-            if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($self->effective_start->epoch, $self->date_expiry->epoch);
-            } else {
-                $args->{delta} = 50;
-                $vol = $volsurface->get_volatility($args);
-            }
-
-            return $vol;
+            $args->{delta} = 50;
+            return $volsurface->get_volatility($args);
         },
         get_economic_event => sub {
             my $args = shift;
