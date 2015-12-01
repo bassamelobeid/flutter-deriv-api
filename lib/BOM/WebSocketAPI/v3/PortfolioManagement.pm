@@ -8,7 +8,7 @@ use Date::Utility;
 use Try::Tiny;
 
 use BOM::WebSocketAPI::v3::Utility;
-use BOM::WebSocketAPI::v3::System;
+use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize);
@@ -23,7 +23,7 @@ sub buy {
     my $source        = $c->stash('source');
 
     my $client = $c->stash('client');
-    my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
+    my $p2 = BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id
         or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
     $p2 = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($p2);
 
