@@ -50,6 +50,17 @@ my %couchdb_databases = (
     exchange_config      => 'zz' . (time . int(rand 999999)) . 'exc',
 );
 
+sub initialize_symbol_dividend {
+    my $symbol = shift;
+    my $rate = shift;
+
+    my $document = { symbol => $symbol, rates => { '365' => $rate }, discrete_points => undef };
+
+    my $dv = BOM::MarketData::Dividend->new(symbol => $symbol);
+    $dv->document($document);
+    $dv->save;
+}
+
 sub _init {
     my $env = BOM::Platform::Runtime->instance->datasources;
 
@@ -73,6 +84,19 @@ sub _init {
     BOM::System::Chronicle::_redis_write()->flushall;
     BOM::System::Chronicle::_dbh()->do('delete from chronicle;') if BOM::System::Chronicle::_dbh();
 
+    initialize_symbol_dividend "R_25", 0;
+    initialize_symbol_dividend "R_50", 0;
+    initialize_symbol_dividend "R_75", 0;
+    initialize_symbol_dividend "R_100", 0;
+    initialize_symbol_dividend "RDBULL", -35;
+    initialize_symbol_dividend "RDBEAR", 20;
+    initialize_symbol_dividend "RDSUN", 0;
+    initialize_symbol_dividend "RDMOON", 0;
+    initialize_symbol_dividend "RDMARS", 0;
+    initialize_symbol_dividend "RDVENUS", 0;
+    initialize_symbol_dividend "RDYANG", -35;
+    initialize_symbol_dividend "RDYIN", 20;
+    
     return 1;
 }
 
