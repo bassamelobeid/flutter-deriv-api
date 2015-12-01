@@ -167,55 +167,27 @@ sub profit_table {
 }
 
 sub send_realtime_balance {
-    my ($c, $message) = @_;
+    my ($client, $message) = @_;
 
-    my $client = $c->stash('client');
-    my $args   = $c->stash('args');
-
-    my $payload = JSON::from_json($message);
-
-    $c->send({
-            json => {
-                msg_type => 'balance',
-                echo_req => $args,
-                balance  => {
-                    loginid  => $client->loginid,
-                    currency => $client->default_account->currency_code,
-                    balance  => $payload->{balance_after}}}}) if $c->tx;
-    return;
+    return {
+        loginid  => $client->loginid,
+        currency => $client->default_account->currency_code,
+        balance  => $message->{balance_after}};
 }
 
 sub balance {
-    my ($c, $args) = @_;
-    my $log    = $c->app->log;
-    my $client = $c->stash('client');
+    my $client = shift;
 
     return {
-        msg_type => 'balance',
-        balance  => {
-            currency => '',
-            loginid  => $client->loginid,
-            balance  => 0,
-        }}
-        unless ($client->default_account);
-
-    my $redis   = $c->stash('redis');
-    my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
-
-    if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-        $redis->subscribe($channel, sub { });
-    }
-    if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-        $redis->unsubscribe($channel, sub { });
-    }
+        currency => '',
+        loginid  => $client->loginid,
+        balance  => 0
+    } unless ($client->default_account);
 
     return {
-        msg_type => 'balance',
-        balance  => {
-            loginid  => $client->loginid,
-            currency => $client->default_account->currency_code,
-            balance  => $client->default_account->balance,
-        },
+        loginid  => $client->loginid,
+        currency => $client->default_account->currency_code,
+        balance  => $client->default_account->balance
     };
 }
 
