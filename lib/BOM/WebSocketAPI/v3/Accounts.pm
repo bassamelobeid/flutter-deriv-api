@@ -34,7 +34,7 @@ sub landing_company {
 
     return BOM::WebSocketAPI::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
-            message_to_client => BOM::Platform::Context::localize('Unknown landing company.')}) unless $c_config;
+            message_to_client => localize('Unknown landing company.')}) unless $c_config;
 
     # BE CAREFUL, do not change ref since it's persistent
     my %landing_company = %{$c_config};
@@ -61,7 +61,7 @@ sub landing_company_details {
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
     return BOM::WebSocketAPI::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
-            message_to_client => BOM::Platform::Context::localize('Unknown landing company.')}) unless $lc;
+            message_to_client => localize('Unknown landing company.')}) unless $lc;
 
     return __build_landing_company($lc);
 }
@@ -240,7 +240,7 @@ sub change_password {
     ## only allow for Session Token
     return BOM::WebSocketAPI::v3::Utility::create_error({
             code              => 'PermissionDenied',
-            message_to_client => BOM::Platform::Context::localize('Permission denied.')}) unless ($token_type // '') eq 'session_token';
+            message_to_client => localize('Permission denied.')}) unless ($token_type // '') eq 'session_token';
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
@@ -253,9 +253,9 @@ sub change_password {
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    return $err->(BOM::Platform::Context::localize('New password is same as old password.'))
+    return $err->(localize('New password is same as old password.'))
         if $args->{new_password} eq $args->{old_password};
-    return $err->(BOM::Platform::Context::localize("Old password is wrong."))
+    return $err->(localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
@@ -271,9 +271,9 @@ sub change_password {
     send_email({
             from    => $cs_email,
             to      => $client->email,
-            subject => BOM::Platform::Context::localize('Your password has been changed.'),
+            subject => localize('Your password has been changed.'),
             message => [
-                BOM::Platform::Context::localize(
+                localize(
                     'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
                     $client->email,
                     $ip
@@ -312,7 +312,7 @@ sub set_settings {
 
     return BOM::WebSocketAPI::v3::Utility::create_error({
             code              => 'PermissionDenied',
-            message_to_client => BOM::Platform::Context::localize('Permission denied.')}) if $client->is_virtual;
+            message_to_client => localize('Permission denied.')}) if $client->is_virtual;
 
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
@@ -348,27 +348,25 @@ sub set_settings {
     if (not $client->save()) {
         return BOM::WebSocketAPI::v3::Utility::create_error({
                 code              => 'InternalServerError',
-                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your account.')});
+                message_to_client => localize('Sorry, an error occurred while processing your account.')});
     }
 
     if ($cil_message) {
         $client->add_note('Update Address Notification', $cil_message);
     }
 
-    my $message = BOM::Platform::Context::localize(
-        'Dear [_1] [_2] [_3],',
-        BOM::Platform::Locale::translate_salutation($client->salutation),
-        $client->first_name, $client->last_name
-    ) . "\n\n";
-    $message .= BOM::Platform::Context::localize('Please note that your settings have been updated as follows:') . "\n\n";
+    my $message =
+        localize('Dear [_1] [_2] [_3],', BOM::Platform::Locale::translate_salutation($client->salutation), $client->first_name, $client->last_name)
+        . "\n\n";
+    $message .= localize('Please note that your settings have been updated as follows:') . "\n\n";
 
     my $residence_country = Locale::Country::code2country($client->residence);
 
     my @updated_fields = (
-        [BOM::Platform::Context::localize('Email address'),        $client->email],
-        [BOM::Platform::Context::localize('Country of Residence'), $residence_country],
+        [localize('Email address'),        $client->email],
+        [localize('Country of Residence'), $residence_country],
         [
-            BOM::Platform::Context::localize('Address'),
+            localize('Address'),
             $client->address_1 . ', '
                 . $client->address_2 . ', '
                 . $client->city . ', '
@@ -376,7 +374,7 @@ sub set_settings {
                 . $client->postcode . ', '
                 . $residence_country
         ],
-        [BOM::Platform::Context::localize('Telephone'), $client->phone],
+        [localize('Telephone'), $client->phone],
     );
     $message .= "<table>";
     foreach my $updated_field (@updated_fields) {
@@ -388,12 +386,12 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . BOM::Platform::Context::localize('The [_1] team.', $website->display_name);
+    $message .= "\n" . localize('The [_1] team.', $website->display_name);
 
     send_email({
         from               => $website->config->get('customer_support.email'),
         to                 => $client->email,
-        subject            => $client->loginid . ' ' . BOM::Platform::Context::localize('Change in account settings'),
+        subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
         use_email_template => 1,
     });
@@ -444,7 +442,7 @@ sub set_self_exclusion {
 
     return BOM::WebSocketAPI::v3::Utility::create_error({
             code              => 'PermissionDenied',
-            message_to_client => BOM::Platform::Context::localize('Permission denied.')}) if $client->is_virtual;
+            message_to_client => localize('Permission denied.')}) if $client->is_virtual;
 
     # get old from above sub get_self_exclusion
     my $self_exclusion = get_self_exclusion($client);
@@ -473,13 +471,13 @@ sub set_self_exclusion {
             next;
         }
         if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
-            return $error_sub->(BOM::Platform::Context::localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+            return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
         }
     }
 
     if (my $session_duration_limit = $args{session_duration_limit}) {
         if ($session_duration_limit > 1440 * 42) {
-            return $error_sub->(BOM::Platform::Context::localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
+            return $error_sub->(localize('Session duration limit cannot be more than 6 weeks.'), 'session_duration_limit');
         }
     }
 
@@ -491,17 +489,17 @@ sub set_self_exclusion {
 
         # checking for the exclude until date which must be larger than today's date
         if (not $exclusion_end->is_after($now)) {
-            return $error_sub->(BOM::Platform::Context::localize('Exclude time must be after today.'), 'exclude_until');
+            return $error_sub->(localize('Exclude time must be after today.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be less than 6 months
         elsif ($exclusion_end->epoch < $six_month->epoch) {
-            return $error_sub->(BOM::Platform::Context::localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
+            return $error_sub->(localize('Exclude time cannot be less than 6 months.'), 'exclude_until');
         }
 
         # checking for the exclude until date could not be more than 5 years
         elsif ($exclusion_end->days_between($now) > 365 * 5 + 1) {
-            return $error_sub->(BOM::Platform::Context::localize('Exclude time cannot be for more than five years.'), 'exclude_until');
+            return $error_sub->(localize('Exclude time cannot be for more than five years.'), 'exclude_until');
         }
     } else {
         delete $args{exclude_until};
@@ -563,12 +561,50 @@ sub set_self_exclusion {
     } else {
         return BOM::WebSocketAPI::v3::Utility::create_error({
                 code              => 'SetSelfExclusionError',
-                message_to_client => BOM::Platform::Context::localize('Please provide at least one self-exclusion setting.')});
+                message_to_client => localize('Please provide at least one self-exclusion setting.')});
     }
 
     $client->save();
 
     return {status => 1};
+}
+
+sub api_token {
+    my ($client, $args) = @_;
+
+    my $rtn;
+
+    my $m = BOM::Database::Model::AccessToken->new;
+    if ($args->{delete_token}) {
+        $m->remove_by_token($args->{delete_token});
+        $rtn->{delete_token} = 1;
+    }
+    if (my $display_name = $args->{new_token}) {
+        my $display_name_err;
+        if ($display_name =~ /^[\w\s\-]{2,32}$/) {
+            if ($m->is_name_taken($client->loginid, $display_name)) {
+                $display_name_err = localize('The name is taken.');
+            }
+        } else {
+            $display_name_err = localize('alphanumeric with space and dash, 2-32 characters');
+        }
+        unless ($display_name_err) {
+            my $token_cnt = $m->get_token_count_by_loginid($client->loginid);
+            $display_name_err = localize('Max 30 tokens are allowed.') if $token_cnt >= 30;
+        }
+        if ($display_name_err) {
+            return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'APITokenError',
+                message_to_client => $display_name_err,
+            });
+        }
+        $m->create_token($client->loginid, $display_name);
+        $rtn->{new_token} = 1;
+    }
+
+    $rtn->{tokens} = $m->get_tokens_by_loginid($client->loginid);
+
+    return $rtn;
 }
 
 1;

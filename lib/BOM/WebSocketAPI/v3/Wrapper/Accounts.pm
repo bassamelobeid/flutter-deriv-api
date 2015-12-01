@@ -140,5 +140,19 @@ sub set_self_exclusion {
     return;
 }
 
+sub api_token {
+    my ($c, $args) = @_;
+
+    my $response = BOM::WebSocketAPI::v3::Accounts::api_token($c->stash('client'), $args);
+    if (exists $response->{error}) {
+        return $c->new_error('api_token', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        return {
+            msg_type  => 'api_token',
+            api_token => $response,
+        };
+    }
+}
+
 1;
 
