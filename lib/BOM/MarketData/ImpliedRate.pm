@@ -71,7 +71,6 @@ sub save {
     return BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content);
 }
 
-
 has type => (
     is      => 'ro',
     isa     => 'bom_interest_rate_type',
