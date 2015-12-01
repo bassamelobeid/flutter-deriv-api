@@ -5,8 +5,7 @@ use Mojo::Base 'Mojolicious::Controller';
 use BOM::WebSocketAPI::v3::Wrapper::Symbols;
 use BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery;
-use BOM::WebSocketAPI::v3::System;
-use BOM::WebSocketAPI::v3::Accounts;
+use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
@@ -65,7 +64,7 @@ sub entry_point {
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
 
-                BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
+                BOM::WebSocketAPI::v3::Wrapper::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::MarketDiscovery::process_realtime_events($c, $msg) if $channel =~ /^FEED::/;
             });
         $c->stash->{redis} = $redis;
@@ -148,22 +147,22 @@ sub __handle {
         ['ticks',                     \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                        0],
         ['ticks_history',             \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,                0],
         ['proposal',                  \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                     0],
-        ['forget',                    \&BOM::WebSocketAPI::v3::System::forget,                                0],
-        ['forget_all',                \&BOM::WebSocketAPI::v3::System::forget_all,                            0],
-        ['ping',                      \&BOM::WebSocketAPI::v3::System::ping,                                  0],
-        ['time',                      \&BOM::WebSocketAPI::v3::System::server_time,                           0],
+        ['forget',                    \&BOM::WebSocketAPI::v3::Wrapper::System::forget,                       0],
+        ['forget_all',                \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,                   0],
+        ['ping',                      \&BOM::WebSocketAPI::v3::Wrapper::System::ping,                         0],
+        ['time',                      \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,                  0],
         ['payout_currencies',         \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::payout_currencies, 0],
         ['contracts_for',             \&BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery::contracts_for,     0],
         ['active_symbols',            \&BOM::WebSocketAPI::v3::Wrapper::Symbols::active_symbols,              0],
         ['residence_list',            \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,               0],
         ['states_list',               \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                  0],
-        ['landing_company',           \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company,            0],
-        ['landing_company_details',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details,    0],
         ['buy',                       \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                      1],
         ['sell',                      \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell,            1],
         ['portfolio',                 \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio,       1],
         ['proposal_open_contract',    \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract,   1],
-        ['balance',                   \&BOM::WebSocketAPI::v3::Accounts::balance,                             1],
+        ['landing_company',           \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company,            0],
+        ['landing_company_details',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details,    0],
+        ['balance',                   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                    1],
         ['statement',                 \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,                  1],
         ['profit_table',              \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table,               1],
         ['get_account_status',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_account_status,         1],

@@ -10,7 +10,7 @@ use Data::UUID;
 use List::MoreUtils qw(any none);
 
 use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::System;
+use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -342,7 +342,7 @@ sub prepare_ask {
     if (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
-    } elsif ($p1->{contract_type} !~ /^SPREAD/) {
+    } elsif ($p1->{contract_type} !~ /^(SPREAD|ASIAN)/) {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
     }
@@ -410,7 +410,7 @@ sub send_ask {
 
     my $latest = get_ask($c, prepare_ask($args));
     if ($latest->{error}) {
-        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id;
 
         my $proposal = {id => $id};
         $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
