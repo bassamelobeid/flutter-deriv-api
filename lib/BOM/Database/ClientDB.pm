@@ -70,15 +70,14 @@ sub _build_db {
             domain   => $domain,
             type     => $type,
             driver   => 'Pg',
-            database => "$domain-$type",
-            host     => '/var/run/postgresql',
-            port     => 6432,
+            database => 'regentmarkets',
+            host     => $clientdb_config->{$domain}->{$type}->{ip},
+            port     => 5432,
             username => 'write',
-            password => '',
+            password => $clientdb_config->{password},
         );
     }
 
-    # return BOM::Database::Rose::DB->new(@db_params);
     return $self->_cached_db(@db_params);
 }
 
