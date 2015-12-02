@@ -44,6 +44,7 @@ subtest "predefined contracts for symbol" => sub {
             epoch      => $now->epoch,
             quote      => 100
         });
+$DB::single=1;
         my $f = available_contracts_for_symbol({
             symbol => $u,
             date   => $now
@@ -196,7 +197,7 @@ subtest "check_intraday trading_period_JPY" => sub {
         '2015-11-27 19:00:00' => {},
     );
 
-    my @intrady_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+    my @intraday_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
             underlying_symbol => 'frxUSDJPY',
             start_type        => 'spot',
             expiry_type       => ['intraday'],
@@ -212,12 +213,12 @@ subtest "check_intraday trading_period_JPY" => sub {
         });
 
         cmp_deeply(
-            \@$intraday_offerings[0]{trading_period}{date_expiry}{date},
+            $intraday_offerings[0]{trading_period}{date_expiry}{date},
             $expected_intraday_trading_period{$date}{date_expiry},
             "Expected date_expiry for $date"
         );
         cmp_deeply(
-            \@$intraday_offerings[0]{trading_period}{date_start}{date},
+            $intraday_offerings[0]{trading_period}{date_start}{date},
             $expected_intraday_trading_period{$date}{date_start},
             "Expected date_start for $date"
         );
@@ -261,13 +262,13 @@ subtest "check_intraday trading_period_non_JPY" => sub {
         });
 
         cmp_deeply(
-            \@eurusd_offerings[0]{trading_period}{date_expiry}{date},
-            $expected_eurusd_intraday_trading_period{$date}{date_expiry},
+            $eurusd_offerings[0]{trading_period}{date_expiry}{date},
+            $expected_eur_intraday_trading_period{$date}{date_expiry},
             "Expected date_expiry for $date"
         );
         cmp_deeply(
-            \@$eurusd_offerings[0]{trading_period}{date_start}{date},
-            $expected_eurusd_intraday_trading_period{$date}{date_start},
+            $eurusd_offerings[0]{trading_period}{date_start}{date},
+            $expected_eur_intraday_trading_period{$date}{date_start},
             "Expected date_start for $date"
         );
     }
