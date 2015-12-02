@@ -71,6 +71,9 @@ sub _build_document {
 sub save {
     my $self = shift;
 
+    use Data::Dumper;
+    die Dumper(BOM::System::Chronicle::_config());
+
     if (not defined BOM::System::Chronicle::get('interest_rates', $self->symbol)) {
         BOM::System::Chronicle::set('interest_rates', $self->symbol, {});
     }
