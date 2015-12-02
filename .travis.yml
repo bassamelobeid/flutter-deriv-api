@@ -38,6 +38,7 @@ install:
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_feeddb.sh
+    - /tmp/travis-scripts/setup_chronicledb.sh
 
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
