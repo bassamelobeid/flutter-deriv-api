@@ -90,8 +90,8 @@ sub cashier_password {
         return $c->new_error('cashier_password', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         return {
-            msg_type        => 'cashier_password',
-            change_password => $response->{status},
+            msg_type         => 'cashier_password',
+            cashier_password => $response->{status},
         };
     }
     return;
