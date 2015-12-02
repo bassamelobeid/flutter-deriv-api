@@ -1600,9 +1600,11 @@ sub _market_data {
     my $self = shift;
 
     # market data date is determined by for_date in underlying.
-    my $for_date    = $self->underlying->for_date;
-    my %underlyings = ($self->underlying->symbol => $self->underlying);
-    my $volsurface  = $self->volsurface;
+    my $for_date        = $self->underlying->for_date;
+    my %underlyings     = ($self->underlying->symbol => $self->underlying);
+    my $volsurface      = $self->volsurface;
+    my $effective_start = $self->effective_start;
+    my $date_expiry     = $self->date_expiry;
     return {
         get_vol_spread => sub {
             my $args = shift;
@@ -1620,7 +1622,7 @@ sub _market_data {
             # if there's new surface data, calculate vol from that.
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($self->effective_start->epoch, $self->date_expiry->epoch);
+                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
             } elsif ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
@@ -1634,7 +1636,7 @@ sub _market_data {
             my $args = shift;
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($self->effective_start->epoch, $self->date_expiry->epoch);
+                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
             } else {
                 $args->{delta} = 50;
                 $vol = $volsurface->get_volatility($args);
