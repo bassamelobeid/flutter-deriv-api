@@ -255,7 +255,7 @@ sub _get_daily_trading_window {
 
     # weekly contract
     my $first_day_of_week      = $now->truncate_to_day->minus_time_interval($now_dow - 1 . 'd');
-    my $firsy_day_of_next_week = $first_day_of_week->plus_time_interval('7d');
+    my $first_day_of_next_week = $first_day_of_week->plus_time_interval('7d');
     push @daily_duration,
         _get_trade_date_of_daily_window({
             current_date_start => $first_day_of_week,
@@ -266,7 +266,7 @@ sub _get_daily_trading_window {
 
     # monthly contract
     my $first_day_of_month    = Date::Utility->new('1-' . $now->month_as_string . '-' . $now_year);
-    my $first_day_of_next_mth = Date::Utility->new('1-' . $now->months_ahead(1));
+    my $first_day_of_next_month = Date::Utility->new('1-' . $now->months_ahead(1));
     push @daily_duration,
         _get_trade_date_of_daily_window({
             current_date_start => $first_day_of_month,
