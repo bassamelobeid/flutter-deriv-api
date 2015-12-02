@@ -27,7 +27,6 @@ sub portfolio {
     my ($c, $args) = @_;
 
     return {
-        echo_req  => $args,
         msg_type  => 'portfolio',
         portfolio => BOM::WebSocketAPI::v3::PortfolioManagement::portfolio($c->stash('client'))};
 }

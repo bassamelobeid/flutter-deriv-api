@@ -38,7 +38,6 @@ sub statement {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'statement',
         statement => BOM::WebSocketAPI::v3::Accounts::statement($c->stash('account'), $args)};
 }
@@ -47,7 +46,6 @@ sub profit_table {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'profit_table',
         profit_table => BOM::WebSocketAPI::v3::Accounts::profit_table($c->stash('client'), $args)};
 }
@@ -56,7 +54,6 @@ sub get_account_status {
     my ($c, $args) = @_;
 
     return {
-        echo_req           => $args,
         msg_type           => 'get_account_status',
         get_account_status => BOM::WebSocketAPI::v3::Accounts::get_account_status($c->stash('client'))};
 }
@@ -87,7 +84,6 @@ sub get_settings {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'get_settings',
         get_settings => BOM::WebSocketAPI::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language)};
 }
@@ -158,7 +154,6 @@ sub balance {
     }
 
     return {
-        echo_req => $args,
         msg_type => 'balance',
         balance  => BOM::WebSocketAPI::v3::Accounts::balance($client)};
 }
