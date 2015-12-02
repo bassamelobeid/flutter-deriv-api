@@ -11,6 +11,7 @@ use List::MoreUtils qw(any none);
 
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -290,7 +291,10 @@ sub process_realtime_events {
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
+            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal(
+                $c,
+                $feed_channels_type->{$channel}->{uuid},
+                $feed_channels_type->{$channel}->{args}) if $c->tx;
         } elsif ($m[0] eq $symbol) {
             my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
