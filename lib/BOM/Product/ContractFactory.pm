@@ -15,8 +15,6 @@ Some general utility subroutines related to bet parameters.
 
 use Carp qw( croak );
 use List::Util qw( first );
-use Module::Load::Conditional qw( can_load );
-use Time::Duration::Concise;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
@@ -28,6 +26,29 @@ use BOM::Product::ContractFactory::Parser qw(
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
+
+# pre-load modules
+use BOM::Product::Contract::Asiand();
+use BOM::Product::Contract::Asianu();
+use BOM::Product::Contract::Call();
+use BOM::Product::Contract::Digitdiff();
+use BOM::Product::Contract::Digiteven();
+use BOM::Product::Contract::Digitmatch();
+use BOM::Product::Contract::Digitodd();
+use BOM::Product::Contract::Digitover();
+use BOM::Product::Contract::Digitunder();
+use BOM::Product::Contract::Expirymiss();
+use BOM::Product::Contract::Expiryrange();
+use BOM::Product::Contract::Invalid();
+use BOM::Product::Contract::Notouch();
+use BOM::Product::Contract::Onetouch();
+use BOM::Product::Contract::Put();
+use BOM::Product::Contract::Range();
+use BOM::Product::Contract::Spreadd();
+use BOM::Product::Contract::Spreadu();
+use BOM::Product::Contract::Upordown();
+use BOM::Product::Contract::Vanilla_call();
+use BOM::Product::Contract::Vanilla_put();
 
 =head2 produce_contract
 
@@ -66,35 +87,6 @@ my %OVERRIDE_LIST = (
     },
 );
 
-# key: bet_type (lower case), value: contract class
-my %_preloaded_module_for_bet = map {
-    my $contract_class = "BOM::Product::Contract::$_";
-    my $can_load = can_load(modules => {$contract_class => undef});
-    $can_load ? (lc $_ => $contract_class) : ();
-    } qw/
-    Asiand
-    Asianu
-    Call
-    Digitdiff
-    Digiteven
-    Digitmatch
-    Digitodd
-    Digitover
-    Digitunder
-    Expirymiss
-    Expiryrange
-    Invalid
-    Notouch
-    Onetouch
-    Put
-    Range
-    Spreadd
-    Spreadu
-    Upordown
-    Vanilla_call
-    Vanilla_put
-    /;
-
 sub produce_contract {
     my ($build_arg, $maybe_currency) = @_;
 
@@ -115,7 +107,16 @@ sub produce_contract {
         $input_params{$_} = $override_params->{$_} for keys %$override_params;
     }
 
-    my $contract_class = $_preloaded_module_for_bet{lc $input_params{bet_type}} // $_preloaded_module_for_bet{invalid};
+    my $contract_class;
+    my $bet_type = ucfirst lc $input_params{bet_type};
+    if (grep {/^$bet_type$/} qw/
+        Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
+        Expiryrange Notouch Onetouch Put Range Spreadd Spreadu Upordown Vanilla_call Vanilla_put
+      /){
+      $contract_class = 'BOM::Product::Contract::' . $bet_type;
+    } else {
+      $contract_class = 'BOM::Product::Contract::Invalid';
+    }
 
     # We might need this for build so, pre-coerce;
     if ((ref $input_params{underlying}) !~ /BOM::Market::Underlying/) {
