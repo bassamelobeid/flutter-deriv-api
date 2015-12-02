@@ -28,27 +28,27 @@ use base qw( Exporter );
 our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
 
 # pre-load modules
-use BOM::Product::Contract::Asiand();
-use BOM::Product::Contract::Asianu();
-use BOM::Product::Contract::Call();
-use BOM::Product::Contract::Digitdiff();
-use BOM::Product::Contract::Digiteven();
-use BOM::Product::Contract::Digitmatch();
-use BOM::Product::Contract::Digitodd();
-use BOM::Product::Contract::Digitover();
-use BOM::Product::Contract::Digitunder();
-use BOM::Product::Contract::Expirymiss();
-use BOM::Product::Contract::Expiryrange();
-use BOM::Product::Contract::Invalid();
-use BOM::Product::Contract::Notouch();
-use BOM::Product::Contract::Onetouch();
-use BOM::Product::Contract::Put();
-use BOM::Product::Contract::Range();
-use BOM::Product::Contract::Spreadd();
-use BOM::Product::Contract::Spreadu();
-use BOM::Product::Contract::Upordown();
-use BOM::Product::Contract::Vanilla_call();
-use BOM::Product::Contract::Vanilla_put();
+require BOM::Product::Contract::Asiand;
+require BOM::Product::Contract::Asianu;
+require BOM::Product::Contract::Call;
+require BOM::Product::Contract::Digitdiff;
+require BOM::Product::Contract::Digiteven;
+require BOM::Product::Contract::Digitmatch;
+require BOM::Product::Contract::Digitodd;
+require BOM::Product::Contract::Digitover;
+require BOM::Product::Contract::Digitunder;
+require BOM::Product::Contract::Expirymiss;
+require BOM::Product::Contract::Expiryrange;
+require BOM::Product::Contract::Invalid;
+require BOM::Product::Contract::Notouch;
+require BOM::Product::Contract::Onetouch;
+require BOM::Product::Contract::Put;
+require BOM::Product::Contract::Range;
+require BOM::Product::Contract::Spreadd;
+require BOM::Product::Contract::Spreadu;
+require BOM::Product::Contract::Upordown;
+require BOM::Product::Contract::Vanilla_call;
+require BOM::Product::Contract::Vanilla_put;
 
 =head2 produce_contract
 
