@@ -168,7 +168,7 @@ subtest 'user / email from loginid not allowed' => sub {
     my $user_2 = BOM::Platform::User->new({
         email => $vr_1,
     });
-    isnt($user, "BOM::Platform::User", "Cannot create User using loginid");
+    isnt($user_2, "BOM::Platform::User", "Cannot create User using loginid");
 };
 
 subtest 'User Login' => sub {
