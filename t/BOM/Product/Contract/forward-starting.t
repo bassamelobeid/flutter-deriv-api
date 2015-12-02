@@ -21,17 +21,17 @@ use BOM::Test::Data::Utility::UnitTestCouchDB;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol => 'RANDOM',
+        symbol       => 'RANDOM',
         trading_days => 'everyday',
-        date   => $now,
+        date         => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol => 'RANDOM_NOCTURNE',
+        symbol       => 'RANDOM_NOCTURNE',
         trading_days => 'everyday',
-        date   => $now,
-        market_times             => {
+        date         => $now,
+        market_times => {
             early_closes => {},
             standard     => {
                 daily_close      => '11h59m59s',
@@ -44,9 +44,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol => 'FOREX',
+        symbol       => 'FOREX',
         trading_days => 'weekdays',
-        date   => $now,
+        date         => $now,
     });
 subtest 'forward starting with payout/stake' => sub {
     my $c = produce_contract({

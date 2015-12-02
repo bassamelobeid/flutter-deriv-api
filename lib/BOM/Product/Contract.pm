@@ -1600,9 +1600,11 @@ sub _market_data {
     my $self = shift;
 
     # market data date is determined by for_date in underlying.
-    my $for_date    = $self->underlying->for_date;
-    my %underlyings = ($self->underlying->symbol => $self->underlying);
-    my $volsurface  = $self->volsurface;
+    my $for_date        = $self->underlying->for_date;
+    my %underlyings     = ($self->underlying->symbol => $self->underlying);
+    my $volsurface      = $self->volsurface;
+    my $effective_start = $self->effective_start;
+    my $date_expiry     = $self->date_expiry;
     return {
         get_vol_spread => sub {
             my $args = shift;
@@ -1619,7 +1621,9 @@ sub _market_data {
             my ($args, $surface_data) = @_;
             # if there's new surface data, calculate vol from that.
             my $vol;
-            if ($surface_data) {
+            if ($volsurface->type eq 'phased') {
+                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+            } elsif ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
             } else {
@@ -1630,8 +1634,15 @@ sub _market_data {
         },
         get_atm_volatility => sub {
             my $args = shift;
-            $args->{delta} = 50;
-            return $volsurface->get_volatility($args);
+            my $vol;
+            if ($volsurface->type eq 'phased') {
+                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+            } else {
+                $args->{delta} = 50;
+                $vol = $volsurface->get_volatility($args);
+            }
+
+            return $vol;
         },
         get_economic_event => sub {
             my $args = shift;
@@ -2386,6 +2397,22 @@ sub _validate_start_date {
                 };
         }
 
+    } elsif ($underlying->market->name eq 'forex' and ($self->timeindays->amount * 86400 < 2 * 60 or $self->tick_expiry)) {
+        my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => $self->date_start->minus_time_interval('15m'),
+            to   => $self->date_start,
+        });
+        if (my $event = first { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
+            push @errors,
+                {
+                message           => 'Disable less than 2 minutes Forex contract because of level 5 USD economic announcement.',
+                severity          => 80,
+                message_to_client => localize(
+                    "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
+                    $event->release_date->plus_time_interval('15m')->time_hhmm
+                ),
+                };
+        }
     } elsif (($self->tick_expiry and $underlying->intradays_must_be_same_day) or $self->date_expiry->date eq $self->date_pricing->date) {
         my $eod_blackout_start =
             ($self->tick_expiry)

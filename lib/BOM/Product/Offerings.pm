@@ -17,6 +17,7 @@ use Time::Duration::Concise;
 use YAML::CacheLoader qw(LoadFile);
 use Finance::Asset;
 
+use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
 use BOM::Product::Contract::Category;
 use BOM::Platform::Context;

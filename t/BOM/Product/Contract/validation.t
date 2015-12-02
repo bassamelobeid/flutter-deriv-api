@@ -1264,6 +1264,81 @@ subtest 'spot reference check' => sub {
     test_error_list('buy', $c, $expected_reasons);
 };
 
+subtest 'economic events blockout period' => sub {
+    my $now               = Date::Utility->new('2015-12-01 10:00');
+    my $underlying_symbol = 'frxUSDJPY';
+    my $volsurface        = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying_symbol,
+            recorded_date => $now,
+        });
+    my $tick_params = {
+        symbol => $underlying_symbol,
+        epoch  => $now->epoch,
+        quote  => 100
+    };
+    my $tick  = BOM::Market::Data::Tick->new($tick_params);
+    my $redis = Cache::RedisDB->redis;
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('15m1s')});
+
+    my $bet_params = {
+        underlying   => $underlying_symbol,
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1m59s',
+        barrier      => 'S0P',
+        current_tick => $tick,
+        volsurface   => $volsurface,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not within period';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'AUD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m59s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not USD';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 4,
+            release_date => $now->minus_time_interval('14m59s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not USD level 5';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m58s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok $c->_validate_start_date, 'error if economic_events is USD level 5';
+    like(
+        ($c->_validate_start_date)[0]->{message_to_client},
+        qr/Trades on Forex with duration less than 2 minutes are temporarily disabled until 10:00/,
+        'error message'
+    );
+    $bet_params->{underlying} = 'FTSE';
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if underlying is not FX';
+};
+
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
