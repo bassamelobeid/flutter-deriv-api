@@ -24,7 +24,6 @@ sub asset_index {
 
     if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $language)) {
         return {
-            echo_req    => $args,
             msg_type    => 'asset_index',
             asset_index => JSON::from_json($r)};
     }
@@ -34,7 +33,6 @@ sub asset_index {
     Cache::RedisDB->set("WS_ASSETINDEX", $language, JSON::to_json($response), 3600);
 
     return {
-        echo_req    => $args,
         msg_type    => 'asset_index',
         asset_index => $response
     };

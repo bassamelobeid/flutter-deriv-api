@@ -88,7 +88,6 @@ sub ping {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'ping',
         ping     => BOM::WebSocketAPI::v3::Utility::ping()};
 }
@@ -97,7 +96,6 @@ sub server_time {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'time',
         time     => BOM::WebSocketAPI::v3::Utility::server_time()};
 }
