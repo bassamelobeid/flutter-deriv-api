@@ -109,13 +109,17 @@ sub produce_contract {
 
     my $contract_class;
     my $bet_type = ucfirst lc $input_params{bet_type};
-    if (grep {/^$bet_type$/} qw/
+    if (
+        grep { /^$bet_type$/ }
+        qw/
         Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
         Expiryrange Notouch Onetouch Put Range Spreadd Spreadu Upordown Vanilla_call Vanilla_put
-      /){
-      $contract_class = 'BOM::Product::Contract::' . $bet_type;
+        /
+        )
+    {
+        $contract_class = 'BOM::Product::Contract::' . $bet_type;
     } else {
-      $contract_class = 'BOM::Product::Contract::Invalid';
+        $contract_class = 'BOM::Product::Contract::Invalid';
     }
 
     # We might need this for build so, pre-coerce;
