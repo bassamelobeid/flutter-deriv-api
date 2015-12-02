@@ -164,13 +164,11 @@ subtest 'default loginid & cookie' => sub {
     };
 };
 
-subtest 'user / email from loginid' => sub {
+subtest 'user / email from loginid not allowed' => sub {
     my $user_2 = BOM::Platform::User->new({
         email => $vr_1,
     });
-
-    is $user_2->email, $email, 'user from loginid';
-    cmp_deeply(sort @loginids, (sort map { $_->loginid } $user_2->loginid), 'loginids ok');
+    isnt($user, "BOM::Platform::User", "Cannot create User using loginid");
 };
 
 subtest 'User Login' => sub {
@@ -187,30 +185,6 @@ subtest 'User Login' => sub {
         $client_vr->save;
         $status = $user->login(%pass);
         is $status->{success}, 1, 'login successfully';
-    };
-
-    subtest 'support login with loginid, for backward compatible' => sub {
-        subtest 'with VR acc' => sub {
-            my $user = BOM::Platform::User->new({
-                email => $vr_1,
-            });
-            is $user->email, $email, 'email OK';
-            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
-
-            $status = $user->login(%pass);
-            is $status->{success}, 1, 'login with loginid OK';
-        };
-
-        subtest 'with CR acc' => sub {
-            my $user = BOM::Platform::User->new({
-                email => $vr_1,
-            });
-            is $user->email, $email, 'email OK';
-            cmp_deeply(sort @loginids, (sort map { $_->loginid } $user->loginid), 'loginids array match');
-
-            $status = $user->login(%pass);
-            is $status->{success}, 1, 'login with loginid OK';
-            }
     };
 
     subtest 'Suspend All logins' => sub {
