@@ -16,7 +16,7 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 
 sub buy {
-    my ($client, $source, $contact_parameters, $args) = @_;
+    my ($client, $source, $contract_parameters, $args) = @_;
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($contract_parameters);
