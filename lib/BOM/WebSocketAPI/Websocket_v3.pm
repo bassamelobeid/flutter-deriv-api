@@ -156,7 +156,7 @@ sub __handle {
         ['active_symbols',            \&BOM::WebSocketAPI::v3::Wrapper::Symbols::active_symbols,              0],
         ['residence_list',            \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,               0],
         ['states_list',               \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                  0],
-        ['buy',                       \&BOM::WebSocketAPI::v3::PortfolioManagement::buy,                      1],
+        ['buy',                       \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::buy,             1],
         ['sell',                      \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell,            1],
         ['portfolio',                 \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio,       1],
         ['proposal_open_contract',    \&BOM::WebSocketAPI::v3::PortfolioManagement::proposal_open_contract,   1],

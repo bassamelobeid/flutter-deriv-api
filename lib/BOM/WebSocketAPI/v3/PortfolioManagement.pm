@@ -16,22 +16,18 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 
 sub buy {
-    my ($c, $args) = @_;
+    my ($client, $source, $contact_parameters, $args) = @_;
 
-    my $purchase_date = time;                  # Purchase is considered to have happened at the point of request.
-    my $id            = $args->{buy};
-    my $source        = $c->stash('source');
+    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+    $contract_parameters = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($contract_parameters);
 
-    my $client = $c->stash('client');
-    my $p2 = BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id
-        or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
-    $p2 = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($p2);
-
-    my $contract = try { produce_contract({%$p2}) } || do {
+    my $contract = try { produce_contract({%$contract_parameters}) } || do {
         my $err = $@;
-        $c->app->log->debug("contract creation failure: $err");
-        return $c->new_error('buy', 'ContractCreationFailure', $c->l('Cannot create contract'));
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
+
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
         contract      => $contract,
@@ -39,10 +35,15 @@ sub buy {
         purchase_date => $purchase_date,
         source        => $source,
     });
+
     if (my $err = $trx->buy) {
-        $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-        return $c->new_error('buy', $err->get_type, $err->{-message_to_client});
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+            message           => "Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
+        });
     }
+
     my $response = {
         transaction_id => $trx->transaction_id,
         contract_id    => $trx->contract_id,
@@ -60,10 +61,7 @@ sub buy {
         $response->{amount_per_point}  = $contract->amount_per_point;
     }
 
-    return {
-        msg_type => 'buy',
-        buy      => $response
-    };
+    return $response;
 }
 
 sub sell {
