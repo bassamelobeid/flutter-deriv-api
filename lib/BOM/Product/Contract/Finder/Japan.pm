@@ -40,6 +40,7 @@ sub available_contracts_for_symbol {
         @offerings = _predefined_trading_period({
             offerings => \@offerings,
             exchange  => $exchange,
+            symbol    => $symbol,
             date      => $now,
         });
 
@@ -99,6 +100,7 @@ sub _predefined_trading_period {
     my @offerings       = @{$args->{offerings}};
     my $exchange        = $args->{exchange};
     my $now             = $args->{date};
+    my $symbol          = $args->{symbol};
     my $now_hour        = $now->hour;
     my $now_minute      = $now->minute;
     my $now_date        = $now->date;
@@ -109,18 +111,21 @@ sub _predefined_trading_period {
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
-        $trading_periods = [
-            _get_intraday_trading_window({
-                    now        => $now,
-                    date_start => $today->plus_time_interval($even_hour . 'h'),
-                    duration   => '2h'
-                })];
-        if ($now_hour > 0) {
-            my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
-            $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
-            push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h'}) }
-                grep { $_->is_after($today) }
-                map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
+
+        if (($symbol !~ /JPY|AUD|NZD/ and $even_hour < 18) or ($symbol =~ /JPY|AUD|NZD/ and ($even_hour != 18 or $even_hour != 20))) {
+            $trading_periods = [
+                _get_intraday_trading_window({
+                        now        => $now,
+                        date_start => $today->plus_time_interval($even_hour . 'h'),
+                        duration   => '2h'
+                    })];
+            if ($now_hour > 0) {
+                my $odd_hour = ($now_hour % 2) ? $now_hour : $now_hour - 1;
+                $odd_hour = $odd_hour % 4 == 1 ? $odd_hour : $odd_hour - 2;
+                push @$trading_periods, map { _get_intraday_trading_window({now => $now, date_start => $_, duration => '5h'}) }
+                    grep { $_->is_after($today) }
+                    map { $today->plus_time_interval($_ . 'h') } ($odd_hour, $odd_hour - 4);
+            }
         }
         # This is for 0 day contract
         push @$trading_periods,
@@ -187,7 +192,7 @@ sub _get_intraday_trading_window {
     my $early_date_start = $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
 
-    if ($now->is_before($date_expiry) and $date_expiry->hour < 18 or ($now->day_of_week == 1 and $early_date_start->hour != 23)) {
+    if ($now->is_before($date_expiry) or ($now->day_of_week == 1 and $early_date_start->hour != 23)) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
@@ -197,7 +202,7 @@ sub _get_intraday_trading_window {
                 date  => $date_expiry->datetime,
                 epoch => $date_expiry->epoch,
             },
-            duration => $duration .'15m',
+            duration => $duration . '15m',
         };
     }
 }
