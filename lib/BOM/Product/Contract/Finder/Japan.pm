@@ -289,7 +289,7 @@ sub _get_daily_trading_window {
 
     # yearly contract
     my $first_day_of_year      = Date::Utility->new('01-Jan-' . $now_year);
-    my $first_day_of_next_year = Date::Utility->new('01-Jan' . $now_year + 1);
+    my $first_day_of_next_year = Date::Utility->new('01-Jan-' . ($now_year + 1));
     push @daily_duration,
         _get_trade_date_of_daily_window({
             current_date_start => $first_day_of_year,
