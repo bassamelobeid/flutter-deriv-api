@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use strict;
 use warnings;
 
+use JSON;
+
 use BOM::WebSocketAPI::v3::PortfolioManagement;
 
 sub sell {
