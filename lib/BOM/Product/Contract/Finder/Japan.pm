@@ -96,18 +96,19 @@ my $cache_keyspace = 'FINDER_PREDEFINED_TRADING';
 my $cache_sep      = '==';
 
 sub _predefined_trading_period {
-    my $args            = shift;
-    my @offerings       = @{$args->{offerings}};
-    my $exchange        = $args->{exchange};
-    my $now             = $args->{date};
-    my $symbol          = $args->{symbol};
-    my $now_hour        = $now->hour;
-    my $now_minute      = $now->minute;
-    my $now_date        = $now->date;
-    my $trading_key     = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
-    my $today_close     = $exchange->closing_on($now);
-    my $today           = $now->truncate_to_day;                                       # Start of the day object.
-    my $trading_periods = Cache::RedisDB->get($cache_keyspace, $trading_key);
+    my $args              = shift;
+    my @offerings         = @{$args->{offerings}};
+    my $exchange          = $args->{exchange};
+    my $now               = $args->{date};
+    my $symbol            = $args->{symbol};
+    my $now_hour          = $now->hour;
+    my $now_minute        = $now->minute;
+    my $now_date          = $now->date;
+    my $trading_key       = join($cache_sep, $exchange->symbol, $now_date, $now_hour);
+    my $today_close       = $exchange->closing_on($now);
+    my $today_close_epoch = $today_close->epoch;
+    my $today             = $now->truncate_to_day;                                       # Start of the day object.
+    my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
@@ -136,7 +137,7 @@ sub _predefined_trading_period {
             },
             date_expiry => {
                 date  => $today_close->datetime,
-                epoch => $today_close->epoch
+                epoch => $today_close_epoch
             },
             duration => '0d'
             };
