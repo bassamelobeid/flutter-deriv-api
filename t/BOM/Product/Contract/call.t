@@ -130,7 +130,7 @@ subtest 'expiry conditions' => sub {
         quote      => 101,
     });
     $c = produce_contract($args);
-    ok !$c->exit_tick, 'no exit tick';
+    ok !$c->exit_tick,  'no exit tick';
     ok !$c->is_expired, 'not expired without exit tick';
     cmp_ok $c->value, '==', 0;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
