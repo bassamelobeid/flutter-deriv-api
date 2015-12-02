@@ -109,7 +109,6 @@ sub sell {
         balance_after  => $trx->balance_after,
         sold_for       => abs($trx->amount),
     };
-
 }
 
 sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
@@ -186,7 +185,7 @@ sub __get_open_contracts {
 }
 
 sub get_bid {
-    my ($short_code, $fmb_id, $currency) = @_;
+    my ($short_code, $contract_id, $currency) = @_;
 
     my $contract = produce_contract($short_code, $currency);
 
@@ -194,7 +193,7 @@ sub get_bid {
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $fmb_id,
+        contract_id         => $contract_id,
         underlying          => $contract->underlying->symbol,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
@@ -211,10 +210,10 @@ sub get_bid {
     );
 
     if ($contract->expiry_type eq 'tick') {
-        $returnhash{prediction}      = $contract->long_term_prediction;
-        $returnhash{tick_count}      = $contract->average_tick_count;
+        $returnhash{prediction}      = $contract->prediction;
+        $returnhash{tick_count}      = $contract->tick_count;
         $returnhash{entry_tick}      = $contract->entry_tick->quote;
-        $returnhash{entry_tick_time} = $contract->entry_tick->quote;
+        $returnhash{entry_tick_time} = $contract->entry_tick->epoch;
         $returnhash{exit_tick}       = $contract->exit_tick->quote;
         $returnhash{exit_tick_time}  = $contract->exit_tick->epoch;
     } else {
