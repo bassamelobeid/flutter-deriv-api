@@ -48,7 +48,7 @@ sub get_verification_code {
 
     # default params: (N=2^14, r=8, p=1, len=32)
     # change len=9 (scrypt_raw), so len=12 (scrypt_b64)
-    return Crypt::ScryptKDF::scrypt_b64($email, '&*%hHKDJHI$#%^@_+?><!~', 16384, 8, 1, 9);
+    return Crypt::ScryptKDF::scrypt_b64($email, '&*%Ljqxire13hk5sOnDL1vS$#%^@_+?><!~', 16384, 8, 1, 9);
 }
 
 sub validate_verification_code {
