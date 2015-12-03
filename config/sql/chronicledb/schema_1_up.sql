@@ -15,6 +15,6 @@ CREATE TABLE chronicle (
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON chronicle TO write;
 GRANT USAGE on chronicle_id_seq to write;
-ALTER ROLE postgres WITH password 'picabo';
+ALTER ROLE postgres WITH password 'mRX1E3Mi00oS8LG';
 
 COMMIT;
