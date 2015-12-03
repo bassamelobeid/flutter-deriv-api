@@ -230,6 +230,24 @@ sub _sanity_failed {
             last OUTER;
         }
         if (ref $arg->{$k}) {
+            if (ref $arg->{$k} eq 'HASH') {
+                foreach my $l (keys %{$arg->{$k}}) {
+                    if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
+                        $failed = 1;
+                        warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                        last OUTER;
+                    }
+                }
+
+            } elsif (ref $arg->{$k} eq 'ARRAY') {
+                foreach my $l (@{$arg->{$k}}) {
+                    if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
+                        $failed = 1;
+                        warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                        last OUTER;
+                    }
+                }
+            }
             foreach my $l (keys %{$arg->{$k}}) {
                 if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
                     $failed = 1;
