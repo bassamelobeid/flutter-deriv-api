@@ -2,6 +2,26 @@ package BOM::MarketData::ImpliedRate;
 
 use BOM::System::Chronicle;
 
+=head1 NAME
+
+BOM::MarketData::ImpliedRate - A module to save/load implied interest rates for currencies
+
+=head1 DESCRIPTION
+
+This module saves/loads implied interest rate data to/from Chronicle. 
+
+my $ir_data = BOM::MarketData::ImpliedRate->new(symbol => 'USD-EUR',
+        rates => { 7 => 0.5, 30 => 1.2, 90 => 2.4 });
+ $ir_data->save;
+
+To read implied interest rates for a currency:
+
+ my $ir_data = BOM::MarketData::ImpliedRate->new(symbol => 'USD-EUR');
+
+ my $rates = $ir_data->rates;
+
+=cut
+
 use Moose;
 extends 'BOM::MarketData::Rates';
 
