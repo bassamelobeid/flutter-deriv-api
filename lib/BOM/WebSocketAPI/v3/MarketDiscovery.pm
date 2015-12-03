@@ -16,7 +16,6 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
-use BOM::Product::Contract::Category;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 sub trading_times {
@@ -148,7 +147,7 @@ sub asset_index {
 }
 
 sub validate_offering {
-    my $symbol = @_;
+    my $symbol = shift;
 
     my @offerings = get_offerings_with_filter('underlying_symbol');
     if (none { $symbol eq $_ } @offerings) {
