@@ -240,7 +240,7 @@ sub _sanity_failed {
         }
     }
 
-    if ($failed) {
+    if (@failed) {
         warn 'Sanity check failed.';
         return {
             msg_type => 'sanity_check',
