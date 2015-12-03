@@ -240,9 +240,14 @@ sub _sanity_failed {
         }
     }
 
-    if (@failed) {
-        $c->app->log->warn("Sanity check failed: $failed[0] -> $failed[1]");
-        return $c->new_error('sanity_check', 'SanityCheckFailed', $c->l("Parameters sanity check failed."));
+    if ($failed) {
+        warn 'Sanity check failed.';
+        return {
+            msg_type => 'sanity_check',
+            error    => {
+                message => "Parameters sanity check failed",
+                code    => "SanityCheckFailed"
+            }};
     }
     return;
 }
