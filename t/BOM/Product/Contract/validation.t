@@ -1355,9 +1355,10 @@ subtest 'economic events blockout period' => sub {
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
     ok $c->_validate_start_date, 'error if economic_events is USD level 5';
+    note ('last available economic event at 10:01');
     like(
         ($c->_validate_start_date)[0]->{message_to_client},
-        qr/Trades on Forex with duration less than 2 minutes are temporarily disabled until 10:15/,
+        qr/Trades on Forex with duration less than 2 minutes are temporarily disabled until 10:16/,
         'error message'
     );
     $bet_params->{underlying} = 'FTSE';
