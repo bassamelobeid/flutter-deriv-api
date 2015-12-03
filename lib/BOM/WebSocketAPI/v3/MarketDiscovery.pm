@@ -258,7 +258,6 @@ sub get_ask {
                 ask_price => sprintf('%.2f', $contract->ask_price),
             };
         }
-        $log->error("contract invalid but no error!");
         return {
             error => {
                 message => BOM::Platform::Context::localize("Cannot validate contract"),
