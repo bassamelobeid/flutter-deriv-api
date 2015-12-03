@@ -149,7 +149,7 @@ sub asset_index {
     return \@data;
 }
 
-sub validate_underlying {
+sub validate_offering {
     my $symbol = @_;
 
     my @offerings = get_offerings_with_filter('underlying_symbol');
@@ -170,60 +170,46 @@ sub validate_underlying {
 }
 
 sub ticks_history {
-    my ($c, $args) = @_;
+    my ($symbol, $args) = @_;
 
-    my $symbol = $args->{ticks_history};
-    my $symbol_offered = any { $symbol eq $_ } get_offerings_with_filter('underlying_symbol');
-    my $ul;
-    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($symbol)) {
-        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
-    }
+    my $ul = BOM::Market::Underlying->new($symbol);
 
     my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
-    my $publish;
-    my $result;
+
+    my ($publish, $result, $type);
     if ($style eq 'ticks') {
         my $ticks = BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
         my $history = {
             prices => [map { $_->{price} } @$ticks],
             times  => [map { $_->{time} } @$ticks],
         };
-        $result = {
-            msg_type => 'history',
-            history  => $history
-        };
+        $result  = {history => $history};
+        $type    = "history";
         $publish = 'tick';
     } elsif ($style eq 'candles') {
-
         my @candles = @{BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
         if (@candles) {
             $result = {
-                msg_type => 'candles',
-                candles  => \@candles,
+                candles => \@candles,
             };
+            $type    = "candles";
             $publish = $args->{granularity};
         } else {
-            return $c->new_error('candles', 'InvalidCandlesRequest', $c->l('Invalid candles request'));
+            return BOM::WebSocketAPI::v3::Utility::create_error({
+                    code              => 'InvalidCandlesRequest',
+                    message_to_client => BOM::Platform::Context::localize('Invalid candles request')});
         }
     } else {
-        return $c->new_error('ticks_history', 'InvalidStyle', $c->l("Style [_1] invalid", $style));
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'InvalidStyle',
+                message_to_client => BOM::Platform::Context::localize("Style [_1] invalid", $style)});
     }
 
-    if ($args->{subscribe} eq '1' and $ul->feed_license ne 'realtime') {
-        return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l('Realtime quotes not available'));
-    }
-
-    if ($args->{subscribe} eq '1' and $ul->feed_license eq 'realtime') {
-        if (not _feed_channel($c, 'subscribe', $symbol, $publish)) {
-            $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
-        }
-    }
-    if ($args->{subscribe} eq '0') {
-        _feed_channel($c, 'unsubscribe', $symbol, $publish);
-        return;
-    }
-
-    return $result;
+    return {
+        type    => $type,
+        data    => $result,
+        publish => $publish
+    };
 }
 
 sub process_realtime_events {
