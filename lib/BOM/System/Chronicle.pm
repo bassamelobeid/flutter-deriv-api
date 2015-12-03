@@ -210,7 +210,7 @@ sub _dbh {
 }
 
 sub _config {
-    state $config = YAML::XS::LoadFile('/etc/chronicle.yml');
+    state $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
     return $config;
 }
 

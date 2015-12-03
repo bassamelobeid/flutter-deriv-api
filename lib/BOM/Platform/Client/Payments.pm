@@ -295,19 +295,32 @@ sub payment_account_transfer {
     my $toRemark = delete $args{toRemark} || $remark || ("Transfer from " . $fmClient->loginid);
     my $fmRemark = delete $args{fmRemark} || $remark || ("Transfer to " . $toClient->loginid);
 
-    my $inter_db_transfer;
-    $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
-
     my $fmAccount = $fmClient->set_default_account($currency);
     my $toAccount = $toClient->set_default_account($currency);
 
-    my $gateway_code = 'account_transfer';
+    my $inter_db_transfer;
+    $inter_db_transfer = delete $args{inter_db_transfer} if (exists $args{inter_db_transfer});
 
-    # special-case:  if either side is a paymentagent, use link table
-    # 'payment_agent_transfer' not 'account_transfer'.  Structure is identical.
-    if (not $inter_db_transfer and ($fmClient->payment_agent || $toClient->payment_agent)) {
-        $gateway_code = 'payment_agent_transfer';
+    unless ($inter_db_transfer) {
+        # here we rely on ->set_default_account above
+        # which makes sure the `write` database is used.
+        my $dbh = $fmClient->db->dbh;
+        try {
+            my $sth = $dbh->prepare('SELECT 1 FROM payment.payment_account_transfer(?,?,?,?,?,?,?,?,NULL)');
+            $sth->execute($fmClient->loginid, $toClient->loginid, $currency, $amount, $fmStaff, $toStaff, $fmRemark, $toRemark);
+            $sth->fetchall_arrayref();
+        }
+        catch {
+            if (ref eq 'ARRAY') {
+                die "@$_";
+            } else {
+                die $_;
+            }
+        };
+        return;
     }
+
+    my $gateway_code = 'account_transfer';
 
     my ($fmPayment) = $fmAccount->add_payment({
         amount               => -$amount,
@@ -342,68 +355,12 @@ sub payment_account_transfer {
         quantity      => 1,
     });
 
-    if (not $inter_db_transfer) {
-        my $db = $fmAccount->db;
-        my $err;
+    $fmAccount->save(cascade => 1);
+    $fmPayment->save(cascade => 1);
 
-        try {
-            $db->begin_work;
+    $toAccount->save(cascade => 1);
+    $toPayment->save(cascade => 1);
 
-            # we can't write the account_transfer records until we have
-            # the payment id's, which are generated on save..
-
-            $fmAccount->save(cascade => 1);
-            $toAccount->save(cascade => 1);
-
-            $fmPayment->$gateway_code({corresponding_payment_id => $toPayment->id});
-            $toPayment->$gateway_code({corresponding_payment_id => $fmPayment->id});
-            $fmPayment->save(cascade => 1);
-            $toPayment->save(cascade => 1);
-
-            $db->commit;
-        }
-        catch {
-            $err = $_;
-        };
-
-        return ($fmTrx, $toTrx) unless $err;
-        $db->rollback;
-        die $err;
-    } else {
-        my $db = $fmAccount->db;
-        my $err;
-
-        try {
-            $db->begin_work;
-            $fmAccount->save(cascade => 1);
-            $fmPayment->save(cascade => 1);
-            $db->commit;
-        }
-        catch {
-            $err = $_;
-        };
-        if ($err) {
-            $db->rollback;
-            die $err;
-        }
-
-        $db = $toAccount->db;
-        try {
-            $db->begin_work;
-            $toAccount->save(cascade => 1);
-            $toPayment->save(cascade => 1);
-            $db->commit;
-        }
-        catch {
-            $err = $_;
-        };
-        if ($err) {
-            $db->rollback;
-            die $err;
-        }
-
-        return ($fmTrx, $toTrx);
-    }
     return;
 }
 
