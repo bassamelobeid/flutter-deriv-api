@@ -3,8 +3,6 @@ SET client_min_messages TO warning;
 BEGIN;
 -- -------------------------------------
 
-CREATE SCHEMA chronicle;
-
 CREATE TABLE chronicle (
       id bigserial,
       timestamp TIMESTAMP DEFAULT NOW(),
@@ -15,6 +13,8 @@ CREATE TABLE chronicle (
       CONSTRAINT search_index UNIQUE(category,name,timestamp)
 );
 
-GRANT ALL ON SCHEMA chronicle TO write;
+GRANT SELECT, INSERT, UPDATE, DELETE ON chronicle TO write;
+GRANT USAGE on chronicle_id_seq to write;
+ALTER ROLE postgres WITH password 'picabo';
 
 COMMIT;
