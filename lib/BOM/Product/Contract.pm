@@ -2400,17 +2400,27 @@ sub _validate_start_date {
     } elsif ($underlying->market->name eq 'forex' and ($self->timeindays->amount * 86400 < 2 * 60 or $self->tick_expiry)) {
         my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => $self->date_start->minus_time_interval('15m'),
-            to   => $self->date_start,
+            to   => $self->date_start->plus_time_interval('15m'),
         });
-        if (my $event = first { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
+        if (my @events = grep { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
+            my @sorted = map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [$_->release_date->epoch, $_] } @events;
+            my $display_time;
+            if (@sorted == 1) {
+                $display_time = $sorted[0]->release_date->plus_time_interval('15m')->time_hhmm;
+            } else {
+                my $counter = 1;
+                while (not $display_time and $counter < @sorted) {
+                    if ($sorted[$i]->release_date->epoch - $sorted[$i - 1]->release_date->epoch > 15 * 60) {
+                        $display_time = $sorted[$i - 1]->release_date->plus_time_interval('15m')->time_hhmm;
+                    }
+                    $counter++;
+                }
+            }
             push @errors,
                 {
                 message           => 'Disable less than 2 minutes Forex contract because of level 5 USD economic announcement.',
                 severity          => 80,
-                message_to_client => localize(
-                    "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
-                    $event->release_date->plus_time_interval('15m')->time_hhmm
-                ),
+                message_to_client => localize("Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]", $display_time),
                 };
         }
     } elsif (($self->tick_expiry and $underlying->intradays_must_be_same_day) or $self->date_expiry->date eq $self->date_pricing->date) {
