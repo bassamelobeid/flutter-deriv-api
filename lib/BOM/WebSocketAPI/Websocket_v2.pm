@@ -230,8 +230,6 @@ sub _sanity_failed {
             last OUTER;
         }
         if (ref $arg->{$k}) {
-
-
             if (ref $arg->{$k} eq 'HASH') {
                 foreach my $l (keys %{$arg->{$k}}) {
                     if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
