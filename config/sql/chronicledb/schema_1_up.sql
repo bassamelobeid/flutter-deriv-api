@@ -3,8 +3,6 @@ SET client_min_messages TO warning;
 BEGIN;
 -- -------------------------------------
 
-CREATE SCHEMA chronicle;
-
 CREATE TABLE chronicle (
       id bigserial,
       timestamp TIMESTAMP DEFAULT NOW(),
@@ -15,9 +13,7 @@ CREATE TABLE chronicle (
       CONSTRAINT search_index UNIQUE(category,name,timestamp)
 );
 
-GRANT USAGE ON SCHEMA chronicle TO read;
-GRANT USAGE ON SCHEMA chronicle TO write;
-GRANT USAGE ON SCHEMA chronicle TO monitor;
+GRANT SELECT, INSERT, UPDATE, DELETE ON chronicle TO write;
 GRANT USAGE on chronicle_id_seq to write;
 
 COMMIT;
