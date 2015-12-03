@@ -15,8 +15,6 @@ Some general utility subroutines related to bet parameters.
 
 use Carp qw( croak );
 use List::Util qw( first );
-use Module::Load::Conditional qw( can_load );
-use Time::Duration::Concise;
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
@@ -28,6 +26,29 @@ use BOM::Product::ContractFactory::Parser qw(
 
 use base qw( Exporter );
 our @EXPORT_OK = qw( produce_contract make_similar_contract simple_contract_info );
+
+# pre-load modules
+require BOM::Product::Contract::Asiand;
+require BOM::Product::Contract::Asianu;
+require BOM::Product::Contract::Call;
+require BOM::Product::Contract::Digitdiff;
+require BOM::Product::Contract::Digiteven;
+require BOM::Product::Contract::Digitmatch;
+require BOM::Product::Contract::Digitodd;
+require BOM::Product::Contract::Digitover;
+require BOM::Product::Contract::Digitunder;
+require BOM::Product::Contract::Expirymiss;
+require BOM::Product::Contract::Expiryrange;
+require BOM::Product::Contract::Invalid;
+require BOM::Product::Contract::Notouch;
+require BOM::Product::Contract::Onetouch;
+require BOM::Product::Contract::Put;
+require BOM::Product::Contract::Range;
+require BOM::Product::Contract::Spreadd;
+require BOM::Product::Contract::Spreadu;
+require BOM::Product::Contract::Upordown;
+require BOM::Product::Contract::Vanilla_call;
+require BOM::Product::Contract::Vanilla_put;
 
 =head2 produce_contract
 
@@ -86,11 +107,19 @@ sub produce_contract {
         $input_params{$_} = $override_params->{$_} for keys %$override_params;
     }
 
-    my $contract_class = 'BOM::Product::Contract::' . ucfirst lc $input_params{bet_type};
-
-    if (not can_load(modules => {$contract_class => undef})) {
+    my $contract_class;
+    my $bet_type = ucfirst lc $input_params{bet_type};
+    if (
+        grep { /^$bet_type$/ }
+        qw/
+        Asiand Asianu Call Digitdiff Digiteven Digitmatch Digitodd Digitover Digitunder Expirymiss
+        Expiryrange Notouch Onetouch Put Range Spreadd Spreadu Upordown Vanilla_call Vanilla_put
+        /
+        )
+    {
+        $contract_class = 'BOM::Product::Contract::' . $bet_type;
+    } else {
         $contract_class = 'BOM::Product::Contract::Invalid';
-        can_load(modules => {$contract_class => undef});    # No idea what to do if this fails.
     }
 
     # We might need this for build so, pre-coerce;
