@@ -44,7 +44,8 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion => 1,
             max_balance        => 10000,
-            max_open_bets      => 100
+            max_open_bets      => 100,
+            max_turnover       => undef,    # null should be OK to pass
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{set_self_exclusion});
