@@ -2410,11 +2410,13 @@ sub _validate_start_date {
             } else {
                 my $counter = 1;
                 while (not $display_time and $counter < @sorted) {
-                    if ($sorted[$i]->release_date->epoch - $sorted[$i - 1]->release_date->epoch > 15 * 60) {
-                        $display_time = $sorted[$i - 1]->release_date->plus_time_interval('15m')->time_hhmm;
+                    if ($sorted[$counter]->release_date->epoch - $sorted[$counter - 1]->release_date->epoch <= 15 * 60) {
+                        $counter++;
+                        next;
                     }
-                    $counter++;
+                    last;
                 }
+                $display_time = $sorted[$counter - 1]->release_date->plus_time_interval('15m')->time_hhmm;
             }
             push @errors,
                 {
