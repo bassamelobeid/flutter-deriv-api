@@ -7,7 +7,7 @@ use Mojo::Util qw(md5_sum steady_time);
 use Mojo::IOLoop;
 
 use BOM::WebSocketAPI::v3::Utility;
-use OM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
+use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
 
 sub forget {
     my ($c, $args) = @_;
