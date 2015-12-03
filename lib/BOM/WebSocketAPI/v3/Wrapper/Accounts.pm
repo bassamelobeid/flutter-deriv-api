@@ -38,7 +38,6 @@ sub statement {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'statement',
         statement => BOM::WebSocketAPI::v3::Accounts::statement($c->stash('account'), $args)};
 }
@@ -47,7 +46,6 @@ sub profit_table {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'profit_table',
         profit_table => BOM::WebSocketAPI::v3::Accounts::profit_table($c->stash('client'), $args)};
 }
@@ -56,7 +54,6 @@ sub get_account_status {
     my ($c, $args) = @_;
 
     return {
-        echo_req           => $args,
         msg_type           => 'get_account_status',
         get_account_status => BOM::WebSocketAPI::v3::Accounts::get_account_status($c->stash('client'))};
 }
@@ -64,8 +61,7 @@ sub get_account_status {
 sub change_password {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
-
+    my $r        = $c->stash('request');
     my $response = BOM::WebSocketAPI::v3::Accounts::change_password(
         $c->stash('client'),
         $c->stash('token_type'),
@@ -83,11 +79,28 @@ sub change_password {
     return;
 }
 
+sub cashier_password {
+    my ($c, $args) = @_;
+
+    my $r        = $c->stash('request');
+    my $response = BOM::WebSocketAPI::v3::Accounts::cashier_password($c->stash('client'), $r->website->config->get('customer_support.email'),
+        $r->client_ip, $args);
+
+    if (exists $response->{error}) {
+        return $c->new_error('cashier_password', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        return {
+            msg_type         => 'cashier_password',
+            cashier_password => $response->{status},
+        };
+    }
+    return;
+}
+
 sub get_settings {
     my ($c, $args) = @_;
 
     return {
-        echo_req => $args,
         msg_type => 'get_settings',
         get_settings => BOM::WebSocketAPI::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language)};
 }
@@ -138,6 +151,58 @@ sub set_self_exclusion {
     }
 
     return;
+}
+
+sub balance {
+    my ($c, $args) = @_;
+
+    my $client = $c->stash('client');
+
+    if ($client->default_account) {
+        my $redis   = $c->stash('redis');
+        my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
+
+        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+            $redis->subscribe($channel, sub { });
+        }
+        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
+            $redis->unsubscribe($channel, sub { });
+        }
+    }
+
+    return {
+        msg_type => 'balance',
+        balance  => BOM::WebSocketAPI::v3::Accounts::balance($client)};
+}
+
+sub send_realtime_balance {
+    my ($c, $message) = @_;
+
+    my $client = $c->stash('client');
+    my $args   = $c->stash('args');
+
+    my $payload = JSON::from_json($message);
+
+    $c->send({
+            json => {
+                msg_type => 'balance',
+                echo_req => $args,
+                balance => BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
+    return;
+}
+
+sub api_token {
+    my ($c, $args) = @_;
+
+    my $response = BOM::WebSocketAPI::v3::Accounts::api_token($c->stash('client'), $args);
+    if (exists $response->{error}) {
+        return $c->new_error('api_token', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        return {
+            msg_type  => 'api_token',
+            api_token => $response,
+        };
+    }
 }
 
 1;

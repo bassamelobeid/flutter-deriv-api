@@ -8,7 +8,7 @@ use Date::Utility;
 use Try::Tiny;
 
 use BOM::WebSocketAPI::v3::Utility;
-use BOM::WebSocketAPI::v3::System;
+use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize);
@@ -16,22 +16,18 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 
 sub buy {
-    my ($c, $args) = @_;
+    my ($client, $source, $contract_parameters, $args) = @_;
 
-    my $purchase_date = time;                  # Purchase is considered to have happened at the point of request.
-    my $id            = $args->{buy};
-    my $source        = $c->stash('source');
+    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+    $contract_parameters = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($contract_parameters);
 
-    my $client = $c->stash('client');
-    my $p2 = BOM::WebSocketAPI::v3::System::forget_one $c, $id
-        or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
-    $p2 = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($p2);
-
-    my $contract = try { produce_contract({%$p2}) } || do {
+    my $contract = try { produce_contract({%$contract_parameters}) } || do {
         my $err = $@;
-        $c->app->log->debug("contract creation failure: $err");
-        return $c->new_error('buy', 'ContractCreationFailure', $c->l('Cannot create contract'));
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'ContractCreationFailure',
+                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
     };
+
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
         contract      => $contract,
@@ -39,10 +35,15 @@ sub buy {
         purchase_date => $purchase_date,
         source        => $source,
     });
+
     if (my $err = $trx->buy) {
-        $c->app->log->error("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
-        return $c->new_error('buy', $err->get_type, $err->{-message_to_client});
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => $err->get_type,
+            message_to_client => $err->{-message_to_client},
+            message           => "Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
+        });
     }
+
     my $response = {
         transaction_id => $trx->transaction_id,
         contract_id    => $trx->contract_id,
@@ -60,10 +61,7 @@ sub buy {
         $response->{amount_per_point}  = $contract->amount_per_point;
     }
 
-    return {
-        msg_type => 'buy',
-        buy      => $response
-    };
+    return $response;
 }
 
 sub sell {
@@ -111,38 +109,6 @@ sub sell {
         balance_after  => $trx->balance_after,
         sold_for       => abs($trx->amount),
     };
-
-}
-
-sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
-    my ($c, $args) = @_;
-
-    my $client = $c->stash('client');
-    my $source = $c->stash('source');
-
-    my @fmbs = ();
-    if ($args->{contract_id}) {
-        @fmbs = grep { $args->{contract_id} eq $_->id } $client->open_bets;
-    } else {
-        @fmbs = $client->open_bets;
-    }
-
-    if (scalar @fmbs > 0) {
-        foreach my $fmb (@fmbs) {
-            $args->{short_code} = $fmb->short_code;
-            $args->{fmb_id}     = $fmb->id;
-            $args->{currency}   = $client->currency;
-
-            my $id = BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
-                'proposal_open_contract:' . JSON::to_json($args));
-            send_bid($c, $id, $args);
-        }
-    } else {
-        return {
-            echo_req               => $args,
-            msg_type               => 'proposal_open_contract',
-            proposal_open_contract => {}};
-    }
 }
 
 sub portfolio {
@@ -188,7 +154,7 @@ sub __get_open_contracts {
 }
 
 sub get_bid {
-    my ($short_code, $fmb_id, $currency) = @_;
+    my ($short_code, $contract_id, $currency) = @_;
 
     my $contract = produce_contract($short_code, $currency);
 
@@ -196,7 +162,7 @@ sub get_bid {
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
         current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $fmb_id,
+        contract_id         => $contract_id,
         underlying          => $contract->underlying->symbol,
         is_expired          => $contract->is_expired,
         is_valid_to_sell    => $contract->is_valid_to_sell,
@@ -213,10 +179,10 @@ sub get_bid {
     );
 
     if ($contract->expiry_type eq 'tick') {
-        $returnhash{prediction}      = $contract->long_term_prediction;
-        $returnhash{tick_count}      = $contract->average_tick_count;
+        $returnhash{prediction}      = $contract->prediction;
+        $returnhash{tick_count}      = $contract->tick_count;
         $returnhash{entry_tick}      = $contract->entry_tick->quote;
-        $returnhash{entry_tick_time} = $contract->entry_tick->quote;
+        $returnhash{entry_tick_time} = $contract->entry_tick->epoch;
         $returnhash{exit_tick}       = $contract->exit_tick->quote;
         $returnhash{exit_tick_time}  = $contract->exit_tick->epoch;
     } else {
@@ -236,27 +202,6 @@ sub get_bid {
     }
 
     return \%returnhash;
-}
-
-sub send_bid {
-    my ($c, $id, $args) = @_;
-
-    my $latest = get_bid($args->{short_code}, $args->{fmb_id}, $args->{currency});
-
-    my $response = {
-        msg_type => 'proposal_open_contract',
-        echo_req => $args,
-    };
-
-    $c->send({
-            json => {
-                %$response,
-                proposal_open_contract => {
-                    id => $id,
-                    %$latest
-                }}});
-
-    return;
 }
 
 1;

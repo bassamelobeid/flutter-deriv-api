@@ -6,23 +6,21 @@ use warnings;
 use Try::Tiny;
 use Mojo::DOM;
 use Time::HiRes;
-use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::System;
-use Cache::RedisDB;
-use JSON;
+use Data::UUID;
 use List::MoreUtils qw(any none);
 
+use BOM::WebSocketAPI::v3::Symbols;
+use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
-use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 use BOM::Product::Contract::Category;
-use Data::UUID;
-use BOM::Market::Underlying;
+use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 sub trading_times {
-    my ($c, $args) = @_;
+    my $args = shift;
 
     my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
@@ -59,24 +57,11 @@ sub trading_times {
             }
         }
     }
-    return {
-        msg_type      => 'trading_times',
-        trading_times => $trading_times,
-    };
+    return $trading_times,;
 }
 
 sub asset_index {
-    my ($c, $args) = @_;
-
-    my $r    = $c->stash('request');
-    my $lang = $r->language;
-
-    if (my $r = Cache::RedisDB->get("WS_ASSETINDEX", $lang)) {
-        return {
-            msg_type    => 'asset_index',
-            asset_index => JSON::from_json($r),
-        };
-    }
+    my ($language, $args) = @_;
 
     my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
         markets => {
@@ -126,7 +111,7 @@ sub asset_index {
                             } else {
                                 $included->{$key} = Time::Duration::Concise::Localize->new(
                                     interval => $included->{$key},
-                                    locale   => $r->language
+                                    locale   => $language
                                 ) unless (ref $included->{$key});
                                 push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
                             }
@@ -159,13 +144,7 @@ sub asset_index {
         }
     }
 
-    # set cache
-    Cache::RedisDB->set("WS_ASSETINDEX", $lang, JSON::to_json([@data]), 3600);
-
-    return {
-        msg_type    => 'asset_index',
-        asset_index => [@data],
-    };
+    return \@data;
 }
 
 sub ticks {
@@ -312,7 +291,10 @@ sub process_realtime_events {
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
             send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
+            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal(
+                $c,
+                $feed_channels_type->{$channel}->{uuid},
+                $feed_channels_type->{$channel}->{args}) if $c->tx;
         } elsif ($m[0] eq $symbol) {
             my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
@@ -354,16 +336,17 @@ sub proposal {
 sub prepare_ask {
     my $p1 = shift;
 
-    $p1->{date_start} //= 0;
-    if ($p1->{date_expiry}) {
-        $p1->{fixed_expiry} //= 1;
-    }
     my %p2 = %$p1;
+
+    $p2{date_start} //= 0;
+    if ($p2{date_expiry}) {
+        $p2{fixed_expiry} //= 1;
+    }
 
     if (defined $p2{barrier} && defined $p2{barrier2}) {
         $p2{low_barrier}  = delete $p2{barrier2};
         $p2{high_barrier} = delete $p2{barrier};
-    } elsif ($p1->{contract_type} !~ /^SPREAD/) {
+    } elsif ($p1->{contract_type} !~ /^(SPREAD|ASIAN)/) {
         $p2{barrier} //= 'S0P';
         delete $p2{barrier2};
     }
@@ -431,7 +414,7 @@ sub send_ask {
 
     my $latest = get_ask($c, prepare_ask($args));
     if ($latest->{error}) {
-        BOM::WebSocketAPI::v3::System::forget_one $c, $id;
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id;
 
         my $proposal = {id => $id};
         $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};

@@ -13,4 +13,12 @@ sub create_error {
             $args->{details} ? (details => $args->{details}) : ()}};
 }
 
+sub ping {
+    return 'pong';
+}
+
+sub server_time {
+    return time;
+}
+
 1;

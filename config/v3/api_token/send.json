@@ -1,13 +1,23 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Asset Index Send",
-  "description":"Retreive the Asset Index: a list of all available markets and a summary of the contracts available thereupon.",
+  "title": "API Token Request",
+  "description": "This call manages API tokens",
   "properties": {
-    "asset_index": {
+    "api_token": {
       "type":"integer",
       "pattern": "^1$",
       "required": "1"
+    },
+    "new_token": {
+      "type": "string",
+      "pattern": "\\w+",
+      "description": "The name of the created token"
+    },
+    "delete_token": {
+      "type": "string",
+      "pattern": "\\w+",
+      "description": "The token to remove"
     },
     "passthrough": {
       "type": "object",

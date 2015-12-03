@@ -1,8 +1,9 @@
-package BOM::WebSocketAPI::v3::System;
+package BOM::WebSocketAPI::v3::Wrapper::System;
 
 use strict;
 use warnings;
 
+use BOM::WebSocketAPI::v3::Utility;
 use Mojo::Util qw(md5_sum steady_time);
 
 sub forget {
@@ -88,8 +89,7 @@ sub ping {
 
     return {
         msg_type => 'ping',
-        ping     => 'pong',
-    };
+        ping     => BOM::WebSocketAPI::v3::Utility::ping()};
 }
 
 sub server_time {
@@ -97,8 +97,7 @@ sub server_time {
 
     return {
         msg_type => 'time',
-        time     => time,
-    };
+        time     => BOM::WebSocketAPI::v3::Utility::server_time()};
 }
 
 sub _id {

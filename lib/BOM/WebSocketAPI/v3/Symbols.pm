@@ -2,10 +2,9 @@ package BOM::WebSocketAPI::v3::Symbols;
 
 use strict;
 use warnings;
+
 use Finance::Asset;
 use Date::Utility;
-use Cache::RedisDB;
-use JSON;
 
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
