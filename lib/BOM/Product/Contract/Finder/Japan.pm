@@ -112,8 +112,9 @@ sub _predefined_trading_period {
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
+        my @skip_even_hour = (grep { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18);
 
-        if (($symbol !~ /JPY|AUD|NZD/ and $even_hour < 18) or ($symbol =~ /JPY|AUD|NZD/ and ($even_hour != 18 or $even_hour != 20))) {
+        if (not grep { $even_hour == $_ } @skip_even_hour) {
             $trading_periods = [
                 _get_intraday_trading_window({
                         now        => $now,
