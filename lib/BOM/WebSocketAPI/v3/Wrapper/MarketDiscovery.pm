@@ -110,7 +110,7 @@ sub send_ask {
     my %details  = %{$args};
     my $response = BOM::WebSocketAPI::v3::MarketDiscovery::get_ask(BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask(\%details));
     if ($response->{error}) {
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id;
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
 
         my $proposal = {id => $id};
         $proposal->{longcode}  = delete $response->{longcode}  if $response->{longcode};
