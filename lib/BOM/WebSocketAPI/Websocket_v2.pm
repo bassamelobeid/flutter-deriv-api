@@ -248,13 +248,6 @@ sub _sanity_failed {
                     }
                 }
             }
-            foreach my $l (keys %{$arg->{$k}}) {
-                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
-                    $failed = 1;
-                    warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
-                    last OUTER;
-                }
-            }
         }
     }
     if ($failed) {
