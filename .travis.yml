@@ -34,7 +34,6 @@ install:
     - source /tmp/travis-scripts/devbox_path.sh
     - sudo ln -s $PWD /home/git/regentmarkets/bom-market
     - /tmp/travis-scripts/devbox.sh *.yml
-    - sudo /bin/bash /home/git/regentmarkets/bom-market/chronicle.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
     - /tmp/travis-scripts/setup_feeddb.sh
