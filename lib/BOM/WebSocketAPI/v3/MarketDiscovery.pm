@@ -11,8 +11,6 @@ use List::MoreUtils qw(any none);
 
 use BOM::WebSocketAPI::v3::Utility;
 use BOM::WebSocketAPI::v3::Symbols;
-use BOM::WebSocketAPI::v3::Wrapper::System;
-use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize);
@@ -212,75 +210,8 @@ sub ticks_history {
     };
 }
 
-sub process_realtime_events {
-    my ($c, $message) = @_;
-
-    my @m = split(';', $message);
-    my $feed_channels_type = $c->stash('feed_channel_type');
-
-    foreach my $channel (keys %{$feed_channels_type}) {
-        $channel =~ /(.*);(.*)/;
-        my $symbol = $1;
-        my $type   = $2;
-
-        if ($type eq 'tick' and $m[0] eq $symbol) {
-            $c->send({
-                    json => {
-                        msg_type => 'tick',
-                        echo_req => $feed_channels_type->{$channel}->{args},
-                        tick     => {
-                            id     => $feed_channels_type->{$channel}->{uuid},
-                            symbol => $symbol,
-                            epoch  => $m[1],
-                            quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
-        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
-            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
-        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal(
-                $c,
-                $feed_channels_type->{$channel}->{uuid},
-                $feed_channels_type->{$channel}->{args}) if $c->tx;
-        } elsif ($m[0] eq $symbol) {
-            my $u = BOM::Market::Underlying->new($symbol);
-            $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
-            $c->send({
-                    json => {
-                        msg_type => 'ohlc',
-                        echo_req => $feed_channels_type->{$channel},
-                        ohlc     => {
-                            id          => $feed_channels_type->{$channel}->{uuid},
-                            epoch       => $m[1],
-                            open_time   => $m[1] - $m[1] % $type,
-                            symbol      => $symbol,
-                            granularity => $type,
-                            open        => $u->pipsized_value($1),
-                            high        => $u->pipsized_value($2),
-                            low         => $u->pipsized_value($3),
-                            close       => $u->pipsized_value($4)}}}) if $c->tx;
-        }
-    }
-
-    return;
-}
-
-sub proposal {
-    my ($c, $args) = @_;
-
-    my $symbol_offered = any { $args->{symbol} eq $_ } get_offerings_with_filter('underlying_symbol');
-    my $ul;
-    unless ($symbol_offered and $ul = BOM::Market::Underlying->new($args->{symbol})) {
-        return $c->new_error('ticks_history', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $args->{symbol}));
-    }
-    my $id = _feed_channel($c, 'subscribe', $args->{symbol}, 'proposal:' . JSON::to_json($args));
-
-    send_ask($c, $id, $args);
-
-    return;
-}
-
 sub prepare_ask {
     my $p1 = shift;
-
     my %p2 = %$p1;
 
     $p2{date_start} //= 0;
@@ -307,14 +238,12 @@ sub prepare_ask {
 }
 
 sub get_ask {
-    my ($c, $p2) = @_;
-    my $app      = $c->app;
-    my $log      = $app->log;
+    my $p2 = shift;
     my $contract = try { produce_contract({%$p2}) } || do {
         my $err = $@;
         return {
             error => {
-                message => $c->l("Cannot create contract"),
+                message => BOM::Platform::Context::localize("Cannot create contract"),
                 code    => "ContractCreationFailure"
             }};
     };
@@ -332,7 +261,7 @@ sub get_ask {
         $log->error("contract invalid but no error!");
         return {
             error => {
-                message => $c->l("Cannot validate contract"),
+                message => BOM::Platform::Context::localize("Cannot validate contract"),
                 code    => "ContractValidationError"
             }};
     }
@@ -352,36 +281,6 @@ sub get_ask {
     $response->{spread} = $contract->spread if $contract->is_spread;
 
     return $response;
-}
-
-sub send_ask {
-    my ($c, $id, $args) = @_;
-
-    my $latest = get_ask($c, prepare_ask($args));
-    if ($latest->{error}) {
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id;
-
-        my $proposal = {id => $id};
-        $proposal->{longcode}  = delete $latest->{longcode}  if $latest->{longcode};
-        $proposal->{ask_price} = delete $latest->{ask_price} if $latest->{ask_price};
-        $c->send({
-                json => {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    proposal => $proposal,
-                    %$latest
-                }});
-    } else {
-        $c->send({
-                json => {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    proposal => {
-                        id => $id,
-                        %$latest
-                    }}});
-    }
-    return;
 }
 
 1;

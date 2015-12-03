@@ -7,6 +7,8 @@ use JSON;
 use Cache::RedisDB;
 
 use BOM::WebSocketAPI::v3::MarketDiscovery;
+use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 
 sub trading_times {
     my ($c, $args) = @_;
@@ -77,7 +79,7 @@ sub ticks_history {
                 return;
             } else {
                 if (not _feed_channel($c, 'subscribe', $symbol, $response->{publish})) {
-                    $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+                    return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
                 }
             }
             return {
@@ -85,6 +87,102 @@ sub ticks_history {
                 %{$response->{data}}};
         }
     }
+    return;
+}
+
+sub proposal {
+    my ($c, $args) = @_;
+
+    my $symbol   = $args->{symbol};
+    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_offering($symbol);
+    if ($response and exists $response->{error}) {
+        return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
+        send_ask($c, $id, $args);
+    }
+    return;
+}
+
+sub send_ask {
+    my ($c, $id, $args) = @_;
+
+    my %details  = %{$args};
+    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::get_ask(BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask(\%details));
+    if ($response->{error}) {
+        BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $id;
+
+        my $proposal = {id => $id};
+        $proposal->{longcode}  = delete $response->{longcode}  if $response->{longcode};
+        $proposal->{ask_price} = delete $response->{ask_price} if $response->{ask_price};
+        $c->send({
+                json => {
+                    msg_type => 'proposal',
+                    echo_req => $args,
+                    proposal => $proposal,
+                    %$response
+                }});
+    } else {
+        $c->send({
+                json => {
+                    msg_type => 'proposal',
+                    echo_req => $args,
+                    proposal => {
+                        id => $id,
+                        %$response
+                    }}});
+    }
+    return;
+}
+
+sub process_realtime_events {
+    my ($c, $message) = @_;
+
+    my @m = split(';', $message);
+    my $feed_channels_type = $c->stash('feed_channel_type');
+
+    foreach my $channel (keys %{$feed_channels_type}) {
+        $channel =~ /(.*);(.*)/;
+        my $symbol = $1;
+        my $type   = $2;
+
+        if ($type eq 'tick' and $m[0] eq $symbol) {
+            $c->send({
+                    json => {
+                        msg_type => 'tick',
+                        echo_req => $feed_channels_type->{$channel}->{args},
+                        tick     => {
+                            id     => $feed_channels_type->{$channel}->{uuid},
+                            symbol => $symbol,
+                            epoch  => $m[1],
+                            quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
+        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
+        } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
+            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal(
+                $c,
+                $feed_channels_type->{$channel}->{uuid},
+                $feed_channels_type->{$channel}->{args}) if $c->tx;
+        } elsif ($m[0] eq $symbol) {
+            my $u = BOM::Market::Underlying->new($symbol);
+            $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
+            $c->send({
+                    json => {
+                        msg_type => 'ohlc',
+                        echo_req => $feed_channels_type->{$channel},
+                        ohlc     => {
+                            id          => $feed_channels_type->{$channel}->{uuid},
+                            epoch       => $m[1],
+                            open_time   => $m[1] - $m[1] % $type,
+                            symbol      => $symbol,
+                            granularity => $type,
+                            open        => $u->pipsized_value($1),
+                            high        => $u->pipsized_value($2),
+                            low         => $u->pipsized_value($3),
+                            close       => $u->pipsized_value($4)}}}) if $c->tx;
+        }
+    }
+
     return;
 }
 
