@@ -157,13 +157,21 @@ sub _predefined_trading_period {
     my @new_offerings;
     foreach my $o (@offerings) {
         # we do not want to offer intraday contract on other contracts
+        # we offer 0day contract on call/put
         my $minimum_contract_duration =
-            $o->{contract_category} eq 'callput' ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds : 86400;
+              $o->{contract_category} eq 'callput'
+            ? $o->{expiry_type} eq 'intraday'
+                ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds
+                : 86399
+            : 86400;
+
+        my $maximum_contract_duration = Time::Duration::Concise->new({interval => $o->{max_contract_duration}})->seconds;
+
         foreach my $trading_period (@$trading_periods) {
             my $date_expiry      = $trading_period->{date_expiry}->{epoch};
             my $date_start       = $trading_period->{date_start}->{epoch};
             my $trading_duration = $date_expiry - $date_start;
-            if ($trading_duration < $minimum_contract_duration) {
+            if ($trading_duration < $minimum_contract_duration or $trading_duration > $maximum_contract_duration) {
                 next;
             } elsif ($now->day_of_week == 5
                 and $trading_duration < 86400
@@ -265,7 +273,7 @@ sub _get_daily_trading_window {
         });
 
     # monthly contract
-    my $first_day_of_month    = Date::Utility->new('1-' . $now->month_as_string . '-' . $now_year);
+    my $first_day_of_month      = Date::Utility->new('1-' . $now->month_as_string . '-' . $now_year);
     my $first_day_of_next_month = Date::Utility->new('1-' . $now->months_ahead(1));
     push @daily_duration,
         _get_trade_date_of_daily_window({
@@ -288,7 +296,7 @@ sub _get_daily_trading_window {
         });
 
     # yearly contract
-    my $first_day_of_year      = Date::Utility->new('01-Jan-' . $now_year);
+    my $first_day_of_year = Date::Utility->new('01-Jan-' . $now_year);
     my $first_day_of_next_year = Date::Utility->new('01-Jan-' . ($now_year + 1));
     push @daily_duration,
         _get_trade_date_of_daily_window({
