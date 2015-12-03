@@ -9,11 +9,13 @@ use Time::HiRes;
 use Data::UUID;
 use List::MoreUtils qw(any none);
 
+use BOM::WebSocketAPI::v3::Utility;
 use BOM::WebSocketAPI::v3::Symbols;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::Market::Registry;
 use BOM::Market::Underlying;
+use BOM::Platform::Context qw (localize);
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Contract::Category;
@@ -147,33 +149,24 @@ sub asset_index {
     return \@data;
 }
 
-sub ticks {
-    my ($c, $args) = @_;
+sub validate_underlying {
+    my $symbol = @_;
 
-    my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     my @offerings = get_offerings_with_filter('underlying_symbol');
-    foreach my $symbol (@symbols) {
-        if (none { $symbol eq $_ } @offerings) {
-            return $c->new_error('ticks', 'InvalidSymbol', $c->l("Symbol [_1] invalid", $symbol));
-        }
-        my $u = BOM::Market::Underlying->new($symbol);
+    if (none { $symbol eq $_ } @offerings) {
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'InvalidSymbol',
+                message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $symbol)});
+    }
+    my $u = BOM::Market::Underlying->new($symbol);
 
-        if ($u->feed_license ne 'realtime') {
-            return $c->new_error('ticks', 'NoRealtimeQuotes', $c->l("Realtime quotes not available for [_1]", $symbol));
-        }
-
-        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-            _feed_channel($c, 'unsubscribe', $symbol, 'tick');
-        } else {
-            my $uuid;
-            if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick')) {
-                return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
-            }
-        }
-
+    if ($u->feed_license ne 'realtime') {
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'NoRealtimeQuotes',
+                message_to_client => BOM::Platform::Context::localize("Realtime quotes not available for [_1]", $symbol)});
     }
 
-    return;
+    return {status => 1};
 }
 
 sub ticks_history {
@@ -231,40 +224,6 @@ sub ticks_history {
     }
 
     return $result;
-}
-
-sub _feed_channel {
-    my ($c, $subs, $symbol, $type) = @_;
-    my $uuid;
-
-    my $feed_channel      = $c->stash('feed_channel');
-    my $feed_channel_type = $c->stash('feed_channel_type');
-
-    my $redis = $c->stash('redis');
-    if ($subs eq 'subscribe') {
-        if (exists $feed_channel_type->{"$symbol;$type"}) {
-            return;
-        }
-        $uuid = Data::UUID->new->create_str();
-        $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args} = $c->stash('args');
-        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
-        $redis->subscribe(["FEED::$symbol"], sub { });
-    }
-
-    if ($subs eq 'unsubscribe') {
-        $feed_channel->{$symbol} -= 1;
-        delete $feed_channel_type->{"$symbol;$type"};
-        if ($feed_channel->{$symbol} <= 0) {
-            $redis->unsubscribe(["FEED::$symbol"], sub { });
-            delete $feed_channel->{$symbol};
-        }
-    }
-
-    $c->stash('feed_channel'      => $feed_channel);
-    $c->stash('feed_channel_type' => $feed_channel_type);
-
-    return $uuid;
 }
 
 sub process_realtime_events {
