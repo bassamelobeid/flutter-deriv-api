@@ -220,33 +220,29 @@ sub __authorize_error {
 }
 
 sub _sanity_failed {
-    my $arg = shift;
-    my $failed;
+    my ($c, $arg) = @_;
+    my @failed;
+
     OUTER:
     foreach my $k (keys %$arg) {
-        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)) {
-            $failed = 1;
-            warn "Sanity check failed: $k -> " . $arg->{$k};
-            last OUTER;
-        }
-        if (ref $arg->{$k}) {
-            foreach my $l (keys %{$arg->{$k}}) {
-                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
-                    $failed = 1;
-                    warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
-                    last OUTER;
+        if (not ref $arg->{$k}) {
+            last OUTER if (@failed = _failed_key_value($k, $arg->{$k}));
+        } else {
+            if (ref $arg->{$k} eq 'HASH') {
+                foreach my $l (keys %{$arg->{$k}}) {
+                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
+                }
+            } elsif (ref $arg->{$k} eq 'ARRAY') {
+                foreach my $l (@{$arg->{$k}}) {
+                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->[$l]));
                 }
             }
         }
     }
-    if ($failed) {
-        warn 'Sanity check failed.';
-        return {
-            msg_type => 'sanity_check',
-            error    => {
-                message => "Parameters sanity check failed",
-                code    => "SanityCheckFailed"
-            }};
+
+    if (@failed) {
+        $c->app->log->warn("Sanity check failed: $failed[0] -> $failed[1]");
+        return $c->new_error('sanity_check', 'SanityCheckFailed', $c->l("Parameters sanity check failed."));
     }
     return;
 }
