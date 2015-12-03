@@ -60,7 +60,7 @@ sub entry_point {
                     }
                 }
 
-                $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
+                $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
                 if (not $data) {
                     $send = undef;
                     $data = {};
@@ -220,27 +220,46 @@ sub __authorize_error {
 }
 
 sub _sanity_failed {
-    my ($c, $arg) = @_;
-    my @failed;
-
+    my $arg = shift;
+    my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
-        if (not ref $arg->{$k}) {
-            last OUTER if (@failed = _failed_key_value($k, $arg->{$k}));
-        } else {
+        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)) {
+            $failed = 1;
+            warn "Sanity check failed: $k -> " . $arg->{$k};
+            last OUTER;
+        }
+        if (ref $arg->{$k}) {
+
+
             if (ref $arg->{$k} eq 'HASH') {
                 foreach my $l (keys %{$arg->{$k}}) {
-                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->{$l}));
+                    if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
+                        $failed = 1;
+                        warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                        last OUTER;
+                    }
                 }
+
             } elsif (ref $arg->{$k} eq 'ARRAY') {
                 foreach my $l (@{$arg->{$k}}) {
-                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->[$l]));
+                    if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
+                        $failed = 1;
+                        warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                        last OUTER;
+                    }
+                }
+            }
+            foreach my $l (keys %{$arg->{$k}}) {
+                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
+                    $failed = 1;
+                    warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
+                    last OUTER;
                 }
             }
         }
     }
-
-    if (@failed) {
+    if ($failed) {
         warn 'Sanity check failed.';
         return {
             msg_type => 'sanity_check',
