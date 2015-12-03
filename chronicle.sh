@@ -9,7 +9,7 @@ read:
     password:
 chronicle:
     ip: 127.0.0.1
-    password: mRX1E3Mi00oS8LG
+    password: picabo
 EOL
 
 echo "Done creating chronicle.yml file";
