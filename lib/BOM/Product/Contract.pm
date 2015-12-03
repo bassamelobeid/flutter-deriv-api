@@ -2316,6 +2316,10 @@ sub _validate_start_date {
         interval => '5m',
         locale   => BOM::Platform::Context::request()->language
     );
+    my $eod_blackout_start =
+          ($self->tick_expiry and $underlying->intradays_must_be_same_day) ? $self->max_tick_expiry_duration
+        : ($self->date_expiry->date eq $self->date_pricing->date) ? $underlying->eod_blackout_start
+        :                                                           undef;
     # Contracts must be held for a minimum duration before resale.
     if (my $orig_start = $self->build_parameters->{_original_date_start}) {
         # Does not apply to unstarted forward-starting contracts
@@ -2428,31 +2432,24 @@ sub _validate_start_date {
                 message_to_client => localize("Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]", $display_time),
                 };
         }
-    } elsif (($self->tick_expiry and $underlying->intradays_must_be_same_day) or $self->date_expiry->date eq $self->date_pricing->date) {
-        my $eod_blackout_start =
-            ($self->tick_expiry)
-            ? $self->max_tick_expiry_duration
-            : $underlying->eod_blackout_start;
-
-        if ($sec_to_close < $eod_blackout_start->seconds) {
-            my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
-                interval => $eod_blackout_start->seconds,
-                locale   => BOM::Platform::Context::request()->language
-            );
-            push @errors,
-                {
-                message => format_error_string(
-                    'end of day start blackout',
-                    symbol           => $underlying->symbol,
-                    min              => $eod_blackout_start->as_concise_string,
-                    'actual seconds' => $sec_to_close
-                ),
-                severity          => 80,
-                message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
-                info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
-                info_text         => localize('Trading Times'),
-                };
-        }
+    } elsif ($eod_blackout_start and $sec_to_close < $eod_blackout_start->seconds) {
+        my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
+            interval => $eod_blackout_start->seconds,
+            locale   => BOM::Platform::Context::request()->language
+        );
+        push @errors,
+            {
+            message => format_error_string(
+                'end of day start blackout',
+                symbol           => $underlying->symbol,
+                min              => $eod_blackout_start->as_concise_string,
+                'actual seconds' => $sec_to_close
+            ),
+            severity          => 80,
+            message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
+            info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+            info_text         => localize('Trading Times'),
+            };
     } elsif ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
         if ($start_date_sec_to_close < 3600) {
             push @errors,
