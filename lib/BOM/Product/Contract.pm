@@ -2410,6 +2410,7 @@ sub _validate_start_date {
                 to => $end,
             });
             my @relevant_events = grep { $_->impact == 5 and $_->symbol eq 'USD' } @$events;
+            last if not @relevant_$events;
             if (@relevant_events == 1) {
                 $display_time = $relevant_events[0]->release_date->plus_time_interval('15m')->time_hhmm;
                 last;
