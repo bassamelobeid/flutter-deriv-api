@@ -257,6 +257,102 @@ sub change_password {
     return {status => 1};
 }
 
+sub cashier_password {
+    my ($client, $cs_email, $ip, $args) = @_;
+
+    my $unlock_password = $args->{unlock_password} // '';
+    my $lock_password   = $args->{lock_password}   // '';
+
+    unless (length($unlock_password) || length($lock_password)) {
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'BadRequest',
+            message_to_client => localize('The application sent an invalid request.'),
+        });
+    }
+
+    my $error_sub = sub {
+        my ($error) = @_;
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+            code              => 'CashierPassword',
+            message_to_client => $error,
+        });
+    };
+
+    if (length($lock_password)) {
+        # lock operation
+        if (length $client->cashier_setting_password) {
+            return $error_sub->(localize('Your cashier was locked.'));
+        }
+
+        $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
+        if (not $client->save()) {
+            return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
+        } else {
+            send_email({
+                    'from'    => $cs_email,
+                    'to'      => $client->email,
+                    'subject' => $client->loginid . " cashier password updated",
+                    'message' => [
+                        localize(
+                            "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
+                            $client->loginid,
+                            $ip
+                        )
+                    ],
+                    'use_email_template' => 1,
+                });
+            return {status => 1};
+        }
+    } else {
+        # unlock operation
+        unless (length $client->cashier_setting_password) {
+            return $error_sub->(localize('Your cashier was not locked.'));
+        }
+
+        my $cashier_password = $client->cashier_setting_password;
+        my $salt = substr($cashier_password, 0, 2);
+        if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
+            BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
+            send_email({
+                    'from'    => $cs_email,
+                    'to'      => $client->email,
+                    'subject' => $client->loginid . "-Failed attempt to unlock cashier section",
+                    'message' => [
+                        localize(
+                            'This is an automated message to alert you to the fact that there was a failed attempt to unlock the Cashier/Settings section of your account [_1] from IP address [_2]',
+                            $client->loginid,
+                            $ip
+                        )
+                    ],
+                    'use_email_template' => 1,
+                });
+
+            return $error_sub->(localize('Sorry, you have entered an incorrect cashier password'));
+        }
+
+        $client->cashier_setting_password('');
+        if (not $client->save()) {
+            return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
+        } else {
+            send_email({
+                    'from'    => $cs_email,
+                    'to'      => $client->email,
+                    'subject' => $client->loginid . " cashier password updated",
+                    'message' => [
+                        localize(
+                            "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
+                            $client->loginid,
+                            $ip
+                        )
+                    ],
+                    'use_email_template' => 1,
+                });
+            BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
+            return {status => 1};
+        }
+    }
+}
+
 sub get_settings {
     my ($client, $language) = @_;
 
