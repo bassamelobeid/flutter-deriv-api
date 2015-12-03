@@ -60,7 +60,7 @@ sub entry_point {
                     }
                 }
 
-                $data = _sanity_failed($p1) || __handle($c, $p1, $tag);
+                $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
                 if (not $data) {
                     $send = undef;
                     $data = {};
