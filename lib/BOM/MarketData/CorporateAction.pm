@@ -134,7 +134,7 @@ sub save {
         BOM::System::Chronicle::set('corporate_actions', $self->symbol, {});
     }
 
-    my $recorded_date = $self->_document_content->{recorded_date};
+    my $recorded_date = $self->recorded_date;
     if ($recorded_date and (Date::Utility->new->epoch - Date::Utility->new($recorded_date)->epoch) > 60) {
         return BOM::System::Chronicle::set('corporate_actions', $self->symbol, $self->_document_content, $recorded_date);
     }
