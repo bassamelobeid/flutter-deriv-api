@@ -14,7 +14,6 @@ is(BOM::MarketData::CorporateAction->new(symbol => 'FPGZ')->document, undef, 'do
 
 my $int = BOM::MarketData::CorporateAction->new(
     symbol        => 'QWER',
-    recorded_date => Date::Utility->new('2014-10-10'),
     actions       => {
         "62799500" => {
             "monitor_date" => "2014-02-07T06:00:07Z",
@@ -40,7 +39,6 @@ lives_ok {
 lives_ok {
     my $int = BOM::MarketData::CorporateAction->new(
         symbol        => 'QWER',
-        recorded_date => Date::Utility->new('2015-10-10'),
         actions       => {
             "32799500" => {
                 "monitor_date" => "2015-02-07T06:00:07Z",
