@@ -552,7 +552,6 @@ sub is_from_office {
     return;
 }
 
-
 sub BUILD {
     my $self = shift;
     if ($self->http_method and not grep { $_ eq $self->http_method } qw/GET POST HEAD OPTIONS/) {
