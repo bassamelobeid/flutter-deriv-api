@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Deep;
@@ -286,7 +286,7 @@ subtest "predefined barriers" => sub {
                 epoch => 1440392400,
                 date  => '2015-08-24 06:00:00'
             },
-            duration => '5h',
+            duration => '5h15m',
         },
         barriers => 1,
     };
