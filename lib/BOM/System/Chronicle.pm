@@ -85,28 +85,32 @@ use YAML::XS;
 use JSON;
 use RedisDB;
 use DBI;
-use DateTime::Format::Pg;
 use DateTime;
+use Date::Utility;
 
-=head3 C<< set("category1", "name1", $value1)  >>
+=head3 C<< set("category1", "name1", $value1, $timestamp[optional]*)  >>
 
 Store a piece of data "value1" under key "category1::name1" in Pg and Redis.
+
+* If you pass a timestamp to the set function, it will set the data at the specified timestamp.
+Default to current time if not provided. $timestamp could be any valid datetime format of Date::Utility (like epoch) or a Date::Utility object.
 
 =cut
 
 sub set {
-    my $category = shift;
-    my $name     = shift;
-    my $value    = shift;
+    my $category      = shift;
+    my $name          = shift;
+    my $value         = shift;
+    my $recorded_date = shift;
 
     die "Cannot store undefined values in Chronicle!" unless defined $value;
-    die "You can only store hash-ref or array-ref in Chronicle!" unless ref $value eq 'ARRAY' or ref $value eq 'HASH';
+    die "You can only store hash-ref or array-ref in Chronicle!" unless (ref $value eq 'ARRAY' or ref $value eq 'HASH');
 
     $value = JSON::to_json($value);
 
     my $key = $category . '::' . $name;
-    _redis_write()->set($key, $value);
-    _archive($category, $name, $value) if _dbh();
+    _redis_write()->set($key, $value) if not defined $recorded_date;
+    _archive($category, $name, $value, $recorded_date) if _dbh();
 
     return 1;
 }
@@ -130,19 +134,19 @@ sub get {
 
 =head3 C<< my $data = get_for("category1", "name1", 1447401505) >>
 
-Query Pg archive for the data under "category1::name1" at or exactly before the given epoch.
+Query Pg archive for the data under "category1::name1" at or exactly before the given epoch/Date::Utility.
 
 =cut
 
 sub get_for {
     my $category = shift;
     my $name     = shift;
-    my $date_for = shift;    #epoch
+    my $date_for = shift;    #epoch or Date::Utility
 
-    my $db_date = DateTime::Format::Pg->format_timestamp(DateTime->from_epoch(epoch => $date_for));
+    my $db_timestamp = Date::Utility->new($date_for)->db_timestamp;
 
     my $db_data = _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? order by timestamp desc limit 1},
-        'id', {}, $category, $name, $db_date);
+        'id', {}, $category, $name, $db_timestamp);
 
     return if not %$db_data;
 
@@ -156,18 +160,22 @@ sub _archive {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
+    my $recorded_date = shift;
 
-    return _dbh()->prepare(<<'SQL')->execute($category, $name, $value);
+    # if recorded_date is undef, this will be current time
+    my $db_timestamp = Date::Utility->new($recorded_date)->db_timestamp;
+
+    return _dbh()->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp);
 WITH ups AS (
     UPDATE chronicle
        SET value=$3
-     WHERE timestamp=DATE_TRUNC('second', now())
+     WHERE timestamp=$4
        AND category=$1
        AND name=$2
  RETURNING *
 )
 INSERT INTO chronicle (timestamp, category, name, value)
-SELECT DATE_TRUNC('second', now()), $1, $2, $3
+SELECT $4, $1, $2, $3
  WHERE NOT EXISTS (SELECT * FROM ups)
 SQL
 }
