@@ -75,13 +75,16 @@ sub available_contracts_for_symbol {
 We set the predefined trading periods based on Japan requirement:
 Intraday contract:
 1) Start at 15 min before closest even hour and expires with duration of 2 hours and 15 min.
-   Mon-Friday:
-   00:00-02:00, 01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00<break> 23:45-02:00, 01:45-04:00
-   For those JPY pairs, it will be 
-   00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00<break> 21:45:00, 23:45-02:00,01:45-04:00, 03:45-06:00
+   Mon-Friday
+   00:00-02:00, 01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00 <break>23:45-02:00, 01:45-04:00, 
+
+   For AUDJPY,USDJPY,AUDUSD, it will be 
+    00:00-02:00,01:45-04:00, 03:45-06:00, 05:45-08:00, 0745-10:00,09:45-12:00, 11:45-14:00, 13:45-16:00, 15:45-18:00<break> 21:45:00, 23:45-02:00,01:45-04:00, 03:45-06:00
+
 
 3) Start at 00:45 and expires with durarion of 5 hours and 15 min and spaces the next available trading window by 4 hours.
-   00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
+   Example: 00:45-06:00 ; 04:45-10:00 ; 08:45-14:00 ; 12:45-18:00
+
 
 Daily contract:
 1) Daily contract: Start at 00:00GMT and end at 23:59:59GMT of the day
@@ -108,11 +111,12 @@ sub _predefined_trading_period {
     my $today_close       = $exchange->closing_on($now);
     my $today_close_epoch = $today_close->epoch;
     my $today             = $now->truncate_to_day;                                       # Start of the day object.
-    my $trading_periods   = Cache::RedisDB->get($cache_keyspace, $trading_key);
+    my $trading_periods;                                                                 #= Cache::RedisDB->get($cache_keyspace, $trading_key);
+
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
-        my @skip_even_hour = (grep { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18);
+        my @skip_even_hour = (grep { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
 
         if (not grep { $even_hour == $_ } @skip_even_hour) {
             $trading_periods = [
@@ -160,15 +164,19 @@ sub _predefined_trading_period {
         # we do not want to offer intraday contract on other contracts
         # we offer 0day contract on call/put
         my $minimum_contract_duration =
-              $o->{contract_category} eq 'callput'
+            (
+                   $o->{contract_category} eq 'callput'
+                or $o->{contract_category} eq 'endsinout'
+            )
             ? $o->{expiry_type} eq 'intraday'
                 ? Time::Duration::Concise->new({interval => $o->{min_contract_duration}})->seconds
-                : 86399
+                : ($today_close_epoch - $today->epoch)
             : 86400;
 
         my $maximum_contract_duration = Time::Duration::Concise->new({interval => $o->{max_contract_duration}})->seconds;
 
         foreach my $trading_period (@$trading_periods) {
+            if (not $trading_period) { next; }
             my $date_expiry      = $trading_period->{date_expiry}->{epoch};
             my $date_start       = $trading_period->{date_start}->{epoch};
             my $trading_duration = $date_expiry - $date_start;
@@ -199,10 +207,9 @@ sub _get_intraday_trading_window {
     my $date_start       = $args->{date_start};
     my $duration         = $args->{duration};
     my $now              = $args->{now};
-    my $early_date_start = $date_start->minus_time_interval('15m');
+    my $early_date_start = ($now->day_of_week == 1 and $date_start->hour == 0) ? $date_start : $date_start->minus_time_interval('15m');
     my $date_expiry      = $date_start->plus_time_interval($duration);
-
-    if ($now->is_before($date_expiry) or ($now->day_of_week == 1 and $early_date_start->hour != 23)) {
+    if ($now->is_before($date_expiry)) {
         return {
             date_start => {
                 date  => $early_date_start->datetime,
@@ -229,7 +236,6 @@ sub _get_trade_date_of_daily_window {
     my $start_of_next_window    = $args->{next_date_start};
     my $duration                = $args->{duration};
     my $exchange                = $args->{exchange};
-
     my $date_start =
         $exchange->trades_on($start_of_current_window) ? $start_of_current_window : $exchange->trade_date_after($start_of_current_window);
     my $date_expiry = $exchange->closing_on($exchange->trade_date_before($start_of_next_window));
