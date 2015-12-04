@@ -68,7 +68,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             5 => 0.543
         },
         discrete_points => {'2013-03-14' => 2.5},
-        date            => $start
+        recorded_date            => $start
     });
 
 my $cur_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({

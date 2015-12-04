@@ -33,7 +33,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol => 'FTSE',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new(1352344145),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(

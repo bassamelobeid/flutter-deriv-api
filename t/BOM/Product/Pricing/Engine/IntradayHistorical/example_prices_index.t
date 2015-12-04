@@ -923,6 +923,7 @@ foreach my $d (@$data) {
         underlying   => $d->{underlying},
         barrier      => 'S0P',
     };
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $d->{underlying}, recorded_date => Date::Utility->new($d->{date_start}),});
     my $c = produce_contract($params);
     is roundnear(0.01, $c->theo_probability->amount), roundnear(0.01, $d->{theo_probability}), 'theo prob checked';
     is roundnear(0.01, $c->pricing_args->{iv}), roundnear(0.01, $d->{vol}), 'vol checked';
