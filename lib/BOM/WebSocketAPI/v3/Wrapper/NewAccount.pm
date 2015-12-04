@@ -9,7 +9,10 @@ use BOM::Platform::SessionCookie;
 sub new_account_virtual {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::NewAccount::new_account_virtual($args, $c->cookie('verify_token'), $args->{email});
+    my $token = $c->cookie('verify_token') || $args->{verification_code};
+$c->app->log->warn("token .... [$token]...\n\n");
+
+    my $response = BOM::WebSocketAPI::v3::NewAccount::new_account_virtual($args, $token, $args->{email});
     if (exists $response->{error}) {
         return $c->new_error('new_account_virtual', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -31,6 +34,9 @@ sub verify_email {
             expires_in  => 3600,
             created_for => 'new_account'
         })->token;
+
+
+$c->app->log->warn("token ...... [$code]....");
 
     my $link = $r->url_for(
         '/user/validate_link',

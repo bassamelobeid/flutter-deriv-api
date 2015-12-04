@@ -6,6 +6,8 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 use BOM::Platform::SessionCookie;
+use BOM::System::Chronicle;
+use List::Util qw(first);
 
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
@@ -20,11 +22,27 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_mojo_test();
 
 my $email = 'test@binary.com';
-my $code  = BOM::Platform::SessionCookie->new({
-        email       => $email,
-        expires_in  => 3600,
-        created_for => 'new_account'
-    })->token;
+
+subtest 'verify_email' => sub {
+    $t = $t->send_ok({json => {verify_email => $email}})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    is($res->{verify_email}, 1, 'verify_email OK');
+    test_schema('verify_email', $res);
+};
+
+my $redis = BOM::System::Chronicle->_redis_read;
+my $tokens = $redis->execute('keys', 'LOGIN_SESSION::*');
+
+my $code;
+foreach my $key (@{$tokens}) {
+    my $value = JSON::from_json($redis->get($key));
+
+    if ($value->{email} eq $email) {
+        $key =~ /^LOGIN_SESSION::(\w+)$/;
+        $code = $1;
+        last;
+    }
+}
 
 my $create_vr = {
     new_account_virtual => 1,
@@ -32,13 +50,6 @@ my $create_vr = {
     client_password     => 'Ac0+-_:@. ',
     residence           => 'au',
     verification_code   => $code
-};
-
-subtest 'verify_email' => sub {
-    $t = $t->send_ok({json => {verify_email => $create_vr->{email}}})->message_ok;
-    my $res = decode_json($t->message->[1]);
-    is($res->{verify_email}, 1, 'verify_email OK');
-    test_schema('verify_email', $res);
 };
 
 subtest 'create Virtual account' => sub {
