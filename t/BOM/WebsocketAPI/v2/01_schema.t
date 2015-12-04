@@ -31,6 +31,11 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => 'R_100',
         recorded_date => Date::Utility->new
     });
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency'
+);
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'R_100'});
 
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
