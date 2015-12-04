@@ -157,9 +157,9 @@ sub get_for {
 }
 
 sub _archive {
-    my $category = shift;
-    my $name     = shift;
-    my $value    = shift;
+    my $category      = shift;
+    my $name          = shift;
+    my $value         = shift;
     my $recorded_date = shift;
 
     # if recorded_date is undef, this will be current time
