@@ -229,6 +229,7 @@ USAGE:
 
 sub get_volatility {
     my ($self, $args) = @_;
+$DB::single=1;
 
     if (scalar(grep { defined $args->{$_} } qw(delta moneyness strike)) != 1) {
         get_logger('QUANT')->logdie("Must pass exactly one of [delta, moneyness, strike] to get_volatility.");
@@ -282,6 +283,7 @@ has price_with_parameterized_surface => (
 
 sub _build_price_with_parameterized_surface {
     my $self = shift;
+$DB::single=1;
 
     return
         unless BOM::Platform::Runtime->instance->app_config->quants->features->enable_parameterized_surface;
@@ -404,6 +406,8 @@ sub _interpolate_delta {
 sub _convert_moneyness_smile_to_delta {
     my ($self, $days) = @_;
 
+    $DB::single=1;
+    my $x = $self->price_with_parameterized_surface;
     my $moneyness_smile = $self->get_smile($days);
 
     my %strikes =
