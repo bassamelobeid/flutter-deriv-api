@@ -17,9 +17,9 @@ active_fx:
       spot:
         euro_atm:
           historical_pricer_max: 5h
-          historical_pricer_min: 15s
+          historical_pricer_min: 2m
           max: 1d
-          min: 15s
+          min: 2m
         euro_non_atm:
           historical_pricer_max: 5h
           historical_pricer_min: 15m
