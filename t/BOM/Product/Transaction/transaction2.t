@@ -259,7 +259,7 @@ sub top_up {
 ####################################################################
 
 SKIP: {
-    skip 'temporarily disabled contracts', 1 if time < Date::Utility->new('2016-01-01');
+    skip 'temporarily disabled contracts', 1 if time < Date::Utility->new('2016-01-01')->epoch;
 subtest 'tick_expiry_engine_turnover_limit', sub {
     plan tests => 13;
     lives_ok {

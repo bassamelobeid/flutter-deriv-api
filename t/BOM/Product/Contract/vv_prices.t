@@ -107,7 +107,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol => 'AEX',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new($params->{date_pricing}),
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
