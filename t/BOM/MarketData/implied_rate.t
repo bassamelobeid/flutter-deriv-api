@@ -14,7 +14,7 @@ use Date::Utility;
 
 subtest 'save implied rate' => sub {
     lives_ok {
-        is (BOM::MarketData::ImpliedRate->new(symbol => 'USD-JPY')->document, undef, 'document is not present');
+        throws_ok { BOM::MarketData::ImpliedRate->new(symbol => 'USD-JPY')->document } qr/404/, 'document is not present';
         my $imp = BOM::MarketData::ImpliedRate->new(
             symbol        => 'USD-JPY',
             rates         => {365 => 0},

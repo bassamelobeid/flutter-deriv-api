@@ -12,7 +12,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::MarketData::InterestRate;
 
 subtest 'save interest rate' => sub {
-    is (BOM::MarketData::InterestRate->new(symbol => 'USD')->document, undef, 'document is not present');
+    throws_ok { BOM::MarketData::InterestRate->new(symbol => 'USD')->document } qr/404/, 'document is not present';
     lives_ok {
         my $int = BOM::MarketData::InterestRate->new(
             symbol        => 'USD',
