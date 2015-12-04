@@ -328,6 +328,23 @@ sub calculate_limits {
             };
     }
 
+    if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
+        push @{$self->limits->{specific_turnover_limits}},
+            +{
+            bet_type => [map { {n => $_} } 'CALL', 'PUT'],
+            name     => 'tick_expiry_engine_turnover_limit',
+            limit    => $ql->tick_expiry_engine_turnover_limit,
+            symbols  => [
+                map { {n => $_} } get_offerings_with_filter(
+                    'underlying_symbol',
+                    {
+                        market      => 'forex',
+                        expiry_type => 'tick'
+                    })
+            ],
+            };
+    }
+
     if ($contract->pricing_engine_name eq 'BOM::Product::Pricing::Engine::Intraday::Index') {
         push @{$self->limits->{specific_turnover_limits}},
             +{
