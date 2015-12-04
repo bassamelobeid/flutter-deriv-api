@@ -131,18 +131,12 @@ smart_fx:
     asset_type: 'currency'
     contracts:
       callput:
-        tick:
-          spot:
-            euro_atm:
-              min: 5
-              max: 10
-              payout_limit: 10000
         intraday:
           spot:
             euro_atm:
-              min: '15s'
+              min: '2m'
               max: '10h'
-              historical_pricer_min: '15s'
+              historical_pricer_min: '2m'
               historical_pricer_max: '10h'
               payout_limit: 1000
     explanation: 'Smart FX indices'
