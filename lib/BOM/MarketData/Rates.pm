@@ -24,6 +24,8 @@ Returns the rate for a particular timeinyears for symbol.
 sub rate_for {
     my ($self, $tiy) = @_;
 
+    die "No rates found for " . $self->symbol if not defined $self->rates;
+
     my $interp = Math::Function::Interpolator->new(points => $self->rates);
     return $interp->linear($tiy * 365) / 100;
 }
