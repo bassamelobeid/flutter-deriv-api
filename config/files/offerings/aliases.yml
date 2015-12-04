@@ -25,12 +25,6 @@ active_fx:
           historical_pricer_min: 15m
           max: 5h
           min: 15m
-    tick:
-      spot:
-        euro_atm:
-          max: 10
-          min: 5
-          payout_limit: 10000
   endsinout:
     daily:
       spot:
