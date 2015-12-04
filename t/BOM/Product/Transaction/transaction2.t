@@ -258,6 +258,8 @@ sub top_up {
 # real tests begin here
 ####################################################################
 
+SKIP: {
+    skip 'temporarily disabled contracts', 1 if time < Date::Utility->new('2016-01-01');
 subtest 'tick_expiry_engine_turnover_limit', sub {
     plan tests => 13;
     lives_ok {
@@ -368,6 +370,7 @@ subtest 'tick_expiry_engine_turnover_limit', sub {
         is $error, undef, 'exactly matching the limit ==> successful buy';
     }
     'survived';
+};
 };
 
 subtest 'tick_expiry_turnover_limit', sub {
