@@ -1,4 +1,4 @@
-use Test::More (tests => 9);
+use Test::More (tests => 8);
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockObject;
