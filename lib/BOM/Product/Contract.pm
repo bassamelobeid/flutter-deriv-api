@@ -2402,34 +2402,19 @@ sub _validate_start_date {
         }
 
     } elsif ($underlying->market->name eq 'forex' and ($self->timeindays->amount * 86400 < 2 * 60 or $self->tick_expiry)) {
-        my $start = $self->date_start->minus_time_interval('15m');
-        my $end   = $self->date_start;
-        my @economic_events;
-        my $counter = 1;
-        my $fetcher = BOM::MarketData::Fetcher::EconomicEvent->new;
-        my $display_time;
-        while ($counter < 5) {
-            my $events = $fetcher->get_latest_events_for_period({
-                from => $start,
-                to   => $end,
-            });
-            my @relevant_events = grep { $_->impact == 5 and $_->symbol eq 'USD' } @$events;
-            last if not @relevant_events;
-            if (@relevant_events == 1) {
-                $display_time = $relevant_events[0]->release_date->plus_time_interval('15m')->time_hhmm;
-                last;
-            }
-            my @sorted = map { $_->[1] } sort { $a->[0] <=> $b->[0] } map { [$_->release_date->epoch, $_] } @relevant_events;
-            $start = $sorted[-1]->release_date;
-            $end   = $start->plus_time_interval('15m');
-            $counter++;
-        }
-        if ($display_time) {
+        my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => $self->date_start->minus_time_interval('15m'),
+            to   => $self->date_start,
+        });
+        if (my $event = first { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
             push @errors,
                 {
                 message           => 'Disable less than 2 minutes Forex contract because of level 5 USD economic announcement.',
                 severity          => 80,
-                message_to_client => localize("Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]", $display_time),
+                message_to_client => localize(
+                    "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
+                    $event->release_date->plus_time_interval('15m')->time_hhmm
+                ),
                 };
         }
     } elsif ($eod_blackout_start and $sec_to_close < $eod_blackout_start->seconds) {
