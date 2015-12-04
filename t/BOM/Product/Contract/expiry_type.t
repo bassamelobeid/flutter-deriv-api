@@ -13,9 +13,9 @@ use BOM::Test::Data::Utility::UnitTestCouchDB;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol => 'RANDOM',
-        trading_day => 'everyday',
-        date   => Date::Utility->new,
+        symbol       => 'RANDOM',
+        trading_days => 'everyday',
+        date         => Date::Utility->new,
     });
 my $time   = time;
 my $params = {

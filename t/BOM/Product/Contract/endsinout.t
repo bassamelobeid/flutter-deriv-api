@@ -61,7 +61,7 @@ subtest 'expiry miss' => sub {
         ok !$c->is_path_dependent;
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
@@ -114,7 +114,7 @@ subtest 'expiry range' => sub {
         ok $c->sentiment,    'low_vol';
         is_deeply $c->supported_expiries, ['intraday', 'daily'];
         is_deeply $c->supported_start_types, ['spot'];
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         isa_ok $c->greek_engine,   'BOM::Product::Pricing::Greeks::BlackScholes';
     }
     'generic';
@@ -123,6 +123,12 @@ subtest 'expiry range' => sub {
         'exchange',
         {
             symbol => 'RANDOM',
+            date   => Date::Utility->new
+        });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol => 'R_100',
             date   => Date::Utility->new
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -150,7 +156,7 @@ subtest 'expiry range' => sub {
         $args->{high_barrier} = 'S10P';
         my $c = produce_contract($args);
         ok $c->is_intraday;
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
         ok $c->high_barrier;
         cmp_ok $c->high_barrier->as_absolute, '==', 100.10, 'correct high barrier';
         ok $c->low_barrier;

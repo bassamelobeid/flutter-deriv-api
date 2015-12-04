@@ -81,7 +81,7 @@ subtest 'call variations' => sub {
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{duration}     = '10m';
         $args->{date_pricing} = $now->plus_time_interval('10m');
@@ -89,7 +89,7 @@ subtest 'call variations' => sub {
         $c                    = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
         ok $c->is_forward_starting, 'forward starting';
-        isa_ok $c->pricing_engine,  'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine,  'Pricing::Engine::EuropeanDigitalSlope';
 
         $args->{date_pricing} = $now;
         $args->{date_start}   = $now;
@@ -102,7 +102,7 @@ subtest 'call variations' => sub {
         $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
-        isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Slope::Observed';
+        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
     }
     'pricing engine selection';
 };
@@ -130,8 +130,8 @@ subtest 'expiry conditions' => sub {
         quote      => 101,
     });
     $c = produce_contract($args);
-    ok $c->is_expired, 'expired';
-    ok !$c->exit_tick, 'no exit tick';
+    ok !$c->exit_tick,  'no exit tick';
+    ok !$c->is_expired, 'not expired without exit tick';
     cmp_ok $c->value, '==', 0;
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'frxUSDJPY',

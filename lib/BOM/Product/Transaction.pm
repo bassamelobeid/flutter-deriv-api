@@ -11,6 +11,9 @@ use JSON qw( from_json );
 use Date::Utility;
 use ExpiryQueue qw( enqueue_new_transaction );
 use Format::Util::Numbers qw(roundnear to_monetary_number_format);
+use RateLimitations qw(within_rate_limits);
+use Try::Tiny;
+
 use BOM::Platform::Context qw(request localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::Client;
@@ -29,7 +32,6 @@ use BOM::Database::Model::DataCollection::QuantsBetVariables;
 use BOM::Database::Model::Constants;
 use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
-use Try::Tiny;
 use BOM::Utility::Log4perl qw/get_logger/;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
 
@@ -178,7 +180,7 @@ sub stats_start {
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
     my $bet_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
-    my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class", "client:$loginid",]};
+    my $tags      = {tags => ["broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "contract_class:$bet_class",]};
 
     if ($what eq 'buy') {
         if ($self->contract->is_spread) {
@@ -513,9 +515,13 @@ sub buy {    ## no critic (RequireArgUnpacking)
         # all these validations MUST NOT use the database
         # database related validations MUST be implemented in the database
         # ask your friendly DBA team if in doubt
+        #
+        # Keep the transaction rate test first to limit the impact of abusive buyers
         $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
-            qw/_validate_iom_withdrawal_limit
+            qw/
+            _validate_buy_transaction_rate
+            _validate_iom_withdrawal_limit
             _validate_payout_limit
             _is_valid_to_buy
             _validate_date_pricing
@@ -1139,7 +1145,11 @@ sub _validate_trade_pricing_adjustment {
     my $move              = $requested - $recomputed;
     my $commission_markup = 0;
     if (not $contract->is_expired) {
-        $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
+        if ($contract->new_interface_engine) {
+            $commission_markup = $contract->pricing_engine->commission_markup;
+        } else {
+            $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
+        }
     }
     my $allowed_move = $commission_markup * 0.5;
     $allowed_move = 0 if $recomputed == 1;
@@ -1248,6 +1258,39 @@ sub _validate_date_pricing {
             -mesg              => 'Bet was validated for a time [' . $contract->date_pricing->epoch . '] too far from now[' . time . ']',
             -message_to_client => BOM::Platform::Context::localize('This contract cannot be properly validated at this time.'));
     }
+    return;
+}
+
+=head2 $self->_validate_buy_transaction_rate
+
+Validate the client's buy transaction rate does not exceed our limits
+
+=cut
+
+sub _validate_buy_transaction_rate {
+    my $self   = shift;
+    my $client = $self->client;
+
+    # Define the appropriate rates in `bom-platform/config/environments/*/perl_rate_limitations.yml`
+    # before attempting to apply them here.
+
+    return unless $client->is_virtual;    # We only limit virtual accounts at this point
+
+    my $service = 'virtual_buy_transaction';
+    my $loginid = $client->loginid;
+
+    if (
+        not within_rate_limits({
+                service  => $service,
+                consumer => $loginid,
+            }))
+    {
+        return Error::Base->cuss(
+            -type              => 'BuyRateExceeded',
+            -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
+            -message_to_client => BOM::Platform::Context::localize('Too many recent attempts.  Try again later.'));
+    }
+
     return;
 }
 
@@ -1553,7 +1596,7 @@ sub sell_expired_contracts {
     my $virtual   = $client->is_virtual ? 'yes' : 'no';
     my $rmgenv    = BOM::System::Config::env;
     my $sell_type = (defined $source and exists $source_to_sell_type{$source}) ? $source_to_sell_type{$source} : 'expired';
-    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type", "client:" . lc($loginid));
+    my @tags      = ("broker:$broker", "virtual:$virtual", "rmgenv:$rmgenv", "sell_type:$sell_type",);
 
     for my $class (keys %stats_attempt) {
         stats_count("transaction.sell.attempt", $stats_attempt{$class}, {tags => [@tags, "contract_class:$class"]});

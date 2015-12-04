@@ -336,16 +336,6 @@ subtest 'valid bet passing and stuff' => sub {
 
     ok($bet->is_valid_to_buy,  'Valid for purchase');
     ok($bet->is_valid_to_sell, '..and for sale-back');
-
-    $bet_params->{bet_type}   = 'CALL';
-    $bet_params->{date_start} = $oft_used_date->plus_time_interval('-1d');    # We didn't insert any data here.
-    delete $bet_params->{date_pricing};
-    $bet_params->{barrier}  = 'S100P';
-    $bet_params->{duration} = '15m';
-    $bet                    = produce_contract($bet_params);
-
-    my $expected_reasons = [qr/Missing settlement/];
-    test_error_list('sell', $bet, $expected_reasons);
 };
 
 subtest 'invalid underlying is a weak foundation' => sub {
@@ -717,7 +707,7 @@ subtest 'invalid start times' => sub {
 
     $bet = produce_contract($bet_params);
 
-    $expected_reasons = [qr/^Start must be before expiry/, qr/Intraday duration.*not acceptable/, qr/Missing settlement/, qr/already expired/];
+    $expected_reasons = [qr/stake same as payout/, qr/^Start must be before expiry/, qr/Intraday duration.*not acceptable/,];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '6d';
@@ -1009,34 +999,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
 };
-
-subtest 'missing ticks check' => sub {
-    plan tests => 2;
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
-    my $starting   = $oft_used_date->epoch;
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch => $starting,
-        quote => 100.012,
-        bid   => 100.015,
-        ask   => 100.021
-    });
-    my $bet_params = {
-        underlying   => $underlying,
-        bet_type     => 'INTRADD',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $starting,
-        duration     => '30m',
-        barrier      => 'S0P',
-        current_tick => $tick,
-    };
-    my $bet              = produce_contract($bet_params);
-    my $expected_reasons = [qr/Missing settlement/];
-    test_error_list('sell', $bet, $expected_reasons);
-    ok(!$bet->initialized_correctly, 'Considering the errors, we can not settle without intervention.');
-};
-
 subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
@@ -1300,6 +1262,81 @@ subtest 'spot reference check' => sub {
     my $c                = produce_contract($bet_params);
     my $expected_reasons = [qr/spot reference/];
     test_error_list('buy', $c, $expected_reasons);
+};
+
+subtest 'economic events blockout period' => sub {
+    my $now               = Date::Utility->new('2015-12-01 10:00');
+    my $underlying_symbol = 'frxUSDJPY';
+    my $volsurface        = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying_symbol,
+            recorded_date => $now,
+        });
+    my $tick_params = {
+        symbol => $underlying_symbol,
+        epoch  => $now->epoch,
+        quote  => 100
+    };
+    my $tick  = BOM::Market::Data::Tick->new($tick_params);
+    my $redis = Cache::RedisDB->redis;
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('15m1s')});
+
+    my $bet_params = {
+        underlying   => $underlying_symbol,
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1m59s',
+        barrier      => 'S0P',
+        current_tick => $tick,
+        volsurface   => $volsurface,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not within period';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'AUD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m59s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not USD';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 4,
+            release_date => $now->minus_time_interval('14m59s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not USD level 5';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m58s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok $c->_validate_start_date, 'error if economic_events is USD level 5';
+    like(
+        ($c->_validate_start_date)[0]->{message_to_client},
+        qr/Trades on Forex with duration less than 2 minutes are temporarily disabled until 10:00/,
+        'error message'
+    );
+    $bet_params->{underlying} = 'FTSE';
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if underlying is not FX';
 };
 
 # Let's not surprise anyone else

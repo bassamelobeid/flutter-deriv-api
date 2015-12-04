@@ -2,7 +2,6 @@
 
 use strict;
 use warnings;
-
 use Test::MockTime qw/:all/;
 use Test::MockModule;
 use Test::More tests => 26;
@@ -262,7 +261,8 @@ SELECT t.*, b.*, c.*, v1.*, v2.*, t2.*
  WHERE t.id=\$1
 SQL
 
-    $stmt = db->dbh->prepare($stmt);
+    my $db = db;
+    $stmt = $db->dbh->prepare($stmt);
     $stmt->execute($txnid);
 
     my $res = $stmt->fetchrow_arrayref;
@@ -1780,7 +1780,7 @@ subtest 'max_turnover validation', sub {
 
         # retry with a slightly higher limit should succeed
         $error = do {
-            # by a bet yesterday. It should not interfere.
+            # buy a bet yesterday. It should not interfere.
             lives_ok {
                 BOM::Database::Helper::FinancialMarketBet->new({
                         bet_data => +{
@@ -1955,9 +1955,8 @@ subtest 'max_30day_turnover validation', sub {
 
         my $error = do {
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(
-                get_limit_for_30day_turnover => sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 }
-            );
+            $mock_client->mock(get_limit_for_30day_turnover =>
+                    sub { note "mocked Client->get_limit_for_30day_turnover returning " . (3 * 5.20 - .01); 3 * 5.20 - .01 });
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -2368,8 +2367,8 @@ subtest 'max_30day_losses validation', sub {
                 _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
             my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20); 3 * 5.20 }
-            );
+            $mock_client->mock(
+                get_limit_for_30day_losses => sub { note "mocked Client->get_limit_for_30day_losses returning " . (3 * 5.20); 3 * 5.20 });
 
             $txn->buy;
         };

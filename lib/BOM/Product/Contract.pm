@@ -7,7 +7,7 @@ use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time sleep);
 use List::Util qw(min max first);
-use List::MoreUtils qw(none);
+use List::MoreUtils qw(none uniq);
 use Scalar::Util qw(looks_like_number);
 
 use BOM::Market::UnderlyingDB;
@@ -24,6 +24,7 @@ use BOM::MarketData::VolSurface::Utils;
 use BOM::Platform::Context qw(request localize);
 use BOM::MarketData::VolSurface::Empirical;
 use BOM::MarketData::Fetcher::VolSurface;
+use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::MarketData::VolSurface::Utils;
@@ -31,8 +32,8 @@ use BOM::MarketData::VolSurface::Utils;
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
 require BOM::Product::Pricing::Engine::Intraday::Index;
-require BOM::Product::Pricing::Engine::Slope::Observed;
 require BOM::Product::Pricing::Engine::VannaVolga::Calibrated;
+require Pricing::Engine::EuropeanDigitalSlope;
 require Pricing::Engine::TickExpiry;
 
 require BOM::Product::Pricing::Greeks::BlackScholes;
@@ -219,7 +220,6 @@ has [qw( pricing_engine_name )] => (
 
 has pricing_engine => (
     is         => 'ro',
-    isa        => 'BOM::Product::Pricing::Engine',
     lazy_build => 1,
 );
 
@@ -506,8 +506,7 @@ sub _build_greek_engine {
 sub _build_pricing_engine_name {
     my $self = shift;
 
-    my $engine_name =
-        $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'BOM::Product::Pricing::Engine::Slope::Observed';
+    my $engine_name = $self->is_path_dependent ? 'BOM::Product::Pricing::Engine::VannaVolga::Calibrated' : 'Pricing::Engine::EuropeanDigitalSlope';
 
     if ($self->tick_expiry) {
         my @symbols = BOM::Market::UnderlyingDB->instance->get_symbols_for(
@@ -561,9 +560,17 @@ has pricing_engine_parameters => (
 sub _build_pricing_engine {
     my $self = shift;
 
-    return $self->pricing_engine_name->new({
-            bet => $self,
-            %{$self->pricing_engine_parameters}});
+    my $pricing_engine;
+    if ($self->new_interface_engine) {
+        my %pricing_parameters = map { $_ => $self->_pricing_parameters->{$_} } @{$self->pricing_engine_name->required_args};
+        $pricing_engine = $self->pricing_engine_name->new(%pricing_parameters);
+    } else {
+        $pricing_engine = $self->pricing_engine_name->new({
+                bet => $self,
+                %{$self->pricing_engine_parameters}});
+    }
+
+    return $pricing_engine;
 }
 
 has remaining_time => (
@@ -1109,17 +1116,41 @@ sub _build_payout {
 sub _build_theo_probability {
     my $self = shift;
 
-    return $self->_get_probability_reference('probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
+    my $theo;
+    # Have to keep it this way until we remove CalculatedValue in Contract.
+    if ($self->new_interface_engine) {
+        $theo = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'theo_probability',
+            description => 'theorectical value of a contract',
+            set_by      => $self->pricing_engine_name,
+            minimum     => 0,
+            maximum     => 1,
+            base_amount => $self->pricing_engine->theo_probability,
+        });
+    } else {
+        $theo = $self->pricing_engine->probability;
+    }
 
-    return $self->pricing_engine->probability;
+    return $theo;
 }
 
 sub _build_bs_probability {
     my $self = shift;
 
-    return $self->_get_probability_reference('bs_probability')->{probability} if $self->new_interface_engine->{$self->pricing_engine_name};
+    my $bs_prob;
+    # Have to keep it this way until we remove CalculatedValue in Contract.
+    if ($self->new_interface_engine) {
+        $bs_prob = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'bs_probability',
+            description => 'BlackScholes value of a contract',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->bs_probability,
+        });
+    } else {
+        $bs_prob = $self->pricing_engine->bs_probability;
+    }
 
-    return $self->pricing_engine->bs_probability;
+    return $bs_prob;
 }
 
 sub _build_bs_price {
@@ -1131,10 +1162,41 @@ sub _build_bs_price {
 sub _build_model_markup {
     my $self = shift;
 
-    # theo_probability markup will always be used.
-    return $self->_get_probability_reference('probability')->{markups}->{model_markup} if $self->new_interface_engine->{$self->pricing_engine_name};
+    my $model_markup;
+    if ($self->new_interface_engine) {
+        my $risk_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'risk_markup',
+            description => 'Risk markup for a pricing model',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->risk_markup,
+        });
+        my $commission_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'commission_markup',
+            description => 'Commission markup for a pricing model',
+            set_by      => $self->pricing_engine_name,
+            base_amount => $self->pricing_engine->commission_markup,
+        });
+        if ($self->built_with_bom_parameters) {
+            my $sell_discount = Math::Util::CalculatedValue::Validatable->new({
+                name        => 'sell_discount',
+                description => 'Discount on sell',
+                set_by      => __PACKAGE__,
+                base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor,
+            });
+            $commission_markup->include_adjustment('multiply', $sell_discount);
+        }
+        $model_markup = Math::Util::CalculatedValue::Validatable->new({
+            name        => 'model_markup',
+            description => 'Risk and commission markup for a pricing model',
+            set_by      => $self->pricing_engine_name,
+        });
+        $model_markup->include_adjustment('reset', $risk_markup);
+        $model_markup->include_adjustment('add',   $commission_markup);
+    } else {
+        $model_markup = $self->pricing_engine->model_markup;
+    }
 
-    return $self->pricing_engine->model_markup;
+    return $model_markup;
 }
 
 sub _build_theo_price {
@@ -1236,6 +1298,8 @@ sub _build_pricing_args {
         barrier2        => $barriers_for_pricing->{barrier2},
         q_rate          => $self->q_rate,
         iv              => $self->pricing_vol,
+        discount_rate   => $self->discount_rate,
+        mu              => $self->mu,
         payouttime_code => $self->payouttime_code,
         starttime       => $start_date->epoch,
     };
@@ -1478,64 +1542,157 @@ has [qw(atm_vols rho)] => (
 # a hash reference for slow migration of pricing engine to the new interface.
 has new_interface_engine => (
     is      => 'ro',
-    default => sub {
-        {
-            'Pricing::Engine::TickExpiry' => 1,
-        };
-    },
+    lazy    => 1,
+    builder => '_build_new_interface_engine',
 );
 
-sub _get_probability_reference {
-    my ($self, $probability_name) = @_;
+sub _build_new_interface_engine {
+    my $self = shift;
 
-    my $prob_ref;
-    if ($self->new_interface_engine->{$self->pricing_engine_name}) {
-        my %pricing_parameters = map { my $method = '_' . $_; $_ => $self->$method } @{$self->pricing_engine_name->REQUIRED_ARGS};
-        # will make this more generic as we move more pricing engines to this interface
-        my $func_name = $self->pricing_engine_name . '::' . $probability_name;
-        my $subref    = \&$func_name;
-        $prob_ref = &$subref(\%pricing_parameters);
-    } else {
-        # shouldn't be calling this if it doesn't have the new interface
-        $prob_ref = {
-            error       => 'Invalid call to [' . $probability_name . '] for engine [' . $self->pricing_engine_name . ']',
-            probability => 1,
-            markups     => {
-                # avoid undefined markups
-                model_markup      => 0,
-                risk_markup       => 0,
-                commission_markup => 0,
-            },
-        };
-    }
+    my %engines = (
+        'Pricing::Engine::TickExpiry'           => 1,
+        'Pricing::Engine::EuropeanDigitalSlope' => 1,
+    );
 
-    # convert it to a CV.
-    $prob_ref->{probability} = Math::Util::CalculatedValue::Validatable->new({
-        name        => 'theo_probability',
-        description => '0.5 probability adjusted for trend',
-        set_by      => $self->pricing_engine_name,
-        base_amount => $prob_ref->{probability},
-    });
-    # convert markups to CV
-    for my $markup_name (keys $prob_ref->{markups}) {
-        $prob_ref->{markups}->{$markup_name} = Math::Util::CalculatedValue::Validatable->new({
-            name        => $markup_name,
-            description => $markup_name,
-            set_by      => $self->pricing_engine_name,
-            base_amount => $prob_ref->{markups}->{$markup_name},
-        });
-    }
-    # We always get a value for probability.
-    # Here is where we decide whether it is a valid probability or not!
-    if ($prob_ref->{error}) {
-        $self->add_errors({
-            severity          => 100,
-            message           => 'Error in calculating probability [' . $prob_ref->{error} . ']',
-            message_to_client => localize("We could not price this contract now, please try again later."),
-        });
-    }
+    return $engines{$self->pricing_engine_name} // 0;
+}
 
-    return $prob_ref;
+sub _pricing_parameters {
+    my $self = shift;
+
+    return {
+        priced_with       => $self->priced_with,
+        spot              => $self->pricing_spot,
+        strikes           => [grep { $_ } values %{$self->_barriers_for_pricing}],
+        date_start        => $self->effective_start,
+        date_expiry       => $self->date_expiry,
+        date_pricing      => $self->date_pricing,
+        discount_rate     => $self->discount_rate,
+        q_rate            => $self->q_rate,
+        r_rate            => $self->r_rate,
+        mu                => $self->mu,
+        vol               => $self->pricing_vol,
+        payouttime_code   => $self->payouttime_code,
+        contract_type     => $self->code,
+        underlying_symbol => $self->underlying->symbol,
+        market_data       => $self->_market_data,
+        market_convention => $self->_market_convention,
+    };
+}
+
+sub _market_convention {
+    my $self = shift;
+
+    return {
+        calculate_expiry => sub {
+            my ($start, $expiry) = @_;
+            my $utils = BOM::MarketData::VolSurface::Utils->new;
+            return $utils->effective_date_for($expiry)->days_between($utils->effective_date_for($start));
+        },
+        get_rollover_time => sub {
+            my $when = shift;
+            return BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($when);
+        },
+    };
+}
+
+sub _market_data {
+    my $self = shift;
+
+    # market data date is determined by for_date in underlying.
+    my $for_date        = $self->underlying->for_date;
+    my %underlyings     = ($self->underlying->symbol => $self->underlying);
+    my $volsurface      = $self->volsurface;
+    my $effective_start = $self->effective_start;
+    my $date_expiry     = $self->date_expiry;
+    return {
+        get_vol_spread => sub {
+            my $args = shift;
+            return $volsurface->get_spread($args);
+        },
+        get_volsurface_data => sub {
+            return $volsurface->surface;
+        },
+        get_market_rr_bf => sub {
+            my $timeindays = shift;
+            return $volsurface->get_market_rr_bf($timeindays);
+        },
+        get_volatility => sub {
+            my ($args, $surface_data) = @_;
+            # if there's new surface data, calculate vol from that.
+            my $vol;
+            if ($volsurface->type eq 'phased') {
+                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+            } elsif ($surface_data) {
+                my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
+                $vol = $new_volsurface_obj->get_volatility($args);
+            } else {
+                $vol = $volsurface->get_volatility($args);
+            }
+
+            return $vol;
+        },
+        get_atm_volatility => sub {
+            my $args = shift;
+            my $vol;
+            if ($volsurface->type eq 'phased') {
+                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+            } else {
+                $args->{delta} = 50;
+                $vol = $volsurface->get_volatility($args);
+            }
+
+            return $vol;
+        },
+        get_economic_event => sub {
+            my $args = shift;
+            my $underlying = $underlyings{$args->{underlying_symbol}} // BOM::Market::Underlying->new({
+                symbol   => $args->{underlying_symbol},
+                for_date => $for_date
+            });
+            my ($from, $to) = map { Date::Utility->new($args->{$_}) } qw(start end);
+            my %applicable_symbols = (
+                USD                                 => 1,
+                AUD                                 => 1,
+                CAD                                 => 1,
+                CNY                                 => 1,
+                NZD                                 => 1,
+                $underlying->quoted_currency_symbol => 1,
+                $underlying->asset_symbol           => 1,
+            );
+
+            my $ee = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+                from => $from,
+                to   => $to
+            });
+            my @applicable_news =
+                map { {
+                    release_date => $_->[0],
+                    vol_factor   => $_->[1]->get_scaling_factor($underlying->symbol, 'vol'),
+                    spot_factor  => $_->[1]->get_scaling_factor($underlying->symbol, 'spot')}
+                } sort {
+                $a->[0] <=> $b->[0]
+                } map {
+                [$_->release_date->epoch, $_]
+                } grep {
+                $applicable_symbols{$_->symbol}
+                } @$ee;
+
+            return @applicable_news;
+        },
+        get_ticks => sub {
+            my $args              = shift;
+            my $underlying_symbol = delete $args->{underlying_symbol};
+            $args->{underlying} = $underlyings{$underlying_symbol} // BOM::Market::Underlying->new({
+                symbol   => $underlying_symbol,
+                for_date => $for_date
+            });
+            return BOM::Market::AggTicks->new->retrieve($args);
+        },
+        get_overnight_tenor => sub {
+            return $volsurface->_ON_day;
+        },
+    };
 }
 
 sub _build_priced_with {
@@ -1564,14 +1721,13 @@ sub _build_priced_with {
 sub _build_mu {
     my $self = shift;
 
-    my $pricing_args = $self->pricing_args;
-    my $mu           = $pricing_args->{r_rate} - $pricing_args->{q_rate};
+    my $mu = $self->r_rate - $self->q_rate;
 
     if (first { $self->underlying->market->name eq $_ } (qw(forex commodities indices))) {
         my $rho = $self->rho->{fd_dq};
         my $vol = $self->atm_vols;
         # See [1] for Quanto Formula
-        $mu = $pricing_args->{r_rate} - $pricing_args->{q_rate} - $rho * $vol->{fordom} * $vol->{domqqq};
+        $mu = $self->r_rate - $self->q_rate - $rho * $vol->{fordom} * $vol->{domqqq};
     }
 
     return $mu;
@@ -2160,6 +2316,10 @@ sub _validate_start_date {
         interval => '5m',
         locale   => BOM::Platform::Context::request()->language
     );
+    my $eod_blackout_start =
+          ($self->tick_expiry and $underlying->intradays_must_be_same_day) ? $self->max_tick_expiry_duration
+        : ($self->date_expiry->date eq $self->date_pricing->date) ? $underlying->eod_blackout_start
+        :                                                           undef;
     # Contracts must be held for a minimum duration before resale.
     if (my $orig_start = $self->build_parameters->{_original_date_start}) {
         # Does not apply to unstarted forward-starting contracts
@@ -2241,31 +2401,40 @@ sub _validate_start_date {
                 };
         }
 
-    } elsif (($self->tick_expiry and $underlying->intradays_must_be_same_day) or $self->date_expiry->date eq $self->date_pricing->date) {
-        my $eod_blackout_start =
-            ($self->tick_expiry)
-            ? $self->max_tick_expiry_duration
-            : $underlying->eod_blackout_start;
-
-        if ($sec_to_close < $eod_blackout_start->seconds) {
-            my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
-                interval => $eod_blackout_start->seconds,
-                locale   => BOM::Platform::Context::request()->language
-            );
+    } elsif ($underlying->market->name eq 'forex' and ($self->timeindays->amount * 86400 < 2 * 60 or $self->tick_expiry)) {
+        my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => $self->date_start->minus_time_interval('15m'),
+            to   => $self->date_start,
+        });
+        if (my $event = first { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
             push @errors,
                 {
-                message => format_error_string(
-                    'end of day start blackout',
-                    symbol           => $underlying->symbol,
-                    min              => $eod_blackout_start->as_concise_string,
-                    'actual seconds' => $sec_to_close
-                ),
+                message           => 'Disable less than 2 minutes Forex contract because of level 5 USD economic announcement.',
                 severity          => 80,
-                message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
-                info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
-                info_text         => localize('Trading Times'),
+                message_to_client => localize(
+                    "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
+                    $event->release_date->plus_time_interval('15m')->time_hhmm
+                ),
                 };
         }
+    } elsif ($eod_blackout_start and $sec_to_close < $eod_blackout_start->seconds) {
+        my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
+            interval => $eod_blackout_start->seconds,
+            locale   => BOM::Platform::Context::request()->language
+        );
+        push @errors,
+            {
+            message => format_error_string(
+                'end of day start blackout',
+                symbol           => $underlying->symbol,
+                min              => $eod_blackout_start->as_concise_string,
+                'actual seconds' => $sec_to_close
+            ),
+            severity          => 80,
+            message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
+            info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+            info_text         => localize('Trading Times'),
+            };
     } elsif ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
         if ($start_date_sec_to_close < 3600) {
             push @errors,
@@ -2705,44 +2874,37 @@ sub _validate_volsurface {
     return @errors;
 }
 
-## PRICING PARAMETERS CODE ##
-## This is a temporary place for this code.
-## It would be moved to the appropriate class when we have refactored all PE to the new interface
-
-sub _contract_type {
-    return shift->code;
-}
-
-sub _underlying_symbol {
-    return shift->underlying->symbol;
-}
-
-sub _economic_events {
+sub _validate_eod_market_risk {
     my $self = shift;
 
-    my $underlying = $self->underlying;
-    my $from       = $self->effective_start->minus_time_interval('10m');
-    my $to         = $self->effective_start->plus_time_interval('10m');
-    my $eco_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-        from => $from,
-        to   => $to,
-    });
-    my @influential_currencies = qw(USD AUD CAD CNY NZD);
-    my %applicable_symbols = map { $_ => 1 } ($underlying->quoted_currency_symbol, $underlying->asset_symbol, @influential_currencies);
-    my @applicable_events =
-        map { $_->[1] } sort { $a->[1] <=> $b->[0] } map { [$_->release_date->epoch, $_] } grep { $applicable_symbols{$_->symbol} } @$eco_events;
+    my @errors;
+    my $ny_1700 = BOM::MarketData::VolSurface::Utils->new->NY1700_rollover_date_on($self->date_start);
+    my $ny_1600 = $ny_1700->minus_time_interval('1h');
 
-    return \@applicable_events;
-}
+    if (
+        first { $self->market->name eq $_ } (qw(forex commodities))
+            and $self->timeindays->amount <= 3
+        and (
+            $ny_1600->is_before($self->date_start)
+            or (    $self->is_intraday
+                and $ny_1600->is_before($self->date_expiry)))
+        and not $self->is_atm_bet
+        )
+    {
+        my $message =
+            ($self->built_with_bom_parameters)
+            ? localize('Resale of this contract is not offered.')
+            : localize('The contract is not available after [_1] GMT.', $ny_1600->time_hhmm);
+        push @errors,
+            {
+            message           => 'Underlying buying suspended between NY1600 and GMT0000',
+            message_to_client => $message . ' ',
+            info_link         => request()->url_for('/resources/asset_index'),
+            info_text         => localize('View Asset Index'),
+            };
+    }
 
-sub _last_twenty_ticks {
-    my $self = shift;
-
-    return BOM::Market::AggTicks->new->retrieve({
-        underlying   => $self->underlying,
-        ending_epoch => $self->effective_start->epoch,
-        tick_count   => 20,
-    });
+    return @errors;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
