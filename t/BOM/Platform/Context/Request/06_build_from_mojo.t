@@ -172,13 +172,6 @@ subtest 'cookie preferred' => sub {
     };
 };
 
-subtest 'ids failed' => sub {
-    throws_ok {
-        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {test => '/etc/passwd%00'})});
-    }
-    qr/Detected IDS attacks/;
-};
-
 subtest 'accepted http_methods' => sub {
     subtest 'GET|POST|HEAD' => sub {
         foreach my $method (qw/GET POST HEAD/) {
