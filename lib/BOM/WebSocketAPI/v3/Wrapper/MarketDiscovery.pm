@@ -94,7 +94,7 @@ sub proposal {
     my ($c, $args) = @_;
 
     my $symbol   = $args->{symbol};
-    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_offering($symbol);
+    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {

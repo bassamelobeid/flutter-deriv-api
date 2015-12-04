@@ -146,15 +146,23 @@ sub asset_index {
     return \@data;
 }
 
-sub validate_offering {
-    my $symbol = shift;
-
+sub validate_symbol {
+    my $symbol    = shift;
     my @offerings = get_offerings_with_filter('underlying_symbol');
     if (none { $symbol eq $_ } @offerings) {
         return BOM::WebSocketAPI::v3::Utility::create_error({
                 code              => 'InvalidSymbol',
                 message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $symbol)});
     }
+    return;
+}
+
+sub validate_offering {
+    my $symbol = shift;
+
+    my $response = validate_symbol($symbol);
+    return $response if $response;
+
     my $u = BOM::Market::Underlying->new($symbol);
 
     if ($u->feed_license ne 'realtime') {
