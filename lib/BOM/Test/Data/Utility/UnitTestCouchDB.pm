@@ -21,6 +21,7 @@ use 5.010;
 use strict;
 use warnings;
 
+use Test::MockTime qw(set_absolute_time restore_time);
 use BOM::MarketData::CorrelationMatrix;
 use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
@@ -28,7 +29,6 @@ use CouchDB::Client;
 use Carp qw( croak );
 use LWP::UserAgent;
 use YAML::XS;
-use Test::MockTime qw(set_absolute_time restore_time);
 
 use BOM::MarketData::ExchangeConfig;
 use BOM::MarketData::VolSurface::Delta;
@@ -245,13 +245,14 @@ sub create_doc {
 
     if ($save) {
         if ( $class_name =~ /^.+(Dividend|CorporateAction)$/ ) {
-            set_absolute_time($data->{recorded_date}->epoch);
+            set_absolute_time($data->{recorded_date}->epoch) if $data->{recorded_date};
         }
 
         $obj->save;
 
         if ( $class_name =~ /^.+(Dividend|CorporateAction)$/ ) {
-            restore_time;
+            restore_time() if $data->{recorded_date};
+;
         }
     }
 
