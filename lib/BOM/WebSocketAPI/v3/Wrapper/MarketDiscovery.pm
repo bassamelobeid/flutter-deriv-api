@@ -72,14 +72,24 @@ sub ticks_history {
     } else {
         $response = BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history($symbol, $args);
         if ($response and exists $response->{error}) {
-            return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
-        } else {
-            if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-                _feed_channel($c, 'unsubscribe', $symbol, $response->{publish});
-                return;
+            if ($args->{granularity}) {
+                return $c->new_error('candles', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
-                if (not _feed_channel($c, 'subscribe', $symbol, $response->{publish})) {
-                    return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+                return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
+            }
+        } else {
+            if (exists $args->{subscribe}) {
+                if ($args->{subscribe} eq '1') {
+                    $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_license($symbol);
+                    if ($response and $response->{error}) {
+                        return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
+                    }
+                    if (not _feed_channel($c, 'subscribe', $symbol, $response->{publish})) {
+                        return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+                    }
+                } else {
+                    _feed_channel($c, 'unsubscribe', $symbol, $response->{publish});
+                    return;
                 }
             }
             return {
