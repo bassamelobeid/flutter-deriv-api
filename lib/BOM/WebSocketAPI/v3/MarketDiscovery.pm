@@ -157,26 +157,19 @@ sub validate_symbol {
     return;
 }
 
-sub validate_license {
-    my $symbol = shift;
-    my $u      = BOM::Market::Underlying->new($symbol);
-
-    if ($u->feed_license ne 'realtime') {
-        return BOM::WebSocketAPI::v3::Utility::create_error({
-                code              => 'NoRealtimeQuotes',
-                message_to_client => BOM::Platform::Context::localize("Realtime quotes not available for [_1]", $symbol)});
-    }
-    return;
-}
-
 sub validate_offering {
     my $symbol = shift;
 
     my $response = validate_symbol($symbol);
     return $response if $response;
 
-    $response = validate_license($symbol);
-    return $response if $response;
+    my $u = BOM::Market::Underlying->new($symbol);
+
+    if ($u->feed_license ne 'realtime') {
+        return BOM::WebSocketAPI::v3::Utility::create_error({
+                code              => 'NoRealtimeQuotes',
+                message_to_client => BOM::Platform::Context::localize("Realtime quotes not available for [_1]", $symbol)});
+    }
 
     return {status => 1};
 }
