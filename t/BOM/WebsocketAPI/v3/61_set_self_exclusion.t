@@ -58,13 +58,11 @@ $res = decode_json($t->message->[1]);
 ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 my %data = %{$res->{get_self_exclusion}};
-diag Dumper(\%data);
 is $data{max_balance},     10000, 'max_balance saved ok';
 is $data{max_turnover},    undef, 'max_turnover is not there';
 is $data{max_7day_losses}, undef, 'max_7day_losses is not saved';
 is $data{max_open_bets},   100,   'max_open_bets saved';
 
-# plus save is ok
 $t = $t->send_ok({
         json => {
             set_self_exclusion => 1,
@@ -74,6 +72,18 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'SetSelfExclusionError';
 is $res->{error}->{field}, 'max_open_bets', 'max open bets was set so it can not be set to null';
+test_schema('set_self_exclusion', $res);
+
+$t = $t->send_ok({
+        json => {
+            set_self_exclusion => 1,
+            max_balance        => 9999,
+            max_turnover       => 1000,
+            max_open_bets      => 0,      # 0 is not ok if it was set
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'SetSelfExclusionError';
+is $res->{error}->{field}, 'max_open_bets', 'max open bets was set so it can not be set to 0';
 test_schema('set_self_exclusion', $res);
 
 $t = $t->send_ok({
