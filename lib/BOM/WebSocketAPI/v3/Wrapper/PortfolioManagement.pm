@@ -36,7 +36,7 @@ sub portfolio {
 sub buy {
     my ($c, $args) = @_;
 
-    my $contract_parameters = BOM::WebSocketAPI::v3::Wrapper::System::forget_one $c, $args->{buy}
+    my $contract_parameters = BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{buy})
         or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
 
     my $response = BOM::WebSocketAPI::v3::PortfolioManagement::buy($c->stash('client'), $c->stash('source'), $contract_parameters, $args);
@@ -71,7 +71,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             $args->{short_code}  = $fmb->short_code;
             $args->{contract_id} = $fmb->id;
             $args->{currency}    = $client->currency;
-            my $id = BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
+            my $id = BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
                 'proposal_open_contract:' . JSON::to_json($args));
             send_proposal($c, $id, $args);
         }

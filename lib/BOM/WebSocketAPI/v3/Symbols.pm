@@ -164,7 +164,7 @@ sub candles {
     my $ul          = $args->{ul} || die 'no underlying';
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
-    my $granularity = $args->{granularity};
+    my $granularity = $args->{granularity} // 60;
     my $count       = $args->{count};
 
     my @all_ohlc;
@@ -224,6 +224,5 @@ sub candles {
     }
 
     return [map { {epoch => $_->epoch + 0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
-
 }
 1;
