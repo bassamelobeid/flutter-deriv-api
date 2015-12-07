@@ -252,7 +252,6 @@ sub create_doc {
 
         if ( $class_name =~ /^.+(Dividend|CorporateAction)$/ ) {
             restore_time() if $data->{recorded_date};
-;
         }
     }
 
