@@ -160,7 +160,7 @@ sub _archive {
     my $name     = shift;
     my $value    = shift;
 
-    # We will use Test::MockTime to force Chronicle to store hostorical data
+    # In unit tests, we will use Test::MockTime to force Chronicle to store hostorical data
     my $db_timestamp = Date::Utility->new()->db_timestamp;
 
     return _dbh()->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp);
