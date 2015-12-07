@@ -36,7 +36,10 @@ has for_date => (
 sub rate_for {
     my ($self, $tiy) = @_;
 
-    return BOM::MarketData::Dividend->new(symbol => $self->symbol)->rate_for($tiy);
+    return BOM::MarketData::Dividend->new(
+        symbol   => $self->symbol,
+        for_date => $self->for_date
+    )->rate_for($tiy);
 }
 
 no Moose;
