@@ -224,6 +224,5 @@ sub candles {
     }
 
     return [map { {epoch => $_->epoch + 0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
-
 }
 1;
