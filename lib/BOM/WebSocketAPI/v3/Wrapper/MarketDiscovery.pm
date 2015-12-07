@@ -66,7 +66,7 @@ sub ticks_history {
     my ($c, $args) = @_;
 
     my $symbol   = $args->{ticks_history};
-    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_offering($symbol);
+    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
