@@ -72,7 +72,7 @@ sub ticks_history {
     } else {
         $response = BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history($symbol, $args);
         if ($response and exists $response->{error}) {
-            if ($args->{granularity}) {
+            if (exists $args->{granularity}) {
                 return $c->new_error('candles', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -80,9 +80,9 @@ sub ticks_history {
         } else {
             if (exists $args->{subscribe}) {
                 if ($args->{subscribe} eq '1') {
-                    $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_license($symbol);
-                    if ($response and $response->{error}) {
-                        return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
+                    my $license = BOM::WebSocketAPI::v3::MarketDiscovery::validate_license($symbol);
+                    if ($license and exists $license->{error}) {
+                        return $c->new_error('ticks', $license->{error}->{code}, $license->{error}->{message_to_client});
                     }
                     if (not _feed_channel($c, 'subscribe', $symbol, $response->{publish})) {
                         return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
