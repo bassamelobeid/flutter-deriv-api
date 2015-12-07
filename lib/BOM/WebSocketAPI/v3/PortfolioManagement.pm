@@ -52,6 +52,7 @@ sub buy {
         start_time     => $contract->date_start->epoch,
         longcode       => Mojo::DOM->new->parse($contract->longcode)->all_text,
         shortcode      => $contract->shortcode,
+        payout         => $contract->payout
     };
 
     if ($contract->is_spread) {
