@@ -28,6 +28,7 @@ use CouchDB::Client;
 use Carp qw( croak );
 use LWP::UserAgent;
 use YAML::XS;
+use Test::MockTime qw(set_absolute_time restore_time);
 
 use BOM::MarketData::ExchangeConfig;
 use BOM::MarketData::VolSurface::Delta;
@@ -35,6 +36,7 @@ use BOM::MarketData::VolSurface::Flat;
 use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
+
 
 # For the unit_test_couchdb.t test case, we limit the dabase name to three characters
 # ie 'bom', 'vol', 'int, etc. all have three characters each
@@ -242,7 +244,15 @@ sub create_doc {
     my $obj        = $class_name->new($data);
 
     if ($save) {
+        if ( $class_name =~ /^.+(Dividend|CorporateAction)$/ ) {
+            set_absolute_time($data->{recorded_date}->epoch);
+        }
+
         $obj->save;
+
+        if ( $class_name =~ /^.+(Dividend|CorporateAction)$/ ) {
+            restore_time;
+        }
     }
 
     return $obj;
