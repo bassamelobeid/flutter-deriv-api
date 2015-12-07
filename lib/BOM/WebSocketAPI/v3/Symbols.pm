@@ -164,7 +164,7 @@ sub candles {
     my $ul          = $args->{ul} || die 'no underlying';
     my $start_time  = $args->{start};
     my $end_time    = $args->{end};
-    my $granularity = $args->{granularity} // 60;
+    my $granularity = $args->{granularity};
     my $count       = $args->{count};
 
     my @all_ohlc;
