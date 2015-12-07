@@ -22,13 +22,12 @@ use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize);
 
 sub new_account_virtual {
-    my $args = shift;
+    my ($args, $token, $email) = @_;
 
     my %details = %{$args};
-    my $code    = delete $details{verification_code};
 
     my $err_code;
-    if (BOM::Platform::Account::validate_verification_code($details{email}, $code)) {
+    if (_is_session_cookie_valid($token, $email)) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => \%details,
             email_verified => 1
@@ -53,17 +52,26 @@ sub new_account_virtual {
             message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
 }
 
+sub _is_session_cookie_valid {
+    my ($token, $email) = @_;
+    my $session_cookie = BOM::Platform::SessionCookie->new({token => $token});
+    unless ($session_cookie and $session_cookie->email and $session_cookie->email eq $email) {
+        return 0;
+    }
+
+    return 1;
+}
+
 sub verify_email {
-    my ($email, $website) = @_;
-
+    my ($email, $website, $link) = @_;
     unless (BOM::Platform::User->new({email => $email})) {
-        my $code = BOM::Platform::Account::get_verification_code($email);
-
         send_email({
-                from    => $website->config->get('customer_support.email'),
-                to      => $email,
-                subject => BOM::Platform::Context::localize('Verify your email address - [_1]', $website->display_name),
-                message => [BOM::Platform::Context::localize('Your email address verification code is: ' . $code)]});
+            from               => $website->config->get('customer_support.email'),
+            to                 => $email,
+            subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $website->display_name),
+            message            => [BOM::Platform::Context::localize('Your email address verification code is: ' . $link)],
+            use_email_template => 1
+        });
     }
 
     return {status => 1};    # always return 1, so not to leak client's email
