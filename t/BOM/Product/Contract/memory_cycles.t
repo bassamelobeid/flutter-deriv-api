@@ -4,6 +4,7 @@ use warnings;
 use Test::Exception;
 use Test::Memory::Cycle;
 use Test::More qw( no_plan );
+use Test::NoWarnings;
 use Test::Warn;
 use Test::MockModule;
 use File::Spec;
@@ -27,7 +28,7 @@ subtest 'Check BOM::Product::Contract for memory cycles' => sub {
     use_ok('BOM::Product::Contract');
     my $params = {
         underlying => 'frxEURUSD',
-        duration   => '10d',
+        duration   => '10t',
         bet_type   => 'CALL',
         barrier    => 'S0P',
         payout     => 100,
