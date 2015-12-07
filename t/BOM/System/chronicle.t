@@ -1,10 +1,12 @@
 use strict;
 use warnings;
 
+use Test::MockTime qw(:all);
 use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
 use Time::HiRes;
+use Time::Local ();
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::System::Chronicle;
 use Date::Utility;
@@ -35,7 +37,10 @@ subtest 'set for a specific date' => sub {
     $d->{sample4} = 'something';
     my $ten_minutes_ago = $now->minus_time_interval('10m');
     lives_ok {
-        ok BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d, $ten_minutes_ago), 'saved';
+        set_fixed_time(0); #$ten_minutes_ago->epoch);
+        ok BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d), 'saved';
+        restore_time;
+
         my $d = BOM::System::Chronicle::get_for('vol_surface', 'frxUSDJPY', $ten_minutes_ago);
         is $d->{sample4}, 'something', 'data retrieved';
     } 'save and fetch from postgres chronicle';
