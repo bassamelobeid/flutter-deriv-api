@@ -23,9 +23,9 @@ sub url_for {
     my ($self, @args) = @_;
 
     my $url = Mojo::URL->new($args[0] || '');
-    my $query       = $args[1] || {};
-    my $domain_type = { ($args[2] ? %{$args[2]} : () ),  %{_get_domain_type($url->path)} } ;
-    my $internal    = $args[3] || {};
+    my $query = $args[1] || {};
+    my $domain_type = {($args[2] ? %{$args[2]} : ()), %{_get_domain_type($url->path)}};
+    my $internal = $args[3] || {};
 
     if ($domain_type->{static}) {
         my $path = $url->path;
