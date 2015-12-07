@@ -37,7 +37,6 @@ use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
 
-
 # For the unit_test_couchdb.t test case, we limit the dabase name to three characters
 # ie 'bom', 'vol', 'int, etc. all have three characters each
 my %couchdb_databases = (
@@ -54,9 +53,13 @@ my %couchdb_databases = (
 
 sub initialize_symbol_dividend {
     my $symbol = shift;
-    my $rate = shift;
+    my $rate   = shift;
 
-    my $document = { symbol => $symbol, rates => { '365' => $rate }, discrete_points => undef };
+    my $document = {
+        symbol          => $symbol,
+        rates           => {'365' => $rate},
+        discrete_points => undef
+    };
 
     my $dv = BOM::MarketData::Dividend->new(symbol => $symbol);
     $dv->document($document);
@@ -86,19 +89,19 @@ sub _init {
     BOM::System::Chronicle::_redis_write()->flushall;
     BOM::System::Chronicle::_dbh()->do('delete from chronicle;') if BOM::System::Chronicle::_dbh();
 
-    initialize_symbol_dividend "R_25", 0;
-    initialize_symbol_dividend "R_50", 0;
-    initialize_symbol_dividend "R_75", 0;
-    initialize_symbol_dividend "R_100", 0;
-    initialize_symbol_dividend "RDBULL", -35;
-    initialize_symbol_dividend "RDBEAR", 20;
-    initialize_symbol_dividend "RDSUN", 0;
-    initialize_symbol_dividend "RDMOON", 0;
-    initialize_symbol_dividend "RDMARS", 0;
+    initialize_symbol_dividend "R_25",    0;
+    initialize_symbol_dividend "R_50",    0;
+    initialize_symbol_dividend "R_75",    0;
+    initialize_symbol_dividend "R_100",   0;
+    initialize_symbol_dividend "RDBULL",  -35;
+    initialize_symbol_dividend "RDBEAR",  20;
+    initialize_symbol_dividend "RDSUN",   0;
+    initialize_symbol_dividend "RDMOON",  0;
+    initialize_symbol_dividend "RDMARS",  0;
     initialize_symbol_dividend "RDVENUS", 0;
-    initialize_symbol_dividend "RDYANG", -35;
-    initialize_symbol_dividend "RDYIN", 20;
-    
+    initialize_symbol_dividend "RDYANG",  -35;
+    initialize_symbol_dividend "RDYIN",   20;
+
     return 1;
 }
 
@@ -244,13 +247,13 @@ sub create_doc {
     my $obj        = $class_name->new($data);
 
     if ($save) {
-        if ( $class_name =~ /^.+(Dividend|CorporateAction)$/ ) {
+        if ($class_name =~ /^.+(Dividend|CorporateAction)$/) {
             set_absolute_time($data->{recorded_date}->epoch) if $data->{recorded_date};
         }
 
         $obj->save;
 
-        if ( $class_name =~ /^.+(Dividend|CorporateAction)$/ ) {
+        if ($class_name =~ /^.+(Dividend|CorporateAction)$/) {
             restore_time() if $data->{recorded_date};
         }
     }
