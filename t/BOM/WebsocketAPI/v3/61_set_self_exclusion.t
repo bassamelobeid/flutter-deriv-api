@@ -46,6 +46,7 @@ $t = $t->send_ok({
             max_balance        => 10000,
             max_open_bets      => 100,
             max_turnover       => undef,    # null should be OK to pass
+            max_7day_losses    => 0,        # 0 is ok to pass but not saved
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{set_self_exclusion});
@@ -57,9 +58,11 @@ $res = decode_json($t->message->[1]);
 ok($res->{get_self_exclusion});
 test_schema('get_self_exclusion', $res);
 my %data = %{$res->{get_self_exclusion}};
-is $data{max_balance},   10000, 'max_balance saved ok';
-is $data{max_turnover},  undef, 'max_turnover is not there';
-is $data{max_open_bets}, 100,   'max_open_bets saved';
+diag Dumper(\%data);
+is $data{max_balance},     10000, 'max_balance saved ok';
+is $data{max_turnover},    undef, 'max_turnover is not there';
+is $data{max_7day_losses}, undef, 'max_7day_losses is not saved';
+is $data{max_open_bets},   100,   'max_open_bets saved';
 
 # plus save is ok
 $t = $t->send_ok({
