@@ -66,7 +66,19 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion => 1,
             max_balance        => 9999,
-            max_turnover       => 1000
+            max_turnover       => 1000,
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{error}->{code}, 'SetSelfExclusionError';
+is $res->{error}->{field}, 'max_open_bets', 'max open bets was set so it can not be set to null';
+test_schema('set_self_exclusion', $res);
+
+$t = $t->send_ok({
+        json => {
+            set_self_exclusion => 1,
+            max_balance        => 9999,
+            max_turnover       => 1000,
+            max_open_bets      => 100,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 ok($res->{set_self_exclusion});
@@ -87,6 +99,8 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion => 1,
             max_balance        => 10001,
+            max_turnover       => 1000,
+            max_open_bets      => 100,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code},  'SetSelfExclusionError';
@@ -97,6 +111,8 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion     => 1,
             max_balance            => 9999,
+            max_turnover           => 1000,
+            max_open_bets          => 100,
             session_duration_limit => 1440 * 42 + 1,
         }})->message_ok;
 $res = decode_json($t->message->[1]);
@@ -108,6 +124,8 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion     => 1,
             max_balance            => 9999,
+            max_turnover           => 1000,
+            max_open_bets          => 100,
             session_duration_limit => 1440,
             exclude_until          => '2010-01-01'
         }})->message_ok;
@@ -120,6 +138,8 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion     => 1,
             max_balance            => 9999,
+            max_turnover           => 1000,
+            max_open_bets          => 100,
             session_duration_limit => 1440,
             exclude_until          => DateTime->now()->add(months => 3)->ymd
         }})->message_ok;
@@ -132,6 +152,8 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion     => 1,
             max_balance            => 9999,
+            max_turnover           => 1000,
+            max_open_bets          => 100,
             session_duration_limit => 1440,
             exclude_until          => DateTime->now()->add(years => 6)->ymd
         }})->message_ok;
@@ -146,6 +168,8 @@ $t = $t->send_ok({
         json => {
             set_self_exclusion     => 1,
             max_balance            => 9998,
+            max_turnover           => 1000,
+            max_open_bets          => 100,
             session_duration_limit => 1440,
             exclude_until          => $exclude_until
         }})->message_ok;
