@@ -801,9 +801,8 @@ my %known_errors = (
             -type              => 'OpenPositionLimit',
             -mesg              => "Client has reached the limit of $limit open positions.",
             -message_to_client => BOM::Platform::Context::localize(
-                'Sorry, you cannot hold more than [_1] contracts at a given time. Please visit the <a href="[_2]" class="pjaxload">statement</a> page to automatically sell your expired contracts.',
-                $limit,
-                request()->url_for("/user/statement")
+                'Sorry, you cannot hold more than [_1] contracts at a given time. Please visit the statement page to automatically sell your expired contracts.',
+                $limit
             ),
         );
     },
@@ -1288,7 +1287,7 @@ sub _validate_buy_transaction_rate {
         return Error::Base->cuss(
             -type              => 'BuyRateExceeded',
             -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
-            -message_to_client => BOM::Platform::Context::localize('Too many recent attempts.  Try again later.'));
+            -message_to_client => BOM::Platform::Context::localize('Too many recent attempts. Try again later.'));
     }
 
     return;
