@@ -8,6 +8,7 @@ use BOM::WebSocketAPI::v3::Wrapper::ContractDiscovery;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 use BOM::WebSocketAPI::v3::Wrapper::Accounts;
 use BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery;
+use BOM::WebSocketAPI::v3::MarketDiscovery;
 use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
@@ -63,7 +64,7 @@ sub entry_point {
                     if $channel =~ /^FEED::/;
 
                 BOM::WebSocketAPI::v3::Wrapper::Accounts::send_realtime_balance($c, $msg) if $channel =~ /^TXNUPDATE::balance_/;
-                BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::process_realtime_events($c, $msg) if $channel =~ /^FEED::/;
+                BOM::WebSocketAPI::v3::MarketDiscovery::process_realtime_events($c, $msg) if $channel =~ /^FEED::/;
             });
         $c->stash->{redis} = $redis;
     }
@@ -142,9 +143,9 @@ sub __handle {
         ['authorize',                 \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,                        0],
         ['trading_times',             \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,              0],
         ['asset_index',               \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,                0],
-        ['ticks',                     \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::ticks,                      0],
-        ['ticks_history',             \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::ticks_history,              0],
-        ['proposal',                  \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::proposal,                   0],
+        ['ticks',                     \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks,                               0],
+        ['ticks_history',             \&BOM::WebSocketAPI::v3::MarketDiscovery::ticks_history,                       0],
+        ['proposal',                  \&BOM::WebSocketAPI::v3::MarketDiscovery::proposal,                            0],
         ['forget',                    \&BOM::WebSocketAPI::v3::Wrapper::System::forget,                              0],
         ['forget_all',                \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,                          0],
         ['ping',                      \&BOM::WebSocketAPI::v3::Wrapper::System::ping,                                0],
