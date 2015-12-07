@@ -98,9 +98,9 @@ Default to current time if not provided. $timestamp could be any valid datetime 
 =cut
 
 sub set {
-    my $category      = shift;
-    my $name          = shift;
-    my $value         = shift;
+    my $category = shift;
+    my $name     = shift;
+    my $value    = shift;
 
     die "Cannot store undefined values in Chronicle!" unless defined $value;
     die "You can only store hash-ref or array-ref in Chronicle!" unless (ref $value eq 'ARRAY' or ref $value eq 'HASH');
@@ -156,9 +156,9 @@ sub get_for {
 }
 
 sub _archive {
-    my $category      = shift;
-    my $name          = shift;
-    my $value         = shift;
+    my $category = shift;
+    my $name     = shift;
+    my $value    = shift;
 
     # We will use Test::MockTime to force Chronicle to store hostorical data
     my $db_timestamp = Date::Utility->new()->db_timestamp;
