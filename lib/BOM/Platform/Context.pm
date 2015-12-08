@@ -110,6 +110,8 @@ Returns the localized verion of the provided string, with argument
 =cut
 
 sub localize {
+    my @texts = @_;
+
     my $request = request();
     # use language/website from request, or fallback to defaults
     my ($language, $website) =
@@ -121,7 +123,7 @@ sub localize {
     my $lh = BOM::Platform::Context::I18N::handle_for($language, $website, $version)
         || die("could not build locale for language $language, static-version $version, website " . $website->name);
 
-    return $lh->maketext(@_);
+    return $lh->maketext(@texts);
 }
 
 sub _configure_template_stash_for {
