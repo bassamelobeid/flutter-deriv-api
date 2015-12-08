@@ -37,7 +37,7 @@ subtest 'set for a specific date' => sub {
     $d->{sample4} = 'something';
     my $ten_minutes_ago = $now->minus_time_interval('10m');
     lives_ok {
-        set_fixed_time(0); #$ten_minutes_ago->epoch);
+        set_absolute_time($ten_minutes_ago->epoch);
         ok BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d), 'saved';
         restore_time;
 
