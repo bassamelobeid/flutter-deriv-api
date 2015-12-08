@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 11);
+use Test::More (tests => 10);
 use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
@@ -125,28 +125,6 @@ subtest 'param' => sub {
         });
         isa_ok $request->param('a'), 'ARRAY';
         isa_ok $request->param('b'), 'ARRAY';
-    };
-};
-
-subtest 'ids' => sub {
-    subtest 'failed' => sub {
-        throws_ok {
-            BOM::Platform::Context::Request::from_cgi({
-                cgi => mock_cgi_for({test => '/etc/passwd%00'}),
-            });
-        }
-        qr/Detected IDS attacks/;
-    };
-
-    subtest 'whitelisted' => sub {
-        my $request = BOM::Platform::Context::Request::from_cgi({
-            cgi => mock_cgi_for({login => '/etc/passwd%00'}),
-        });
-        isa_ok $request, 'BOM::Platform::Context::Request';
-        $request = BOM::Platform::Context::Request::from_cgi({
-            cgi => mock_cgi_for({staff => '/etc/passwd%00'}),
-        });
-        isa_ok $request, 'BOM::Platform::Context::Request';
     };
 };
 
