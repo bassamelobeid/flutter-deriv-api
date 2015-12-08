@@ -88,12 +88,9 @@ use DBI;
 use DateTime;
 use Date::Utility;
 
-=head3 C<< set("category1", "name1", $value1, $timestamp[optional]*)  >>
+=head3 C<< set("category1", "name1", $value1)  >>
 
 Store a piece of data "value1" under key "category1::name1" in Pg and Redis.
-
-* If you pass a timestamp to the set function, it will set the data at the specified timestamp.
-Default to current time if not provided. $timestamp could be any valid datetime format of Date::Utility (like epoch) or a Date::Utility object.
 
 =cut
 
