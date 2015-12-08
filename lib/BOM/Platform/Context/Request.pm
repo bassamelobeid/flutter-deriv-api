@@ -4,7 +4,6 @@ use Moose;
 
 use JSON;
 use CGI;
-use CGI::IDS;
 use CGI::Untaint;
 use URL::Encode;
 use Data::Dumper;
@@ -553,35 +552,8 @@ sub is_from_office {
     return;
 }
 
-#Uses CGI::IDS to detect attacks from params.
-sub detect_param_attacks {
-    my $self = shift;
-
-    my $ids = CGI::IDS->new(
-        whitelist_file  => '/home/git/regentmarkets/bom-platform/config/ids_whitelist.xml',
-        disable_filters => ['67']);
-    #convert all arrays to a joined string to avoid stringify to return ARRAY string.
-    my $impact = $ids->detect_attacks(request => {map { (ref $_ eq 'ARRAY') ? join(',', @$_) : $_ } %{$self->params}});
-    if ($impact >= 4) {
-        my $attacks_descriptions = "Attack impact is $impact ";
-        foreach my $attack (@{$ids->get_attacks()}) {
-            my $rules_broken = "";
-            foreach my $rule (@{$attack->{matched_filters}}) {
-                $rules_broken .= " - " . $ids->get_rule_description(rule_id => $rule);
-            }
-            $attacks_descriptions .= ", { [" . $attack->{key} . " => " . $attack->{value} . "] $rules_broken }";
-        }
-
-        my $ip = $self->client_ip;
-        get_logger()->logcroak("[$ip] Detected IDS attacks on page " . $self->http_path . $attacks_descriptions);
-    }
-
-    return;
-}
-
 sub BUILD {
     my $self = shift;
-    $self->detect_param_attacks();
     if ($self->http_method and not grep { $_ eq $self->http_method } qw/GET POST HEAD OPTIONS/) {
         get_logger()->logcroak($self->http_method . " is not an accepted request method");
     }
