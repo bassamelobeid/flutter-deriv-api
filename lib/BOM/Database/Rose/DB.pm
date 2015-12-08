@@ -42,6 +42,8 @@ __PACKAGE__->default_connect_options(
     PrintWarn         => 0,
 );
 
+__PACKAGE__->db_cache_class('BOM::Database::Rose::DB::Cache');
+
 # Moving into its own sub here so legacy code can temporarily re-use it.
 # Error severity is as follows:
 #
@@ -64,7 +66,7 @@ sub _handle_errors {
     die [$state, $dbh->errstr] if $state =~ /^BI...$/;
 
     warn "DB Error Severity: $severity, $error_message. SQLSTATE=$state. Error=$err";
-
+    
     die Mojo::Exception->new($dbh->errstr || $error_message);
 }
 

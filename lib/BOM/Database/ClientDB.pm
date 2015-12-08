@@ -65,7 +65,6 @@ sub _build_db {
     );
 
     if (not BOM::Database::Rose::DB->registry->entry_exists(@db_params)) {
-        state $clientdb_config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
         BOM::Database::Rose::DB->register_db(
             domain   => $domain,
             type     => $type,
@@ -78,7 +77,20 @@ sub _build_db {
         );
     }
 
-    return BOM::Database::Rose::DB->new(@db_params);
+    return $self->_cached_db(@db_params);
+}
+
+sub _cached_db {
+    my ($self, @db_params) = @_;
+
+    my $db = BOM::Database::Rose::DB->db_cache->get_db(@db_params);
+
+    unless ($db and $db->dbh and $db->dbh->ping) {
+        $db = BOM::Database::Rose::DB->new(@db_params);
+        BOM::Database::Rose::DB->db_cache->set_db($db);
+    }
+
+    return $db;
 }
 
 no Moose;
