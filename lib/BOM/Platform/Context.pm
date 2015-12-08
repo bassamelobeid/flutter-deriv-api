@@ -111,15 +111,15 @@ Returns the localized verion of the provided string, with argument
 
 sub localize {
     my @texts    = @_;
-    my $language = 'EN';
-    my $website  = runtime()->website_list->default_website;
-    my $version  = runtime()->website_list->default_website->config->get('static.version');
 
-    if (my $request = request()) {
-        $language = $request->language;
-        $website  = $request->website;
-        $version  = $website->config->get('static.version');
-    }
+    my $request = request();
+    # use language/website from request, or fallback to defaults
+    my ($language, $website)
+      = $request
+      ? ($request->language, $request->website)
+      : ('EN', runtime()->website_list->default_website)
+      ;
+    my $version = $website->config->get('static.version');
 
     my $lh = BOM::Platform::Context::I18N::handle_for($language, $website, $version)
         || die("could not build locale for language $language, static-version $version, website " . $website->name);
