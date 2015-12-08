@@ -110,15 +110,14 @@ Returns the localized verion of the provided string, with argument
 =cut
 
 sub localize {
-    my @texts    = @_;
+    my @texts = @_;
 
     my $request = request();
     # use language/website from request, or fallback to defaults
-    my ($language, $website)
-      = $request
-      ? ($request->language, $request->website)
-      : ('EN', runtime()->website_list->default_website)
-      ;
+    my ($language, $website) =
+        $request
+        ? ($request->language, $request->website)
+        : ('EN', runtime()->website_list->default_website);
     my $version = $website->config->get('static.version');
 
     my $lh = BOM::Platform::Context::I18N::handle_for($language, $website, $version)
