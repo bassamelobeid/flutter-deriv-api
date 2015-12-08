@@ -1,0 +1,91 @@
+---
+AM:
+- EEI_AM
+AX:
+- ASX
+- ASX_S
+B2:
+- BMF
+- BOVESPA
+BU:
+- EEI_BU
+- EEI_LI
+- EURONEXT
+- STOXX
+BX:
+- BSE
+CE:
+- CME
+DB:
+- DFM
+DT:
+- EUREX
+FA:
+- FSE
+HO:
+- HKF
+HS:
+- HKSE
+IE:
+- ISE
+JA:
+- JSC
+JH:
+- JSE
+LI:
+- ICE_LIFFE
+LS:
+- LSE
+- ODLS
+MD:
+- MEFF
+MI:
+- BI
+- IDM
+MS:
+- BM
+N7:
+- NASDAQ
+- NASDAQ_INDEX
+ND:
+- NZSE
+NT:
+- NSE
+NY:
+- NYSE
+- NYSE_SPC
+- SP_GSCI
+O2:
+- OMX
+OK:
+- OSE
+OS:
+- OSLO
+PA:
+- EEI_PA
+- SBF
+R7:
+- MOF
+- RTS
+S5:
+- EUREX_SWISS
+- SWX
+SE:
+- KRX
+SF:
+- SFE
+SG:
+- SGX
+SH:
+- SSE
+SN:
+- SZSE
+SX:
+- SES
+T4:
+- TRSE
+TD:
+- SAS
+TK:
+- TSE
+- TSE_S
