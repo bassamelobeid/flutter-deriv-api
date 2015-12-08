@@ -70,28 +70,15 @@ sub _build_db {
             domain   => $domain,
             type     => $type,
             driver   => 'Pg',
-            database => 'regentmarkets',
-            host     => $clientdb_config->{$domain}->{$type}->{ip},
-            port     => 5432,
+            database => "$domain-$type",
+            host     => '/var/run/postgresql',
+            port     => 6432,
             username => 'write',
-            password => $clientdb_config->{password},
+            password => '',
         );
     }
 
-    return $self->_cached_db(@db_params);
-}
-
-sub _cached_db {
-    my ($self, @db_params) = @_;
-
-    my $db = BOM::Database::Rose::DB->db_cache->get_db(@db_params);
-
-    unless ($db and $db->dbh and $db->dbh->ping) {
-        $db = BOM::Database::Rose::DB->new(@db_params);
-        BOM::Database::Rose::DB->db_cache->set_db($db);
-    }
-
-    return $db;
+    return BOM::Database::Rose::DB->new(@db_params);
 }
 
 no Moose;
