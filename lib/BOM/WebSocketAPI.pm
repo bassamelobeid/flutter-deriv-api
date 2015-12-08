@@ -48,6 +48,14 @@ sub startup {
                 $c->res->headers->header('Content-Language' => $lang);
             }
         });
+    $app->hook(after_dispatch  => sub {
+        $log->warn("---- after dispatch1 ---- $$");
+        $log->warn(s/\s*$//r) for (qx!sudo ls -l /proc/$$/fd!);
+        BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+        $log->warn("---- after dispatch2 ---- $$");
+        $log->warn(s/\s*$//r) for (qx!sudo ls -l /proc/$$/fd!);
+        $log->warn("---- after dispatch3 ---- $$");
+    });
 
     # add few helpers
     # pre-load config to be shared among workers
