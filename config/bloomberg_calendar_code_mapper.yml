@@ -89,3 +89,47 @@ TD:
 TK:
 - TSE
 - TSE_S
+AU:
+- AUD
+BZ:
+- BRL
+CA:
+- CAD
+CZ:
+- CZK
+EU:
+- EUR
+GB:
+- GBP
+HK:
+- HKD
+ID:
+- IDR
+IN:
+- INR
+JN:
+- JPY
+MX:
+- MXN
+NO:
+- NOK
+NZ:
+- NZD
+PD:
+- PLN
+RU:
+- RUB
+SA:
+- ZAR
+SI:
+- SGD
+SK:
+- KRW
+SW:
+- SEK
+SZ:
+- CHF
+UA:
+- AED
+US:
+- USD
