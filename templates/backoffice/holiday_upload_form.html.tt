@@ -1,7 +1,14 @@
 <p><b> Upload Excel file contains exchange or currencies holiday from Bloomberg </b></p> 
 <form  name="upload_file" action="[% upload_url %]" method="POST" enctype="multipart/form-data">
     <table>
-        <tr><td colspan=2><INPUT type=hidden name="whattodo" value="process_exchange_currencies_holidays"></td></tr>
+        <tr>
+            <td>What to upload: </td>
+            <td><select name="calendar-type">
+                <option value='exchange-holiday'>Exchange Holiday</option>
+                <option value='country-holiday'>Country Holiday</option>
+                <option value='trading-time'>Early Close</option>
+            </select></td>
+        </tr>
         <tr><td>Please select the file to upload</td><td><INPUT type="file" name="filetoupload" id="upload_exchnage_currencies_excel_file_field" value="" size="45"></td></tr>
         <tr><td colspan=2><INPUT type="submit" name="upload_exchange_currencies_excel_file" value="Process Excel File"></td></tr>
     </table>
