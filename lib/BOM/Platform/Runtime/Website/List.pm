@@ -59,16 +59,17 @@ sub get_by_broker_code {
     my $self   = shift;
     my $broker = shift;
 
-    my $website_by_broker_code = $self->default_website;
-    if (not grep { $broker eq $_->code } @{$self->default_website->broker_codes}) {
-        foreach my $website (values %{$self->_websites}) {
+    my $default = $self->default_website;
+    if (not grep { $broker eq $_->code } @{$default->broker_codes}) {
+        foreach my $website (grep { $_ != $default } values %{$self->_websites}) {
             if (grep { $broker eq $_->code } @{$website->broker_codes}) {
-                $website_by_broker_code = $website;
+                return $website;
             }
         }
     }
 
-    return $website_by_broker_code;
+    # if nothing has been found
+    return $default;
 }
 
 =head2 choose_website
