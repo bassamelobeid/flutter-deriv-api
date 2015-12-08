@@ -56,10 +56,8 @@ sub new {
     my $class = shift;
     my $args = shift || die 'BOM::Platform::Client->new called without args';
 
-    for ($args->{loginid}) {
-        $_ || die "no loginid";
-        /^[A-Z]{2,6}\d{4,}$/ || die "invalid loginid ($_)";
-    }
+    my $loginid = $args->{loginid};
+    die "no loginid" unless $loginid;
 
     my $operation = delete $args->{db_operation};
 
