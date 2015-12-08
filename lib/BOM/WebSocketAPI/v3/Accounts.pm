@@ -532,14 +532,20 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
     {
-        my $val = $args{$field};
-        next unless defined $val;
-        unless ($val =~ /^\d+/ and $val > 0) {
-            delete $args{$field};
-            next;
+        my $val      = $args{$field};
+        my $is_valid = 0;
+        if ($val and $val =~ /^\d+$/ and $val > 0) {
+            $is_valid = 1;
+            if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
+                $is_valid = 0;
+            }
         }
-        if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
+        next if $is_valid;
+
+        if ($self_exclusion->{$field}) {
             return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+        } else {
+            delete $args{$field};
         }
     }
 
