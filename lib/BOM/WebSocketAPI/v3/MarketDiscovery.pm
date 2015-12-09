@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Date::Utility;
-use List::MoreUtils qw(any none);
 use Time::Duration::Concise::Localize;
 
 use BOM::WebSocketAPI::v3::Utility;
@@ -142,6 +141,26 @@ sub asset_index {
     return \@data;
 }
 
+sub active_symbols {
+    my ($client, $args) = @_;
+
+    my $landing_company_name = 'costarica';
+    if ($client) {
+        $landing_company_name = $client->landing_company->short;
+    }
+    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
+
+    return [
+        map { $_ }
+            grep {
+            my $market = $_->{market};
+            grep { $market eq $_ } @{$legal_allowed_markets}
+            }
+            map {
+            _description($_, $args->{active_symbols})
+            } get_offerings_with_filter('underlying_symbol')];
+}
+
 sub _description {
     my $symbol = shift;
     my $by     = shift || 'brief';
@@ -178,26 +197,6 @@ sub _description {
     }
 
     return $response;
-}
-
-sub active_symbols {
-    my ($client, $args) = @_;
-
-    my $landing_company_name = 'costarica';
-    if ($client) {
-        $landing_company_name = $client->landing_company->short;
-    }
-    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
-
-    return [
-        map { $_ }
-            grep {
-            my $market = $_->{market};
-            grep { $market eq $_ } @{$legal_allowed_markets}
-            }
-            map {
-            _description($_, $args->{active_symbols})
-            } get_offerings_with_filter('underlying_symbol')];
 }
 
 1;

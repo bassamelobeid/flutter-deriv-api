@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::Contract;
 use strict;
 use warnings;
 
+use List::MoreUtils qw(none);
+
 use BOM::WebSocketAPI::v3::Utility;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize);
