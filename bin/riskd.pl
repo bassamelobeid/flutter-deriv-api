@@ -4,6 +4,7 @@ package BOM::Riskd;
 
 use Moose;
 with 'App::Base::Daemon';
+with 'BOM::Utility::Logging';
 
 use lib qw(/home/git/regentmarkets/bom-backoffice/lib/);
 use Time::Duration::Concise::Localize;
@@ -33,13 +34,13 @@ sub daemon_run {
         if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
 
     while (1) {
-        say STDERR 'Starting marked-to-model calculation.';
+        $self->info('Starting marked-to-model calculation.');
         BOM::RiskReporting::MarkedToModel->new(run_by => $self)->generate;
-        say STDERR 'Completed marked-to-model calculation.';
+        $self->info('Completed marked-to-model calculation.');
         $self->rest;
-        say STDERR 'Starting risk report generation.';
+        $self->info('Starting risk report generation.');
         BOM::RiskReporting::Dashboard->new(run_by => $self)->generate;
-        say STDERR 'Completed risk report generation.';
+        $self->info('Completed risk report generation.');
         $self->rest;
     }
 
@@ -50,9 +51,9 @@ sub rest {
     my $self     = shift;
     my $how_long = $self->rest_period;
 
-    say STDERR 'Checking for config changes.';
+    $self->info('Checking for config changes.');
     BOM::Platform::Runtime->instance->app_config->check_for_update;    # We're a long-running process. See if config changed underneath us.
-    say STDERR 'Resting for ' . $how_long->as_string . '...';
+    $self->info('Resting for ' . $how_long->as_string . '...');
     sleep($how_long->seconds);
 
     return;
@@ -60,7 +61,7 @@ sub rest {
 
 sub handle_shutdown {
     my $self = shift;
-    say STDERR 'Shutting down.';
+    $self->warning('Shutting down.');
     return 0;
 }
 

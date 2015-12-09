@@ -19,6 +19,7 @@ use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::MarketData::Fetcher::EconomicEvent;
+use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Context;
 use BOM::MarketData::CorrelationMatrix;
 my $broker = request()->broker->code;
@@ -99,7 +100,7 @@ if ($autoupdate) {
         $sender->MailMsg({msg => $msg});
 
         print "Error while updating news calendar: $error";
-        warn("Error while updating news calendar: $error");
+        get_logger->error("Error while updating news calendar: $error");
     }
 } elsif ($save_economic_event) {
     eval { Date::Utility->new($release_date); };

@@ -10,6 +10,7 @@ use Locale::Country 'code2country';
 use Data::Dumper;
 
 use f_brokerincludeall;
+use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
@@ -33,6 +34,7 @@ my %input = %{request()->params};
 PrintContentType();
 my $language  = $input{l};
 my $dbloc     = BOM::Platform::Runtime->instance->app_config->system->directory->db;
+my $logger    = get_logger();
 my $loginid   = trim(uc $input{loginID}) || die 'failed to pass loginID (note mixed case!)';
 my $self_post = request()->url_for('backoffice/f_clientloginid_edit.cgi');
 my $self_href = request()->url_for('backoffice/f_clientloginid_edit.cgi', {loginID => $loginid});
@@ -45,7 +47,7 @@ my $client = eval { BOM::Platform::Client->new({loginid => $loginid}) } || do {
     my $err = $@;
     print "<p>ERROR: Client [$loginid] not found.</p>";
     if ($err) {
-        warn ($err);
+        $logger->error($err);
         print "<p>(Support: details in errorlog)</p>";
     }
     print qq[<form action="$self_post" method="post">
@@ -205,6 +207,7 @@ if ($input{whattodo} eq 'uploadID') {
 
 # PERFORM ON-DEMAND ID CHECKS
 if (my $check_str = $input{do_id_check}) {
+    $logger->info("doing a $check_str for $client");
     my $result;
     my $id_auth = BOM::Platform::Client::IDAuthentication->new(
         client        => $client,
@@ -216,6 +219,7 @@ if (my $check_str = $input{do_id_check}) {
             : /ProveID/ ? $id_auth->_fetch_proveid()
             :             die("unknown IDAuthentication method $_");
     }
+    $logger->info("result: " . Dumper($result));
     print qq[<p><b>"$check_str" completed</b></p>
              <p><a href="$self_href">&laquo;Return to Client Details<a/></p>];
     code_exit_BO();
