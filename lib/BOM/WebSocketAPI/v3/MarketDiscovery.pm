@@ -3,18 +3,14 @@ package BOM::WebSocketAPI::v3::MarketDiscovery;
 use strict;
 use warnings;
 
-use Try::Tiny;
-use Mojo::DOM;
-use Time::HiRes;
-use Data::UUID;
+use Date::Utility;
 use List::MoreUtils qw(any none);
+use Time::Duration::Concise::Localize;
 
 use BOM::WebSocketAPI::v3::Utility;
-use BOM::WebSocketAPI::v3::Symbols;
-use BOM::Market::Registry;
 use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize);
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
@@ -146,39 +142,62 @@ sub asset_index {
     return \@data;
 }
 
-sub validate_symbol {
-    my $symbol    = shift;
-    my @offerings = get_offerings_with_filter('underlying_symbol');
-    if (none { $symbol eq $_ } @offerings) {
-        return BOM::WebSocketAPI::v3::Utility::create_error({
-                code              => 'InvalidSymbol',
-                message_to_client => BOM::Platform::Context::localize("Symbol [_1] invalid", $symbol)});
+sub _description {
+    my $symbol = shift;
+    my $by     = shift || 'brief';
+    my $ul     = BOM::Market::Underlying->new($symbol) || return;
+    my $iim    = $ul->intraday_interval ? $ul->intraday_interval->minutes : '';
+    # sometimes the ul's exchange definition or spot-pricing is not availble yet.  Make that not fatal.
+    my $exchange_is_open = eval { $ul->exchange } ? $ul->exchange->is_open_at(time) : '';
+    my ($spot, $spot_time, $spot_age) = ('', '', '');
+    if ($spot = eval { $ul->spot }) {
+        $spot_time = $ul->spot_time;
+        $spot_age  = $ul->spot_age;
     }
-    return;
+    my $response = {
+        symbol                 => $symbol,
+        display_name           => $ul->display_name,
+        symbol_type            => $ul->instrument_type,
+        market_display_name    => $ul->market->translated_display_name,
+        market                 => $ul->market->name,
+        submarket              => $ul->submarket->name,
+        submarket_display_name => $ul->submarket->translated_display_name,
+        exchange_is_open       => $exchange_is_open || 0,
+        is_trading_suspended   => $ul->is_trading_suspended,
+        pip                    => $ul->pip_size
+    };
+
+    if ($by eq 'full') {
+        $response->{exchange_name}             = $ul->exchange_name;
+        $response->{delay_amount}              = $ul->delay_amount;
+        $response->{quoted_currency_symbol}    = $ul->quoted_currency_symbol;
+        $response->{intraday_interval_minutes} = $iim;
+        $response->{spot}                      = $spot;
+        $response->{spot_time}                 = $spot_time;
+        $response->{spot_age}                  = $spot_age;
+    }
+
+    return $response;
 }
 
-sub validate_license {
-    my $symbol = shift;
-    my $u      = BOM::Market::Underlying->new($symbol);
+sub active_symbols {
+    my ($client, $args) = @_;
 
-    if ($u->feed_license ne 'realtime') {
-        return BOM::WebSocketAPI::v3::Utility::create_error({
-                code              => 'NoRealtimeQuotes',
-                message_to_client => BOM::Platform::Context::localize("Realtime quotes not available for [_1]", $symbol)});
+    my $landing_company_name = 'costarica';
+    if ($client) {
+        $landing_company_name = $client->landing_company->short;
     }
-    return;
-}
+    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-sub validate_offering {
-    my $symbol = shift;
-
-    my $response = validate_symbol($symbol);
-    return $response if $response;
-
-    $response = validate_license($symbol);
-    return $response if $response;
-
-    return {status => 1};
+    return [
+        map { $_ }
+            grep {
+            my $market = $_->{market};
+            grep { $market eq $_ } @{$legal_allowed_markets}
+            }
+            map {
+            _description($_, $args->{active_symbols})
+            } get_offerings_with_filter('underlying_symbol')];
 }
 
 sub ticks_history {
@@ -222,78 +241,6 @@ sub ticks_history {
         data    => $result,
         publish => $publish
     };
-}
-
-sub prepare_ask {
-    my $p1 = shift;
-    my %p2 = %$p1;
-
-    $p2{date_start} //= 0;
-    if ($p2{date_expiry}) {
-        $p2{fixed_expiry} //= 1;
-    }
-
-    if (defined $p2{barrier} && defined $p2{barrier2}) {
-        $p2{low_barrier}  = delete $p2{barrier2};
-        $p2{high_barrier} = delete $p2{barrier};
-    } elsif ($p1->{contract_type} !~ /^(SPREAD|ASIAN)/) {
-        $p2{barrier} //= 'S0P';
-        delete $p2{barrier2};
-    }
-
-    $p2{underlying}  = delete $p2{symbol};
-    $p2{bet_type}    = delete $p2{contract_type};
-    $p2{amount_type} = delete $p2{basis} if exists $p2{basis};
-    if ($p2{duration} and not exists $p2{date_expiry}) {
-        $p2{duration} .= delete $p2{duration_unit};
-    }
-
-    return \%p2;
-}
-
-sub get_ask {
-    my $p2 = shift;
-    my $contract = try { produce_contract({%$p2}) } || do {
-        my $err = $@;
-        return {
-            error => {
-                message => BOM::Platform::Context::localize("Cannot create contract"),
-                code    => "ContractCreationFailure"
-            }};
-    };
-    if (!$contract->is_valid_to_buy) {
-        if (my $pve = $contract->primary_validation_error) {
-            return {
-                error => {
-                    message => $pve->message_to_client,
-                    code    => "ContractBuyValidationError"
-                },
-                longcode  => Mojo::DOM->new->parse($contract->longcode)->all_text,
-                ask_price => sprintf('%.2f', $contract->ask_price),
-            };
-        }
-        return {
-            error => {
-                message => BOM::Platform::Context::localize("Cannot validate contract"),
-                code    => "ContractValidationError"
-            }};
-    }
-
-    my $ask_price = sprintf('%.2f', $contract->ask_price);
-    my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
-
-    my $response = {
-        longcode      => Mojo::DOM->new->parse($contract->longcode)->all_text,
-        payout        => $contract->payout,
-        ask_price     => $ask_price,
-        display_value => $display_value,
-        spot          => $contract->current_spot,
-        spot_time     => $contract->current_tick->epoch,
-        date_start    => $contract->date_start->epoch
-    };
-    $response->{spread} = $contract->spread if $contract->is_spread;
-
-    return $response;
 }
 
 1;
