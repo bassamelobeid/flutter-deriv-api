@@ -45,7 +45,7 @@ sub ticks {
 
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
-        my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_offering($symbol);
+        my $response = BOM::WebSocketAPI::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
             return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
         } else {
@@ -66,7 +66,7 @@ sub ticks_history {
     my ($c, $args) = @_;
 
     my $symbol   = $args->{ticks_history};
-    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_symbol($symbol);
+    my $response = BOM::WebSocketAPI::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -76,7 +76,7 @@ sub ticks_history {
         } else {
             if (exists $args->{subscribe}) {
                 if ($args->{subscribe} eq '1') {
-                    my $license = BOM::WebSocketAPI::v3::MarketDiscovery::validate_license($symbol);
+                    my $license = BOM::WebSocketAPI::v3::Contract::validate_license($symbol);
                     if ($license and exists $license->{error}) {
                         return $c->new_error('ticks_history', $license->{error}->{code}, $license->{error}->{message_to_client});
                     }
@@ -100,7 +100,7 @@ sub proposal {
     my ($c, $args) = @_;
 
     my $symbol   = $args->{symbol};
-    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::validate_symbol($symbol);
+    my $response = BOM::WebSocketAPI::v3::Contract::validate_symbol($symbol);
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -114,7 +114,7 @@ sub send_ask {
     my ($c, $id, $args) = @_;
 
     my %details  = %{$args};
-    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::get_ask(BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask(\%details));
+    my $response = BOM::WebSocketAPI::v3::Contract::get_ask(BOM::WebSocketAPI::v3::Contract::prepare_ask(\%details));
     if ($response->{error}) {
         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
 
