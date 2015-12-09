@@ -36,6 +36,7 @@ use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
+use BOM::Utility::Log4perl qw( get_logger );
 use YAML::XS qw(LoadFile);
 # We're going to do this from time to time.
 # I claim it's under control.
