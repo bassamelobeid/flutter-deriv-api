@@ -20,7 +20,7 @@ my $calendar;
 if ($cgi->param('upload_excel')) {
     my $file = $cgi->param('filetoupload');
     BOM::BloombergCalendar::backup_file($file);
-    $calendar = BOM::BloombergCalendar::parse_holiday($file, $calendar_type);
+    $calendar = BOM::BloombergCalendar::parse_calendar($file, $calendar_type);
 } elsif ($cgi->param('manual_holiday_upload')) {
     my $calendar_type = $cgi->param('calendar-type');
     my $symbol_str = $cgi->param('symbol');
