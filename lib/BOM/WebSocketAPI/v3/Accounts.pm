@@ -22,6 +22,20 @@ use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 
+sub payout_currencies {
+    my $account = shift;
+
+    my $currencies;
+    if ($account) {
+        $currencies = [$account->currency_code];
+    } else {
+        my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
+        $currencies = $lc->legal_allowed_currencies;
+    }
+
+    return $currencies,;
+}
+
 sub landing_company {
     my $args = shift;
 

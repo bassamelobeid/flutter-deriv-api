@@ -5,15 +5,6 @@ use warnings;
 
 use BOM::WebSocketAPI::v3::Offerings;
 
-sub payout_currencies {
-    my $c = shift;
-
-    return {
-        msg_type          => 'payout_currencies',
-        payout_currencies => BOM::WebSocketAPI::v3::Offerings::payout_currencies($c->stash('account')),
-    };
-}
-
 sub contracts_for {
     my ($c, $args) = @_;
     my $response = BOM::WebSocketAPI::v3::Offerings::contracts_for($args);
