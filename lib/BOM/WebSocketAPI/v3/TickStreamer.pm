@@ -142,7 +142,7 @@ sub candles {
         @all_ohlc = @all_ohlc[-$count .. -1];
     }
 
-    return [map { {epoch => $_->epoch + 0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } @all_ohlc];
+    return [map { {epoch => $_->epoch + 0, open => $_->open, high => $_->high, low => $_->low, close => $_->close} } grep { defined $_ } @all_ohlc];
 }
 
 sub _validate_start_end {
