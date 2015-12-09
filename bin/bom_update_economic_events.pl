@@ -4,20 +4,16 @@ package BOM::System::Script::UpdateEconomicEvents;
 
 use Moose;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
 use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
 use Date::Utility;
-use BOM::Utility::Log4perl;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON;
 use Path::Tiny;
 use BOM::System::Chronicle;
-
-BOM::Utility::Log4perl::init_log4perl_console;
 
 sub documentation { return 'This script runs economic events update from forex factory at 00:00 GMT'; }
 

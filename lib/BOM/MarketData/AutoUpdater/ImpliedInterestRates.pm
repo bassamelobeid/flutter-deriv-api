@@ -26,7 +26,6 @@ sub _build_file {
 sub _get_forward_rates {
     my $self = shift;
 
-    my $logger = $self->_logger;
     my $csv = Text::CSV::Slurp->load(file => $self->file);
     my $forward_rates;
     my $report = $self->report;
@@ -56,7 +55,6 @@ sub _get_forward_rates {
 sub run {
     my $self = shift;
 
-    $self->_logger->debug(ref($self) . ' starting update.');
     my $report        = $self->report;
     my $forward_rates = $self->_get_forward_rates();
     my @tenors        = ('ON', '1W', '2W', '1M', '2M', '3M', '6M', '9M', '12M');
@@ -181,7 +179,6 @@ sub run {
         $report->{$implied_symbol}->{success} = 1;
     }
 
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }

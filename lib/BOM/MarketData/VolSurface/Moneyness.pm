@@ -18,13 +18,13 @@ use BOM::Platform::Runtime;
 use VolSurface::Utils qw(get_delta_for_strike get_strike_for_moneyness);
 use VolSurface::Calibration::Equities;
 
+use Carp;
 use Try::Tiny;
 use Math::Function::Interpolator;
 use List::MoreUtils qw(indexes);
 use List::Util qw(min first);
 use Storable qw( dclone );
 use JSON qw(from_json);
-use BOM::Utility::Log4perl qw( get_logger );
 
 sub _document_content {
     my $self = shift;
@@ -231,7 +231,7 @@ sub get_volatility {
     my ($self, $args) = @_;
 
     if (scalar(grep { defined $args->{$_} } qw(delta moneyness strike)) != 1) {
-        get_logger('QUANT')->logdie("Must pass exactly one of [delta, moneyness, strike] to get_volatility.");
+        croak("Must pass exactly one of [delta, moneyness, strike] to get_volatility.");
     }
 
     $args->{days} =
@@ -382,7 +382,7 @@ sub _interpolate_delta {
 
     my %smile = %{$args->{smile}};
 
-    get_logger('QUANT')->logcroak('minimum of three points on a smile')
+    croak('minimum of three points on a smile')
         if keys %smile < 3;
 
     my @sorted = sort { $a <=> $b } keys %smile;
