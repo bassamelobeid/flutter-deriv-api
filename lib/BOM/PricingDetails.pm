@@ -17,6 +17,7 @@ use POSIX qw( floor );
 use namespace::autoclean;
 use List::MoreUtils qw(uniq);
 use Try::Tiny;
+use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
@@ -341,7 +342,7 @@ sub _get_moneyness_surface {
         $dates = $bet->volsurface->fetch_historical_surface_date({back_to => 20});
     }
     catch {
-        warn("caught error in _get_moneyness_surface: $_");
+        get_logger->warn("caught error in _get_moneyness_surface: $_");
     };
 
     my @unique_dates   = uniq(@$dates);
