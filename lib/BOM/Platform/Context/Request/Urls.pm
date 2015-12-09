@@ -24,7 +24,7 @@ sub url_for {
 
     my $url = Mojo::URL->new($args[0] || '');
     my $query = $args[1] || {};
-    my $domain_type = {($args[2] ? %{$args[2]} : ()), %{_get_domain_type($url->path)}};
+    my $domain_type = _get_domain_type($url->path, (($args[2] ? %{$args[2]} : ())));
     my $internal = $args[3] || {};
 
     if ($domain_type->{static}) {
@@ -104,8 +104,8 @@ sub domain_for {
 memoize('_get_domain_type');
 
 sub _get_domain_type {
-    my $path        = shift;
-    my $domain_type = {};
+    my ($path, %defaults) = @_;
+    my $domain_type = {%defaults};
 
     #Select domain_type base on path
     if ($path) {
