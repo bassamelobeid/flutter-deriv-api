@@ -29,11 +29,11 @@ sub parse_calendar {
     my $csv = Text::CSV::Slurp->load(file => $file);
     my @holiday_data;
     if ($calendar_type eq 'exchange_holiday') {
-        @holiday_data = grep {defined $_->{Trading} and $_->{Trading} =~ /No/} @$csv
+        @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /No/ } @$csv;
     } elsif ($calendar_type eq 'country_holiday') {
-        @holiday_data = grep { defined $_->{Settle} and $_->{Settle} =~ /No/} @$csv
+        @holiday_data = grep { defined $_->{Settle} and $_->{Settle} =~ /No/ } @$csv;
     } elsif ($calendar_type eq 'trading_time') {
-        @holiday_data = grep {defined $_->{Trading} and $_->{Trading} =~ /Partial/} @$csv;
+        @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /Partial/ } @$csv;
     }
 
     my $data = _process(@holiday_data);
@@ -75,10 +75,10 @@ sub _process {
 
     my $output;
     foreach my $data (@data) {
-        my $date          = $data->{'Date'};
+        my $date = $data->{'Date'};
         next unless $date;
         my $calendar_code = $data->{'Code'};
-        my $description       = $data->{'Holidays/Events'};
+        my $description   = $data->{'Holidays/Events'};
 
         if ($date =~ /(\d{1,2})\/(\d{1,2})\/(\d{2})$/) {
             my $year = $3;
@@ -104,20 +104,20 @@ sub _include_synthetic {
     my $calendar = shift;
 
     my %mapper = (
-        SYNSTOXX => [qw(STOXX EUREX)],
-        SYNEURONEXT=> [qw(EURONEXT EEI_AM)],
-        SYNLSE=> [qw(LSE ICE_LIFFE)],
-        SYNBSE=> [qw(BSE BSE)],
-        SYNNYSE_DJI=> [qw(NYSE CME)],
-        SYNFSE=> [qw(FSE EUREX)],
-        SYNHKSE=> [qw(HKSE HKF)],
-        SYNTSE=> [qw(TSE CME)],
-        SYNSWX=> [qw(SWX EUREX_SWISS)],
-        SYNNYSE_SPC=> [qw(NYSE_SPC CME)],
+        SYNSTOXX    => [qw(STOXX EUREX)],
+        SYNEURONEXT => [qw(EURONEXT EEI_AM)],
+        SYNLSE      => [qw(LSE ICE_LIFFE)],
+        SYNBSE      => [qw(BSE BSE)],
+        SYNNYSE_DJI => [qw(NYSE CME)],
+        SYNFSE      => [qw(FSE EUREX)],
+        SYNHKSE     => [qw(HKSE HKF)],
+        SYNTSE      => [qw(TSE CME)],
+        SYNSWX      => [qw(SWX EUREX_SWISS)],
+        SYNNYSE_SPC => [qw(NYSE_SPC CME)],
     );
     # take care of synthetic holidays now
     foreach my $syn_exchange (keys %mapper) {
-        my %syn_data = map {%{$calendar->{$_}}} @{$mapper{$syn_exchange}};
+        my %syn_data = map { %{$calendar->{$_}} } @{$mapper{$syn_exchange}};
         $calendar->{$syn_exchange} = \%syn_data;
     }
 
