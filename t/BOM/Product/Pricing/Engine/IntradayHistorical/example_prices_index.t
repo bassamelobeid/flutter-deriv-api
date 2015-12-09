@@ -6,6 +6,7 @@ use warnings;
 use Test::More (tests => 13);
 use Test::NoWarnings;
 
+use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use Format::Util::Numbers qw(roundnear);
 use BOM::Test::Runtime qw(:normal);
 use BOM::Market::AggTicks;
@@ -15,7 +16,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Market::Underlying;
 use Text::CSV::Slurp;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
@@ -878,16 +878,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'correlation_matrix',
     {
         correlations => $corr,
-        date         => Date::Utility->new()});
+        recorded_date         => Date::Utility->new()});
 
 map { BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_->symbol, date => Date::Utility->new,}) } @symbols;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_moneyness',
-    {
-        symbol        => $_->symbol,
-        recorded_date => Date::Utility->new,
-    }) for grep { $_->symbol ne 'ISEQ' } @symbols;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
@@ -896,12 +889,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => Date::Utility->new,
     }) for qw(frxEURUSD frxAUDUSD frxUSDCHF);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/USD GBP EUR AUD CHF/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
@@ -913,6 +900,20 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 my $data = Text::CSV::Slurp->load(file => '/home/git/regentmarkets/bom/t/data/test_intraday_index.csv');
 
 foreach my $d (@$data) {
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'currency',
+        {
+            symbol => $_,
+            recorded_date   => Date::Utility->new($d->{date_start}),
+        }) for (qw/USD GBP EUR AUD CHF/);
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => $_->symbol,
+            recorded_date => Date::Utility->new($d->{date_start}),
+        }) for grep { $_->symbol ne 'ISEQ' } @symbols;
+
     my $params = {
         bet_type     => $d->{bet_type},
         currency     => $d->{currency},

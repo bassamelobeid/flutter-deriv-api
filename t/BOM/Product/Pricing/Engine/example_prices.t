@@ -41,7 +41,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         recorded_date => $recorded_date,
-        date          => Date::Utility->new,
+        recorded_date          => Date::Utility->new,
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -50,7 +50,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol       => $_,
         holidays     => $exchange->{$_}->{holidays},
         market_times => $exchange->{$_}->{market_times},
-        date         => Date::Utility->new,
+        recorded_date         => Date::Utility->new,
     }) for qw( LSE FSE);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -64,7 +64,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol   => $_,
         daycount => $currency_config->{$_}->{daycount},
         holidays => $currency_config->{$_}->{holidays},
-        date     => Date::Utility->new,
+        recorded_date     => Date::Utility->new,
     }) for qw( GBP JPY USD EUR);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -77,7 +77,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => $_,
         rates  => $interest_rate->{$_}->{rates},
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     }) for qw( GBP JPY USD EUR JPY-USD EUR-USD GBP-USD);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
@@ -113,7 +113,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol        => $_,
-        date          => Date::Utility->new,
+        recorded_date          => Date::Utility->new,
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
     }) for qw( FTSE GDAXI);
