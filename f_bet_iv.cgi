@@ -10,7 +10,7 @@ use BOM::Market::UnderlyingDB;
 use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
-use BOM::MarketData::HolidayCalendar qw( generate_holiday_upload_form );
+use BOM::BloombergCalendar;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -132,7 +132,7 @@ print generate_dividend_upload_form({
 # Upload calendar
 #
 Bar("Upload Calendar");
-print generate_holiday_upload_form({
+print BOM::BloombergCalendar::generate_holiday_upload_form({
     broker     => $broker,
     upload_url => request()->url_for('backoffice/f_upload_holidays.cgi'),
 });

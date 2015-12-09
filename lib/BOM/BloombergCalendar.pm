@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use BOM::System::Chronicle;
+use BOM::Platform::Context;
 use File::Temp ();
 use Try::Tiny;
 use File::Copy;
@@ -38,6 +39,23 @@ sub parse_calendar {
     my $data = _process(@holiday_data);
 
     return $data;
+}
+
+sub generate_holiday_upload_form {
+    my $args = shift;
+
+    my $form;
+
+    BOM::Platform::Context::template->process(
+        'backoffice/holiday_upload_form.html.tt',
+        {
+            broker     => $args->{broker},
+            upload_url => $args->{upload_url},
+        },
+        \$form
+    ) || die BOM::Platform::Context::template->error();
+
+    return $form;
 }
 
 sub backup_file {
