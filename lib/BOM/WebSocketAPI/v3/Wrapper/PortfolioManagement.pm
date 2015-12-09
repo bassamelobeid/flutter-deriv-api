@@ -6,6 +6,8 @@ use warnings;
 use JSON;
 
 use BOM::WebSocketAPI::v3::PortfolioManagement;
+use BOM::WebSocketAPI::v3::Contract;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub portfolio {
     my ($c, $args) = @_;
@@ -35,7 +37,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             $args->{short_code}  = $fmb->short_code;
             $args->{contract_id} = $fmb->id;
             $args->{currency}    = $client->currency;
-            my $id = BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
+            my $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
                 'proposal_open_contract:' . JSON::to_json($args));
             send_proposal($c, $id, $args);
         }
@@ -50,7 +52,7 @@ sub send_proposal {
     my ($c, $id, $args) = @_;
 
     my $details = {%$args};
-    my $latest  = BOM::WebSocketAPI::v3::PortfolioManagement::get_bid(
+    my $latest  = BOM::WebSocketAPI::v3::Contract::get_bid(
         delete $details->{short_code},
         delete $details->{contract_id},
         delete $details->{currency});
