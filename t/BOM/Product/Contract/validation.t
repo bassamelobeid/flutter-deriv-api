@@ -336,16 +336,6 @@ subtest 'valid bet passing and stuff' => sub {
 
     ok($bet->is_valid_to_buy,  'Valid for purchase');
     ok($bet->is_valid_to_sell, '..and for sale-back');
-
-    $bet_params->{bet_type}   = 'CALL';
-    $bet_params->{date_start} = $oft_used_date->plus_time_interval('-1d');    # We didn't insert any data here.
-    delete $bet_params->{date_pricing};
-    $bet_params->{barrier}  = 'S100P';
-    $bet_params->{duration} = '15m';
-    $bet                    = produce_contract($bet_params);
-
-    my $expected_reasons = [qr/Missing settlement/];
-    test_error_list('sell', $bet, $expected_reasons);
 };
 
 subtest 'invalid underlying is a weak foundation' => sub {
@@ -660,10 +650,17 @@ subtest 'volsurfaces become old and invalid' => sub {
             recorded_date  => Date::Utility->new('2013-03-27 06:00:34'),
             spot_reference => $tick->quote,
         });
-
     my $gdaxi = BOM::Market::Underlying->new('GDAXI');
-    $bet_params->{underlying} = $gdaxi;
     my $surface_too_old_date = $gdaxi->exchange->opening_on(Date::Utility->new('2013-03-28'));
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => $surface_too_old_date->plus_time_interval('2h23m20s')
+    });
+
+    $bet_params->{underlying} = $gdaxi;
     $bet_params->{date_start} = $bet_params->{date_pricing} = $surface_too_old_date->plus_time_interval('2h23m20s');
     $bet_params->{bet_type}   = 'ONETOUCH';
     $bet_params->{barrier}    = 103;
@@ -717,13 +714,7 @@ subtest 'invalid start times' => sub {
 
     $bet = produce_contract($bet_params);
 
-    $expected_reasons = [
-        qr/stake same as payout/,
-        qr/^Start must be before expiry/,
-        qr/Intraday duration.*not acceptable/,
-        qr/Missing settlement/,
-        qr/already expired/
-    ];
+    $expected_reasons = [qr/stake same as payout/, qr/^Start must be before expiry/, qr/Intraday duration.*not acceptable/,];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '6d';
@@ -756,6 +747,13 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration}     = '7d';
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*in starting blackout/];
@@ -774,6 +772,13 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration}     = '0d';
     $bet_params->{date_start}   = $underlying->exchange->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
 
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/end of day start blackout/, qr/Daily duration.*is outside/];
@@ -791,6 +796,13 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration}     = '5d';
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{volsurface}   = $volsurface;
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
 
     $bet              = produce_contract($bet_params);
     $expected_reasons = [qr/underlying.*closed/];
@@ -813,6 +825,13 @@ subtest 'invalid start times' => sub {
     $bet_params->{date_start}   = Date::Utility->new('2013-03-28 11:00:00');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{volsurface}   = $volsurface_with_unacceptable_calibration_error;
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     $bet                        = produce_contract($bet_params);
     $expected_reasons           = [qr/Calibration fit outside acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -978,6 +997,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{duration}     = '11d';
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('24-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     $bet                        = produce_contract($bet_params);
 
     $expected_reasons = [qr/trading days.*calendar days/, qr/holiday blackout period/];
@@ -985,6 +1011,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we pick an earlier start date, validates just fine.');
 
@@ -1010,39 +1043,18 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{duration}     = '8d';
     $bet_params->{barrier}      = 'S1P';
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     $bet                        = produce_contract($bet_params);
 
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
 };
-
-subtest 'missing ticks check' => sub {
-    plan tests => 2;
-    my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
-    my $starting   = $oft_used_date->epoch;
-
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch => $starting,
-        quote => 100.012,
-        bid   => 100.015,
-        ask   => 100.021
-    });
-    my $bet_params = {
-        underlying   => $underlying,
-        bet_type     => 'INTRADD',
-        currency     => 'USD',
-        payout       => 100,
-        date_start   => $starting,
-        duration     => '30m',
-        barrier      => 'S0P',
-        current_tick => $tick,
-    };
-    my $bet              = produce_contract($bet_params);
-    my $expected_reasons = [qr/Missing settlement/];
-    test_error_list('sell', $bet, $expected_reasons);
-    ok(!$bet->initialized_correctly, 'Considering the errors, we can not settle without intervention.');
-};
-
 subtest 'underlying with critical corporate actions' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
@@ -1080,6 +1092,13 @@ subtest 'underlying with critical corporate actions' => sub {
         current_tick => $tick,
         date_pricing => $starting,
     };
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'FPFP',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     my $bet = produce_contract($bet_params);
     ok $bet->confirm_validity, 'can buy stock';
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['FPFP']);
@@ -1133,13 +1152,6 @@ subtest '10% barrier check for double barrier contract' => sub {
 };
 
 subtest 'intraday indices duration test' => sub {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'index',
-        {
-            symbol => 'AS51',
-            date   => Date::Utility->new,
-        });
-
     my $now = Date::Utility->new('2015-04-08 10:00:00');
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
@@ -1176,6 +1188,13 @@ subtest 'intraday indices duration test' => sub {
         payout       => 100,
         barrier      => 'S0P',
     };
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol => 'AS51',
+            recorded_date   => $now,
+        });
+
     my $c = produce_contract($params);
     ok $c->is_valid_to_buy, 'valid 15 minutes Flash on AS51';
     $params->{duration} = '14m';
@@ -1191,7 +1210,7 @@ subtest 'intraday indices duration test' => sub {
         'index',
         {
             symbol => 'FTSE',
-            date   => Date::Utility->new,
+            recorded_date   => Date::Utility->new($params->{date_pricing}),
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
@@ -1241,6 +1260,12 @@ subtest 'intraday index missing pricing coefficient' => sub {
         payout       => 100,
         barrier      => 'S0P',
     };
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol => 'FTSE',
+            recorded_date   => Date::Utility->new($params->{date_pricing}),
+        });
     my $mock = Test::MockModule->new('BOM::Product::Contract');
     $mock->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
     my $c = produce_contract($params);
@@ -1267,6 +1292,12 @@ subtest 'expiry_daily expiration time' => sub {
         payout       => 100,
         barrier      => 'S0P',
     };
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol => 'AS51',
+            recorded_date   => Date::Utility->new($params->{date_pricing}),
+        });
     my $c = produce_contract($params);
     ok $c->_validate_expiry_date;
     my $err = ($c->_validate_expiry_date)[0]->{message_to_client};
@@ -1303,9 +1334,96 @@ subtest 'spot reference check' => sub {
         current_tick => $tick,
         volsurface   => $volsurface,
     };
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol => 'FTSE',
+            recorded_date   => Date::Utility->new($bet_params->{date_pricing}),
+        });
     my $c                = produce_contract($bet_params);
     my $expected_reasons = [qr/spot reference/];
     test_error_list('buy', $c, $expected_reasons);
+};
+
+subtest 'economic events blockout period' => sub {
+    my $now               = Date::Utility->new('2015-12-01 10:00');
+    my $underlying_symbol = 'frxUSDJPY';
+    my $volsurface        = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying_symbol,
+            recorded_date => $now,
+        });
+    my $tick_params = {
+        symbol => $underlying_symbol,
+        epoch  => $now->epoch,
+        quote  => 100
+    };
+    my $tick  = BOM::Market::Data::Tick->new($tick_params);
+    my $redis = Cache::RedisDB->redis;
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('15m1s')});
+
+    my $bet_params = {
+        underlying   => $underlying_symbol,
+        bet_type     => 'CALL',
+        currency     => 'USD',
+        payout       => 100,
+        date_start   => $now,
+        date_pricing => $now,
+        duration     => '1m59s',
+        barrier      => 'S0P',
+        current_tick => $tick,
+        volsurface   => $volsurface,
+    };
+    my $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not within period';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'AUD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m59s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not USD';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 4,
+            release_date => $now->minus_time_interval('14m59s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if economic_events is not USD level 5';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'economic_events',
+        {
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m58s')});
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    $c = produce_contract($bet_params);
+    ok $c->_validate_start_date, 'error if economic_events is USD level 5';
+    like(
+        ($c->_validate_start_date)[0]->{message_to_client},
+        qr/Trades on Forex with duration less than 2 minutes are temporarily disabled until 10:00/,
+        'error message'
+    );
+    $bet_params->{underlying} = 'FTSE';
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol => 'FTSE',
+            recorded_date   => Date::Utility->new($bet_params->{date_pricing}),
+        });
+    $c = produce_contract($bet_params);
+    ok !$c->_validate_start_date, 'no error if underlying is not FX';
 };
 
 # Let's not surprise anyone else
