@@ -26,10 +26,10 @@ validation checks on BOM::MarketData::VolSurface objects.
 
 use Moose;
 use 5.010;
+use Carp;
 
 use Format::Util::Numbers qw(roundnear);
 use List::Util qw( min reduce );
-use BOM::Utility::Log4perl qw( get_logger );
 use Math::Business::BlackScholes::Binaries;
 
 use List::MoreUtils qw(indexes);
@@ -96,7 +96,7 @@ sub _check_identical_surface {
         }
     }
     if (time - $existing->recorded_date->epoch > 15000 and not $surface->{underlying}->quanto_only) {
-        get_logger('QUANT')->croak('Surface data has not changed since last update [' . $existing->recorded_date->epoch . '].');
+        croak('Surface data has not changed since last update [' . $existing->recorded_date->epoch . '].');
     }
     return;
 }
@@ -124,8 +124,7 @@ sub _check_volatility_jump {
             my $diff            = abs($new_vol - $existing_vol);
             my $percentage_diff = $diff / $existing_vol * 100;
             if ($diff > 0.03 and $percentage_diff > 100) {
-                get_logger('QUANT')
-                    ->croak('Big difference found on term['
+                croak(    'Big difference found on term['
                         . $days
                         . '] for point ['
                         . $sought_point
@@ -165,7 +164,7 @@ sub _admissible_check {
         }
         my $atid = $utils->effective_date_for($date_expiry)->days_between($utils->effective_date_for($now));
         # If intraday or not FX, then use the exact duration with fractions of a day.
-        get_logger('QUANT')->croak("Invalid tenor[$atid] on surface") if ($atid == 0);
+        croak("Invalid tenor[$atid] on surface") if ($atid == 0);
         my $t     = $atid / 365;
         my $r     = $underlying->interest_rate_for($t);
         my $q     = ($underlying->market->prefer_discrete_dividend) ? 0 : $underlying->dividend_rate_for($t);
@@ -218,16 +217,13 @@ sub _admissible_check {
                 # For delta surface, the strike(prob) is decreasing(increasing) across delta point, hence the slope is positive
                 # For moneyness surface, the strike(prob) is increasing(decreasing) across moneyness point, hence the slope is negative
                 if ($surface_type eq 'delta' and $slope <= 0) {
-                    get_logger('QUANT')
-                        ->croak(
+                    croak(
                         "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level);
                 }
 
                 if ($surface_type eq 'moneyness' and $slope >= 0.0) {
-                    get_logger('QUANT')
-                        ->croak(
-                        "Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level,
-                        );
+                    croak("Admissible check 1 failure for maturity[$day]. BS digital call price decreases between $prev{vol_level} and " . $vol_level,
+                    );
                 }
             }
 
@@ -240,7 +236,7 @@ sub _admissible_check {
             my $bs_theo_before_discounted = $bs_theo / (exp(-$r * $t));
 
             if ($bs_theo_before_discounted < 0.95) {
-                get_logger('QUANT')->croak(
+                croak(
                     "Admissible check 4 failure for maturity[$day] vol at level [$vol_level]. BS digital call theo prob[$bs_theo] not 1 when barrier -> zero.",
                 );
 
@@ -251,7 +247,7 @@ sub _admissible_check {
             $barrier = $S * 10000;
             my $call_prob_for_inf_strike = Math::Business::BlackScholes::Binaries::call($S, $barrier, $t, $r, $r - $q, $vol);
             if ($call_prob_for_inf_strike > 1e-10) {
-                get_logger('QUANT')->croak(
+                croak(
                           "Admissible check 5 failure for maturity[$day] vol at level[$vol_level].BS digital call price not -> 0 ["
                         . $call_prob_for_inf_strike
                         . "] as barrier -> 'infinity'.",
@@ -296,8 +292,7 @@ sub _admissible_check {
             ## surfaces that are close to passing through.
             my $convexity_flag = $bet_minus_h - 2 * $bet + $bet_plus_h;
             if ($convexity_flag < -0.009) {
-                get_logger('QUANT')
-                    ->croak("Admissible check 2 failure for maturity[$day] strike center[$vol_level] convexity value is [$convexity_flag].",);
+                croak("Admissible check 2 failure for maturity[$day] strike center[$vol_level] convexity value is [$convexity_flag].",);
             }
         }
     }
@@ -308,7 +303,7 @@ sub _admissible_check {
 sub _check_spot_reference {
     my $surface = shift;
 
-    get_logger('QUANT')->croak('spot_reference is undef during volupdate for underlying [' . $surface->underlying->symbol . ']')
+    croak('spot_reference is undef during volupdate for underlying [' . $surface->underlying->symbol . ']')
         unless $surface->spot_reference;
 
     return 1;
@@ -318,7 +313,7 @@ sub _check_age {
     my $surface = shift;
 
     if (time - $surface->recorded_date->epoch > 7200) {
-        get_logger('QUANT')->croak('VolSurface is more than 2 hours old');
+        croak('VolSurface is more than 2 hours old');
     }
 
     return 1;
@@ -340,17 +335,17 @@ sub _check_structure {
     my $max_vol_change_by_delta = 0.4 + $extra_allowed;
 
     my @days = keys %{$surface_hashref};
-    get_logger('QUANT')->croak('Must be at least two maturities on vol surface.') if scalar @days < 2;
+    croak('Must be at least two maturities on vol surface.') if scalar @days < 2;
 
     foreach my $day (@days) {
         if ($day !~ /^\d+$/) {
-            get_logger('QUANT')->croak("Invalid day[$day] in volsurface for underlying[$system_symbol]. Not a positive integer.");
+            croak("Invalid day[$day] in volsurface for underlying[$system_symbol]. Not a positive integer.");
         } elsif ($day > $max_term) {
-            get_logger('QUANT')->croak("Day[$day] in volsurface for underlying[$system_symbol] greater than allowed.");
+            croak("Day[$day] in volsurface for underlying[$system_symbol] greater than allowed.");
         }
 
         if (not grep { exists $surface_hashref->{$day}->{$_} } qw(smile vol_spread)) {
-            get_logger('QUANT')->croak("Missing both smile and atm_spread (must have at least one) for day [$day] on underlying [$system_symbol]");
+            croak("Missing both smile and atm_spread (must have at least one) for day [$day] on underlying [$system_symbol]");
         }
     }
 
@@ -358,7 +353,7 @@ sub _check_structure {
     my $market  = $surface->underlying->market;
 
     if ($market eq 'forex' and $min_day > 7) {
-        get_logger('QUANT')->croak("ON term is missing in volsurface for underlying $system_symbol, the minimum term is $min_day");
+        croak("ON term is missing in volsurface for underlying $system_symbol, the minimum term is $min_day");
     }
 
     @days = sort { $a <=> $b } @days;
@@ -372,14 +367,14 @@ sub _check_structure {
 
     foreach my $vol_level (@volatility_level) {
         if ($vol_level !~ /^\d+\.?\d+$/) {
-            get_logger('QUANT')->croak("Invalid vol_point[$vol_level] for underlying[$system_symbol]");
+            die("Invalid vol_point[$vol_level] for underlying[$system_symbol]");
         }
     }
 
     reduce {
         abs($a - $b) <= $diff_smile_point
             ? $b
-            : get_logger('QUANT')->croak("Difference between point $a and $b too great.");
+            : die("Difference between point $a and $b too great.");
     }
     @volatility_level;
 
@@ -391,8 +386,7 @@ sub _check_structure {
 
             if ($type eq 'delta') {
                 if (not @volatility_level ~~ @vol_levels_for_smile) {
-                    get_logger('QUANT')
-                        ->croak('Deltas['
+                    die(      'Deltas['
                             . join(',', @vol_levels_for_smile)
                             . "] for maturity[$day], underlying["
                             . $system_symbol
@@ -406,8 +400,7 @@ sub _check_structure {
                 return $a if (not defined $b);
                 abs($smile->{$a} - $smile->{$b}) <= $max_vol_change_by_delta * $smile->{$a}
                     ? $b
-                    : get_logger('QUANT')
-                    ->croak("Invalid volatility points: too big jump from "
+                    : die("Invalid volatility points: too big jump from "
                         . "$a:$smile->{$a} to $b:$smile->{$b}"
                         . "for maturity[$day], underlying[$system_symbol]");
             }
@@ -443,8 +436,7 @@ sub check_smile {
     foreach my $vol_level (keys %{$smile}) {
         my $vol = $smile->{$vol_level};
         if ($vol !~ /^\d?\.?\d*$/ or $vol > 5) {
-            get_logger('QUANT')
-                ->croak('Invalid smile volatility for '
+            die(      'Invalid smile volatility for '
                     . $day
                     . ' days at volatility level (either delta or moneyness level) '
                     . $vol_level . ' ('
