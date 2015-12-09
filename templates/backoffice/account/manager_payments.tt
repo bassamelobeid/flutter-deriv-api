@@ -86,8 +86,8 @@
             <option value="affiliate_reward"    >Affiliate Reward</option>
             <option value="external_cashier"    >Doughflow</option>
             <option value="free_gift"           >Free Gift</option>
-            <option value="adjustment_purchase" >Adjustment to Bet Purchase</option>
-            <option value="adjustment_sale"     >Adjustment to Bet Sale</option>
+            <option value="adjustment_purchase" >Adjustment to Contract Purchase</option>
+            <option value="adjustment_sale"     >Adjustment to Contract Sale</option>
             <option value="dormant_fee"         >Dormant Fee</option>
             <option value="adjustment"          >Adjustment</option>
             <option value="cash_transfer"       >Western Union</option>
