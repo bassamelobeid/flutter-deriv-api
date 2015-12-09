@@ -528,12 +528,11 @@ sub _get_economic_events {
     foreach my $event (@$raw_events) {
         my $event_name = $event->event_name;
         $event_name =~ s/\s/_/g;
-        my $news_parameters =
-            map { $news_categories->{$_} }
-            first { exists $news_categories->{$_} }
+        my $key = first { exists $news_categories->{$_} }
         map { ($_ . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name, $_ . '_' . $event->symbol . '_' . $event->impact . '_default') }
             ($underlying->symbol, $default_underlying);
 
+        my $news_parameters = $news_categories->{$key};
         next unless $news_parameters;
         $news_parameters->{release_time} = $event->release_date->epoch;
         push @events, $news_parameters;
