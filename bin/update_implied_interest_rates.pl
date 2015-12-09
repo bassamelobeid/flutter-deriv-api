@@ -3,6 +3,7 @@ package BOM::System::Script::UpdateImpliedInterestRates;
 
 use Moose;
 with 'App::Base::Script';
+with 'BOM::Utility::Logging';
 
 use BOM::MarketData::AutoUpdater::ImpliedInterestRates;
 use BOM::Platform::Runtime;
