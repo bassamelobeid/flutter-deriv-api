@@ -26,8 +26,7 @@ sub portfolio {
             contract_type  => $row->{bet_type},
             currency       => $client->currency,
             shortcode      => $row->{short_code},
-            longcode =>
-                BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency)->longcode
+            longcode       => BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency)->longcode
         );
         push $portfolio->{contracts}, \%trx;
     }

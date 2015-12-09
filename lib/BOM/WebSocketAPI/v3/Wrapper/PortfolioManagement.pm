@@ -52,10 +52,7 @@ sub send_proposal {
     my ($c, $id, $args) = @_;
 
     my $details = {%$args};
-    my $latest  = BOM::WebSocketAPI::v3::Contract::get_bid(
-        delete $details->{short_code},
-        delete $details->{contract_id},
-        delete $details->{currency});
+    my $latest = BOM::WebSocketAPI::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
 
     $c->send({
             json => {

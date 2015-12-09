@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Mojo::DOM;
 use Date::Utility;
 
 use BOM::WebSocketAPI::v3::Utility;
@@ -168,7 +167,7 @@ sub profit_table {
         if ($and_description) {
             $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency) }) {
-                $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
+                $trx{longcode}  = $con->longcode;
                 $trx{shortcode} = $con->shortcode;
             }
         }
