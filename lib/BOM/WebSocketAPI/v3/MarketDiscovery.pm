@@ -200,47 +200,4 @@ sub active_symbols {
             } get_offerings_with_filter('underlying_symbol')];
 }
 
-sub ticks_history {
-    my ($symbol, $args) = @_;
-
-    my $ul = BOM::Market::Underlying->new($symbol);
-
-    my $style = $args->{style} || ($args->{granularity} ? 'candles' : 'ticks');
-
-    my ($publish, $result, $type);
-    if ($style eq 'ticks') {
-        my $ticks = BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
-        my $history = {
-            prices => [map { $_->{price} } @$ticks],
-            times  => [map { $_->{time} } @$ticks],
-        };
-        $result  = {history => $history};
-        $type    = "history";
-        $publish = 'tick';
-    } elsif ($style eq 'candles') {
-        my @candles = @{BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
-        if (@candles) {
-            $result = {
-                candles => \@candles,
-            };
-            $type    = "candles";
-            $publish = $args->{granularity};
-        } else {
-            return BOM::WebSocketAPI::v3::Utility::create_error({
-                    code              => 'InvalidCandlesRequest',
-                    message_to_client => BOM::Platform::Context::localize('Invalid candles request')});
-        }
-    } else {
-        return BOM::WebSocketAPI::v3::Utility::create_error({
-                code              => 'InvalidStyle',
-                message_to_client => BOM::Platform::Context::localize("Style [_1] invalid", $style)});
-    }
-
-    return {
-        type    => $type,
-        data    => $result,
-        publish => $publish
-    };
-}
-
 1;
