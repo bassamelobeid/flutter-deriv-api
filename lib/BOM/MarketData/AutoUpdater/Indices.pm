@@ -98,10 +98,9 @@ sub _build_surfaces_from_file {
 }
 
 sub run {
-    my $self = shift;
-    $self->_logger->debug(ref($self) . ' starting update.');
+    my $self               = shift;
     my $surfaces_from_file = $self->surfaces_from_file;
-    my %valid_synthetic = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
+    my %valid_synthetic    = map { $_ => 1 } BOM::Market::UnderlyingDB->instance->get_symbols_for(
         market            => 'indices',
         submarket         => 'smart_index',
         contract_category => 'ANY',
@@ -145,7 +144,6 @@ sub run {
         }
     }
 
-    $self->_logger->debug(ref($self) . ' update complete.');
     $self->SUPER::run();
     return 1;
 }

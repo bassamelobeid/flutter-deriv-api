@@ -20,7 +20,6 @@ use Try::Tiny;
 
 use Date::Utility;
 use BOM::Platform::Runtime;
-use BOM::Utility::Log4perl qw(get_logger);
 use JSON;
 
 requires 'symbol', '_data_location', '_document_content';

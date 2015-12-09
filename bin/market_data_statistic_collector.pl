@@ -16,7 +16,6 @@ use Moose;
 
 use BOM::Platform::Runtime;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 use BOM::Market::Underlying;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Flat;

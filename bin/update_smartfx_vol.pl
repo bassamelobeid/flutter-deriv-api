@@ -13,7 +13,6 @@ Updates our vols with the latest quotes we have received from Bloomberg.
 
 use Moose;
 with 'App::Base::Script';
-with 'BOM::Utility::Logging';
 
 use YAML::CacheLoader;
 use List::Util qw(first);
