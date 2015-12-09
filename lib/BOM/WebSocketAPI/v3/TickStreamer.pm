@@ -22,7 +22,7 @@ sub ticks_history {
 
     my ($publish, $result, $type);
     if ($style eq 'ticks') {
-        my $ticks = BOM::WebSocketAPI::v3::Symbols::ticks({%$args, ul => $ul});    ## no critic
+        my $ticks = ticks({%$args, ul => $ul});    ## no critic
         my $history = {
             prices => [map { $_->{price} } @$ticks],
             times  => [map { $_->{time} } @$ticks],
@@ -31,7 +31,7 @@ sub ticks_history {
         $type    = "history";
         $publish = 'tick';
     } elsif ($style eq 'candles') {
-        my @candles = @{BOM::WebSocketAPI::v3::Symbols::candles({%$args, ul => $ul})};    ## no critic
+        my @candles = @{candles({%$args, ul => $ul})};    ## no critic
         if (@candles) {
             $result = {
                 candles => \@candles,

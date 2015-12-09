@@ -43,7 +43,7 @@ sub forget_all {
                 # . 's' while we are still using tickS in this calls. backward compatibility that must be removed.
                 if (($ftype . 's') =~ /^$type/) {
                     push @removed_ids, $c->stash('feed_channel_type')->{$k}->{uuid};
-                    BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
                 }
             }
         }
@@ -63,7 +63,7 @@ sub forget_one {
             $k =~ /(.*);(.*)/;
             if ($c->stash('feed_channel_type')->{$k}->{uuid} eq $id) {
                 my $args = $c->stash('feed_channel_type')->{$k}->{args};
-                BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $1, $2);
                 return $args;
             }
         }
