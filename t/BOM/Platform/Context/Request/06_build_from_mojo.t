@@ -1,4 +1,4 @@
-use Test::More (tests => 9);
+use Test::More (tests => 8);
 use Test::Exception;
 use Test::NoWarnings;
 use Test::MockObject;
@@ -170,13 +170,6 @@ subtest 'cookie preferred' => sub {
             {mojo_request => mock_request_for("https://www.binary.com/", {login => $lc2->token}, {$cookie_name => $lc->token})});
         is $request->session_cookie->loginid, 'CR1001', "Valid Client";
     };
-};
-
-subtest 'ids failed' => sub {
-    throws_ok {
-        BOM::Platform::Context::Request::from_mojo({mojo_request => mock_request_for("https://www.binary.com/", {test => '/etc/passwd%00'})});
-    }
-    qr/Detected IDS attacks/;
 };
 
 subtest 'accepted http_methods' => sub {
