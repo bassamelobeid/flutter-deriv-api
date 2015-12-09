@@ -3,6 +3,8 @@ package BOM::WebSocketAPI::v3::Transaction;
 use strict;
 use warnings;
 
+use Try::Tiny;
+
 use BOM::WebSocketAPI::v3::Contract;
 use BOM::WebSocketAPI::v3::Utility;
 use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);

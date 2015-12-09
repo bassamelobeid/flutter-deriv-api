@@ -3,6 +3,7 @@ package BOM::WebSocketAPI::v3::MarketDiscovery;
 use strict;
 use warnings;
 
+use Try::Tiny;
 use Date::Utility;
 use Time::Duration::Concise::Localize;
 
