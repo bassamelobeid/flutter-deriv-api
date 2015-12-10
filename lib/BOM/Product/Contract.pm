@@ -2801,7 +2801,6 @@ sub _validate_volsurface {
 
     my @errors;
 
-    return @errors if $self->market->name eq 'random';
     if ($self->build_parameters->{pricing_vol}) {
         push @errors,
             {
@@ -2811,6 +2810,8 @@ sub _validate_volsurface {
             message_to_client => localize("Prevailing market price cannot be determined."),
             };
     }
+
+    return @errors if $self->market->name eq 'random';
 
     my $surface          = $self->volsurface;
     my $now              = $self->date_pricing;
