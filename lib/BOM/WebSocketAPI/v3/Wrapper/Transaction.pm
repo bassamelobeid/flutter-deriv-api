@@ -14,7 +14,6 @@ sub buy {
 
     my $response = BOM::WebSocketAPI::v3::Transaction::buy($c->stash('client'), $c->stash('source'), $contract_parameters, $args);
     if (exists $response->{error}) {
-        $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
         return $c->new_error('buy', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         return {
@@ -29,9 +28,6 @@ sub sell {
 
     my $response = BOM::WebSocketAPI::v3::Transaction::sell($c->stash('client'), $c->stash('source'), $args);
     if (exists $response->{error}) {
-        if (exists $response->{error}->{message}) {
-            $c->app->log->info($response->{error}->{message});
-        }
         return $c->new_error('sell', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         return {
