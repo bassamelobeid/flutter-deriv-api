@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Mojo::DOM;
 use Date::Utility;
 
 use BOM::WebSocketAPI::v3::Utility;
@@ -21,6 +20,20 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
+
+sub payout_currencies {
+    my $account = shift;
+
+    my $currencies;
+    if ($account) {
+        $currencies = [$account->currency_code];
+    } else {
+        my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
+        $currencies = $lc->legal_allowed_currencies;
+    }
+
+    return $currencies,;
+}
 
 sub landing_company {
     my $args = shift;
@@ -154,7 +167,7 @@ sub profit_table {
         if ($and_description) {
             $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency) }) {
-                $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
+                $trx{longcode}  = $con->longcode;
                 $trx{shortcode} = $con->shortcode;
             }
         }
@@ -532,14 +545,20 @@ sub set_self_exclusion {
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
     {
-        my $val = $args{$field};
-        next unless defined $val;
-        unless ($val =~ /^\d+/ and $val > 0) {
-            delete $args{$field};
-            next;
+        my $val      = $args{$field};
+        my $is_valid = 0;
+        if ($val and $val =~ /^\d+$/ and $val > 0) {
+            $is_valid = 1;
+            if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
+                $is_valid = 0;
+            }
         }
-        if ($self_exclusion->{$field} and $val > $self_exclusion->{$field}) {
+        next if $is_valid;
+
+        if ($self_exclusion->{$field}) {
             return $error_sub->(localize('Please enter a number between 0 and [_1].', $self_exclusion->{$field}), $field);
+        } else {
+            delete $args{$field};
         }
     }
 

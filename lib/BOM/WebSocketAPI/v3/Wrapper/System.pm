@@ -3,8 +3,11 @@ package BOM::WebSocketAPI::v3::Wrapper::System;
 use strict;
 use warnings;
 
-use BOM::WebSocketAPI::v3::Utility;
 use Mojo::Util qw(md5_sum steady_time);
+use Mojo::IOLoop;
+
+use BOM::WebSocketAPI::v3::Utility;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
     my ($c, $args) = @_;
@@ -40,7 +43,7 @@ sub forget_all {
                 # . 's' while we are still using tickS in this calls. backward compatibility that must be removed.
                 if (($ftype . 's') =~ /^$type/) {
                     push @removed_ids, $c->stash('feed_channel_type')->{$k}->{uuid};
-                    BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
                 }
             }
         }
@@ -60,7 +63,7 @@ sub forget_one {
             $k =~ /(.*);(.*)/;
             if ($c->stash('feed_channel_type')->{$k}->{uuid} eq $id) {
                 my $args = $c->stash('feed_channel_type')->{$k}->{args};
-                BOM::WebSocketAPI::v3::MarketDiscovery::_feed_channel($c, 'unsubscribe', $1, $2);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $1, $2);
                 return $args;
             }
         }
