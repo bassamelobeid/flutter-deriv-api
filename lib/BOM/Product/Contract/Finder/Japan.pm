@@ -291,7 +291,7 @@ sub _get_daily_trading_window {
         });
 
     # quarterly contract
-    my $current_quarter_month     = $now->quarter * 3 - 2;
+    my $current_quarter_month     = $now->quarter_of_year * 3 - 2;
     my $first_day_of_quarter      = Date::Utility->new($now_year . "-$current_quarter_month-01");
     my $first_day_of_next_quarter = Date::Utility->new('1-' . $first_day_of_quarter->months_ahead(3));
     push @daily_duration,
