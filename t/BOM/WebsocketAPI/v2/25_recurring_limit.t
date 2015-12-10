@@ -11,6 +11,7 @@ build_test_R_50_data();
 
 my $t               = build_mojo_test();
 my $first_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
+$first_timer_cnt--;
 
 foreach my $i (1 .. 60) {
     $t = $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
@@ -18,9 +19,9 @@ foreach my $i (1 .. 60) {
 
     my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
     if ($i <= 50) {
-        is $now_timer_cnt, $first_timer_cnt + $i - 1;
+        is $now_timer_cnt, $first_timer_cnt + $i;
     } else {
-        is $now_timer_cnt, $first_timer_cnt + 50 - 1;    # max
+        is $now_timer_cnt, $first_timer_cnt + 50;    # max
     }
 }
 
@@ -39,7 +40,7 @@ foreach my $i (1 .. 3) {
     # my $proposal = decode_json($t->message->[1]);
 
     my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
-    is $now_timer_cnt, $first_timer_cnt + 50 - 1;    # max
+    is $now_timer_cnt, $first_timer_cnt + 50;    # max
 }
 
 $t->finish_ok;
