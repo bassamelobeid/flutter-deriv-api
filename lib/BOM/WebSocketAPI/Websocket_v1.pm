@@ -11,6 +11,7 @@ use BOM::WebSocketAPI::v1::Accounts;
 use BOM::WebSocketAPI::v1::MarketDiscovery;
 use BOM::WebSocketAPI::v1::PortfolioManagement;
 use DataDog::DogStatsd::Helper;
+use BOM::Database::Rose::DB;
 
 sub ok {
     my $c      = shift;
@@ -52,6 +53,8 @@ sub entry_point {
                 die "data too large [$l]";
             }
             $c->send({json => $data});
+
+            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
         });
     return;
 }

@@ -19,6 +19,7 @@ use JSON;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use Time::HiRes;
+use BOM::Database::Rose::DB;
 
 sub ok {
     my $c      = shift;
