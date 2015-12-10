@@ -18,9 +18,9 @@ foreach my $i (1 .. 60) {
 
     my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
     if ($i <= 50) {
-        is $now_timer_cnt, $first_timer_cnt + $i;
+        is $now_timer_cnt, $first_timer_cnt + $i - 1;
     } else {
-        is $now_timer_cnt, $first_timer_cnt + 50;    # max
+        is $now_timer_cnt, $first_timer_cnt + 50 - 1;    # max
     }
 }
 
@@ -39,7 +39,7 @@ foreach my $i (1 .. 3) {
     # my $proposal = decode_json($t->message->[1]);
 
     my $now_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
-    is $now_timer_cnt, $first_timer_cnt + 50;    # max
+    is $now_timer_cnt, $first_timer_cnt + 50 - 1;    # max
 }
 
 $t->finish_ok;
