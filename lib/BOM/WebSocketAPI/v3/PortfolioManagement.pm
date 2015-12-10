@@ -3,113 +3,11 @@ package BOM::WebSocketAPI::v3::PortfolioManagement;
 use strict;
 use warnings;
 
-use Mojo::DOM;
 use Date::Utility;
-use Try::Tiny;
 
-use BOM::WebSocketAPI::v3::Utility;
-use BOM::WebSocketAPI::v3::MarketDiscovery;
-use BOM::Platform::Runtime;
-use BOM::Platform::Context qw (localize);
-use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
-use BOM::Product::Transaction;
-
-sub buy {
-    my ($client, $source, $contract_parameters, $args) = @_;
-
-    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
-    $contract_parameters = BOM::WebSocketAPI::v3::MarketDiscovery::prepare_ask($contract_parameters);
-
-    my $contract = try { produce_contract({%$contract_parameters}) } || do {
-        my $err = $@;
-        return BOM::WebSocketAPI::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
-
-    my $trx = BOM::Product::Transaction->new({
-        client        => $client,
-        contract      => $contract,
-        price         => ($args->{price} || 0),
-        purchase_date => $purchase_date,
-        source        => $source,
-    });
-
-    if (my $err = $trx->buy) {
-        return BOM::WebSocketAPI::v3::Utility::create_error({
-            code              => $err->get_type,
-            message_to_client => $err->{-message_to_client},
-            message           => "Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
-        });
-    }
-
-    my $response = {
-        transaction_id => $trx->transaction_id,
-        contract_id    => $trx->contract_id,
-        balance_after  => $trx->balance_after,
-        purchase_time  => $trx->purchase_date->epoch,
-        buy_price      => $trx->price,
-        start_time     => $contract->date_start->epoch,
-        longcode       => Mojo::DOM->new->parse($contract->longcode)->all_text,
-        shortcode      => $contract->shortcode,
-        payout         => $contract->payout
-    };
-
-    if ($contract->is_spread) {
-        $response->{stop_loss_level}   = $contract->stop_loss_level;
-        $response->{stop_profit_level} = $contract->stop_profit_level;
-        $response->{amount_per_point}  = $contract->amount_per_point;
-    }
-
-    return $response;
-}
-
-sub sell {
-    my ($client, $source, $args) = @_;
-
-    my $id = $args->{sell};
-
-    my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
-            client_loginid => $client->loginid,
-            currency_code  => $client->currency,
-            db             => BOM::Database::ClientDB->new({
-                    client_loginid => $client->loginid,
-                    operation      => 'replica',
-                }
-            )->db,
-        });
-
-    my $fmb = $fmb_dm->get_fmb_by_id([$id]);
-    return BOM::WebSocketAPI::v3::Utility::create_error({
-            code              => 'InvalidSellContractProposal',
-            message_to_client => BOM::Platform::Context::localize('Unknown contract sell proposal')}) unless $fmb;
-
-    my $contract = produce_contract(${$fmb}[0]->short_code, $client->currency);
-    my $trx = BOM::Product::Transaction->new({
-        client      => $client,
-        contract    => $contract,
-        contract_id => $id,
-        price       => ($args->{price} || 0),
-        source      => $source,
-    });
-
-    if (my $err = $trx->sell) {
-        return BOM::WebSocketAPI::v3::Utility::create_error({
-            code              => $err->get_type,
-            message_to_client => $err->{-message_to_client},
-            message           => "Contract-Sell Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
-        });
-    }
-
-    $trx = $trx->transaction_record;
-
-    return {
-        transaction_id => $trx->id,
-        contract_id    => $id,
-        balance_after  => $trx->balance_after,
-        sold_for       => abs($trx->amount),
-    };
-}
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Database::DataMapper::FinancialMarketBet;
+use BOM::Database::ClientDB;
 
 sub portfolio {
     my $client = shift;
@@ -128,8 +26,7 @@ sub portfolio {
             contract_type  => $row->{bet_type},
             currency       => $client->currency,
             shortcode      => $row->{short_code},
-            longcode =>
-                Mojo::DOM->new->parse(BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency)->longcode)->all_text
+            longcode       => BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency)->longcode
         );
         push $portfolio->{contracts}, \%trx;
     }
@@ -151,57 +48,6 @@ sub __get_open_contracts {
         });
 
     return $fmb_dm->get_open_bets_of_account();
-}
-
-sub get_bid {
-    my ($short_code, $contract_id, $currency) = @_;
-
-    my $contract = produce_contract($short_code, $currency);
-
-    my %returnhash = (
-        ask_price           => sprintf('%.2f', $contract->ask_price),
-        bid_price           => sprintf('%.2f', $contract->bid_price),
-        current_spot_time   => $contract->current_tick->epoch,
-        contract_id         => $contract_id,
-        underlying          => $contract->underlying->symbol,
-        is_expired          => $contract->is_expired,
-        is_valid_to_sell    => $contract->is_valid_to_sell,
-        is_forward_starting => $contract->is_forward_starting,
-        is_path_dependent   => $contract->is_path_dependent,
-        is_intraday         => $contract->is_intraday,
-        date_start          => $contract->date_start->epoch,
-        date_expiry         => $contract->date_expiry->epoch,
-        date_settlement     => $contract->date_settlement->epoch,
-        currency            => $contract->currency,
-        longcode            => $contract->longcode,
-        shortcode           => $contract->shortcode,
-        payout              => $contract->payout,
-    );
-
-    if ($contract->expiry_type eq 'tick') {
-        $returnhash{prediction}      = $contract->prediction;
-        $returnhash{tick_count}      = $contract->tick_count;
-        $returnhash{entry_tick}      = $contract->entry_tick->quote;
-        $returnhash{entry_tick_time} = $contract->entry_tick->epoch;
-        $returnhash{exit_tick}       = $contract->exit_tick->quote;
-        $returnhash{exit_tick_time}  = $contract->exit_tick->epoch;
-    } else {
-        $returnhash{current_spot} = $contract->current_spot;
-        $returnhash{entry_spot}   = $contract->entry_spot;
-    }
-
-    if ($contract->two_barriers) {
-        $returnhash{high_barrier} = $contract->high_barrier->as_absolute;
-        $returnhash{low_barrier}  = $contract->low_barrier->as_absolute;
-    } elsif ($contract->barrier) {
-        $returnhash{barrier} = $contract->barrier->as_absolute;
-    }
-
-    if ($contract->expiry_type ne 'tick' and not $contract->is_valid_to_sell) {
-        $returnhash{validation_error} = $contract->primary_validation_error->message_to_client;
-    }
-
-    return \%returnhash;
 }
 
 1;
