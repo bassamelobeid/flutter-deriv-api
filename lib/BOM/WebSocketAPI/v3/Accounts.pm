@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use Try::Tiny;
-use Mojo::DOM;
 use Date::Utility;
 
 use BOM::WebSocketAPI::v3::Utility;
@@ -21,6 +20,20 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
+
+sub payout_currencies {
+    my $account = shift;
+
+    my $currencies;
+    if ($account) {
+        $currencies = [$account->currency_code];
+    } else {
+        my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
+        $currencies = $lc->legal_allowed_currencies;
+    }
+
+    return $currencies,;
+}
 
 sub landing_company {
     my $args = shift;
@@ -154,7 +167,7 @@ sub profit_table {
         if ($and_description) {
             $trx{longcode} = '';
             if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency) }) {
-                $trx{longcode}  = Mojo::DOM->new->parse($con->longcode)->all_text;
+                $trx{longcode}  = $con->longcode;
                 $trx{shortcode} = $con->shortcode;
             }
         }
