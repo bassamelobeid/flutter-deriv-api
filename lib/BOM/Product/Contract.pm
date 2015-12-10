@@ -1080,7 +1080,7 @@ sub is_valid_to_sell {
         $self->add_errors({
             alert             => 1,
             severity          => 100,
-            message           => 'affected by corporate action',
+            message           => format_error_string('affected by corporate action', symbol => $self->underlying->symbol),
             message_to_client => localize("This contract is affected by corporate action."),
         });
     }
@@ -2094,7 +2094,7 @@ sub _validate_underlying {
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->trading) {
         push @errors,
             {
-            message           => 'All trading suspended on system',
+            message           => format_error_string('All trading suspended on system'),
             severity          => 102,
             message_to_client => localize("Trading is suspended at the moment."),
             };
@@ -2234,8 +2234,12 @@ sub _validate_payout {
         # We did the best we could to clean up looks like still too many decimals
         push @errors,
             {
-            severity          => 10,
-            message           => format_error_string('payout amount has more than 2 decimal places', payout => $bet_payout),
+            severity => 10,
+            message  => format_error_string(
+                'payout amount has too many decimal places',
+                permitted => 2,
+                payout    => $bet_payout
+            ),
             message_to_client => localize('Payout may not have more than two decimal places.',),
             };
     }
@@ -2286,7 +2290,7 @@ sub _validate_stake {
         my $message = ($self->built_with_bom_parameters) ? localize('Current market price is 0.') : localize('This contract offers no return.');
         push @errors,
             {
-            message           => 'stake same as payout',
+            message           => format_error_string('stake same as payout'),
             severity          => 90,
             message_to_client => $message,
             };
@@ -2347,8 +2351,12 @@ sub _validate_start_date {
     if (not $epoch_expiry > $epoch_start) {
         push @errors,
             {
-            severity          => 100,
-            message           => 'Start must be before expiry',
+            severity => 100,
+            message  => format_error_string(
+                'Start must be before expiry',
+                'start' => $epoch_start,
+                expiry  => $epoch_expiry
+            ),
             message_to_client => localize("Expiry time cannot be in the past."),
             };
     }
@@ -2368,7 +2376,7 @@ sub _validate_start_date {
             {
             alert             => 1,
             severity          => 100,
-            message           => 'starts in the past',
+            message           => format_error_string('starts in the past'),
             message_to_client => localize("Start time is in the past"),
             };
     }
@@ -2378,14 +2386,22 @@ sub _validate_start_date {
             ($self->is_forward_starting) ? localize("The market must be open at the start time.") : localize('This market is presently closed.');
         push @errors,
             {
-            severity          => 120,
-            message           => 'underlying is closed',
+            severity => 120,
+            message  => format_error_string(
+                'underlying is closed at start',
+                symbol => $self->underlying->symbol,
+                start  => $self->date_start->datetime
+            ),
             message_to_client => $message . " " . localize("Try out the Random Indices which are always open.")};
     } elsif (my $open_seconds = ($exchange->seconds_since_open_at($self->date_start) // 0) < $underlying->sod_blackout_start->seconds) {
         my $blackout_time = $underlying->sod_blackout_start->as_string;
         push @errors,
             {
-            message           => 'underlying [' . $underlying->symbol . '] is in starting blackout [' . $blackout_time . ']',
+            message => format_error_string(
+                'underlying in starting blackout',
+                symbol   => $underlying->symbol,
+                blackout => $blackout_time
+            ),
             severity          => 80,
             message_to_client => localize("Trading is available after the first [_1] of the session.", $blackout_time) . " "
                 . localize("Try out the Random Indices which are always open.")};
@@ -2401,7 +2417,7 @@ sub _validate_start_date {
                 };
         }
 
-    } elsif ($underlying->market->name eq 'forex' and ($self->timeindays->amount * 86400 < 2 * 60 or $self->tick_expiry)) {
+    } elsif ($underlying->market->name eq 'forex' and ($self->remaining_time->minutes < 2 or $self->tick_expiry)) {
         my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => $self->date_start->minus_time_interval('15m'),
             to   => $self->date_start,
@@ -2409,7 +2425,14 @@ sub _validate_start_date {
         if (my $event = first { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
             push @errors,
                 {
-                message           => 'Disable less than 2 minutes Forex contract because of level 5 USD economic announcement.',
+                message => format_error_string(
+                    'too short duration during news event',
+                    symbol        => $underlying->symbol,
+                    duration      => $self->remaining_time->as_concise_string,
+                    min           => '2m',
+                    'news impact' => $event->impact,
+                    'news symbol' => $event->symbol,
+                ),
                 severity          => 80,
                 message_to_client => localize(
                     "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
@@ -2470,7 +2493,7 @@ sub _validate_expiry_date {
             {
             alert             => 1,
             severity          => 100,
-            message           => 'already expired contract',
+            message           => format_error_string('already expired contract'),
             message_to_client => localize("Contract has already expired."),
             };
     } elsif ($self->is_intraday) {
@@ -2478,7 +2501,11 @@ sub _validate_expiry_date {
             my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
             push @errors,
                 {
-                message           => 'underlying closed at expiry',
+                message => format_error_string(
+                    'underlying closed at expiry',
+                    symbol => $self->underlying->symbol,
+                    expiry => $self->date_expiry->datetime
+                ),
                 severity          => 110,
                 message_to_client => localize("Contract must expire during trading hours."),
                 info_link         => $times_link,
@@ -2521,10 +2548,14 @@ sub _validate_expiry_date {
     } elsif ($self->expiry_daily) {
         my $close = $self->underlying->exchange->closing_on($self->date_expiry);
         # if it is not a trading day at expiry, we will catch that later.
-        if ($close and $close->epoch != $self->date_expiry->epoch) {
+        if ($close and not $close->is_same_as($self->date_expiry)) {
             push @errors,
                 {
-                message           => 'unauthorised expiry date',
+                message => format_error_string(
+                    'daily expiry must expire at close',
+                    expiry => $self->date_expiry->datetime,
+                    close  => $close->datetime
+                ),
                 severity          => 100,
                 message_to_client => localize(
                     'Contracts on [_1] with duration more than 24 hours must expire at the end of a trading day.',
@@ -2611,13 +2642,13 @@ sub _subvalidate_lifetime_intraday {
             push @errors,
                 {
                 severity          => 100,
-                message           => 'Intraday resale not permitted',
+                message           => format_error_string('Intraday resale not permitted'),
                 message_to_client => localize('Resale of this contract is not offered.')};
         } elsif ($duration < $shortest->seconds) {
             push @errors,
                 {
                 severity          => 98,
-                message           => 'Intraday resale too short',
+                message           => format_error_string('Intraday resale too short'),
                 message_to_client => localize('Resale of this contract is not offered with less than [_1] remaining.', $shortest->as_string)};
         }
     } else {
@@ -2776,7 +2807,7 @@ sub _validate_volsurface {
             {
             alert             => 1,
             severity          => 99,
-            message           => 'forced (not calculated) IV',
+            message           => format_error_string('forced (not calculated) IV'),
             message_to_client => localize("Prevailing market price cannot be determined."),
             };
     }
@@ -2794,7 +2825,7 @@ sub _validate_volsurface {
             {
             alert             => 1,
             severity          => 99,
-            message           => 'Volsurface has smile flags',
+            message           => format_error_string('Volsurface has smile flags', symbol => $self->underlying->symbol),
             message_to_client => $standard_message,
             };
     }
@@ -2805,9 +2836,14 @@ sub _validate_volsurface {
     {
         push @errors,
             {
-            alert             => 1,
-            severity          => 99,
-            message           => 'Intraday forex volsurface recorded_date greater than six hours old',
+            alert    => 1,
+            severity => 99,
+            message  => format_error_string(
+                'volsurface too old',
+                symbol => $self->underlying->symbol,
+                age    => $surface_age->as_concise_string,
+                max    => '6h'
+            ),
             message_to_client => $standard_message,
             };
     } elsif ($self->market->name eq 'indices' and $surface_age->hours > 24 and not $self->is_atm_bet) {
@@ -2817,45 +2853,46 @@ sub _validate_volsurface {
             severity => 100,
             set_by   => __PACKAGE__,
             message  => format_error_string(
-                'Index volsurface recorded_date greater than four hours old',
+                'volsurface too old',
                 symbol => $self->underlying->symbol,
-                age    => $surface_age->as_concise_string
+                age    => $surface_age->as_concise_string,
+                max    => '4h',
             ),
             message_to_client => $standard_message,
             };
     } elsif ($surface->recorded_date->days_between($self->exchange->trade_date_before($now)) < 0) {
         push @errors,
             {
-            alert             => 1,
-            severity          => 99,
-            message           => 'volsurface recorded_date earlier than trade date before today',
+            alert    => 1,
+            severity => 99,
+            message  => format_error_string(
+                'volsurface too old',
+                symbol          => $self->underlying->symbol,
+                'recorded date' => $surface->recorded_date->datetime,
+                'trade date'    => $now->datetime
+            ),
             message_to_client => $standard_message,
             };
     }
 
     if ($self->volsurface->type eq 'moneyness') {
-        my $calibration_error_threshold = BOM::Platform::Runtime->instance->app_config->quants->market_data->volsurface_calibration_error_threshold;
+        my $max_acceptable_error = BOM::Platform::Runtime->instance->app_config->quants->market_data->volsurface_calibration_error_threshold;
+        $max_acceptable_error *= 5 if $self->is_atm_bet;    # More latitude when vols don't matter so much
 
-        if ($surface->price_with_parameterized_surface) {
-            if ($surface->calibration_error > $calibration_error_threshold * 5) {
-                push @errors,
-                    {
-                    alert             => 1,
-                    severity          => 100,
-                    set_by            => __PACKAGE__,
-                    message           => format_error_string('Calibration fit outside acceptable range', symbol => $self->underlying->symbol),
-                    message_to_client => $standard_message,
-                    };
-            } elsif ($surface->calibration_error > $calibration_error_threshold and not $self->is_atm_bet) {
-                push @errors,
-                    {
-                    alert             => 1,
-                    severity          => 100,
-                    set_by            => __PACKAGE__,
-                    message           => format_error_string('Calibration fit outside acceptable range for IV', symbol => $self->underlying->symbol),
-                    message_to_client => $standard_message,
-                    };
-            }
+        if ($surface->price_with_parameterized_surface and $surface->calibration_error > $max_acceptable_error) {
+            push @errors,
+                {
+                alert    => 1,
+                severity => 100,
+                set_by   => __PACKAGE__,
+                message  => format_error_string(
+                    'Calibration fit outside acceptable range',
+                    symbol              => $self->underlying->symbol,
+                    'calibration error' => $surface->calibration_error,
+                    acceptable          => $max_acceptable_error,
+                ),
+                message_to_client => $standard_message,
+                };
         }
 
         if (abs($surface->spot_reference - $self->current_spot) / $self->current_spot * 100 > 5) {
@@ -2864,8 +2901,12 @@ sub _validate_volsurface {
                 alert    => 1,
                 severity => 100,
                 set_by   => __PACKAGE__,
-                message =>
-                    format_error_string('spot reference[' . $surface->spot_reference . '] too far from current spot[' . $self->current_spot . ']'),
+                message  => format_error_string(
+                    'spot too far from surface reference',
+                    symbol              => $self->underlying->symbol,
+                    spot                => $self->current_spot,
+                    'surface reference' => $surface->spot_reference
+                ),
                 message_to_client => $standard_message,
                 };
         }
@@ -2897,7 +2938,11 @@ sub _validate_eod_market_risk {
             : localize('The contract is not available after [_1] GMT.', $ny_1600->time_hhmm);
         push @errors,
             {
-            message           => 'Underlying buying suspended between NY1600 and GMT0000',
+            message => format_error_string(
+                'Underlying buying suspended between NY1600 and GMT0000',
+                symbol   => $self->underlying->symbol,
+                duration => $self->remaining_time->as_concise_string
+            ),
             message_to_client => $message . ' ',
             info_link         => request()->url_for('/resources/asset_index'),
             info_text         => localize('View Asset Index'),
