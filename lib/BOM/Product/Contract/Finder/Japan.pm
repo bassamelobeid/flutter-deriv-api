@@ -116,6 +116,7 @@ sub _predefined_trading_period {
     if (not $trading_periods) {
         $now_hour = $now_minute < 45 ? $now_hour : $now_hour + 1;
         my $even_hour = $now_hour - ($now_hour % 2);
+        # We did not offer intraday contract after NY16. However, we turn on these three pairs on Japan
         my @skip_even_hour = (grep { $_ eq $symbol } qw(frxUSDJPY frxAUDJPY frxAUDUSD)) ? (18, 20) : (18, 20, 22);
 
         if (not grep { $even_hour == $_ } @skip_even_hour) {
@@ -175,8 +176,7 @@ sub _predefined_trading_period {
 
         my $maximum_contract_duration = Time::Duration::Concise->new({interval => $o->{max_contract_duration}})->seconds;
 
-        foreach my $trading_period (@$trading_periods) {
-            if (not $trading_period) { next; }
+        foreach my $trading_period (grep { defined } @$trading_periods) {
             my $date_expiry      = $trading_period->{date_expiry}->{epoch};
             my $date_start       = $trading_period->{date_start}->{epoch};
             my $trading_duration = $date_expiry - $date_start;
