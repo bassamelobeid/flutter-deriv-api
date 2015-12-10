@@ -4,7 +4,18 @@ use 5.014;
 use strict;
 use warnings;
 
+use JSON;
+
 use BOM::WebSocketAPI::v3::Accounts;
+
+sub payout_currencies {
+    my $c = shift;
+
+    return {
+        msg_type          => 'payout_currencies',
+        payout_currencies => BOM::WebSocketAPI::v3::Accounts::payout_currencies($c->stash('account')),
+    };
+}
 
 sub landing_company {
     my ($c, $args) = @_;
