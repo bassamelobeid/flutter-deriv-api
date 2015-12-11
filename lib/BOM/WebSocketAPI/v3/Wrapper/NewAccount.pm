@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::v3::Wrapper::NewAccount;
 use strict;
 use warnings;
 
-use BOM::WebSocketAPI::v3::NewAccount;
+use BOM::RPC::v3::NewAccount;
 use BOM::Platform::SessionCookie;
 
 sub new_account_virtual {
@@ -11,7 +11,7 @@ sub new_account_virtual {
 
     my $token = $c->cookie('verify_token') || $args->{verification_code};
 
-    my $response = BOM::WebSocketAPI::v3::NewAccount::new_account_virtual($args, $token, $args->{email});
+    my $response = BOM::RPC::v3::NewAccount::new_account_virtual($args, $token, $args->{email});
     if (exists $response->{error}) {
         return $c->new_error('new_account_virtual', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -40,7 +40,7 @@ sub verify_email {
             verify_token => $code,
         });
 
-    my $response = BOM::WebSocketAPI::v3::NewAccount::verify_email($email, $c->stash('request')->website, $link);
+    my $response = BOM::RPC::v3::NewAccount::verify_email($email, $c->stash('request')->website, $link);
 
     return {
         msg_type     => 'verify_email',
@@ -51,7 +51,7 @@ sub verify_email {
 sub new_account_real {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::NewAccount::new_account_real($c->stash('client'), $args);
+    my $response = BOM::RPC::v3::NewAccount::new_account_real($c->stash('client'), $args);
     if (exists $response->{error}) {
         return $c->new_error('new_account_real', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -66,7 +66,7 @@ sub new_account_real {
 sub new_account_maltainvest {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::NewAccount::new_account_maltainvest($c->stash('client'), $args);
+    my $response = BOM::RPC::v3::NewAccount::new_account_maltainvest($c->stash('client'), $args);
     if (exists $response->{error}) {
         return $c->new_error('new_account_maltainvest', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {

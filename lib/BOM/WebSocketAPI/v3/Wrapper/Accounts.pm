@@ -6,21 +6,21 @@ use warnings;
 
 use JSON;
 
-use BOM::WebSocketAPI::v3::Accounts;
+use BOM::RPC::v3::Accounts;
 
 sub payout_currencies {
     my $c = shift;
 
     return {
         msg_type          => 'payout_currencies',
-        payout_currencies => BOM::WebSocketAPI::v3::Accounts::payout_currencies($c->stash('account')),
+        payout_currencies => BOM::RPC::v3::Accounts::payout_currencies($c->stash('account')),
     };
 }
 
 sub landing_company {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::Accounts::landing_company($args);
+    my $response = BOM::RPC::v3::Accounts::landing_company($args);
     if (exists $response->{error}) {
         return $c->new_error('landing_company', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -34,7 +34,7 @@ sub landing_company {
 sub landing_company_details {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::Accounts::landing_company_details($args);
+    my $response = BOM::RPC::v3::Accounts::landing_company_details($args);
     if (exists $response->{error}) {
         return $c->new_error('landing_company_details', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -50,7 +50,7 @@ sub statement {
 
     return {
         msg_type => 'statement',
-        statement => BOM::WebSocketAPI::v3::Accounts::statement($c->stash('account'), $args)};
+        statement => BOM::RPC::v3::Accounts::statement($c->stash('account'), $args)};
 }
 
 sub profit_table {
@@ -58,7 +58,7 @@ sub profit_table {
 
     return {
         msg_type => 'profit_table',
-        profit_table => BOM::WebSocketAPI::v3::Accounts::profit_table($c->stash('client'), $args)};
+        profit_table => BOM::RPC::v3::Accounts::profit_table($c->stash('client'), $args)};
 }
 
 sub get_account_status {
@@ -66,14 +66,14 @@ sub get_account_status {
 
     return {
         msg_type           => 'get_account_status',
-        get_account_status => BOM::WebSocketAPI::v3::Accounts::get_account_status($c->stash('client'))};
+        get_account_status => BOM::RPC::v3::Accounts::get_account_status($c->stash('client'))};
 }
 
 sub change_password {
     my ($c, $args) = @_;
 
     my $r        = $c->stash('request');
-    my $response = BOM::WebSocketAPI::v3::Accounts::change_password(
+    my $response = BOM::RPC::v3::Accounts::change_password(
         $c->stash('client'),
         $c->stash('token_type'),
         $r->website->config->get('customer_support.email'),
@@ -94,7 +94,7 @@ sub cashier_password {
     my ($c, $args) = @_;
 
     my $r        = $c->stash('request');
-    my $response = BOM::WebSocketAPI::v3::Accounts::cashier_password($c->stash('client'), $r->website->config->get('customer_support.email'),
+    my $response = BOM::RPC::v3::Accounts::cashier_password($c->stash('client'), $r->website->config->get('customer_support.email'),
         $r->client_ip, $args);
 
     if (exists $response->{error}) {
@@ -113,7 +113,7 @@ sub get_settings {
 
     return {
         msg_type => 'get_settings',
-        get_settings => BOM::WebSocketAPI::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language)};
+        get_settings => BOM::RPC::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language)};
 }
 
 sub set_settings {
@@ -122,7 +122,7 @@ sub set_settings {
     my $r = $c->stash('request');
 
     my $response =
-        BOM::WebSocketAPI::v3::Accounts::set_settings($c->stash('client'), $r->website, $r->client_ip, $c->req->headers->header('User-Agent'),
+        BOM::RPC::v3::Accounts::set_settings($c->stash('client'), $r->website, $r->client_ip, $c->req->headers->header('User-Agent'),
         $r->language, $args);
 
     if (exists $response->{error}) {
@@ -140,13 +140,13 @@ sub get_self_exclusion {
     my ($c, $args) = @_;
     return {
         msg_type           => 'get_self_exclusion',
-        get_self_exclusion => BOM::WebSocketAPI::v3::Accounts::get_self_exclusion($c->stash('client'))};
+        get_self_exclusion => BOM::RPC::v3::Accounts::get_self_exclusion($c->stash('client'))};
 }
 
 sub set_self_exclusion {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::Accounts::set_self_exclusion(
+    my $response = BOM::RPC::v3::Accounts::set_self_exclusion(
         $c->stash('client'),
         $c->stash('request')->website->config->get('customer_support.email'),
         $c->app_config->compliance->email, $args
@@ -183,7 +183,7 @@ sub balance {
 
     return {
         msg_type => 'balance',
-        balance  => BOM::WebSocketAPI::v3::Accounts::balance($client)};
+        balance  => BOM::RPC::v3::Accounts::balance($client)};
 }
 
 sub send_realtime_balance {
@@ -198,14 +198,14 @@ sub send_realtime_balance {
             json => {
                 msg_type => 'balance',
                 echo_req => $args,
-                balance => BOM::WebSocketAPI::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
+                balance => BOM::RPC::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
     return;
 }
 
 sub api_token {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::Accounts::api_token($c->stash('client'), $args);
+    my $response = BOM::RPC::v3::Accounts::api_token($c->stash('client'), $args);
     if (exists $response->{error}) {
         return $c->new_error('api_token', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
