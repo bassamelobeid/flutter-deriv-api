@@ -77,7 +77,6 @@ sub entry_point {
 
             my $tag = 'origin:';
             my $data;
-            my $send = 1;
             if (ref($p1) eq 'HASH') {
 
                 if (my $origin = $c->req->headers->header("Origin")) {
@@ -87,33 +86,16 @@ sub entry_point {
                 }
 
                 $c->stash('args' => $p1);
-                $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
-                if (not $data) {
-                    $send = undef;
-                    $data = {};
+                $data = _sanity_failed($c, $p1);
+                if $data {
+                    $c->send({json => $data});
                 }
-
-                if ($data->{error} and $data->{error}->{code} eq 'SanityCheckFailed') {
-                    $data->{echo_req} = {};
-                } else {
-                    $data->{echo_req} = $p1;
-                }
+                __handle($c, $p1, $tag);
             } else {
                 # for invalid call, eg: not json
                 $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
                 $data->{echo_req} = {};
-            }
-            $data->{version} = 3;
-
-            my $l = length JSON::to_json($data);
-            if ($l > 328000) {
-                $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
-                $data->{echo_req} = $p1;
-            }
-            if ($send) {
                 $c->send({json => $data});
-            } else {
-                return;
             }
         });
 
@@ -264,6 +246,63 @@ sub _failed_key_value {
         return ($key, $value);
     }
     return;
+}
+
+sub _rpc_client {
+    state $client = MojoX::JSON::RPC::Client->new;
+    return $client;
+}
+
+sub rpc {
+    my $method = shift;
+    my $callback = shift;
+    my $params = @_;
+
+    my $client = _rpc_client;
+    my $url    = 'http://localhost:5005/jsonrpc';
+    my $callobj = {
+        id      => 1,
+        method  => $method,
+        params  => $params
+    };
+
+    $client->call($url, $callobj, sub {
+        my $res = pop;
+        if($res) {
+            if ($res->is_error) {
+                warn $res->error_message;
+                $self->send({json=>$c->new_error('error', 'CallError', $c->l('Call error.'))});
+            }
+            else {
+                my $send = 1;
+                my $data = &$callback(JSON::from_json($res->result));
+
+                if (not $data) {
+                    $send = undef;
+                    $data = {};
+                }
+
+                $data->{echo_req} = $p1;
+                $data->{version} = 3;
+
+                my $l = length JSON::to_json($data);
+                if ($l > 328000) {
+                    $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
+                    $data->{echo_req} = $p1;
+                }
+                if ($send) {
+                    $c->send({json => $data});
+                } else {
+                    return;
+                }
+            }
+        }
+        else {
+            my $tx_res = $client->tx->res;
+            warn $tx_res->message;
+            $self->send({json=>$c->new_error('error', 'WrongResponse', $c->l('Wrong response.'))});
+        }
+    });
 }
 
 sub _sanity_failed {
