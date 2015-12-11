@@ -41,7 +41,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         recorded_date => $recorded_date,
-        recorded_date          => Date::Utility->new,
+        date          => Date::Utility->new,
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -50,7 +50,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol       => $_,
         holidays     => $exchange->{$_}->{holidays},
         market_times => $exchange->{$_}->{market_times},
-        recorded_date         => Date::Utility->new,
+        date         => Date::Utility->new,
     }) for qw( LSE FSE);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -64,7 +64,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol   => $_,
         daycount => $currency_config->{$_}->{daycount},
         holidays => $currency_config->{$_}->{holidays},
-        recorded_date     => Date::Utility->new,
+        date     => Date::Utility->new,
     }) for qw( GBP JPY USD EUR);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -113,6 +113,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol        => $_,
+        date          => Date::Utility->new,
         recorded_date => $recorded_date,
         rates         => $dividend->{$_}{rates},
     }) for qw( FTSE GDAXI);
@@ -128,7 +129,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $recorded_date,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new()});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {date => Date::Utility->new()});
 
 foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
     foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {
@@ -169,21 +170,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             is($bet->barrier->supplied_barrier, $expectations->{barrier}, 'Barrier is set as expected.');
         }
         my $ask = $bet->ask_probability;
-
-        if (roundnear(1e-4, $ask->amount) != $expectations->{ask_prob} ) {
-        #    print "Problem occured!\n";
-        #    print "underlying: $underlying\n";
-        #    print "bet_type is $bet_type\n";
-        #    print "epoch is $date_pricing \n";
-        #    print "amout is " . roundnear(1e-4, $ask->amount) . "\n";
-        #    print "expectation is ". $expectations->{ask_prob} . "\n";
-
-        }
-
-            
         is(roundnear(1e-4, $ask->amount), $expectations->{ask_prob}, 'Ask probability is correct.');
-
-
         my $theo = $bet->theo_probability;
         is(roundnear(1e-4, $theo->amount),                          $expectations->{theo_prob},         'Theo probability is correct.');
         is(roundnear(1e-4, $ask->peek_amount('total_markup')),      $expectations->{total_markup},      'Total markup is correct.');
