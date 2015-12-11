@@ -93,9 +93,9 @@ sub change_password {
 sub cashier_password {
     my ($c, $args) = @_;
 
-    my $r        = $c->stash('request');
-    my $response = BOM::RPC::v3::Accounts::cashier_password($c->stash('client'), $r->website->config->get('customer_support.email'),
-        $r->client_ip, $args);
+    my $r = $c->stash('request');
+    my $response =
+        BOM::RPC::v3::Accounts::cashier_password($c->stash('client'), $r->website->config->get('customer_support.email'), $r->client_ip, $args);
 
     if (exists $response->{error}) {
         return $c->new_error('cashier_password', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -121,8 +121,7 @@ sub set_settings {
 
     my $r = $c->stash('request');
 
-    my $response =
-        BOM::RPC::v3::Accounts::set_settings($c->stash('client'), $r->website, $r->client_ip, $c->req->headers->header('User-Agent'),
+    my $response = BOM::RPC::v3::Accounts::set_settings($c->stash('client'), $r->website, $r->client_ip, $c->req->headers->header('User-Agent'),
         $r->language, $args);
 
     if (exists $response->{error}) {
