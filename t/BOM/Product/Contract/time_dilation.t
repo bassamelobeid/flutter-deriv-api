@@ -10,12 +10,13 @@ use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 
+use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+
 use Date::Utility;
 use BOM::Product::ContractFactory qw( produce_contract );
 
 use BOM::Platform::Runtime;
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use JSON qw( from_json to_json decode_json );
 
@@ -281,7 +282,6 @@ foreach my $fixture_type (keys %historical) {
                 $fixture->{$date_key} = Date::Utility->new($fixture->{$date_key})
                     if exists $fixture->{$date_key};
             }
-
             BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 $fixture_type,
                 {
@@ -337,13 +337,6 @@ my $end   = Date::Utility->new('2012-01-19T02:00:00Z');
 for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
     my $when = Date::Utility->new($time);
     $bet_params{date_pricing} = $when;
-
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'currency',
-        {
-            symbol => $_,
-            recorded_date   => $bet_params{date_pricing},
-        }) for (qw/GBP EUR AUD JPY USD/);
 
     my $bet        = produce_contract(\%bet_params);
     my $price_date = $bet->date_pricing->datetime_iso8601;
