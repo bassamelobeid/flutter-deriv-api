@@ -170,15 +170,15 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
         }
         my $ask = $bet->ask_probability;
 
-        if (roundnear(1e-4, $ask->amount) != $expectations->{ask_prob} ) {
-            print "Problem occured!\n";
-            print "underlying: $underlying\n";
-            print "bet_type is $bet_type\n";
-            print "epoch is $date_pricing \n";
-            print "amout is " . roundnear(1e-4, $ask->amount) . "\n";
-            print "expectation is ". $expectations->{ask_prob} . "\n";
+        #if (roundnear(1e-4, $ask->amount) != $expectations->{ask_prob} ) {
+        #    print "Problem occured!\n";
+        #    print "underlying: $underlying\n";
+        #    print "bet_type is $bet_type\n";
+        #    print "epoch is $date_pricing \n";
+        #    print "amout is " . roundnear(1e-4, $ask->amount) . "\n";
+        #    print "expectation is ". $expectations->{ask_prob} . "\n";
 
-        }
+        #}
 
             
         is(roundnear(1e-4, $ask->amount), $expectations->{ask_prob}, 'Ask probability is correct.');
