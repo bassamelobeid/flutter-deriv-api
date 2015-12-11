@@ -6,6 +6,7 @@ use List::MoreUtils qw(pairwise);
 
 use Moose;
 with 'App::Base::Script';
+with 'BOM::Utility::Logging';
 
 use Bloomberg::FileDownloader;
 use Bloomberg::CorporateAction;

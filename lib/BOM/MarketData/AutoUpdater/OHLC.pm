@@ -35,6 +35,8 @@ sub _build_file {
 sub run {
     my $self = shift;
 
+    my $logger = $self->_logger;
+
     my @files  = @{$self->file};
     my $report = $self->report;
     if ($#files == -1) {
@@ -69,6 +71,7 @@ sub run {
                 push @{$report->{error}}, "Unregconized bloomberg symbol[$bb_symbol]";
                 next;
             }
+            $logger->debug(ref($self) . ' starting update for ' . uc $bom_underlying_symbol . '.');
 
             my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
             my $now        = Date::Utility->new;
@@ -105,6 +108,7 @@ sub run {
                     $report->{$bom_underlying_symbol}->{success} = 1;
                 }
             }
+            $logger->debug(ref($self) . ' update complete for ' . uc $bom_underlying_symbol . '.');
 
         }
     }
@@ -181,10 +185,11 @@ sub _passes_sanity_check {
 sub verify_ohlc_update {
     my $self = shift;
 
-    my $now = Date::Utility->new;
+    my $now    = Date::Utility->new;
+    my $logger = $self->_logger;
 
     if ($self->is_a_weekend) {
-        # Skipping OHLC update verification on weekends
+        $logger->info('Skipping OHLC update verification on weekends');
         return;
     }
     my @all_markets = map { $_->name } BOM::Market::Registry->instance->display_markets;
@@ -202,7 +207,7 @@ sub verify_ohlc_update {
         my $db_file = $self->directory_to_save . '/' . $underlying_symbol . '.db';
 
         if (not $db_file) {
-            warn 'Could not find file [' . $self->directory_to_save . '/' . $underlying_symbol . '.db';
+            $logger->info('Could not find file [' . $self->directory_to_save . '/' . $underlying_symbol . '.db');
             next;
         }
 
@@ -211,7 +216,7 @@ sub verify_ohlc_update {
         my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 
         if ($underlying->has_holiday_on($now)) {
-            # skipping on a holiday
+            $logger->info('Skipping OHLC verification for ' . $underlying->symbol . 'on a holiday');
             next;
         }
         next unless $underlying->use_official_ohlc;
@@ -219,7 +224,7 @@ sub verify_ohlc_update {
         if (my @filelines = read_file($db_file)) {
             $self->_check_file($underlying, @filelines);
         } else {
-            die('Could not open file: ' . $db_file);
+            $logger->logcroak('Could not open file: ' . $db_file);
         }
 
     }
@@ -230,6 +235,7 @@ sub verify_ohlc_update {
 sub _check_file {
     my ($self, $underlying, @filelines) = @_;
 
+    my $logger            = $self->_logger;
     my $suspicious_move   = $underlying->market->suspicious_move;
     my $p_suspicious_move = $suspicious_move * 100;
     my $now               = Date::Utility->new;
@@ -251,33 +257,35 @@ sub _check_file {
             if ($now->days_between($when) <= 10)    #don't bug cron with old suspicions
             {
                 if ($high > $open * (1 + $suspicious_move)) {
-                    warn("--Warning: Suspicious : $underlying_symbol $date high ($high) > open ($open) + $p_suspicious_move\%");
+                    $logger->warn("--Warning: Suspicious : $underlying_symbol $date high ($high) > open ($open) + $p_suspicious_move\%");
                 } elsif ($close > $open * (1 + $suspicious_move)) {
-                    warn("--Warning: Suspicious : $underlying_symbol $date close ($close) > open ($open) + $p_suspicious_move\%");
+                    $logger->warn("--Warning: Suspicious : $underlying_symbol $date close ($close) > open ($open) + $p_suspicious_move\%");
                 } elsif ($low < $open * (1 - $suspicious_move)) {
-                    warn("--Warning: Suspicious : $underlying_symbol $date low ($low) < open ($open) - $p_suspicious_move\%");
+                    $logger->warn("--Warning: Suspicious : $underlying_symbol $date low ($low) < open ($open) - $p_suspicious_move\%");
                 } elsif ($close < $open * (1 - $suspicious_move)) {
-                    warn("--Warning: Suspicious : $underlying_symbol $date close ($close) < open ($open) - $p_suspicious_move\%");
+                    $logger->warn("--Warning: Suspicious : $underlying_symbol $date close ($close) < open ($open) - $p_suspicious_move\%");
                 }
 
                 if ($prevclose) {
                     if ($low > $prevclose * (1 + $suspicious_move)) {
-                        warn("--Warning: Suspicious : $underlying_symbol $date low ($low) > previousclose ($prevclose) + $p_suspicious_move\%");
+                        $logger->warn(
+                            "--Warning: Suspicious : $underlying_symbol $date low ($low) > previousclose ($prevclose) + $p_suspicious_move\%");
                     }
                     if ($high < $prevclose * (1 - $suspicious_move)) {
-                        warn("--Warning: Suspicious : $underlying_symbol $date high ($high) < previousclose ($prevclose) - $p_suspicious_move\%");
+                        $logger->warn(
+                            "--Warning: Suspicious : $underlying_symbol $date high ($high) < previousclose ($prevclose) - $p_suspicious_move\%");
                     }
                 }
 
-                if    ($high < $low)   { warn("--ERROR : $underlying_symbol $date high ($high) < low ($low) !!"); }
-                elsif ($close < $low)  { warn("--ERROR : $underlying_symbol $date close ($close) < low ($low) !!"); }
-                elsif ($close > $high) { warn("--ERROR : $underlying_symbol $date close ($close) > high ($high) !!"); }
+                if    ($high < $low)   { $logger->warn("--ERROR : $underlying_symbol $date high ($high) < low ($low) !!"); }
+                elsif ($close < $low)  { $logger->warn("--ERROR : $underlying_symbol $date close ($close) < low ($low) !!"); }
+                elsif ($close > $high) { $logger->warn("--ERROR : $underlying_symbol $date close ($close) > high ($high) !!"); }
 
                 if ($prevwhen and $when->is_same_as($prevwhen)) {
-                    warn("--ERROR : $underlying_symbol $date appears twice");
+                    $logger->warn("--ERROR : $underlying_symbol $date appears twice");
                 } elsif ($prevdate) {
                     if (my $trading_days_between = $underlying->exchange->trading_days_between($prevwhen, $when)) {
-                        warn(
+                        $logger->warn(
                             "--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (trading days between is: $trading_days_between)."
                         );
                     } else {
@@ -285,21 +293,22 @@ sub _check_file {
 
                         # If days between is negative it would mean that the dates are not ordered properly
                         if ($days_between < 0) {
-                            warn(
+                            $logger->warn(
                                 "--Warning: $underlying_symbol DATES are out of order date $prevdate is after $date (days between is: $days_between)."
                             );
                         }
 
                         # If days between is too big, there should also be a trading day in between
                         if ($days_between > 10) {
-                            warn("--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (days between is: $days_between).");
+                            $logger->warn(
+                                "--Warning: $underlying_symbol MISSING DATES between $prevdate and $date (days between is: $days_between).");
                         }
                     }
                 }
             }
             ($prevwhen, $prevdate, $prevopen, $prevhigh, $prevlow, $prevclose) = ($when, $date, $open, $high, $low, $close);
         } else {
-            warn("--$underlying_symbol ERRONEOUS LINE '$dbline'");
+            $logger->warn("--$underlying_symbol ERRONEOUS LINE '$dbline'");
         }
     }
 
@@ -309,7 +318,7 @@ sub _check_file {
     if ($now->is_a_weekend or $now->day_of_week == 1 and $date ne $now->date_ddmmmyy and $date ne $yesterday->date_ddmmmyy) {
         # Make sure we traded yesterday
         if ($underlying->trades_on($yesterday)) {
-            warn("--$underlying_symbol ERROR can't find yesterday's data (" . $yesterday->date_ddmmmyy . ")");
+            $logger->warn("--$underlying_symbol ERROR can't find yesterday's data (" . $yesterday->date_ddmmmyy . ")");
         }
     }
 
