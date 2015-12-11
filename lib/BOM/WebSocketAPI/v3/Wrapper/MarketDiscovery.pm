@@ -6,7 +6,7 @@ use warnings;
 use JSON;
 use Cache::RedisDB;
 
-use BOM::WebSocketAPI::v3::MarketDiscovery;
+use BOM::RPC::v3::MarketDiscovery;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 
 sub trading_times {
@@ -14,7 +14,7 @@ sub trading_times {
 
     return {
         msg_type      => 'trading_times',
-        trading_times => BOM::WebSocketAPI::v3::MarketDiscovery::trading_times($args),
+        trading_times => BOM::RPC::v3::MarketDiscovery::trading_times($args),
     };
 }
 
@@ -29,7 +29,7 @@ sub asset_index {
             asset_index => JSON::from_json($r)};
     }
 
-    my $response = BOM::WebSocketAPI::v3::MarketDiscovery::asset_index($language, $args);
+    my $response = BOM::RPC::v3::MarketDiscovery::asset_index($language, $args);
 
     Cache::RedisDB->set("WS_ASSETINDEX", $language, JSON::to_json($response), 3600);
 
@@ -55,7 +55,7 @@ sub active_symbols {
 
     $result = {
         msg_type => 'active_symbols',
-        active_symbols => BOM::WebSocketAPI::v3::MarketDiscovery::active_symbols($client, $args)};
+        active_symbols => BOM::RPC::v3::MarketDiscovery::active_symbols($client, $args)};
     Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300));
 
     return $result;
