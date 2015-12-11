@@ -68,13 +68,7 @@ sub _build_document {
 
     if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
         $document = BOM::System::Chronicle::get_for('interest_rates', $self->symbol, $self->for_date->epoch);
-
-        # This works around a problem with Volatility surfaces and negative dates to expiry.
-        # We have to use the oldest available surface.. and we don't really know when it
-        # was relative to where we are now.. so just say it's from the requested day.
-        # We do not allow saving of historical surfaces, so this should be fine.
         $document //= {};
-        $document->{date} = $self->for_date->datetime_iso8601;
     }
 
     return $document;
