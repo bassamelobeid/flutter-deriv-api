@@ -63,7 +63,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now,
     }) for qw(RDMOON RDSUN RDMARS RDVENUS);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_}) for qw(RDMARS RDSUN RDMOON RDVENUS);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
 
 my @test_cases = ({
         underlying => 'RDSUN',
@@ -110,6 +109,11 @@ foreach my $t (@test_cases) {
             quote  => 100,
             epoch  => $ds->epoch,
         });
+        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {
+                symbol => 'USD',
+                recorded_date => $ds,
+            });
+
         my $pp = {
             bet_type     => 'CALL',
             underlying   => $u,

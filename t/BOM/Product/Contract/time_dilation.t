@@ -337,6 +337,14 @@ my $end   = Date::Utility->new('2012-01-19T02:00:00Z');
 for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
     my $when = Date::Utility->new($time);
     $bet_params{date_pricing} = $when;
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'currency',
+        {
+            symbol => $_,
+            recorded_date   => $bet_params{date_pricing},
+        }) for (qw/GBP EUR AUD JPY USD/);
+
     my $bet        = produce_contract(\%bet_params);
     my $price_date = $bet->date_pricing->datetime_iso8601;
     my %current    = (

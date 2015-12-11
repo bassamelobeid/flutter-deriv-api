@@ -7,6 +7,7 @@ use Test::Most;
 use List::Util qw( max );
 use Test::MockObject::Extends;
 use Test::FailWarnings;
+use Test::Warn;
 use Scalar::Util qw( looks_like_number );
 use Test::MockModule;
 use File::Spec;
@@ -24,7 +25,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
@@ -32,21 +33,21 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol           => 'RANDOM',
         trading_days     => 'everyday',
         open_on_weekends => 1,
-        date             => Date::Utility->new,
+        recorded_date             => Date::Utility->new,
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     }) for (qw/EUR JPY USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     }) for qw( JPY USD EUR );
 
 initialize_realtime_ticks_db();
@@ -275,7 +276,7 @@ subtest 'Flagging System' => sub {
 };
 
 subtest 'volatility error check' => sub {
-    plan tests => 1;
+    plan tests => 2;
     my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',
         {
@@ -291,13 +292,16 @@ subtest 'volatility error check' => sub {
             recorded_date => Date::Utility->new,
             save          => 0,
         });
-    throws_ok {
-        $surface->get_volatility({
-            delta => 50,
-            days  => 7
-        });
-    }
-    qr/PricingError/, 'Get vol from a surface with zero-value vols.';
+    warning_like
+    {
+        throws_ok {
+            $surface->get_volatility({
+                    delta => 50,
+                    days  => 7
+                });
+        }
+        qr/PricingError/, 'Get vol from a surface with zero-value vols.';
+    } qr/Could not interpolate volatility/, 'Get warning for interpolation problem';
 };
 
 subtest 'object creaion error check' => sub {
@@ -307,7 +311,7 @@ subtest 'object creaion error check' => sub {
     my $surface       = {1 => {smile => {50 => 0.1}}};
     throws_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, recorded_date => $recorded_date) }
     qr/Attribute \(symbol\) is required/,
-        'Cannot create volsurface without underlying';
+    'Cannot create volsurface without underlying';
     throws_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, underlying => $underlying) }
     qr/Must pass both "surface" and "recorded_date" if passing either/, 'Cannot create volsurface without recorded_date';
     lives_ok { BOM::MarketData::VolSurface::Delta->new(surface => $surface, underlying => $underlying, recorded_date => $recorded_date) }

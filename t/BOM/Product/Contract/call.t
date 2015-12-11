@@ -19,19 +19,19 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
-        date   => Date::Utility->new
+        recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'USD',
-        date   => Date::Utility->new
+        recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'JPY',
-        date   => Date::Utility->new
+        recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

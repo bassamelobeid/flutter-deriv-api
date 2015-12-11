@@ -20,19 +20,19 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'USD',
-        date   => $now,
+        recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol => 'R_100',
-        date   => $now,
+        recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'RANDOM',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
