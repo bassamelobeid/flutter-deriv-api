@@ -334,7 +334,6 @@ sub _build_country_code {
 sub _build_cookie_domain {
     my $self   = shift;
     my $domain = $self->domain_name;
-    return $domain if $domain eq '127.0.0.1';
     $domain =~ s/^[^.]+\.([^.]+\..+)/$1/;
     return "." . $domain;
 }
