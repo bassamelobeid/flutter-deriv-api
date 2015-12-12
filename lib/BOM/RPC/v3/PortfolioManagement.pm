@@ -5,7 +5,7 @@ use warnings;
 
 use Date::Utility;
 
-use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 
@@ -26,7 +26,7 @@ sub portfolio {
             contract_type  => $row->{bet_type},
             currency       => $client->currency,
             shortcode      => $row->{short_code},
-            longcode       => BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency)->longcode
+            longcode       => (simple_contract_info($row->{short_code}, $client->currency))[0] // '',
         );
         push $portfolio->{contracts}, \%trx;
     }

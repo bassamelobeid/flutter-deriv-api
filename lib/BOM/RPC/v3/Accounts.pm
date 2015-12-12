@@ -4,7 +4,6 @@ use 5.014;
 use strict;
 use warnings;
 
-use Try::Tiny;
 use Date::Utility;
 
 use BOM::RPC::v3::Utility;
@@ -116,13 +115,12 @@ sub statement {
         };
 
         if ($args->{description}) {
-            $struct->{longcode}  = $txn->{payment_remark} // '';
-            $struct->{shortcode} = $txn->{short_code}     // '';
+            $struct->{shortcode} = $txn->{short_code} // '';
 
-            if ($txn->{short_code}) {
-                my ($longcode, undef, undef) = try { simple_contract_info($txn->{short_code}, $account->currency_code) };
-                $struct->{longcode} = $longcode if $longcode;
+            if ($struct->{shortcode} && $account->currency_code) {
+                $struct->{longcode} = (simple_contract_info($struct->{shortcode}, $account->currency_code))[0];
             }
+            $struct->{longcode} //= $txn->{payment_remark} // '';
         }
 
         push @txns, $struct;
@@ -165,12 +163,10 @@ sub profit_table {
         $trx{sell_time}      = Date::Utility->new($row->{sell_time})->epoch;
 
         if ($and_description) {
-            $trx{longcode} = '';
-            if (my $con = try { BOM::Product::ContractFactory::produce_contract($row->{short_code}, $client->currency) }) {
-                $trx{longcode}  = $con->longcode;
-                $trx{shortcode} = $con->shortcode;
-            }
+            $trx{shortcode} = $row->{short_code};
+            $trx{longcode} = (simple_contract_info($trx{shortcode}, $client->currency))[0];
         }
+
         push @transactions, \%trx;
     }
 
