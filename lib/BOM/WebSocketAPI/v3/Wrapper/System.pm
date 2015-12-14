@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use Mojo::Util qw(md5_sum steady_time);
-use Mojo::IOLoop;
 
 use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
@@ -24,17 +23,6 @@ sub forget_all {
     my @removed_ids;
 
     if (my $type = $args->{forget_all}) {
-        my $ws_id  = $c->tx->connection;
-        my $this_c = ($c->{ws}{$ws_id} //= {});
-        my $list   = ($this_c->{l} //= []);
-        my @dummy  = @$list;                      # must copy b/c forget_one modifies @$list
-
-        for my $v (@dummy) {
-            if ($v->{type} eq $type and forget_one($c, $v->{id})) {
-                push @removed_ids, $v->{id};
-            }
-        }
-
         if ($c->stash('feed_channel_type')) {
             foreach my $k (keys %{$c->stash('feed_channel_type')}) {
                 $k =~ /(.*);(.*)/;
@@ -69,22 +57,7 @@ sub forget_one {
         }
     }
 
-    my $ws_id  = $c->tx->connection;
-    my $this_c = ($c->{ws}{$ws_id} //= {});
-    my $list   = ($this_c->{l} //= []);
-    my $hash   = ($this_c->{h} //= {});
-
-    my $v = delete $hash->{$id};
-    return unless $v;
-    @$list = grep { $_->{id} ne $id } @$list;
-
-    if (exists $v->{cleanup}) {
-        $v->{cleanup}->($reason);
-    } else {
-        Mojo::IOLoop->remove($id);
-    }
-
-    return $v;
+    return;
 }
 
 sub ping {
