@@ -27,7 +27,7 @@ sub startup {
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
 
-    foreach my $fun qw( 
+    foreach my $fun (qw(
         'BOM::RPC::v3::Accounts::payout_currencies'
         'BOM::RPC::v3::Accounts::landing_company'
         'BOM::RPC::v3::Accounts::landing_company_details'
@@ -70,7 +70,7 @@ sub startup {
         'BOM::RPC::v3::TickStreamer::ticks'
         'BOM::RPC::v3::TickStreamer::candles'
         'BOM::RPC::v3::Transaction::buy'
-    ) {
+    )) {
         $app->plugin('json_rpc_dispatcher' => {
             services => {
                 '/jsonrpc' => MojoX::JSON::RPC::Service->new->register(
