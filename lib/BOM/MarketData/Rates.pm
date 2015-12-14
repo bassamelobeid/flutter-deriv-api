@@ -12,10 +12,11 @@ has rates => (
 );
 
 sub _build_rates {
-    my $self   = shift;
-    my $result = $self->document->{rates};
+    my $self = shift;
 
-    get_logger->warn('No rates found for ' . $self->symbol) if not defined $result;
+    get_logger->warn('No rates found for ' . $self->symbol) if not defined $self->document;
+
+    my $result = $self->document->{rates};
 
     return $result;
 }
