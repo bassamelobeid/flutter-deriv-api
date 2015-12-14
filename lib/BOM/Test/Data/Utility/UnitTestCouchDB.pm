@@ -247,13 +247,13 @@ sub create_doc {
     my $obj        = $class_name->new($data);
 
     if ($save) {
-        if ($class_name =~ /^.+(Dividend|CorporateAction)$/) {
+        if ($class_name =~ /^.+(InterestRate|Dividend|CorporateAction)$/) {
             set_absolute_time($data->{recorded_date}->epoch) if $data->{recorded_date};
         }
 
         $obj->save;
 
-        if ($class_name =~ /^.+(Dividend|CorporateAction)$/) {
+        if ($class_name =~ /^.+(Dividend|CorporateAction|InterestRate)$/) {
             restore_time() if $data->{recorded_date};
         }
     }
