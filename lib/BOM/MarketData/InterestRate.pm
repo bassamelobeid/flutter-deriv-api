@@ -4,9 +4,21 @@ use BOM::System::Chronicle;
 
 =head1 NAME
 
-BOM::MarketData::InterestRate
+BOM::MarketData::InterestRate - A module to save/load interest rates for currencies
 
 =head1 DESCRIPTION
+
+This module saves/loads interest rate data to/from Chronicle. 
+
+my $ir_data = BOM::MarketData::InterestRate->new(symbol => 'USD',
+        rates => { 7 => 0.5, 30 => 1.2, 90 => 2.4 });
+ $ir_data->save;
+
+To read interest rates for a currency:
+
+ my $ir_data = BOM::MarketData::InterestRate->new(symbol => 'USD');
+
+ my $rates = $ir_data->rates;
 
 =cut
 
@@ -15,9 +27,16 @@ extends 'BOM::MarketData::Rates';
 
 use Math::Function::Interpolator;
 
-has '_data_location' => (
+=head2 for_date
+
+The date for which we wish data
+
+=cut
+
+has for_date => (
     is      => 'ro',
-    default => 'interest_rates',
+    isa     => 'Maybe[Date::Utility]',
+    default => undef,
 );
 
 around _document_content => sub {
@@ -31,25 +50,38 @@ around _document_content => sub {
     };
 };
 
-=head2 VersionedSymbolData
+=head2 document
 
-As this module inherits from VersionedSymbolData we need to manipulate the inheritance so that we can "inject"
-our Chronicle saving code in the inherited "save" subroutine.
+The CouchDB document that this object is tied to.
 
 =cut
 
-with 'BOM::MarketData::Role::VersionedSymbolData' => {
-    -alias    => {save => '_save'},
-    -excludes => ['save']};
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_document {
+    my $self = shift;
+
+    my $document = BOM::System::Chronicle::get('interest_rates', $self->symbol);
+
+    if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
+        $document = BOM::System::Chronicle::get_for('interest_rates', $self->symbol, $self->for_date->epoch);
+        $document //= {};
+    }
+
+    return $document;
+}
 
 sub save {
     my $self = shift;
 
-    #first call original save method to save all data into CouchDB just like before
-    my $result = $self->_save();
+    if (not defined BOM::System::Chronicle::get('interest_rates', $self->symbol)) {
+        BOM::System::Chronicle::set('interest_rates', $self->symbol, {});
+    }
 
-    BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content);
-    return $result;
+    return BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content);
 }
 
 has type => (
