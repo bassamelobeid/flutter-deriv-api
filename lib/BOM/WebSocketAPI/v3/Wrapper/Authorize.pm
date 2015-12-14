@@ -3,14 +3,14 @@ package BOM::WebSocketAPI::v3::Wrapper::Authorize;
 use strict;
 use warnings;
 
-use BOM::WebSocketAPI::v3::Authorize;
+use BOM::RPC::v3::Authorize;
 use BOM::Platform::Client;
 
 sub authorize {
     my ($c, $args) = @_;
     my $token = $args->{authorize};
 
-    my $response = BOM::WebSocketAPI::v3::Authorize::authorize($token);
+    my $response = BOM::RPC::v3::Authorize::authorize($token);
 
     if (exists $response->{error}) {
         return $c->new_error('authorize', $response->{error}->{code}, $response->{error}->{message_to_client});

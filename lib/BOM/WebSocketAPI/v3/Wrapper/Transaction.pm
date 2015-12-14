@@ -3,7 +3,7 @@ package BOM::WebSocketAPI::v3::Wrapper::Transaction;
 use strict;
 use warnings;
 
-use BOM::WebSocketAPI::v3::Transaction;
+use BOM::RPC::v3::Transaction;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
 sub buy {
@@ -12,7 +12,7 @@ sub buy {
     my $contract_parameters = BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{buy})
         or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
 
-    my $response = BOM::WebSocketAPI::v3::Transaction::buy($c->stash('client'), $c->stash('source'), $contract_parameters, $args);
+    my $response = BOM::RPC::v3::Transaction::buy($c->stash('client'), $c->stash('source'), $contract_parameters, $args);
     if (exists $response->{error}) {
         return $c->new_error('buy', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
@@ -26,7 +26,7 @@ sub buy {
 sub sell {
     my ($c, $args) = @_;
 
-    my $response = BOM::WebSocketAPI::v3::Transaction::sell($c->stash('client'), $c->stash('source'), $args);
+    my $response = BOM::RPC::v3::Transaction::sell($c->stash('client'), $c->stash('source'), $args);
     if (exists $response->{error}) {
         return $c->new_error('sell', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {

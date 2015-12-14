@@ -6,7 +6,7 @@ use warnings;
 use Mojo::Util qw(md5_sum steady_time);
 use Mojo::IOLoop;
 
-use BOM::WebSocketAPI::v3::Utility;
+use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub forget {
@@ -92,7 +92,7 @@ sub ping {
 
     return {
         msg_type => 'ping',
-        ping     => BOM::WebSocketAPI::v3::Utility::ping()};
+        ping     => BOM::RPC::v3::Utility::ping()};
 }
 
 sub server_time {
@@ -100,7 +100,7 @@ sub server_time {
 
     return {
         msg_type => 'time',
-        time     => BOM::WebSocketAPI::v3::Utility::server_time()};
+        time     => BOM::RPC::v3::Utility::server_time()};
 }
 
 sub _id {
