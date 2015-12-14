@@ -21,7 +21,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -29,7 +29,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => $_,
         rates  => {8 => 0},
-        date   => $now,
+        recorded_date   => $now,
     }) for (qw/JPY USD JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -68,7 +68,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     }) for qw( JPY USD );
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -113,13 +113,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'EUR',
-        date   => Date::Utility->new,
+        recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'EURONEXT',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',

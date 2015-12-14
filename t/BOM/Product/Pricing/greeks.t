@@ -13,25 +13,27 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
+my $date_pricing = '8-Nov-12';
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     }) for (qw/GBP JPY USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
-        recorded_date => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     }) for qw( frxUSDJPY frxGBPJPY frxGBPUSD );
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -50,7 +52,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         },
         type         => 'implied',
         implied_from => 'USD',
-        date         => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -69,7 +71,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         },
         type         => 'implied',
         implied_from => 'USD',
-        date         => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     });
 
 my %bet_params = (

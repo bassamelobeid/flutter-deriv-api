@@ -1,7 +1,10 @@
 #!/usr/bin/env perl
 
-use Test::Most (tests => 2);
-use Test::NoWarnings;
+use strict;
+use warnings;
+
+use Test::Most (tests => 1);
+use Test::FailWarnings;
 use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
@@ -50,7 +53,7 @@ subtest 'Proper form' => sub {
             ~
     );
     my @currencies = ('USD', 'EUR', 'RUR');    # Inexhaustive, incorrect list: just to be sure the currency is not accidentally hard-coded.
-    plan tests => scalar @shortcodes * scalar @currencies;
+    plan tests => 2 * scalar @shortcodes * scalar @currencies;
 
     foreach my $currency (@currencies) {
         my $expected_standard_form = qr/$currency (?:\d*\.?\d+) payout if .*\.$/;    # Simplified standard form to which all should adhere.
@@ -58,7 +61,9 @@ subtest 'Proper form' => sub {
         my $params;
         foreach my $shortcode (@shortcodes) {
             my ($description) = simple_contract_info($shortcode, $currency);
-            like($description, $expected_standard_form, 'Contract long code meets expectations as to form.');
+            my ($again)       = simple_contract_info($shortcode, $currency);
+            like($description, $expected_standard_form, $shortcode . ' => long code form appears ok');
+            cmp_ok $again, 'eq', $description, '... and second invocation returns the same result';
         }
     }
 };

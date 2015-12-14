@@ -28,7 +28,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => $now,
+        recorded_date   => $now->minus_time_interval('10m'),
     }) for (qw/JPY USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -43,7 +43,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol       => 'USD',
         release_date => $now,
-        date         => Date::Utility->new(),
+        recorded_date         => Date::Utility->new(),
     },
 );
 

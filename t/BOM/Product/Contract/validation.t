@@ -234,7 +234,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier,
-        date          => Date::Utility->new,
+    }) for (qw/USD JPY EUR AUD SGD GBP/);
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => $an_hour_earlier->minus_time_interval('150d'),
     }) for (qw/USD JPY EUR AUD SGD GBP/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -286,7 +292,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     }) for qw( JPY USD EUR AUD SGD );
 
 my $orig_suspended = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
@@ -1056,7 +1062,7 @@ subtest 'underlying with critical corporate actions' => sub {
         'currency',
         {
             symbol => 'GBP',
-            date   => Date::Utility->new,
+            recorded_date   => $an_hour_earlier,
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
@@ -1111,7 +1117,7 @@ subtest '10% barrier check for double barrier contract' => sub {
         'currency',
         {
             symbol => $_,
-            date   => Date::Utility->new,
+            recorded_date   => $an_hour_earlier,
         }) for (qw/GBP USD/);
 
     my $now = Date::Utility->new('2014-10-08 10:00:00');
@@ -1212,7 +1218,7 @@ subtest 'intraday indices duration test' => sub {
         'currency',
         {
             symbol => 'GBP',
-            date   => Date::Utility->new,
+            recorded_date   => $an_hour_earlier,
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'exchange',
@@ -1426,8 +1432,10 @@ subtest 'economic events blockout period' => sub {
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
 
+my $counter = 0;
 sub test_error_list {
     my ($which, $bet, $expected) = @_;
+    $counter++;
     my @expected_reasons = @{$expected};
     my $err_count        = scalar @expected_reasons;
     my $val_method       = 'is_valid_to_' . lc $which;
