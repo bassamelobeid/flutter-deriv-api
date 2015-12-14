@@ -76,36 +76,4 @@ sub server_time {
         time     => BOM::RPC::v3::Utility::server_time()};
 }
 
-sub _id {
-    my ($hash) = @_;
-
-    my $id;
-    do { $id = md5_sum steady_time . rand 999 } while $hash->{$id};
-
-    return $id;
-}
-
-## limit total stream count to 50
-sub limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
-    my ($c, $data) = @_;
-
-    my $ws_id  = $c->tx->connection;
-    my $this_c = ($c->{ws}{$ws_id} //= {});
-    my $list   = ($this_c->{l} //= []);
-    my $hash   = ($this_c->{h} //= {});
-
-    my $id = ($data->{id} //= _id($hash));
-    forget_one $c, $id, 'StreamCountLimitReached'
-        if exists $hash->{$id};
-
-    push @$list, $data;
-    $hash->{$id} = $data;
-
-    return $id if scalar(@$list) <= 50;
-
-    forget_one $c, $list->[0]->{id}, 'StreamCountLimitReached';
-
-    return $id;
-}
-
 1;
