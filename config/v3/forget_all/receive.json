@@ -17,7 +17,7 @@
     },
     "req_id": {
         "type": "integer",
-        "description": "Optional field send in request to map to response if req_id is send in request"
+        "description": "Optional field send in request to map to response, present only when request contains req_id"
     }
   },
   "required": [
