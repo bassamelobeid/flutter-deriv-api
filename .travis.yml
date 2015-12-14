@@ -24,7 +24,6 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-feed
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-rpc
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
@@ -32,7 +31,7 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
-    - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
+    - sudo ln -s $PWD /home/git/regentmarkets/bom-rpc
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
