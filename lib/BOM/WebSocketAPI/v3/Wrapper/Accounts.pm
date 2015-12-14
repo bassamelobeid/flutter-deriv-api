@@ -26,15 +26,15 @@ sub landing_company {
             my $response = shift;
             if (exists $response->{error}) {
                 return $c->new_error('landing_company', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type        => 'landing_company',
-                    landing_company => $response
-                };
             }
+            return {
+                msg_type        => 'landing_company',
+                landing_company => $response
+            };
         },
         $args
     );
+    return;
 }
 
 sub landing_company_details {
