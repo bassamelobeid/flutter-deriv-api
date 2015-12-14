@@ -20,6 +20,7 @@ use JSON;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use Time::HiRes;
+use MojoX::JSON::RPC::Client;
 
 sub ok {
     my $c      = shift;
