@@ -38,6 +38,10 @@
     "msg_type": {
       "type": "string",
       "description": "authorize"
+    },
+    "req_id": {
+      "type": "integer",
+      "description": "Optional field send in request to map to response if req_id is send in request"
     }
   },
   "required": [
