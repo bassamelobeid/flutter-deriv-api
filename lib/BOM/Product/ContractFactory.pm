@@ -14,11 +14,13 @@ Some general utility subroutines related to bet parameters.
 =cut
 
 use Carp qw( croak );
+use Cache::RedisDB;
 use List::Util qw( first );
 use Time::Duration::Concise;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
 use BOM::Market::Data::Tick;
+use BOM::Platform::Context qw(request);
 use BOM::Product::ContractFactory::Parser qw(
     shortcode_to_parameters
     financial_market_bet_to_parameters
@@ -299,23 +301,41 @@ sub _args_to_ref {
 =head2 simple_contract_info
 
 To avoid doing a bunch of extra work hitting the FeedDB, this fakes up an entry tick and returns a description,
-sell channel and tick_expiry status only.
+tick_expiry status and spread status only. These values are cached when accessed via a shortcode.
 
 This whole thing needs to be reconsidered, eventually.
 
 =cut
 
-sub simple_contract_info {
-    my ($build_arg, $maybe_currency) = @_;
+{
+    my $sci_keyspace = 'SIMPLE_CONTRACT_INFO';
+    my $sci_ttl      = 24 * 60 * 60;             # Tune for cache retention to manage space/time trade-off.
 
-    my $params = _args_to_ref($build_arg, $maybe_currency);
-    $params->{entry_tick} = BOM::Market::Data::Tick->new({
-        quote => 1,
-        epoch => 1,
-    });
-    my $contract_analogue = produce_contract($params);
+    sub simple_contract_info {
+        my ($build_arg, $maybe_currency) = @_;
 
-    return ($contract_analogue->longcode, $contract_analogue->tick_expiry, $contract_analogue->is_spread);
+        # If this looks like it may be a shortcode (which is the most common case)
+        # we can try to use the cache.
+        my $cache_key =
+            ($maybe_currency && !ref($build_arg))
+            ? join(';', $build_arg, $maybe_currency, BOM::Platform::Context::request()->language)
+            : undef;
+        my $result = ($cache_key) ? Cache::RedisDB->get($sci_keyspace, $cache_key) : undef;
+
+        if (not $result) {
+            # Uncacheable or cache miss, so we do the full routine.
+            my $params = _args_to_ref($build_arg, $maybe_currency);
+            $params->{entry_tick} = BOM::Market::Data::Tick->new({
+                quote => 1,
+                epoch => 1,
+            });
+            my $contract_analogue = produce_contract($params);
+            $result = [$contract_analogue->longcode, $contract_analogue->tick_expiry, $contract_analogue->is_spread];
+            Cache::RedisDB->set($sci_keyspace, $cache_key, $result) if ($cache_key);
+        }
+
+        return ($result) ? @$result : undef;
+    }
 }
 
 =head2 make_similar_contract
