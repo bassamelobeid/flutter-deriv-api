@@ -320,6 +320,7 @@ sub rpc {
             }
             return;
         });
+    return;
 }
 
 sub _sanity_failed {
