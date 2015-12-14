@@ -281,14 +281,14 @@ sub sell_expired_contracts {
         } elsif (not $expired) {
             $bet_info->{reason} = 'not expired';
         } elsif (not defined $bet->value) {
+            # $bet->value is set when we confirm expiration status, even further above.
             $bet_info->{reason} = 'indeterminate value';
-        } elsif (0 + $bet->value xor 0 + $expected_value) {
-            # $bet->value above is set when we confirm expiration status, even further above.
+        } elsif (0 + $bet->bid_price xor 0 + $expected_value) {
             # We want to be sure that both sides agree that it is either worth nothing or payout.
             # Sadly, you can't compare the values directly because $expected_value has been
             # converted to USD and our payout currency might be different.
             # Since the values can come back as strings, we use the 0 + to force them to be evaluated numerically.
-            $bet_info->{reason} = 'expected to be worth ' . $expected_value . ' got ' . $bet->value;
+            $bet_info->{reason} = 'expected to be worth ' . $expected_value . ' got ' . $bet->bid_price;
         } else {
             try {
                 if ($bet->is_valid_to_sell) {
@@ -298,7 +298,7 @@ sub sell_expired_contracts {
                             },
                             bet_data => {
                                 id         => $fmb_id,
-                                sell_price => $bet->value,
+                                sell_price => $bet->bid_price,
                                 sell_time  => $bet->date_pricing->db_timestamp,
                             },
                             account_data => {
@@ -313,7 +313,7 @@ sub sell_expired_contracts {
 
                     stats_inc("transaction.sell.success", $stats_data->{tags});
                     if ($rmgenv eq 'production' and $stats_data->{virtual} eq 'no') {
-                        my $usd_amount = int(in_USD($bet->value, $currency) * 100);
+                        my $usd_amount = int(in_USD($bet->bid_price, $currency) * 100);
                         stats_count('business.buy_minus_sell_usd', -$usd_amount, $stats_data->{tags});
                     }
                 } else {
