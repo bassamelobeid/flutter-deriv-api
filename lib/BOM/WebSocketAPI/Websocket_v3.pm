@@ -104,6 +104,7 @@ sub entry_point {
                 $data->{echo_req} = {};
             }
             $data->{version} = 3;
+            $data->{req_id} = $p1->{req_id} if exists $p1->{req_id};
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
