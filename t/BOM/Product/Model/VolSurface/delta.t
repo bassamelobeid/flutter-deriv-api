@@ -276,7 +276,7 @@ subtest 'Flagging System' => sub {
 };
 
 subtest 'volatility error check' => sub {
-    plan tests => 2;
+    plan tests => 1;
     my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',
         {
@@ -292,16 +292,13 @@ subtest 'volatility error check' => sub {
             recorded_date => Date::Utility->new,
             save          => 0,
         });
-    warning_like
-    {
-        throws_ok {
-            $surface->get_volatility({
-                    delta => 50,
-                    days  => 7
-                });
-        }
-        qr/PricingError/, 'Get vol from a surface with zero-value vols.';
-    } qr/Could not interpolate volatility/, 'Get warning for interpolation problem';
+    throws_ok {
+        $surface->get_volatility({
+                delta => 50,
+                days  => 7
+            });
+    }
+    qr/PricingError/, 'Get vol from a surface with zero-value vols.';
 };
 
 subtest 'object creaion error check' => sub {
