@@ -32,6 +32,11 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => Date::Utility->new
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'R_100'});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol        => 'USD',
+    });
 
 my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
