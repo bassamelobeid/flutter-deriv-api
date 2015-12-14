@@ -308,13 +308,13 @@ sub rpc {
                 $data = {};
             }
 
-            $data->{echo_req} = $p1;
+            $data->{echo_req} = $params;
             $data->{version}  = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
                 $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
-                $data->{echo_req} = $p1;
+                $data->{echo_req} = $params;
             }
             if ($send) {
                 $self->send({json => $data});
