@@ -70,14 +70,9 @@ sub startup {
         'BOM::RPC::v3::TickStreamer::ticks'
         'BOM::RPC::v3::TickStreamer::candles'
         'BOM::RPC::v3::Transaction::buy'
-    )) {
-        $app->plugin('json_rpc_dispatcher' => {
-            services => {
-                '/jsonrpc' => MojoX::JSON::RPC::Service->new->register(
-                    $fun, \&$fun
-                )
-            }
-        });
+        ))
+    {
+        $app->plugin('json_rpc_dispatcher' => {services => {'/jsonrpc' => MojoX::JSON::RPC::Service->new->register($fun, \&$fun)}});
     }
 
     return;
