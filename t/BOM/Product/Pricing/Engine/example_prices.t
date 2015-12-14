@@ -77,7 +77,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => $_,
         rates  => $interest_rate->{$_}->{rates},
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     }) for qw( GBP JPY USD EUR JPY-USD EUR-USD GBP-USD);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',

@@ -22,18 +22,25 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
+my $underlying       = BOM::Market::Underlying->new('frxUSDJPY');
+my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
+my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);
+my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);
+my $dm               = BOM::MarketData::Fetcher::VolSurface->new;
+
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
-        date   => Date::Utility->new,
+        recorded_date   => $bet_start,
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => $bet_start,
     }) for (qw/AUD EUR JPY USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -50,17 +57,10 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             186 => 0.1,
             365 => 0.13,
         },
-        date         => Date::Utility->new,
+        recorded_date         => $bet_start,
         type         => 'implied',
         implied_from => 'USD'
     });
-
-my $underlying       = BOM::Market::Underlying->new('frxUSDJPY');
-my $bet_start        = Date::Utility->new('2012-02-01 01:00:00');
-my $longterm_expiry  = Date::Utility->new($bet_start->epoch + 7 * 86400);
-my $shortterm_expiry = Date::Utility->new($bet_start->epoch + 23 * 3540);
-my $dm               = BOM::MarketData::Fetcher::VolSurface->new;
-
 my $spot = 79.08;
 
 # Strategy: Test that the butterfly_markup is correctly computed only for surfaces where the ON BF is greater than the butterfly_cutoff,

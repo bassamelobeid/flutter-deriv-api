@@ -25,7 +25,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new
+        recorded_date   => $now
     }) for ('USD', 'JPY');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

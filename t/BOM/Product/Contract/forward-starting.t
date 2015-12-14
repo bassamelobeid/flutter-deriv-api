@@ -26,6 +26,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date         => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol          => $_,
+        recorded_date   => $now->minus_time_interval('5m'),
+    }) for qw(USD JPY JPY-USD);
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol       => 'RANDOM_NOCTURNE',

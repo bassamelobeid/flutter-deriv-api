@@ -23,21 +23,22 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Date::Utility;
 use BOM::Platform::Runtime;
 
+my $start = Date::Utility->new('12-Mar-13');
+my $end   = Date::Utility->new('15-Mar-13');
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => $start,
     }) for (qw/USD JPY EUR/);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => $start,
     }) for (qw/FOREX FSE EURONEXT/);
 
-my $start = Date::Utility->new('12-Mar-13');
-my $end   = Date::Utility->new('15-Mar-13');
 
 subtest 'discrete points on forex' => sub {
     plan tests => 2;
@@ -80,7 +81,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'DEDAI',
-        recorded_date => Date::Utility->new,
+        recorded_date   => $start,
     });
 subtest 'discrete dividend on stocks' => sub {
     plan tests => 7;
