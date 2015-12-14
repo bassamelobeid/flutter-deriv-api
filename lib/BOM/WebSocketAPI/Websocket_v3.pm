@@ -77,6 +77,7 @@ sub entry_point {
 
             my $tag = 'origin:';
             my $data;
+            my $send = 1;
             if (ref($p1) eq 'HASH') {
 
                 if (my $origin = $c->req->headers->header("Origin")) {
@@ -86,16 +87,33 @@ sub entry_point {
                 }
 
                 $c->stash('args' => $p1);
-                $data = _sanity_failed($c, $p1);
-                if $data {
-                    $c->send({json => $data});
+                $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
+                if (not $data) {
+                    $send = undef;
+                    $data = {};
                 }
-                __handle($c, $p1, $tag);
+
+                if ($data->{error} and $data->{error}->{code} eq 'SanityCheckFailed') {
+                    $data->{echo_req} = {};
+                } else {
+                    $data->{echo_req} = $p1;
+                }
             } else {
                 # for invalid call, eg: not json
                 $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
                 $data->{echo_req} = {};
+            }
+            $data->{version} = 3;
+
+            my $l = length JSON::to_json($data);
+            if ($l > 328000) {
+                $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
+                $data->{echo_req} = $p1;
+            }
+            if ($send) {
                 $c->send({json => $data});
+            } else {
+                return;
             }
         });
 
