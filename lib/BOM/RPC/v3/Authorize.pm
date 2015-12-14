@@ -67,6 +67,8 @@ sub logout {
         }
         BOM::System::AuditLog::log("user logout", "$email,$loginid");
     }
+
+    return;
 }
 
 sub login_env {
