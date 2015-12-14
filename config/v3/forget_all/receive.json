@@ -14,7 +14,11 @@
     "msg_type": {
         "type": "string",
         "description": "forget_all"
-      }
+    },
+    "req_id": {
+        "type": "integer",
+        "description": "Optional field send in request to map to response if req_id is send in request"
+    }
   },
   "required": [
     "echo_req",
