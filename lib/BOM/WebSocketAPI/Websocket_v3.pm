@@ -120,13 +120,8 @@ sub entry_point {
     # stop all recurring
     $c->on(
         finish => sub {
-            my ($c) = @_;
-            my $ws_id = $c->tx->connection;
-            foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-                Mojo::IOLoop->remove($id);
-            }
-            delete $c->{ws}{$ws_id};
-            delete $c->{fmb_ids}{$ws_id};
+            my $c = shift;
+            BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
         });
 
     return;
