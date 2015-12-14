@@ -21,6 +21,7 @@ sub landing_company {
     my ($c, $args) = @_;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
         'BOM::RPC::v3::Accounts::landing_company',
         sub {
             my $response = shift;

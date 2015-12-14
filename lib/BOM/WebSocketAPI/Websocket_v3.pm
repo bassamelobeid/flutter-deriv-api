@@ -272,6 +272,7 @@ sub _rpc_client {
 }
 
 sub rpc {
+    my $self     = shift;
     my $method   = shift;
     my $callback = shift;
     my $params   = @_;
@@ -291,12 +292,12 @@ sub rpc {
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
-                $self->send({json => $c->new_error('error', 'WrongResponse', $c->l('Wrong response.'))});
+                $self->send({json => $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'))});
                 return;
             }
             if ($res->is_error) {
                 warn $res->error_message;
-                $self->send({json => $c->new_error('error', 'CallError', $c->l('Call error.'))});
+                $self->send({json => $cself>new_error('error', 'CallError', $self->l('Call error.'))});
                 return;
             }
             my $send = 1;
@@ -312,11 +313,11 @@ sub rpc {
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
-                $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
+                $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
                 $data->{echo_req} = $p1;
             }
             if ($send) {
-                $c->send({json => $data});
+                $self->send({json => $data});
             }
             return;
         });
