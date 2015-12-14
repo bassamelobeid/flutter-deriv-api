@@ -272,55 +272,55 @@ sub _rpc_client {
 }
 
 sub rpc {
-    my $method = shift;
+    my $method   = shift;
     my $callback = shift;
-    my $params = @_;
+    my $params   = @_;
 
-    my $client = _rpc_client;
-    my $url    = 'http://localhost:5005/jsonrpc';
+    my $client  = _rpc_client;
+    my $url     = 'http://localhost:5005/jsonrpc';
     my $callobj = {
-        id      => 1,
-        method  => $method,
-        params  => $params
+        id     => 1,
+        method => $method,
+        params => $params
     };
 
-    $client->call($url, $callobj, sub {
-        my $res = pop;
-        if($res) {
-            if ($res->is_error) {
-                warn $res->error_message;
-                $self->send({json=>$c->new_error('error', 'CallError', $c->l('Call error.'))});
-            }
-            else {
-                my $send = 1;
-                my $data = &$callback(JSON::from_json($res->result));
-
-                if (not $data) {
-                    $send = undef;
-                    $data = {};
-                }
-
-                $data->{echo_req} = $p1;
-                $data->{version} = 3;
-
-                my $l = length JSON::to_json($data);
-                if ($l > 328000) {
-                    $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
-                    $data->{echo_req} = $p1;
-                }
-                if ($send) {
-                    $c->send({json => $data});
+    $client->call(
+        $url, $callobj,
+        sub {
+            my $res = pop;
+            if ($res) {
+                if ($res->is_error) {
+                    warn $res->error_message;
+                    $self->send({json => $c->new_error('error', 'CallError', $c->l('Call error.'))});
                 } else {
-                    return;
+                    my $send = 1;
+                    my $data = &$callback(JSON::from_json($res->result));
+
+                    if (not $data) {
+                        $send = undef;
+                        $data = {};
+                    }
+
+                    $data->{echo_req} = $p1;
+                    $data->{version}  = 3;
+
+                    my $l = length JSON::to_json($data);
+                    if ($l > 328000) {
+                        $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
+                        $data->{echo_req} = $p1;
+                    }
+                    if ($send) {
+                        $c->send({json => $data});
+                    } else {
+                        return;
+                    }
                 }
+            } else {
+                my $tx_res = $client->tx->res;
+                warn $tx_res->message;
+                $self->send({json => $c->new_error('error', 'WrongResponse', $c->l('Wrong response.'))});
             }
-        }
-        else {
-            my $tx_res = $client->tx->res;
-            warn $tx_res->message;
-            $self->send({json=>$c->new_error('error', 'WrongResponse', $c->l('Wrong response.'))});
-        }
-    });
+        });
 }
 
 sub _sanity_failed {

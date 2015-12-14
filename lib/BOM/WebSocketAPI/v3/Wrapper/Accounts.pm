@@ -30,11 +30,11 @@ sub landing_company {
                 return {
                     msg_type        => 'landing_company',
                     landing_company => $response
-                });
+                };
             }
         },
         $args
-    )
+    );
 }
 
 sub landing_company_details {
