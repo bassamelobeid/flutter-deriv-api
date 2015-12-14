@@ -3,8 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::System;
 use strict;
 use warnings;
 
-use Mojo::Util qw(md5_sum steady_time);
-
 use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
