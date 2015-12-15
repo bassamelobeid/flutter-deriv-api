@@ -28,11 +28,11 @@ sub startup {
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
 
-    $app->plugin('json_rpc_dispatcher' => {
-        services => {
-            '/landing_company' => MojoX::JSON::RPC::Service->new->register('landing_company', \&BOM::RPC::v3::Accounts::landing_company),
-        }
-    });
+    $app->plugin(
+        'json_rpc_dispatcher' => {
+            services => {
+                '/landing_company' => MojoX::JSON::RPC::Service->new->register('landing_company', \&BOM::RPC::v3::Accounts::landing_company),
+            }});
 
     return;
 }
