@@ -279,7 +279,7 @@ sub rpc {
     my $params   = shift;
 
     my $client  = _rpc_client;
-    my $url     = 'http://localhost:5005/jsonrpc';
+    my $url     = 'http://127.0.0.1:5005/'.$method;
     my $callobj = {
         id     => 1,
         method => $method,
@@ -298,11 +298,11 @@ sub rpc {
             }
             if ($res->is_error) {
                 warn $res->error_message;
-                $self->send({json => $self-> new_error('error', 'CallError', $self->l('Call error.'))});
+                $self->send({json => $self-> new_error('error', 'CallError', $self->l('Call error.'.$res->error_message))});
                 return;
             }
             my $send = 1;
-            my $data = &$callback(JSON::from_json($res->result));
+            my $data = &$callback($res->result);
 
             if (not $data) {
                 $send = undef;

@@ -22,7 +22,7 @@ sub landing_company {
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
-        'BOM::RPC::v3::Accounts::landing_company',
+        'landing_company',
         sub {
             my $response = shift;
             if (exists $response->{error}) {
