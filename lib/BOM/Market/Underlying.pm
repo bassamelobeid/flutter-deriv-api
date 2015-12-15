@@ -207,6 +207,10 @@ has _feed_license => (
     is => 'ro',
 );
 
+has _providers => (
+    is => 'ro',
+);
+
 has asset => (
     is         => 'ro',
     lazy_build => 1,
@@ -253,6 +257,19 @@ has forward_tickers => (
     isa     => 'HashRef',
     default => sub { return {}; },
 );
+
+=head2 providers
+
+A list of feed providers for this underlying in the order of priority.
+
+=cut
+
+sub providers {
+    my $self = shift;
+
+    return $self->_providers || $self->market->providers;
+
+}
 
 =head2 outlier_tick
 
@@ -460,6 +477,11 @@ around BUILDARGS => sub {
     if ($params_ref->{feed_license}) {
         $params_ref->{_feed_license} = $params_ref->{feed_license};
         delete $params_ref->{feed_license};
+    }
+
+    if ($params_ref->{providers}) {
+        $params_ref->{_providers} = $params_ref->{providers};
+        delete $params_ref->{providers};
     }
 
     return $class->$orig($params_ref);
