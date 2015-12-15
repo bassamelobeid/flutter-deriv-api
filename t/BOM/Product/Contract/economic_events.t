@@ -28,7 +28,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
-        date   => $now,
+        recorded_date   => $now->minus_time_interval('10m'),
     }) for (qw/JPY USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -49,6 +49,14 @@ $mocked->mock(
                 'release_time' => 1389096000,
             }];
     });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'economic_events',
+    {
+        symbol       => 'USD',
+        release_date => $now,
+        recorded_date         => Date::Utility->new(),
+    },
+);
 
 my $bet = produce_contract({
     bet_type     => 'CALL',

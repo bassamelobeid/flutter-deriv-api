@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 4;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
 use Test::Deep;
@@ -19,6 +19,16 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'exchange',
+        {
+            symbol   => 'FOREX',
+            date     => $now,
+            holidays => {
+                "01-Jan-15" => "Christmas Day",
+            },
+        });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',
         {
@@ -29,12 +39,12 @@ subtest "predefined contracts for symbol" => sub {
     my %expected = (
         frxUSDJPY => {
             contract_count => {
-                callput      => 40,
-                touchnotouch => 24,
-                staysinout   => 12,
-                endsinout    => 12,
+                callput      => 16,
+                touchnotouch => 8,
+                staysinout   => 8,
+                endsinout    => 10,
             },
-            hit_count => 88,
+            hit_count => 42,
         },
         frxAUDCAD => {hit_count => 0},
     );
@@ -58,73 +68,25 @@ subtest "predefined contracts for symbol" => sub {
 subtest "predefined trading_period" => sub {
     my %expected_count = (
         offering                                => 12,
-        offering_with_predefined_trading_period => 86,
+        offering_with_predefined_trading_period => 40,
         trading_period                          => {
-            call_intraday => 13,
-            call_daily    => 6,
-            range_daily   => 6,
+            call_intraday => 2,
+            call_daily    => 5,
+            range_daily   => 4,
         });
 
     my %expected_trading_period = (
         call_intraday => {
-            duration    => ['3d', '7d', '31d', '60d', '180d', '367d', '2h', '4h', '4h', '3h', '3h', '5h', '5h'],
-            date_expiry => [
-                map { Date::Utility->new($_)->epoch } (
-                    '2015-09-07 23:59:59',
-                    '2015-09-11 21:00:00',
-                    '2015-10-05 23:59:59',
-                    '2015-11-03 23:59:59',
-                    '2016-03-02 23:59:59',
-                    '2016-09-05 23:59:59',
-                    '2015-09-04 18:00:00',
-                    '2015-09-04 20:00:00',
-                    '2015-09-04 18:00:00',
-                    '2015-09-04 20:00:00',
-                    '2015-09-04 18:00:00',
-                    '2015-09-04 20:00:00',
-                    '2015-09-04 18:00:00'
-                )
-            ],
-            date_start => [
-                map { Date::Utility->new($_)->epoch } (
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 15:45:00',
-                    '2015-09-04 15:45:00',
-                    '2015-09-04 13:45:00',
-                    '2015-09-04 16:45:00',
-                    '2015-09-04 14:45:00',
-                    '2015-09-04 14:45:00',
-                    '2015-09-04 12:45:00'
-                )
-            ],
+            duration => ['2h15m', '5h15m'],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-09-04 18:00:00', '2015-09-04 18:00:00',)],
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-09-04 15:45:00', '2015-09-04 12:45:00',)],
         },
         range_daily => {
-            duration    => ['3d', '7d', '31d', '60d', '180d', '367d'],
-            date_expiry => [
-                map { Date::Utility->new($_)->epoch } (
-                    '2015-09-07 23:59:59',
-                    '2015-09-11 21:00:00',
-                    '2015-10-05 23:59:59',
-                    '2015-11-03 23:59:59',
-                    '2016-03-02 23:59:59',
-                    '2016-09-05 23:59:59'
-                )
-            ],
-            date_start => [
-                map { Date::Utility->new($_)->epoch } (
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00',
-                    '2015-09-04 00:00:00'
-                )
-            ],
+            duration => ['1W', '1M', '3M', '1Y'],
+            date_expiry =>
+                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 23:59:59',)],
+            date_start =>
+                [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00', '2015-01-02 00:00:00',)],
         },
     );
 
@@ -137,11 +99,11 @@ subtest "predefined trading_period" => sub {
     is(scalar(keys @offerings), $expected_count{'offering'}, 'Expected total contract before included predefined trading period');
     my $exchange = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
     my $now      = Date::Utility->new('2015-09-04 17:00:00');
-
     @offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
         offerings => \@offerings,
         exchange  => $exchange,
         date      => $now,
+        symbol    => 'frxUSDJPY',
     });
 
     my %got;
@@ -171,6 +133,129 @@ subtest "predefined trading_period" => sub {
         cmp_deeply(\@got_date_expiry, $expected_trading_period{$bet_type}{date_expiry}, "Expected date_expiry for $bet_type");
     }
 };
+
+subtest "check_intraday trading_period_JPY" => sub {
+    my %expected_intraday_trading_period = (
+        # monday
+        '2015-11-23 00:00:00' => {
+            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
+        },
+        '2015-11-23 01:00:00' => {
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 00:00:00', '2015-11-23 00:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-23 02:00:00', '2015-11-23 06:00:00',)],
+
+        },
+        '2015-11-23 18:00:00' => {},
+        '2015-11-23 22:00:00' => {
+            date_start  => [Date::Utility->new('2015-11-23 21:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 00:00:00')->epoch],
+        },
+        # tues
+        '2015-11-24 00:00:00' => {
+            date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch],
+        },
+        '2015-11-24 01:00:00' => {
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-23 23:45:00', '2015-11-24 00:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-24 02:00:00', '2015-11-24 06:00:00',)],
+
+        },
+        '2015-11-24 21:00:00' => {},
+        '2015-11-24 23:00:00' => {
+            date_start  => [Date::Utility->new('2015-11-24 21:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-25 00:00:00')->epoch],
+        },
+        # Friday
+        '2015-11-27 00:00:00' => {
+            date_start  => [Date::Utility->new('2015-11-26 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-27 02:00:00')->epoch],
+        },
+        '2015-11-27 02:00:00' => {
+            date_start  => [map { Date::Utility->new($_)->epoch } ('2015-11-27 01:45:00', '2015-11-27 00:45:00',)],
+            date_expiry => [map { Date::Utility->new($_)->epoch } ('2015-11-27 04:00:00', '2015-11-27 06:00:00',)],
+
+        },
+        '2015-11-27 18:00:00' => {},
+        '2015-11-27 19:00:00' => {},
+    );
+
+    my @i_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            underlying_symbol => 'frxUSDJPY',
+            start_type        => 'spot',
+            expiry_type       => ['intraday'],
+            barrier_category  => ['euro_non_atm']});
+    my $ex = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
+    foreach my $date (keys %expected_intraday_trading_period) {
+        my $now                = Date::Utility->new($date);
+        my @intraday_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
+            offerings => \@i_offerings,
+            exchange  => $ex,
+            date      => $now,
+            symbol    => 'frxUSDJPY',
+        });
+        cmp_deeply(
+            $intraday_offerings[0]{trading_period}{date_expiry}{epoch},
+            $expected_intraday_trading_period{$date}{date_expiry}[0],
+            "Expected date_expiry for $date"
+        );
+        cmp_deeply(
+            $intraday_offerings[0]{trading_period}{date_start}{epoch},
+            $expected_intraday_trading_period{$date}{date_start}[0],
+            "Expected date_start for $date"
+        );
+    }
+
+};
+subtest "check_intraday trading_period_non_JPY" => sub {
+    my %expected_eur_intraday_trading_period = (
+        # monday
+        '2015-11-23 00:00:00' => {
+            date_start  => [Date::Utility->new('2015-11-23 00:00:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-23 02:00:00')->epoch],
+        },
+        '2015-11-23 18:00:00' => {},
+        '2015-11-23 22:00:00' => {},
+        # tues
+        '2015-11-24 00:00:00' => {
+            date_start  => [Date::Utility->new('2015-11-23 23:45:00')->epoch],
+            date_expiry => [Date::Utility->new('2015-11-24 02:00:00')->epoch],
+        },
+        '2015-11-24 21:00:00' => {},
+        '2015-11-24 23:00:00' => {},
+        # Friday
+        '2015-11-27 18:00:00' => {},
+        '2015-11-27 19:00:00' => {},
+    );
+
+    my @e_offerings = BOM::Product::Offerings::get_offerings_flyby->query({
+            underlying_symbol => 'frxEURUSD',
+            start_type        => 'spot',
+            expiry_type       => ['intraday'],
+            barrier_category  => ['euro_non_atm']});
+    my $ex = BOM::Market::Underlying->new('frxEURUSD')->exchange;
+    foreach my $date (keys %expected_eur_intraday_trading_period) {
+        my $now              = Date::Utility->new($date);
+        my @eurusd_offerings = BOM::Product::Contract::Finder::Japan::_predefined_trading_period({
+            offerings => \@e_offerings,
+            exchange  => $ex,
+            date      => $now,
+            symbol    => 'frxEURUSD',
+        });
+
+        cmp_deeply(
+            $eurusd_offerings[0]{trading_period}{date_expiry}{epoch},
+            $expected_eur_intraday_trading_period{$date}{date_expiry}[0],
+            "Expected date_expiry for $date"
+        );
+        cmp_deeply(
+            $eurusd_offerings[0]{trading_period}{date_start}{epoch},
+            $expected_eur_intraday_trading_period{$date}{date_start}[0],
+            "Expected date_start for $date"
+        );
+    }
+
+};
 subtest "predefined barriers" => sub {
 
     my %expected_barriers = (
@@ -195,13 +280,13 @@ subtest "predefined barriers" => sub {
         trading_period => {
             date_start => {
                 epoch => 1440374400,
-                date  => '2015-08-24 00:00:00'
+                date  => '2015-08-24 00:45:00'
             },
             date_expiry => {
                 epoch => 1440392400,
-                date  => '2015-08-24 05:00:00'
+                date  => '2015-08-24 06:00:00'
             },
-            duration => '5h',
+            duration => '5h15m',
         },
         barriers => 1,
     };

@@ -234,7 +234,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol        => $_,
         recorded_date => $an_hour_earlier,
-        date          => Date::Utility->new,
+    }) for (qw/USD JPY EUR AUD SGD GBP/);
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol        => $_,
+        recorded_date => $an_hour_earlier->minus_time_interval('150d'),
     }) for (qw/USD JPY EUR AUD SGD GBP/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -286,7 +292,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
         symbol => $_,
-        date   => Date::Utility->new,
+        recorded_date   => Date::Utility->new,
     }) for qw( JPY USD EUR AUD SGD );
 
 my $orig_suspended = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
@@ -419,7 +425,7 @@ subtest 'invalid bet payout hobbling around' => sub {
 
     $bet_params->{amount} = 12.345;
     $bet                  = produce_contract($bet_params);
-    $expected_reasons     = [qr/more than 2 decimal places/];
+    $expected_reasons     = [qr/too many decimal places/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount}   = 1e5;
@@ -530,10 +536,6 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet_params->{amount_type} = 'stake';
     $bet_params->{amount}      = 0;
     $bet                       = produce_contract($bet_params);
-    # stake [0] is too low for payout [0]
-    #         # stake [0] is same as payout [0]
-    #                 # payout amount outside acceptable range[0] acceptable range [1 - 100000]
-    #
     $expected_reasons = [qr/Empty or zero stake/, qr/stake.*is not within limits/, qr/payout.*acceptable range/, qr/stake.*same as.*payout/];
     test_error_list('buy', $bet, $expected_reasons);
 };
@@ -613,7 +615,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 
     my $bet = produce_contract($bet_params);
 
-    my $expected_reasons = [qr/volsurface recorded_date earlier than/, qr/Quote.*too old/];
+    my $expected_reasons = [qr/volsurface too old/, qr/Quote.*too old/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_start}   = $oft_used_date->epoch;
@@ -635,12 +637,12 @@ subtest 'volsurfaces become old and invalid' => sub {
         current_tick => $tick,
     };
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/^Intraday.*volsurface recorded_date/, qr/Quote.*too old/];
+    $expected_reasons = [qr/volsurface too old/, qr/Quote.*too old/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet = produce_contract($bet_params);
     ok($bet->volsurface->set_smile_flag(1, 'fake broken surface'), 'Set smile flags');
-    $expected_reasons = [qr/^Intraday.*volsurface recorded_date/, qr/has smile flags/, qr/Quote.*too old/];
+    $expected_reasons = [qr/volsurface too old/, qr/has smile flags/, qr/Quote.*too old/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -668,7 +670,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{volsurface} = $volsurface;
     $bet_params->{current_tick} = $tick;
     $bet                        = produce_contract($bet_params);
-    $expected_reasons           = [qr/^Index.*volsurface recorded_date greater than four hours old/];
+    $expected_reasons           = [qr/volsurface too old/];
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {date => Date::Utility->new()});
 
@@ -678,7 +680,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{pricing_vol} = $forced_vol;
     $bet = produce_contract($bet_params);
     is($bet->pricing_args->{iv}, $forced_vol, 'Pricing args contains proper forced vol.');
-    $expected_reasons = [qr/^Index.*volsurface recorded_date greater than four hours old/, qr/forced \(not calculated\) IV/];
+    $expected_reasons = [qr/volsurface too old/, qr/forced \(not calculated\) IV/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 
@@ -729,7 +731,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{barrier}      = 'S0P';
 
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/^Intraday.*volsurface recorded_date/, qr/forward-starting.*blackout/];
+    $expected_reasons = [qr/volsurface too old/, qr/forward-starting.*blackout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_pricing} = $starting + 45;
@@ -869,7 +871,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{duration}     = '14d';
     $bet_params->{current_tick} = $tick;
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/Calibration fit outside acceptable range for IV/, qr/Barrier too far from spot/];
+    $expected_reasons = [qr/Calibration fit outside acceptable range/, qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface("{}"),       'Set');
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface($orig_list), 'restored original list');
@@ -1060,7 +1062,7 @@ subtest 'underlying with critical corporate actions' => sub {
         'currency',
         {
             symbol => 'GBP',
-            date   => Date::Utility->new,
+            recorded_date   => $an_hour_earlier,
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
@@ -1115,7 +1117,7 @@ subtest '10% barrier check for double barrier contract' => sub {
         'currency',
         {
             symbol => $_,
-            date   => Date::Utility->new,
+            recorded_date   => $an_hour_earlier,
         }) for (qw/GBP USD/);
 
     my $now = Date::Utility->new('2014-10-08 10:00:00');
@@ -1216,7 +1218,7 @@ subtest 'intraday indices duration test' => sub {
         'currency',
         {
             symbol => 'GBP',
-            date   => Date::Utility->new,
+            recorded_date   => $an_hour_earlier,
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'exchange',
@@ -1341,7 +1343,7 @@ subtest 'spot reference check' => sub {
             recorded_date   => Date::Utility->new($bet_params->{date_pricing}),
         });
     my $c                = produce_contract($bet_params);
-    my $expected_reasons = [qr/spot reference/];
+    my $expected_reasons = [qr/spot too far from surface reference/];
     test_error_list('buy', $c, $expected_reasons);
 };
 
@@ -1430,8 +1432,10 @@ subtest 'economic events blockout period' => sub {
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
 
+my $counter = 0;
 sub test_error_list {
     my ($which, $bet, $expected) = @_;
+    $counter++;
     my @expected_reasons = @{$expected};
     my $err_count        = scalar @expected_reasons;
     my $val_method       = 'is_valid_to_' . lc $which;

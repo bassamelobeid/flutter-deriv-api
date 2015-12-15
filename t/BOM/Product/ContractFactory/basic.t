@@ -155,7 +155,7 @@ subtest 'make_similar_contract' => sub {
 };
 
 subtest 'simple_contract_info' => sub {
-    plan tests => 4;
+    plan tests => 9;
 
     my $contract_params = {
         bet_type   => 'DOUBLEUP',
@@ -166,10 +166,11 @@ subtest 'simple_contract_info' => sub {
         barrier    => 108.26,
     };
 
-    my ($desc, $ticky) = simple_contract_info($contract_params);
+    my ($desc, $ticky, $spready) = simple_contract_info($contract_params);
 
     like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
-    ok(!$ticky, "our params do not create a tick expiry contract.");
+    ok(!$ticky,   "our params do not create a tick expiry contract.");
+    ok(!$spready, "our params do not create a spread contract.");
 
     $contract_params = {
         bet_type   => 'FLASHD',
@@ -180,10 +181,28 @@ subtest 'simple_contract_info' => sub {
         barrier    => 108.26,
     };
 
-    ($desc, $ticky) = simple_contract_info($contract_params);
+    ($desc, $ticky, $spready) = simple_contract_info($contract_params);
 
     like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
-    ok($ticky, "our params create a tick expiry contract.");
+    ok($ticky,    "our params create a tick expiry contract.");
+    ok(!$spready, "our params do not create a spread contract.");
+
+    $contract_params = {
+        bet_type         => 'SPREADU',
+        underlying       => 'R_100',
+        date_start       => 1449810000,    # 2015-12-11 05:00:00
+        amount_per_point => 1,
+        stop_loss        => 10,
+        stop_profit      => 10,
+        currency         => 'USD',
+        stop_type        => 'point',
+    };
+
+    ($desc, $ticky, $spready) = simple_contract_info($contract_params);
+
+    like $desc, qr#^USD 1.00#, 'our params got us what seems like it might be a description';
+    ok(!$ticky,  "our params do not create a tick expiry contract.");
+    ok($spready, "our params create a spread contract.");
 };
 
 1;

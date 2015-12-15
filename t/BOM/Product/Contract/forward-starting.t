@@ -26,6 +26,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date         => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'currency',
+    {
+        symbol          => $_,
+        recorded_date   => $now->minus_time_interval('5m'),
+    }) for qw(USD JPY JPY-USD);
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol       => 'RANDOM_NOCTURNE',
@@ -101,7 +108,7 @@ subtest 'forward starting on random nightly' => sub {
     ok $c->is_forward_starting;
     ok $c->_validate_start_date;
     my @err = $c->_validate_start_date;
-    like($err[0]->{message}, qr/is in starting blackout/);
+    like($err[0]->{message}, qr/in starting blackout/);
     $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'RDBULL',
@@ -132,7 +139,7 @@ subtest 'forward starting on random daily' => sub {
     ok $c->is_forward_starting;
     ok $c->_validate_start_date;
     my @err = $c->_validate_start_date;
-    like($err[0]->{message}, qr/is in starting blackout/);
+    like($err[0]->{message}, qr/in starting blackout/);
     $c = produce_contract({
         bet_type     => 'CALL',
         underlying   => 'RDMARS',

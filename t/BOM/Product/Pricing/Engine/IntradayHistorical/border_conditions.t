@@ -7,16 +7,18 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use BOM::Test::Runtime qw(:normal);
+
+use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Market::AggTicks;
+
+use BOM::Test::Runtime qw(:normal);
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::MarketData::VolSurface::Utils;
-
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+
 
 BOM::Market::AggTicks->new->flush;
 
@@ -50,13 +52,11 @@ my $first_day = Date::Utility->new($date_start)->truncate_to_day;
 my $next_day = Date::Utility->new($date_start + (3600 * 9));
 
 foreach my $day ($first_day, $next_day) {
-
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
         {
             symbol        => $_,
             recorded_date => $day,
-            date          => Date::Utility->new,
         }) for (qw/GBP JPY USD AUD EUR SGD/);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -66,7 +66,6 @@ foreach my $day ($first_day, $next_day) {
             recorded_date => $day,
         }) for qw( frxUSDJPY frxGBPJPY frxGBPUSD );
 }
-
 my $bet_params = {
     bet_type     => $bet_type,
     date_pricing => $date_start,
