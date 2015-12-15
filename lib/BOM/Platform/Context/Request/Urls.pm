@@ -1,5 +1,6 @@
 package BOM::Platform::Context::Request::Urls;
 
+use Memoize;
 use Moose::Role;
 use Mojo::URL;
 use YAML::XS;
@@ -22,11 +23,10 @@ sub url_for {
     my ($self, @args) = @_;
 
     my $url = Mojo::URL->new($args[0] || '');
-    my $query       = $args[1] || {};
-    my $domain_type = $args[2] || {};
-    my $internal    = $args[3] || {};
+    my $query = $args[1] || {};
+    my $domain_type = _get_domain_type($url->path, (($args[2] ? %{$args[2]} : ())));
+    my $internal = $args[3] || {};
 
-    $self->_find_domain_type($url->path, $domain_type);
     if ($domain_type->{static}) {
         my $path = $url->path;
         $path =~ s/^\///;
@@ -101,10 +101,11 @@ sub domain_for {
     return $domain;
 }
 
-sub _find_domain_type {
-    my $self        = shift;
-    my $path        = shift;
-    my $domain_type = shift;
+memoize('_get_domain_type');
+
+sub _get_domain_type {
+    my ($path, %defaults) = @_;
+    my $domain_type = {%defaults};
 
     #Select domain_type base on path
     if ($path) {
@@ -133,7 +134,7 @@ sub _find_domain_type {
         $domain_type->{no_lang} = 1;
     }
 
-    return;
+    return $domain_type;
 }
 
 has [qw(_page_caching_rules _dealing_domain _localhost_domain)] => (
