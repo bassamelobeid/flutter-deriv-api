@@ -192,8 +192,7 @@ sub _calculate_news_triangle {
     my @times    = @$times;
     my @combined = (1) x scalar(@times);
     foreach my $news (@$news_array) {
-        my $shift = _shift($news->{release_time}, $contract->{start}, $contract->{duration});
-        my $effective_news_time = $news->{release_time} + $shift;
+        my $effective_news_time = _get_effective_news_time($news->{release_time}, $contract->{start}, $contract->{duration});
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
         my $eps = machine_epsilon();
         my $decay_coef = -log(2 / ($news->{magnitude} - 1 + $eps)) / $news->{duration};
@@ -212,7 +211,7 @@ sub _calculate_news_triangle {
     return \@combined;
 }
 
-sub _shift {
+sub _get_effective_news_time {
     my ($news_time, $contract_start, $contract_duration) = @_;
 
     my $five_minutes_in_seconds = 5 * 60;
@@ -227,7 +226,9 @@ sub _shift {
         $shift_seconds = $desired_start - $news_time;
     }
 
-    return $shift_seconds;
+    my $effective_time = $news_time + $shift_seconds;
+
+    return $effective_time;
 }
 
 sub _get_volatility_seasonality_areas {
