@@ -20,6 +20,7 @@ use JSON;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use Time::HiRes;
+use BOM::Database::Rose::DB;
 use MojoX::JSON::RPC::Client;
 
 sub ok {
@@ -99,6 +100,7 @@ sub entry_point {
                 } else {
                     $data->{echo_req} = $p1;
                 }
+                $data->{req_id} = $p1->{req_id} if (exists $p1->{req_id});
             } else {
                 # for invalid call, eg: not json
                 $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
@@ -113,21 +115,17 @@ sub entry_point {
             }
             if ($send) {
                 $c->send({json => $data});
-            } else {
-                return;
             }
+
+            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+            return;
         });
 
     # stop all recurring
     $c->on(
         finish => sub {
-            my ($c) = @_;
-            my $ws_id = $c->tx->connection;
-            foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-                Mojo::IOLoop->remove($id);
-            }
-            delete $c->{ws}{$ws_id};
-            delete $c->{fmb_ids}{$ws_id};
+            my $c = shift;
+            BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
         });
 
     return;
