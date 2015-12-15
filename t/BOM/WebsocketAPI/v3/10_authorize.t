@@ -46,6 +46,16 @@ $balance = decode_json($t->message->[1]);
 ok($balance->{balance});
 test_schema('balance', $balance);
 
+## try logout
+$t = $t->send_ok({json => {logout => 1}})->message_ok;
+my $res = decode_json($t->message->[1]);
+ok($res->{logout});
+test_schema('logout', $res);
+
+$t = $t->send_ok({json => {balance => 1}})->message_ok;
+$balance = decode_json($t->message->[1]);
+is($balance->{error}->{code}, 'AuthorizationRequired', 'required again after logout');
+
 $t->finish_ok;
 
 done_testing();

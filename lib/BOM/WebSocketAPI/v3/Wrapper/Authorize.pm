@@ -38,4 +38,22 @@ sub authorize {
     return;
 }
 
+sub logout {
+    my ($c, $args) = @_;
+
+    BOM::RPC::v3::Authorize::logout($c->stash('request'), $c->req->headers->header('User-Agent') || '');
+
+    $c->stash(
+        loginid    => undef,
+        token_type => undef,
+        client     => undef,
+        account    => undef
+    );
+
+    return {
+        msg_type => 'logout',
+        logout   => 1
+    };
+}
+
 1;
