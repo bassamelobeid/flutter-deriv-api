@@ -141,6 +141,7 @@ sub __handle {
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
         ['authorize',                 \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,                        0],
+        ['logout',                    \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout,                           0],
         ['trading_times',             \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,              0],
         ['asset_index',               \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,                0],
         ['active_symbols',            \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::active_symbols,             0],
