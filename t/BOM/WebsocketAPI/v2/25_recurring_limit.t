@@ -9,9 +9,10 @@ use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 
 build_test_R_50_data();
 
-my $t               = build_mojo_test();
+my $t = build_mojo_test();
+$t = $t->send_ok({json => {ping => 1}})->message_ok;
+
 my $first_timer_cnt = scalar(keys %{$t->ua->ioloop->reactor->{timers}});
-$first_timer_cnt--;
 
 foreach my $i (1 .. 60) {
     $t = $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
