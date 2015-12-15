@@ -5,8 +5,8 @@ use warnings;
 
 use JSON;
 
-use BOM::WebSocketAPI::v3::PortfolioManagement;
-use BOM::WebSocketAPI::v3::Contract;
+use BOM::RPC::v3::PortfolioManagement;
+use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub portfolio {
@@ -14,7 +14,7 @@ sub portfolio {
 
     return {
         msg_type  => 'portfolio',
-        portfolio => BOM::WebSocketAPI::v3::PortfolioManagement::portfolio($c->stash('client'))};
+        portfolio => BOM::RPC::v3::PortfolioManagement::portfolio($c->stash('client'))};
 }
 
 sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
@@ -52,7 +52,7 @@ sub send_proposal {
     my ($c, $id, $args) = @_;
 
     my $details = {%$args};
-    my $latest = BOM::WebSocketAPI::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
+    my $latest = BOM::RPC::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
 
     $c->send({
             json => {
