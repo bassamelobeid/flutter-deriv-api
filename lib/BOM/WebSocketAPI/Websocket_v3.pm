@@ -260,7 +260,11 @@ sub __handle {
 sub _failed_key_value {
     my ($key, $value) = @_;
 
-    if ($key !~ /^[A-Za-z0-9_-]{1,50}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/='&\$]{0,256}$/) {
+    # allow all printable ASCII char for password
+    state %pwd_field;
+    $pwd_field{client_password} = 1;
+
+    if (not $pwd_field{$key} and ($key !~ /^[A-Za-z0-9_-]{1,50}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/='&\$]{0,256}$/)) {
         return ($key, $value);
     }
     return;
