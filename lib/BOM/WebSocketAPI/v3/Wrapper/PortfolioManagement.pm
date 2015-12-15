@@ -59,7 +59,6 @@ sub send_proposal {
                 msg_type => 'proposal_open_contract',
                 echo_req => $details,
                 (exists $details->{req_id}) ? (req_id => $details->{req_id}) : (),
-                req_id                 => $details->{req_id},
                 proposal_open_contract => {
                     id => $id,
                     %$latest
