@@ -174,7 +174,7 @@ sub _predefined_trading_period {
                 : ($today_close_epoch - $today->epoch)
             : 86400;
 
-        my $maximum_contract_duration = Time::Duration::Concise->new({interval => $o->{max_contract_duration}})->seconds;
+        my $maximum_contract_duration = $o->{contract_category} eq 'callput' and $o->{expiry_type} eq 'intraday' ? 18000 :Time::Duration::Concise->new({interval => $o->{max_contract_duration}})->seconds;
 
         foreach my $trading_period (grep { defined } @$trading_periods) {
             my $date_expiry      = $trading_period->{date_expiry}->{epoch};
