@@ -19,7 +19,7 @@ while (1) {
         my $redis = _redis();
         my $dbh   = BOM::Database::FeedDB::write_dbh();
 
-        my $MAX_FEED_CHANNELS = 20;
+        my $MAX_FEED_CHANNELS = 80;
         $dbh->do("LISTEN feed_watchers_$_") for (1..$MAX_FEED_CHANNELS);
 
         my $sel = IO::Select->new;
