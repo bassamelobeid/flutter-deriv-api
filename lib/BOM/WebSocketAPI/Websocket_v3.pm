@@ -99,13 +99,13 @@ sub entry_point {
                 } else {
                     $data->{echo_req} = $p1;
                 }
+                $data->{req_id} = $p1->{req_id} if (exists $p1->{req_id});
             } else {
                 # for invalid call, eg: not json
                 $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
                 $data->{echo_req} = {};
             }
             $data->{version} = 3;
-            $data->{req_id} = $p1->{req_id} if exists $p1->{req_id};
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
