@@ -50,11 +50,11 @@ sub get_volatility {
 
     my ($tick_count, $real_periods) = (0, 0);
     my @tick_epochs = map { $_->{epoch} } @$ticks;
-    my (@time_samples_past, @returns);
+    my (@time_samples_past, @returns_squared);
     for (my $i = $returns_sep; $i <= $#tick_epochs; $i++) {
         push @time_samples_past, ($tick_epochs[$i] + $tick_epochs[$i - $returns_sep]) / 2;
         my $dt = $tick_epochs[$i] - $tick_epochs[$i - $returns_sep];
-        push @returns, log($ticks->[$i]->{quote} / $ticks->[$i - 4]->{quote}) * 365 * 86400 / $dt;
+        push @returns_squared, ((log($ticks->[$i]->{quote} / $ticks->[$i - 4]->{quote})**2) * 365 * 86400 / $dt);
         $real_periods++;
         $tick_count += $ticks->[$i]->{count};
     }
@@ -74,7 +74,7 @@ sub get_volatility {
     my $end_lookback    = $current_epoch + $seconds_to_expiration + 300;
     my $economic_events = $self->_get_economic_events($start_lookback, $end_lookback);
     my $weights         = _calculate_weights(\@time_samples_past, $economic_events);
-    my $sum_vol         = sum map { $returns[$_]**2 * $weights->[$_] } (0 .. $#time_samples_past);
+    my $sum_vol         = sum map { $returns_squared[$_] * $weights->[$_] } (0 .. $#time_samples_past);
     my $observed_vol    = sqrt($sum_vol / sum(@$weights));
 
     my $c_start = $args->{current_epoch};
