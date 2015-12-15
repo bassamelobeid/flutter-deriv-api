@@ -54,7 +54,7 @@ sub get_volatility {
     for (my $i = $returns_sep; $i <= $#tick_epochs; $i++) {
         push @time_samples_past, ($tick_epochs[$i] + $tick_epochs[$i - $returns_sep]) / 2;
         my $dt = $tick_epochs[$i] - $tick_epochs[$i - $returns_sep];
-        push @returns_squared, ((log($ticks->[$i]->{quote} / $ticks->[$i - 4]->{quote})**2) * 365 * 86400 / $dt);
+        push @returns_squared, ((log($ticks->[$i]->{quote} / $ticks->[$i - 4]->{quote})**2) * 252 * 86400 / $dt);
         $real_periods++;
         $tick_count += $ticks->[$i]->{count};
     }
