@@ -78,7 +78,7 @@ subtest 'call variations' => sub {
         isa_ok $c, 'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
-        $args->{duration} = '6h1s';
+        $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
@@ -99,7 +99,7 @@ subtest 'call variations' => sub {
         isa_ok $c, 'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
 
-        $args->{duration} = '6h1s';
+        $args->{duration} = '5h1s';
         $c = produce_contract($args);
         isa_ok $c, 'BOM::Product::Contract::Call';
         isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';

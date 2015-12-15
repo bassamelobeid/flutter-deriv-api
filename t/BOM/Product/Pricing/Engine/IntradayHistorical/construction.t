@@ -113,7 +113,7 @@ is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'slope pr
 $bet_params->{duration} = '15m';
 $bet = produce_contract($bet_params);
 is $bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'intraday historical forex pricer for duration (15m)';
-$bet_params->{duration} = '6h1s';
+$bet_params->{duration} = '5h1s';
 $bet = produce_contract($bet_params);
 is $bet->pricing_engine_name, 'Pricing::Engine::EuropeanDigitalSlope', 'slope pricer for duration (6h1s)';
 done_testing;
