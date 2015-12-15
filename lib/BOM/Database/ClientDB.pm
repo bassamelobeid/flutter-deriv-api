@@ -65,16 +65,15 @@ sub _build_db {
     );
 
     if (not BOM::Database::Rose::DB->registry->entry_exists(@db_params)) {
-        state $clientdb_config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
         BOM::Database::Rose::DB->register_db(
             domain   => $domain,
             type     => $type,
             driver   => 'Pg',
-            database => 'regentmarkets',
-            host     => $clientdb_config->{$domain}->{$type}->{ip},
-            port     => 5432,
+            database => "$domain-$type",
+            host     => '/var/run/postgresql',
+            port     => 6432,
             username => 'write',
-            password => $clientdb_config->{password},
+            password => '',
         );
     }
 
