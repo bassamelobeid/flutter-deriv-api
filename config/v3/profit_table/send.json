@@ -12,32 +12,26 @@
     },
     "description": {
       "type": "integer",
-      "sample": "1",
       "description": "If set to 1, will return full contracts description."
     },
     "limit": {
       "type": "number",
-      "sample": "100",
       "description": "Apply upper limit to count of transactions received"
     },
     "offset": {
       "type": "number",
-      "sample": "0",
       "description": "Skip this many transactions"
     },
     "date_from": {
       "type": "string",
-      "sample": "1439432307",
       "description": "Optional start date (epoch or YYYY-MM-DD)"
     },
     "date_to": {
       "type": "string",
-      "sample": "1439432307",
       "description": "Optional end date (epoch or YYYY-MM-DD)"
     },
     "sort": {
       "type": "string",
-      "sample": "DESC",
       "pattern": "^(ASC|DESC)$",
       "description": "sort direction, default DESC"
     },

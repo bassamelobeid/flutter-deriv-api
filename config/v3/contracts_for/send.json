@@ -13,8 +13,7 @@
         "region":{
             "type":"string",
             "description":"Set to 'japan' to retrieve contracts available under Japanese regulations, or 'other' otherwise.",
-            "pattern":"^(japan|other)$",
-            "sample":"other"
+            "pattern":"^(japan|other)$"
         },
         "passthrough":{
             "type":"object",
