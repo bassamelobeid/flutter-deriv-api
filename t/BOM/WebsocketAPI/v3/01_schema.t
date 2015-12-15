@@ -38,7 +38,7 @@ explain "Testing version: $v";
 foreach my $f (grep { -d } glob "$v/*") {
     $test_name = File::Basename::basename($f);
     explain $f;
-    my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("$f/send.json")));
+    my $send = strip_doc_send(JSON::from_json(File::Slurp::read_file("$f/example.json")));
     $t->send_ok({json => $send}, "send request for $test_name");
     $t->message_ok("$test_name got a response");
     my $validator = JSON::Schema->new(JSON::from_json(File::Slurp::read_file("$f/receive.json")));

@@ -96,6 +96,7 @@ sub send_ask {
                 json => {
                     msg_type => 'proposal',
                     echo_req => $args,
+                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                     proposal => $proposal,
                     %$response
                 }});
@@ -104,6 +105,7 @@ sub send_ask {
                 json => {
                     msg_type => 'proposal',
                     echo_req => $args,
+                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                     proposal => {
                         id => $id,
                         %$response
@@ -120,34 +122,35 @@ sub process_realtime_events {
 
     foreach my $channel (keys %{$feed_channels_type}) {
         $channel =~ /(.*);(.*)/;
-        my $symbol = $1;
-        my $type   = $2;
+        my $symbol    = $1;
+        my $type      = $2;
+        my $arguments = $feed_channels_type->{$channel}->{args};
 
         if ($type eq 'tick' and $m[0] eq $symbol) {
             $c->send({
                     json => {
                         msg_type => 'tick',
-                        echo_req => $feed_channels_type->{$channel}->{args},
-                        tick     => {
+                        echo_req => $arguments,
+                        (exists $arguments->{req_id}) ? (req_id => $arguments->{req_id}) : (),
+                        tick => {
                             id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
-            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $feed_channels_type->{$channel}->{args}) if $c->tx;
+            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
-            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal(
-                $c,
-                $feed_channels_type->{$channel}->{uuid},
-                $feed_channels_type->{$channel}->{args}) if $c->tx;
+            BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
+                if $c->tx;
         } elsif ($m[0] eq $symbol) {
             my $u = BOM::Market::Underlying->new($symbol);
             $message =~ /;$type:([.0-9+-]+),([.0-9+-]+),([.0-9+-]+),([.0-9+-]+);/;
             $c->send({
                     json => {
                         msg_type => 'ohlc',
-                        echo_req => $feed_channels_type->{$channel},
-                        ohlc     => {
+                        echo_req => $arguments,
+                        (exists $arguments->{req_id}) ? (req_id => $arguments->{req_id}) : (),
+                        ohlc => {
                             id          => $feed_channels_type->{$channel}->{uuid},
                             epoch       => $m[1],
                             open_time   => $m[1] - $m[1] % $type,
