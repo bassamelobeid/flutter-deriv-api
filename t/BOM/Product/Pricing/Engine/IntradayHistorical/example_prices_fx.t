@@ -319,7 +319,7 @@ is(roundnear(1e-2, $bet->average_tick_count),             7.51,   'Correct numbe
 is(roundnear(1e-4, $ask->peek_amount('model_markup')),    0.013, 'model_markup is correct.');
 is(roundnear(1e-4, $ask->peek_amount('vega_correction')), 0.003, 'vega_correction is correct.');
 is($ask->peek_amount('path_dependent_markup'), undef, 'No path dependent markup.');
-is(roundnear(1e-4, $bet->pricing_args->{iv}), 0.1105, 'Expected intraday vol amount');
+is(roundnear(1e-4, $bet->pricing_args->{iv}), 0.1103, 'Expected intraday vol amount');
 
 my $forced_iv = 1.2180;    # Make it 10x higher and see what happens.
 $bet_params->{pricing_vol} = $forced_iv;
