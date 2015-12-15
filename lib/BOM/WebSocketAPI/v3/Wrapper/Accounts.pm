@@ -204,7 +204,7 @@ sub send_realtime_balance {
             json => {
                 msg_type => 'balance',
                 echo_req => $args,
-                req_id   => $args->{req_id},
+                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                 balance => BOM::RPC::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
     return;
 }
