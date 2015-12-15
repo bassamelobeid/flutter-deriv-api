@@ -558,8 +558,7 @@ sub _build_economic_events_spot_risk_markup {
 
     my @combined = (0) x scalar(@time_samples);
     foreach my $news (@$news_array) {
-        my $shift = _shift($news->{release_time}, $start->epoch, $contract_duration);
-        my $effective_news_time = $news->{release_time} + $shift;
+        my $effective_news_time = _get_effective_news_time($news->{release_time}, $start->epoch, $contract_duration);
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
         my $decay_coef = -log(2 / ($news->{magnitude} + 1e-9)) / $news->{duration};
         my @triangle;
@@ -585,7 +584,7 @@ sub _build_economic_events_spot_risk_markup {
     return $spot_risk_markup;
 }
 
-sub _shift {
+sub _get_effective_news_time {
     my ($news_time, $contract_start, $contract_duration) = @_;
 
     my $five_minutes_in_seconds = 5 * 60;
@@ -600,7 +599,9 @@ sub _shift {
         $shift_seconds = $desired_start - $news_time;
     }
 
-    return $shift_seconds;
+    my $effective_time = $news_time + $shift_seconds;
+
+    return $effective_time;
 }
 
 # Generally for indices and stocks the minimum available tenor for smile is 30 days.
