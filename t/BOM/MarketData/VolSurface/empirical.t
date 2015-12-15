@@ -708,7 +708,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.273157870730932, '';
+            0.273157870931096, '';
         ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
