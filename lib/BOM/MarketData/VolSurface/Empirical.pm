@@ -221,11 +221,13 @@ sub _shift {
     if ($news_time > $contract_start - $five_minutes_in_seconds and $news_time < $contract_start) {
         $shift_seconds = $contract_start - $news_time;
     } elsif ($news_time < $contract_end + $five_minutes_in_seconds and $news_time > $contract_end - $five_minutes_in_seconds) {
-        $shift_seconds = $news_time - $contract_end + $five_minutes_in_seconds;
+        # Always shifts to the contract start time if duration is less than 5 minutes.
+        my $max_shift = min($five_minutes_in_seconds, $contract_duration);
+        my $desired_start = $contract_end - $max_shift;
+        $shift_seconds = $desired_start - $news_time;
     }
 
-    # Always shifts to the contract start time if duration is less than 5 minutes.
-    return min($shift_seconds, $contract_duration);
+    return $shift_seconds;
 }
 
 sub _get_volatility_seasonality_areas {
