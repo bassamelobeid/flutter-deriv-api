@@ -20,6 +20,7 @@ use JSON;
 use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use Time::HiRes;
+use BOM::Database::Rose::DB;
 use MojoX::JSON::RPC::Client;
 
 sub ok {
@@ -114,9 +115,10 @@ sub entry_point {
             }
             if ($send) {
                 $c->send({json => $data});
-            } else {
-                return;
             }
+
+            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+            return;
         });
 
     # stop all recurring

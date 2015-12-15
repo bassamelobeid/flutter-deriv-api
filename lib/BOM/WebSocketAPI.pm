@@ -36,6 +36,7 @@ sub startup {
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
+
             $c->cookie(
                 language => '',
                 {expires => 1});
