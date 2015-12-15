@@ -3,6 +3,7 @@ package BOM::MarketData::VolSurface::Empirical;
 use feature 'state';
 use Moose;
 
+use Machine::Epsilon;
 use Math::Gauss qw(pdf);
 use Cache::RedisDB;
 use List::Util qw(max min sum);
@@ -194,7 +195,8 @@ sub _calculate_news_triangle {
         my $shift = _shift($news->{release_time}, $contract->{start}, $contract->{duration});
         my $effective_news_time = $news->{release_time} + $shift;
         # +1e-9 is added to prevent a division by zero error if news magnitude is 1
-        my $decay_coef = -log(2 / ($news->{magnitude} - 1 + 1e-9)) / $news->{duration};
+        my $eps = machine_epsilon();
+        my $decay_coef = -log(2 / ($news->{magnitude} - 1 + $eps)) / $news->{duration};
         my @triangle;
         foreach my $time (@$times) {
             if ($time < $effective_news_time) {
