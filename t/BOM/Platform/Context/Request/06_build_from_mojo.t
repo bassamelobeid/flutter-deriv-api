@@ -205,7 +205,7 @@ sub mock_request_for {
     my $method  = shift || 'GET';
 
     my $url_mock = Mojo::URL->new($for_url);
-    $url_mock->query->param(%$param);
+    $url_mock->query->param(%$param) if keys %$param;
     my $header_mock = Test::MockObject->new();
     $header_mock->mock('header', sub { shift; return $headers->{shift}; });
 
