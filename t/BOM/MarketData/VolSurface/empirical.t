@@ -684,7 +684,7 @@ subtest 'seasonalized volatility' => sub {
                 seconds_to_expiration => 900
             }
             ),
-            0.156466025941551, '';
+            0.0944480459725993, '';
     }
     'lives through process of getting seasonalized volatility';
 };
@@ -708,7 +708,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.623643583174398, '';
+            0.273157870730932, '';
         ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
@@ -729,7 +729,7 @@ subtest 'seasonalized volatility with news' => sub {
                 include_news_impact   => 1
             }
             ),
-            0.156466025941551, '';
+            0.0944480459725993, '';
         ok !$vs->error, 'no error';
     }
     'lives through process of getting seasonalized volatility';
