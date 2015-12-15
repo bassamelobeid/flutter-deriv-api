@@ -170,7 +170,7 @@ foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
             is($bet->barrier->supplied_barrier, $expectations->{barrier}, 'Barrier is set as expected.');
         }
         my $ask = $bet->ask_probability;
-        is(roundnear(1e-4, $ask->amount), $expectations->{ask_prob}, 'Ask probability is correct.');
+        is(roundnear(1e-4, $ask->amount), $expectations->{ask_prob}, "Ask probability for $underlying $bet_type is correct.");
         my $theo = $bet->theo_probability;
         is(roundnear(1e-4, $theo->amount),                          $expectations->{theo_prob},         'Theo probability is correct.');
         is(roundnear(1e-4, $ask->peek_amount('total_markup')),      $expectations->{total_markup},      'Total markup is correct.');
