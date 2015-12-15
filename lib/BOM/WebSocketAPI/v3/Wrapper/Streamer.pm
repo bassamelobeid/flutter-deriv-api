@@ -96,6 +96,7 @@ sub send_ask {
                 json => {
                     msg_type => 'proposal',
                     echo_req => $args,
+                    req_id   => $args->{req_id},
                     proposal => $proposal,
                     %$response
                 }});
@@ -104,6 +105,7 @@ sub send_ask {
                 json => {
                     msg_type => 'proposal',
                     echo_req => $args,
+                    req_id   => $args->{req_id},
                     proposal => {
                         id => $id,
                         %$response
@@ -128,6 +130,7 @@ sub process_realtime_events {
                     json => {
                         msg_type => 'tick',
                         echo_req => $feed_channels_type->{$channel}->{args},
+                        req_id   => $feed_channels_type->{$channel}->{args}->{req_id},
                         tick     => {
                             id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
@@ -146,7 +149,8 @@ sub process_realtime_events {
             $c->send({
                     json => {
                         msg_type => 'ohlc',
-                        echo_req => $feed_channels_type->{$channel},
+                        echo_req => $feed_channels_type->{$channel}->{args},
+                        req_id   => $feed_channels_type->{$channel}->{args}->{req_id},
                         ohlc     => {
                             id          => $feed_channels_type->{$channel}->{uuid},
                             epoch       => $m[1],

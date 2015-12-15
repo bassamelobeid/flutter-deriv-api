@@ -58,6 +58,7 @@ sub send_proposal {
             json => {
                 msg_type               => 'proposal_open_contract',
                 echo_req               => $details,
+                req_id                 => $details->{req_id},
                 proposal_open_contract => {
                     id => $id,
                     %$latest
