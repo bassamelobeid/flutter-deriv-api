@@ -20,15 +20,22 @@ sub payout_currencies {
 sub landing_company {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Accounts::landing_company($args);
-    if (exists $response->{error}) {
-        return $c->new_error('landing_company', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type        => 'landing_company',
-            landing_company => $response
-        };
-    }
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'landing_company',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('landing_company', $response->{error}->{code}, $response->{error}->{message_to_client});
+            }
+            return {
+                msg_type        => 'landing_company',
+                landing_company => $response
+            };
+        },
+        $args
+    );
+    return;
 }
 
 sub landing_company_details {
@@ -197,6 +204,7 @@ sub send_realtime_balance {
             json => {
                 msg_type => 'balance',
                 echo_req => $args,
+                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                 balance => BOM::RPC::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
     return;
 }

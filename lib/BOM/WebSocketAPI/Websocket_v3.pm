@@ -21,6 +21,7 @@ use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
+use MojoX::JSON::RPC::Client;
 
 sub ok {
     my $c      = shift;
@@ -99,6 +100,7 @@ sub entry_point {
                 } else {
                     $data->{echo_req} = $p1;
                 }
+                $data->{req_id} = $p1->{req_id} if (exists $p1->{req_id});
             } else {
                 # for invalid call, eg: not json
                 $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
@@ -122,13 +124,8 @@ sub entry_point {
     # stop all recurring
     $c->on(
         finish => sub {
-            my ($c) = @_;
-            my $ws_id = $c->tx->connection;
-            foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-                Mojo::IOLoop->remove($id);
-            }
-            delete $c->{ws}{$ws_id};
-            delete $c->{fmb_ids}{$ws_id};
+            my $c = shift;
+            BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
         });
 
     return;
@@ -143,6 +140,7 @@ sub __handle {
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
         ['authorize',                 \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,                        0],
+        ['logout',                    \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout,                           0],
         ['trading_times',             \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,              0],
         ['asset_index',               \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,                0],
         ['active_symbols',            \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::active_symbols,             0],
@@ -265,6 +263,64 @@ sub _failed_key_value {
     if ($key !~ /^[A-Za-z0-9_-]{1,50}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/='&\$]{0,256}$/) {
         return ($key, $value);
     }
+    return;
+}
+
+sub _rpc_client {
+    state $client = MojoX::JSON::RPC::Client->new;
+    return $client;
+}
+
+sub rpc {
+    my $self     = shift;
+    my $method   = shift;
+    my $callback = shift;
+    my $params   = shift;
+
+    my $client  = _rpc_client;
+    my $url     = 'http://127.0.0.1:5005/' . $method;
+    my $callobj = {
+        id     => 1,
+        method => $method,
+        params => $params
+    };
+
+    $client->call(
+        $url, $callobj,
+        sub {
+            my $res = pop;
+            if (!$res) {
+                my $tx_res = $client->tx->res;
+                warn $tx_res->message;
+                $self->send({json => $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'))});
+                return;
+            }
+            if ($res->is_error) {
+                warn $res->error_message;
+                $self->send({json => $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message))});
+                return;
+            }
+            my $send = 1;
+            my $data = &$callback($res->result);
+
+            if (not $data) {
+                $send = undef;
+                $data = {};
+            }
+
+            $data->{echo_req} = $params;
+            $data->{version}  = 3;
+
+            my $l = length JSON::to_json($data);
+            if ($l > 328000) {
+                $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
+                $data->{echo_req} = $params;
+            }
+            if ($send) {
+                $self->send({json => $data});
+            }
+            return;
+        });
     return;
 }
 
