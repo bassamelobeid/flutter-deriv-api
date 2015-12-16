@@ -7,6 +7,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
+use Redis::CacheDB;
 use Date::Utility;
 use BOM::Market::Data::Tick;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
@@ -67,14 +68,16 @@ cmp_ok(
     $bet->pricing_engine->economic_events_spot_risk_markup->amount,
     'vol risk markup is lower than higher range'
 );
-ok !$bet->double_volatility_risk_markup, 'regular volatility risk markup';
+ok !$bet->pricing_engine->double_volatility_risk_markup, 'regular volatility risk markup';
 is($bet->pricing_engine->economic_events_markup->amount, 0.0198959999973886, 'economic events markup is max of spot or vol risk markup');
 
 subtest 'double economic events volatility risk markup' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('economic_events', {symbol => 'USD', release_date => $now, recorded_date => $now, impact => 5, event_name => 'test'});
+    my $redis = Cache::RedisDB->redis;
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     my $c = produce_contract($params);
-    ok $c->pricing_engine->economic_events_volatility_risk_markup;
-    ok $c->double_volatility_risk_markup, 'double volatility risk markup';
+    ok $c->pricing_engine->economic_events_spot_risk_markup;
+    ok $c->pricing_engine->double_volatility_risk_markup, 'double volatility risk markup';
 };
 
 done_testing;
