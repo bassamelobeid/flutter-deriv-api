@@ -18,8 +18,7 @@ sub residence_list {
                 residence_list => $response,
             };
         },
-        {args => $args}
-    );
+        {args => $args});
     return;
 }
 
@@ -36,8 +35,7 @@ sub states_list {
                 residence_list => $response,
             };
         },
-        {args => $args}
-    );
+        {args => $args});
     return;
 }
 
