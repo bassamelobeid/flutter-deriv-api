@@ -14,7 +14,7 @@ sub residence_list {
 sub states_list {
     my $params = shift;
 
-    my $args   = $params->{args};
+    my $args    = $params->{args};
     my $country = $args->{states_list};
 
     my $states = BOM::Platform::Locale::get_state_option($country);
