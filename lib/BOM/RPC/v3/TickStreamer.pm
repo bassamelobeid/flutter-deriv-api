@@ -14,7 +14,21 @@ use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 
 sub ticks_history {
-    my ($symbol, $args) = @_;
+    my $params = shift;
+    my $args   = $params->{args};
+    my $symbol = $args->{ticks_history};
+
+    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return $response;
+    }
+
+    if ($args->{subscribe} eq '1') {
+        my $license = BOM::RPC::v3::Contract::validate_license($symbol);
+        if ($license and exists $license->{error}) {
+            return $license;
+        }
+    }
 
     my $ul = BOM::Market::Underlying->new($symbol);
 
