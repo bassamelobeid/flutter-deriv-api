@@ -285,8 +285,8 @@ sub rpc {
 
     $params->{language} = $self->stash('language');
 
-    my $client  = _rpc_client;
-    my $url     = 'http://127.0.0.1:5005/' . $method;
+    my $client = _rpc_client;
+    my $url    = 'http://127.0.0.1:5005/' . $method;
 
     my $callobj = {
         id     => 1,
