@@ -60,10 +60,6 @@ Amount the feed for this exchange needs to be delayed, in minutes.
 
 A Date::Utility for a non-DST day which we believe represents normal trading for this exchange.
 
-=head2 open_on_weekends
-
-Is this exchange available for trading on a weekend?
-
 =cut
 
 has [qw(
@@ -131,11 +127,6 @@ has is_affected_by_dst => (
     is         => 'ro',
     isa        => 'Bool',
     lazy_build => 1,
-);
-
-has open_on_weekends => (
-    is      => 'ro',
-    default => 0,
 );
 
 =head2 trading_days

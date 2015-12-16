@@ -81,7 +81,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'RANDOM',
-        open_on_weekends => 1,
         trading_days     => 'everyday',
         holidays         => {},
         market_times     => {
@@ -100,7 +99,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'RANDOM_NOCTURNE',
-        open_on_weekends => 1,
         trading_days     => 'everyday',
         holidays         => {},
         market_times     => {
@@ -347,15 +345,11 @@ subtest "Holiday on weekends" => sub {
 };
 
 subtest 'Whole bunch of stuff.' => sub {
-    plan tests => 104;
+    plan tests => 101;
 
     is($LSE->weight_on(Date::Utility->new('2-Apr-13')), 1.0, 'open weight');
     is($LSE->weight_on(Date::Utility->new('1-Apr-13')), 0.0, 'holiday weight');
     is($LSE->weight_on(Date::Utility->new('1-Apr-13')), 0.0, 'weekend weight');
-
-    ok(!$LSE->open_on_weekends,   'LSE not open on weekends.');
-    ok(!$FOREX->open_on_weekends, 'FOREX not open on weekends.');
-    ok($RANDOM->open_on_weekends, 'RANDOM is open on weekends.');
 
     is($FOREX->trade_date_after(Date::Utility->new('20-Dec-13'))->date, '2013-12-23', '23-Dec-13 is next trading day on FOREX after 20-Dec-13');
 

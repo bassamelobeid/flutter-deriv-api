@@ -50,7 +50,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'TSE',
-        open_on_weekends => 0,
         delay_amount     => 1440,
         holidays         => {
             '14-Oct-13' => 'Health Sport Day',
@@ -76,7 +75,6 @@ foreach my $symbol (qw(ASX LSE SES)) {
         'exchange',
         {
             symbol           => $symbol,
-            open_on_weekends => 0,
             delay_amount     => 1440,
             holidays         => {
                 '1-Jan-16' => 'New Year Day',
@@ -96,7 +94,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'RANDOM',
-        open_on_weekends => 1,
         delay_amount     => 0,
         market_times     => {
             standard => {
@@ -112,7 +109,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'FSE',
-        open_on_weekends => 0,
         delay_amount     => 15,
         market_times     => {
             standard => {
@@ -133,7 +129,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'NYSE',
-        open_on_weekends => 0,
         delay_amount     => 1440,
         market_times     => {
             dst => {
@@ -154,7 +149,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'NYSE_SPC',
-        open_on_weekends => 0,
         delay_amount     => 1440,
         market_times     => {
             dst => {
