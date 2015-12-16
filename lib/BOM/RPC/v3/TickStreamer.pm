@@ -27,7 +27,7 @@ sub get_bid {
     my $params = shift;
     my $args   = $params->{args};
 
-    return BOM::RPC::v3::Contract::get_bid($details->{short_code}, $details->{contract_id}, $details->{currency});
+    return BOM::RPC::v3::Contract::get_bid($args->{short_code}, $args->{contract_id}, $args->{currency});
 }
 
 sub ticks_history {
