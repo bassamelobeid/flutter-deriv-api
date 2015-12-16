@@ -75,6 +75,7 @@ sub proposal {
         my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
         async_send_ask($c, $id, $args);
     }
+    return;
 }
 
 sub async_send_ask {
