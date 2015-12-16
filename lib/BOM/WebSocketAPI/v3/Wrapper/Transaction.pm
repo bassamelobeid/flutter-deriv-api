@@ -13,8 +13,7 @@ sub buy {
         or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'buy',
+        $c, 'buy',
         sub {
             my $response = shift;
             if (exists $response->{error}) {
@@ -25,8 +24,12 @@ sub buy {
                 buy      => $response
             };
         },
-        {args => $args, client_loginid => $c->stash('client')->loginid, source => $c->stash('source'), contract_parameters => $contract_parameters}
-    );
+        {
+            args                => $args,
+            client_loginid      => $c->stash('client')->loginid,
+            source              => $c->stash('source'),
+            contract_parameters => $contract_parameters
+        });
     return;
 }
 
@@ -34,8 +37,7 @@ sub sell {
     my ($c, $args) = @_;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'sell',
+        $c, 'sell',
         sub {
             my $response = shift;
             if (exists $response->{error}) {
@@ -46,8 +48,10 @@ sub sell {
                 buy      => $response
             };
         },
-        {args => $args, client_loginid => $c->stash('client')->loginid, source => $c->stash('source')}
-    );
+        {
+            args           => $args,
+            client_loginid => $c->stash('client')->loginid,
+            source         => $c->stash('source')});
     return;
 }
 

@@ -48,7 +48,8 @@ sub ticks_history {
             if (exists $args->{subscribe}) {
                 if ($args->{subscribe} eq '1') {
                     if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish})) {
-                        return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
+                        return $c->new_error('ticks_history', 'AlreadySubscribed',
+                            $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
                     }
                 } else {
                     _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $response->{publish});
@@ -58,10 +59,8 @@ sub ticks_history {
             return {
                 msg_type => $response->{type},
                 %{$response->{data}}};
-            }
         },
-        {args => $args}
-    );
+        {args => $args});
     return;
 }
 
