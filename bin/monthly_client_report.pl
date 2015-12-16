@@ -40,7 +40,7 @@ sub go {
         select
             '$month_end',
             acc.client_loginid,
-            'Bet $Buy_Sell',
+            'Contract $Buy_Sell',
             abs(sum(trx.amount)),
             sum(trx.amount),
             acc.currency_code,
