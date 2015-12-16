@@ -1,0 +1,1654 @@
+---
+ADS:
+  currency: AED
+  delay_amount: '1440'
+  display_name: Abu Dhabi Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 10h
+      daily_open: 6h
+      daily_settlement: 13h
+  symbol: ADS
+  tenfore_trading_timezone: UTC
+  trading_days: sun_thru_thu
+  trading_timezone: Asia/Dubai
+ASX:
+  currency: AUD
+  delay_amount: '15'
+  display_name: Australian Stock Exchange
+  market_times:
+    dst:
+      daily_close: 5h
+      daily_open: -1h
+      daily_settlement: 8h
+    early_closes:
+      23-Dec-2011: 3h10m
+      24-Dec-2009: 3h10m
+      24-Dec-2010: 3h10m
+      24-Dec-2012: 3h10m
+      24-Dec-2013: 3h10m
+      24-Dec-2014: 3h10m
+      24-Dec-2015: 3h10m
+      30-Dec-2011: 3h10m
+      31-Dec-2009: 3h10m
+      31-Dec-2010: 3h10m
+      31-Dec-2012: 3h10m
+      31-Dec-2013: 3h10m
+      31-Dec-2014: 3h10m
+      31-Dec-2015: 3h10m
+    partial_trading:
+      dst_close: 3h10m
+      dst_open: -1h
+      standard_close: 4h10m
+      standard_open: 0s
+    standard:
+      daily_close: 6h
+      daily_open: 0s
+      daily_settlement: 9h
+  symbol: ASX
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Australia/Sydney
+ASX_S:
+  currency: AUD
+  delay_amount: '20'
+  display_name: Australian Stock Exchange
+  market_times:
+    dst:
+      daily_close: 5h
+      daily_open: -1h
+      daily_settlement: 8h
+    early_closes:
+      24-Dec-2013: 3h10m
+      24-Dec-2014: 3h10m
+      24-Dec-2015: 3h10m
+      31-Dec-2013: 3h10m
+      31-Dec-2014: 3h10m
+      31-Dec-2015: 3h10m
+    partial_trading:
+      dst_close: 3h10m
+      dst_open: -1h
+      standard_close: 4h10m
+      standard_open: 0s
+    standard:
+      daily_close: 6h
+      daily_open: 0s
+      daily_settlement: 9h
+  symbol: ASX_S
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Australia/Sydney
+BI:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: Borsa Italiana
+  market_times:
+    dst:
+      daily_close: 15h25m
+      daily_open: 7h
+      daily_settlement: 18h25m
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 16h25m
+      daily_open: 8h
+      daily_settlement: 19h25m
+  symbol: BI
+  tenfore_trading_timezone: Europe/Rome
+  trading_days: weekdays
+  trading_timezone: Europe/Rome
+BM:
+  currency: EUR
+  delay_amount: '15'
+  display_name: Borsa Madrid
+  market_times:
+    dst:
+      daily_close: 15h30m
+      daily_open: 7h
+      daily_settlement: 18h30m
+    early_closes:
+      24-Dec-2012: 13h00m
+      24-Dec-2013: 13h00m
+      24-Dec-2014: 13h00m
+      24-Dec-2015: 7h
+      31-Dec-2012: 13h00m
+      31-Dec-2013: 13h00m
+      31-Dec-2014: 13h00m
+      31-Dec-2015: 7h
+    partial_trading:
+      dst_close: 8h
+      dst_open: 12h
+      standard_close: 7h
+      standard_open: 11h
+    standard:
+      daily_close: 16h30m
+      daily_open: 8h
+      daily_settlement: 19h30m
+  symbol: BM
+  tenfore_trading_timezone: Europe/Madrid
+  trading_days: weekdays
+  trading_timezone: Europe/Madrid
+BMF:
+  currency: BRL
+  delay_amount: '1440'
+  display_name: Borsa de Mercadorias Future Exchange
+  market_times:
+    dst:
+      daily_close: 18h55m
+      daily_open: 10h
+      daily_settlement: 23h59m59s
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 19h55m
+      daily_open: 11h
+      daily_settlement: 23h59m59s
+  symbol: BMF
+  tenfore_trading_timezone: America/Sao_Paulo
+  trading_days: weekdays
+  trading_timezone: EST
+BOVESPA:
+  currency: BRL
+  delay_amount: '15'
+  display_name: BOVESPA
+  market_times:
+    dst:
+      daily_close: 18h55m
+      daily_open: 12h00m
+      daily_settlement: 21h55m
+    early_closes:
+      17-Jun-2014: 16h25m
+      23-Jun-2014: 17h25m
+      28-Jun-2014: 17h25m
+      4-Jul-2014: 17h25m
+      8-Jul-2014: 17h25m
+    partial_trading: {}
+    standard:
+      daily_close: 19h55m
+      daily_open: 13h00m
+      daily_settlement: 22h55m
+  symbol: BOVESPA
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: America/Sao_Paulo
+BSE:
+  currency: INR
+  delay_amount: '10'
+  display_name: Bombay Stock Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 10h00m
+      daily_open: 03h45m
+      daily_settlement: 13h
+  symbol: BSE
+  tenfore_trading_timezone: Asia/Kolkata
+  trading_days: weekdays
+  trading_timezone: Asia/Kolkata
+CME:
+  currency: USD
+  delay_amount: '1440'
+  display_name: Chichago Board of Trade Exchange
+  market_times:
+    dst:
+      daily_close: 21h15m
+      daily_open: -2h
+      daily_settlement: 23h59m59s
+    early_closes:
+      12-Feb-2016: 18h15m
+      15-Feb-2016: 18h15m
+      15-Jan-2016: 18h15m
+      16-Feb-2015: 18h15m
+      18-Jan-2016: 18h15m
+      2-Apr-2015: 17h15m
+      2-Jan-2015: 18h15m
+      2-Jul-2015: 17h15m
+      2-Sep-2016: 17h15m
+      24-Dec-2014: 18h15m
+      24-Dec-2015: 18h15m
+      24-Mar-2016: 17h15m
+      25-May-2015: 17h15m
+      27-May-2016: 17h15m
+      27-Nov-2015: 18h15m
+      30-May-2016: 17h15m
+      4-Jul-2016: 17h15m
+      5-Sep-2016: 17h15m
+      7-Sep-2015: 17h15m
+    partial_trading:
+      dst_close: 17h15m
+      dst_open: -1h
+      standard_close: 18h15m
+      standard_open: -2h
+    standard:
+      daily_close: 22h15m
+      daily_open: -1h
+      daily_settlement: 23h59m59s
+  symbol: CME
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: America/New_York
+DFM:
+  currency: AED
+  delay_amount: '1440'
+  display_name: Dubai Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 9h45m
+      daily_open: 6h
+      daily_settlement: 12h45m
+  symbol: DFM
+  tenfore_trading_timezone: UTC
+  trading_days: sun_thru_thu
+  trading_timezone: Asia/Dubai
+EEI_AM:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: Euronext Derivatives Amsterdam Exchange
+  market_times:
+    dst:
+      daily_close: 20h00m
+      daily_open: 6h
+      daily_settlement: 23h59m59s
+    early_closes:
+      24-Dec-2014: 12h
+      24-Dec-2015: 12h
+      31-Dec-2014: 12h
+      31-Dec-2015: 12h
+    partial_trading:
+      dst_close: 11h
+      dst_open: 6h
+      standard_close: 12h
+      standard_open: 7h
+    standard:
+      daily_close: 21h00m
+      daily_open: 7h
+      daily_settlement: 23h59m59s
+  symbol: EEI_AM
+  tenfore_trading_timezone: Europe/Berlin
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+EEI_BU:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: Euronext Derivatives Brussels Exchange
+  market_times:
+    dst:
+      daily_close: 15h35m
+      daily_open: 7h
+      daily_settlement: 23h59m59s
+    early_closes:
+      24-Dec-2014: 12h
+      24-Dec-2015: 12h
+      31-Dec-2014: 12h
+      31-Dec-2015: 12h
+    partial_trading:
+      dst_close: 11h
+      dst_open: 7h
+      standard_close: 12h
+      standard_open: 8h
+    standard:
+      daily_close: 16h35m
+      daily_open: 8h
+      daily_settlement: 23h59m59s
+  symbol: EEI_BU
+  tenfore_trading_timezone: Europe/Berlin
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+EEI_LI:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: Euronext Derivatives Lisbon Exchange
+  market_times:
+    dst:
+      daily_close: 15h40m
+      daily_open: 7h
+      daily_settlement: 23h59m59s
+    early_closes:
+      24-Dec-2014: 12h
+      24-Dec-2015: 12h
+      31-Dec-2014: 12h
+      31-Dec-2015: 12h
+    partial_trading:
+      dst_close: 11h
+      dst_open: 7h
+      standard_close: 12h
+      standard_open: 8h
+    standard:
+      daily_close: 16h40m
+      daily_open: 8h
+      daily_settlement: 23h59m59s
+  symbol: EEI_LI
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+EEI_PA:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: Euronext Derivatives Paris Exchange
+  market_times:
+    dst:
+      daily_close: 20h00m
+      daily_open: 6h
+      daily_settlement: 23h59m59s
+    early_closes:
+      24-Dec-2014: 12h
+      24-Dec-2015: 12h
+      31-Dec-2014: 12h
+      31-Dec-2015: 12h
+    partial_trading:
+      dst_close: 11h
+      dst_open: 6h
+      standard_close: 12h
+      standard_open: 7h
+    standard:
+      daily_close: 21h00m
+      daily_open: 7h
+      daily_settlement: 23h59m59s
+  symbol: EEI_PA
+  tenfore_trading_timezone: Europe/Berlin
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+EGX:
+  currency: EGP
+  delay_amount: '1440'
+  display_name: Egypt Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 12h30m
+      daily_open: 8h
+      daily_settlement: 15h30m
+  symbol: EGX
+  tenfore_trading_timezone: UTC
+  trading_days: sun_thru_thu
+  trading_timezone: Asia/Dubai
+EUREX:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: EUREX
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 5h50m
+      daily_settlement: 23h59m59s
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 21h
+      daily_open: 6h50m
+      daily_settlement: 23h59m59s
+  symbol: EUREX
+  tenfore_trading_timezone: Europe/Berlin
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+EUREX_SWISS:
+  currency: CHF
+  delay_amount: '1440'
+  display_name: EUREX SWISS Exchange
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 5h50m
+      daily_settlement: 23h59m59s
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 21h
+      daily_open: 6h50m
+      daily_settlement: 23h59m59s
+  symbol: EUREX_SWISS
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/Zurich
+EURONEXT:
+  currency: EUR
+  delay_amount: 0
+  display_name: EURONEXT
+  market_times:
+    dst:
+      daily_close: 15h30m
+      daily_open: 7h
+      daily_settlement: 18h30m
+    early_closes:
+      23-Dec-2011: 14h35m
+      24-Dec-2009: 13h
+      24-Dec-2010: 13h
+      24-Dec-2012: 13h
+      24-Dec-2013: 13h
+      24-Dec-2014: 13h
+      24-Dec-2015: 14h05m
+      30-Dec-2011: 14h35m
+      31-Dec-2009: 13h
+      31-Dec-2010: 13h
+      31-Dec-2012: 13h
+      31-Dec-2013: 13h
+      31-Dec-2014: 13h
+      31-Dec-2015: 14h05m
+    partial_trading:
+      dst_close: 13h05m
+      dst_open: 7h
+      standard_close: 14h05m
+      standard_open: 8h
+    standard:
+      daily_close: 16h30m
+      daily_open: 8h
+      daily_settlement: 19h30m
+  symbol: EURONEXT
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/Paris
+FOREX:
+  delay_amount: '0'
+  display_name: Forex
+  market_times:
+    early_closes:
+      18-Jan-2016: 18h00m
+      24-Dec-2015: 18h00m
+      26-Nov-2015: 18h00m
+      27-Nov-2015: 18h00m
+      31-Dec-2014: 18h00m
+      31-Dec-2015: 18h00m
+      5-Sep-2016: 18h00m
+    partial_trading: {}
+    standard:
+      daily_close: 23h59m59s
+      daily_open: 0s
+      daily_settlement: 23h59m59s
+  symbol: FOREX
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: UTC
+FS:
+  currency: GBP
+  delay_amount: '1440'
+  display_name: FS
+  market_times:
+    dst:
+      daily_close: 20h00m
+      daily_open: 13h30m
+      daily_settlement: 23h59m59s
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 21h00m
+      daily_open: 14h30m
+      daily_settlement: 23h59m59s
+  symbol: FS
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/London
+FSE:
+  currency: EUR
+  delay_amount: '15'
+  display_name: Frankfurt Stock Exchange
+  market_times:
+    dst:
+      daily_close: 15h30m
+      daily_open: 7h
+      daily_settlement: 18h30m
+    early_closes:
+      28-Dec-2012: 13h
+      30-Dec-2009: 13h
+      30-Dec-2010: 13h
+      30-Dec-2011: 13h
+      30-Dec-2013: 13h
+      30-Dec-2014: 13h
+      30-Dec-2015: 13h
+    partial_trading:
+      dst_close: 12h
+      dst_open: 7h
+      standard_close: 13h
+      standard_open: 8h
+    standard:
+      daily_close: 16h30m
+      daily_open: 8h
+      daily_settlement: 19h30m
+  symbol: FSE
+  tenfore_trading_timezone: Europe/Berlin
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+HKF:
+  currency: HKD
+  delay_amount: '1440'
+  display_name: Hong Kong Future Exchange
+  market_times:
+    early_closes:
+      18-Feb-2015: 4h
+      24-Dec-2014: 4h
+      24-Dec-2015: 4h
+      31-Dec-2014: 4h
+      31-Dec-2015: 4h
+    partial_trading:
+      standard_close: 4h
+      standard_open: 1h15m
+    standard:
+      afternoon_open: 5h
+      daily_close: 15h45m
+      daily_open: 1h15m
+      daily_settlement: 23h59m59s
+      morning_close: 4h
+  symbol: HKF
+  tenfore_trading_timezone: Asia/Hong_Kong
+  trading_days: weekdays
+  trading_timezone: Asia/Hong_Kong
+HKSE:
+  currency: HKD
+  delay_amount: '60'
+  display_name: Hong Kong Stock Exchange
+  market_times:
+    early_closes:
+      18-Feb-2015: 3h59m
+      2-Feb-2011: 4h30m
+      24-Dec-2009: 4h30m
+      24-Dec-2010: 4h30m
+      24-Dec-2012: 3h59m
+      24-Dec-2013: 3h59m
+      24-Dec-2014: 3h59m
+      24-Dec-2015: 3h59m
+      30-Jan-2014: 3h59m
+      31-Dec-2009: 4h30m
+      31-Dec-2010: 4h30m
+      31-Dec-2012: 3h59m
+      31-Dec-2013: 3h59m
+      31-Dec-2014: 3h59m
+      31-Dec-2015: 3h59m
+    late_opens:
+      24-Dec-10: 2h30m
+    partial_trading:
+      standard_close: 3h59m
+      standard_open: 1h30m
+    standard:
+      daily_close: 7h40m
+      daily_open: 1h30m
+      daily_settlement: 10h40m
+      trading_breaks:
+      - - 3h59m
+        - 5h00m
+  symbol: HKSE
+  tenfore_trading_timezone: Asia/Hong_Kong
+  trading_days: weekdays
+  trading_timezone: Asia/Hong_Kong
+ICE_LIFFE:
+  currency: GBP
+  delay_amount: '1440'
+  display_name: LIFFE Exchange
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 00h00m
+      daily_settlement: 23h59m59s
+    early_closes:
+      24-Dec-2014: 12h
+      24-Dec-2015: 12h
+      28-Dec-2015: 12h
+      31-Aug-2015: 12h
+      31-Dec-2014: 12h
+      31-Dec-2015: 12h
+    partial_trading:
+      dst_close: 11h
+      dst_open: 00h00m
+      standard_close: 12h
+      standard_open: 1h
+    standard:
+      daily_close: 21h
+      daily_open: 1h
+      daily_settlement: 23h59m59s
+  symbol: ICE_LIFFE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: UTC
+IDM:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: Borsa Italiana Future Exchange
+  market_times:
+    dst:
+      daily_close: 15h40m
+      daily_open: 7h
+      daily_settlement: 23h59m59s
+    early_closes: {}
+    partial_trading:
+      dst_close: 11h
+      dst_open: 7h
+      standard_close: 12h
+      standard_open: 8h
+    standard:
+      daily_close: 16h40m
+      daily_open: 8h
+      daily_settlement: 23h59m59s
+  symbol: IDM
+  tenfore_trading_timezone: Europe/Rome
+  trading_days: weekdays
+  trading_timezone: Europe/Rome
+ISE:
+  currency: EUR
+  delay_amount: '15'
+  display_name: Irish Stock Exchange
+  market_times:
+    dst:
+      daily_close: 15h30m
+      daily_open: 7h
+      daily_settlement: 21h30m
+    early_closes:
+      23-Dec-2011: 13h15m
+      24-Dec-2009: 13h15m
+      24-Dec-2010: 13h15m
+      24-Dec-2013: 13h15m
+      24-Dec-2014: 13h15m
+      24-Dec-2015: 12h30m
+      30-Dec-2011: 13h15m
+      31-Dec-2009: 13h15m
+      31-Dec-2010: 13h15m
+      31-Dec-2012: 13h15m
+      31-Dec-2013: 13h15m
+      31-Dec-2014: 13h15m
+      31-Dec-2015: 12h30m
+    partial_trading:
+      dst_close: 11h30m
+      dst_open: 7h
+      standard_close: 12h30m
+      standard_open: 8h
+    standard:
+      daily_close: 16h30m
+      daily_open: 8h
+      daily_settlement: 22h30m
+  symbol: ISE
+  tenfore_trading_timezone: CET
+  trading_days: weekdays
+  trading_timezone: Europe/Dublin
+JSC:
+  currency: IDR
+  delay_amount: '1440'
+  display_name: Jakarta Stock Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 8h50m
+      daily_open: 2h00m
+      daily_settlement: 11h50m
+      day_of_week_extended_trading_breaks: 5
+      trading_breaks:
+      - - 5h00m
+        - 6h30m
+      - - 4h30m
+        - 7h00m
+  symbol: JSC
+  tenfore_trading_timezone: Asia/Jakarta
+  trading_days: weekdays
+  trading_timezone: Asia/Jakarta
+JSE:
+  currency: ZAR
+  delay_amount: '30'
+  display_name: Johannesburg Stock Exchange
+  market_times:
+    early_closes:
+      24-Dec-2013: 10h
+      24-Dec-2014: 10h
+      24-Dec-2015: 10h
+      31-Dec-2013: 10h
+      31-Dec-2014: 10h
+      31-Dec-2015: 10h
+    partial_trading:
+      standard_close: 10h
+      standard_open: 7h
+    standard:
+      daily_close: 14h50m
+      daily_open: 7h
+      daily_settlement: 17h50m
+  symbol: JSE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Africa/Johannesburg
+KRX:
+  currency: KRW
+  delay_amount: '1440'
+  display_name: Korean Stock Exchange
+  market_times:
+    early_closes:
+      10-Nov-2016: 6h
+      12-Nov-2015: 6h
+      13-Nov-2014: 6h
+      2-Jan-2015: 6h
+      4-Jan-2016: 6h
+    late_opens:
+      2-Jan-14: 1h
+    partial_trading:
+      standard_close: 6h
+      standard_open: 1h
+    standard:
+      daily_close: 5h50m
+      daily_open: 0s
+      daily_settlement: 9h
+  symbol: KRX
+  tenfore_trading_timezone: Asia/Seoul
+  trading_days: weekdays
+  trading_timezone: Asia/Seoul
+LSE:
+  currency: GBP
+  delay_amount: '15'
+  display_name: London Stock Exchange
+  market_times:
+    dst:
+      daily_close: 15h30m
+      daily_open: 7h
+      daily_settlement: 18h30m
+    early_closes:
+      23-Dec-2011: 12h30m
+      24-Dec-2009: 12h30m
+      24-Dec-2010: 12h30m
+      24-Dec-2012: 12h30m
+      24-Dec-2013: 12h30m
+      24-Dec-2014: 12h30m
+      24-Dec-2015: 12h30m
+      30-Dec-2011: 12h30m
+      31-Dec-2009: 12h30m
+      31-Dec-2010: 12h30m
+      31-Dec-2012: 12h30m
+      31-Dec-2013: 12h30m
+      31-Dec-2014: 12h30m
+      31-Dec-2015: 12h30m
+    partial_trading:
+      dst_close: 11h30m
+      dst_open: 7h
+      standard_close: 12h30m
+      standard_open: 8h
+    standard:
+      daily_close: 16h30m
+      daily_open: 8h
+      daily_settlement: 19h30m
+  symbol: LSE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/London
+MEFF:
+  currency: EUR
+  delay_amount: '1440'
+  display_name: Marid Future Exchange
+  market_times:
+    dst:
+      daily_close: 18h
+      daily_open: 7h
+      daily_settlement: 23h59m59s
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 19h
+      daily_open: 8h
+      daily_settlement: 23h59m59s
+  symbol: MEFF
+  tenfore_trading_timezone: Europe/Madrid
+  trading_days: weekdays
+  trading_timezone: Europe/Madrid
+MOF:
+  currency: USD
+  delay_amount: '1440'
+  display_name: Russian future Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: ~
+    standard:
+      afternoon_open: 16h30m
+      daily_close: 20h50m
+      daily_open: 7h
+      daily_settlement: 23h59m59s
+      morning_close: 15h45m
+  symbol: MOF
+  tenfore_trading_timezone: Europe/Moscow
+  trading_days: weekdays
+  trading_timezone: UTC
+NASDAQ:
+  currency: USD
+  delay_amount: '60'
+  display_name: NASDAQ
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 13h30m
+      daily_settlement: 22h59m59s
+    early_closes:
+      23-Nov-2012: 18h
+      24-Dec-2012: 18h
+      24-Dec-2013: 18h
+      24-Dec-2014: 18h
+      24-Dec-2015: 18h
+      25-Nov-2011: 18h
+      26-Nov-2010: 18h
+      27-Nov-2015: 18h
+      28-Nov-2014: 18h
+      29-Nov-2013: 18h
+      3-Jul-2012: 17h
+      3-Jul-2013: 17h
+      3-Jul-2014: 17h
+    partial_trading:
+      dst_close: 17h
+      dst_open: 13h30m
+      standard_close: 18h
+      standard_open: 14h30m
+    standard:
+      daily_close: 21h
+      daily_open: 14h30m
+      daily_settlement: 23h59m59s
+  symbol: NASDAQ
+  tenfore_trading_timezone: America/New_York
+  trading_days: weekdays
+  trading_timezone: America/New_York
+NASDAQ_INDEX:
+  currency: USD
+  delay_amount: '60'
+  display_name: NASDAQ
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 13h30m
+      daily_settlement: 22h59m59s
+    early_closes:
+      23-Nov-2012: 18h
+      24-Dec-2012: 18h
+      24-Dec-2013: 18h
+      24-Dec-2014: 18h
+      24-Dec-2015: 18h
+      25-Nov-2011: 18h
+      26-Nov-2010: 18h
+      27-Nov-2015: 18h
+      28-Nov-2014: 18h
+      29-Nov-2013: 18h
+      3-Jul-2012: 17h
+      3-Jul-2013: 17h
+      3-Jul-2014: 17h
+    partial_trading:
+      dst_close: 17h
+      dst_open: 13h30m
+      standard_close: 18h
+      standard_open: 14h30m
+    standard:
+      daily_close: 21h
+      daily_open: 14h30m
+      daily_settlement: 23h59m59s
+  symbol: NASDAQ_INDEX
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: America/New_York
+NSE:
+  currency: INR
+  delay_amount: '15'
+  display_name: India National Stock Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 10h00m
+      daily_open: 03h45m
+      daily_settlement: 13h
+  symbol: NSE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Asia/Calcutta
+NYSE:
+  currency: USD
+  delay_amount: '1440'
+  display_name: New York Stock Exchange
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 13h30m
+      daily_settlement: 22h59m59s
+    early_closes:
+      23-Nov-2012: 18h
+      24-Dec-2012: 18h
+      24-Dec-2013: 18h
+      24-Dec-2014: 18h
+      24-Dec-2015: 18h
+      25-Nov-2011: 18h
+      26-Nov-2010: 18h
+      27-Nov-2015: 18h
+      28-Nov-2014: 18h
+      29-Nov-2013: 18h
+      3-Jul-2012: 17h
+      3-Jul-2013: 17h
+      3-Jul-2014: 17h
+    partial_trading:
+      dst_close: 17h
+      dst_open: 13h30m
+      standard_close: 18h
+      standard_open: 14h30m
+    standard:
+      daily_close: 21h
+      daily_open: 14h30m
+      daily_settlement: 23h59m59s
+  symbol: NYSE
+  tenfore_trading_timezone: America/New_York
+  trading_days: weekdays
+  trading_timezone: America/New_York
+NYSE_SPC:
+  currency: USD
+  delay_amount: '1440'
+  display_name: New York Stock Exchange
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 13h30m
+      daily_settlement: 22h59m59s
+    early_closes:
+      23-Nov-2012: 18h
+      24-Dec-2012: 18h
+      24-Dec-2013: 18h
+      24-Dec-2014: 18h
+      24-Dec-2015: 18h
+      25-Nov-2011: 18h
+      26-Nov-2010: 18h
+      27-Nov-2015: 18h
+      28-Nov-2014: 18h
+      29-Nov-2013: 18h
+      3-Jul-2012: 17h
+      3-Jul-2013: 17h
+      3-Jul-2014: 17h
+    partial_trading:
+      dst_close: 17h
+      dst_open: 13h30m
+      standard_close: 18h
+      standard_open: 14h30m
+    standard:
+      daily_close: 21h
+      daily_open: 14h30m
+      daily_settlement: 23h59m59s
+  symbol: NYSE_SPC
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: America/New_York
+NZSE:
+  currency: NZD
+  delay_amount: '15'
+  display_name: New Zealand Stock Exchange
+  market_times:
+    dst:
+      daily_close: 6h
+      daily_open: -1h
+      daily_settlement: 9h
+    early_closes:
+      1-Apr-2010: 4h
+      17-Apr-2014: 5h
+      2-Apr-2015: 6h
+      21-Apr-2011: 4h
+      23-Dec-2011: 3h
+      24-Dec-2010: 3h
+      24-Dec-2012: 3h
+      24-Dec-2014: 6h
+      24-Dec-2015: 6h
+      24-Mar-2016: 6h
+      30-Dec-2011: 3h
+      31-Dec-2010: 3h
+      31-Dec-2012: 3h
+      31-Dec-2014: 6h
+      31-Dec-2015: 6h
+    partial_trading:
+      dst_close: 6h
+      dst_open: -1h
+      standard_close: 5h
+      standard_open: -2h
+    standard:
+      daily_close: 5h
+      daily_open: -2h
+      daily_settlement: 8h
+  symbol: NZSE
+  tenfore_trading_timezone: Pacific/Auckland
+  trading_days: weekdays
+  trading_timezone: Pacific/Auckland
+ODLS:
+  currency: USD
+  delay_amount: '0'
+  display_name: ODL Securities
+  market_times:
+    dst:
+      daily_close: 18h30m
+      daily_open: 7h15m
+      daily_settlement: 23h59m59s
+    early_closes:
+      23-Dec-2011: 12h30m
+      24-Dec-2009: 12h30m
+      24-Dec-2010: 12h30m
+      24-Dec-2012: 12h30m
+      24-Dec-2013: 12h30m
+      24-Dec-2014: 12h30m
+      24-Dec-2015: 12h30m
+      30-Dec-2011: 12h30m
+      31-Dec-2009: 12h30m
+      31-Dec-2010: 12h30m
+      31-Dec-2012: 12h30m
+      31-Dec-2013: 12h30m
+      31-Dec-2014: 12h30m
+      31-Dec-2015: 12h30m
+    partial_trading:
+      dst_close: 11h30m
+      dst_open: 7h15m
+      standard_close: 12h30m
+      standard_open: 8h15m
+    standard:
+      daily_close: 19h30m
+      daily_open: 8h15m
+      daily_settlement: 23h59m59s
+  symbol: ODLS
+  tenfore_trading_timezone: Europe/London
+  trading_days: weekdays
+  trading_timezone: Europe/London
+OMX:
+  currency: SEK
+  delay_amount: '15'
+  display_name: OMX
+  market_times:
+    dst:
+      daily_close: 15h25m
+      daily_open: 7h
+      daily_settlement: 18h25m
+    early_closes:
+      1-Apr-2010: 11h
+      1-Jun-2011: 11h
+      1-Nov-2013: 12h
+      12-May-2010: 11h
+      13-May-2015: 11h
+      16-May-2012: 11h
+      17-Apr-2014: 11h
+      2-Apr-2015: 11h
+      2-Nov-2012: 12h
+      21-Apr-2011: 11h
+      24-Mar-2016: 12h
+      28-Mar-2013: 12h
+      28-May-2014: 11h
+      30-Apr-2010: 11h
+      30-Apr-2012: 11h
+      30-Apr-2013: 11h
+      30-Apr-2014: 11h
+      30-Apr-2015: 11h
+      30-Oct-2015: 12h
+      31-Oct-2014: 12h
+      4-May-2016: 11h
+      4-Nov-2011: 12h
+      4-Nov-2016: 12h
+      5-Apr-2012: 11h
+      5-Jan-2010: 12h
+      5-Jan-2011: 12h
+      5-Jan-2012: 12h
+      5-Jan-2015: 12h
+      5-Jan-2016: 12h
+      5-Nov-2010: 12h
+      8-May-2013: 11h
+    partial_trading:
+      dst_close: 11h
+      dst_open: 7h
+      standard_close: 12h
+      standard_open: 8h
+    standard:
+      daily_close: 16h25m
+      daily_open: 8h
+      daily_settlement: 19h25m
+  symbol: OMX
+  tenfore_trading_timezone: Europe/Stockholm
+  trading_days: weekdays
+  trading_timezone: Europe/Stockholm
+OSE:
+  currency: JPY
+  delay_amount: '1440'
+  display_name: Osaka Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: ~
+    standard:
+      afternoon_open: 7h30m
+      daily_close: 17h55m
+      daily_open: 0s
+      daily_settlement: 23h59m59s
+      morning_close: 6h15m
+  symbol: OSE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Asia/Tokyo
+OSLO:
+  currency: NOK
+  delay_amount: '15'
+  display_name: OSLO
+  market_times:
+    dst:
+      daily_close: 14h30m
+      daily_open: 07h00m
+      daily_settlement: 17h30m
+    early_closes:
+      1-Apr-2015: 11h
+      23-Mar-2016: 12h
+    partial_trading:
+      dst_close: 11h
+      dst_open: 7h
+      standard_close: 12h
+      standard_open: 8h
+    standard:
+      daily_close: 15h30m
+      daily_open: 08h00m
+      daily_settlement: 18h30m
+  symbol: OSLO
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/Oslo
+RANDOM:
+  delay_amount: '0'
+  display_name: Randoms
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 23h59m59s
+      daily_open: 0s
+      daily_settlement: 23h59m59s
+  symbol: RANDOM
+  tenfore_trading_timezone: NA
+  trading_days: everyday
+  trading_timezone: UTC
+RANDOM_NOCTURNE:
+  delay_amount: '0'
+  display_name: Nocturnal Randoms
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 11h59m59s
+      daily_open: -12h
+      daily_settlement: 11h59m59s
+  symbol: RANDOM_NOCTURNE
+  tenfore_trading_timezone: NA
+  trading_days: everyday
+  trading_timezone: UTC
+RTS:
+  currency: USD
+  delay_amount: '15'
+  display_name: RTS
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 15h45m
+      daily_open: 07h00m
+      daily_settlement: 18h45m
+  symbol: RTS
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/Moscow
+SAS:
+  currency: SAR
+  delay_amount: '1440'
+  display_name: Saudi Arabic Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 12h30m
+      daily_open: 8h
+      daily_settlement: 15h30m
+  symbol: SAS
+  tenfore_trading_timezone: UTC
+  trading_days: sun_thru_thu
+  trading_timezone: Asia/Dubai
+SES:
+  currency: SGD
+  delay_amount: '1440'
+  display_name: Singapore Stock Exchange
+  market_times:
+    early_closes:
+      18-Feb-2015: 4h30m
+      2-Feb-2011: 4h30m
+      24-Dec-2009: 4h30m
+      24-Dec-2010: 4h30m
+      24-Dec-2011: 4h30m
+      24-Dec-2013: 4h30m
+      24-Dec-2014: 4h30m
+      24-Dec-2015: 4h30m
+      30-Jan-2014: 4h30m
+      31-Dec-2009: 4h30m
+      31-Dec-2010: 4h30m
+      31-Dec-2012: 4h30m
+      31-Dec-2013: 4h30m
+      31-Dec-2014: 4h30m
+      31-Dec-2015: 4h30m
+    partial_trading:
+      standard_close: 4h30m
+      standard_open: 1h
+    standard:
+      daily_close: 9h
+      daily_open: 1h
+      daily_settlement: 12h
+  symbol: SES
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Asia/Singapore
+SFE:
+  currency: AUD
+  delay_amount: '1440'
+  display_name: Sydney Future Exchange
+  market_times:
+    dst:
+      afternoon_open: 6h30m
+      daily_close: 8h00m
+      daily_open: -2h50m
+      daily_settlement: 23h59m59s
+      morning_close: 6h00m
+    early_closes:
+      1-Sep-2014: 4h10m
+      24-Dec-2014: 3h10m
+      24-Dec-2015: 3h10m
+      27-Nov-2014: 4h10m
+      31-Dec-2014: 3h10m
+      31-Dec-2015: 3h10m
+      8-Jun-2015: 4h10m
+    partial_trading:
+      dst_close: 3h10m
+      dst_open: -1h
+      standard_close: 4h10m
+      standard_open: -1h
+    standard:
+      afternoon_open: 7h30m
+      daily_close: 9h00m
+      daily_open: -1h50m
+      daily_settlement: 23h59m59s
+      morning_close: 7h00m
+  symbol: SFE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Australia/Sydney
+SGX:
+  currency: SGD
+  delay_amount: '1440'
+  display_name: Singapore Derivatives Exchange
+  market_times:
+    early_closes:
+      18-Feb-2015: 4h30m
+      24-Dec-2014: 4h30m
+      24-Dec-2015: 4h30m
+      31-Dec-2014: 4h30m
+      31-Dec-2015: 4h30m
+    partial_trading:
+      standard_close: 4h30m
+      standard_open: 1h
+    standard:
+      daily_close: 9h
+      daily_open: 1h
+      daily_settlement: 23h59m59s
+  symbol: SGX
+  tenfore_trading_timezone: Asia/Singapore
+  trading_days: weekdays
+  trading_timezone: Asia/Singapore
+SP_GLOBAL:
+  currency: USD
+  delay_amount: '1440'
+  display_name: CME_GLOBAL
+  market_times:
+    dst:
+      daily_close: 20h00m
+      daily_open: 13h30m
+      daily_settlement: 23h59m59s
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 21h00m
+      daily_open: 14h30m
+      daily_settlement: 23h59m59s
+  symbol: SP_GLOBAL
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: America/Chicago
+SP_GSCI:
+  currency: USD
+  delay_amount: '1440'
+  display_name: SP_GSCI
+  market_times:
+    dst:
+      daily_close: 15h30m
+      daily_open: 07h00m
+      daily_settlement: 23h59m59s
+    early_closes:
+      24-Dec-2014: 15h30m
+      24-Dec-2015: 12h30m
+      27-Nov-2015: 12h30m
+      28-Nov-2014: 15h30m
+      3-Jul-2014: 16h30m
+    partial_trading:
+      dst_close: 11h30m
+      dst_open: 07h00m
+      standard_close: 12h30m
+      standard_open: 08h00m
+    standard:
+      daily_close: 16h30m
+      daily_open: 08h00m
+      daily_settlement: 23h59m59s
+  symbol: SP_GSCI
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: America/Chicago
+SSE:
+  currency: CNY
+  delay_amount: '15'
+  display_name: Shanghai Stock Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 7h
+      daily_open: 1h30m
+      daily_settlement: 10h
+      trading_breaks:
+      - - 3h30m
+        - 5h00m
+  symbol: SSE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Asia/Shanghai
+STOXX:
+  currency: EUR
+  delay_amount: '20'
+  display_name: STOXX Exchange
+  market_times:
+    dst:
+      daily_close: 15h30m
+      daily_open: 7h
+      daily_settlement: 18h30m
+    early_closes:
+      24-Dec-2015: 14h05m
+      31-Dec-2015: 14h05m
+    partial_trading:
+      dst_close: 13h05m
+      dst_open: 7h
+      standard_close: 14h05m
+      standard_open: 8h
+    standard:
+      daily_close: 16h30m
+      daily_open: 8h
+      daily_settlement: 19h30m
+  symbol: STOXX
+  tenfore_trading_timezone: Europe/Berlin
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+SWX:
+  currency: CHF
+  delay_amount: '1440'
+  display_name: Swiss Exchange
+  market_times:
+    dst:
+      daily_close: 15h20m
+      daily_open: 7h
+      daily_settlement: 18h20m
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 16h20m
+      daily_open: 8h
+      daily_settlement: 19h20m
+  symbol: SWX
+  tenfore_trading_timezone: Europe/Zurich
+  trading_days: weekdays
+  trading_timezone: Europe/Zurich
+SYNEURONEXT:
+  currency: EUR
+  delay_amount: '0'
+  display_name: Synthetic Euronext
+  market_times:
+    dst:
+      daily_close: 20h00m
+      daily_open: 7h15m
+      daily_settlement: 20h00m
+    early_closes: ~
+    standard:
+      daily_close: 21h00m
+      daily_open: 8h15m
+      daily_settlement: 21h00m
+  symbol: SYNEURONEXT
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/Paris
+SYNFSE:
+  currency: EUR
+  delay_amount: '0'
+  display_name: Synthetic FSE
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 7h15m
+      daily_settlement: 20h00m
+    early_closes:
+      30-Dec-2015: 13h
+    partial_trading:
+      dst_close: 12h
+      dst_open: 7h15m
+      standard_close: 13h
+      standard_open: 8h15m
+    standard:
+      daily_close: 21h00m
+      daily_open: 8h15m
+      daily_settlement: 21h00m
+  symbol: SYNFSE
+  tenfore_trading_timezone: Europe/Berling
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+SYNLSE:
+  currency: GBP
+  delay_amount: '0'
+  display_name: Synthetic LSE
+  market_times:
+    dst:
+      daily_close: 20h00m
+      daily_open: 7h15m
+      daily_settlement: 20h00m
+    early_closes: ~
+    standard:
+      daily_close: 21h00m
+      daily_open: 8h15m
+      daily_settlement: 21h00m
+  symbol: SYNLSE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Europe/London
+SYNNYSE_DJI:
+  currency: USD
+  delay_amount: '0'
+  display_name: Synthetic NYSE
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 7h15m
+      daily_settlement: 20h
+      trading_breaks:
+      - - 13h20m
+        - 13h40m
+    partial_trading:
+      dst_close: 17h
+      dst_open: 13h40m
+      standard_close: 18h
+      standard_open: 14h40m
+    standard:
+      daily_close: 21h
+      daily_open: 8h15m
+      daily_settlement: 21h
+      trading_breaks:
+      - - 14h20m
+        - 14h40m
+  symbol: SYNNYSE_DJI
+  tenfore_trading_timezone: America/New_York
+  trading_days: weekdays
+  trading_timezone: America/New_York
+SYNNYSE_SPC:
+  currency: USD
+  delay_amount: '0'
+  display_name: Synthetic NYSE_SPC
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 7h20m
+      daily_settlement: 20h
+      trading_breaks:
+      - - 13h20m
+        - 13h40m
+    early_closes:
+      23-Nov-2012: 18h
+      24-Dec-2012: 18h
+      24-Dec-2013: 18h
+      24-Dec-2014: 18h
+      24-Dec-2015: 18h
+      25-Nov-2011: 18h
+      26-Nov-2010: 18h
+      27-Nov-2015: 18h
+      28-Nov-2014: 18h
+      29-Nov-2013: 18h
+      3-Jul-2012: 17h
+      3-Jul-2013: 17h
+      3-Jul-2014: 17h
+    partial_trading:
+      dst_close: 17h
+      dst_open: 13h40m
+      standard_close: 18h
+      standard_open: 14h40m
+    standard:
+      daily_close: 21h
+      daily_open: 8h20m
+      daily_settlement: 21h
+      trading_breaks:
+      - - 14h20m
+        - 14h40m
+  symbol: SYNNYSE_SPC
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: America/New_York
+SYNSTOXX:
+  currency: EUR
+  delay_amount: '0'
+  display_name: Synthetic STOXX
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 7h15m
+      daily_settlement: 20h
+    early_closes:
+      24-Dec-2015: 14h05m
+      31-Dec-2015: 14h05m
+    standard:
+      daily_close: 21h
+      daily_open: 8h15m
+      daily_settlement: 21h
+  symbol: SYNSTOXX
+  tenfore_trading_timezone: Europe/Berlin
+  trading_days: weekdays
+  trading_timezone: Europe/Berlin
+SYNSWX:
+  currency: CHF
+  delay_amount: '0'
+  display_name: Synthetic SWX
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 7h
+      daily_settlement: 20h
+    early_closes: ~
+    partial_trading: ~
+    standard:
+      daily_close: 21h
+      daily_open: 8h
+      daily_settlement: 21h
+  symbol: SYNSWX
+  tenfore_trading_timezone: Europe/Zurich
+  trading_days: weekdays
+  trading_timezone: Europe/Zurich
+SYNTSE:
+  currency: JPY
+  delay_amount: '0'
+  display_name: Synthetic TSE
+  market_times:
+    early_closes: ~
+    partial_trading: ~
+    standard:
+      daily_close: 20h00m
+      daily_open: 00h15m
+      daily_settlement: 20h00m
+  symbol: SYNTSE
+  tenfore_trading_timezone: Asia/Tokyo
+  trading_days: weekdays
+  trading_timezone: Asia/Tokyo
+SZSE:
+  currency: CNY
+  delay_amount: '30'
+  display_name: Shenzhen Stock Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 7h
+      daily_open: 1h30m
+      daily_settlement: 10h
+      trading_breaks:
+      - - 3h30m
+        - 5h00m
+  symbol: SZSE
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Asia/Shanghai
+TRSE:
+  currency: CAD
+  delay_amount: '1440'
+  display_name: Toronto Stock Exchange
+  market_times:
+    dst:
+      daily_close: 20h
+      daily_open: 13h30m
+      daily_settlement: 22h59m59s
+    early_closes:
+      24-Dec-2010: 18h
+      24-Dec-2013: 18h
+      24-Dec-2014: 18h
+      24-Dec-2015: 18h
+    partial_trading:
+      dst_close: 17h
+      dst_open: 13h30m
+      standard_close: 18h
+      standard_open: 14h30m
+    standard:
+      daily_close: 21h
+      daily_open: 14h30m
+      daily_settlement: 23h59m59s
+  symbol: TRSE
+  tenfore_trading_timezone: America/Toronto
+  trading_days: weekdays
+  trading_timezone: America/Toronto
+TSE:
+  currency: JPY
+  delay_amount: '1440'
+  display_name: Tokyo Stock Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      daily_close: 6h
+      daily_open: 0s
+      daily_settlement: 9h
+      trading_breaks:
+      - - 2h30m
+        - 3h30m
+  symbol: TSE
+  tenfore_trading_timezone: Asia/Tokyo
+  trading_days: weekdays
+  trading_timezone: Asia/Tokyo
+TSE_S:
+  currency: JPY
+  delay_amount: '1440'
+  display_name: Tokyo Stock Exchange
+  market_times:
+    early_closes: {}
+    partial_trading: {}
+    standard:
+      afternoon_open: 3h30m
+      daily_close: 6h
+      daily_open: 0s
+      daily_settlement: 9h
+      morning_close: 2h30m
+  symbol: TSE_S
+  tenfore_trading_timezone: UTC
+  trading_days: weekdays
+  trading_timezone: Asia/Tokyo
