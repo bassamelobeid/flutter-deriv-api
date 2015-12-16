@@ -36,9 +36,8 @@ use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
-
 use BOM::Utility::Log4perl qw( get_logger );
-
+use YAML::XS qw(LoadFile);
 # We're going to do this from time to time.
 # I claim it's under control.
 ## no critic(TestingAndDebugging::ProhibitNoWarnings)
@@ -141,6 +140,39 @@ has open_on_weekends => (
     default => 0,
 );
 
+=head2 trading_days
+
+An exchange's trading day category. The list is enumerated in the exchanges_trading_days_aliases.yml file.
+
+=cut
+
+has trading_days => (
+    is      => 'ro',
+    default => 'weekdays',
+);
+
+=head2 trading_days_list
+
+List the trading day index which defined on config/files/exchanges_trading_days_aliases.yml
+
+=cut
+
+has trading_days_list => (
+    is         => 'ro',
+    isa        => 'ArrayRef',
+    lazy_build => 1,
+);
+
+{
+    my $trading_days_aliases = YAML::XS::LoadFile('/home/git/regentmarkets/bom-market/config/files/exchanges_trading_days_aliases.yml');
+
+    sub _build_trading_days_list {
+        my $self = shift;
+        return \@{$trading_days_aliases->{$self->trading_days}};
+
+    }
+}
+
 =head2 display_name
 
 A name we can show to someone someday
@@ -198,16 +230,16 @@ sub BUILDARGS {
     }
 
     $params_ref->{holidays} = \%holidays;
-
-    foreach my $dst_maybe (keys %{$params_ref->{market_times}}) {
-        foreach my $trading_segment (keys %{$params_ref->{market_times}->{$dst_maybe}}) {
-            if ($trading_segment ne 'trading_breaks') {
-                $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = Time::Duration::Concise::Localize->new(
-                    interval => $params_ref->{market_times}->{$dst_maybe}->{$trading_segment},
+    foreach my $key (keys %{$params_ref->{market_times}}) {
+        foreach my $trading_segment (keys %{$params_ref->{market_times}->{$key}}) {
+            if ($trading_segment eq 'day_of_week_extended_trading_breaks') { next; }
+            elsif ($trading_segment ne 'trading_breaks') {
+                $params_ref->{market_times}->{$key}->{$trading_segment} = Time::Duration::Concise::Localize->new(
+                    interval => $params_ref->{market_times}->{$key}->{$trading_segment},
                     locale   => BOM::Platform::Context::request()->language
                 );
             } else {
-                my $break_intervals = $params_ref->{market_times}->{$dst_maybe}->{$trading_segment};
+                my $break_intervals = $params_ref->{market_times}->{$key}->{$trading_segment};
                 my @converted;
                 foreach my $int (@$break_intervals) {
                     my $open_int = Time::Duration::Concise::Localize->new(
@@ -220,7 +252,7 @@ sub BUILDARGS {
                     );
                     push @converted, [$open_int, $close_int];
                 }
-                $params_ref->{market_times}->{$dst_maybe}->{$trading_segment} = \@converted;
+                $params_ref->{market_times}->{$key}->{$trading_segment} = \@converted;
             }
         }
     }
@@ -327,12 +359,8 @@ sub trades_on {
     my $really_when = $self->trading_date_for($when);
     my $days_since  = $really_when->days_since_epoch;
     my $symbol      = $self->symbol;
-
-    $trades_cache{$symbol}->{$days_since} //= ((
-                   $self->open_on_weekends
-                or $really_when->is_a_weekday
-        )
-            and not $self->has_holiday_on($really_when)) ? 1 : 0;
+    $trades_cache{$symbol}->{$days_since} //=
+        (@{$self->trading_days_list}[$really_when->day_of_week] and not $self->has_holiday_on($really_when)) ? 1 : 0;
 
     return $trades_cache{$symbol}->{$days_since};
 }
@@ -399,7 +427,6 @@ sub _build_trading_date_can_differ {
         map  { $self->market_times->{$_}->{daily_open} }
         grep { exists $self->market_times->{$_}->{daily_open} }
         keys %{$self->market_times};
-
     return (scalar @premidnight_opens) ? 1 : 0;
 }
 
@@ -855,13 +882,17 @@ sub _get_exchange_open_times {
     if ($self->trades_on($that_midnight)) {
         my $dst_key = $self->_times_dst_key($that_midnight);
         my $ti      = $self->market_times->{$dst_key}->{$which};
+        my $extended_lunch_hour;
+        if ($which eq 'trading_breaks') {
+            my $extended_trading_breaks = $self->market_times->{$dst_key}->{day_of_week_extended_trading_breaks};
+            $extended_lunch_hour = ($extended_trading_breaks and $when->day_of_week == $extended_trading_breaks) ? 1 : 0;
+        }
         if ($ti) {
             if (ref $ti eq 'ARRAY') {
-                for my $int (@$ti) {
-                    my $start_of_break = $that_midnight->plus_time_interval($int->[0]);
-                    my $end_of_break   = $that_midnight->plus_time_interval($int->[1]);
-                    push @{$requested_time}, [$start_of_break, $end_of_break];
-                }
+                my $trading_breaks = $extended_lunch_hour ? @$ti[1] : @$ti[0];
+                my $start_of_break = $that_midnight->plus_time_interval($trading_breaks->[0]);
+                my $end_of_break   = $that_midnight->plus_time_interval($trading_breaks->[1]);
+                push @{$requested_time}, [$start_of_break, $end_of_break];
             } else {
                 $requested_time = $that_midnight->plus_time_interval($ti);
             }
