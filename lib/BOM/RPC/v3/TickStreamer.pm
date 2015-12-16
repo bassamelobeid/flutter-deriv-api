@@ -27,10 +27,7 @@ sub get_bid {
     my $params = shift;
     my $args   = $params->{args};
 
-    my %details = %{$args};
-    my $response = BOM::RPC::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
-
-    return $response;
+    return BOM::RPC::v3::Contract::get_bid($details->{short_code}, $details->{contract_id}, $details->{currency});
 }
 
 sub ticks_history {
