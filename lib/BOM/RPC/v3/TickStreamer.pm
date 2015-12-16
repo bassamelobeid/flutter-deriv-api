@@ -125,7 +125,7 @@ sub candles {
             reverse @{
                 $ul->feed_api->ohlc_start_end({
                         start_time         => $first_stop,
-                        end_time           => $last_stop,
+                        end_time           => $last_stop - 1,
                         aggregation_period => $granularity,
                     })});
         my $last_ohlc = $ul->feed_api->ohlc_daily_list({
