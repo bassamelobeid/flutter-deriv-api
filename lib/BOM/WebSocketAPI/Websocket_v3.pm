@@ -262,7 +262,7 @@ sub _failed_key_value {
 
     # allow all printable ASCII char for password
     state %pwd_field;
-    $pwd_field{client_password} = 1 if (not %pwd_field);
+    %pwd_field = map { $_ => 1 } qw( client_password old_password new_password unlock_password lock_password ) if (not %pwd_field);
 
     if ($pwd_field{$key}) {
         return;
