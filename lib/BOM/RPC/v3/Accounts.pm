@@ -295,6 +295,11 @@ sub cashier_password {
             return $error_sub->(localize('Your cashier was locked.'));
         }
 
+        my $user = BOM::Platform::User->new({email => $client->email});
+        if (BOM::System::Password::checkpw($lock_password, $user->password)) {
+            return $error_sub->(localize('Please use a different password than your login password.'));
+        }
+
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
