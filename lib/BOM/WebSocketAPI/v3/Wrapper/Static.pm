@@ -31,8 +31,8 @@ sub states_list {
         sub {
             my $response = shift;
             return {
-                msg_type       => 'states_list',
-                residence_list => $response,
+                msg_type    => 'states_list',
+                states_list => $response,
             };
         },
         {args => $args});
