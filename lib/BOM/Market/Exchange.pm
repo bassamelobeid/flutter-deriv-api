@@ -30,7 +30,6 @@ use Carp;
 use Scalar::Util qw(looks_like_number);
 
 use Date::Utility;
-use BOM::Market::Currency;
 use BOM::MarketData::ExchangeConfig;
 use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
@@ -103,7 +102,6 @@ Exchange's main currency.
 
 has currency => (
     is  => 'ro',
-    isa => 'Maybe[BOM::Market::Currency]',
 );
 
 =head2 holidays
@@ -209,17 +207,6 @@ sub BUILDARGS {
     croak "Exchange symbol must be specified" unless $symbol;
     my $params_ref = BOM::MarketData::ExchangeConfig->new({symbol => $symbol})->get_parameters;
     $params_ref->{symbol} = $symbol;
-
-    if (defined $params_ref->{currency}) {
-        my $currency = uc $params_ref->{currency};
-        if (length($currency) != 3 or $currency eq 'NA') {
-            delete $params_ref->{currency};
-        } else {
-            $params_ref->{currency} = BOM::Market::Currency->new($currency);
-        }
-    } else {
-        delete $params_ref->{currency};
-    }
 
     my %holidays          = ();
     my $today_since_epoch = Date::Utility::today->days_since_epoch;
