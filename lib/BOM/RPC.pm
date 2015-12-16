@@ -10,7 +10,6 @@ use MojoX::JSON::RPC::Service;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
-use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Transaction;
 
 sub startup {
