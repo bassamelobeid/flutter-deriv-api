@@ -42,7 +42,7 @@ sub save {
         },
     };
 
-    BOM::System::Chronicle::set('holidays', 'holidays', $holiday_document);
+    return BOM::System::Chronicle::set('holidays', 'holidays', $holiday_document);
 }
 
 sub get_holidays_for {
