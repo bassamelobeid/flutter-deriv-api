@@ -7,7 +7,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
-use Redis::CacheDB;
+use Cache::RedisDB;
 use Date::Utility;
 use BOM::Market::Data::Tick;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
