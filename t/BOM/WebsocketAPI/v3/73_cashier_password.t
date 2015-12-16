@@ -43,14 +43,24 @@ is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
 # lock cashier
+$t = $t->send_ok({json => {cashier_password => 1}})->message_ok;
+my $res = decode_json($t->message->[1]);
+ok $res->{cashier_password} == 0, 'password was not set';
+test_schema('cashier_password', $res);
+
 my $password = rand();
 $t = $t->send_ok({
         json => {
             cashier_password => 1,
             lock_password    => $password
         }})->message_ok;
-my $res = decode_json($t->message->[1]);
+$res = decode_json($t->message->[1]);
 ok $res->{cashier_password};
+test_schema('cashier_password', $res);
+
+$t = $t->send_ok({json => {cashier_password => 1}})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{cashier_password} == 1, 'password was set';
 test_schema('cashier_password', $res);
 
 $t = $t->send_ok({
@@ -78,7 +88,12 @@ $t = $t->send_ok({
             unlock_password  => $password
         }})->message_ok;
 $res = decode_json($t->message->[1]);
-ok $res->{cashier_password};
+ok $res->{cashier_password} == 0;
+test_schema('cashier_password', $res);
+
+$t = $t->send_ok({json => {cashier_password => 1}})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{cashier_password} == 0, 'password was clear';
 test_schema('cashier_password', $res);
 
 $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
