@@ -25,12 +25,21 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_mojo_test();
 
 my $email     = 'abc@binary.com';
+my $password  = 'jskjd8292922';
+my $hash_pwd  = BOM::System::Password::hashpw($password);
 my $client_cr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
     broker_code => 'CR',
 });
 $client_cr->email($email);
 $client_cr->save;
 my $cr_1 = $client_cr->loginid;
+my $user = BOM::Platform::User->create(
+    email    => $email,
+    password => $hash_pwd
+);
+$user->save;
+$user->add_loginid({loginid => $cr_1});
+$user->save;
 
 my $token = BOM::Platform::SessionCookie->new(
     loginid => $cr_1,
@@ -48,8 +57,17 @@ my $res = decode_json($t->message->[1]);
 ok $res->{cashier_password} == 0, 'password was not set';
 test_schema('cashier_password', $res);
 
-my $password = rand();
+## use same password as login is not ok
 $t = $t->send_ok({
+        json => {
+            cashier_password => 1,
+            lock_password    => $password
+        }})->message_ok;
+$res = decode_json($t->message->[1]);
+ok $res->{error}->{message} =~ /Please use a different password than your login password/, 'Please use a different password than your login password';
+
+$password = rand();
+$t        = $t->send_ok({
         json => {
             cashier_password => 1,
             lock_password    => $password
