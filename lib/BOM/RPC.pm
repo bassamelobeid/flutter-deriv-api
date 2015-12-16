@@ -44,6 +44,12 @@ sub startup {
                 '/ticks_history'   => MojoX::JSON::RPC::Service->new->register('ticks_history',   \&BOM::RPC::v3::TickStreamer::ticks_history),
                 '/buy'             => MojoX::JSON::RPC::Service->new->register('buy',             \&BOM::RPC::v3::Transaction::buy),
                 '/sell'            => MojoX::JSON::RPC::Service->new->register('sell',            \&BOM::RPC::v3::Transaction::sell),
+            },
+            exception_handler => sub {
+                my ($dispatcher, $err, $m) = @_;
+                $dispatcher->app->log->error(qq{Internal error: $err});
+                $m->invalid_request('Invalid request');
+                return;
             }});
 
     return;
