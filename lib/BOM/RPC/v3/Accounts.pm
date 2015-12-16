@@ -273,10 +273,12 @@ sub cashier_password {
     my $lock_password   = $args->{lock_password}   // '';
 
     unless (length($unlock_password) || length($lock_password)) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'BadRequest',
-            message_to_client => localize('The application sent an invalid request.'),
-        });
+        # just return status
+        if (length $client->cashier_setting_password) {
+            return {status => 1};
+        } else {
+            return {status => 0};
+        }
     }
 
     my $error_sub = sub {
@@ -357,7 +359,7 @@ sub cashier_password {
                     'use_email_template' => 1,
                 });
             BOM::System::AuditLog::log('cashier unlocked', $client->loginid);
-            return {status => 1};
+            return {status => 0};
         }
     }
 }
