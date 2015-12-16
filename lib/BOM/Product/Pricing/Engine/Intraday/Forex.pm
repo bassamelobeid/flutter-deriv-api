@@ -629,6 +629,10 @@ sub _build_economic_events_volatility_risk_markup {
         $markup_base_amount = max(0, $tv_with_news - $tv_without_news);
     }
 
+    if ($self->double_volatility_risk_markup) {
+        $markup_base_amount *= 2;
+    }
+
     my $markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'economic_events_volatility_risk_markup',
         description => 'markup to account for volatility risk of economic events',

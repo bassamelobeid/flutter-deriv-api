@@ -7,6 +7,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
+use Cache::RedisDB;
 use Date::Utility;
 use BOM::Market::Data::Tick;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
@@ -47,7 +48,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     },
 );
 
-my $bet = produce_contract({
+my $params = {
     bet_type     => 'CALL',
     underlying   => 'frxUSDJPY',
     current_spot => 100,
@@ -57,7 +58,8 @@ my $bet = produce_contract({
     currency     => 'USD',
     payout       => 100,
     date_pricing => $now->minus_time_interval('10m'),
-});
+};
+my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
 is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.0198959999973886, 'correct spot risk markup');
 cmp_ok(
@@ -66,6 +68,16 @@ cmp_ok(
     $bet->pricing_engine->economic_events_spot_risk_markup->amount,
     'vol risk markup is lower than higher range'
 );
+ok !$bet->pricing_engine->double_volatility_risk_markup, 'regular volatility risk markup';
 is($bet->pricing_engine->economic_events_markup->amount, 0.0198959999973886, 'economic events markup is max of spot or vol risk markup');
+
+subtest 'double economic events volatility risk markup' => sub {
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('economic_events', {symbol => 'USD', release_date => $now, recorded_date => $now, impact => 5, event_name => 'test'});
+    my $redis = Cache::RedisDB->redis;
+    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
+    my $c = produce_contract($params);
+    ok $c->pricing_engine->economic_events_spot_risk_markup;
+    ok $c->pricing_engine->double_volatility_risk_markup, 'double volatility risk markup';
+};
 
 done_testing;
