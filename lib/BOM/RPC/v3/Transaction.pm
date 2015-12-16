@@ -16,10 +16,10 @@ use BOM::Platform::Context qw (localize);
 sub buy {
     my $params = shift;
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    my $source = $params->{source};
+    my $client              = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
-    my $args = $params->{args};
+    my $args                = $params->{args};
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
@@ -73,7 +73,7 @@ sub sell {
 
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     my $source = $params->{source};
-    my $args = $params->{args};
+    my $args   = $params->{args};
 
     my $id = $args->{sell};
 
