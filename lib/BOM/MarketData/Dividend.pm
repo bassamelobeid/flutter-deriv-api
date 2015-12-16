@@ -2,20 +2,73 @@ package BOM::MarketData::Dividend;
 
 =head1 NAME
 
-BOM::MarketData::Dividend
+BOM::MarketData::Dividend - A module to save/load dividends 
 
 =head1 DESCRIPTION
+
+This module saves/loads dividends data to/from Chronicle. 
+To save dividends for a company:
+
+my $corp_dividends = BOM::MarketData::Dividends->new(symbol => $symbol,
+        rates => { 1 => 0, 2 => 1, 3=> 0.04 }
+        discrete_points => { '2015-04-24' => 0, '2015-09-09' => 0.134 });
+ $corp_dividends->save;
+
+To read dividends information for a company:
+
+ my $corp_dividends = BOM::MarketData::Dividends->new(symbol => $symbol);
+
+ my $rates = $corp_dividends->rates;
+ my $disc_points = $corp_dividends->discrete_points;
 
 =cut
 
 use Moose;
 extends 'BOM::MarketData::Rates';
 
-has '_data_location' => (
+use BOM::System::Chronicle;
+
+=head2 for_date
+
+The date for which we wish data
+
+=cut
+
+has for_date => (
     is      => 'ro',
-    default => 'dividends',
+    isa     => 'Maybe[Date::Utility]',
+    default => undef,
 );
 
+=head2 symbol
+
+Represents underlying symbol
+
+=cut
+
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_document {
+    my $self = shift;
+
+    my $document = BOM::System::Chronicle::get('dividends', $self->symbol);
+
+    if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
+        $document = BOM::System::Chronicle::get_for('dividends', $self->symbol, $self->for_date->epoch);
+
+        # This works around a problem with Volatility surfaces and negative dates to expiry.
+        # We have to use the oldest available surface.. and we don't really know when it
+        # was relative to where we are now.. so just say it's from the requested day.
+        # We do not allow saving of historical surfaces, so this should be fine.
+        $document //= {};
+        $document->{date} = $self->for_date->datetime_iso8601;
+    }
+
+    return $document;
+}
 around _document_content => sub {
     my $orig = shift;
     my $self = shift;
@@ -28,7 +81,16 @@ around _document_content => sub {
     };
 };
 
-with 'BOM::MarketData::Role::VersionedSymbolData';
+sub save {
+    my $self = shift;
+
+    #if chronicle does not have this document, first create it because in document_content we will need it
+    if (not defined BOM::System::Chronicle::get('dividends', $self->symbol)) {
+        BOM::System::Chronicle::set('dividends', $self->symbol, {});
+    }
+
+    return BOM::System::Chronicle::set('dividends', $self->symbol, $self->_document_content);
+}
 
 =head2 recorded_date
 
@@ -60,6 +122,8 @@ has discrete_points => (
 
 sub _build_discrete_points {
     my $self = shift;
+
+    return if not defined $self->document;
     return $self->document->{discrete_points} || undef;
 }
 

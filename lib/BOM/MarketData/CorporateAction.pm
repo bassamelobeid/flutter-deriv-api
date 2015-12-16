@@ -1,31 +1,60 @@
 package BOM::MarketData::CorporateAction;
 
+use BOM::System::Chronicle;
+
 =head1 NAME
 
 BOM::MarketData::CorporateAction
 
 =head1 DESCRIPTION
 
-Represents the corporate actions data of an underlying from couch database
-$corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
+Represents the corporate actions data of an underlying from database. To read actions for a company:
+
+ my $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol);
+ my $actions = $corp->actions;
+
+
+To save actions for a company:
+
+ my $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol, 
+                                                    actions => {
+                                                        1234 => {
+                                                            monitor_date => "2014-02-07",
+                                                            type => "ACQUIS",
+                                                            description => "Acquisition",
+                                                            effective_date => "15-Jul-15",
+                                                            flag => "N", #N means new action, U means updated action, D means cancelled action
+                                                        }});
+ $corp->save();
 
 =cut
 
 use Moose;
-extends 'BOM::MarketData';
+extends 'BOM::MarketData';    #we keep this as its not related to CouchDB
+
+=head1 ATTRIBUTES
+
+=head2 for_date
+
+The date for which we wish data
+
+=cut
+
+has for_date => (
+    is      => 'ro',
+    isa     => 'Maybe[Date::Utility]',
+    default => undef,
+);
 
 =head2 symbol
+
 Represents underlying symbol
+
 =cut
 
 has symbol => (
     is       => 'ro',
     required => 1,
-);
-
-has _data_location => (
-    is      => 'ro',
-    default => 'corporate_actions'
 );
 
 has _existing_actions => (
@@ -35,6 +64,8 @@ has _existing_actions => (
 
 sub _build__existing_actions {
     my $self = shift;
+
+    return {} if not defined $self->document;
 
     return ($self->document->{actions}) ? $self->document->{actions} : {};
 }
@@ -71,7 +102,40 @@ around _document_content => sub {
     };
 };
 
-with 'BOM::MarketData::Role::VersionedSymbolData';
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_document {
+    my $self = shift;
+
+    my $document = BOM::System::Chronicle::get('corporate_actions', $self->symbol);
+
+    if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
+        $document = BOM::System::Chronicle::get_for('corporate_actions', $self->symbol, $self->for_date->epoch);
+
+        # This works around a problem with Volatility surfaces and negative dates to expiry.
+        # We have to use the oldest available surface.. and we don't really know when it
+        # was relative to where we are now.. so just say it's from the requested day.
+        # We do not allow saving of historical surfaces, so this should be fine.
+        $document //= {};
+        $document->{date} = $self->for_date->datetime_iso8601;
+    }
+
+    return $document;
+}
+
+sub save {
+    my $self = shift;
+
+    #TODO: if chronicle does not have this document, first create it because in document_content we will need it
+    if (not defined BOM::System::Chronicle::get('corporate_actions', $self->symbol)) {
+        BOM::System::Chronicle::set('corporate_actions', $self->symbol, {});
+    }
+
+    return BOM::System::Chronicle::set('corporate_actions', $self->symbol, $self->_document_content);
+}
 
 =head2 actions
 
@@ -87,7 +151,10 @@ has actions => (
 sub _build_actions {
     my $self = shift;
 
-    return $self->_couchdb->document_present($self->current_document_id) ? $self->document->{actions} : {};
+    my $document = $self->document;
+
+    return $document->{actions} if defined $document;
+    return {};
 }
 
 =head2 action_exists

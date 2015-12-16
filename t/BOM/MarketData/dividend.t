@@ -14,7 +14,7 @@ use Date::Utility;
 
 subtest 'save dividend' => sub {
     lives_ok {
-        throws_ok { BOM::MarketData::Dividend->new(symbol => 'AEX')->document } qr/404/, 'document is not present';
+        is(BOM::MarketData::Dividend->new(symbol => 'AEX')->document, undef, 'document is not present');
         my $dvd = BOM::MarketData::Dividend->new(
             rates           => {365          => 0},
             discrete_points => {'2014-10-10' => 0},

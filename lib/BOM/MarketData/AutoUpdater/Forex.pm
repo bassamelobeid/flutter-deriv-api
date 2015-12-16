@@ -86,7 +86,7 @@ sub _build_symbols_to_update {
     my %skip_list =
         map { $_ => 1 } (
         @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
-        qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD)
+        qw(frxBROUSD frxBROAUD frxBROEUR frxBROGBP frxXPTAUD frxXPDAUD frxAUDSAR)
         );
 
     my @symbols = grep { !$skip_list{$_} } (@forex, @commodities, @quanto_currencies);
