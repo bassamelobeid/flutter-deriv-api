@@ -81,33 +81,39 @@ sub proposal {
 sub send_ask {
     my ($c, $id, $args) = @_;
 
-    my %details  = %{$args};
-    my $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-    if ($response->{error}) {
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'send_ask',
+        sub {
+            my $response = shift;
 
-        my $proposal = {id => $id};
-        $proposal->{longcode}  = delete $response->{longcode}  if $response->{longcode};
-        $proposal->{ask_price} = delete $response->{ask_price} if $response->{ask_price};
-        $c->send({
-                json => {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => $proposal,
-                    %$response
-                }});
-    } else {
-        $c->send({
-                json => {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => {
-                        id => $id,
-                        %$response
-                    }}});
-    }
+            if ($response->{error}) {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+
+                my $proposal = {id => $id};
+                $proposal->{longcode}  = delete $response->{longcode}  if $response->{longcode};
+                $proposal->{ask_price} = delete $response->{ask_price} if $response->{ask_price};
+                $c->send({
+                        json => {
+                            msg_type => 'proposal',
+                            echo_req => $args,
+                            (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                            proposal => $proposal,
+                            %$response
+                        }});
+            } else {
+                $c->send({
+                        json => {
+                            msg_type => 'proposal',
+                            echo_req => $args,
+                            (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                            proposal => {
+                                id => $id,
+                                %$response
+                            }}});
+            }
+        },
+        {args => $args});
     return;
 }
 
