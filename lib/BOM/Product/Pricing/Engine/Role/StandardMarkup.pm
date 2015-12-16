@@ -541,8 +541,18 @@ sub get_applicable_economic_events {
     @applicable_news =
         sort { $a->release_date->epoch <=> $b->release_date->epoch } @applicable_news;
 
+    if (first { $_->symbol eq 'USD' and $_->impact eq 5 } @applicable_news) {
+        $self->double_volatility_risk_markup(1);
+    }
+
     return @applicable_news;
 }
+
+# a flag to double the volatility_risk_markup in case of USD level 5 news
+has double_volatility_risk_markup => (
+    is      => 'rw',
+    default => 0
+);
 
 sub _build_economic_events_spot_risk_markup {
     my $self = shift;
