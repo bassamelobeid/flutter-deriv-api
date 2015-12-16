@@ -13,6 +13,26 @@ use BOM::Platform::Context qw (localize);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 
+sub send_ask {
+    my $params = shift;
+    my $args   = $params->{args};
+
+    my %details  = %{$args};
+    my $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
+
+    return $response;
+}
+
+sub get_bid {
+    my $params = shift;
+    my $args   = $params->{args};
+
+    my %details = %{$args};
+    my $response = BOM::RPC::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
+
+    return $response;
+}
+
 sub ticks_history {
     my $params = shift;
     my $args   = $params->{args};
