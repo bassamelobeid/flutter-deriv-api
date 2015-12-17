@@ -669,6 +669,12 @@ currency:
       180: 2.498
       365: 2.339
 
+holiday:
+  class_name: 'BOM::MarketData::Holiday'
+  data:
+    description: 'New Year'
+    affected_symbols: 'EURONEXT ASX USD'
+    date: '2015-01-01'
 exchange:
   class_name: 'BOM::MarketData::ExchangeConfig'
   data:
