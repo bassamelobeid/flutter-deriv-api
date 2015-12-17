@@ -76,7 +76,7 @@ sub proposal {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
-        async_send_ask($c, $id, $args);
+        send_ask($c, $id, $args);
     }
     return;
 }
