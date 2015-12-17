@@ -97,7 +97,7 @@ Exchange's main currency.
 =cut
 
 has currency => (
-    is  => 'ro',
+    is => 'ro',
 );
 
 =head2 holidays
@@ -245,16 +245,9 @@ Is this an over the counter exchange?
 =cut
 
 has is_OTC => (
-    is         => 'ro',
-    isa        => 'Bool',
-    init_arg   => undef,
-    lazy_build => 1,
+    is      => 'ro',
+    default => 0,
 );
-
-sub _build_is_OTC {
-    my $self = shift;
-    return ($self->symbol eq 'FOREX' or $self->symbol eq 'RANDOM' or $self->symbol eq 'RANDOM_NOCTURNE');
-}
 
 =head1 METHODS
 
