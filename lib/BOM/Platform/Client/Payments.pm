@@ -544,6 +544,7 @@ sub payment_western_union {
     my $staff        = $args{staff}        || 'system';
 
     my $action_type = $amount > 0 ? 'deposit' : 'withdrawal';
+    my $fdp         = $self->is_first_deposit_pending;
     my $account = $self->set_default_account($currency);
 
     my %wu_values = map { $_ => $args{$_} }
@@ -573,6 +574,8 @@ sub payment_western_union {
     });
     $account->save(cascade => 1);
     $trx->load;    # to re-read 'now' timestamps
+
+    BOM::Platform::Client::IDAuthentication->new(client => $self)->run_authentication if $fdp;
 
     return $trx;
 }
