@@ -7,6 +7,7 @@ use Machine::Epsilon;
 use Math::Gauss qw(pdf);
 use Cache::RedisDB;
 use List::Util qw(max min sum);
+use List::MoreUtils qw(uniq);
 use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::CacheLoader qw(LoadFile);
@@ -50,7 +51,7 @@ sub get_volatility {
     $self->error('Insufficient tick interval to get_volatility') if @$ticks <= $returns_sep;
 
     my ($tick_count, $real_periods) = (0, 0);
-    my @tick_epochs = map { $_->{epoch} } @$ticks;
+    my @tick_epochs = uniq map { $_->{epoch} } @$ticks;
     my (@time_samples_past, @returns_squared);
     for (my $i = $returns_sep; $i <= $#tick_epochs; $i++) {
         push @time_samples_past, ($tick_epochs[$i] + $tick_epochs[$i - $returns_sep]) / 2;
