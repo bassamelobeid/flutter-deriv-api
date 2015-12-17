@@ -132,49 +132,6 @@ sub has_identical_event {
     return (@docs) ? $docs[0] : '';
 }
 
-has _influential_currencies => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub { ['USD', 'AUD', 'CAD', 'CNY', 'NZD'] });
-
-has _coefficients => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__coefficients {
-    return LoadFile('/home/git/regentmarkets/bom-market/config/files/news_impact_coefficients.yml');
-}
-
-sub get_scaling_factor {
-    my ($self, $underlying_symbol, $risk_type) = @_;
-
-    my $impact       = $self->impact;
-    my $event_symbol = $self->symbol;
-
-    my $scaling_factor;
-    if ($risk_type eq 'spot') {
-        if ($underlying_symbol =~ /$event_symbol/) {
-            $scaling_factor = 0.12;
-        } elsif (
-            first {
-                $event_symbol eq $_
-            }
-            @{$self->_influential_currencies})
-        {
-            $scaling_factor = 0.06;
-        } else {
-            $scaling_factor = 0;
-        }
-    } elsif ($risk_type eq 'vol') {
-        if ($impact == 1 or $impact == 3 or $impact == 5) {
-            $scaling_factor = $self->_coefficients->{$impact}{$event_symbol}{$underlying_symbol};
-        }
-    }
-
-    return $scaling_factor;
-}
-
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
