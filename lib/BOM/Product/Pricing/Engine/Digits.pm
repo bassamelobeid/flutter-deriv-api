@@ -66,7 +66,7 @@ sub _build_probability {
                 severity => 100,
                 message  => format_error_string(
                     'No winning digits',
-                    code      => $contract->bet_type->code,
+                    code      => $contract->code,
                     selection => $contract->barrier->as_absolute,
                 ),
                 message_to_client => localize('Digit must be in the range of [_1] to [_2].', @range)});

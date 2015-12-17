@@ -7,6 +7,7 @@ use Test::MockModule;
 use File::Spec;
 use JSON qw(decode_json);
 
+use Cache::RedisDB;
 use Date::Utility;
 use BOM::Market::Data::Tick;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
@@ -58,7 +59,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     },
 );
 
-my $bet = produce_contract({
+my $params = {
     bet_type     => 'CALL',
     underlying   => 'frxUSDJPY',
     current_spot => 100,
@@ -68,7 +69,8 @@ my $bet = produce_contract({
     currency     => 'USD',
     payout       => 100,
     date_pricing => $now->minus_time_interval('10m'),
-});
+};
+my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
 is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.15, 'correct spot risk markup');
 cmp_ok(
