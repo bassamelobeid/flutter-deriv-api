@@ -22,6 +22,7 @@ use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
 use MojoX::JSON::RPC::Client;
+use Data::UUID;
 
 sub ok {
     my $c      = shift;
@@ -289,7 +290,7 @@ sub rpc {
     my $url    = 'http://127.0.0.1:5005/' . $method;
 
     my $callobj = {
-        id     => 1,
+        id     => Data::UUID->new()->create_str(),
         method => $method,
         params => $params
     };
