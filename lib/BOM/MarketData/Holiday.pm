@@ -3,17 +3,18 @@ package BOM::MarketData::Holiday;
 use Moose;
 use Carp qw(croak);
 use Date::Utility;
+use List::Util qw(first);
 
 use BOM::System::Chronicle;
 
 around BUILDARGS => sub {
     my $orig   = shift;
     my $class  = shift;
-    my %params = ref $_[0] ? %{$_[0]} : $_[0];
+    my %params = ref $_[0] ? %{$_[0]} : @_;
 
     my ($a, $b, $c) = map { $params{$_} } qw(date affected_symbols description);
-    if (($a && !$b && !$c) || (!$a && $b && !$c) || (!$a && !$b && $c)) {
-        croak "date, affected_symbols and description are required when pass in either.";
+    if ($a or $b or $c) {
+        croak "date, affected_symbols and description are required when pass in either." unless ($a and $b and $c);
     }
 
     return $class->$orig(@_);
