@@ -275,7 +275,7 @@ lives_ok { $bet = produce_contract($bet_params); } 'Can create example ONETOUCH 
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
 is(roundnear(1e-4, $ask->amount),                         1,      'Ask probability is correct.');
-is(roundnear(1e-2, $bet->average_tick_count),             6.17,   'Correct number of average ticks.');
+is(roundnear(1e-2, $bet->average_tick_count),             6.22,   'Correct number of average ticks.');
 is(roundnear(1e-4, $ask->peek_amount('model_markup')),    0.0303, 'model_markup is correct.');
 is(roundnear(1e-4, $ask->peek_amount('vega_correction')), 0.0033, 'vega_correction is correct.');
 is($ask->peek_amount('path_dependent_markup'), 2, 'Includes path dependent markup.');
@@ -294,8 +294,8 @@ $bet_params = {
 lives_ok { $bet = produce_contract($bet_params); } 'Can create example NOTOUCH bet';
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'Bet selected IH pricing engine.');
 $ask = $bet->ask_probability;
-is(roundnear(1e-4, $ask->amount),                         0.0583,  'Ask probability is correct.');
-is(roundnear(1e-2, $bet->average_tick_count),             6.17,    'Correct number of average ticks.');
+is(roundnear(1e-4, $ask->amount),                         0.0582,  'Ask probability is correct.');
+is(roundnear(1e-2, $bet->average_tick_count),             6.22,    'Correct number of average ticks.');
 is(roundnear(1e-4, $ask->peek_amount('model_markup')),    0.0303,  'model_markup is correct.');
 is(roundnear(1e-4, $ask->peek_amount('vega_correction')), -0.0033, 'vega_correction is correct.');
 is($ask->peek_amount('path_dependent_markup'), 2, 'Includes path dependent markup.');
