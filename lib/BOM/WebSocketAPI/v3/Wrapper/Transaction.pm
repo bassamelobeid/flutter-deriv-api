@@ -12,47 +12,31 @@ sub buy {
     my $contract_parameters = BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $args->{buy})
         or return $c->new_error('buy', 'InvalidContractProposal', $c->l("Unknown contract proposal"));
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c, 'buy',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('buy', $response->{error}->{code}, $response->{error}->{message_to_client});
-            }
-            return {
-                msg_type => 'buy',
-                buy      => $response
-            };
-        },
-        {
-            args                => $args,
-            client_loginid      => $c->stash('client')->loginid,
-            source              => $c->stash('source'),
-            contract_parameters => $contract_parameters
-        });
-    return;
+    my $response = BOM::RPC::v3::Transaction::buy($c->stash('client'), $c->stash('source'), $contract_parameters, $args);
+    if (exists $response->{error}) {
+        return $c->new_error('buy', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        return {
+            msg_type => 'buy',
+            buy      => $response
+        };
+    }
 }
 
 sub sell {
     my ($c, $args) = @_;
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c, 'sell',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('sell', $response->{error}->{code}, $response->{error}->{message_to_client});
-            }
-            return {
-                msg_type => 'sell',
-                buy      => $response
-            };
-        },
-        {
-            args           => $args,
-            client_loginid => $c->stash('client')->loginid,
-            source         => $c->stash('source')});
+    my $response = BOM::RPC::v3::Transaction::sell($c->stash('client'), $c->stash('source'), $args);
+    if (exists $response->{error}) {
+        return $c->new_error('sell', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        return {
+            msg_type => 'sell',
+            sell     => $response
+        };
+    }
     return;
 }
+
 
 1;
