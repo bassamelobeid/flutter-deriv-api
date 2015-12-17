@@ -12,9 +12,12 @@ use BOM::Product::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context;
 
 sub buy {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $client              = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     my $source              = $params->{source};
@@ -70,6 +73,8 @@ sub buy {
 
 sub sell {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     my $source = $params->{source};
