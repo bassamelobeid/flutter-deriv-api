@@ -39,6 +39,17 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now,
     });
 
+my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
+$mocked->mock(
+    '_get_economic_events',
+    sub {
+        [{
+                'bias'         => 0.010000,
+                'duration'     => 60.000000,
+                'magnitude'    => 1.000000,
+                'release_time' => 1389096000,
+            }];
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'economic_events',
     {
@@ -61,23 +72,13 @@ my $params = {
 };
 my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
-is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.0198959999973886, 'correct spot risk markup');
+is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.15, 'correct spot risk markup');
 cmp_ok(
     $bet->pricing_engine->economic_events_volatility_risk_markup->amount,
     '<',
     $bet->pricing_engine->economic_events_spot_risk_markup->amount,
     'vol risk markup is lower than higher range'
 );
-ok !$bet->pricing_engine->double_volatility_risk_markup, 'regular volatility risk markup';
-is($bet->pricing_engine->economic_events_markup->amount, 0.0198959999973886, 'economic events markup is max of spot or vol risk markup');
-
-subtest 'double economic events volatility risk markup' => sub {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('economic_events', {symbol => 'USD', release_date => $now, recorded_date => $now, impact => 5, event_name => 'test'});
-    my $redis = Cache::RedisDB->redis;
-    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
-    my $c = produce_contract($params);
-    ok $c->pricing_engine->economic_events_spot_risk_markup;
-    ok $c->pricing_engine->double_volatility_risk_markup, 'double volatility risk markup';
-};
+is($bet->pricing_engine->economic_events_markup->amount, 0.15, 'economic events markup is max of spot or vol risk markup');
 
 done_testing;
