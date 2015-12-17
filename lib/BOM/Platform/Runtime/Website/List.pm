@@ -126,7 +126,7 @@ sub _build__websites {
 
     my $websites = {};
     for my $website (keys %{$self->definitions}) {
-        next if ($website eq 'version');
+        warn "website key [$website]......\n\n";
 
         my $website_definition = $self->definitions->{$website};
 
@@ -142,6 +142,9 @@ sub _build__websites {
 
         $websites->{$website} = BOM::Platform::Runtime::Website->new($website_definition);
     }
+
+    use Data::Dumper;
+    warn Dumper($websites);
 
     return $websites;
 }
