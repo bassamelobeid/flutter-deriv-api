@@ -22,6 +22,7 @@ use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
 use MojoX::JSON::RPC::Client;
+use Data::UUID;
 
 sub ok {
     my $c      = shift;
@@ -283,10 +284,13 @@ sub rpc {
     my $callback = shift;
     my $params   = shift;
 
-    my $client  = _rpc_client;
-    my $url     = 'http://127.0.0.1:5005/' . $method;
+    $params->{language} = $self->stash('language');
+
+    my $client = _rpc_client;
+    my $url    = 'http://127.0.0.1:5005/' . $method;
+
     my $callobj = {
-        id     => 1,
+        id     => Data::UUID->new()->create_str(),
         method => $method,
         params => $params
     };
@@ -314,13 +318,15 @@ sub rpc {
                 $data = {};
             }
 
-            $data->{echo_req} = $params;
+            my $args = $params->{args};
+            $data->{echo_req} = $args;
             $data->{version}  = 3;
+            $data->{req_id}   = $args->{req_id} if ($args and exists $args->{req_id});
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
                 $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
-                $data->{echo_req} = $params;
+                $data->{echo_req} = $args;
             }
             if ($send) {
                 $self->send({json => $data});
