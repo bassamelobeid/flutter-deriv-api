@@ -29,7 +29,19 @@ sub _document_content {
     return \%structure;
 }
 
-with 'BOM::MarketData::Role::VersionedSymbolData';
+with 'BOM::MarketData::Role::VersionedSymbolData' => {
+    -alias    => {save => '_save'},
+    -excludes => ['save']};
+
+sub save {
+    my $self = shift;
+
+    #first call original save method to save all data into CouchDB just like before
+    my $result = $self->_save();
+
+    BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, $self->_document_content);
+    return $result;
+}
 
 =head1 NAME
 
