@@ -57,15 +57,14 @@ sub send_proposal {
         sub {
             my $response = shift;
 
-            $c->send({
-                    json => {
-                        msg_type => 'proposal_open_contract',
-                        echo_req => $args,
-                        (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                        proposal_open_contract => {
-                            id => $id,
-                            %$response
-                        }}});
+            return {
+                msg_type => 'proposal_open_contract',
+                echo_req => $args,
+                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                proposal_open_contract => {
+                    id => $id,
+                    %$response
+                }};
         },
         {args => $args});
     return;
