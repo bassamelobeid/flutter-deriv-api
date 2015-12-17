@@ -37,7 +37,19 @@ around _document_content => sub {
     };
 };
 
-with 'BOM::MarketData::Role::VersionedSymbolData';
+with 'BOM::MarketData::Role::VersionedSymbolData' => {
+    -alias    => {save => '_save'},
+    -excludes => ['save']};
+
+sub save {
+    my $self = shift;
+
+    #first call original save method to save all data into CouchDB just like before
+    my $result = $self->_save();
+
+    BOM::System::Chronicle::set('correlation_matrices', $self->symbol, $self->_document_content);
+    return $result;
+}
 
 has correlations => (
     is         => 'rw',
