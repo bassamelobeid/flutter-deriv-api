@@ -288,8 +288,8 @@ my $ISE             = BOM::Market::Exchange->new('ISE');
 subtest 'Basics.' => sub {
     plan tests => 18;
 
-    is($LSE->currency->symbol, 'GBP', 'LSE trades in GBP');
-    is($FSE->currency->symbol, 'EUR', 'FSE trades in EUR');
+    is($LSE->currency, 'GBP', 'LSE trades in GBP');
+    is($FSE->currency, 'EUR', 'FSE trades in EUR');
     ok(!defined $FOREX->currency,  'FOREX has no single currency');
     ok(!defined $RANDOM->currency, 'RANDOM has no single currency');
 
