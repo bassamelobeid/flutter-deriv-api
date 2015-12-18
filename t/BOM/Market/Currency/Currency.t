@@ -29,10 +29,9 @@ sleep 2;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'RUR',
-        recorded_date   => Date::Utility->new,
+        symbol        => 'RUR',
+        recorded_date => Date::Utility->new,
     });
-
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
@@ -56,24 +55,31 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
+    'holiday',
     {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
-    }) for qw( JPY USD );
-
+        recorded_date => Date::Utility->new,
+        calendar      => {
+            "2012-01-01" => {
+                "NY" => ['RUR'],
+            },
+            "2012-01-02" => {
+                "NY 2" => ['RUR'],
+            },
+            "2012-01-03" => {
+                "pseudo-holiday" => ['RUR'],
+            },
+            "2012-01-07" => {
+                "Orthodox Chirstmas" => ['RUR'],
+            },
+        },
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency_config',
     {
         symbol                 => 'RUR',
         bloomberg_country_code => 'RU',
-        holidays               => {
-            "2012-01-01" => "NY",
-            "2012-01-02" => "NY 2",
-            "2012-01-03" => "0.4",
-            "2012-01-07" => "Orthodox Chirstmas",
-        },
-        recorded_date => Date::Utility->new,
+        holidays               => {},
+        recorded_date          => Date::Utility->new,
     });
 
 subtest Holidays => sub {
@@ -85,13 +91,13 @@ subtest Holidays => sub {
     }
     'create RUR';
 
-    is(scalar(keys %{$rur->holidays}), 4, '4 RUR holidays');
+    is(scalar(keys %{$rur->holidays}), 6, '6 RUR holidays');
     my @real_holidays = grep { $rur->has_holiday_on(Date::Utility->new($_ * 86400)) } keys(%{$rur->holidays});
     is(scalar @real_holidays, 3, '3 real RUR holidays');
     ok($rur->has_holiday_on(Date::Utility->new('2012-01-01')),  'RUR has a holiday on 2012-01-01');
     ok(!$rur->has_holiday_on(Date::Utility->new('2011-12-01')), 'RUR is open on 2011-12-01');
 
-    is($rur->weight_on(Date::Utility->new('2012-01-03')), 0.4, 'slow day');
+    is($rur->weight_on(Date::Utility->new('2012-01-03')), 0.5, 'slow day');
     is($rur->weight_on(Date::Utility->new('2012-01-04')), 1.0, 'normal day');
     is($rur->weight_on(Date::Utility->new('2012-01-01')), 0.0, 'holiday');
 };

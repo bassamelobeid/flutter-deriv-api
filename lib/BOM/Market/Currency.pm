@@ -80,9 +80,9 @@ sub weight_on {
     my ($self, $when) = @_;
     my $weight = $self->holidays->{$when->days_since_epoch};
     return
-          (!defined $weight)         ? 1.0
-        : looks_like_number($weight) ? $weight
-        :                              0.0;
+          (!defined $weight)            ? 1.0
+        : ($weight eq 'pseudo-holiday') ? 0.5
+        :                                 0.0;
 }
 
 =head2 has_holiday_on
@@ -94,7 +94,7 @@ return 0 for them.
 sub has_holiday_on {
     my ($self, $when) = @_;
     my $weight = $self->holidays->{$when->days_since_epoch};
-    return defined $weight && !looks_like_number($weight);
+    return defined $weight && $weight ne 'pseudo-holiday';
 }
 
 =head2 interest
