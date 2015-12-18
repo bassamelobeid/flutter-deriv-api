@@ -126,7 +126,6 @@ sub entry_point {
     $c->on(
         finish => sub {
             my $c = shift;
-            my ($c) = @_;
             if ($c->tx) {
                 my $ws_id = $c->tx->connection;
                 foreach my $id (keys %{$c->{ws}{$ws_id}}) {
