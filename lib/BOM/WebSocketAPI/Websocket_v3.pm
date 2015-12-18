@@ -43,7 +43,7 @@ sub entry_point {
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
     Mojo::IOLoop->singleton->max_connections(100000);
-    
+
     if (not $c->stash->{redis}) {
         state $url = do {
             my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
@@ -125,8 +125,14 @@ sub entry_point {
     # stop all recurring
     $c->on(
         finish => sub {
-            my $c = shift;
-            BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
+            my $c     = shift;
+            my ($c)   = @_;
+            my $ws_id = $c->tx->connection;
+            foreach my $id (keys %{$c->{ws}{$ws_id}}) {
+                Mojo::IOLoop->remove($id);
+            }
+            delete $c->{ws}{$ws_id};
+            delete $c->{fmb_ids}{$ws_id};
         });
 
     return;
@@ -140,27 +146,27 @@ sub __handle {
 
     # [param key, sub, require auth, unauth-error-code]
     my @dispatch = (
-        ['authorize',                 \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,                        0],
-        ['logout',                    \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout,                           0],
-        ['trading_times',             \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,              0],
-        ['asset_index',               \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,                0],
-        ['active_symbols',            \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::active_symbols,             0],
-        ['ticks',                     \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks,                             0],
-        ['ticks_history',             \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history,                     0],
-        ['proposal',                  \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,                          0],
-        ['forget',                    \&BOM::WebSocketAPI::v3::Wrapper::System::forget,                              0],
-        ['forget_all',                \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,                          0],
-        ['ping',                      \&BOM::WebSocketAPI::v3::Wrapper::System::ping,                                0],
-        ['time',                      \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,                         0],
-        ['contracts_for',             \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for,                    0],
-        ['residence_list',            \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,                      0],
-        ['states_list',               \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,                         0],
-        ['payout_currencies',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::payout_currencies,                 0],
-        ['landing_company',           \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company,                   0],
-        ['landing_company_details',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details,           0],
-        ['paymentagent_list',         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,                  0],
-        ['verify_email',              \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email,                    0],
-        ['new_account_virtual',       \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual,             0],
+        ['authorize',               \&BOM::WebSocketAPI::v3::Wrapper::Authorize::authorize,              0],
+        ['logout',                  \&BOM::WebSocketAPI::v3::Wrapper::Authorize::logout,                 0],
+        ['trading_times',           \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::trading_times,    0],
+        ['asset_index',             \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::asset_index,      0],
+        ['active_symbols',          \&BOM::WebSocketAPI::v3::Wrapper::MarketDiscovery::active_symbols,   0],
+        ['ticks',                   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks,                   0],
+        ['ticks_history',           \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history,           0],
+        ['proposal',                \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,                0],
+        ['forget',                  \&BOM::WebSocketAPI::v3::Wrapper::System::forget,                    0],
+        ['forget_all',              \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,                0],
+        ['ping',                    \&BOM::WebSocketAPI::v3::Wrapper::System::ping,                      0],
+        ['time',                    \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,               0],
+        ['contracts_for',           \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for,          0],
+        ['residence_list',          \&BOM::WebSocketAPI::v3::Wrapper::Static::residence_list,            0],
+        ['states_list',             \&BOM::WebSocketAPI::v3::Wrapper::Static::states_list,               0],
+        ['payout_currencies',       \&BOM::WebSocketAPI::v3::Wrapper::Accounts::payout_currencies,       0],
+        ['landing_company',         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company,         0],
+        ['landing_company_details', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::landing_company_details, 0],
+        ['paymentagent_list',       \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_list,        0],
+        ['verify_email',            \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email,          0],
+        ['new_account_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual,   0],
         # authenticated calls
 ##        ['sell',                      \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,                           1],
 ##        ['buy',                       \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,                            1],
