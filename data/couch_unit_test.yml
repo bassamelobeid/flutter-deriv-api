@@ -672,9 +672,11 @@ currency:
 holiday:
   class_name: 'BOM::MarketData::Holiday'
   data:
-    description: 'New Year'
-    affected_symbols: 'EURONEXT ASX USD'
-    date: '2015-01-01'
+    calendar:
+        1420070400:
+          'New Year':
+            - EURONEXT
+            - USD
 exchange:
   class_name: 'BOM::MarketData::ExchangeConfig'
   data:
@@ -686,24 +688,7 @@ exchange:
     tenfore_trading_timezone: UTC
     open_on_weekends : 0
     trading_days: weekdays
-    currency: NA
     bloomberg_calendar_code: NA
-    holidays:
-      #2013:
-      1-Jan-13: New Year's Day
-      25-Dec-13: Christmas
-      2013-12-20: "pseudo-holiday"
-      2013-12-23: "pseudo-holiday"
-      2013-12-24: "pseudo-holiday"
-      2013-12-26: "pseudo-holiday"
-      2013-12-27: "pseudo-holiday"
-      2013-12-30: "pseudo-holiday"
-      2013-12-31: "pseudo-holiday"
-      #2014
-      1-Jan-14: "New Year's Day"
-      25-Dec-14: Christmas
-      2014-01-02: "pseudo-holiday"
-      2014-01-03: "pseudo-holiday"
     market_times:
       early_closes: {}
       standard:
