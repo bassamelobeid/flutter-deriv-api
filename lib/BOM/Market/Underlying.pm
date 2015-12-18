@@ -207,7 +207,6 @@ has _feed_license => (
     is => 'ro',
 );
 
-
 has asset => (
     is         => 'ro',
     lazy_build => 1,
@@ -481,7 +480,6 @@ around BUILDARGS => sub {
         $params_ref->{_feed_license} = $params_ref->{feed_license};
         delete $params_ref->{feed_license};
     }
-
 
     return $class->$orig($params_ref);
 };
