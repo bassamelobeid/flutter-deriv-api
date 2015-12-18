@@ -446,6 +446,7 @@ EURONEXT:
 FOREX:
   delay_amount: '0'
   display_name: Forex
+  is_OTC: 1
   market_times:
     early_closes:
       18-Jan-2016: 18h00m
@@ -559,7 +560,7 @@ HKSE:
       31-Dec-2014: 3h59m
       31-Dec-2015: 3h59m
     late_opens:
-      24-Dec-10: 2h30m
+      24-Dec-2010: 2h30m
     partial_trading:
       standard_close: 3h59m
       standard_open: 1h30m
@@ -718,7 +719,7 @@ KRX:
       2-Jan-2015: 6h
       4-Jan-2016: 6h
     late_opens:
-      2-Jan-14: 1h
+      2-Jan-2014: 1h
     partial_trading:
       standard_close: 6h
       standard_open: 1h
@@ -1136,6 +1137,7 @@ OSLO:
 RANDOM:
   delay_amount: '0'
   display_name: Randoms
+  is_OTC: 1
   market_times:
     early_closes: {}
     partial_trading: {}
@@ -1150,6 +1152,7 @@ RANDOM:
 RANDOM_NOCTURNE:
   delay_amount: '0'
   display_name: Nocturnal Randoms
+  is_OTC: 1
   market_times:
     early_closes: {}
     partial_trading: {}

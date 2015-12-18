@@ -1,3 +1,8 @@
+#!/usr/bin/perl
+
+use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestRedis;
+
 use Test::Most;
 use Test::MockModule;
 use File::Spec;
@@ -7,14 +12,30 @@ use Test::MockObject::Extends;
 use Test::MockModule;
 use JSON qw(decode_json);
 use Time::Local ();
+use YAML::XS qw(LoadFile);
 
 use Readonly;
 Readonly::Scalar my $HKSE_TRADE_DURATION_DAY => ((2 * 3600 + 29 * 60) + (2 * 3600 + 40 * 60));
 Readonly::Scalar my $HKSE_TRADE_DURATION_MORNING => 2 * 3600 + 29 * 60;
 Readonly::Scalar my $HKSE_TRADE_DURATION_EVENING => 2 * 3600 + 40 * 60;
-
-use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+my $date = Date::Utility->new('2013-12-01'); # first of December 2014
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
+    recorded_date => $date,
+    calendar => {
+        "6-May-2013"  => {
+            "Early May Bank Holiday" => [qw(LSE)],
+        },
+        "25-Dec-2013" => {
+            "Christmas Day" => [qw(LSE FOREX)],
+        },
+        "1-Jan-2014"  => {
+            "New Year's Day" => [qw(LSE FOREX)],
+        },
+        "1-Apr-2013" => {
+            "Easter Monday" => [qw(LSE)],
+        },
+    },
+});
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange');
 
@@ -26,32 +47,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         delay_amount     => 15,
         trading_days     => 'weekdays',
         trading_timezone => 'Europe/London',
-        holidays         => {
-            "1-Jan-2013"  => "New Year's Day",
-            "29-Mar-2013" => "Good Friday",
-            "1-Apr-2013"  => "Easter Monday",
-            "6-May-2013"  => "Early May Bank Holiday",
-            "27-May-2013" => "Late May Bank Holiday",
-            "26-Aug-2013" => "Summer Bank Holiday",
-            "25-Dec-2013" => "Christmas Day",
-            "26-Dec-2013" => "Boxing Day",
-            "2013-12-20"  => "pseudo-holiday",
-            "2013-12-23"  => "pseudo-holiday",
-            "2013-12-24"  => "pseudo-holiday",
-            "2013-12-27"  => "pseudo-holiday",
-            "2013-12-30"  => "pseudo-holiday",
-            "2013-12-31"  => "pseudo-holiday",
-            "1-Jan-2014"  => "New Year's Day",
-            "18-Apr-2014" => "Good Friday",
-            "21-Apr-2014" => "Easter Monday",
-            "5-May-2014"  => "Early May Bank Holiday",
-            "26-May-2014" => "Late May Bank Holiday",
-            "25-Aug-2014" => "Summer Bank Holiday",
-            "25-Dec-2014" => "Christmas Day",
-            "26-Dec-2014" => "Boxing Day",
-            "2014-01-02"  => "pseudo-holiday",
-            "2014-01-03"  => "pseudo-holiday",
-        },
         market_times => {
             dst => {
                 daily_close      => '15h30m',
@@ -82,7 +77,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'RANDOM',
         trading_days     => 'everyday',
-        holidays         => {},
         market_times     => {
             early_closes => {},
             standard     => {
@@ -100,7 +94,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'RANDOM_NOCTURNE',
         trading_days     => 'everyday',
-        holidays         => {},
         market_times     => {
             early_closes => {},
             standard     => {
@@ -210,45 +203,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         trading_days => 'weekdays',
         delay_amount     => 60,
         trading_timezone => 'Asia/Hong_Kong',
-        holidays         => {
-            "1-Jan-2013"  => "The first day of January",
-            "11-Feb-2013" => "The second day of Lunar New Year",
-            "12-Feb-2013" => "The third day of Lunar New Year",
-            "13-Feb-2013" => "The fourth day of Lunar New Year",
-            "29-Mar-2013" => "Good Friday",
-            "1-Apr-2013"  => "Easter Monday",
-            "1-May-2013"  => "Labour Day",
-            "17-May-2013" => "The Birthday of the Buddha",
-            "12-Jun-2013" => "Tuen Ng Festival",
-            "1-Jul-2013"  => "Hong Kong Special Administrative Region Establishment Day",
-            "20-Sep-2013" => "The day following the Chinese Mid-Autumn Festival",
-            "1-Oct-2013"  => "National Day",
-            "14-Oct-2013" => "The day following Chung Yeung Festival",
-            "25-Dec-2013" => "Christmas Day",
-            "26-Dec-2013" => "The first weekday after Christmas Day",
-            "2013-12-20"  => "pseudo-holiday",
-            "2013-12-23"  => "pseudo-holiday",
-            "2013-12-24"  => "pseudo-holiday",
-            "2013-12-24"  => "pseudo-holiday",
-            "2013-12-27"  => "pseudo-holiday",
-            "2013-12-30"  => "pseudo-holiday",
-            "2013-12-31"  => "pseudo-holiday",
-            "1-Jan-2014"  => "New Year's Day",
-            "31-Jan-2014" => "The first day of Lunar New Year",
-            "3-Feb-2014"  => "The fourth day of Lunar New Year",
-            "18-Apr-2014" => "Good Friday",
-            "21-Apr-2014" => "Easter Monday",
-            "1-May-2014"  => "Labour Day",
-            "6-May-2014"  => "Buddha's Birthday",
-            "2-Jun-2014"  => "Tuen Ng Festival",
-            "1-Jul-2014"  => "Sar Establishment Day",
-            "9-Sep-2014"  => "Day after Mid-autumn Festival",
-            "1-Oct-2014"  => "National Day",
-            "2-Oct-2014"  => "Chung Yeung Festival",
-            "25-Dec-2014" => "Christmas Day",
-            "26-Dec-2014" => "Christmas Holiday",
-            "2014-01-03"  => "pseudo-holiday",
-        },
         market_times => {
             late_opens => {
                 '24-Dec-2010' => '2h30m',
@@ -276,7 +230,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol
 use BOM::Market::Exchange;
 use BOM::Market::Underlying;
 
-my $LSE             = BOM::Market::Exchange->new('LSE');
+my $LSE             = BOM::Market::Exchange->new('LSE', $date);
 my $FSE             = BOM::Market::Exchange->new('FSE');               # think GDAXI
 my $FOREX           = BOM::Market::Exchange->new('FOREX');
 my $RANDOM          = BOM::Market::Exchange->new('RANDOM');
@@ -285,15 +239,57 @@ my $ASX             = BOM::Market::Exchange->new('ASX');
 my $NYSE            = BOM::Market::Exchange->new('NYSE');
 my $HKSE            = BOM::Market::Exchange->new('HKSE');
 my $ISE             = BOM::Market::Exchange->new('ISE');
-subtest 'Basics.' => sub {
-    plan tests => 18;
 
-    is($LSE->currency, 'GBP', 'LSE trades in GBP');
-    is($FSE->currency, 'EUR', 'FSE trades in EUR');
-    ok(!defined $FOREX->currency,  'FOREX has no single currency');
-    ok(!defined $RANDOM->currency, 'RANDOM has no single currency');
+# all the exchange in the yaml
+my $exchanges = LoadFile('/home/git/regentmarkets/bom-market/config/files/exchange.yml');
 
-    is($LSE->holiday_days_between(Date::Utility->new('24-Dec-13'), Date::Utility->new('3-Jan-14')), 3, "Three holidays over the year end on LSE.");
+subtest 'exchange currency and OTC check' => sub {
+    my %undef_currency_exchanges = (
+        RANDOM => 1,
+        FOREX => 1,
+        RANDOM_NOCTURNE => 1
+    );
+    foreach my $exchange (keys %$exchanges) {
+        if ($undef_currency_exchanges{$exchange}) {
+            ok !$exchanges->{$exchange}->{currency}, "currency undef for $exchange";
+            ok $exchanges->{$exchange}->{is_OTC}, "is OTC for $exchange";
+        } else {
+            ok $exchanges->{$exchange}->{currency}, "currency defined for $exchange";
+            ok !$exchanges->{$exchange}->{is_OTC}, "non OTC for $exchange";
+        }
+    }
+};
+
+subtest 'holidays check' => sub {
+    is $LSE->for_date->epoch, $date->epoch, 'for_date properly set in Exchange';
+    my %expected_holidays = (
+        15831 => 'Early May Bank Holiday',
+        16057 => 'pseudo-holiday',
+        16058 => 'pseudo-holiday',
+        16059 => 'pseudo-holiday',
+        16060 => 'pseudo-holiday',
+        16061 => 'pseudo-holiday',
+        16062 => 'pseudo-holiday',
+        16063 => 'pseudo-holiday',
+        16064 => 'Christmas Day',
+        16065 => 'pseudo-holiday',
+        16066 => 'pseudo-holiday',
+        16067 => 'pseudo-holiday',
+        16068 => 'pseudo-holiday',
+        16069 => 'pseudo-holiday',
+        16070 => 'pseudo-holiday',
+        16071 => 'New Year\'s Day',
+        15796 => 'Easter Monday',
+    );
+    lives_ok {
+        my $holidays = $LSE->holidays;
+        is scalar(keys %$holidays), scalar(keys %expected_holidays), 'holidays retrieved is as expected';
+        for (keys %expected_holidays) {
+            is $holidays->{Date::Utility->new($_)->epoch}, $expected_holidays{$_}, 'matches holiday';
+        }
+    } 'check holiday accuracy';
+
+    is($LSE->holiday_days_between(Date::Utility->new('24-Dec-13'), Date::Utility->new('3-Jan-14')), 2, "two holidays over the year end on LSE.");
 
     ok($LSE->has_holiday_on(Date::Utility->new('6-May-13')),    'LSE has holiday on 6-May-13.');
     ok(!$FOREX->has_holiday_on(Date::Utility->new('6-May-13')), 'FOREX is open on LSE holiday 6-May-13.');
@@ -302,18 +298,15 @@ subtest 'Basics.' => sub {
     ok(!$LSE->trades_on(Date::Utility->new('1-Jan-14')),   'LSE doesn\'t trade on 1-Jan-14 because it is on holiday.');
     ok(!$LSE->trades_on(Date::Utility->new('12-May-13')),  'LSE doesn\'t trade on weekend (12-May-13).');
     ok($LSE->trades_on(Date::Utility->new('3-May-13')),    'LSE trades on normal day 4-May-13.');
-    ok($FOREX->trades_on(Date::Utility->new('3-May-13')),  'FOREX trades on normal day 4-May-13.');
-    ok(!$LSE->trades_on(Date::Utility->new('5-May-13')),   'LSE doesn\'t trade on 5-May-13 as it is a weekend day.');
-    ok(!$FOREX->trades_on(Date::Utility->new('5-May-13')), 'FOREX doesn\'t trade on 5-May-13 as it is a weekend day.');
+    ok(!$LSE->trades_on(Date::Utility->new('5-May-13')),   'LSE doesn\'t trade on 5-May-13 as it is a weekend.');
     ok($RANDOM->trades_on(Date::Utility->new('5-May-13')), 'RANDOM trades on 5-May-13 as it is open on weekends.');
 
-    is(scalar(keys %{$FOREX->holidays}), 13, '13 FOREX holidays');
-    my @real_holidays = grep { $FOREX->has_holiday_on(Date::Utility->new($_ * 86400)) } keys(%{$FOREX->holidays});
-    is(scalar @real_holidays, 4, '4 real FOREX holidays');
-    ok(!$FOREX->has_holiday_on(Date::Utility->new('26-Dec-13')), '26-Dec-13 is not a real holiday');
+    my @real_holidays = grep { $LSE->has_holiday_on(Date::Utility->new($_ * 86400)) } keys(%{$LSE->holidays});
+    is(scalar @real_holidays, 4, '4 real LSE holidays');
+    ok(!$LSE->has_holiday_on(Date::Utility->new('26-Dec-13')), '26-Dec-13 is not a real holiday');
 };
 
-subtest "Holiday on weekends" => sub {
+subtest "Holiday/Weekend weights" => sub {
     my $trade_start = Date::Utility->new('30-Mar-13');
     my $sunday      = Date::Utility->new('7-Apr-13');
     my $trade_end   = Date::Utility->new('8-Apr-13');
@@ -345,7 +338,7 @@ subtest "Holiday on weekends" => sub {
 };
 
 subtest 'Whole bunch of stuff.' => sub {
-    plan tests => 101;
+    plan tests => 99;
 
     is($LSE->weight_on(Date::Utility->new('2-Apr-13')), 1.0, 'open weight');
     is($LSE->weight_on(Date::Utility->new('1-Apr-13')), 0.0, 'holiday weight');
@@ -517,9 +510,6 @@ subtest 'Whole bunch of stuff.' => sub {
         0, 'No trading days between 4th May and 6th May on LSE (over weekend, then holiday on Monday)');
     is($LSE->trading_days_between(Date::Utility->new('10-May-13'), Date::Utility->new('14-May-13')),
         1, '1 trading day between 10th and 14th May on LSE (over weekend, Monday open)');
-
-    is($FOREX->is_OTC, 1,  'FOREX is an OTC exchange.');
-    is($LSE->is_OTC,   '', 'LSE is not an OTC exchange.');
 
     # seconds_of_trading_between:
 

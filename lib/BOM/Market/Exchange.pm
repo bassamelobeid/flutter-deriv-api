@@ -29,8 +29,8 @@ use Memoize;
 use Carp;
 use Scalar::Util qw(looks_like_number);
 
+use BOM::MarketData::Holiday;
 use Date::Utility;
-use BOM::MarketData::ExchangeConfig;
 use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
 use Time::Duration::Concise;
@@ -94,9 +94,13 @@ has [qw(
 
 Exchange's main currency.
 
+=head2 for_date
+
+for_date is to for historical search of holiday information
+
 =cut
 
-has currency => (
+has [qw( for_date currency )] => (
     is => 'ro',
 );
 
@@ -109,9 +113,28 @@ that day.
 =cut
 
 has holidays => (
-    is  => 'rw',
-    isa => 'HashRef',
+    is         => 'ro',
+    lazy_build => 1,
 );
+
+sub _build_holidays {
+    my $self = shift;
+
+    my $ref = BOM::MarketData::Holiday::get_holidays_for($self->symbol, $self->for_date);
+    my %exchange_holidays = map {Date::Utility->new($_)->days_since_epoch => $ref->{$_}} keys %$ref;
+    # pseudo-holidays for exchanges are 1 week before and after Christmas Day.
+    my $year = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
+    my $christmas_day = Date::Utility->new('25-Dec-'. $year);
+    my $pseudo_start = $christmas_day->minus_time_interval('7d');
+    my %pseudo_holidays = map {$pseudo_start->plus_time_interval($_.'d')->days_since_epoch => 'pseudo-holiday'} (0 .. 14);
+
+    my $holidays = {
+        %pseudo_holidays,
+        %exchange_holidays,
+    };
+
+    return $holidays;
+}
 
 ## PRIVATE attribute market_times
 #
@@ -193,21 +216,13 @@ has [qw(trading_timezone tenfore_trading_timezone)] => (
 );
 
 sub BUILDARGS {
-    my ($class, $symbol) = @_;
+    my ($class, $symbol, $for_date) = @_;
 
     croak "Exchange symbol must be specified" unless $symbol;
-    my $params_ref = BOM::MarketData::ExchangeConfig->new({symbol => $symbol})->get_parameters;
+    my $params_ref = LoadFile('/home/git/regentmarkets/bom-market/config/files/exchange.yml')->{$symbol};
     $params_ref->{symbol} = $symbol;
+    $params_ref->{for_date} = $for_date if $for_date;
 
-    my %holidays          = ();
-    my $today_since_epoch = Date::Utility::today->days_since_epoch;
-
-    for (keys %{$params_ref->{holidays}}) {
-        my $when = Date::Utility->new($_);
-        $holidays{$when->days_since_epoch} = $params_ref->{holidays}->{$_};
-    }
-
-    $params_ref->{holidays} = \%holidays;
     foreach my $key (keys %{$params_ref->{market_times}}) {
         foreach my $trading_segment (keys %{$params_ref->{market_times}->{$key}}) {
             if ($trading_segment eq 'day_of_week_extended_trading_breaks') { next; }
@@ -269,7 +284,7 @@ sub _object_expired {
 }
 
 sub new {
-    my ($self, $symbol) = @_;
+    my ($self, $symbol, $for_date) = @_;
 
     state %cached_objects;
 
@@ -278,7 +293,7 @@ sub new {
 
     my $ex = $cached_objects{$key};
     if (not $ex or $ex->_object_expired) {
-        $ex = $self->_new($symbol);
+        $ex = $self->_new($symbol, $for_date);
         $cached_objects{$key} = $ex;
     }
 
