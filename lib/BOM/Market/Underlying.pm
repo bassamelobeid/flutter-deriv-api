@@ -207,9 +207,6 @@ has _feed_license => (
     is => 'ro',
 );
 
-has _providers => (
-    is => 'ro',
-);
 
 has asset => (
     is         => 'ro',
@@ -258,16 +255,22 @@ has forward_tickers => (
     default => sub { return {}; },
 );
 
+has providers => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
 =head2 providers
 
 A list of feed providers for this underlying in the order of priority.
 
 =cut
 
-sub providers {
+
+sub _build_providers {
     my $self = shift;
 
-    return $self->_providers || $self->market->providers;
+    return $self->market->providers;
 
 }
 
@@ -479,10 +482,6 @@ around BUILDARGS => sub {
         delete $params_ref->{feed_license};
     }
 
-    if ($params_ref->{providers}) {
-        $params_ref->{_providers} = $params_ref->{providers};
-        delete $params_ref->{providers};
-    }
 
     return $class->$orig($params_ref);
 };
