@@ -20,8 +20,6 @@ sub payout_currencies {
 sub landing_company {
     my ($c, $args) = @_;
 
-    my ($c, $args) = @_;
-
     my $country  = $args->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
     my $c_config = $configs->{$country};
