@@ -42,6 +42,14 @@ BOM::Market::Underlying->new({symbol => 'frxGBPINR'})->set_combined_realtime({
     quote => 100,
 });
 
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
+    recorded_date => $fake_date,
+    calendar => {
+        '2013-01-01' => {
+            'New Year' => ['FOREX'],
+        }
+    },
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
