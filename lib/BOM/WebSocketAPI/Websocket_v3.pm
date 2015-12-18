@@ -96,7 +96,7 @@ sub entry_point {
                     $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
                 };
                 if ($@) {
-                    $c->app->log->error("$$ timeout for " . JSON::to_json($p1));
+                    $c->app->log->info("$$ timeout for " . JSON::to_json($p1));
                 }
 
                 if (not $data) {
