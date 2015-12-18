@@ -36,31 +36,34 @@ sub ticks {
 sub ticks_history {
     my ($c, $args) = @_;
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'ticks_history',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
-            }
-
+    my $symbol   = $args->{ticks_history};
+    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
+    } else {
+        $response = BOM::RPC::v3::TickStreamer::ticks_history($symbol, $args);
+        if ($response and exists $response->{error}) {
+            return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
+        } else {
             if (exists $args->{subscribe}) {
                 if ($args->{subscribe} eq '1') {
-                    if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish})) {
-                        return $c->new_error('ticks_history', 'AlreadySubscribed',
-                            $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
+                    my $license = BOM::RPC::v3::Contract::validate_license($symbol);
+                    if ($license and exists $license->{error}) {
+                        return $c->new_error('ticks_history', $license->{error}->{code}, $license->{error}->{message_to_client});
+                    }
+                    if (not _feed_channel($c, 'subscribe', $symbol, $response->{publish})) {
+                        return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
                     }
                 } else {
-                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $response->{publish});
+                    _feed_channel($c, 'unsubscribe', $symbol, $response->{publish});
                     return;
                 }
             }
             return {
                 msg_type => $response->{type},
                 %{$response->{data}}};
-        },
-        {args => $args});
+        }
+    }
     return;
 }
 
@@ -73,12 +76,12 @@ sub proposal {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
-        async_send_ask($c, $id, $args);
+        send_ask($c, $id, $args);
     }
     return;
 }
 
-sub async_send_ask {
+sub send_ask {
     my ($c, $id, $args) = @_;
 
     my %details  = %{$args};
@@ -108,43 +111,6 @@ sub async_send_ask {
                         %$response
                     }}});
     }
-    return;
-}
-
-sub send_ask {
-    my ($c, $id, $args) = @_;
-
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'send_ask',
-        sub {
-            my $response = shift;
-
-            if ($response->{error}) {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-
-                my $proposal = {id => $id};
-                $proposal->{longcode}  = delete $response->{longcode}  if $response->{longcode};
-                $proposal->{ask_price} = delete $response->{ask_price} if $response->{ask_price};
-                return {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => $proposal,
-                    %$response
-                };
-            } else {
-                return {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => {
-                        id => $id,
-                        %$response
-                    }};
-            }
-        },
-        {args => $args});
     return;
 }
 
