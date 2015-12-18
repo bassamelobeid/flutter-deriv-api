@@ -10,6 +10,9 @@
 "/user/statement":
   header:
     Cache-Control: "private, must-revalidate, max-age=0"
+"/user/profit_table":
+  header:
+    Cache-Control: "private, must-revalidate, max-age=0"
 "/user/portfolio":
   header:
     Cache-Control: "private, must-revalidate, max-age=0"
@@ -155,10 +158,10 @@
 "/cashier/payment_methods":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/user/profit_table":
+"/user/profit_tablews":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/user/statement":
+"/user/statementws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user/change_passwordws":
