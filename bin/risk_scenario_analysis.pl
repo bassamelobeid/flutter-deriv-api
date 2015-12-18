@@ -16,18 +16,19 @@ use BOM::Platform::Runtime;
 use lib qw(/home/git/regentmarkets/bom-backoffice/lib/ /home/git/regentmarkets/bom-market/lib/);
 use BOM::RiskReporting::ScenarioAnalysis;
 with 'App::Base::Script';
+with 'BOM::Utility::Logging';
 
 sub script_run {
     my $self = shift;
 
     my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
     if (not $localhost->has_role('master_live_server')) {
-        warn "$0 should only run on master live server, not [" . $localhost->canonical_name . "]";
+        $self->warning("$0 should only run on master live server, not [" . $localhost->canonical_name . "]");
         return $self->return_value(255);
     }
-    say STDERR 'Starting scenario analysis generation.';
+    $self->info('Starting scenario analysis generation.');
     BOM::RiskReporting::ScenarioAnalysis->new(run_by => $self)->generate;
-    say STDERR 'Completed scenario analysis generation.';
+    $self->info('Completed scenario analysis generation.');
 
     return 0;
 }

@@ -70,7 +70,7 @@ if (request()->param('perform_actions')) {
             if ($action eq 'cancel') {
                 # For cancelled bets, now adjust their account for the purchase price
                 my $client = BOM::Platform::Client::get_instance({'loginid' => $bet_info->{loginid}});
-                my $remark = 'Adjustment bet purchase ref ' . $bet_info->{ref};
+                my $remark = 'Adjustment contract purchase ref ' . $bet_info->{ref};
                 $client->payment_legacy_payment(
                     currency     => $bet_info->{currency},
                     amount       => $bet_info->{buy_price},
