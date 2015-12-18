@@ -317,6 +317,11 @@ my $transaction_4 = BOM::Product::Transaction->new({
 isnt $transaction_4->buy, 'undef', 'successful buy';
 my $start_time_5 = Date::Utility->new('2015-11-10 08:30:00')->epoch;
 
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'correlation_matrix',
+    {
+        recorded_date => Date::Utility->new($start_time_5),
+    });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
