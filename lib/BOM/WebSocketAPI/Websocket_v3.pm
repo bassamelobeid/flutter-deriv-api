@@ -125,14 +125,16 @@ sub entry_point {
     # stop all recurring
     $c->on(
         finish => sub {
-            my $c     = shift;
-            my ($c)   = @_;
-            my $ws_id = $c->tx->connection;
-            foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-                Mojo::IOLoop->remove($id);
+            my $c = shift;
+            my ($c) = @_;
+            if ($c->tx) {
+                my $ws_id = $c->tx->connection;
+                foreach my $id (keys %{$c->{ws}{$ws_id}}) {
+                    Mojo::IOLoop->remove($id);
+                }
+                delete $c->{ws}{$ws_id};
+                delete $c->{fmb_ids}{$ws_id};
             }
-            delete $c->{ws}{$ws_id};
-            delete $c->{fmb_ids}{$ws_id};
         });
 
     return;
