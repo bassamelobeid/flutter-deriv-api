@@ -22,7 +22,7 @@ use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
 use Data::UUID;
-use Time::Out qw(timeout) ;
+use Time::Out qw(timeout);
 
 sub ok {
     my $c      = shift;
@@ -95,8 +95,8 @@ sub entry_point {
                 timeout 15 => sub {
                     $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
                 };
-                if ($@){
-                    $c->app->log->error("timeout for ". JSON::to_json($p1));
+                if ($@) {
+                    $c->app->log->error("timeout for " . JSON::to_json($p1));
                 }
 
                 if (not $data) {
@@ -177,27 +177,27 @@ sub __handle {
         ['verify_email',            \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::verify_email,          0],
         ['new_account_virtual',     \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_virtual,   0],
         # authenticated calls
-##        ['sell',                      \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,                           1],
-##        ['buy',                       \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,                            1],
-##        ['portfolio',                 \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio,              1],
-##        ['proposal_open_contract',    \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, 1],
-##        ['balance',                   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                           1],
-##        ['statement',                 \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,                         1],
-##        ['profit_table',              \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table,                      1],
-##        ['get_account_status',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_account_status,                1],
-##        ['change_password',           \&BOM::WebSocketAPI::v3::Wrapper::Accounts::change_password,                   1],
-##        ['get_settings',              \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_settings,                      1],
-##        ['set_settings',              \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_settings,                      1],
-##        ['get_self_exclusion',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_self_exclusion,                1],
-##        ['set_self_exclusion',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion,                1],
-##        ['cashier_password',          \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password,                  1],
-##        ['api_token',                 \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,                         1],
-##        ['get_limits',                \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                         1],
-##        ['paymentagent_withdraw',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,              1],
-##        ['paymentagent_transfer',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,              1],
-##        ['transfer_between_accounts', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts,          1],
-##        ['new_account_real',          \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real,                1],
-##        ['new_account_maltainvest',   \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,         1],
+        ['sell',                      \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,                           1],
+        ['buy',                       \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,                            1],
+        ['portfolio',                 \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio,              1],
+        ['proposal_open_contract',    \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract, 1],
+        ['balance',                   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                           1],
+        ['statement',                 \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,                         1],
+        ['profit_table',              \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table,                      1],
+        ['get_account_status',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_account_status,                1],
+        ['change_password',           \&BOM::WebSocketAPI::v3::Wrapper::Accounts::change_password,                   1],
+        ['get_settings',              \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_settings,                      1],
+        ['set_settings',              \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_settings,                      1],
+        ['get_self_exclusion',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_self_exclusion,                1],
+        ['set_self_exclusion',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion,                1],
+        ['cashier_password',          \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password,                  1],
+        ['api_token',                 \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,                         1],
+        ['get_limits',                \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                         1],
+        ['paymentagent_withdraw',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,              1],
+        ['paymentagent_transfer',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_transfer,              1],
+        ['transfer_between_accounts', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::transfer_between_accounts,          1],
+        ['new_account_real',          \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real,                1],
+        ['new_account_maltainvest',   \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,         1],
     );
 
     foreach my $dispatch (@dispatch) {
