@@ -43,7 +43,7 @@ sub entry_point {
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
     Mojo::IOLoop->singleton->max_connections(100000);
-    
+
     if (not $c->stash->{redis}) {
         state $url = do {
             my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
@@ -288,7 +288,7 @@ sub _sanity_failed {
                 }
             } elsif (ref $arg->{$k} eq 'ARRAY') {
                 foreach my $l (@{$arg->{$k}}) {
-                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->[$l]));
+                    last OUTER if (@failed = _failed_key_value($k, $l));
                 }
             }
         }
