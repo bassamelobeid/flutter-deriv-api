@@ -34,8 +34,8 @@ It trims the calendar by removing holiday before the recorded_date.
 sub save {
     my $self = shift;
 
-    my $cached_holidays = BOM::System::Chronicle::get('holidays','holidays');
-    my %relevant_holidays = map {$_ => $cached_holidays->{$_}} grep {$_ >= $self->recorded_date->truncate_to_day->epoch} keys %$cached_holidays;
+    my $cached_holidays = BOM::System::Chronicle::get('holidays', 'holidays');
+    my %relevant_holidays = map { $_ => $cached_holidays->{$_} } grep { $_ >= $self->recorded_date->truncate_to_day->epoch } keys %$cached_holidays;
     my $calendar = $self->calendar;
 
     foreach my $new_holiday (keys %$calendar) {
@@ -44,7 +44,7 @@ sub save {
             $relevant_holidays{$epoch} = $calendar->{$new_holiday};
             next;
         }
-        foreach my $new_holiday_desc ( keys %{$calendar->{$new_holiday}}) {
+        foreach my $new_holiday_desc (keys %{$calendar->{$new_holiday}}) {
             my $new_symbols = $calendar->{$new_holiday}{$new_holiday_desc};
             my $symbols_to_save = [uniq(@{$relevant_holidays{$epoch}{$new_holiday_desc}}, @$new_symbols)];
             $relevant_holidays{$epoch}{$new_holiday_desc} = $symbols_to_save;

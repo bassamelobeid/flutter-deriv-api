@@ -121,17 +121,14 @@ sub _build_holidays {
     my $self = shift;
 
     my $ref = BOM::MarketData::Holiday::get_holidays_for($self->symbol, $self->for_date);
-    my %exchange_holidays = map {Date::Utility->new($_)->days_since_epoch => $ref->{$_}} keys %$ref;
+    my %exchange_holidays = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
     # pseudo-holidays for exchanges are 1 week before and after Christmas Day.
-    my $year = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
-    my $christmas_day = Date::Utility->new('25-Dec-'. $year);
-    my $pseudo_start = $christmas_day->minus_time_interval('7d');
-    my %pseudo_holidays = map {$pseudo_start->plus_time_interval($_.'d')->days_since_epoch => 'pseudo-holiday'} (0 .. 14);
+    my $year            = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
+    my $christmas_day   = Date::Utility->new('25-Dec-' . $year);
+    my $pseudo_start    = $christmas_day->minus_time_interval('7d');
+    my %pseudo_holidays = map { $pseudo_start->plus_time_interval($_ . 'd')->days_since_epoch => 'pseudo-holiday' } (0 .. 14);
 
-    my $holidays = {
-        %pseudo_holidays,
-        %exchange_holidays,
-    };
+    my $holidays = {%pseudo_holidays, %exchange_holidays,};
 
     return $holidays;
 }

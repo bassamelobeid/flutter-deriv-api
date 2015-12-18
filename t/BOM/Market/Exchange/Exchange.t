@@ -18,24 +18,26 @@ use Readonly;
 Readonly::Scalar my $HKSE_TRADE_DURATION_DAY => ((2 * 3600 + 29 * 60) + (2 * 3600 + 40 * 60));
 Readonly::Scalar my $HKSE_TRADE_DURATION_MORNING => 2 * 3600 + 29 * 60;
 Readonly::Scalar my $HKSE_TRADE_DURATION_EVENING => 2 * 3600 + 40 * 60;
-my $date = Date::Utility->new('2013-12-01'); # first of December 2014
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
-    recorded_date => $date,
-    calendar => {
-        "6-May-2013"  => {
-            "Early May Bank Holiday" => [qw(LSE)],
+my $date = Date::Utility->new('2013-12-01');    # first of December 2014
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'holiday',
+    {
+        recorded_date => $date,
+        calendar      => {
+            "6-May-2013" => {
+                "Early May Bank Holiday" => [qw(LSE)],
+            },
+            "25-Dec-2013" => {
+                "Christmas Day" => [qw(LSE FOREX)],
+            },
+            "1-Jan-2014" => {
+                "New Year's Day" => [qw(LSE FOREX)],
+            },
+            "1-Apr-2013" => {
+                "Easter Monday" => [qw(LSE)],
+            },
         },
-        "25-Dec-2013" => {
-            "Christmas Day" => [qw(LSE FOREX)],
-        },
-        "1-Jan-2014"  => {
-            "New Year's Day" => [qw(LSE FOREX)],
-        },
-        "1-Apr-2013" => {
-            "Easter Monday" => [qw(LSE)],
-        },
-    },
-});
+    });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange');
 
@@ -47,7 +49,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         delay_amount     => 15,
         trading_days     => 'weekdays',
         trading_timezone => 'Europe/London',
-        market_times => {
+        market_times     => {
             dst => {
                 daily_close      => '15h30m',
                 daily_open       => '7h',
@@ -75,9 +77,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol           => 'RANDOM',
-        trading_days     => 'everyday',
-        market_times     => {
+        symbol       => 'RANDOM',
+        trading_days => 'everyday',
+        market_times => {
             early_closes => {},
             standard     => {
                 daily_close      => '23h59m59s',
@@ -92,9 +94,9 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
-        symbol           => 'RANDOM_NOCTURNE',
-        trading_days     => 'everyday',
-        market_times     => {
+        symbol       => 'RANDOM_NOCTURNE',
+        trading_days => 'everyday',
+        market_times => {
             early_closes => {},
             standard     => {
                 daily_close      => '11h59m59s',
@@ -134,7 +136,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'ASX',
         currency         => 'AUD',
-        trading_days => 'weekdays',
+        trading_days     => 'weekdays',
         trading_timezone => 'Australia/Sydney',
         market_times     => {
             dst => {
@@ -156,7 +158,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'ISE',
         currency         => 'EUR',
-        trading_days => 'weekdays',
+        trading_days     => 'weekdays',
         trading_timezone => 'Europe/Dublin',
         market_times     => {
             dst => {
@@ -178,7 +180,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'NYSE',
         currency         => 'USD',
-        trading_days => 'weekdays',
+        trading_days     => 'weekdays',
         trading_timezone => 'America/New_York',
         market_times     => {
             dst => {
@@ -200,10 +202,10 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol           => 'HKSE',
         currency         => 'HKD',
-        trading_days => 'weekdays',
+        trading_days     => 'weekdays',
         delay_amount     => 60,
         trading_timezone => 'Asia/Hong_Kong',
-        market_times => {
+        market_times     => {
             late_opens => {
                 '24-Dec-2010' => '2h30m',
             },
@@ -245,8 +247,8 @@ my $exchanges = LoadFile('/home/git/regentmarkets/bom-market/config/files/exchan
 
 subtest 'exchange currency and OTC check' => sub {
     my %undef_currency_exchanges = (
-        RANDOM => 1,
-        FOREX => 1,
+        RANDOM          => 1,
+        FOREX           => 1,
         RANDOM_NOCTURNE => 1
     );
     foreach my $exchange (keys %$exchanges) {
@@ -287,7 +289,8 @@ subtest 'holidays check' => sub {
         for (keys %expected_holidays) {
             is $holidays->{Date::Utility->new($_)->epoch}, $expected_holidays{$_}, 'matches holiday';
         }
-    } 'check holiday accuracy';
+    }
+    'check holiday accuracy';
 
     is($LSE->holiday_days_between(Date::Utility->new('24-Dec-13'), Date::Utility->new('3-Jan-14')), 2, "two holidays over the year end on LSE.");
 
@@ -371,14 +374,14 @@ subtest 'Whole bunch of stuff.' => sub {
     # before opening time on an LSE trading day:
     my $six_am       = Date::Utility->new('3-May-13 06:00:00');
     my $six_am_epoch = $six_am->epoch;
-    is($LSE->is_open_at($six_am),                   undef,         'LSE not open at 6am');
-    is($LSE->is_open_at($six_am_epoch),             undef,         'LSE not open at 6am');
-    is($LSE->will_open_after($six_am),              1,             'LSE will open on this day after 6am');
-    is($LSE->will_open_after($six_am_epoch),        1,             'LSE will open on this day after 6am');
-    is($LSE->seconds_since_open_at($six_am),        undef,         'at 6am, LSE not open yet');
-    is($LSE->seconds_since_open_at($six_am_epoch),  undef,         'at 6am, LSE not open yet');
-    is($LSE->seconds_since_close_at($six_am),       undef,         'at 6am, LSE hasn\'t closed yet');
-    is($LSE->seconds_since_close_at($six_am_epoch), undef,         'at 6am, LSE hasn\'t closed yet');
+    is($LSE->is_open_at($six_am),                   undef, 'LSE not open at 6am');
+    is($LSE->is_open_at($six_am_epoch),             undef, 'LSE not open at 6am');
+    is($LSE->will_open_after($six_am),              1,     'LSE will open on this day after 6am');
+    is($LSE->will_open_after($six_am_epoch),        1,     'LSE will open on this day after 6am');
+    is($LSE->seconds_since_open_at($six_am),        undef, 'at 6am, LSE not open yet');
+    is($LSE->seconds_since_open_at($six_am_epoch),  undef, 'at 6am, LSE not open yet');
+    is($LSE->seconds_since_close_at($six_am),       undef, 'at 6am, LSE hasn\'t closed yet');
+    is($LSE->seconds_since_close_at($six_am_epoch), undef, 'at 6am, LSE hasn\'t closed yet');
 
     # after closing time on an LSE trading day:
     my $six_pm       = Date::Utility->new('3-May-13 18:00:00');
@@ -394,8 +397,8 @@ subtest 'Whole bunch of stuff.' => sub {
 
     # LSE holiday:
     my $lse_holiday_epoch = Date::Utility->new('6-May-13 12:00:00')->epoch;
-    is($LSE->is_open_at($lse_holiday_epoch),      undef, 'is_open_at LSE not open today at all.');
-    is($LSE->will_open_after($lse_holiday_epoch), undef, 'will_open_after LSE not open today at all.');
+    is($LSE->is_open_at($lse_holiday_epoch),             undef, 'is_open_at LSE not open today at all.');
+    is($LSE->will_open_after($lse_holiday_epoch),        undef, 'will_open_after LSE not open today at all.');
     is($LSE->seconds_since_open_at($lse_holiday_epoch),  undef, 'seconds_since_open_at LSE not open today at all.');
     is($LSE->seconds_since_close_at($lse_holiday_epoch), undef, 'seconds_since_close_at LSE not open today at all.');
 
@@ -403,9 +406,9 @@ subtest 'Whole bunch of stuff.' => sub {
     my $HKSE = BOM::Market::Exchange->new('HKSE');
 
     my $lunchbreak_epoch = Date::Utility->new('3-May-13 04:30:00')->epoch;
-    is($HKSE->is_open_at($lunchbreak_epoch),            undef,   'HKSE closed for lunch!');
-    is($HKSE->will_open_after($lunchbreak_epoch),       1,       'HKSE will open for the afternoon session.');
-    is($HKSE->seconds_since_open_at($lunchbreak_epoch),  undef, 'seconds since open is undef if market is closed (which includes closed for lunch).');
+    is($HKSE->is_open_at($lunchbreak_epoch),            undef, 'HKSE closed for lunch!');
+    is($HKSE->will_open_after($lunchbreak_epoch),       1,     'HKSE will open for the afternoon session.');
+    is($HKSE->seconds_since_open_at($lunchbreak_epoch), undef, 'seconds since open is undef if market is closed (which includes closed for lunch).');
     is($HKSE->seconds_since_close_at($lunchbreak_epoch), 31 * 60, '1 hour into lunch, HKSE closed 31 minutes ago.');
 
     my $HKSE_close_epoch = Date::Utility->new('3-May-13 07:40:00')->epoch;

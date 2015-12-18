@@ -14,16 +14,16 @@ use Date::Utility;
 my $now = Date::Utility->new;
 
 subtest 'error check' => sub {
-    throws_ok {BOM::MarketData::Holiday->new(recorded_date => $now)} qr/required/, 'throws error if not enough argument to create a holiday';
-    throws_ok {BOM::MarketData::Holiday->new(calendar => {})} qr/required/, 'throws error if not enough argument to create a holiday';
-    lives_ok {BOM::MarketData::Holiday->new(recorded_date => $now, calendar => {})} 'creates a holiday object if all args are present';
+    throws_ok { BOM::MarketData::Holiday->new(recorded_date => $now) } qr/required/, 'throws error if not enough argument to create a holiday';
+    throws_ok { BOM::MarketData::Holiday->new(calendar => {}) } qr/required/, 'throws error if not enough argument to create a holiday';
+    lives_ok { BOM::MarketData::Holiday->new(recorded_date => $now, calendar => {}) } 'creates a holiday object if all args are present';
 };
 
 subtest 'save and retrieve event' => sub {
     lives_ok {
         my $h = BOM::MarketData::Holiday->new(
             recorded_date => $now,
-            calendar => {
+            calendar      => {
                 $now->epoch => {
                     'Test Event' => ['USD'],
                 }
@@ -32,7 +32,7 @@ subtest 'save and retrieve event' => sub {
         ok $h->save, 'succesfully saved event.';
         $h = BOM::MarketData::Holiday->new(
             recorded_date => $now,
-            calendar => {
+            calendar      => {
                 $now->epoch => {
                     'Test Event 2' => ['EURONEXT'],
                 }
@@ -42,12 +42,13 @@ subtest 'save and retrieve event' => sub {
         my $event = BOM::MarketData::Holiday::get_holidays_for('EURONEXT');
         ok $event->{$now->truncate_to_day->epoch}, 'has a holiday';
         is $event->{$now->truncate_to_day->epoch}, 'Test Event 2', 'Found saved holiday';
-    } 'saves event';
+    }
+    'saves event';
     my $next_day = $now->plus_time_interval('1d');
     lives_ok {
         my $h = BOM::MarketData::Holiday->new(
             recorded_date => $next_day,
-            calendar => {
+            calendar      => {
                 $next_day->epoch => {
                     'Test Event Update' => ['AUD'],
                 }
@@ -59,12 +60,17 @@ subtest 'save and retrieve event' => sub {
         $event = BOM::MarketData::Holiday::get_holidays_for('AUD');
         ok $event->{$next_day->truncate_to_day->epoch}, 'has a holiday';
         is $event->{$next_day->truncate_to_day->epoch}, 'Test Event Update', 'Found saved holiday';
-    } 'removed historical holiday when new event is inserted';
+    }
+    'removed historical holiday when new event is inserted';
 };
 
 subtest 'save and retrieve event in history' => sub {
     my $yesterday = $now->minus_time_interval('1d');
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {recorded_date => $yesterday, calendar => {$now->epoch => {'Test Historical Save' => ['EURONEXT']}}});
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'holiday',
+        {
+            recorded_date => $yesterday,
+            calendar      => {$now->epoch => {'Test Historical Save' => ['EURONEXT']}}});
     my $h = BOM::MarketData::Holiday::get_holidays_for('EURONEXT', $yesterday);
     ok $h->{$now->truncate_to_day->epoch}, 'has a holiday';
     is $h->{$now->truncate_to_day->epoch}, 'Test Historical Save', 'Found saved holiday';
