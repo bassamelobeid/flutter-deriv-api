@@ -22,6 +22,7 @@ use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
 use Data::UUID;
+use Time::Out qw(timeout) ;
 
 sub ok {
     my $c      = shift;
@@ -90,7 +91,14 @@ sub entry_point {
                 }
 
                 $c->stash('args' => $p1);
-                $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
+
+                timeout 15 => sub {
+                    $data = _sanity_failed($c, $p1) || __handle($c, $p1, $tag);
+                };
+                if ($@){
+                    $c->app->log->error("timeout for ". JSON::to_json($p1));
+                }
+
                 if (not $data) {
                     $send = undef;
                     $data = {};
