@@ -43,7 +43,8 @@ sub entry_point {
     $c->inactivity_timeout(120);
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
-
+    Mojo::IOLoop->singleton->max_connections(100000);
+    
     if (not $c->stash->{redis}) {
         state $url = do {
             my $cf = YAML::XS::LoadFile('/etc/rmg/chronicle.yml')->{read};
