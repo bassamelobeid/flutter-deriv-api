@@ -296,7 +296,7 @@ sub _sanity_failed {
                 }
             } elsif (ref $arg->{$k} eq 'ARRAY') {
                 foreach my $l (@{$arg->{$k}}) {
-                    last OUTER if (@failed = _failed_key_value($l, $arg->{$k}->[$l]));
+                    last OUTER if (@failed = _failed_key_value($k, $l));
                 }
             }
         }
