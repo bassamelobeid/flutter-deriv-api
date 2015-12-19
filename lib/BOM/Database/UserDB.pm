@@ -1,11 +1,11 @@
 package BOM::Database::UserDB;
 
-use YAML::XS;
-use feature "state";
+use strict;
+use warnings;
+use BOM::Database::Rose::DB;
 
 sub rose_db {
     my %overrides = @_;
-    state $config = YAML::XS::LoadFile('/etc/rmg/userdb.yml');
     BOM::Database::Rose::DB->register_db(
         connect_options => {
             AutoCommit => 1,
@@ -16,11 +16,11 @@ sub rose_db {
         domain   => 'userdb',
         type     => 'write',
         driver   => 'Pg',
-        database => 'users',
-        port     => '5436',
+        database => 'userdb-write',
+        port     => 6436,
         username => 'write',
-        host     => $config->{ip},
-        password => $config->{password},
+        host     => '/var/run/postgresql' ,
+        password => '',
         %overrides,
     );
 

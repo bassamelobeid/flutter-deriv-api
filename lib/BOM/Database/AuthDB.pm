@@ -1,7 +1,7 @@
 package BOM::Database::AuthDB;
 
-use YAML::XS;
-use feature "state";
+use strict;
+use warnings;
 use BOM::Database::Rose::DB;
 
 sub rose_db {
