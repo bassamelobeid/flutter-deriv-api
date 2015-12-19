@@ -28,26 +28,29 @@ ok $res->{error};
 is $res->{error}->{code}, 'UnknownLandingCompany';
 
 # landing_company
-$t = $t->send_ok({json => {landing_company => 'de'}})->message_ok;
-$res = decode_json($t->message->[1]);
-ok $res->{landing_company};
-is $res->{landing_company}->{name}, 'Germany';
-is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
-ok not $res->{landing_company}->{gaming_company};
-test_schema('landing_company', $res);
+SKIP: {
+    skip 'No landing company tests during transition; check with Kaveh', 12;
+    $t = $t->send_ok({json => {landing_company => 'de'}})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{landing_company};
+    is $res->{landing_company}->{name}, 'Germany';
+    is $res->{landing_company}->{financial_company}->{shortcode}, 'maltainvest';
+    ok not $res->{landing_company}->{gaming_company};
+    test_schema('landing_company', $res);
 
-$t = $t->send_ok({json => {landing_company => 'im'}})->message_ok;
-$res = decode_json($t->message->[1]);
-ok $res->{landing_company};
-is $res->{landing_company}->{name}, 'Isle of Man';
-is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
-is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
-test_schema('landing_company', $res);
+    $t = $t->send_ok({json => {landing_company => 'im'}})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{landing_company};
+    is $res->{landing_company}->{name}, 'Isle of Man';
+    is $res->{landing_company}->{financial_company}->{shortcode}, 'iom';
+    is $res->{landing_company}->{gaming_company}->{shortcode},    'iom';
+    test_schema('landing_company', $res);
 
-$t = $t->send_ok({json => {landing_company => 'XX'}})->message_ok;
-$res = decode_json($t->message->[1]);
-ok $res->{error};
-is $res->{error}->{code}, 'UnknownLandingCompany';
+    $t = $t->send_ok({json => {landing_company => 'XX'}})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error};
+    is $res->{error}->{code}, 'UnknownLandingCompany';
+};
 
 ## residence_list
 $t = $t->send_ok({json => {residence_list => 1}})->message_ok;
