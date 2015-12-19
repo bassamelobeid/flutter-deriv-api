@@ -134,8 +134,7 @@ sub generate {
             }
             catch {
                 $error_count++;
-                $mail_content .=
-                    "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . "]\n";
+                $mail_content .= "Unable to process bet [ $last_fmb_id, " . $open_fmb->{short_code} . ", $_ ]\n";
             };
         }
 
