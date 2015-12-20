@@ -205,7 +205,7 @@ sub _dbh {
     return if not defined _config()->{chronicle};
 
     state $dbh = DBI->connect_cached(
-        "dbi:Pg:dbname=chronicle-write;port=6437;host=/var/run/postgresql",
+        "dbi:Pg:dbname=chronicle-write;port=6432;host=/var/run/postgresql",
         "write",
         '',
         {
