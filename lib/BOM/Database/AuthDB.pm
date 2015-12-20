@@ -16,7 +16,7 @@ sub rose_db {
         domain   => 'authdb',
         type     => 'write',
         driver   => 'Pg',
-        database => 'authdb-write',
+        database => 'authdb',
         port     => 6432,
         username => 'write',
         host     => '/var/run/postgresql',
