@@ -17,7 +17,7 @@ sub rose_db {
         type     => 'write',
         driver   => 'Pg',
         database => 'userdb-write',
-        port     => 6436,
+        port     => 6432,
         username => 'write',
         host     => '/var/run/postgresql' ,
         password => '',
