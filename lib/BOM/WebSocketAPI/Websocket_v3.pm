@@ -139,6 +139,7 @@ sub entry_point {
                 foreach my $id (keys %{$c->{ws}{$ws_id}}) {
                     Mojo::IOLoop->remove($id);
                 }
+                delete $c->stash->{redis};
                 delete $c->{ws}{$ws_id};
                 delete $c->{fmb_ids}{$ws_id};
             }
