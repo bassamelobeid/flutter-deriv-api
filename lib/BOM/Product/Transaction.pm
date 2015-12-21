@@ -647,7 +647,9 @@ sub sell {    ## no critic (RequireArgUnpacking)
         # ask your friendly DBA team if in doubt
         $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
             for (
-            qw/_validate_iom_withdrawal_limit
+            qw/
+            _validate_sell_transaction_rate
+            _validate_iom_withdrawal_limit
             _validate_payout_limit
             _is_valid_to_sell
             _validate_currency/,
@@ -1267,15 +1269,34 @@ Validate the client's buy transaction rate does not exceed our limits
 =cut
 
 sub _validate_buy_transaction_rate {
-    my $self   = shift;
+    my $self = shift;
+
+    return $self->__validate_transaction_rate_limit('buy');
+}
+
+=head2 $self->_validate_sell_transaction_rate
+
+Validate the client's sell transaction rate does not exceed our limits
+
+=cut
+
+sub _validate_sell_transaction_rate {
+    my $self = shift;
+
+    return $self->__validate_transaction_rate_limit('sell');
+}
+
+sub __validate_transaction_rate_limit {
+    my ($self, $what) = @_;
     my $client = $self->client;
+    $what = lc $what;
 
     # Define the appropriate rates in `bom-platform/config/environments/*/perl_rate_limitations.yml`
     # before attempting to apply them here.
 
     return unless $client->is_virtual;    # We only limit virtual accounts at this point
 
-    my $service = 'virtual_buy_transaction';
+    my $service = 'virtual_' . $what . '_transaction';
     my $loginid = $client->loginid;
 
     if (
@@ -1285,7 +1306,7 @@ sub _validate_buy_transaction_rate {
             }))
     {
         return Error::Base->cuss(
-            -type              => 'BuyRateExceeded',
+            -type              => ucfirst($what) . 'RateExceeded',
             -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
             -message_to_client => BOM::Platform::Context::localize('Too many recent attempts. Try again later.'));
     }
@@ -1530,6 +1551,16 @@ sub sell_expired_contracts {
 
     my $currency = $client->currency;
     my $loginid  = $client->loginid;
+
+    # Apply rate limits before doing the full lookup
+    return
+        if (
+        $client->is_virtual              # Only virtuals
+        and not defined $contract_ids    # who are just selling "whatever"
+        and not within_rate_limits({
+                service  => 'virtual_batch_sell',
+                consumer => $loginid
+            }));
 
     my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
         client_loginid => $loginid,
