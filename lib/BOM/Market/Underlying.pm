@@ -265,7 +265,6 @@ A list of feed providers for this underlying in the order of priority.
 
 =cut
 
-
 sub _build_providers {
     my $self = shift;
 
