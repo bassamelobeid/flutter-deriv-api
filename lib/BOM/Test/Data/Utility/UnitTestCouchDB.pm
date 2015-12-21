@@ -47,7 +47,6 @@ my %couchdb_databases = (
     economic_events      => 'zz' . (time . int(rand 999999)) . 'eco',
     correlation_matrices => 'zz' . (time . int(rand 999999)) . 'cor',
     corporate_actions    => 'zz' . (time . int(rand 999999)) . 'coa',
-    currency_config      => 'zz' . (time . int(rand 999999)) . 'cuc',
     exchange_config      => 'zz' . (time . int(rand 999999)) . 'exc',
 );
 
