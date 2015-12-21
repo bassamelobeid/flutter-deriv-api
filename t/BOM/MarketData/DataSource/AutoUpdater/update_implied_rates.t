@@ -24,12 +24,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol => 'FOREX',
         date   => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( JPY USD AUD );
 
 subtest 'invalid input' => sub {
     lives_ok {

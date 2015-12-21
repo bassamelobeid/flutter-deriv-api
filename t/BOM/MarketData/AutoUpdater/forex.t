@@ -24,13 +24,6 @@ my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw(USD JPY GBP INR SEK CHF CAD NOK AUD EUR CZK PLN NZD);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

@@ -33,13 +33,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw(AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',

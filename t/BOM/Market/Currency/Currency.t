@@ -73,14 +73,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         },
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol                 => 'RUR',
-        bloomberg_country_code => 'RU',
-        holidays               => {},
-        recorded_date          => Date::Utility->new,
-    });
 
 subtest Holidays => sub {
     plan tests => 8;

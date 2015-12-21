@@ -227,7 +227,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 );
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(AUD GBP EUR USD HKD);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(GBP EUR);
 
 use BOM::Market::Exchange;
 use BOM::Market::Underlying;
