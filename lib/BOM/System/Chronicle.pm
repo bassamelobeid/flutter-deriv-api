@@ -177,8 +177,9 @@ SQL
 
 sub _redis_write {
     state $redis_write = RedisDB->new(
-        host => _config()->{write}->{host},
-        port => _config()->{write}->{port},
+        timeout => 10,
+        host    => _config()->{write}->{host},
+        port    => _config()->{write}->{port},
         (_config()->{write}->{password} ? ('password', _config()->{write}->{password}) : ()));
 
     return $redis_write;
@@ -186,8 +187,9 @@ sub _redis_write {
 
 sub _redis_read {
     state $redis_read = RedisDB->new(
-        host => _config()->{read}->{host},
-        port => _config()->{read}->{port},
+        timeout => 10,
+        host    => _config()->{read}->{host},
+        port    => _config()->{read}->{port},
         (_config()->{read}->{password} ? ('password', _config()->{read}->{password}) : ()));
 
     return $redis_read;
