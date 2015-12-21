@@ -20,13 +20,19 @@ subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'holiday', {
+            recorded_date => $now,
+            calendar => {
+                "01-Jan-15" => {
+                    "Christmas Day" => ['FOREX'],
+                },
+            },
+        });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'exchange',
         {
             symbol   => 'FOREX',
             date     => $now,
-            holidays => {
-                "01-Jan-15" => "Christmas Day",
-            },
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',
@@ -83,7 +89,7 @@ subtest "predefined trading_period" => sub {
         range_daily => {
             duration => ['1W', '1M', '3M', '1Y'],
             date_expiry =>
-                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 23:59:59',)],
+                [map { Date::Utility->new($_)->epoch } ('2015-09-04 21:00:00', '2015-09-30 23:59:59', '2015-09-30 23:59:59', '2015-12-31 18:00:00',)],
             date_start =>
                 [map { Date::Utility->new($_)->epoch } ('2015-08-31 00:00:00', '2015-09-01 00:00:00', '2015-07-01 00:00:00', '2015-01-02 00:00:00',)],
         },
@@ -120,7 +126,6 @@ subtest "predefined trading_period" => sub {
         'Expected total contract after included predefined trading period'
     );
     is(scalar(@{$got{$_}}), $expected_count{trading_period}{$_}, "Expected total trading period on $_") for (keys %{$expected_count{trading_period}});
-
     foreach my $bet_type (keys %expected_trading_period) {
 
         my @got_duration = map { $got{$bet_type}[$_]{duration} } keys $got{$bet_type};
