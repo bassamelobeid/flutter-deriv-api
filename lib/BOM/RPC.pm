@@ -18,7 +18,7 @@ sub startup {
         });
 
     $app->moniker('rpc');
-    $app->plugin('Config');
+    $app->plugin('Config' => file => '/etc/rmg/rpc.conf');
 
     my $log = $app->log;
 
