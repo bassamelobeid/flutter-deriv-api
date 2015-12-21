@@ -33,6 +33,31 @@ my $tick_params = {
 
 my $tick = BOM::Market::Data::Tick->new($tick_params);
 
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'holiday',
+    {
+        recorded_date => Date::Utility->new,
+        calendar => {
+            "25-Dec-12"  => {
+                "Christmas Day" => ['FSE'],
+            },
+            "26-Dec-12"  => {
+                "Christmas Holiday" => ['FSE'],
+            },
+            "31-Dec-12"  => {
+                " New Year's Eve" => ['FSE'],
+            },
+            "1-Jan-13" => {
+                "New Year" => ['FSE'],
+            },
+            "29-Mar-13"  => {
+                "Good Friday" => ['FSE'],
+            },
+            "1-Apr-13"   => {
+                "Easter Monday" => ['FSE'],
+            },
+        },
+    });
 foreach my $symbol (qw(FOREX NYSE TSE SES ASX)) {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'exchange',
@@ -47,7 +72,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol           => 'RANDOM',
         open_on_weekends => 1,
         trading_days     => 'everyday',
-        holidays         => {},
         market_times     => {
             early_closes => {},
             standard     => {
@@ -59,7 +83,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         },
         date => Date::Utility->new,
     });
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
@@ -67,32 +90,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         currency         => 'EUR',
         delay_amount     => 15,
         trading_timezone => 'Europe/Berlin',
-        holidays         => {
-            "25-Dec-12"  => "Christmas Day",
-            "26-Dec-12"  => "Christmas Holiday",
-            "31-Dec-12"  => " New Year's Eve",
-            "1-Jan-13"   => "New Year's Day",
-            "29-Mar-13"  => "Good Friday",
-            "1-Apr-13"   => "Easter Monday",
-            "1-May-13"   => "Labpur Day",
-            "24-Dec-13"  => "Christmas Eve",
-            "25-Dec-13"  => "Christmas Day",
-            "26-Dec-13"  => "Christmas Holiday",
-            "31-Dec-13"  => "New Year's Eve",
-            "2013-12-20" => "pseudo-holiday",
-            "2013-12-23" => "pseudo-holiday",
-            "2013-12-27" => "pseudo-holiday",
-            "2013-12-30" => "pseudo-holiday",
-            "1-Jan-14"   => "New Year's Day",
-            "18-Apr-14"  => "Good Friday",
-            "21-Apr-14"  => "Easter Monday",
-            "1-May-14"   => "Labour Day",
-            "25-Dec-14"  => "Christmas Day",
-            "26-Dec-14"  => "Boxing Day",
-            "31-Dec-14"  => "New Year's Eve",
-            "2014-01-02" => "pseudo-holiday",
-            "2014-01-03" => "pseudo-holiday",
-        },
         market_times => {
             standard => {
                 daily_close      => '16h30m',
@@ -120,32 +117,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         currency         => 'EUR',
         delay_amount     => 15,
         trading_timezone => 'Europe/London',
-        holidays         => {
-            "1-Jan-13"   => "New Year's Day",
-            "29-Mar-13"  => "Good Friday",
-            "1-Apr-13"   => "Easter Monday",
-            "6-May-13"   => "Early May Bank Holiday",
-            "27-May-13"  => "Late May Bank Holiday",
-            "26-Aug-13"  => "Summer Bank Holiday",
-            "25-Dec-13"  => "Christmas Day",
-            "26-Dec-13"  => "Boxing Day",
-            "2013-12-20" => "pseudo-holiday",
-            "2013-12-23" => "pseudo-holiday",
-            "2013-12-24" => "pseudo-holiday",
-            "2013-12-27" => "pseudo-holiday",
-            "2013-12-30" => "pseudo-holiday",
-            "2013-12-31" => "pseudo-holiday",
-            "1-Jan-14"   => "New Year's Day",
-            "18-Apr-14"  => "Good Friday",
-            "21-Apr-14"  => "Easter Monday",
-            "5-May-14"   => "Early May Bank Holiday",
-            "26-May-14"  => "Late May Bank Holiday",
-            "25-Aug-14"  => "Summer Bank Holiday",
-            "25-Dec-14"  => "Christmas Day",
-            "26-Dec-14"  => "Boxing Day",
-            "2014-01-02" => "pseudo-holiday",
-            "2014-01-03" => "pseudo-holiday",
-        },
         market_times => {
             dst => {
                 daily_close      => '15h30m',
@@ -178,32 +149,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         currency         => 'GBP',
         delay_amount     => 15,
         trading_timezone => 'Europe/London',
-        holidays         => {
-            "1-Jan-13"   => "New Year's Day",
-            "29-Mar-13"  => "Good Friday",
-            "1-Apr-13"   => "Easter Monday",
-            "6-May-13"   => "Early May Bank Holiday",
-            "27-May-13"  => "Late May Bank Holiday",
-            "26-Aug-13"  => "Summer Bank Holiday",
-            "25-Dec-13"  => "Christmas Day",
-            "26-Dec-13"  => "Boxing Day",
-            "2013-12-20" => "pseudo-holiday",
-            "2013-12-23" => "pseudo-holiday",
-            "2013-12-24" => "pseudo-holiday",
-            "2013-12-27" => "pseudo-holiday",
-            "2013-12-30" => "pseudo-holiday",
-            "2013-12-31" => "pseudo-holiday",
-            "1-Jan-14"   => "New Year's Day",
-            "18-Apr-14"  => "Good Friday",
-            "21-Apr-14"  => "Easter Monday",
-            "5-May-14"   => "Early May Bank Holiday",
-            "26-May-14"  => "Late May Bank Holiday",
-            "25-Aug-14"  => "Summer Bank Holiday",
-            "25-Dec-14"  => "Christmas Day",
-            "26-Dec-14"  => "Boxing Day",
-            "2014-01-02" => "pseudo-holiday",
-            "2014-01-03" => "pseudo-holiday",
-        },
         market_times => {
             dst => {
                 daily_close      => '15h30m',
@@ -1046,7 +991,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => Date::Utility->new($bet_params->{date_pricing})
     });
     $bet                        = produce_contract($bet_params);
-
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
 };
