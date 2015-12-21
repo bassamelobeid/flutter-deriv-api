@@ -50,13 +50,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date => Date::Utility->new,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( GBP JPY USD );
-
 my $FRW_frxUSDJPY_ON = BOM::Market::Underlying->new('FRW_frxUSDJPY_ON');
 my $FRW_frxUSDJPY_TN = BOM::Market::Underlying->new('FRW_frxUSDJPY_TN');
 my $FRW_frxUSDJPY_1W = BOM::Market::Underlying->new('FRW_frxUSDJPY_1W');

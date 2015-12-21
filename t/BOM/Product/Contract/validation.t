@@ -288,13 +288,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         spot_reference => $tick->quote,
     });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
-    }) for qw( JPY USD EUR AUD SGD );
-
 my $orig_suspended = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types(['RANGE']), 'Suspended RANGE bet purchases!');
 

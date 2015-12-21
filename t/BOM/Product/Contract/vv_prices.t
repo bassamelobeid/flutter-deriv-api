@@ -64,12 +64,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         }});
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
-    }) for qw( JPY USD );
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',

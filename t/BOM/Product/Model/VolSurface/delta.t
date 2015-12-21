@@ -43,13 +43,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date   => Date::Utility->new,
     }) for (qw/EUR JPY USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
-    }) for qw( JPY USD EUR );
-
 initialize_realtime_ticks_db();
 
 my @mocked_underlyings;

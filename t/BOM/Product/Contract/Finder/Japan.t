@@ -16,7 +16,6 @@ use BOM::Market::Underlying;
 use Date::Utility;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange',        {symbol => 'FOREX'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY AUD CAD EUR);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
 

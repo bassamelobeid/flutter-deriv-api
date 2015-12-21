@@ -147,13 +147,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw(EUR USD);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( USD EUR );
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
         symbol        => $_,

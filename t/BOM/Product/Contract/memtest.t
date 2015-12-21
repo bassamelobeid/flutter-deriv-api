@@ -44,12 +44,6 @@ for (@currencies) {
             symbol        => $_,
             recorded_date => $now
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'currency_config',
-        {
-            symbol        => $_,
-            recorded_date => $now
-        });
 }
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $volsurfaces{$_},

@@ -18,12 +18,6 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( JPY USD );
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol => 'FOREX',
