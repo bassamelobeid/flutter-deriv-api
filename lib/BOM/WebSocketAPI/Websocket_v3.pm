@@ -192,6 +192,7 @@ sub __handle {
         ['get_self_exclusion',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::get_self_exclusion,                1],
         ['set_self_exclusion',        \&BOM::WebSocketAPI::v3::Wrapper::Accounts::set_self_exclusion,                1],
         ['cashier_password',          \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password,                  1],
+        ['topup_virtual',             \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual,                      1],
         ['api_token',                 \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,                         1],
         ['get_limits',                \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,                         1],
         ['paymentagent_withdraw',     \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw,              1],

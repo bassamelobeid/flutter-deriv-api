@@ -50,7 +50,7 @@ SKIP: {
     $res = decode_json($t->message->[1]);
     ok $res->{error};
     is $res->{error}->{code}, 'UnknownLandingCompany';
-};
+}
 
 ## residence_list
 $t = $t->send_ok({json => {residence_list => 1}})->message_ok;

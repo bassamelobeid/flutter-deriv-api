@@ -86,4 +86,22 @@ sub transfer_between_accounts {
     };
 }
 
+sub topup_virtual {
+    my ($c, $args) = @_;
+
+    my $res = BOM::RPC::v3::Cashier::topup_virtual({
+        client     => $c->stash('client'),
+        app_config => $c->app_config,
+    });
+    if (exists $res->{error}) {
+        $c->app->log->info($res->{error}->{message}) if (exists $res->{error}->{message});
+        return $c->new_error('topup_virtual', $res->{error}->{code}, $res->{error}->{message_to_client});
+    }
+
+    return {
+        msg_type      => 'topup_virtual',
+        topup_virtual => $res,
+    };
+}
+
 1;
