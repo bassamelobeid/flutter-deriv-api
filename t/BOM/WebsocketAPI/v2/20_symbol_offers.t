@@ -26,7 +26,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in
         open_on_weekends => 1
     }) for @exchange;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new('2015-08-21 05:30:00');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

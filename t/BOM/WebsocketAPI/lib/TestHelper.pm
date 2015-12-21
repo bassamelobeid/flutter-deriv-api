@@ -62,7 +62,6 @@ sub build_test_R_50_data {
             open_on_weekends => 1
         }) for @exchange;
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD);
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_flat',
         {
