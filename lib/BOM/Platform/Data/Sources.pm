@@ -64,7 +64,6 @@ sub _build_couchdb_databases {
         economic_events      => 'economic_events',
         correlation_matrices => 'correlation_matrices',
         corporate_actions    => 'corporate_actions',
-        currency_config      => 'currency_config',
         exchange_config      => 'exchange_config',
     };
 }
