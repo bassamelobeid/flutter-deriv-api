@@ -23,7 +23,7 @@ sub startup {
         });
 
     $app->moniker('websocket');
-    $app->plugin('Config' => file => '/etc/rmg/websocket.conf');
+    $app->plugin('Config' => { file => $ENV{MOJO_CONFIG} || '/etc/rmg/websocket.conf' });
 
     my $log = $app->log;
 

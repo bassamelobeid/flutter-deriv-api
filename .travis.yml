@@ -38,6 +38,7 @@ before_install:
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
+    - mkdir /tmp/rmg; cp websocket.conf.example /tmp/rmg/websocket.conf; export MOJO_CONFIG=/tmp/rmg/websocket.conf
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
