@@ -206,8 +206,7 @@ sub _dbh {
 
     state $dbh = DBI->connect_cached(
         "dbi:Pg:dbname=chronicle;port=6432;host=/var/run/postgresql",
-        "write",
-        '',
+        "write", '',
         {
             RaiseError => 1,
         });
