@@ -672,7 +672,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet                        = produce_contract($bet_params);
     $expected_reasons           = [qr/volsurface too old/];
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => $bet_params->{date_start}});
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {date => Date::Utility->new()});
 
     test_error_list('buy', $bet, $expected_reasons);
 
@@ -960,9 +960,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
         barrier      => 'S0P',
         current_tick => $tick,
     };
-    
-    my $dt_starting = Date::Utility->new($bet_params->{date_start});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => $dt_starting});
 
     my $bet              = produce_contract($bet_params);
     my $expected_reasons = [qr/Intraday duration.*not acceptable/];
@@ -977,7 +974,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{duration}     = '369d';
     $bet_params->{date_start}   = $starting;
     $bet_params->{date_pricing} = $starting;
-
     $bet                        = produce_contract($bet_params);
 
     $expected_reasons = [qr/Daily duration.*outside.*range/];
@@ -993,7 +989,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{barrier}      = 'S10P';
     $bet                        = produce_contract($bet_params);
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
 
     $expected_reasons = [qr/buying suspended between NY1600 and GMT0000/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -1004,15 +999,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{duration}     = '11d';
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('24-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'index',
-        {
-            symbol        => 'GDAXI',
-            date          => Date::Utility->new,
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => $bet_params->{date_start}});
-
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     $bet                        = produce_contract($bet_params);
 
     $expected_reasons = [qr/trading days.*calendar days/, qr/holiday blackout period/];
@@ -1020,15 +1013,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('6-Dec-12'))->plus_time_interval('15m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'index',
-        {
-            symbol        => 'GDAXI',
-            date          => Date::Utility->new,
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => $bet_params->{date_start}});
-
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we pick an earlier start date, validates just fine.');
 
@@ -1054,15 +1045,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{duration}     = '8d';
     $bet_params->{barrier}      = 'S1P';
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'index',
-        {
-            symbol        => 'GDAXI',
-            date          => Date::Utility->new,
-            recorded_date => Date::Utility->new($bet_params->{date_pricing})
-        });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => $bet_params->{date_start}});
-
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'GDAXI',
+        date          => Date::Utility->new,
+        recorded_date => Date::Utility->new($bet_params->{date_pricing})
+    });
     $bet                        = produce_contract($bet_params);
 
     $expected_reasons = [qr/enough trading.*calendar days/];
@@ -1105,11 +1094,11 @@ subtest 'underlying with critical corporate actions' => sub {
         current_tick => $tick,
         date_pricing => $starting,
     };
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'index',
-        {
-            symbol        => 'FPFP',
-            date          => Date::Utility->new,
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'index',
+    {
+        symbol        => 'FPFP',
+        date          => Date::Utility->new,
         recorded_date => Date::Utility->new($bet_params->{date_pricing})
     });
     my $bet = produce_contract($bet_params);
