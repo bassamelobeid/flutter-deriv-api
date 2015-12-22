@@ -33,7 +33,6 @@ use BOM::Market::Asset;
 use BOM::Market::Currency;
 use BOM::Market::Exchange;
 use BOM::Market::SubMarket::Registry;
-use BOM::MarketData::ExchangeConfig;
 use BOM::Market;
 use BOM::Market::Registry;
 use Format::Util::Numbers qw(roundnear);
