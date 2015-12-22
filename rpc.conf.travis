@@ -1,3 +1,4 @@
+# This application expects file like that at /etc/rmg directory
 app->log(Mojo::Log->new(
     level => 'info',
     path  => '/var/log/httpd/bom-rpc_trace.log'
