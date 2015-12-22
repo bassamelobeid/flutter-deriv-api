@@ -68,7 +68,7 @@ print
     '<span style="align=center"><TABLE BORDER=1 CELLPADDING=1 CELLSPACING=0><TR><TD>MARKET</TD><TD><b>PROVIDER</TD><TD><b>BACKUP</TD><TD><b>2NDBACKUP</TD><TD><b>3RDBACKUP</TD></TR>';
 foreach my $underlying_symbol ('frxUSDJPY', 'FTSE', 'UKBARC', 'USINTC') {
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
-    my $providers = join "</TD><TD>", @{$underlying->market->providers};
+    my $providers = join "</TD><TD>", @{$underlying->providers};
     print '<TR><TD><b>' . $underlying->market->name . '</TD><TD>' . $providers . "</TD></TR>";
 }
 print '</span>';
