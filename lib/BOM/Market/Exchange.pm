@@ -133,6 +133,20 @@ sub _build_holidays {
     return $holidays;
 }
 
+has early_closes => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_early_closes {
+    my $self = shift;
+
+    my $ref = BOM::MarketData::EarlyClose::get_early_closes_for($self->symbol, $self->for_date);
+    my %early_closes = map {Date::Utility->new($_)->days_since_epoch => $ref->{$_}} keys %$ref;
+
+    return \%early_closes;
+}
+
 ## PRIVATE attribute market_times
 #
 # A hashref of human-readable times, which are converted to epochs for a given day
@@ -821,7 +835,7 @@ sub closes_early_on {
 
     my $closes_early;
     if ($self->trades_on($when)) {
-        my $listed = $self->market_times->{early_closes}->{$when->date_ddmmmyyyy};
+        my $listed = $self->early_closes->{$when->days_since_epoch};
         if ($listed) {
             $closes_early = $when->truncate_to_day->plus_time_interval($listed);
         } elsif (my $scheduled_changes = $self->regularly_adjusts_trading_hours_on($when)) {
