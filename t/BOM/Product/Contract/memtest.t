@@ -3,12 +3,13 @@
 use strict;
 use warnings;
 
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+
 use Test::More tests => 2;
 use Test::NoWarnings;
 use Test::Exception;
 use Test::Memory::Cycle;
 
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use BOM::Product::ContractFactory qw(produce_contract);
@@ -87,11 +88,13 @@ my %correlations = map {
     } grep {
     $_->symbol !~ /frx/
     } @market_data_underlyings;
+
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'correlation_matrix',
     {
         symbol       => 'indices',
-        correlations => \%correlations
+        correlations => \%correlations,
+        for_date     => Date::Utility->new->minus_time_interval("30m"),
     });
 
 my %start_type = (
