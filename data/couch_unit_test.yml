@@ -677,6 +677,10 @@ holiday:
           'New Year':
             - EURONEXT
             - USD
+early_close:
+  class_name: 'BOM::MarketData::EarlyClose'
+  data:
+    calendar: {}
 exchange:
   class_name: 'BOM::MarketData::ExchangeConfig'
   data:
@@ -690,7 +694,6 @@ exchange:
     trading_days: weekdays
     bloomberg_calendar_code: NA
     market_times:
-      early_closes: {}
       standard:
         daily_close: 23h59m59s
         daily_open: 0s
