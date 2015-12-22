@@ -420,8 +420,6 @@ HKSE:
   delay_amount: '60'
   display_name: Hong Kong Stock Exchange
   market_times:
-    late_opens:
-      24-Dec-2010: 2h30m
     partial_trading:
       standard_close: 3h59m
       standard_open: 1h30m
@@ -543,8 +541,6 @@ KRX:
   delay_amount: '1440'
   display_name: Korean Stock Exchange
   market_times:
-    late_opens:
-      2-Jan-2014: 1h
     partial_trading:
       standard_close: 6h
       standard_open: 1h
