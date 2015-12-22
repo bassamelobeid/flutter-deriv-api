@@ -10,13 +10,12 @@ use Test::Mojo;
 use Test::Most;
 use Data::Dumper;
 use Devel::Gladiator qw(walk_arena arena_ref_counts arena_table);
-
 use Sys::MemInfo qw(totalmem freemem totalswap);
 
 my $connections = 2;
 
 my $free_memory = (&freemem / 1024);
-my $free_swap = (Sys::MemInfo::get("freeswap") / 1024);
+my $free_swap   = (Sys::MemInfo::get("freeswap") / 1024);
 
 my $app_count = `netstat -nat | grep 6381 | grep EST |  wc -l`;
 $app_count = $app_count / 2;
@@ -37,9 +36,9 @@ sub strip_doc_send {
     return $r;
 }
 
-my $svr = $ENV{BOM_WEBSOCKETS_SVR} || '';
+my $svr     = $ENV{BOM_WEBSOCKETS_SVR} || '';
 my $counter = 0;
-my @pool = ();
+my @pool    = ();
 while ($counter < $connections) {
     my $t = $svr ? Test::Mojo->new : Test::Mojo->new('BOM::WebSocketAPI');
     $t->websocket_ok("$svr/websockets/v3");
@@ -72,13 +71,14 @@ print "Current Local Redis connection count is " . $new_local_count . "\n";
 is $new_local_count, $local_count, 'Local redis connection is not leaked';
 
 my %dump2 = map { $dump1{$_} ? () : ("$_" => $_) } walk_arena();
-use Devel::Peek; Dump \%dump2;
+use Devel::Peek;
+Dump \%dump2;
 
-my $current_mem = (&freemem / 1024);
+my $current_mem  = (&freemem / 1024);
 my $current_swap = (Sys::MemInfo::get("freeswap") / 1024);
 
-is $current_mem, $free_memory, 'Free memory ok after process';
-is $current_swap, $free_swap, 'Free swap memory ok after process';
+is $current_mem,  $free_memory, 'Free memory ok after process';
+is $current_swap, $free_swap,   'Free swap memory ok after process';
 
 done_testing();
 
