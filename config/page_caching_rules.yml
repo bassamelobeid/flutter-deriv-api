@@ -185,6 +185,12 @@
 "/user/api_tokenws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/new_account/realws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/home2":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user/settings/securityws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
