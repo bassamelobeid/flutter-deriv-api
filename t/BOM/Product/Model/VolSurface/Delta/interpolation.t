@@ -47,10 +47,10 @@ my $tabular = (scalar @ARGV and $ARGV[0] eq 'tabular');
 
 # Clear all holidays and weights before preceding, as the
 # surfaces tested against did not take any into account.
-BOM::Market::Currency->new('EUR')->holidays({});
-BOM::Market::Currency->new('USD')->holidays({});
-BOM::Market::Currency->new('JPY')->holidays({});
-BOM::Market::Exchange->new('FOREX')->holidays({});
+BOM::Market::Currency->new('EUR');
+BOM::Market::Currency->new('USD');
+BOM::Market::Currency->new('JPY');
+BOM::Market::Exchange->new('FOREX');
 
 my $bbss     = BloombergSurfaces->new(relative_data_dir => 'interpolation');
 my $clss     = ClarkSurfaces->new;
