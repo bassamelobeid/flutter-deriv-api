@@ -254,6 +254,24 @@ has forward_tickers => (
     default => sub { return {}; },
 );
 
+has providers => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+=head2 providers
+
+A list of feed providers for this underlying in the order of priority.
+
+=cut
+
+sub _build_providers {
+    my $self = shift;
+
+    return $self->market->providers;
+
+}
+
 =head2 outlier_tick
 
 Allowed percentage move between consecutive ticks
