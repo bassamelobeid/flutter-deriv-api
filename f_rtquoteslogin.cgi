@@ -10,7 +10,7 @@ use BOM::Market::UnderlyingDB;
 use BOM::Market::Registry;
 use Proc::Killall;
 use BOM::Market::Registry;
-use BOM::Feed::Listener::Quote;
+use Feed::Listener::Quote;
 use Try::Tiny;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
