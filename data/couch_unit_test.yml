@@ -677,8 +677,8 @@ holiday:
           'New Year':
             - EURONEXT
             - USD
-early_close:
-  class_name: 'BOM::MarketData::EarlyClose'
+partial_trading:
+  class_name: 'BOM::MarketData::PartialTrading'
   data:
     calendar: {}
 exchange:
