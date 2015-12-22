@@ -23,7 +23,7 @@ sub startup {
         });
 
     $app->moniker('websocket');
-    $app->plugin('Config');
+    $app->plugin('Config' => {file => $ENV{WEBSOCKET_CONFIG} || '/etc/rmg/websocket.conf'});
 
     my $log = $app->log;
 
