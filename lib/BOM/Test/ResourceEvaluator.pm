@@ -1,8 +1,8 @@
-package BOM::Test::LoadTester;
+package BOM::Test::ResourceEvaluator;
 
 =head1 NAME
 
-BOM::Test::LoadTester
+BOM::Test::ResourceEvaluator
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,7 @@ This class will be used to test system memory before and after executing test ca
 
 =head1 SYNOPSIS
 
-    use BOM::Test::LoadTester::load_test(\&function_to_execute);
+    use BOM::Test::ResourceEvaluator::evaluate(\&function_to_execute);
 
 =cut
 
@@ -24,7 +24,7 @@ use Test::Mojo;
 use Test::Most;
 use Devel::Gladiator qw(walk_arena arena_ref_counts arena_table);
 
-sub load_test {
+sub evaluate {
     my $func = shift;
 
     # check for redis (Application)
