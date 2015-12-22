@@ -9,6 +9,7 @@ use Path::Tiny;
 
 use f_brokerincludeall;
 use Date::Utility;
+use BOM::Utility::Log4perl qw( get_logger );
 use Format::Util::Numbers qw( commas );
 use BOM::MarketData::InterestRate;
 use BOM::MarketData::VolSurface::Delta;
@@ -108,7 +109,7 @@ if ($filen eq 'editvol') {
     );
     my $existing_surface_args = {
         underlying => $underlying,
-        $underlying->market->name eq 'forex' ? (cutoff => 'New York 10:00') : (),
+        ($underlying->market->name eq 'forex' or $underlying->market->name eq 'commodities') ? (cutoff => 'New York 10:00') : (),
     };
     my $surface = $model->new(%surface_args);
 
@@ -225,7 +226,7 @@ if (    -e $overridefilename
 
 #internal audit warnings
 if ($filen eq 'f_broker/promocodes.txt' and not BOM::Platform::Runtime->instance->app_config->system->on_development and $diff) {
-    warn("promocodes.txt EDITED BY $clerk");
+    get_logger->warn("promocodes.txt EDITED BY $clerk");
     send_email({
             from    => BOM::Platform::Runtime->instance->app_config->system->email,
             to      => BOM::Platform::Runtime->instance->app_config->compliance->email,
@@ -300,7 +301,7 @@ unless ($diff eq '0') {
     }
 }
 if ($message and not BOM::Platform::Runtime->instance->app_config->system->on_development) {
-    warn('FILECHANGED', "File $filen edited by $clerk", $message);
+    get_logger()->warn('FILECHANGED', "File $filen edited by $clerk", $message);
 }
 
 code_exit_BO();

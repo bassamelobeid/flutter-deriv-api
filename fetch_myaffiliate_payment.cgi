@@ -5,6 +5,7 @@ use strict 'vars';
 use Getopt::Long;
 use Text::CSV;
 use IO::File;
+use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::MyAffiliates::PaymentToBOMAccountManager;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context qw(request);
@@ -73,6 +74,9 @@ if (not defined $pid) {
     POSIX::open("/dev/null", &POSIX::O_WRONLY);    # stdout
     POSIX::open("/dev/null", &POSIX::O_WRONLY);    # stderr
 
+    BOM::Utility::Log4perl->init(1);
+    $SIG{__WARN__} = sub { get_logger->warn($_[0]) };
+
     $0 = "fetch myaffiliate payment info worker";
     POSIX::setsid;
 
@@ -102,7 +106,7 @@ if (not defined $pid) {
         truncate $lock, 0;
     }
     catch {
-        warn($_);
+        get_logger->error($_);
     };
 
     POSIX::_exit 0;

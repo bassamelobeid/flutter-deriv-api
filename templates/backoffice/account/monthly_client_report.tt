@@ -14,8 +14,8 @@
     <form action="[%request.url_for('backoffice/monthly_client_report.cgi')%]" method="post">
         <input type="hidden" name="broker" value="[%request.broker.code%]"/>
         <select name="crdr">
-            <option value="debit">All Debits and Bet-Buys</option>
-            <option value="credit">All Credits and Bet-Sells</option>
+            <option value="debit">All Debits and Contract-Buys</option>
+            <option value="credit">All Credits and Contract-Sells</option>
         </select>
         Run Month: <input size="8" name="yyyymm" value="$yyyymm"/> e.g. 2014-12
         &nbsp;&nbsp;&nbsp;
@@ -28,8 +28,8 @@
             [ 'adjustment',         'Adjustment' ],
             [ 'affiliate_reward',   'Affiliate Reward' ],
             [ 'bank_money_transfer','Bank Wire' ],
-            [ 'adjustment_purchase','Bet Purchase Adjustment' ],
-            [ 'adjustment_sale'     'Bet Sale Adjustment' ],
+            [ 'adjustment_purchase','Contract Purchase Adjustment' ],
+            [ 'adjustment_sale'     'Contract Sale Adjustment' ],
             [ 'cancellation',       'Cancellation' ],
             [ 'closed_account',     'Closed Account' ],
             [ 'dormant_fee',        'Dormant Fee' ],

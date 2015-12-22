@@ -3,6 +3,7 @@ use open qw[ :encoding(UTF-8) ];
 use POSIX;
 use Path::Tiny;
 use BOM::Backoffice::GNUPlot;
+use BOM::Utility::Log4perl qw( get_logger );
 use Date::Utility;
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Runtime;
@@ -150,7 +151,7 @@ sub graph_plot {
 
         close(DATAF);
     } else {
-        warn("Can't write to $graph_datafile $@ $!");
+        get_logger->warn("Can't write to $graph_datafile $@ $!");
         print "Error - can't write graph file";
         return;
     }
@@ -173,7 +174,11 @@ sub graph_draw {
     print GNU "\n";
     close GNU;
 
-    return unless -s $graph_outputfile;    #not exists and has non-zero size
+    if (not -s $graph_outputfile)    #not exists and has non-zero size
+    {
+        get_logger->debug("no $graph_outputfile");
+        return;
+    }
 
     return "<img id=\"GnuPlotChart\" src=\"$graph_outputfile_ht\" border=\"0\" width=\"$graph_sizex\" height=\"$graph_sizey\" />";
 }

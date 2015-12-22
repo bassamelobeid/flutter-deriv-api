@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 package main;
 
+use BOM::Utility::Log4perl;
 use BOM::Platform::MyAffiliates::GenerateRegistrationDaily;
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
@@ -10,6 +11,7 @@ run() unless caller;
 
 sub run {
     use Getopt::Long;
+    BOM::Utility::Log4perl::init_log4perl_console;
     su_nobody();
     BOM::Platform::Sysinit::init();
 
