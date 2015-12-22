@@ -20,34 +20,22 @@ sub payout_currencies {
 sub landing_company {
     my ($c, $args) = @_;
 
-    my $country  = $args->{landing_company};
-    my $configs  = BOM::Platform::Runtime->instance->countries_list;
-    my $c_config = $configs->{$country};
-    unless ($c_config) {
-        ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
-    }
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'UnknownLandingCompany',
-            message_to_client => localize('Unknown landing company.')}) unless $c_config;
-
-    # BE CAREFUL, do not change ref since it's persistent
-    my %landing_company = %{$c_config};
-
-    $landing_company{id} = $country;
-    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
-    if (($landing_company{gaming_company} // '') ne 'none') {
-        $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
-    } else {
-        delete $landing_company{gaming_company};
-    }
-    if (($landing_company{financial_company} // '') ne 'none') {
-        $landing_company{financial_company} = __build_landing_company($registry->get($landing_company{financial_company}));
-    } else {
-        delete $landing_company{financial_company};
-    }
-
-    return \%landing_company;
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'landing_company',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('landing_company', $response->{error}->{code}, $response->{error}->{message_to_client});
+            }
+            return {
+                msg_type        => 'landing_company',
+                landing_company => $response
+            };
+        },
+        $args
+    );
+    return;
 }
 
 sub landing_company_details {
