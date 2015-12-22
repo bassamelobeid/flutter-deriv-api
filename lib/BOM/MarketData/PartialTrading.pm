@@ -9,8 +9,8 @@ use Carp qw(croak);
 use BOM::System::Chronicle;
 
 around BUILDARGS => sub {
-    my $orig = shift;
-    my $class = shift;
+    my $orig   = shift;
+    my $class  = shift;
     my %params = ref $_[0] ? %{$_[0]} : @_;
 
     if ($params{calendar} xor $params{recorded_date}) {
@@ -27,8 +27,9 @@ The type of partial trading:
 - late open
 
 =cut
+
 has type => (
-    is => 'ro',
+    is       => 'ro',
     required => 1,
 );
 

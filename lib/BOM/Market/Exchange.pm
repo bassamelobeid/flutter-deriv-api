@@ -149,7 +149,7 @@ sub _build_early_closes {
 }
 
 sub _build_late_opens {
-    my  $self = shift;
+    my $self = shift;
 
     my $ref = BOM::MarketData::PartialTrading::get_partial_trading_for('late_opens', $self->symbol, $self->for_date);
     my %late_opens = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
