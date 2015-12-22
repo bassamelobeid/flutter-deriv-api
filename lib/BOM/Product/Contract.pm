@@ -1748,7 +1748,7 @@ sub _build_rho {
     } elsif ($self->underlying->market->name eq 'indices') {
         my $construct_args = {
             symbol   => $self->underlying->market->name,
-            for_date => $self->date_expiry
+            for_date => $self->underlying->for_date
         };
         my $rho_data = BOM::MarketData::CorrelationMatrix->new($construct_args);
 
