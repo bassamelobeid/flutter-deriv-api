@@ -191,10 +191,10 @@ sub _request_id_authentication {
     $status = uc($status);
     $self->_notify("SET TO $status PENDING EMAIL REQUEST FOR ID", 'client received an email requesting identity proof');
 
-    my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    my $support_email  = BOM::Platform::Context::request()->website->config->get('customer_support.email');
-    my $ce_subject     = localize('Documents are required to verify your identity');
-    my $ce_body        = localize(<<'EOM', $client_name, $support_email);
+    my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
+    my $support_email = BOM::Platform::Context::request()->website->config->get('customer_support.email');
+    my $ce_subject    = localize('Documents are required to verify your identity');
+    my $ce_body       = localize(<<'EOM', $client_name, $support_email);
 Dear [_1],
 
 I am writing to you regarding your account with Binary.com.
