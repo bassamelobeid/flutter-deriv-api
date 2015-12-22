@@ -30,6 +30,7 @@ use Carp;
 use Scalar::Util qw(looks_like_number);
 
 use BOM::MarketData::Holiday;
+use BOM::MarketData::EarlyClose;
 use Date::Utility;
 use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
