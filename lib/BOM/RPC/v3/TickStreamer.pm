@@ -12,9 +12,45 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Platform::Context;
+
+sub send_ask {
+    my $params = shift;
+    my $args   = $params->{args};
+
+    BOM::Platform::Context::request()->language($params->{language});
+
+    my %details  = %{$args};
+    my $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
+
+    return $response;
+}
+
+sub get_bid {
+    my $params = shift;
+    my $args   = $params->{args};
+
+    BOM::Platform::Context::request()->language($params->{language});
+
+    return BOM::RPC::v3::Contract::get_bid($args->{short_code}, $args->{contract_id}, $args->{currency});
+}
 
 sub ticks_history {
-    my ($symbol, $args) = @_;
+    my $params = shift;
+    my $args   = $params->{args};
+    my $symbol = $args->{ticks_history};
+
+    my $response = BOM::RPC::v3::Contract::validate_symbol($symbol);
+    if ($response and exists $response->{error}) {
+        return $response;
+    }
+
+    if ($args->{subscribe} eq '1') {
+        my $license = BOM::RPC::v3::Contract::validate_license($symbol);
+        if ($license and exists $license->{error}) {
+            return $license;
+        }
+    }
 
     my $ul = BOM::Market::Underlying->new($symbol);
 
