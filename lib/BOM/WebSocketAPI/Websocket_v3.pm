@@ -356,7 +356,7 @@ sub rpc {
 
             my $args = $params->{args};
             $data->{echo_req} = $args;
-            $data->{req_id}   = $args->{req_id} if ($args and exists $args->{req_id});
+            $data->{req_id} = $args->{req_id} if ($args and exists $args->{req_id});
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
