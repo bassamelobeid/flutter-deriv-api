@@ -1319,7 +1319,7 @@ expected_result:
                 duration: 8d
                 ask_prob: 0.5589
                 theo_prob: 0.5261
-                total_markup: 0.0327
+                total_markup: 0.0328
                 commission_markup: 0.0251
                 risk_markup: 0.0077
                 price_engine: Pricing::Engine::EuropeanDigitalSlope
@@ -1327,10 +1327,10 @@ expected_result:
                 barrier: 6776.72
                 spot: 6685.31
                 duration: 4d
-                ask_prob: 0.8659
-                theo_prob: 0.719
-                total_markup: 0.1469
-                commission_markup: 0.0416
+                ask_prob: 0.8688
+                theo_prob: 0.7218
+                total_markup: 0.147
+                commission_markup: 0.0417
                 risk_markup: 0.1053
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             RANGE:
@@ -1360,7 +1360,7 @@ expected_result:
                 barrier: 9516.05
                 spot: 9518.2
                 duration: 12d
-                ask_prob: 0.4839
+                ask_prob: 0.484
                 theo_prob: 0.4595
                 total_markup: 0.0245
                 commission_markup: 0.0231
@@ -1370,11 +1370,11 @@ expected_result:
                 barrier: 9736.84
                 spot: 9518.2
                 duration: 17d
-                ask_prob: 0.6436
+                ask_prob: 0.6437
                 theo_prob: 0.5711
-                total_markup: 0.0725
+                total_markup: 0.0726
                 commission_markup: 0.0316
-                risk_markup: 0.0409
+                risk_markup: 0.041
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             RANGE:
                 barrier: 10000

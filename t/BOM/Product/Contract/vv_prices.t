@@ -133,8 +133,8 @@ $c = produce_contract({
     currency   => 'EUR',
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->bs_probability->amount), 0.5992, 'correct bs probability for indices contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0251, 'correct market supplement';
+is roundnear(0.0001, $c->bs_probability->amount), 0.5995, 'correct bs probability for indices contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.025, 'correct market supplement';
 
 $c = produce_contract({
     %$params,
@@ -145,6 +145,6 @@ $c = produce_contract({
     currency     => 'EUR',
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->bs_probability->amount), 0.263, 'correct bs probability for indices contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0173, 'correct market supplement';
+is roundnear(0.0001, $c->bs_probability->amount), 0.2629, 'correct bs probability for indices contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0172, 'correct market supplement';
 BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface($orig);
