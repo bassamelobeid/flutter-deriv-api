@@ -16,15 +16,6 @@ initialize_realtime_ticks_db();
 use Finance::Asset;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
-my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } Finance::Asset->instance->symbols;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
-    'exchange',
-    {
-        symbol           => $_,
-        date             => Date::Utility->new,
-        trading_days     => 'everyday',
-        open_on_weekends => 1
-    }) for @exchange;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new('2015-08-21 05:30:00');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
