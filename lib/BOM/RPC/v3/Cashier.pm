@@ -791,4 +791,40 @@ sub transfer_between_accounts {
     return {status => 1};
 }
 
+sub topup_virtual {
+    my $arg_ref    = shift;
+    my $client     = $arg_ref->{client};
+    my $app_config = $arg_ref->{app_config};
+
+    my $error_sub = sub {
+        my ($message_to_client, $message) = @_;
+        BOM::RPC::v3::Utility::create_error({
+            code              => 'TopupVirtualError',
+            message_to_client => $message_to_client,
+            ($message) ? (message => $message) : (),
+        });
+    };
+
+    # ERROR CHECKS
+    if (!$client->is_virtual) {
+        return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
+    }
+
+    if ($client->default_account->balance > $app_config->payments->virtual->minimum_topup_balance) {
+        return $error_sub->(localize('Your balance is higher than the permitted amount.'));
+    }
+
+    if (scalar($client->open_bets)) {
+        return $error_sub->(localize('Sorry, you have open positions. Please close out all open positions before requesting additional funds.'));
+    }
+
+    # CREDIT HIM WITH THE MONEY
+    my ($curr, $amount, $trx) = $client->deposit_virtual_funds;
+
+    return {
+        amount   => $amount,
+        currency => $curr
+    };
+}
+
 1;
