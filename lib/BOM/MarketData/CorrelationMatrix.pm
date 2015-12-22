@@ -10,8 +10,6 @@ Correlations have an index, a currency, and duration that corresponds
 to a correlation. An example of a correlation is SPC, AUD, 1M, with
 a correlation of 0.42.
 
-The values can be updated through backoffice's Quant Market Data page.
-
 =cut
 
 use Moose;
@@ -23,41 +21,10 @@ use Math::Function::Interpolator;
 use BOM::Market::Underlying;
 use Date::Utility;
 
-=head2 for_date
-
-The date for which we wish data
-
-=cut
-
-has for_date => (
+has _data_location => (
     is      => 'ro',
-    isa     => 'Maybe[Date::Utility]',
-    default => undef,
+    default => 'correlation_matrices',
 );
-
-has document => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
-sub _build_document {
-    my $self = shift;
-
-    my $document = BOM::System::Chronicle::get('correlation_matrices', $self->symbol);
-
-    if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
-        $document = BOM::System::Chronicle::get_for('correlation_matrices', $self->symbol, $self->for_date->epoch);
-
-        # This works around a problem with Volatility surfaces and negative dates to expiry.
-        # We have to use the oldest available surface.. and we don't really know when it
-        # was relative to where we are now.. so just say it's from the requested day.
-        # We do not allow saving of historical surfaces, so this should be fine.
-        $document //= {};
-        $document->{date} = $self->for_date->datetime_iso8601;
-    }
-
-    return $document;
-}
 
 around _document_content => sub {
     my $orig = shift;
@@ -70,15 +37,18 @@ around _document_content => sub {
     };
 };
 
+with 'BOM::MarketData::Role::VersionedSymbolData' => {
+    -alias    => {save => '_save'},
+    -excludes => ['save']};
+
 sub save {
     my $self = shift;
 
-    #if chronicle does not have this document, first create it because in document_content we will need it
-    if (not defined BOM::System::Chronicle::get('correlation_matrices', $self->symbol)) {
-        BOM::System::Chronicle::set('correlation_matrices', $self->symbol, {});
-    }
+    #first call original save method to save all data into CouchDB just like before
+    my $result = $self->_save();
 
-    return BOM::System::Chronicle::set('correlation_matrices', $self->symbol, $self->_document_content);
+    BOM::System::Chronicle::set('correlation_matrices', $self->symbol, $self->_document_content);
+    return $result;
 }
 
 has correlations => (
