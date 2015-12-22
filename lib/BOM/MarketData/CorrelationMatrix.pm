@@ -45,7 +45,7 @@ sub _build_document {
 
     my $document = BOM::System::Chronicle::get('correlation_matrices', $self->symbol);
 
-    if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
+    if ($self->for_date and $self->for_date->epoch < Date::Utility->new($document->{date})->epoch) {
         $document = BOM::System::Chronicle::get_for('correlation_matrices', $self->symbol, $self->for_date->epoch);
 
         # This works around a problem with Volatility surfaces and negative dates to expiry.
