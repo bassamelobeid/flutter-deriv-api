@@ -22,6 +22,7 @@ use JSON::Schema;
 use File::Slurp;
 use Test::Mojo;
 use Test::Most;
+use Test::FailWarnings;
 use Devel::Gladiator qw(walk_arena arena_ref_counts arena_table);
 
 sub evaluate {
