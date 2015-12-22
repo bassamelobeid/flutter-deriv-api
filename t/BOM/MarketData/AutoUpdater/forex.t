@@ -44,14 +44,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
     },
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => 'FOREX',
-        recorded_date => $fake_date,
-        date          => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
