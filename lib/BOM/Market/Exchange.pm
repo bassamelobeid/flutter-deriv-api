@@ -30,7 +30,7 @@ use Carp;
 use Scalar::Util qw(looks_like_number);
 
 use BOM::MarketData::Holiday;
-use BOM::MarketData::EarlyClose;
+use BOM::MarketData::PartialTrading;
 use Date::Utility;
 use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
@@ -134,7 +134,7 @@ sub _build_holidays {
     return $holidays;
 }
 
-has early_closes => (
+has [qw(early_closes late_opens)] => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -142,10 +142,19 @@ has early_closes => (
 sub _build_early_closes {
     my $self = shift;
 
-    my $ref = BOM::MarketData::EarlyClose::get_early_closes_for($self->symbol, $self->for_date);
+    my $ref = BOM::MarketData::PartialTrading::get_partial_trading_for('early_closes', $self->symbol, $self->for_date);
     my %early_closes = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
 
     return \%early_closes;
+}
+
+sub _build_late_opens {
+    my  $self = shift;
+
+    my $ref = BOM::MarketData::PartialTrading::get_partial_trading_for('late_opens', $self->symbol, $self->for_date);
+    my %late_opens = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
+
+    return \%late_opens;
 }
 
 ## PRIVATE attribute market_times
@@ -859,7 +868,7 @@ sub opens_late_on {
 
     my $opens_late;
     if ($self->trades_on($when)) {
-        my $listed = $self->market_times->{late_opens}->{$when->date_ddmmmyyyy};
+        my $listed = $self->late_opens->{$when->days_since_epoch};
         if ($listed) {
             $opens_late = $when->truncate_to_day->plus_time_interval($listed);
         } elsif (my $scheduled_changes = $self->regularly_adjusts_trading_hours_on($when)) {

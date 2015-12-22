@@ -1,4 +1,4 @@
-package BOM::MarketData::EarlyClose;
+package BOM::MarketData::PartialTrading;
 
 use Moose;
 use List::MoreUtils qw(uniq);
@@ -20,6 +20,18 @@ around BUILDARGS => sub {
     return $class->$orig(@_);
 };
 
+=head2 type
+
+The type of partial trading:
+- early close
+- late open
+
+=cut
+has type => (
+    is => 'ro',
+    required => 1,
+);
+
 has [qw(calendar recorded_date)] => (
     is => 'ro',
 );
@@ -27,7 +39,7 @@ has [qw(calendar recorded_date)] => (
 sub save {
     my $self = shift;
 
-    my $cached_data = BOM::System::Chronicle::get('early_closes', 'early_closes');
+    my $cached_data = BOM::System::Chronicle::get('partial_trading', $self->type);
     my $recorded_epoch = $self->recorded_date->truncate_to_day->epoch;
     my %relevant_dates =
         map { $_ => $cached_data->{$_} }
@@ -45,16 +57,16 @@ sub save {
         }
     }
 
-    return BOM::System::Chronicle::set('early_closes', 'early_closes', \%relevant_dates);
+    return BOM::System::Chronicle::set('partial_trading', $self->type, \%relevant_dates);
 }
 
-sub get_early_closes_for {
-    my ($symbol, $for_date) = @_;
+sub get_partial_trading_for {
+    my ($type, $symbol, $for_date) = @_;
 
     my $cached =
         $for_date
-        ? BOM::System::Chronicle::get_for('early_closes', 'early_closes', $for_date)
-        : BOM::System::Chronicle::get('early_closes', 'early_closes');
+        ? BOM::System::Chronicle::get_for('partial_trading', $type, $for_date)
+        : BOM::System::Chronicle::get('partial_trading', $type);
     my %early_closes;
     foreach my $epoch (keys %$cached) {
         foreach my $close_time (keys %{$cached->{$epoch}}) {
