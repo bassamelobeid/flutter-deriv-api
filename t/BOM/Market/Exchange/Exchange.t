@@ -66,10 +66,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 standard_open  => '8h',
                 standard_close => '12h30m',
             },
-            early_closes => {
-                '24-Dec-2010' => '12h30m',
-                '24-Dec-2013' => '12h30m',
-            },
         },
     },
 );
@@ -80,7 +76,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol       => 'RANDOM',
         trading_days => 'everyday',
         market_times => {
-            early_closes => {},
             standard     => {
                 daily_close      => '23h59m59s',
                 daily_open       => '0s',
@@ -97,7 +92,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol       => 'RANDOM_NOCTURNE',
         trading_days => 'everyday',
         market_times => {
-            early_closes => {},
             standard     => {
                 daily_close      => '11h59m59s',
                 daily_open       => '-12h',
@@ -116,7 +110,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         trading_days => 'weekdays',
         delay_amount => 15,
         market_times => {
-            early_closes => {},
             standard     => {
                 daily_close      => '16h30m',
                 daily_open       => '8h',
@@ -206,12 +199,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         delay_amount     => 60,
         trading_timezone => 'Asia/Hong_Kong',
         market_times     => {
-            late_opens => {
-                '24-Dec-2010' => '2h30m',
-            },
-            early_closes => {
-                '24-Dec-2009' => '4h30m',
-            },
             standard => {
                 daily_close      => '7h40m',
                 daily_open       => '1h30m',
@@ -226,6 +213,30 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     },
 );
 
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('partial_trading', {
+    recorded_date => $date,
+    type => 'early_closes',
+    calendar => {
+        '24-Dec-2009' => {
+            '4h30m' => ['HKSE'],
+        },
+        '24-Dec-2010' => {
+            '12h30m' => ['LSE']
+        },
+        '24-Dec-2013' => {
+            '12h30m' => ['LSE'],
+        },
+    },
+});
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('partial_trading', {
+    recorded_date => $date,
+    type => 'late_opens',
+    calendar => {
+        '24-Dec-2010' => {
+            '2h30m' => ['HKSE'],
+        },
+    },
+});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(AUD GBP EUR USD HKD);
 
 use BOM::Market::Exchange;
