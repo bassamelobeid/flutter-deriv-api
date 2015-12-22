@@ -31,7 +31,7 @@ before_install:
 
 install:
     - sudo ln -s $PWD /home/git/regentmarkets/bom-rpc
-    - cp $PWD/rpc.conf.example /tmp/rmg/rpc.conf; export RPC_CONFIG=/tmp/rmg/rpc.conf
+    - export RPC_CONFIG=$PWD/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh
 
     - /tmp/travis-scripts/remove_postgresdb_config.sh
