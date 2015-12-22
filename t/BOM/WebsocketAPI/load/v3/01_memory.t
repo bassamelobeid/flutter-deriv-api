@@ -9,7 +9,7 @@ use Test::Mojo;
 use Test::Most;
 use Data::Dumper;
 
-use BOM::Test::LoadTester;
+use BOM::Test::ResourceEvaluator;
 
 sub do_testing {
     my $connections = 100;
@@ -58,7 +58,7 @@ sub do_testing {
     undef $strip_doc_send;
 }
 
-BOM::Test::LoadTester(\&do_testing);
+BOM::Test::ResourceEvaluator::evaluate(\&do_testing);
 
 done_testing();
 
