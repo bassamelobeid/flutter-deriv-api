@@ -21,6 +21,7 @@ use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
+use MojoX::JSON::RPC::Client;
 use Data::UUID;
 use Time::Out qw(timeout);
 
@@ -287,6 +288,69 @@ sub _failed_key_value {
     } elsif ($key !~ /^[A-Za-z0-9_-]{1,50}$/ or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/='&\$]{0,256}$/) {
         return ($key, $value);
     }
+    return;
+}
+
+sub _rpc_client {
+    state $client = MojoX::JSON::RPC::Client->new;
+    return $client;
+}
+
+sub rpc {
+    my $self     = shift;
+    my $method   = shift;
+    my $callback = shift;
+    my $params   = shift;
+
+    $params->{language} = $self->stash('language');
+
+    my $client = _rpc_client;
+    my $url    = 'http://127.0.0.1:5005/' . $method;
+
+    my $callobj = {
+        id     => Data::UUID->new()->create_str(),
+        method => $method,
+        params => $params
+    };
+
+    $client->call(
+        $url, $callobj,
+        sub {
+            my $res = pop;
+            if (!$res) {
+                my $tx_res = $client->tx->res;
+                warn $tx_res->message;
+                $self->send({json => $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'))});
+                return;
+            }
+            if ($res->is_error) {
+                warn $res->error_message;
+                $self->send({json => $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message))});
+                return;
+            }
+            my $send = 1;
+            my $data = &$callback($res->result);
+
+            if (not $data) {
+                $send = undef;
+                $data = {};
+            }
+
+            my $args = $params->{args};
+            $data->{echo_req} = $args;
+            $data->{version}  = 3;
+            $data->{req_id}   = $args->{req_id} if ($args and exists $args->{req_id});
+
+            my $l = length JSON::to_json($data);
+            if ($l > 328000) {
+                $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
+                $data->{echo_req} = $args;
+            }
+            if ($send) {
+                $self->send({json => $data});
+            }
+            return;
+        });
     return;
 }
 
