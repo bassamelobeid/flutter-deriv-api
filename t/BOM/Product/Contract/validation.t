@@ -73,7 +73,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         open_on_weekends => 1,
         trading_days     => 'everyday',
         market_times     => {
-            early_closes => {},
             standard     => {
                 daily_close      => '23h59m59s',
                 daily_open       => '0s',
@@ -111,6 +110,20 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'partial_trading',
+    {
+        type => 'early_closes',
+        recorded_date => Date::Utility->new,
+        calendar => {
+            '24-Dec-10' => {
+                '12h30m' => ['EURONEXT','LSE'],
+            },
+            '24-Dec-13' => {
+                '12h30m' => ['EURONEXT','LSE'],
+            },
+        },
+    });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'exchange',
     {
         symbol           => 'EURONEXT',
@@ -133,10 +146,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 dst_close      => '11h30m',
                 standard_open  => '8h',
                 standard_close => '12h30m',
-            },
-            early_closes => {
-                '24-Dec-10' => '12h30m',
-                '24-Dec-13' => '12h30m',
             },
         },
         date => Date::Utility->new,
@@ -165,10 +174,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 dst_close      => '11h30m',
                 standard_open  => '8h',
                 standard_close => '12h30m',
-            },
-            early_closes => {
-                '24-Dec-10' => '12h30m',
-                '24-Dec-13' => '12h30m',
             },
         },
         date => Date::Utility->new,
@@ -1091,7 +1096,7 @@ subtest '10% barrier check for double barrier contract' => sub {
 };
 
 subtest 'intraday indices duration test' => sub {
-    my $now = Date::Utility->new('2015-04-08 10:00:00');
+    my $now = Date::Utility->new('2015-04-08 00:30:00');
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
@@ -1140,7 +1145,7 @@ subtest 'intraday indices duration test' => sub {
     $c = produce_contract($params);
     my $expected_reasons = [qr/Intraday duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
-    $params->{duration} = '6h';
+    $params->{duration} = '5h1s';
     $c                  = produce_contract($params);
     $expected_reasons   = [qr/Intraday duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
@@ -1171,10 +1176,20 @@ subtest 'intraday indices duration test' => sub {
             recorded_date  => $now,
             spot_reference => $tick->quote,
         });
+    $params->{date_start} = Date::Utility->new('2015-04-08 07:15:00');
+    my $ftse_tick = BOM::Market::Data::Tick->new({
+            epoch      => $params->{date_start}->epoch,
+            underlying => 'FTSE',
+            quote      => 100.012,
+            bid        => 100.015,
+            ask        => 100.021
+    });
 
+    $params->{date_pricing} = $params->{date_start};
     $params->{underlying} = 'FTSE';
     $params->{currency}   = 'GBP';
     $params->{duration}   = '15m';
+    $params->{current_tick} = $ftse_tick;
     $c                    = produce_contract($params);
     $expected_reasons = [qr/trying unauthorised/, qr/Intraday duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
@@ -1213,7 +1228,7 @@ subtest 'intraday index missing pricing coefficient' => sub {
 };
 
 subtest 'expiry_daily expiration time' => sub {
-    my $now         = Date::Utility->new('2014-10-08 10:00:00');
+    my $now         = Date::Utility->new('2014-10-08 00:15:00');
     my $tick_params = {
         symbol => 'not_checked',
         epoch  => $now->epoch,
@@ -1225,7 +1240,7 @@ subtest 'expiry_daily expiration time' => sub {
         underlying   => 'AS51',
         date_start   => $now,
         date_pricing => $now,
-        duration     => '25h',
+        duration     => '23h',
         currency     => 'AUD',
         current_tick => $tick,
         payout       => 100,
