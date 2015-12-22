@@ -21,19 +21,6 @@ use BOM::MarketData::VolSurface::Cutoff;
 use BOM::Market::Underlying;
 use Date::Utility;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'HKSE',
-        date   => Date::Utility->new,
-    });
-
 subtest 'Private method _cutoff_date_for_effective_day' => sub {
     plan tests => 5;
 

@@ -15,19 +15,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use Cache::RedisDB;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => 'RANDOM',
-        date         => Date::Utility->new,
-        trading_days => 'everyday',
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',

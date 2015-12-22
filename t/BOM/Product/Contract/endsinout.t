@@ -16,12 +16,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
@@ -119,12 +113,6 @@ subtest 'expiry range' => sub {
     }
     'generic';
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => 'RANDOM',
-            date   => Date::Utility->new
-        });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
         {

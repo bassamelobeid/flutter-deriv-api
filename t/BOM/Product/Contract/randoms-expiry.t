@@ -17,46 +17,6 @@ use Date::Utility;
 
 my $now = Date::Utility->new()->truncate_to_day->plus_time_interval('1h');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol         => 'RANDOM',
-        trading_days   => 'everyday',
-        holidays       => {},
-        "market_times" => {
-            "early_closes" => {
-
-            },
-            "standard" => {
-                "daily_close"      => "23h59m59s",
-                "daily_settlement" => "23h59m59s",
-                "daily_open"       => "0s"
-            },
-            "partial_trading" => {
-
-            }
-        },
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol         => 'RANDOM_NOCTURNE',
-        trading_days   => 'everyday',
-        holidays       => {},
-        "market_times" => {
-            "early_closes" => {
-
-            },
-            "standard" => {
-                "daily_close"      => "11h59m59s",
-                "daily_settlement" => "11h59m59s",
-                "daily_open"       => "-12h"
-            },
-            "partial_trading" => {
-
-            }
-        },
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_phased',
     {
         symbol        => $_,

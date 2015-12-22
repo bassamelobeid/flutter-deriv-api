@@ -14,7 +14,6 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::Market::Underlying;
 use Date::Utility;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange',        {symbol => 'FOREX'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
@@ -27,12 +26,6 @@ subtest "predefined contracts for symbol" => sub {
                     "Christmas Day" => ['FOREX'],
                 },
             },
-        });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol   => 'FOREX',
-            date     => $now,
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',

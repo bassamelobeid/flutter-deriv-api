@@ -22,7 +22,6 @@ use YAML::XS qw(LoadFile);
 my $data_file       = path(__FILE__)->parent->child('config.yml');
 my $config_data     = LoadFile($data_file);
 my $volsurface      = $config_data->{volsurface};
-my $exchange        = $config_data->{exchange};
 my $interest_rate   = $config_data->{currency};
 my $dividend        = $config_data->{index};
 my $expected_result = $config_data->{expected_result};
@@ -36,26 +35,6 @@ my $recorded_date = Date::Utility->new($date_start);
 my $mocked = Test::MockModule->new('BOM::Market::Underlying');
 $mocked->mock('uses_implied_rate', sub { return 0 });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        recorded_date => $recorded_date,
-        date          => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => $_,
-        market_times => $exchange->{$_}->{market_times},
-        date         => Date::Utility->new,
-    }) for qw( LSE FSE);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'SAS',
-    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
     recorded_date => $recorded_date,
     calendar => {

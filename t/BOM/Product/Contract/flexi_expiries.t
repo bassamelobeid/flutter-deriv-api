@@ -15,12 +15,6 @@ use BOM::Market::Underlying;
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => Date::Utility->new('2014-03-04 11:45:00')->epoch,
     underlying => 'frxUSDJPY'

@@ -22,15 +22,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 
 BOM::Market::AggTicks->new->flush;
 
-foreach my $symbol (qw(NYSE LSE TSE FSE ASX FOREX SES)) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => $symbol,
-            date   => Date::Utility->new,
-        });
-}
-
 BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git/regentmarkets/bom/t/data/feed/');
 
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/8-Nov-12.dump');

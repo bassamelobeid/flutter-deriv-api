@@ -19,24 +19,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'RANDOM',
-        open_on_weekends => 1,
-        trading_days     => 'everyday',
-        holidays         => {},
-        market_times     => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',

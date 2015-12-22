@@ -23,8 +23,6 @@ use Data::Dumper;
 my $now = Date::Utility->new;
 initialize_realtime_ticks_db();
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange');
-
 my $client  = BOM::Platform::Client->new({loginid => 'CR2002'});
 my $account = $client->set_default_account('USD');
 my $db      = $client->set_db('write');

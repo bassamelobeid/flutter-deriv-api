@@ -27,20 +27,6 @@ BOM::Platform::Runtime->instance->app_config->system->directory->feed('/home/git
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('intraday_index_ticks.dump');
 my @symbols = map { BOM::Market::Underlying->new($_) } BOM::Market::UnderlyingDB->instance->symbols_for_intraday_index;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_->exchange_name,
-        date   => Date::Utility->new,
-    }) for (@symbols);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
 my $corr = {
     'FCHI' => {
         'GBP' => {

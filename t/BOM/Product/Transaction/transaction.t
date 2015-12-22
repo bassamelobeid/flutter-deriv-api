@@ -34,32 +34,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'RANDOM',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'Randoms',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        open_on_weekends         => 1,
-        trading_days             => 'everyday',
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
         symbol        => 'R_50',

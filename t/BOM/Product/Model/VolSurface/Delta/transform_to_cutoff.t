@@ -9,13 +9,6 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURGBP',

@@ -58,57 +58,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         },
     });
-foreach my $symbol (qw(FOREX NYSE TSE SES ASX)) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => $symbol,
-            date   => Date::Utility->new,
-        });
-}
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'RANDOM',
-        open_on_weekends => 1,
-        trading_days     => 'everyday',
-        market_times     => {
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'FSE',
-        currency         => 'EUR',
-        delay_amount     => 15,
-        trading_timezone => 'Europe/Berlin',
-        market_times => {
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m',
-            },
-            partial_trading => {
-                dst_open       => '7h',
-                dst_close      => '12h',
-                standard_open  => '8h',
-                standard_close => '13h',
-            },
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m'
-            },
-        },
-        date => Date::Utility->new,
-    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'partial_trading',
     {
@@ -123,62 +72,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         },
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'EURONEXT',
-        currency         => 'EUR',
-        delay_amount     => 15,
-        trading_timezone => 'Europe/London',
-        market_times => {
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m',
-            },
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m'
-            },
-            partial_trading => {
-                dst_open       => '7h',
-                dst_close      => '11h30m',
-                standard_open  => '8h',
-                standard_close => '12h30m',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'LSE',
-        currency         => 'GBP',
-        delay_amount     => 15,
-        trading_timezone => 'Europe/London',
-        market_times => {
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m',
-            },
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m'
-            },
-            partial_trading => {
-                dst_open       => '7h',
-                dst_close      => '11h30m',
-                standard_open  => '8h',
-                standard_close => '12h30m',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -1162,13 +1055,6 @@ subtest 'intraday indices duration test' => sub {
             symbol => 'GBP',
             recorded_date   => $an_hour_earlier,
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => 'LSE',
-            date   => Date::Utility->new,
-        });
-
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {

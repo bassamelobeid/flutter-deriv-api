@@ -16,13 +16,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'RANDOM',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
         symbol        => 'R_50',

@@ -28,13 +28,6 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

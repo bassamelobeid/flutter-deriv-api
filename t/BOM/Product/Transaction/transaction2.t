@@ -27,15 +27,6 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'FOREX'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'RANDOM',
-        holidays         => {},
-        open_on_weekends => 1,
-        trading_days     => 'everyday',
-    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
@@ -70,40 +61,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'FSE',
-        currency         => 'EUR',
-        delay_amount     => 15,
-        trading_timezone => 'UTC',
-        holidays         => {},
-        market_times     => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'SYNEURONEXT',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
@@ -123,32 +80,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => $_,
         recorded_date => Date::Utility->new,
     }) for qw/GDAXI SYNAEX/;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'RANDOM',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'Randoms',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        open_on_weekends         => 1,
-        trading_days             => 'everyday',
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

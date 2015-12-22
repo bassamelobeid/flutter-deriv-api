@@ -16,12 +16,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new('10-Mar-2015');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new
-    }) for ('FOREX', 'RANDOM');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

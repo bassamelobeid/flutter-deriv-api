@@ -13,12 +13,6 @@ use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use Date::Utility;
 
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => $_,
-        recorded_date => $now
-    }) for qw(FOREX RANDOM RANDOM_NOCTURNE SYNEURONEXT EURONEXT);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index',    {symbol => $_}) for qw(AEX SYNAEX frxXAUUSD frxXPDUSD);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(

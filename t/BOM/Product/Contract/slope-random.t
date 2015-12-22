@@ -12,7 +12,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Date::Utility;
 
 my $now = Date::Utility->new()->truncate_to_day->plus_time_interval('1h');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => $_}) for qw(RANDOM RANDOM_NOCTURNE);
 my %phased_mapper = (
     RDMOON => {
         "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5-sin($x));};',

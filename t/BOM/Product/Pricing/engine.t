@@ -19,13 +19,6 @@ use Pricing::Engine::EuropeanDigitalSlope;
 my $date_pricing = 1352344145;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        recorded_date   => Date::Utility->new($date_pricing),
-    }) for (qw/FOREX LSE/);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

@@ -26,7 +26,6 @@ my @underlyings = map { BOM::Market::Underlying->new($_) } map { (get_offerings_
 my $all                     = Finance::Asset->all_parameters;
 my @market_data_underlyings = map { BOM::Market::Underlying->new($_) } keys %$all;
 my @exchanges               = map { Finance::Asset->get_parameters_for($_->symbol)->{exchange_name} } @market_data_underlyings;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => $_}) for @exchanges;
 my %volsurfaces = map { $_->symbol => 'volsurface_' . $_->volatility_surface_type } grep { $_->volatility_surface_type } @market_data_underlyings;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',

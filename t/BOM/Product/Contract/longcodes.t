@@ -12,13 +12,6 @@ use BOM::Test::Runtime qw(:normal);
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FOREX RANDOM BSE ASX/);
-
 subtest 'Proper form' => sub {
     my @shortcodes = (
         qw~
