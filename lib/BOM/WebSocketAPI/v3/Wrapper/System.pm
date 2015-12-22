@@ -3,9 +3,6 @@ package BOM::WebSocketAPI::v3::Wrapper::System;
 use strict;
 use warnings;
 
-use Mojo::Util qw(md5_sum steady_time);
-use Mojo::IOLoop;
-
 use BOM::RPC::v3::Utility;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
@@ -24,17 +21,6 @@ sub forget_all {
     my @removed_ids;
 
     if (my $type = $args->{forget_all}) {
-        my $ws_id  = $c->tx->connection;
-        my $this_c = ($c->{ws}{$ws_id} //= {});
-        my $list   = ($this_c->{l} //= []);
-        my @dummy  = @$list;                      # must copy b/c forget_one modifies @$list
-
-        for my $v (@dummy) {
-            if ($v->{type} eq $type and forget_one($c, $v->{id})) {
-                push @removed_ids, $v->{id};
-            }
-        }
-
         if ($c->stash('feed_channel_type')) {
             foreach my $k (keys %{$c->stash('feed_channel_type')}) {
                 $k =~ /(.*);(.*)/;
@@ -68,23 +54,7 @@ sub forget_one {
             }
         }
     }
-
-    my $ws_id  = $c->tx->connection;
-    my $this_c = ($c->{ws}{$ws_id} //= {});
-    my $list   = ($this_c->{l} //= []);
-    my $hash   = ($this_c->{h} //= {});
-
-    my $v = delete $hash->{$id};
-    return unless $v;
-    @$list = grep { $_->{id} ne $id } @$list;
-
-    if (exists $v->{cleanup}) {
-        $v->{cleanup}->($reason);
-    } else {
-        Mojo::IOLoop->remove($id);
-    }
-
-    return $v;
+    return;
 }
 
 sub ping {
@@ -101,38 +71,6 @@ sub server_time {
     return {
         msg_type => 'time',
         time     => BOM::RPC::v3::Utility::server_time()};
-}
-
-sub _id {
-    my ($hash) = @_;
-
-    my $id;
-    do { $id = md5_sum steady_time . rand 999 } while $hash->{$id};
-
-    return $id;
-}
-
-## limit total stream count to 50
-sub limit_stream_count {    ## no critic (Subroutines::RequireFinalReturn)
-    my ($c, $data) = @_;
-
-    my $ws_id  = $c->tx->connection;
-    my $this_c = ($c->{ws}{$ws_id} //= {});
-    my $list   = ($this_c->{l} //= []);
-    my $hash   = ($this_c->{h} //= {});
-
-    my $id = ($data->{id} //= _id($hash));
-    forget_one $c, $id, 'StreamCountLimitReached'
-        if exists $hash->{$id};
-
-    push @$list, $data;
-    $hash->{$id} = $data;
-
-    return $id if scalar(@$list) <= 50;
-
-    forget_one $c, $list->[0]->{id}, 'StreamCountLimitReached';
-
-    return $id;
 }
 
 1;

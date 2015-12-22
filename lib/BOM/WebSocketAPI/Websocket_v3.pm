@@ -135,15 +135,8 @@ sub entry_point {
     $c->on(
         finish => sub {
             my $c = shift;
-            if ($c->tx) {
-                my $ws_id = $c->tx->connection;
-                foreach my $id (keys %{$c->{ws}{$ws_id}}) {
-                    Mojo::IOLoop->remove($id);
-                }
-                delete $c->stash->{redis};
-                delete $c->{ws}{$ws_id};
-                delete $c->{fmb_ids}{$ws_id};
-            }
+            BOM::WebSocketAPI::v3::Wrapper::System::forget_all($c, {forget_all => 1});
+            delete $c->stash->{redis};
         });
 
     return;
