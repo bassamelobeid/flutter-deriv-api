@@ -1,5 +1,19 @@
 package BOM::Test::LoadTester;
 
+=head1 NAME
+
+BOM::Test::LoadTester
+
+=head1 DESCRIPTION
+
+This class will be used to test system memory before and after executing test case. This add checks for redis, authdb, couchdb, postgres connection before and after the test case execution and report accordingly
+
+=head1 SYNOPSIS
+
+    use BOM::Test::LoadTester::load_test(\&function_to_execute);
+
+=cut
+
 use strict;
 use warnings;
 
