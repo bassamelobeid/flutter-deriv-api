@@ -3,13 +3,22 @@ package BOM::MarketData::EarlyClose;
 use Moose;
 use List::MoreUtils qw(uniq);
 use List::Util qw(first);
+use Date::Utility;
+use Carp qw(croak);
 
 use BOM::System::Chronicle;
 
-has underlying_symbol => (
-    is       => 'ro',
-    required => 1,
-);
+around BUILDARGS => sub {
+    my $orig = shift;
+    my $class = shift;
+    my %params = ref $_[0] ? %{$_[0]} : @_;
+
+    if ($params{calendar} xor $params{recorded_date}) {
+        croak "calendar and recorded_date are required when pass in either.";
+    }
+
+    return $class->$orig(@_);
+};
 
 has [qw(calendar recorded_date)] => (
     is => 'ro',
@@ -30,9 +39,10 @@ sub save {
             $relevant_dates{$epoch} = $calendar{$epoch};
             next;
         }
-        my @symbols_to_save =
-            uniq(@{$relevant_dates{$epoch}}, @{$calendar{$epoch}});
-        $relevant_dates{$epoch} = \@symbols_to_save;
+        foreach my $close_time (keys %{$calendar{$epoch}}) {
+            my @symbols_to_save = uniq(@{$relevant_dates{$epoch}{$close_time}}, @{$calendar{$epoch}{$close_time}});
+            $relevant_dates{$epoch}{$close_time} = \@symbols_to_save;
+        }
     }
 
     return BOM::System::Chronicle::set('early_closes', 'early_closes', \%relevant_dates);
