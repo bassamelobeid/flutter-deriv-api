@@ -1295,11 +1295,11 @@ expected_result:
                 barrier2: 1.335
                 spot: 1.3803
                 duration: 222d
-                ask_prob: 0.2769
-                theo_prob: 0.2385
-                total_markup: 0.0384
+                ask_prob: 0.2778
+                theo_prob: 0.2393
+                total_markup: 0.0385
                 commission_markup: 0.025
-                risk_markup: 0.0134
+                risk_markup: 0.0135
                 price_engine: BOM::Product::Pricing::Engine::VannaVolga::Calibrated
             EXPIRYRANGE:
                 barrier: 1.445
