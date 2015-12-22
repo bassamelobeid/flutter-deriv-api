@@ -51,17 +51,22 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 sub send_proposal {
     my ($c, $id, $args) = @_;
 
-    my $details = {%$args};
-    my $latest = BOM::RPC::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_bid',
+        sub {
+            my $response = shift;
 
-    $c->send({
-            json => {
-                msg_type               => 'proposal_open_contract',
-                echo_req               => $details,
+            return {
+                msg_type => 'proposal_open_contract',
+                echo_req => $args,
+                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                 proposal_open_contract => {
                     id => $id,
-                    %$latest
-                }}});
+                    %$response
+                }};
+        },
+        {args => $args});
     return;
 }
 
