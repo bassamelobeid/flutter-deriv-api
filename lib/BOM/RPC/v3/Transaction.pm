@@ -12,17 +12,9 @@ use BOM::Product::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context qw (localize);
-use BOM::Platform::Context;
 
 sub buy {
-    my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
-
-    my $client              = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    my $source              = $params->{source};
-    my $contract_parameters = $params->{contract_parameters};
-    my $args                = $params->{args};
+    my ($client, $source, $contract_parameters, $args) = @_;
 
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
@@ -72,13 +64,7 @@ sub buy {
 }
 
 sub sell {
-    my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
-
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    my $source = $params->{source};
-    my $args   = $params->{args};
+    my ($client, $source, $args) = @_;
 
     my $id = $args->{sell};
 
