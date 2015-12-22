@@ -134,7 +134,7 @@ sub _build_holidays {
 }
 
 has early_closes => (
-    is => 'ro',
+    is         => 'ro',
     lazy_build => 1,
 );
 
@@ -142,7 +142,7 @@ sub _build_early_closes {
     my $self = shift;
 
     my $ref = BOM::MarketData::EarlyClose::get_early_closes_for($self->symbol, $self->for_date);
-    my %early_closes = map {Date::Utility->new($_)->days_since_epoch => $ref->{$_}} keys %$ref;
+    my %early_closes = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
 
     return \%early_closes;
 }
