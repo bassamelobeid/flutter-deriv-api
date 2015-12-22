@@ -208,10 +208,8 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {date => Date::Utility->new()});
 
-#foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
-#    foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {
-foreach my $underlying ('frxEURUSD') {
-    foreach my $bet_type ('RANGE') {
+foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
+    foreach my $bet_type ('CALL', 'NOTOUCH', 'RANGE', 'EXPIRYRANGE', 'DIGITMATCH') {
         my $expectations = $expected_result->{$underlying}->{$bet_type};
         next unless scalar keys %$expectations;
 
