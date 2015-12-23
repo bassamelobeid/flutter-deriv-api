@@ -65,7 +65,6 @@ $email_mocked->mock('send_email', sub { return 1 });
                 "amount"                    => 100
             }})->message_ok;
     my $res = decode_json($t->message->[1]);
-
     ok $res->{error}->{message} =~ /The account transfer is unavailable/, 'The account transfer is unavailable';
 
     $t->finish_ok;
@@ -134,7 +133,7 @@ $email_mocked->mock('send_email', sub { return 1 });
     ok $res->{error}->{message} =~ /The maximum amount you may transfer/, 'The maximum amount you may transfer';
 
     ## test for failure
-    foreach my $amount (undef, '', -1, 0.01) {
+    foreach my $amount ('', -1, 0.01) {
         $t = $t->send_ok({
                 json => {
                     "transfer_between_accounts" => "1",
@@ -150,6 +149,15 @@ $email_mocked->mock('send_email', sub { return 1 });
         }
     }
 
+    $t = $t->send_ok({
+            json => {
+                "transfer_between_accounts" => "1",
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is scalar(@{$res->{accounts}}), 2, 'two accounts';
+    my ($tmp) = grep { $_->{loginid} eq $cr_1 } @{$res->{accounts}};
+    ok $tmp->{balance} == 0;
+
     $client_cr->payment_free_gift(
         currency => 'EUR',
         amount   => 100,
@@ -158,6 +166,16 @@ $email_mocked->mock('send_email', sub { return 1 });
 
     $client_cr->clr_status('cashier_locked');    # clear locked
     $client_cr->save();
+
+    $t = $t->send_ok({
+            json => {
+                "transfer_between_accounts" => "1",
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is scalar(@{$res->{accounts}}), 2, 'two accounts';
+    ($tmp) = grep { $_->{loginid} eq $cr_1 } @{$res->{accounts}};
+    ok $tmp->{balance} == 100;
+
     $t = $t->send_ok({
             json => {
                 "transfer_between_accounts" => "1",
