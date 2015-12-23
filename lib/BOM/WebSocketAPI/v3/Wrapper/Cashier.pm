@@ -83,6 +83,7 @@ sub transfer_between_accounts {
     return {
         msg_type                  => 'transfer_between_accounts',
         transfer_between_accounts => $response->{status},
+        (exists $response->{accounts}) ? (accounts => $response->{accounts}) : (),
     };
 }
 
