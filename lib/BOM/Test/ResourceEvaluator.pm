@@ -22,6 +22,7 @@ use JSON::Schema;
 use File::Slurp;
 use Test::Mojo;
 use Test::Most;
+# use Test::FailWarnings; # as of now Devel::Galdiator is complaining about Redis2 object leak, so need to fix that then enable this
 use Devel::Gladiator qw(walk_arena arena_ref_counts arena_table);
 
 sub evaluate {
