@@ -189,7 +189,6 @@ has [qw(
         spot_spread
         spot_spread_size
         instrument_type
-        sd_symbol
         )
     ] => (
     is         => 'ro',
