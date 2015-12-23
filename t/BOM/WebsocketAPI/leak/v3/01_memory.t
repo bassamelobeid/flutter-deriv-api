@@ -15,7 +15,7 @@ use lib "$Bin/../../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
 sub do_testing {
-    my $connections = 2;
+    my $connections = 1000;
     my $counter     = 0;
     my @pool        = ();
 
