@@ -50,7 +50,10 @@ sub parse_calendar {
 
     my $data = _process(@holiday_data);
     # don't have to include synthetics for country holidays
-    _include_synthetic($data) if $calendar_type ne 'country_holiday';
+    if ($calendar_type ne 'country_holiday') {
+        _include_synthetic($data);
+        _include_forex_holidays($data);
+    }
     # convert to proper calendar format
     my $calendar;
     foreach my $exchange_name (keys %$data) {
@@ -58,7 +61,7 @@ sub parse_calendar {
             my $description;
             if ($calendar_type eq 'early_closes') {
                 my $exchange = BOM::Market::Exchange->new($exchange_name);
-                $desciption =
+                $description =
                       $exchange->is_in_dst_at($date)
                     ? $exchange->market_times->{partial_trading}{dst_close}
                     : $exchange->market_times->{partial_trading}{standard_close};
@@ -70,6 +73,20 @@ sub parse_calendar {
     }
 
     return $calendar;
+}
+
+sub _include_forex_holidays {
+    my $data = shift;
+
+    my $year      = Date::Utility->new->year;
+    my $christmas = Date::Utility->new("$year-12-25")->epoch;
+    my $new_year  = Date::Utility->new(($year + 1) . "-01-01")->epoch;
+    $data->{FOREX} = {
+        $christmas => 'Christmas Day',
+        $new_year  => "New Year\'s Day",
+    };
+
+    return;
 }
 
 sub generate_holiday_upload_form {

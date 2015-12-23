@@ -14,7 +14,6 @@
         <tr><td colspan=2><INPUT type="submit" name="upload_exchange_currencies_excel_file" value="Process Excel File"></td></tr>
     </table>
 </form>
-<p><i> NOTE: Remember to update Christmas and New Years holidays for FOREX exchange </i></p>
 <p><b>Manual holiday calendar update tool: </b></p>
 
 <form name="manual_update" action="[% upload_url %]" METHOD="POST" ENCTYPE="multipart/form-data">
