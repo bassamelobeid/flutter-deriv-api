@@ -4,7 +4,8 @@ use feature 'state';
 use strict;
 use warnings;
 
-use BOM::System::Chronicle;
+use BOM::MarketData::Holiday;
+use BOM::MarketData::PartialTrading;
 use BOM::Platform::Context;
 use File::Temp ();
 use Try::Tiny;
@@ -16,9 +17,20 @@ use YAML::CacheLoader qw(LoadFile);
 sub save_calendar {
     my ($calendar, $calendar_type) = @_;
 
-    # don't have to include synthetics for country holidays
-    _include_synthetic($calendar) if $calendar_type ne 'country_holiday';
-    my $updated = map { BOM::System::Chronicle::set($calendar_type, $_, $calendar->{$_}) } keys %$calendar;
+    my $recorded_date = Date::Utility->new;
+    my $updated;
+    if ($calendar_type eq 'exchange_holiday' or $calendar_type eq 'country_holiday') {
+        $updated = BOM::MarketData::Holiday->new(
+            recorded_date => $recorded_date,
+            calendar      => $calendar,
+        )->save;
+    } else {
+        $updated = BOM::MarketData::PartialTrading->new(
+            recorded_date => $recorded_date,
+            type          => $calendar_type,
+            calendar      => $calendar,
+        )->save;
+    }
 
     return $updated;
 }
@@ -37,8 +49,18 @@ sub parse_calendar {
     }
 
     my $data = _process(@holiday_data);
+    # don't have to include synthetics for country holidays
+    _include_synthetic($data) if $calendar_type ne 'country_holiday';
+    # convert to proper calendar format
+    my $calendar;
+    foreach my $exchange_name (keys %$data) {
+        foreach my $date (keys %{$data->{$exchange_name}}) {
+            my $description = $data->{$exchange_name}{$date};
+            push @{$calendar->{$date}{$description}}, $exchange_name;
+        }
+    }
 
-    return $data;
+    return $calendar;
 }
 
 sub generate_holiday_upload_form {
