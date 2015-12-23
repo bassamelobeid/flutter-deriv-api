@@ -32,10 +32,8 @@ my $binary = new_ok(
     [
         name            => 'Binary',
         primary_url     => 'www.binary.com',
-        features        => ['affiliates', 'training_videos', 'call_back'],
         broker_codes    => [$cr,],
         localhost       => BOM::Platform::Runtime->instance->hosts->localhost,
-        resource_subdir => 'Binary',
     ],
 );
 
