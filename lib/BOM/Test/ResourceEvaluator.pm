@@ -47,7 +47,8 @@ sub evaluate {
 
     my $new_local_count = `netstat -nat | grep 6379 | grep EST |  wc -l`;
     $new_local_count = $new_local_count / 2;
-    is $new_local_count, $local_count + 1, 'Local redis connection is not leaked';    # ??? redis connection remains open thats why +1, we need to fix
+    is $new_local_count, $local_count,
+        'Local redis connection is not leaked';    # ??? redis connection remains open sometimes, in that case we need to add +1, we need to fix
 
     my %dump2 = map { $dump1{$_} ? () : ("$_" => $_) } walk_arena();
     use Devel::Peek;
