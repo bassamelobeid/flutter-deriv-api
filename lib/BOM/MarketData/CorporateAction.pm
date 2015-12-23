@@ -129,12 +129,12 @@ sub _build_document {
 sub save {
     my $self = shift;
 
-    #TODO: if chronicle does not have this document, first create it because in document_content we will need it
+    #if chronicle does not have this document, first create it because in document_content we will need it
     if (not defined BOM::System::Chronicle::get('corporate_actions', $self->symbol)) {
-        BOM::System::Chronicle::set('corporate_actions', $self->symbol, {});
+        BOM::System::Chronicle::set('corporate_actions', $self->symbol, {}, $self->recorded_date);
     }
 
-    return BOM::System::Chronicle::set('corporate_actions', $self->symbol, $self->_document_content);
+    return BOM::System::Chronicle::set('corporate_actions', $self->symbol, $self->_document_content, $self->recorded_date);
 }
 
 =head2 actions
