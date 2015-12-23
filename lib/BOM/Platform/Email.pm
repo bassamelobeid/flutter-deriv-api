@@ -58,7 +58,7 @@ sub send_email {
     # strip carriage returns in subject
     $subject =~ s/[\r\n\f\t]/ /g;
     my $prefix = BOM::Platform::Runtime->instance->app_config->system->alerts->email_subject_prefix;
-    my $server = BOM::Platform::Runtime->instance->hosts->localhost->canonical_name;
+    my $server = BOM::Platform::Runtime->instance->hosts->localhost->name;
     $prefix =~ s/_HOST_/$server/g;
     $prefix =~ s/\[//;
     $prefix =~ s/\]//;

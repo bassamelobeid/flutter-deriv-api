@@ -41,12 +41,6 @@ has 'role_definitions' => (
     isa => 'BOM::System::Host::Role::Registry',
 );
 
-has '_registry_by_canonical_name' => (
-    is         => 'rw',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
 =head1 METHODS
 
 =head2 config_filename
@@ -82,43 +76,13 @@ around 'get' => sub {
     my $self = shift;
     my $name = shift;
 
-    return $self->$orig($name) || $self->_registry_by_canonical_name->{$name};
+    return $self->$orig($name);
 };
-
-=head2 registry_fixup
-
-Builds the lookup hash by canonical name, but does not other affect the input registry hashref.
-
-=cut
 
 sub registry_fixup {
     my $self = shift;
     my $reg  = shift;
 
-    my $_registry_by_canonical_name = {};
-    foreach my $host (keys %$reg) {
-        my $h  = $reg->{$host};
-        my $cn = $h->canonical_name;
-        if ($_registry_by_canonical_name->{$cn}) {
-            Carp::croak("More than one BOM::System::Host registered with canonical name "
-                    . $cn . ": "
-                    . $h->name
-                    . " conflicts with "
-                    . $_registry_by_canonical_name->{$cn}->name);
-        } else {
-            $_registry_by_canonical_name->{$cn} = $h;
-        }
-        if ($h->virtualization_host and not ref $h->virtualization_host) {
-            my $vh = first { $reg->{$_}->canonical_name eq $h->virtualization_host } (keys %$reg);
-            if ($vh) {
-                $h->virtualization_host($reg->{$vh});
-            } else {
-                Carp::croak("Unknown BOM::System::Host " . $h->virtualization_host . " given as virtualization host for $host");
-            }
-        }
-    }
-
-    $self->_registry_by_canonical_name($_registry_by_canonical_name);
     $reg->{localhost} = $self->_configure_localhost($reg);
 
     return $reg;
@@ -138,7 +102,6 @@ sub _configure_localhost {
     unless ($localhost) {
         $localhost = BOM::System::Host->new({
             name             => 'localhost',
-            canonical_name   => 'localhost',
             groups           => ['rmg'],
             role_definitions => $self->role_definitions,
             roles            => ['couchdb_master', 'couchdb_server'],

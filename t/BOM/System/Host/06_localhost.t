@@ -19,4 +19,3 @@ my $me;
 $me = BOM::Platform::Runtime->instance->hosts->localhost;
 
 is($me->name,           $hostname, 'name is correct');
-is($me->canonical_name, $hostname, 'Canonical name is correct');

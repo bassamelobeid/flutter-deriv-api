@@ -17,7 +17,6 @@ BOM::System::Host
     my $server = BOM::System::Host->new(
         name           => 'cr-deal01',
         domain         => 'regentmarkets.com',
-        canonical_name => 'crservers-cr-deal01',
         groups         => [ 'rmg' ],
         roles          => [ BOM::System::Host::Role::Registry->get('customer_facing_webserver') ],
     );
@@ -39,18 +38,6 @@ name of the server. e.g. collector01
 has name => (
     is       => 'ro',
     required => 1,
-);
-
-=head2 canonical_name
-
-canonical name, by default the same as I<name>. E.g. tierpoint-collector01.
-
-=cut
-
-has canonical_name => (
-    is      => 'ro',
-    lazy    => 1,
-    default => sub { shift->name },
 );
 
 =head2 domain
@@ -374,7 +361,7 @@ sub BUILDARGS {
 
     if ($arg_ref->{name} and $arg_ref->{name} eq 'localhost') {
         my @name = split(/\./, Sys::Hostname::hostname);
-        $arg_ref->{name} = $arg_ref->{canonical_name} = $name[0];
+        $arg_ref->{name} = $name[0];
     }
 
     my $role_definitions = $arg_ref->{role_definitions};
