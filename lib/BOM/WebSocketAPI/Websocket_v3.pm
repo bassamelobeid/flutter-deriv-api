@@ -242,7 +242,7 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all',                        {tags => [$tag, $descriptor->{category}]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all',                        {tags => [$tag, $category]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth} and my $loginid = $c->stash('loginid')) {
