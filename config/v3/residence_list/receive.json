@@ -23,6 +23,10 @@
           "text":{
             "type":"string",
             "description":"Country full name"
+          },
+          "text":{
+            "type":"phone_idd",
+            "description":"IDD code of country"
           }
         }
       }
