@@ -149,28 +149,6 @@ sub _configure_localhost {
     return $localhost;
 }
 
-=head2 find_by_role($role[, $role, ...])
-
-Returns an array of all BOM::System::Host objects stored in $self which have role $role.
-
-Call with multiple $role values and the results will be de-duplicated (one host with two or more
-of the specified roles will only be returned once).
-
-=cut
-
-sub find_by_role {
-    my $self = shift;
-    Carp::croak("Usage: find_by_role(role1[,...])") unless (@_);
-
-    my $result = {};
-    while (my $role = shift) {
-        foreach my $server (grep { $_->has_role($role) } ($self->all)) {
-            $result->{$server->canonical_name} = $server;
-        }
-    }
-    return values %$result;
-}
-
 sub _build_localhost {
     my $self = shift;
     return $self->get('localhost');
