@@ -53,25 +53,6 @@ has primary_url => (
     isa => 'Str',
 );
 
-=head2 resource_subdir
-
-The subdirectory name to seperate website specific resources like templates, static files
-etc. By default it's the name of the website without whitespaces.
-
-=cut
-
-has resource_subdir => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build_resource_subdir {
-    my $self   = shift;
-    my $subdir = $self->name;
-    $subdir =~ s/\s/_/g;
-    return $subdir;
-}
-
 =head2 broker_codes
 
 The list of broker codes that can be used by this website
@@ -171,11 +152,6 @@ has 'default_language' => (
 has 'localhost' => (
     is       => 'ro',
     required => 1,
-);
-
-has 'features' => (
-    is      => 'ro',
-    default => sub { []; },
 );
 
 has config => (

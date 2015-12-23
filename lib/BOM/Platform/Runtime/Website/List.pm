@@ -126,8 +126,6 @@ sub _build__websites {
 
     my $websites = {};
     for my $website (keys %{$self->definitions}) {
-        next if ($website eq 'version');
-
         my $website_definition = $self->definitions->{$website};
 
         $website_definition->{name}         = $website;

@@ -191,16 +191,15 @@ sub _request_id_authentication {
     $status = uc($status);
     $self->_notify("SET TO $status PENDING EMAIL REQUEST FOR ID", 'client received an email requesting identity proof');
 
-    my $client_name    = join(' ', $client->salutation, $client->first_name, $client->last_name);
-    my $support_email  = BOM::Platform::Context::request()->website->config->get('customer_support.email');
-    my $ce_broker_name = BOM::Platform::Runtime->instance->website_list->get_by_broker_code($client->broker)->name;
-    my $ce_subject     = localize('Documents are required to verify your identity');
-    my $ce_body        = localize(<<'EOM', $client_name, $ce_broker_name, $support_email);
+    my $client_name   = join(' ', $client->salutation, $client->first_name, $client->last_name);
+    my $support_email = BOM::Platform::Context::request()->website->config->get('customer_support.email');
+    my $ce_subject    = localize('Documents are required to verify your identity');
+    my $ce_body       = localize(<<'EOM', $client_name, $support_email);
 Dear [_1],
 
 I am writing to you regarding your account with Binary.com.
 
-We are legally required to verify that clients are over the age of 18, and so we request that you forward scanned copies of one of the following to helpdesk@binary.com:
+We are legally required to verify that clients are over the age of 18, and so we request that you forward scanned copies of one of the following to [_2]:
 
 - Valid Passport or Driving licence or National ID card
 
@@ -210,7 +209,7 @@ I look forward to hearing from you soon.
 
 Kind regards,
 
-[_2]
+Binary
 EOM
     return ({
         from               => $support_email,
