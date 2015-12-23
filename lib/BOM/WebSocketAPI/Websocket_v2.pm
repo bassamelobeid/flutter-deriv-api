@@ -174,7 +174,7 @@ sub __handle {
             return __authorize_error($dispatch->[0]);
         }
 
-        stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, $descriptor->{category}, $c->stash('client')->loginid]});
+        stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, $dispatch->[0], $c->stash('client')->loginid]});
 
         ## sell expired
         if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {
