@@ -8,15 +8,17 @@ use Mojo::JSON;
 use Test::Mojo;
 use Test::Most;
 use Data::Dumper;
+
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+initialize_realtime_ticks_db();
+
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
+use BOM::Test::ResourceEvaluator;
 use TestHelper qw/test_schema build_mojo_test/;
 
-use BOM::Test::ResourceEvaluator;
-use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-
 sub do_testing {
-    my $connections = 1000;
+    my $connections = 500;
     my $counter     = 0;
     my @pool        = ();
 
@@ -29,11 +31,11 @@ sub do_testing {
         is $res->{msg_type}, 'active_symbols';
         test_schema('active_symbols', $res);
 
-        $t = $t->send_ok({json => {landing_company_details => 'iom'}})->message_ok;
+        $t = $t->send_ok({json => {asset_index => 1}})->message_ok;
         $res = decode_json($t->message->[1]);
-        ok $res->{landing_company_details};
-        is $res->{landing_company_details}->{country}, 'Isle of Man';
-        test_schema('landing_company_details', $res);
+        ok $res->{asset_index};
+        is $res->{msg_type}, 'asset_index';
+        test_schema('asset_index', $res);
 
         push @pool, $t;
         $counter++;
