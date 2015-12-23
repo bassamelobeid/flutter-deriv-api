@@ -14,7 +14,6 @@ use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Test::ResourceEvaluator;
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-initialize_realtime_ticks_db();
 
 sub do_testing {
     my $connections = 1000;
