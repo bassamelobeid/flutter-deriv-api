@@ -114,38 +114,6 @@ openvz_server:
   inherits:
     - production_unix_server
 
-otn_query:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
-  inherits:
-    - production_unix_server
-
-otn_master:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
-  inherits:
-    - production_unix_server
-
-otn_master_backup:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
-  inherits:
-    - production_unix_server
-
-otn_relay:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
-  inherits:
-    - production_unix_server
-
 postgres_server:
   consumes:
     - postgres_server

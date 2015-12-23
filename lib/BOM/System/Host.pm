@@ -98,19 +98,6 @@ has 'role_definitions' => (
     isa => 'Maybe[BOM::System::Host::Role::Registry]',
 );
 
-=head2 postgres_binary_replication_master
-
-The name of the server, if any, that this server wants to replicate its postgres DB from.
-
-Needless to say, this setting is only meaningful for Postgres binary replica servers.
-
-=cut
-
-has postgres_binary_replication_master => (
-    is  => 'rw',
-    isa => 'Str',
-);
-
 =head1 METHODS
 
 =head2 $self->fqdn
