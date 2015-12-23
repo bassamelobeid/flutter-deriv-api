@@ -171,6 +171,8 @@ sub __handle {
             return __authorize_error($dispatch->[0]);
         }
 
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag], $descriptor->{category}, $c->stash('client')->loginid});
+
         ## sell expired
         if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {
             if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {

@@ -98,6 +98,8 @@ sub __handle {
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
         }
+
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.authenticated_call.all', {tags => [$tag, $dispatch->[0], $c->stash('client')->loginid]});
         return $dispatch->[1]->($c, $p1);
     }
 
