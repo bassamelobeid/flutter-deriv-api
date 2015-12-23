@@ -52,7 +52,7 @@ sub do_testing {
     }
 
     foreach my $conn (@pool) {
-        $conn->finish_ok;
+        $conn->finished_ok;
     }
 
     undef $strip_doc_send;

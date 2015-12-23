@@ -7,7 +7,7 @@ v3:
 structure:
 	forkprove --timer -I./lib  -I./t t/BOM/*.t
 
-load:
+leaktest:
 	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/load/v3
 
 tidy:
