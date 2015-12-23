@@ -142,7 +142,7 @@ has os_version => (
 =head2 os_architecture
 
 The processor chip architecture that the operating system runs on. This may be different
-than the physical processor in the machine on which the host is running, due to virtualization.
+than the physical processor in the machine on which the host is running
 
 =cut
 
@@ -150,14 +150,6 @@ has os_architecture => (
     is      => 'ro',
     default => 'Unknown',
 );
-
-=head2 virtualization_host
-
-If set, the BOM::System::Host object that represents the virtualization server on which $self runs.
-
-=cut
-
-has virtualization_host => (is => 'rw');
 
 =head2 aws_region
 
@@ -241,35 +233,6 @@ has 'role_definitions' => (
     is  => 'ro',
     isa => 'Maybe[BOM::System::Host::Role::Registry]',
 );
-
-=head2 Shared resources: num_cpu, RAM, disk
-
-These attributes are typically defined for a virtualization host but not for virtual servers.
-
-=cut
-
-foreach my $field (qw(num_cpu RAM disk)) {
-    __PACKAGE__->meta->add_attribute(
-        $field,
-        {
-            is      => 'ro',
-            lazy    => 1,
-            default => sub {
-                my $self = shift;
-                return $self->virtualization_host
-                    ? $self->virtualization_host->$field
-                    : undef;
-            },
-        });
-}
-
-=head2 Physical server attributes: brand, bandwidth, contract_terms, purchase_price, monthly_rental
-
-These attributes are typically defined for a virtualization host but not for virtual servers.
-
-=cut
-
-has [qw(brand bandwidth contract_terms purchase_price monthly_rental)] => (is => 'ro');
 
 =head2 postgres_binary_replication_master
 
