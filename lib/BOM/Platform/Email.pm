@@ -33,14 +33,6 @@ sub send_email {
 
     my $template_loginid = $args_ref->{template_loginid} || (request && request->loginid);
 
-    # Replace _DEVELOPER_ with the developer's actual email address
-    if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
-        my $email_id = Sys::Hostname::hostname;
-        $email_id =~ s/dev//g;
-        my $developer = "$email_id\@binary.com";
-        $email =~ s/_DEVELOPER_/$developer/g;
-    }
-
     my $logger = get_logger();
     if (not $fromemail) {
         $logger->warn("fromemail missing - [$fromemail, $email, $subject]");
@@ -58,7 +50,10 @@ sub send_email {
     # strip carriage returns in subject
     $subject =~ s/[\r\n\f\t]/ /g;
     my $prefix = BOM::Platform::Runtime->instance->app_config->system->alerts->email_subject_prefix;
-    my $server = BOM::Platform::Runtime->instance->hosts->localhost->name;
+
+    my @name = split(/\./, Sys::Hostname::hostname);
+    my $server = $name[0];
+
     $prefix =~ s/_HOST_/$server/g;
     $prefix =~ s/\[//;
     $prefix =~ s/\]//;
