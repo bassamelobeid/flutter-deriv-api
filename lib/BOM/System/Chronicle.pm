@@ -98,6 +98,9 @@ sub set {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
+    my $rec_date = shift;
+
+    $rec_date //= Date::Utility->new();
 
     die "Cannot store undefined values in Chronicle!" unless defined $value;
     die "You can only store hash-ref or array-ref in Chronicle!" unless (ref $value eq 'ARRAY' or ref $value eq 'HASH');
@@ -106,7 +109,7 @@ sub set {
 
     my $key = $category . '::' . $name;
     _redis_write()->set($key, $value);
-    _archive($category, $name, $value) if _dbh();
+    _archive($category, $name, $value, $rec_date) if _dbh();
 
     return 1;
 }
@@ -156,9 +159,10 @@ sub _archive {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
+    my $rec_date = shift;
 
     # In unit tests, we will use Test::MockTime to force Chronicle to store hostorical data
-    my $db_timestamp = Date::Utility->new()->db_timestamp;
+    my $db_timestamp = $rec_date->db_timestamp;
 
     return _dbh()->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp);
 WITH ups AS (
