@@ -10,6 +10,7 @@ use Test::Most;
 use Data::Dumper;
 
 use BOM::Test::ResourceEvaluator;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 sub do_testing {
     my $connections = 100;

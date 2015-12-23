@@ -8,7 +8,7 @@ structure:
 	forkprove --timer -I./lib  -I./t t/BOM/*.t
 
 leaktest:
-	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/load/v3
+	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/leak/v3
 
 tidy:
 	find . -name '*.p?.bak' -delete
