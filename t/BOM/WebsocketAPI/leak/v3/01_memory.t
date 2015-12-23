@@ -49,5 +49,3 @@ sub do_testing {
 BOM::Test::ResourceEvaluator::evaluate(\&do_testing);
 
 done_testing();
-
-1;
