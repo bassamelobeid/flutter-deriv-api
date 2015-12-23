@@ -40,6 +40,8 @@ before_install:
     - /tmp/travis-scripts/redis.sh
 
 install:
+    - sudo /tmp/go;chmod 777 /tmp/go
+    - export GOPATH=/tmp/go
     - go get github.com/kavehmz/queue
     - go get golang.org/x/net/websocket
     - go get github.com/garyburd/redigo/redis
