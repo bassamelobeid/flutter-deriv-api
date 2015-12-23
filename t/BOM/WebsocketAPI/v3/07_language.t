@@ -13,8 +13,9 @@ my $res = decode_json($t->message->[1]);
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
-    value => 'af',
-    text  => 'Afghanistan'
+    value     => 'af',
+    text      => 'Afghanistan',
+    phone_idd => '93'
     };
 
 # test RU
@@ -24,8 +25,10 @@ $res = decode_json($t->message->[1]);
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
-    value => 'au',
-    text  => decode_utf8('Австралия')};
+    value     => 'au',
+    text      => decode_utf8('Австралия'),
+    phone_idd => '61'
+    };
 
 # back to EN
 $t   = build_mojo_test();
@@ -34,8 +37,9 @@ $res = decode_json($t->message->[1]);
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
-    value => 'af',
-    text  => 'Afghanistan'
+    value     => 'af',
+    text      => 'Afghanistan',
+    phone_idd => '93'
     };
 
 $t->finish_ok;
