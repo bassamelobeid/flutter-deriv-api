@@ -364,7 +364,8 @@ sub __handle {
         }
 
         my $client = $c->stash('client');
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.authenticated_call.all', {tags => [$tag, $descriptor->{category}, $client->{loginid}]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.authenticated_call.all',
+            {tags => [$tag, $descriptor->{category}, $client->{loginid}]});
 
         ## sell expired
         if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
