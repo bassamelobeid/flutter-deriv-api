@@ -5,8 +5,8 @@ use Try::Tiny;
 use Spreadsheet::ParseExcel;
 use Format::Util::Numbers qw(roundnear);
 use Date::Utility;
-use Finance::Asset;
 use BOM::Market::Underlying;
+use SuperDerivatives::UnderlyingConfig;
 
 sub process_dividend {
     my ($fh, $vendor) = @_;
@@ -106,10 +106,10 @@ sub read_discrete_forecasted_dividend_from_excel_files {
         }
 
         if ($source eq 'SD') {
-            $symbol = convert_SD_symbol_to_BOM_symbol($symbol);
+            $symbol = SuperDerivatives::UnderlyingConfig::sd_to_binary($symbol);
             # skipping these because SuperDerivatives doesn't provide dividend
             # information on these underlyings
-            if (grep { $symbol eq $_ } qw(STI NA)) {
+            if (not $symbol or grep { $symbol eq $_ } qw(STI)) {
                 next SHEET;
             }
         }
@@ -195,21 +195,6 @@ sub is_dividend_in_bounds {
     }
 
     return $is_dividend_in_bounds;
-}
-
-sub convert_SD_symbol_to_BOM_symbol {
-    my $sdcode = shift @_;
-
-    my $content = Finance::Asset->instance->all_parameters;
-    my %sd_bom  = map { $_ => $content->{$_}->{sd_symbol} } keys %$content;
-    my %bom_sd  = reverse %sd_bom;
-
-    if (not $bom_sd{$sdcode}) {
-        return 'NA';
-    } else {
-        return $bom_sd{$sdcode};
-    }
-
 }
 
 sub generate_dividend_upload_form {
