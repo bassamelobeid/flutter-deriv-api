@@ -50,7 +50,7 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            my $tag = 'origin:';
+            my $tag = 'origin:ws.binaryws.com';
             my $data;
             my $send = 1;
             if (ref($p1) eq 'HASH') {
@@ -165,7 +165,7 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.' . $dispatch->[0], {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.all',               {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.all',               {tags => [$tag, $dispatch->[0]]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[0]);

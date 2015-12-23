@@ -79,7 +79,7 @@ sub entry_point {
 
             BOM::Platform::Context::request($c->stash('request'));
 
-            my $tag = 'origin:';
+            my $tag = 'origin:ws.binaryws.com';
             my $data;
             my $send = 1;
             if (ref($p1) eq 'HASH') {
@@ -241,8 +241,8 @@ sub __handle {
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api.call.all',                        {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.' . $descriptor->{category}, {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all',                        {tags => [$tag], $descriptor->{category}});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth} and my $loginid = $c->stash('loginid')) {
