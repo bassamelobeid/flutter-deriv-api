@@ -14,7 +14,6 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Mock::Exchanges qw(:init);
 use DateTime;
 use Cache::RedisDB;
 use Date::Utility;
