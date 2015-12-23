@@ -364,7 +364,7 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.authenticated_call.all',
-            {tags => [$tag, $descriptor->{category}, $c->stash('loginid')]});
+            {tags => [$tag, $descriptor->{category}, $c->stash('client')->loginid]});
 
         ## sell expired
         if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
