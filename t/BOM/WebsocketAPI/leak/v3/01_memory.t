@@ -8,11 +8,13 @@ use Mojo::JSON;
 use Test::Mojo;
 use Test::Most;
 use Data::Dumper;
-
-use BOM::Test::ResourceEvaluator;
 use FindBin qw/$Bin/;
 use lib "$Bin/../../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+
+use BOM::Test::ResourceEvaluator;
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+initialize_realtime_ticks_db();
 
 sub do_testing {
     my $connections = 1000;
