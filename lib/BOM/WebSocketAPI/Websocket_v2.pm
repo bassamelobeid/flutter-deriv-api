@@ -165,13 +165,13 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.' . $dispatch->[0], {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.all',               {tags => [$tag, $dispatch->[0]]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.all', {tags => [$tag, $dispatch->[0]]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[0]);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all', {tags => ($tag, $descriptor->{category}, $c->stash('client')->loginid}));
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, $descriptor->{category}, $c->stash('client')->loginid]}));
 
         ## sell expired
         if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {
