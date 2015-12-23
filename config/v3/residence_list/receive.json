@@ -25,7 +25,7 @@
             "description":"Country full name"
           },
           "phone_idd":{
-            "type":"string",
+            "type": ["string", "null"],
             "description":"IDD code of country"
           }
         }
