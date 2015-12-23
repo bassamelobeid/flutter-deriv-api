@@ -139,7 +139,6 @@ sub _configure_localhost {
         $localhost = BOM::System::Host->new({
             name             => 'localhost',
             canonical_name   => 'localhost',
-            ip_address       => '127.0.0.1',
             groups           => ['rmg'],
             role_definitions => $self->role_definitions,
             roles            => ['couchdb_master', 'couchdb_server'],

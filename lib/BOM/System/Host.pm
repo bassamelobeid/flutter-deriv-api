@@ -18,7 +18,6 @@ BOM::System::Host
         name           => 'cr-deal01',
         domain         => 'regentmarkets.com',
         canonical_name => 'crservers-cr-deal01',
-        ip_address     => '190.241.168.35',
         groups         => [ 'rmg' ],
         roles          => [ BOM::System::Host::Role::Registry->get('customer_facing_webserver') ],
     );
@@ -52,18 +51,6 @@ has canonical_name => (
     is      => 'ro',
     lazy    => 1,
     default => sub { shift->name },
-);
-
-=head2 ip_address
-
-The public IP address for this server.
-
-=cut
-
-has ip_address => (
-    is       => 'ro',
-    isa      => 'bom_ipv4_host_address',
-    required => 1,
 );
 
 =head2 domain
