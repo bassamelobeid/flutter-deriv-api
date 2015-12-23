@@ -640,13 +640,31 @@ sub transfer_between_accounts {
     my $currency     = $args->{currency};
     my $amount       = $args->{amount};
 
+    my %siblings = map { $_->loginid => $_ } $client->siblings;
+
+    # get clients
+    unless ($loginid_from and $loginid_to and $currency and $amount) {
+        my @accounts;
+        foreach my $account (values %siblings) {
+            next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
+            next unless $account->default_account;
+            push @accounts,
+                {
+                loginid => $account->loginid,
+                balance => $account->default_account->balance
+                };
+        }
+        return {
+            status   => 0,
+            accounts => \@accounts
+        };
+    }
+
     if (not looks_like_number($amount) or $amount < 0.1 or $amount !~ /^\d+.?\d{0,2}$/) {
         return $error_sub->(localize('Invalid amount. Minimum transfer amount is 0.10, and up to 2 decimal places.'));
     }
 
     my $err_msg = "from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount], ";
-
-    my %siblings = map { $_->loginid => $_ } $client->siblings;
 
     my $is_good = 0;
     if ($siblings{$loginid_from} && $siblings{$loginid_to}) {
