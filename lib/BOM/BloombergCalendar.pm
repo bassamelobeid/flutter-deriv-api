@@ -44,7 +44,7 @@ sub parse_calendar {
         @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /No/ } @$csv;
     } elsif ($calendar_type eq 'country_holiday') {
         @holiday_data = grep { defined $_->{Settle} and $_->{Settle} =~ /No/ } @$csv;
-    } elsif ($calendar_type eq 'trading_time') {
+    } elsif ($calendar_type eq 'early_closes') {
         @holiday_data = grep { defined $_->{Trading} and $_->{Trading} =~ /Partial/ } @$csv;
     }
 
@@ -55,7 +55,16 @@ sub parse_calendar {
     my $calendar;
     foreach my $exchange_name (keys %$data) {
         foreach my $date (keys %{$data->{$exchange_name}}) {
-            my $description = $data->{$exchange_name}{$date};
+            my $description;
+            if ($calendar_type eq 'early_closes') {
+                my $exchange = BOM::Market::Exchange->new($exchange_name);
+                $desciption =
+                      $exchange->is_in_dst_at($date)
+                    ? $exchange->market_times->{partial_trading}{dst_close}
+                    : $exchange->market_times->{partial_trading}{standard_close};
+            } else {
+                $description = $data->{$exchange_name}{$date};
+            }
             push @{$calendar->{$date}{$description}}, $exchange_name;
         }
     }
@@ -139,7 +148,7 @@ sub _include_synthetic {
     );
     # take care of synthetic holidays now
     foreach my $syn_exchange (keys %mapper) {
-        my %syn_data = map { %{$calendar->{$_}} } @{$mapper{$syn_exchange}};
+        my %syn_data = map { (exists $calendar->{$_}) ? %{$calendar->{$_}} : () } @{$mapper{$syn_exchange}};
         $calendar->{$syn_exchange} = \%syn_data;
     }
 

@@ -29,20 +29,17 @@ if ($cgi->param('upload_excel')) {
     my $holiday_desc = $cgi->param('holiday_desc');
     # sanity check
     die "Incomplete entry\n" unless ($symbol_str and $holiday_date and $holiday_desc);
-    foreach my $symbol (@symbols) {
-        $calendar->{$symbol}{Date::Utility->new($holiday_date)->date_ddmmmyyyy} = $holiday_desc;
-    }
-} elsif ($cgi->param('manual_early_close_upload')) {
+    $calendar->{Date::Utility->new($holiday_date)->truncate_to_day->epoch}{$holiday_desc} = \@symbols;
+} elsif ($cgi->param('manual_partial_trading_upload')) {
     my $calendar_type = $cgi->param('calendar-type');
     my $symbol_str = $cgi->param('symbol');
     my @symbols = split ' ' , $symbol_str;
-    my $early_close_date = $cgi->param('early_close_date');
-    my $early_close_desc = $cgi->param('early_close_desc');
+    my $date = $cgi->param('date');
+    my $time = $cgi->param('time');
+    my $desciption = $cgi->param('description');
     # sanity check
-    die "Incomplete entry\n" unless ($symbol_str and $early_close_date and $early_close_desc);
-    foreach my $symbol (@symbols) {
-        $calendar->{$symbol}{Date::Utility->new($early_close_date)->date_ddmmmyyyy} = $early_close_desc;
-    }
+    die "Incomplete entry\n" unless ($symbol_str and $date and $time and $description);
+    $calendar->{Date::Utility->new($date)->truncate_to_day->epoch}{$time} = \@symbols;
 }
 
 BOM::BloombergCalendar::save_calendar($calendar, $calendar_type);
