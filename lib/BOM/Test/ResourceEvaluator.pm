@@ -22,7 +22,7 @@ use JSON::Schema;
 use File::Slurp;
 use Test::Mojo;
 use Test::Most;
-# use Test::FailWarnings; # as of now Devel::Galdiator is complaining about Redis2 object leak, so need to fix that then enable this
+use Test::FailWarnings;    # Devel::Galdiator will complain about Redis2 object leak, so need to fix that when we enable
 use Devel::Gladiator qw(walk_arena arena_ref_counts arena_table);
 
 sub evaluate {
@@ -36,7 +36,8 @@ sub evaluate {
     my $local_count = `netstat -nat | grep 6379 | grep EST |  wc -l`;
     $local_count = $local_count / 2;
 
-    my %dump1 = map { ("$_" => $_) } walk_arena();
+    # uncomment when we fix Devel::Gladiator
+    #    my %dump1 = map { ("$_" => $_) } walk_arena();
 
     #start executing function now
     $func->();
@@ -51,9 +52,10 @@ sub evaluate {
     is $new_local_count, $local_count,
         'Local redis connection is not leaked';    # ??? redis connection remains open sometimes, in that case we need to add +1, we need to fix
 
-    my %dump2 = map { $dump1{$_} ? () : ("$_" => $_) } walk_arena();
-    use Devel::Peek;
-    Dump \%dump2;
+    # uncomment when we fix Devel::Gladiator
+    #    my %dump2 = map { $dump1{$_} ? () : ("$_" => $_) } walk_arena();
+    #    use Devel::Peek;
+    #    Dump \%dump2;
 
     return;
 }
