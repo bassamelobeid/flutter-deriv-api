@@ -16,26 +16,14 @@ subtest 'BOM::System::Host basic tests' => sub {
     lives_ok {
         my $host = BOM::System::Host->new({
             name           => 'fred',
-            ip_address     => '1.2.3.4',
             roles          => ['streaming_server', 'loggedout_server'],
             roles          => ['streaming_server', 'ui_server'],
-            birthdate      => Date::Utility->new->iso8601,
         });
     }
     'Able to instantiate a BOM::System::Host manually';
 
     throws_ok {
         my $host = BOM::System::Host->new({
-            name           => 'fred',
-            ip_address     => '1.2.3.4.5',
-            roles          => ['streaming_server', 'ui_server'],
-        });
-    }
-    qr/Attribute \(ip_address\) does not pass/, 'Invalid IP address is rejected';
-
-    throws_ok {
-        my $host = BOM::System::Host->new({
-            ip_address     => '1.2.3.4',
             roles          => ['streaming_server', 'ui_server'],
         });
     }
@@ -43,16 +31,7 @@ subtest 'BOM::System::Host basic tests' => sub {
 
     throws_ok {
         my $host = BOM::System::Host->new({
-            name           => 'fred',
-            roles          => ['streaming_server', 'ui_server'],
-        });
-    }
-    qr/Attribute \(ip_address\) is required/, 'ip_address is required';
-
-    throws_ok {
-        my $host = BOM::System::Host->new({
             name             => 'fred',
-            ip_address       => '123.123.22.11',
             role_definitions => BOM::Platform::Runtime->instance->host_roles,
             roles            => ['fribitz'],
         });
@@ -61,7 +40,6 @@ subtest 'BOM::System::Host basic tests' => sub {
 
     my $host = BOM::System::Host->new({
         name             => 'fred',
-        ip_address       => '1.2.3.4',
         role_definitions => BOM::Platform::Runtime->instance->host_roles,
         roles            => [BOM::Platform::Runtime->instance->host_roles->get('streaming_server')],
         groups           => ['rmg', 'bom'],
@@ -81,7 +59,6 @@ subtest 'BOM::System::Host basic tests' => sub {
 
     $host = BOM::System::Host->new({
         name            => 'joe',
-        ip_address      => '1.2.3.4',
         domain          => 'localdomain',
         external_domain => 'example.com',
     });
