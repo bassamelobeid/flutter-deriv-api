@@ -9,7 +9,7 @@ use BOM::WebSocketAPI::v2::System;
 use BOM::WebSocketAPI::v2::Accounts;
 use BOM::WebSocketAPI::v2::MarketDiscovery;
 use BOM::WebSocketAPI::v2::PortfolioManagement;
-use DataDog::DogStatsd::Helper;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::Schema;
 use File::Slurp;
 use JSON;
@@ -164,14 +164,14 @@ sub __handle {
                 }};
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.' . $dispatch->[0], {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.all', {tags => [$tag, $dispatch->[0]]});
+        stats_inc('websocket_api_v2.call.' . $dispatch->[0], {tags => [$tag]});
+        stats_inc('websocket_api_v2.call.all', {tags => [$tag, $dispatch->[0]]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[0]);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, $descriptor->{category}, $c->stash('client')->loginid]});
+        stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, $descriptor->{category}, $c->stash('client')->loginid]});
 
         ## sell expired
         if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {

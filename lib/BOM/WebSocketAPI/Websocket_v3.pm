@@ -13,7 +13,7 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
-use DataDog::DogStatsd::Helper;
+use DataDog::DogStatsd::Helper qw(stats_inc);
 use JSON::Schema;
 use File::Slurp;
 use JSON;
@@ -241,8 +241,8 @@ sub __handle {
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all', {tags => [$tag, $descriptor->{category}]});
+        stats_inc('websocket_api_v3.call.' . $descriptor->{category}, {tags => [$tag]});
+        stats_inc('websocket_api_v3.call.all', {tags => [$tag, $descriptor->{category}]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth} and my $loginid = $c->stash('loginid')) {
@@ -266,7 +266,7 @@ sub __handle {
             return $c->new_error($descriptor->{category}, 'AuthorizationRequired', $c->l('Please log in.'));
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.authenticated_call.all', {tags => [$tag, $descriptor->{category}, $c->stash('loginid')]});
+        stats_inc('websocket_api_v3.authenticated_call.all', {tags => [$tag, $descriptor->{category}, $c->stash('loginid')]});
 
         ## sell expired
         if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
