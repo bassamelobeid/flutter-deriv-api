@@ -8,8 +8,8 @@ app->renderer->default_format('json');
 {
     hypnotoad => {
         listen   => ["http://*:5004"],
-        workers  => 150,          # Number of worker processes
-        clients  => 2,            # Maximum number of concurrent connections each worker process is allowed to handle
+        workers  => 2,          # Number of worker processes
+        clients  => 100,            # Maximum number of concurrent connections each worker process is allowed to handle
         pid_file => '/var/run/bom-daemon/bom-websocket-api.pid',
         user     => 'nobody',
         group    => 'nogroup',
