@@ -100,7 +100,7 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.authenticated_call.all',
-            {tags => [$tag, $dispatch->[0], $c->stash('client')->loginid]});
+            {tags => [$tag, $dispatch->[0], $c->stash('loginid')]});
         return $dispatch->[1]->($c, $p1);
     }
 
