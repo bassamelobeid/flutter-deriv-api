@@ -2,7 +2,6 @@
 BackOffice:
   primary_url: _HOST_.binary.com
   default_language: EN
-  resource_subdir: backoffice
   broker_codes:
       - MX
       - MF
@@ -15,7 +14,6 @@ BackOffice:
 Binaryqa01:
   primary_url: www.binaryqa01.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -29,7 +27,6 @@ Binaryqa01:
 Binaryqa02:
   primary_url: www.binaryqa02.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -43,7 +40,6 @@ Binaryqa02:
 Binaryqa03:
   primary_url: www.binaryqa03.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -57,7 +53,6 @@ Binaryqa03:
 Binaryqa04:
   primary_url: www.binaryqa04.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -71,7 +66,6 @@ Binaryqa04:
 Binaryqa05:
   primary_url: www.binaryqa05.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -85,7 +79,6 @@ Binaryqa05:
 Binaryqa06:
   primary_url: www.binaryqa06.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -99,7 +92,6 @@ Binaryqa06:
 Binaryqa07:
   primary_url: www.binaryqa07.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -113,7 +105,6 @@ Binaryqa07:
 Binaryqa08:
   primary_url: www.binaryqa08.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -127,7 +118,6 @@ Binaryqa08:
 Binaryqa09:
   primary_url: www.binaryqa09.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -141,7 +131,6 @@ Binaryqa09:
 Binaryqa10:
   primary_url: www.binaryqa10.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -155,7 +144,6 @@ Binaryqa10:
 Binaryqa11:
   primary_url: www.binaryqa11.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -169,7 +157,6 @@ Binaryqa11:
 Binaryqa12:
   primary_url: www.binaryqa12.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -183,7 +170,6 @@ Binaryqa12:
 Binaryqa13:
   primary_url: www.binaryqa13.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -197,7 +183,6 @@ Binaryqa13:
 Binaryqa14:
   primary_url: www.binaryqa14.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -211,7 +196,6 @@ Binaryqa14:
 Binaryqa15:
   primary_url: www.binaryqa15.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -225,7 +209,6 @@ Binaryqa15:
 Binaryqa16:
   primary_url: www.binaryqa16.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -239,7 +222,6 @@ Binaryqa16:
 Binaryqa17:
   primary_url: www.binaryqa17.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -253,7 +235,6 @@ Binaryqa17:
 Binaryqa18:
   primary_url: www.binaryqa18.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -267,7 +248,6 @@ Binaryqa18:
 Binaryqa19:
   primary_url: www.binaryqa19.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -281,7 +261,6 @@ Binaryqa19:
 Binaryqa20:
   primary_url: www.binaryqa20.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -295,7 +274,6 @@ Binaryqa20:
 Binaryqa21:
   primary_url: www.binaryqa21.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -309,7 +287,6 @@ Binaryqa21:
 Binaryqa22:
   primary_url: www.binaryqa22.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -323,7 +300,6 @@ Binaryqa22:
 Binaryqa23:
   primary_url: www.binaryqa23.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -337,7 +313,6 @@ Binaryqa23:
 Binaryqa24:
   primary_url: www.binaryqa24.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -351,7 +326,6 @@ Binaryqa24:
 Binaryqa25:
   primary_url: www.binaryqa25.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -365,7 +339,6 @@ Binaryqa25:
 Binaryqa26:
   primary_url: www.binaryqa26.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -379,7 +352,6 @@ Binaryqa26:
 Binaryqa27:
   primary_url: www.binaryqa27.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -393,7 +365,6 @@ Binaryqa27:
 Binaryqa28:
   primary_url: www.binaryqa28.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -407,7 +378,6 @@ Binaryqa28:
 Binaryqa29:
   primary_url: www.binaryqa29.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -421,7 +391,6 @@ Binaryqa29:
 Binaryqa30:
   primary_url: www.binaryqa30.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -435,7 +404,6 @@ Binaryqa30:
 Binaryqa31:
   primary_url: www.binaryqa31.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -449,7 +417,6 @@ Binaryqa31:
 Binaryqa32:
   primary_url: www.binaryqa32.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -463,7 +430,6 @@ Binaryqa32:
 Binaryqa33:
   primary_url: www.binaryqa33.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -477,7 +443,6 @@ Binaryqa33:
 Binaryqa34:
   primary_url: www.binaryqa34.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -491,7 +456,6 @@ Binaryqa34:
 Binaryqa35:
   primary_url: www.binaryqa35.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -505,7 +469,6 @@ Binaryqa35:
 Binaryqa36:
   primary_url: www.binaryqa36.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -519,7 +482,6 @@ Binaryqa36:
 Binaryqa37:
   primary_url: www.binaryqa37.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -533,7 +495,6 @@ Binaryqa37:
 Binaryqa38:
   primary_url: www.binaryqa38.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -547,7 +508,6 @@ Binaryqa38:
 Binaryqa39:
   primary_url: www.binaryqa39.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -561,7 +521,6 @@ Binaryqa39:
 Binaryqa40:
   primary_url: www.binaryqa40.com
   default_language: EN
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
@@ -576,7 +535,6 @@ Binary:
   primary_url: www.binary.com
   default_language: EN
   default: 1
-  resource_subdir: Binary
   broker_codes:
       - MX
       - MF
