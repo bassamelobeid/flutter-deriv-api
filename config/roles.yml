@@ -93,10 +93,6 @@ generic_rmg_web_server:
   inherits:
     - production_unix_server
 
-ui_server:
-  inherits:
-    - customer_facing_webserver
-
 master_live_server:
   consumes:
     - volupd_ssh

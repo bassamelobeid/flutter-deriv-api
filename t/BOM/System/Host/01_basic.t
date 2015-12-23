@@ -17,14 +17,13 @@ subtest 'BOM::System::Host basic tests' => sub {
         my $host = BOM::System::Host->new({
             name           => 'fred',
             roles          => ['streaming_server', 'loggedout_server'],
-            roles          => ['streaming_server', 'ui_server'],
         });
     }
     'Able to instantiate a BOM::System::Host manually';
 
     throws_ok {
         my $host = BOM::System::Host->new({
-            roles          => ['streaming_server', 'ui_server'],
+            roles          => ['streaming_server'],
         });
     }
     qr/Attribute \(name\) is required/, 'name is required';
