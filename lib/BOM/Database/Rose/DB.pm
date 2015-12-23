@@ -135,7 +135,6 @@ sub dbi_connect {
             keepalives_idle=180
             keepalives_interval=5
             keepalives_count=10 /,
-        "application_name=CLIENTPID:$$",
     );
 
     my $dbh = DBI->connect(@params) || croak $DBI::errstr;

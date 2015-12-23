@@ -1,12 +1,11 @@
 package BOM::Database::AuthDB;
 
-use YAML::XS;
-use feature "state";
+use strict;
+use warnings;
 use BOM::Database::Rose::DB;
 
 sub rose_db {
     my %overrides = @_;
-    state $config = YAML::XS::LoadFile('/etc/rmg/authdb.yml');
     BOM::Database::Rose::DB->register_db(
         connect_options => {
             AutoCommit => 1,
@@ -17,11 +16,11 @@ sub rose_db {
         domain   => 'authdb',
         type     => 'write',
         driver   => 'Pg',
-        database => 'auth',
-        port     => $config->{port} || '5435',
+        database => 'authdb',
+        port     => 6432,
         username => 'write',
-        host     => $config->{ip},
-        password => $config->{password},
+        host     => '/var/run/postgresql',
+        password => '',
         %overrides,
     );
 
