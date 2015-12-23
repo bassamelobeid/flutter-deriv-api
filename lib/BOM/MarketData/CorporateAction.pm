@@ -131,7 +131,7 @@ sub save {
 
     #if chronicle does not have this document, first create it because in document_content we will need it
     if (not defined BOM::System::Chronicle::get('corporate_actions', $self->symbol)) {
-        BOM::System::Chronicle::set('corporate_actions', $self->symbol, {}, $self->recorded_date);
+        BOM::System::Chronicle::set('corporate_actions', $self->symbol, {});
     }
 
     return BOM::System::Chronicle::set('corporate_actions', $self->symbol, $self->_document_content, $self->recorded_date);

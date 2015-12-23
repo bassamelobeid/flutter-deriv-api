@@ -78,7 +78,7 @@ sub save {
     my $self = shift;
 
     if (not defined BOM::System::Chronicle::get('interest_rates', $self->symbol)) {
-        BOM::System::Chronicle::set('interest_rates', $self->symbol, {}, $self->recorded_date);
+        BOM::System::Chronicle::set('interest_rates', $self->symbol, {});
     }
 
     return BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content, $self->recorded_date);
