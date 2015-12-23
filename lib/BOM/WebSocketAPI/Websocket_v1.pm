@@ -10,7 +10,7 @@ use BOM::WebSocketAPI::v1::System;
 use BOM::WebSocketAPI::v1::Accounts;
 use BOM::WebSocketAPI::v1::MarketDiscovery;
 use BOM::WebSocketAPI::v1::PortfolioManagement;
-use DataDog::DogStatsd::Helper qw(stats_inc);
+use DataDog::DogStatsd::Helper;
 use BOM::Database::Rose::DB;
 
 sub ok {
@@ -92,14 +92,14 @@ sub __handle {
                 $tag = "origin:$1";
             }
         }
-        stats_inc('websocket_api_v1.call.' . $dispatch->[0], {tags => [$tag]});
-        stats_inc('websocket_api_v1.call.all', {tags => [$tag, $dispatch->[0]]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.call.' . $dispatch->[0], {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.call.all', {tags => [$tag, $dispatch->[0]]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
         }
 
-        stats_inc('websocket_api_v1.authenticated_call.all', {tags => [$tag, $dispatch->[0], $c->stash('client')->loginid]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.authenticated_call.all', {tags => [$tag, $dispatch->[0], $c->stash('client')->loginid]});
         return $dispatch->[1]->($c, $p1);
     }
 
