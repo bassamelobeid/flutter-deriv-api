@@ -23,7 +23,7 @@ sub script_run {
 
     my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
     if (not $localhost->has_role('master_live_server')) {
-        $self->warning("$0 should only run on master live server, not [" . $localhost->canonical_name . "]");
+        $self->warning("$0 should only run on master live server, not [" . $localhost->name . "]");
         return $self->return_value(255);
     }
     $self->info('Starting scenario analysis generation.');
