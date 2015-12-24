@@ -24,6 +24,7 @@ use BOM::Database::Rose::DB;
 use MojoX::JSON::RPC::Client;
 use Data::UUID;
 use Time::Out qw(timeout);
+use Guard;
 
 sub ok {
     my $c      = shift;
@@ -309,11 +310,6 @@ sub _failed_key_value {
     return;
 }
 
-sub _rpc_client {
-    state $client = MojoX::JSON::RPC::Client->new;
-    return $client;
-}
-
 sub rpc {
     my $self     = shift;
     my $method   = shift;
@@ -322,7 +318,7 @@ sub rpc {
 
     $params->{language} = $self->stash('language');
 
-    my $client = _rpc_client;
+    my $client = MojoX::JSON::RPC::Client->new;
     my $url    = 'http://127.0.0.1:5005/' . $method;
 
     my $callobj = {
@@ -335,6 +331,7 @@ sub rpc {
         $url, $callobj,
         sub {
             my $res = pop;
+            my $client_guard = guard { undef $client };
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
