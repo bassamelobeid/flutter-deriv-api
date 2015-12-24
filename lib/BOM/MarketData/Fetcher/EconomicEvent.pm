@@ -119,6 +119,42 @@ my $cache_namespace = 'COUCH_NEWS::';
 sub get_latest_events_for_period {
     my ($self, $period) = @_;
 
+    my $start  = $period->{from}->epoch;
+    my $end    = $period->{to}->epoch;
+    my $source = $period->{source} ? $period->{source} : $self->{source};
+
+    #try to read from Chronicle
+    my $current_ee = BOM::System::Chronicle::get('economic_events', 'economic_events');
+    my $current_ee_count = scalar @$current_ee;
+
+    #what is the period of the release dates of current economic events we have?
+    my $current_start = $current_ee->[0]->{release_date}->epoch;
+    my $current_end   = $current_ee->[$current_ee_count - 1]->{release_date}->epoch;
+
+    #while we do not have enough economic events to cover the requested time period, add from Chronicle's DB
+    while ($start->epoch >= $current_start->epoch and $end->epoch <= $current_end->epoch) {
+        #BOM::System::Chronicle::get_for
+    }
+
+    #now delete news items which are outside requested time period
+    my %valid_ee;
+
+    for my $single_ee (@$current_ee) {
+        my $ee_epoch = Date::Utility->new($single_ee->{release_date})->epoch;
+
+        #if this economic event's release date lies in the period that we want, create an object based on it and add it
+        #to the result array (prevent adding repeated economic events by storing in a hash based on a uniqe key)
+        my $unique_key = $single_ee->{symbol} . $single_ee->{release_date} . $single_ee->{event_name};
+
+        $valid_ee{$unique_key} = BOM::MarketData::EconomicEventChrocnicle->new($single_ee) if $ee_epoch >= $start and $ee_epoch <= $end;
+    }
+
+    return $self->_get_latest_events_for_period($period);
+}
+
+sub _get_latest_events_for_period {
+    my ($self, $period) = @_;
+
     # We may do this from time to time.
     # I claim it's under control.
     ## no critic(TestingAndDebugging::ProhibitNoWarnings)
