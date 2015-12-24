@@ -59,11 +59,7 @@ sub _build_couchdb_databases {
     return {
         bom                  => 'bom',
         volatility_surfaces  => 'volatility_surfaces',
-        interest_rates       => 'interest_rates',
-        dividends            => 'dividends',
         economic_events      => 'economic_events',
-        correlation_matrices => 'correlation_matrices',
-        corporate_actions    => 'corporate_actions',
         currency_config      => 'currency_config',
         exchange_config      => 'exchange_config',
     };
