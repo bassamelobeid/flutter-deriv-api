@@ -9,6 +9,7 @@ with 'BOM::Utility::Logging';
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
 use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventChronicle;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Utility::Log4perl;
@@ -38,6 +39,10 @@ sub script_run {
 
     my $file_timestamp = Date::Utility->new->date_yyyymmdd;
 
+    #this will be an array of all extracted economic events. Later we will store 
+    #the sorted array (by release date) in chronicle
+    my @all_events;
+    
     foreach my $event_param (@$events_received) {
         my $eco = BOM::MarketData::EconomicEvent->new($event_param);
         unless (_is_categorized($eco)) {
@@ -48,12 +53,25 @@ sub script_run {
         $event_param->{release_date}  = $event_param->{release_date}->epoch;
         $event_param->{recorded_date} = Date::Utility->new->epoch;
 
+        my $eco_ch = BOM::MarketData::EconomicEventChronicle->new($event_param);
+        push @all_events, $eco_ch;
+
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param)."\n");
         BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS' , $event_param->{release_date}, JSON::to_json($event_param));
         BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS_TRIMMED' , $event_param->{release_date}, JSON::to_json($event_param));
 
     }
 
+    @all_events = sort {$a->release_date->epoch cmp $b->release_date->epoch} @all_events;
+    
+    #now we need to convert these sorted data into their document
+    my @all_documents;
+    push @all_documents, $_->document for @all_events;
+    BOM::System::Chronicle::set("economic_events", "economic_events", \@all_documents);
+    
+    print "stored " . (scalar @all_events) . " events in chronicle...\n";
+    
+    
     my $num_events_saved  = scalar(@$events_received);
 
     stats_gauge('economic_events_saved',$num_events_saved );
