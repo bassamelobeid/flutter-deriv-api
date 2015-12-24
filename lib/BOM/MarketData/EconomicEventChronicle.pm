@@ -17,7 +17,6 @@ extends 'BOM::MarketData';
 use Date::Utility;
 
 use BOM::Market::Types;
-use BOM::MarketData::Fetcher::EconomicEvent;
 
 has document => (
     is         => 'rw',
