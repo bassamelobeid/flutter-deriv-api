@@ -67,4 +67,4 @@ install:
     - sleep 10
     - sudo netstat -anlpt |grep 500
 script:
-    - true
+    - if [ "$TEST_SUITE" == "" ]  ; then cd /home/git/regentmarkets/stress;go run stress.go -insert 10;go run stress.go -workers 10; else make $TEST_SUITE; fi
