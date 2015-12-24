@@ -58,8 +58,9 @@ $res = decode_json($t->message->[1]);
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
-    value => 'af',
-    text  => 'Afghanistan'
+    value     => 'af',
+    text      => 'Afghanistan',
+    phone_idd => '93'
     };
 test_schema('residence_list', $res);
 
