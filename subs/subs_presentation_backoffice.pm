@@ -26,7 +26,7 @@ sub BrokerPresentation {
 
     print '<html>';
     print '<head>';
-    print '<title>' . uc(BOM::Platform::Runtime->instance->hosts->localhost->canonical_name) . "-$Title-$ENV{REMOTE_ADDR}</title>";
+    print '<title>' . uc(BOM::Platform::Runtime->instance->hosts->localhost->name) . "-$Title-$ENV{REMOTE_ADDR}</title>";
     print '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">';
     print '<link rel="SHORTCUT ICON" href="' . request()->url_for('images/common/favicon_1.ico') . '" />';
     print '<link rel="stylesheet" type="text/css" href="' . request()->url_for('css/style.css',         undef, undef, {internal_static => 1}) . '"/>';
@@ -113,7 +113,7 @@ sub ServerWarningBar {
  <tr><td>
  </td><td>~;
 
-    my $switchservers = "<b>You are on " . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name . "</b><br/>";
+    my $switchservers = "<b>You are on " . BOM::Platform::Runtime->instance->hosts->localhost->name . "</b><br/>";
 
     my $runtime   = BOM::Platform::Runtime->instance;
     my $ipmessage = "Your IP: $ENV{'REMOTE_ADDR'}";
@@ -123,10 +123,6 @@ sub ServerWarningBar {
     if (BOM::Platform::Runtime->instance->app_config->system->suspend->system) {
         $topbarbackground = '#FF0000';
         $systemisoff      = " <font size=3>*** SYSTEM IS OFF ***</font> ";
-    } elsif (BOM::Platform::Runtime->instance->app_config->system->on_development) {
-        $topbarbackground = '#BBBB00';
-    } elsif (BOM::Platform::Runtime->instance->hosts->localhost->has_role('ui_server')) {
-        $topbarbackground = '#000077';
     } else {
         $topbarbackground = '#0000BB';
     }

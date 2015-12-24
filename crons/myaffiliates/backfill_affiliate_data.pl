@@ -39,7 +39,7 @@ send_email({
     from    => 'system@binary.com',
     to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
     subject => 'CRON backfill_affiliate_data: Report from '
-        . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name . ' for '
+        . BOM::Platform::Runtime->instance->hosts->localhost->name . ' for '
         . $runtime->datetime_yyyymmdd_hhmmss_TZ,
     message => $full_report,
 });
