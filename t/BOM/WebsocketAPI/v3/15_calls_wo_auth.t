@@ -50,7 +50,7 @@ SKIP: {
     $res = decode_json($t->message->[1]);
     ok $res->{error};
     is $res->{error}->{code}, 'UnknownLandingCompany';
-};
+}
 
 ## residence_list
 $t = $t->send_ok({json => {residence_list => 1}})->message_ok;
@@ -58,8 +58,9 @@ $res = decode_json($t->message->[1]);
 ok $res->{residence_list};
 is_deeply $res->{residence_list}->[0],
     {
-    value => 'af',
-    text  => 'Afghanistan'
+    value     => 'af',
+    text      => 'Afghanistan',
+    phone_idd => '93'
     };
 test_schema('residence_list', $res);
 

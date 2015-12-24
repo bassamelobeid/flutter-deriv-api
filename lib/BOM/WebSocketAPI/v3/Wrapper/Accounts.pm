@@ -20,34 +20,22 @@ sub payout_currencies {
 sub landing_company {
     my ($c, $args) = @_;
 
-    my $country  = $args->{landing_company};
-    my $configs  = BOM::Platform::Runtime->instance->countries_list;
-    my $c_config = $configs->{$country};
-    unless ($c_config) {
-        ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
-    }
-
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'UnknownLandingCompany',
-            message_to_client => localize('Unknown landing company.')}) unless $c_config;
-
-    # BE CAREFUL, do not change ref since it's persistent
-    my %landing_company = %{$c_config};
-
-    $landing_company{id} = $country;
-    my $registry = BOM::Platform::Runtime::LandingCompany::Registry->new;
-    if (($landing_company{gaming_company} // '') ne 'none') {
-        $landing_company{gaming_company} = __build_landing_company($registry->get($landing_company{gaming_company}));
-    } else {
-        delete $landing_company{gaming_company};
-    }
-    if (($landing_company{financial_company} // '') ne 'none') {
-        $landing_company{financial_company} = __build_landing_company($registry->get($landing_company{financial_company}));
-    } else {
-        delete $landing_company{financial_company};
-    }
-
-    return \%landing_company;
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'landing_company',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('landing_company', $response->{error}->{code}, $response->{error}->{message_to_client});
+            }
+            return {
+                msg_type        => 'landing_company',
+                landing_company => $response
+            };
+        },
+        $args
+    );
+    return;
 }
 
 sub landing_company_details {
@@ -187,15 +175,28 @@ sub balance {
 
     my $client = $c->stash('client');
 
-    if ($client->default_account) {
-        my $redis   = $c->stash('redis');
-        my $channel = ['TXNUPDATE::balance_' . $client->default_account->id];
+    if ($client->default_account and exists $args->{subscribe}) {
+        my $redis             = $c->stash('redis');
+        my $channel           = 'TXNUPDATE::balance_' . $client->default_account->id;
+        my $subscriptions     = $c->stash('subscribed_channels') // {};
+        my $already_subsribed = $subscriptions->{$channel};
 
-        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-            $redis->subscribe($channel, sub { });
+        if ($args->{subscribe} eq '1') {
+            if (!$already_subsribed) {
+                $redis->subscribe([$channel], sub { });
+                $subscriptions->{$channel} = 1;
+                $c->stash('subscribed_channels', $subscriptions);
+            } else {
+                warn "Client is already subscribed to the channel $channel; ignoring";
+            }
         }
-        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-            $redis->unsubscribe($channel, sub { });
+        if ($args->{subscribe} and $args->{subscribe} eq '0') {
+            if ($already_subsribed) {
+                $redis->unsubscribe([$channel], sub { });
+                delete $subscriptions->{$channel};
+            } else {
+                warn "Client isn't subscribed to the channel $channel, but trying to unsubscribe; ignoring";
+            }
         }
     }
 
