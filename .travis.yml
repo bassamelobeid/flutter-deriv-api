@@ -66,5 +66,6 @@ install:
     - cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
     - sleep 10
     - sudo netstat -anlpt |grep 500
+    - if [ "$TEST_SUITE" == "" ]  ; then cd /home/git/regentmarkets/stress;go run stress.go -insert 10;go run stress.go -workers 10; else true; fi
 script:
-    - if [ "$TEST_SUITE" == "" ]  ; then cd /home/git/regentmarkets/stress;go run stress.go -insert 10;go run stress.go -workers 10; else make $TEST_SUITE; fi
+    - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
