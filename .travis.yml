@@ -63,6 +63,6 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - sudo mkdir -p /var/log/httpd && sudo chmod 777 /var/log/httpd
     - BOM_CACHE_SERVER='127.0.0.1:6385' REDIS_CACHE_SERVER='127.0.0.1:6385' /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
-    - BOM_CACHE_SERVER='127.0.0.1:6385' REDIS_CACHE_SERVER='127.0.0.1:6385' /home/git/regentmarkets/bom-websocket-api/bin/binary_websocket_api.pl daemon -m production -l http://*:5004/  &
+    - BOM_CACHE_SERVER='127.0.0.1:6385' REDIS_CACHE_SERVER='127.0.0.1:6385' /home/git/regentmarkets/bom-websocket-api/bin/binary_websocket_api.pl daemon  -l 'http://*:5004'  &
 script:
     - if [ "$TEST_SUITE" == "" ]  ; then cd /home/git/regentmarkets/stress;go run stress.go -insert 10;go run stress.go -workers 10; else make $TEST_SUITE; fi
