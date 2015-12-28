@@ -116,7 +116,6 @@ sub entry_point {
                 $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
                 $data->{echo_req} = {};
             }
-            $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
@@ -353,7 +352,6 @@ sub rpc {
 
             my $args = $params->{args};
             $data->{echo_req} = $args;
-            $data->{version}  = 3;
             $data->{req_id}   = $args->{req_id} if ($args and exists $args->{req_id});
 
             my $l = length JSON::to_json($data);
