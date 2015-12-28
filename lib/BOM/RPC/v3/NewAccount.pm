@@ -88,8 +88,11 @@ sub _get_client_details {
         checked_affiliate_exposures   => 0,
         source                        => 'websocket-api',
         latest_environment            => '',
-        myaffiliates_token            => $client->myaffiliates_token || ''
     };
+
+    my $affiliate_token;
+    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
+    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
 
     my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
         address_city address_state address_postcode phone secret_question secret_answer);
