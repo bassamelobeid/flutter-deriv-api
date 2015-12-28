@@ -1,15 +1,16 @@
 package BOM::RPC;
 
 use Mojo::Base 'Mojolicious';
+use MojoX::JSON::RPC::Service;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Context ();
 use BOM::Platform::Context::Request;
-use MojoX::JSON::RPC::Service;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Transaction;
+use BOM::Database::Rose::DB;
 
 sub startup {
     my $app = shift;
@@ -47,6 +48,11 @@ sub startup {
                 $m->invalid_request('Invalid request');
                 return;
             }
+        });
+
+    $app->hook(
+        after_dispatch => sub {
+            BOM::Database::Rose::DB->db_cache->finish_request_cycle;
         });
 
     return;
