@@ -189,7 +189,7 @@
 "/new_account/virtualws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/cashier/limitws":
+"/cashier/limitsws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/new_account/realws":
