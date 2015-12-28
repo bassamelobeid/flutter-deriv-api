@@ -25,6 +25,8 @@ use MojoX::JSON::RPC::Client;
 use Data::UUID;
 use Time::Out qw(timeout);
 use Guard;
+use Proc::CPUUsage;
+use feature "state";
 
 sub ok {
     my $c      = shift;
@@ -316,6 +318,7 @@ sub rpc {
     my $params   = shift;
 
     my $tv = [Time::HiRes::gettimeofday];
+    state $cpu = Proc::CPUUsage->new();
 
     $params->{language} = $self->stash('language');
 
@@ -334,6 +337,7 @@ sub rpc {
             my $res = pop;
 
             DataDog::DogStatsd::Helper::stats_timing('rpc.call.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_timing('rpc.call.cpuuage', $cpu->usage(), {tags => ["rpc:$method"]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
