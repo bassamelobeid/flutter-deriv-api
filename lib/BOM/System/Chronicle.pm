@@ -98,6 +98,9 @@ sub set {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
+    my $rec_date = shift;
+
+    $rec_date //= Date::Utility->new();
 
     die "Cannot store undefined values in Chronicle!" unless defined $value;
     die "You can only store hash-ref or array-ref in Chronicle!" unless (ref $value eq 'ARRAY' or ref $value eq 'HASH');
@@ -106,7 +109,7 @@ sub set {
 
     my $key = $category . '::' . $name;
     _redis_write()->set($key, $value);
-    _archive($category, $name, $value) if _dbh();
+    _archive($category, $name, $value, $rec_date) if _dbh();
 
     return 1;
 }
@@ -152,13 +155,40 @@ sub get_for {
     return JSON::from_json($db_value);
 }
 
+sub get_for_period {
+    my $category = shift;
+    my $name     = shift;
+    my $start    = shift;    #epoch or Date::Utility
+    my $end      = shift;    #epoch or Date::Utility
+
+    my $start_timestamp = Date::Utility->new($start)->db_timestamp;
+    my $end_timestamp   = Date::Utility->new($end)->db_timestamp;
+
+    my $db_data =
+        _dbh()->selectall_hashref(q{SELECT * FROM chronicle where category=? and name=? and timestamp<=? AND timestamp >=? order by timestamp desc},
+        'id', {}, $category, $name, $end_timestamp, $start_timestamp);
+
+    return if not %$db_data;
+
+    my @result;
+
+    for my $id_value (keys %$db_data) {
+        my $db_value = $db_data->{$id_value}->{value};
+
+        push @result, JSON::from_json($db_value);
+    }
+
+    return \@result;
+}
+
 sub _archive {
     my $category = shift;
     my $name     = shift;
     my $value    = shift;
+    my $rec_date = shift;
 
     # In unit tests, we will use Test::MockTime to force Chronicle to store hostorical data
-    my $db_timestamp = Date::Utility->new()->db_timestamp;
+    my $db_timestamp = $rec_date->db_timestamp;
 
     return _dbh()->prepare(<<'SQL')->execute($category, $name, $value, $db_timestamp);
 WITH ups AS (
@@ -205,9 +235,8 @@ sub _dbh {
     return if not defined _config()->{chronicle};
 
     state $dbh = DBI->connect_cached(
-        "dbi:Pg:dbname=chronicle;port=5437;host=" . _config()->{chronicle}->{ip},
-        "write",
-        _config()->{chronicle}->{password},
+        "dbi:Pg:dbname=chronicle;port=6432;host=/var/run/postgresql",
+        "write", '',
         {
             RaiseError => 1,
         });

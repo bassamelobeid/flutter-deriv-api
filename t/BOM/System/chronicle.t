@@ -2,7 +2,7 @@ use strict;
 use warnings;
 
 use Test::MockTime qw(:all);
-use Test::More tests => 6;
+use Test::More tests => 8;
 use Test::Exception;
 use Test::NoWarnings;
 use Time::HiRes;
@@ -11,12 +11,21 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::System::Chronicle;
 use Date::Utility;
 
+
 my $d = { sample1 => [1, 2, 3],
           sample2 => [4, 5, 6],
           sample3 => [7, 8, 9] };
 
+my $d_old = { sample1 => [2, 3, 5],
+          sample2 => [6, 6, 14],
+          sample3 => [9, 12, 13] };
+
 my $first_save_epoch = time;
 is BOM::System::Chronicle::set("vol_surface", "frxUSDJPY", $d), 1, "data is stored without problem";
+is BOM::System::Chronicle::set("vol_surface", "frxUSDJPY-old", $d_old, Date::Utility->new(0)), 1, "data is stored without problem when specifying recorded date";
+
+my $old_data = BOM::System::Chronicle::get_for("vol_surface", "frxUSDJPY-old", 0);
+is_deeply $old_data, $d_old, "data stored using recorded_date is retrieved successfully";
 
 my $d2 = BOM::System::Chronicle::get("vol_surface", "frxUSDJPY");
 is_deeply $d, $d2, "data retrieval works";
