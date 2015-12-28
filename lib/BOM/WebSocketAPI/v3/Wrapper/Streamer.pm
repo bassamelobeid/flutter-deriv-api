@@ -43,16 +43,16 @@ sub ticks_history {
             my $response = shift;
             if ($response and exists $response->{error}) {
                 return $c->new_error('ticks_history', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                if (exists $args->{subscribe}) {
-                    if ($args->{subscribe} eq '1') {
-                        if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish})) {
-                            return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
-                        }
-                    } else {
-                        _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $response->{publish});
-                        return;
+            }
+
+            if (exists $args->{subscribe}) {
+                if ($args->{subscribe} eq '1') {
+                    if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish})) {
+                        return $c->new_error('ticks_history', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
                     }
+                } else {
+                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $response->{publish});
+                    return;
                 }
             }
             return {
