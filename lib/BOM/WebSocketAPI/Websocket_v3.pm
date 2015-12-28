@@ -333,7 +333,7 @@ sub rpc {
         sub {
             my $res = pop;
 
-            DataDog::DogStatsd::Helper::stats_timing('rpc.call.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => [$method]});
+            DataDog::DogStatsd::Helper::stats_timing('rpc.call.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["rpc:$method"]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
