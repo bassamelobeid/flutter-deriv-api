@@ -647,11 +647,11 @@ sub transfer_between_accounts {
         my @accounts;
         foreach my $account (values %siblings) {
             next unless (grep { $account->landing_company->short eq $_ } ('malta', 'maltainvest'));
-            next unless $account->default_account;
             push @accounts,
                 {
-                loginid => $account->loginid,
-                balance => $account->default_account->balance
+                loginid  => $account->loginid,
+                balance  => $account->default_account ? $account->default_account->balance : 0,
+                currency => $account->default_account ? $account->default_account->currency_code : '',
                 };
         }
         return {
