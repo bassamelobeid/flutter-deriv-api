@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 3);
+use Test::More (tests => 2);
 use Test::Exception;
 use Test::NoWarnings;
 use Sys::Hostname;
