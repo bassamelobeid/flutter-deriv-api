@@ -315,7 +315,7 @@ sub rpc {
     my $callback = shift;
     my $params   = shift;
 
-    my $tv = $t0 = [Time::HiRes::gettimeofday];
+    my $tv = [Time::HiRes::gettimeofday];
 
     $params->{language} = $self->stash('language');
 
