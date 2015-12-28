@@ -16,6 +16,7 @@ use BOM::Utility::Log4perl;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON;
 use Path::Tiny;
+use Try::Tiny;
 use BOM::System::Chronicle;
 use List::Util qw(first);
 use YAML::CacheLoader qw(LoadFile);
@@ -53,8 +54,13 @@ sub script_run {
         $event_param->{release_date}  = $event_param->{release_date}->epoch;
         $event_param->{recorded_date} = Date::Utility->new->epoch;
 
-        my $eco_ch = BOM::MarketData::EconomicEventChronicle->new($event_param);
-        push @all_events, $eco_ch;
+        try {
+            my $eco_ch = BOM::MarketData::EconomicEventChronicle->new($event_param);
+            push @all_events, $eco_ch;
+        } catch {
+            print 'Error occured when reading events: ' . $_;
+        };
+
 
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param)."\n");
         BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS' , $event_param->{release_date}, JSON::to_json($event_param));
@@ -62,25 +68,28 @@ sub script_run {
 
     }
 
-    @all_events = sort {$a->release_date->epoch cmp $b->release_date->epoch} @all_events;
-    
-    #now we need to convert these sorted data into their document
-    my @all_documents;
-    push @all_documents, $_->document for @all_events;
-    BOM::System::Chronicle::set("economic_events", "economic_events", \@all_documents);
-    
-    print "stored " . (scalar @all_events) . " events in chronicle...\n";
-    
-    
+    try {
+
+        @all_events = sort {$a->release_date->epoch cmp $b->release_date->epoch} @all_events;
+
+        #now we need to convert these sorted data into their document
+        my @all_documents;
+        push @all_documents, $_->document for @all_events;
+        BOM::System::Chronicle::set("economic_events", "economic_events", \@all_documents);
+        print "stored " . (scalar @all_events) . " events in chronicle...\n";
+    } catch {
+        print 'Error occured while saving events: ' . $_;
+    };
+
     my $num_events_saved  = scalar(@$events_received);
 
     stats_gauge('economic_events_saved',$num_events_saved );
 
     if (not $num_events_saved > 0) {
-        print 'No economic event is saved on couch today. Please check';
-    }
+    print 'No economic event is saved on couch today. Please check';
+}
 
-    return 0;
+return 0;
 }
 
 sub _is_categorized {

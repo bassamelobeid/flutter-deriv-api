@@ -118,11 +118,6 @@ my $cache_namespace = 'COUCH_NEWS::';
 
 sub get_latest_events_for_period {
     my ($self, $period) = @_;
-    return $self->_get_latest_events_for_period($period);
-}
-
-sub _get_latest_events_for_period {
-    my ($self, $period) = @_;
 
     # We may do this from time to time.
     # I claim it's under control.
@@ -155,7 +150,7 @@ sub _get_latest_events_for_period {
                 })};
         push @$events,
             @{
-            $self->_get_latest_events_for_period({
+            $self->get_latest_events_for_period({
                     from   => $start_of_next,
                     to     => $end,
                     source => $source
