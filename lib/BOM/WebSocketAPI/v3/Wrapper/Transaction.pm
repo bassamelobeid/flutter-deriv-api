@@ -27,7 +27,7 @@ sub buy {
         },
         {
             args                => $args,
-            client_loginid      => $c->stash('loginid'),
+            client_loginid      => $c->stash('client')->loginid,
             source              => $c->stash('source'),
             contract_parameters => $contract_parameters
         });
@@ -53,7 +53,7 @@ sub sell {
         },
         {
             args           => $args,
-            client_loginid => $c->stash('loginid'),
+            client_loginid => $c->stash('client')->loginid,
             source         => $c->stash('source')});
     return;
 }
