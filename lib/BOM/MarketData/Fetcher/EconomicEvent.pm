@@ -165,7 +165,6 @@ sub _get_latest_events_for_period {
     return $events;
 }
 
-
 sub _latest_events_for_day_part {
     my ($self, $period) = @_;
 
