@@ -315,6 +315,8 @@ sub rpc {
     my $callback = shift;
     my $params   = shift;
 
+    my $tv = $t0 = [Time::HiRes::gettimeofday];
+
     $params->{language} = $self->stash('language');
 
     my $client = MojoX::JSON::RPC::Client->new;
@@ -330,6 +332,9 @@ sub rpc {
         $url, $callobj,
         sub {
             my $res = pop;
+
+            DataDog::DogStatsd::Helper::stats_timing('rpc.call.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => [$method]});
+
             my $client_guard = guard { undef $client };
             if (!$res) {
                 my $tx_res = $client->tx->res;
