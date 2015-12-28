@@ -138,9 +138,6 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
   exclude_appcache: true
-"/ticker":
-  header:
-    Cache-Control: "public, max-age=600"
 "/tour":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -173,7 +170,7 @@
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/resources/trading_timesws":
   header:
-    Cache-Control: "public, max-age=60"
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/resources/asset_indexws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
