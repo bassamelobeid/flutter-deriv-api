@@ -116,11 +116,11 @@ has legal_allowed_markets => (
     default => sub { [] },
 );
 
-=head2 legal_allowed_contract_categories
+=head2 legal_allowed_contract_types
 A list of contract categories allowed on a particular landing company
 =cut
 
-has legal_allowed_contract_categories => (
+has legal_allowed_contract_types => (
     is      => 'ro',
     isa     => 'ArrayRef[Str]',
     default => sub { [] },
