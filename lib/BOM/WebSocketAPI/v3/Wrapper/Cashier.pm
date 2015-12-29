@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::RPC::v3::Cashier;
+use BOM::WebSocketAPI::Websocket_v3;
 
 sub get_limits {
     my ($c, $args) = @_;
@@ -13,27 +14,49 @@ sub get_limits {
     my $landing_company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short;
     my $wl_config       = $c->app_config->payments->withdrawal_limits->$landing_company;
 
-    my $response = BOM::RPC::v3::Cashier::get_limits($client, $wl_config);
-
-    if (exists $response->{error}) {
-        return $c->new_error('get_limits', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type   => 'get_limits',
-            get_limits => $response
-        };
-    }
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_limits',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('get_limits', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type   => 'get_limits',
+                    get_limits => $response,
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $client->loginid,
+            for_days       => $wl_config->for_days,
+            limit_for_days => $wl_config->limit_for_days,
+            lifetime_limit => $wl_config->lifetime_limit
+        });
+    return;
 }
 
 sub paymentagent_list {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Cashier::paymentagent_list($c->stash('client'), $c->stash('request')->language, $args);
-
-    return {
-        msg_type          => 'paymentagent_list',
-        paymentagent_list => $response
-    };
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'paymentagent_list',
+        sub {
+            my $response = shift;
+            return {
+                msg_type          => 'paymentagent_list',
+                paymentagent_list => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            language       => $c->stash('request')->language
+        });
+    return;
 }
 
 sub paymentagent_withdraw {
