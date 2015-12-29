@@ -14,6 +14,7 @@ use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::MarketDiscovery;
 use BOM::RPC::v3::Offerings;
 use BOM::RPC::v3::Authorize;
+use BOM::RPC::v3::Cashier;
 
 sub startup {
     my $app = shift;
@@ -50,6 +51,8 @@ sub startup {
                 '/contracts_for'   => MojoX::JSON::RPC::Service->new->register('contracts_for',   \&BOM::RPC::v3::Offerings::contracts_for),
                 '/authorize'       => MojoX::JSON::RPC::Service->new->register('authorize',       \&BOM::RPC::v3::Authorize::authorize),
                 '/logout'          => MojoX::JSON::RPC::Service->new->register('logout',          \&BOM::RPC::v3::Authorize::logout),
+                '/get_limits'      => MojoX::JSON::RPC::Service->new->register('get_limits',      \&BOM::RPC::v3::Cashier::get_limits),
+                '/paymentagent_list' => MojoX::JSON::RPC::Service->new->register('paymentagent_list', \&BOM::RPC::v3::Cashier::paymentagent_list),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;

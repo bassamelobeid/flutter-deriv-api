@@ -27,7 +27,14 @@ use BOM::Platform::Email qw(send_email);
 use BOM::System::AuditLog;
 
 sub get_limits {
-    my ($client, $config) = @_;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     # check if Client is not in lock cashier and not virtual account
     unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
@@ -43,9 +50,9 @@ sub get_limits {
         open_positions => $client->get_limit_for_open_positions,
     };
 
-    my $numdays       = $config->for_days;
-    my $numdayslimit  = $config->limit_for_days;
-    my $lifetimelimit = $config->lifetime_limit;
+    my $numdays       = $params->{for_days};
+    my $numdayslimit  = $params->{limit_for_days};
+    my $lifetimelimit = $params->{lifetime_limit};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -84,7 +91,13 @@ sub get_limits {
 }
 
 sub paymentagent_list {
-    my ($client, $language, $args) = @_;
+    my $params = shift;
+    my ($language, $args) = ($params->{language}, $params->{args});
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
 
