@@ -34,7 +34,7 @@ is(_test_db_names(), 0, 'No test DBs in Couch initially.');
 BOM::Test::Data::Utility::UnitTestCouchDB::_init();
 
 my @test_DB_names = _test_db_names();
-is(@test_DB_names, 8, 'Test DBs in Couch after init.');
+is(@test_DB_names, 7, 'Test DBs in Couch after init.');
 
 my @DB_names_set_in_runtime_env = sort values %{$dss->couchdb_databases};
 
@@ -44,7 +44,7 @@ subtest 'keep_db' => sub {
     ok !BOM::Test::Data::Utility::UnitTestCouchDB::keep_db(), 'Default value of keep_db is false.';
     BOM::Test::Data::Utility::UnitTestCouchDB::keep_db(1);
     BOM::Test::Data::Utility::UnitTestCouchDB::_teardown($couch);
-    is(_test_db_names(), 8, 'No test DBs in Couch after teardown.');
+    is(_test_db_names(), 7, 'No test DBs in Couch after teardown.');
 
     BOM::Test::Data::Utility::UnitTestCouchDB::keep_db(0);
     BOM::Test::Data::Utility::UnitTestCouchDB::_teardown($couch);
