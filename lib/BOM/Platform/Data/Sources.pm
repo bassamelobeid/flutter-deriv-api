@@ -57,13 +57,9 @@ sub _build_couchdb_params {
 sub _build_couchdb_databases {
     my $self = shift;
     return {
-        bom                  => 'bom',
-        volatility_surfaces  => 'volatility_surfaces',
-        interest_rates       => 'interest_rates',
-        dividends            => 'dividends',
-        economic_events      => 'economic_events',
-        correlation_matrices => 'correlation_matrices',
-        corporate_actions    => 'corporate_actions',
+        bom                 => 'bom',
+        volatility_surfaces => 'volatility_surfaces',
+        economic_events     => 'economic_events',
     };
 }
 

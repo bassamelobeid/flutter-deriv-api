@@ -9,7 +9,6 @@ use Carp qw(croak);
 use Time::HiRes ();
 use Guard;
 use File::Copy;
-use DataDog::DogStatsd::Helper qw (stats_inc stats_timing);
 use BOM::Platform::Context::Request;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Plack qw( PrintContentType );
@@ -123,14 +122,6 @@ sub log_bo_access {
 }
 
 sub code_exit {
-    if (BOM::Platform::Plack::is_web_server() and not BOM::Platform::Context::request()->backoffice and request()->start_time) {
-        my $page_time = Time::HiRes::time - request()->start_time;
-        $0 =~ /(\w+)\.cgi/;
-        my $page_name = $1;
-        stats_timing('page_generation_time.' . $page_name, $page_time * 1000);
-        stats_timing('page_generation_time',               $page_time * 1000);
-        stats_inc('page_generation_count');
-    }
     BOM::Platform::Context::request_completed();
     exit 0;
 }
