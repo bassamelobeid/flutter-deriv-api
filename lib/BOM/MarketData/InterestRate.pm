@@ -81,7 +81,7 @@ sub save {
         BOM::System::Chronicle::set('interest_rates', $self->symbol, {});
     }
 
-    return BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content);
+    return BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content, $self->recorded_date);
 }
 
 has type => (
