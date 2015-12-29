@@ -175,7 +175,9 @@ sub __handle {
         }
 
         my $client = $c->stash('client');
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, $dispatch->[0], $client->{loginid}]});
+        if ($client) {
+            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, $dispatch->[0], $client->{loginid}]});
+        }
 
         ## sell expired
         if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {

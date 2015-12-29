@@ -100,7 +100,10 @@ sub __handle {
         }
 
         my $client = $c->stash('client');
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.authenticated_call.all', {tags => [$tag, $dispatch->[0], $client->{loginid}]});
+        if ($client) {
+            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.authenticated_call.all', {tags => [$tag, $dispatch->[0], $client->{loginid}]});
+        }
+
         return $dispatch->[1]->($c, $p1);
     }
 
