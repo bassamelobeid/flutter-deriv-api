@@ -16,48 +16,21 @@ subtest 'BOM::System::Host basic tests' => sub {
     lives_ok {
         my $host = BOM::System::Host->new({
             name           => 'fred',
-            canonical_name => 'tierpoint-fred',
-            ip_address     => '1.2.3.4',
             roles          => ['streaming_server', 'loggedout_server'],
-            roles          => ['streaming_server', 'ui_server'],
-            birthdate      => Date::Utility->new->iso8601,
         });
     }
     'Able to instantiate a BOM::System::Host manually';
 
     throws_ok {
         my $host = BOM::System::Host->new({
-            name           => 'fred',
-            canonical_name => 'tierpoint-fred',
-            ip_address     => '1.2.3.4.5',
-            roles          => ['streaming_server', 'ui_server'],
-        });
-    }
-    qr/Attribute \(ip_address\) does not pass/, 'Invalid IP address is rejected';
-
-    throws_ok {
-        my $host = BOM::System::Host->new({
-            canonical_name => 'tierpoint-fred',
-            ip_address     => '1.2.3.4',
-            roles          => ['streaming_server', 'ui_server'],
+            roles          => ['streaming_server'],
         });
     }
     qr/Attribute \(name\) is required/, 'name is required';
 
     throws_ok {
         my $host = BOM::System::Host->new({
-            name           => 'fred',
-            canonical_name => 'tierpoint-fred',
-            roles          => ['streaming_server', 'ui_server'],
-        });
-    }
-    qr/Attribute \(ip_address\) is required/, 'ip_address is required';
-
-    throws_ok {
-        my $host = BOM::System::Host->new({
             name             => 'fred',
-            ip_address       => '123.123.22.11',
-            canonical_name   => 'tierpoint-fred',
             role_definitions => BOM::Platform::Runtime->instance->host_roles,
             roles            => ['fribitz'],
         });
@@ -66,13 +39,11 @@ subtest 'BOM::System::Host basic tests' => sub {
 
     my $host = BOM::System::Host->new({
         name             => 'fred',
-        ip_address       => '1.2.3.4',
         role_definitions => BOM::Platform::Runtime->instance->host_roles,
         roles            => [BOM::Platform::Runtime->instance->host_roles->get('streaming_server')],
         groups           => ['rmg', 'bom'],
     });
 
-    is($host->canonical_name,  'fred',                              'Canonical name defaults to name');
     is($host->domain,          'regentmarkets.com',                 'Internal domain is regentmarkets.com');
     is($host->external_domain, 'binary.com',                        'External domain is binary.com');
     is($host->fqdn,            'fred.regentmarkets.com',            'Internal fqdn is fred.regentmarkets.com');
@@ -87,7 +58,6 @@ subtest 'BOM::System::Host basic tests' => sub {
 
     $host = BOM::System::Host->new({
         name            => 'joe',
-        ip_address      => '1.2.3.4',
         domain          => 'localdomain',
         external_domain => 'example.com',
     });
