@@ -25,6 +25,8 @@ use MojoX::JSON::RPC::Client;
 use Data::UUID;
 use Time::Out qw(timeout);
 use Guard;
+use Proc::CPUUsage;
+use feature "state";
 
 sub ok {
     my $c      = shift;
@@ -120,7 +122,6 @@ sub entry_point {
                 $data = $c->new_error('error', 'BadRequest', $c->l('The application sent an invalid request.'));
                 $data->{echo_req} = {};
             }
-            $data->{version} = 3;
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
@@ -424,6 +425,9 @@ sub rpc {
     my $callback = shift;
     my $params   = shift;
 
+    my $tv = [Time::HiRes::gettimeofday];
+    state $cpu = Proc::CPUUsage->new();
+
     $params->{language} = $self->stash('language');
 
     my $client = MojoX::JSON::RPC::Client->new;
@@ -439,6 +443,10 @@ sub rpc {
         $url, $callobj,
         sub {
             my $res = pop;
+
+            DataDog::DogStatsd::Helper::stats_timing('rpc.call.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_timing('rpc.call.cpuuage', $cpu->usage(), {tags => ["rpc:$method"]});
+
             my $client_guard = guard { undef $client };
             if (!$res) {
                 my $tx_res = $client->tx->res;
@@ -461,9 +469,7 @@ sub rpc {
 
             my $args = $params->{args};
             $data->{echo_req} = $args;
-            $data->{version}  = 3;
-            $data->{req_id}   = $args->{req_id}
-                if ($args and exists $args->{req_id});
+            $data->{req_id} = $args->{req_id} if ($args and exists $args->{req_id});
 
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
