@@ -51,7 +51,7 @@ sub entry_point {
         json => sub {
             my ($c, $p1) = @_;
 
-            my $tag = 'origin:ws.binaryws.com';
+            my $tag = 'origin:';
             my $data;
             my $send = 1;
             if (ref($p1) eq 'HASH') {
