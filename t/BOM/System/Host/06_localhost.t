@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 3);
+use Test::More (tests => 2);
 use Test::Exception;
 use Test::NoWarnings;
 use Sys::Hostname;
@@ -19,4 +19,3 @@ my $me;
 $me = BOM::Platform::Runtime->instance->hosts->localhost;
 
 is($me->name,           $hostname, 'name is correct');
-is($me->canonical_name, $hostname, 'Canonical name is correct');

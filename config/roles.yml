@@ -93,10 +93,6 @@ generic_rmg_web_server:
   inherits:
     - production_unix_server
 
-ui_server:
-  inherits:
-    - customer_facing_webserver
-
 master_live_server:
   consumes:
     - volupd_ssh
@@ -115,38 +111,6 @@ dell_omsa:
     - openmanage_admin_server
 
 openvz_server:
-  inherits:
-    - production_unix_server
-
-otn_query:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
-  inherits:
-    - production_unix_server
-
-otn_master:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
-  inherits:
-    - production_unix_server
-
-otn_master_backup:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
-  inherits:
-    - production_unix_server
-
-otn_relay:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - postgres_feed_server
   inherits:
     - production_unix_server
 
