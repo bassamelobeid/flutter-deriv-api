@@ -43,7 +43,6 @@ sub entry_point {
     $c->tx->with_compression;
 
     $c->inactivity_timeout(120);
-
     # Increase inactivity timeout for connection a bit
     Mojo::IOLoop->singleton->stream($c->tx->connection)->timeout(120);
 
@@ -68,9 +67,7 @@ sub entry_point {
                     $data = {};
                 }
 
-                if (    $data->{error}
-                    and $data->{error}->{code} eq 'SanityCheckFailed')
-                {
+                if ($data->{error} and $data->{error}->{code} eq 'SanityCheckFailed') {
                     $data->{echo_req} = {};
                 } else {
                     $data->{echo_req} = $p1;
@@ -168,16 +165,10 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.' . $dispatch->[0], {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.all', {tags => [$tag, $dispatch->[0]]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.call.all',               {tags => [$tag]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[0]);
-        }
-
-        my $client = $c->stash('client');
-        if ($client) {
-            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all',
-                {tags => [$tag, $dispatch->[0], "loginid:$client->{loginid}"]});
         }
 
         ## sell expired
@@ -206,8 +197,7 @@ sub __handle {
                 }}
 
         }
-        $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')]
-            if ref $result;
+        $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')] if ref $result;
         return $result;
     }
 
@@ -236,11 +226,7 @@ sub _sanity_failed {
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
-        if (
-            $k !~ /^([A-Za-z0-9_-]{1,25})$/
-            or (not ref $arg->{$k}
-                and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/))
-        {
+        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)) {
             $failed = 1;
             warn "Sanity check failed: $k -> " . $arg->{$k};
             last OUTER;
@@ -248,9 +234,7 @@ sub _sanity_failed {
         if (ref $arg->{$k}) {
             if (ref $arg->{$k} eq 'HASH') {
                 foreach my $l (keys %{$arg->{$k}}) {
-                    if (   $l !~ /^([A-Za-z0-9_-]{1,25})$/
-                        or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)
-                    {
+                    if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
                         $failed = 1;
                         warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
                         last OUTER;
@@ -259,9 +243,7 @@ sub _sanity_failed {
 
             } elsif (ref $arg->{$k} eq 'ARRAY') {
                 foreach my $l (@{$arg->{$k}}) {
-                    if (   $l !~ /^([A-Za-z0-9_-]{1,25})$/
-                        or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/)
-                    {
+                    if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:+-]{0,256})$/) {
                         $failed = 1;
                         warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
                         last OUTER;
