@@ -9,7 +9,7 @@ use TestHelper qw/test_schema build_mojo_test build_test_R_50_data/;
 use Net::EmptyPort qw(empty_port);
 
 use BOM::Platform::SessionCookie;
-use BOM::System::Chronicle;
+use BOM::System::RedisReplicated;
 
 build_test_R_50_data();
 my $t = build_mojo_test();
@@ -38,7 +38,7 @@ $t = $t->send_ok({
             "duration"      => "2",
             "duration_unit" => "m"
         }});
-BOM::System::Chronicle->_redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
+BOM::System::RedisReplicated::redis_write->publish('FEED::R_50', 'R_50;1447998048;443.6823;');
 $t->message_ok;
 my $proposal = decode_json($t->message->[1]);
 ok $proposal->{proposal}->{id};
