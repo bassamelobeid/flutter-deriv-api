@@ -21,7 +21,6 @@ use 5.010;
 use strict;
 use warnings;
 
-use Test::MockTime qw(set_absolute_time restore_time);
 use BOM::MarketData::CorrelationMatrix;
 use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
@@ -244,15 +243,7 @@ sub create_doc {
     my $obj        = $class_name->new($data);
 
     if ($save) {
-        if ($class_name =~ /^.+(PartialTrading|Holiday|InterestRate|Dividend|CorporateAction|CorrelationMatrix)$/) {
-            set_absolute_time($data->{recorded_date}->epoch) if $data->{recorded_date};
-        }
-
         $obj->save;
-
-        if ($class_name =~ /^.+(PartialTrading|Holiday|Dividend|CorporateAction|InterestRate|CorrelationMatrix)$/) {
-            restore_time() if $data->{recorded_date};
-        }
     }
 
     return $obj;
