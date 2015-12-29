@@ -5,8 +5,13 @@ use warnings;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
+use BOM::Platform::Context;
 
 sub residence_list {
+    my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
+
     my $residence_list = BOM::Platform::Locale::generate_residence_countries_list();
     $residence_list = [grep { $_->{value} ne '' } @$residence_list];
 
@@ -21,9 +26,11 @@ sub residence_list {
 }
 
 sub states_list {
-    my $country = shift;
+    my $params = shift;
 
-    my $states = BOM::Platform::Locale::get_state_option($country);
+    BOM::Platform::Context::request()->language($params->{language});
+
+    my $states = BOM::Platform::Locale::get_state_option($params->{args}->{states_list});
     $states = [grep { $_->{value} ne '' } @$states];
     return $states;
 }
