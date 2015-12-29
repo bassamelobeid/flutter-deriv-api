@@ -93,18 +93,11 @@ sub __handle {
             }
         }
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.call.' . $dispatch->[0], {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.call.all', {tags => [$tag, $dispatch->[0]]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.call.all',               {tags => [$tag]});
 
         if ($dispatch->[2] and not $c->stash('client')) {
             return __authorize_error($dispatch->[3] || $dispatch->[0]);
         }
-
-        my $client = $c->stash('client');
-        if ($client) {
-            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v1.authenticated_call.all',
-                {tags => [$tag, $dispatch->[0], "loginid:$client->{loginid}"]});
-        }
-
         return $dispatch->[1]->($c, $p1);
     }
 
@@ -133,20 +126,14 @@ sub _sanity_failed {
     my $failed;
     OUTER:
     foreach my $k (keys %$arg) {
-        if (
-            $k !~ /^([A-Za-z0-9_-]{1,25})$/
-            or (not ref $arg->{$k}
-                and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/))
-        {
+        if ($k !~ /^([A-Za-z0-9_-]{1,25})$/ or (not ref $arg->{$k} and $arg->{$k} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/)) {
             $failed = 1;
             warn "Sanity check failed: $k -> " . $arg->{$k};
             last OUTER;
         }
         if (ref $arg->{$k}) {
             foreach my $l (keys %{$arg->{$k}}) {
-                if (   $l !~ /^([A-Za-z0-9_-]{1,25})$/
-                    or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/)
-                {
+                if ($l !~ /^([A-Za-z0-9_-]{1,25})$/ or $arg->{$k}->{$l} !~ /^([\s\.A-Za-z0-9_:-]{0,50})$/) {
                     $failed = 1;
                     warn "Sanity check failed: $l -> " . $arg->{$k}->{$l};
                     last OUTER;
