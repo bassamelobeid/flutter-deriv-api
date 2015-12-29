@@ -86,7 +86,7 @@ sub __handle {
 
     foreach my $dispatch (@dispatch) {
         next unless $p1->{$dispatch->[0]};
-        my $tag = 'origin';
+        my $tag = 'origin:';
         if (my $origin = $c->req->headers->header("Origin")) {
             if ($origin =~ /https?:\/\/([a-zA-Z0-9\.]+)$/) {
                 $tag = "origin:$1";

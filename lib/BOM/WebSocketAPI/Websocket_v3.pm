@@ -84,7 +84,7 @@ sub entry_point {
 
             BOM::Platform::Context::request($c->stash('request'));
 
-            my $tag = 'origin';
+            my $tag = 'origin:';
             my $data;
             my $send = 1;
             if (ref($p1) eq 'HASH') {
