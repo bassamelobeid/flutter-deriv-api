@@ -13,6 +13,7 @@ use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::MarketDiscovery;
 use BOM::RPC::v3::Offerings;
+use BOM::RPC::v3::Authorize;
 
 sub startup {
     my $app = shift;
@@ -47,6 +48,8 @@ sub startup {
                 '/asset_index'     => MojoX::JSON::RPC::Service->new->register('asset_index',     \&BOM::RPC::v3::MarketDiscovery::asset_index),
                 '/active_symbols'  => MojoX::JSON::RPC::Service->new->register('active_symbols',  \&BOM::RPC::v3::MarketDiscovery::active_symbols),
                 '/contracts_for'   => MojoX::JSON::RPC::Service->new->register('contracts_for',   \&BOM::RPC::v3::Offerings::contracts_for),
+                '/authorize'       => MojoX::JSON::RPC::Service->new->register('authorize',       \&BOM::RPC::v3::Authorize::authorize),
+                '/logout'          => MojoX::JSON::RPC::Service->new->register('logout',          \&BOM::RPC::v3::Authorize::logout),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
