@@ -15,9 +15,9 @@ use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
 
 sub trading_times {
-    my $args = shift;
+    my $params = shift;
 
-    my $date = try { Date::Utility->new($args->{trading_times}) } || Date::Utility->new;
+    my $date = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
         markets     => {name => 'name'},
         submarkets  => {name => 'name'},
@@ -56,7 +56,7 @@ sub trading_times {
 }
 
 sub asset_index {
-    my ($language, $args) = @_;
+    my $params = shift;
 
     my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
         markets => {
@@ -106,8 +106,7 @@ sub asset_index {
                             } else {
                                 $included->{$key} = Time::Duration::Concise::Localize->new(
                                     interval => $included->{$key},
-                                    locale   => $language
-                                ) unless (ref $included->{$key});
+                                    locale   => $params->{language}) unless (ref $included->{$key});
                                 push @times, [$included->{$key}->seconds, $included->{$key}->as_concise_string];
                             }
                         }
@@ -143,12 +142,15 @@ sub asset_index {
 }
 
 sub active_symbols {
-    my ($client, $args) = @_;
+    my $params = shift;
 
+    my $client;
     my $landing_company_name = 'costarica';
-    if ($client) {
-        $landing_company_name = $client->landing_company->short;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+        $landing_company_name = $client->landing_company->short if $client;
     }
+
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
     return [
@@ -158,7 +160,7 @@ sub active_symbols {
             grep { $market eq $_ } @{$legal_allowed_markets}
             }
             map {
-            _description($_, $args->{active_symbols})
+            _description($_, $params->{args}->{active_symbols})
             } get_offerings_with_filter('underlying_symbol')];
 }
 
