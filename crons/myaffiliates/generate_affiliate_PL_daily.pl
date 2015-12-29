@@ -75,7 +75,7 @@ send_email({
     from    => BOM::Platform::Runtime->instance->app_config->system->email,
     to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
     subject => 'CRON generate_affiliate_PL_daily: Report from '
-        . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name
+        . BOM::Platform::Runtime->instance->hosts->localhost->name
         . ' for date range '
         . $from_date->date_yyyymmdd . ' - '
         . $to_date->date_yyyymmdd,
