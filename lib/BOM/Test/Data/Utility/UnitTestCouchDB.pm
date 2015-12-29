@@ -35,6 +35,7 @@ use BOM::MarketData::VolSurface::Flat;
 use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
+use BOM::System::RedisReplicated;
 
 # For the unit_test_couchdb.t test case, we limit the dabase name to three characters
 # ie 'bom', 'vol', 'int, etc. all have three characters each
@@ -85,7 +86,7 @@ sub _init {
     _bootstrap($couch);
 
     #delete chronicle data too (Redis and Pg)
-    BOM::System::Chronicle::_redis_write()->flushall;
+    BOM::System::RedisReplicated::redis_write()->flushall;
     BOM::System::Chronicle::_dbh()->do('delete from chronicle;') if BOM::System::Chronicle::_dbh();
 
     initialize_symbol_dividend "R_25",    0;
