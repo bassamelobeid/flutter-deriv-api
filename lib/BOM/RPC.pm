@@ -12,6 +12,7 @@ use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Transaction;
 use BOM::RPC::v3::MarketDiscovery;
+use BOM::RPC::v3::Offerings;
 
 sub startup {
     my $app = shift;
@@ -45,6 +46,7 @@ sub startup {
                 '/trading_times'   => MojoX::JSON::RPC::Service->new->register('trading_times',   \&BOM::RPC::v3::MarketDiscovery::trading_times),
                 '/asset_index'     => MojoX::JSON::RPC::Service->new->register('asset_index',     \&BOM::RPC::v3::MarketDiscovery::asset_index),
                 '/active_symbols'  => MojoX::JSON::RPC::Service->new->register('active_symbols',  \&BOM::RPC::v3::MarketDiscovery::active_symbols),
+                '/contracts_for'   => MojoX::JSON::RPC::Service->new->register('contracts_for',   \&BOM::RPC::v3::Offerings::contracts_for),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;

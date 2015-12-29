@@ -10,8 +10,9 @@ use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Finder::Japan;
 
 sub contracts_for {
-    my $args = shift;
+    my $params = shift;
 
+    my $args   = $params->{args};
     my $symbol = $args->{contracts_for};
     my $contracts_for;
     if ($args->{region} and $args->{region} eq 'japan') {
