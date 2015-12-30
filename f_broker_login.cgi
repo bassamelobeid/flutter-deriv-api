@@ -7,7 +7,7 @@ use open qw[ :encoding(UTF-8) ];
 use BOM::Market::Registry;
 
 use f_brokerincludeall;
-use BOM::System::Config;
+use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use Format::Util::Strings qw( set_selected_item );
 use BOM::Backoffice::Auth0;
@@ -29,7 +29,7 @@ my $broker = request()->broker_code;
 
 BrokerPresentation('STAFF LOGIN PAGE');
 
-if (BOM::System::Config::is_master_server()) {
+if (BOM::System::Localhost::is_master_server()) {
     print "<table border=0 width=97%><tr><td width=97% bgcolor=#FFFFEE>
         <b><center><font size=+1>YOU ARE ON THE MASTER LIVE SERVER</font>
         <br>This is the server on which to edit most system files (except those that are specifically to do with a specific broker code).

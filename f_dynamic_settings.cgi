@@ -7,7 +7,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 
 use f_brokerincludeall;
 
-use BOM::System::Config;
+use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use HTML::Entities;
 use Data::Compare;
@@ -55,7 +55,7 @@ if (scalar @{$settings_list;} == 0) {
 
 my $submitted = request()->param('submitted');
 
-if (not BOM::System::Config::is_master_server()) {
+if (not BOM::System::Localhost::is_master_server()) {
     print "<div id=\"message\"><div id=\"error\">This server is not Dynamic Settings Master and your changes won't be saved.</div></div><br />";
 } else {
     BOM::DynamicSettings::save_settings({

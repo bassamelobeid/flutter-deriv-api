@@ -9,7 +9,7 @@ use Path::Tiny;
 
 use f_brokerincludeall;
 use Date::Utility;
-use BOM::System::Config;
+use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use Format::Util::Numbers qw( commas );
 use BOM::MarketData::InterestRate;
@@ -48,7 +48,7 @@ if ($ok == 0) {
     code_exit_BO();
 }
 
-unless (BOM::System::Config::is_master_server()) {
+unless (BOM::System::Localhost::is_master_server()) {
     print "Sorry, files cannot be saved on this server because it is not the Master Server.";
     code_exit_BO();
 }

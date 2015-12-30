@@ -9,7 +9,7 @@ use warnings;
 use Getopt::Long;
 
 use Date::Utility;
-use BOM::System::Config;
+use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
@@ -40,7 +40,7 @@ my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::Run
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : BOM::Platform::Runtime->instance->landing_companies->all_currencies;
 
 # This report will now only be run on the master server
-exit 0 unless (BOM::System::Config::is_master_server());
+exit 0 unless (BOM::System::Localhost::is_master_server());
 
 my $run_for = Date::Utility->new($for_date);
 

@@ -15,7 +15,7 @@ BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
 use ForexFactory;
-use BOM::System::Config;
+use BOM::System::Localhost;
 use BOM::MarketData::EconomicEvent;
 use BOM::Platform::Runtime;
 use Date::Utility;
@@ -28,7 +28,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-if (BOM::System::Config::is_master_server()) {
+if (BOM::System::Localhost::is_master_server()) {
     code_exit_BO();
 }
 
