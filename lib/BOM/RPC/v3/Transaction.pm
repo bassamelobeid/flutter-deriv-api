@@ -45,7 +45,6 @@ sub buy {
         return BOM::RPC::v3::Utility::create_error({
             code              => $err->get_type,
             message_to_client => $err->{-message_to_client},
-            message           => "Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}"
         });
     }
 

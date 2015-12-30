@@ -27,10 +27,16 @@ use BOM::Platform::Email qw(send_email);
 use BOM::System::AuditLog;
 
 sub get_limits {
-    my ($client, $config) = @_;
+    my $params = shift;
 
-    # check if Client is not in lock cashier and not virtual account
-    unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
+
+    if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
                 message_to_client => localize('Sorry, this feature is not available.')});
@@ -43,9 +49,9 @@ sub get_limits {
         open_positions => $client->get_limit_for_open_positions,
     };
 
-    my $numdays       = $config->for_days;
-    my $numdayslimit  = $config->limit_for_days;
-    my $lifetimelimit = $config->lifetime_limit;
+    my $numdays       = $params->{for_days};
+    my $numdayslimit  = $params->{limit_for_days};
+    my $lifetimelimit = $params->{lifetime_limit};
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -84,7 +90,13 @@ sub get_limits {
 }
 
 sub paymentagent_list {
-    my ($client, $language, $args) = @_;
+    my $params = shift;
+    my ($language, $args) = ($params->{language}, $params->{args});
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
 
@@ -130,12 +142,20 @@ sub paymentagent_list {
 }
 
 sub paymentagent_transfer {
-    my ($client_fm, $app_config, $website, $args) = @_;
+    my $params = shift;
+    my ($loginid_fm, $cs_email, $payments_email, $website_name, $args) =
+        ($params->{client_loginid}, $params->{cs_email}, $params->{payments_email}, $params->{website_name}, $params->{args});
 
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
-    my $loginid_fm = $client_fm->loginid;
     my $loginid_to = uc $args->{transfer_to};
+
+    my $client_fm;
+    if ($loginid_fm) {
+        $client_fm = BOM::Platform::Client->new({loginid => $loginid_fm});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client_fm;
 
     my $payment_agent = $client_fm->payment_agent;
 
@@ -151,19 +171,20 @@ sub paymentagent_transfer {
         my $msg = shift;
         return $error_sub->(
             __output_payments_error_message({
-                    client       => $client_fm,
-                    cs_email     => $website->config->get('customer_support.email'),
-                    action       => "transfer - from $loginid_fm to $loginid_to",
-                    error_msg    => $msg,
-                    payment_type => 'Payment Agent transfer',
-                    currency     => $currency,
-                    amount       => $amount,
+                    client         => $client_fm,
+                    cs_email       => $cs_email,
+                    payments_email => $payments_email,
+                    action         => "transfer - from $loginid_fm to $loginid_to",
+                    error_msg      => $msg,
+                    payment_type   => 'Payment Agent transfer',
+                    currency       => $currency,
+                    amount         => $amount,
                 }));
     };
 
     my $error_msg;
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
+    if (   $params->{is_payment_suspended}
+        or $params->{is_payment_agent_suspended})
     {
         $error_msg = localize('Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
@@ -307,11 +328,11 @@ The funds have been credited into your account.
 
 Kind Regards,
 
-The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website->display_name
+The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website_name
     );
 
     send_email({
-        'from'               => $website->config->get('customer_support.email'),
+        'from'               => $cs_email,
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
@@ -323,14 +344,23 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 }
 
 sub paymentagent_withdraw {
-    my ($client, $app_config, $website, $args) = @_;
+    my $params = shift;
+
+    my ($client_loginid, $cs_email, $payments_email, $website_name, $args) =
+        ($params->{client_loginid}, $params->{cs_email}, $params->{payments_email}, $params->{website_name}, $params->{args});
 
     my $currency             = $args->{currency};
     my $amount               = $args->{amount};
     my $further_instruction  = $args->{description} // '';
     my $paymentagent_loginid = $args->{paymentagent_loginid};
     my $reference            = Data::UUID->new()->create_str();
-    my $client_loginid       = $client->loginid;
+
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -344,18 +374,19 @@ sub paymentagent_withdraw {
         my $msg = shift;
         return $error_sub->(
             __output_payments_error_message({
-                    client       => $client,
-                    cs_email     => $website->config->get('customer_support.email'),
-                    action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
-                    error_msg    => $msg,
-                    payment_type => 'Payment Agent Withdrawal',
-                    currency     => $currency,
-                    amount       => $amount,
+                    client         => $client,
+                    cs_email       => $cs_email,
+                    payments_email => $payments_email,
+                    action         => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
+                    error_msg      => $msg,
+                    payment_type   => 'Payment Agent Withdrawal',
+                    currency       => $currency,
+                    amount         => $amount,
                 }));
     };
 
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
+    if (   $params->{is_payment_suspended}
+        or $params->{is_payment_agent_suspended})
     {
         return $error_sub->(
             localize('Sorry, the Payment Agent Withdrawal is temporarily disabled due to system maintenance. Please try again in 30 minutes.'));
@@ -430,6 +461,7 @@ sub paymentagent_withdraw {
             "Account stuck in previous transaction $client_loginid"
         );
     }
+
     if (not BOM::Platform::Transaction->freeze_client($paymentagent_loginid)) {
         BOM::Platform::Transaction->unfreeze_client($client_loginid);
         return $error_sub->(
@@ -477,7 +509,7 @@ sub paymentagent_withdraw {
     }
 
     if ($amount_transferred > 1500) {
-        my $support = $website->config->get('customer_support.email');
+        my $support = $cs_email;
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
         send_email({
             from    => $support,
@@ -525,17 +557,17 @@ sub paymentagent_withdraw {
         '',
         localize(
             'We would like to inform you that the withdrawal request of [_1][_2] by [_3] [_4] has been processed. The funds have been credited into your account [_5] at [_6].',
-            $currency, $amount, $client_name, $client_loginid, $paymentagent_loginid, $website->display_name
+            $currency, $amount, $client_name, $client_loginid, $paymentagent_loginid, $website_name
         ),
         '',
         $further_instruction,
         '',
         localize('Kind Regards,'),
         '',
-        localize('The [_1] team.', $website->display_name),
+        localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => $website->config->get('customer_support.email'),
+        from               => $cs_email,
         to                 => $paymentagent->email,
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
@@ -546,14 +578,15 @@ sub paymentagent_withdraw {
 }
 
 sub __output_payments_error_message {
-    my $args          = shift;
-    my $client        = $args->{'client'};
-    my $cs_email      = $args->{'cs_email'};
-    my $action        = $args->{'action'};
-    my $payment_type  = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
-    my $currency      = $args->{'currency'};
-    my $amount        = $args->{'amount'};
-    my $error_message = $args->{'error_msg'};
+    my $args           = shift;
+    my $client         = $args->{'client'};
+    my $cs_email       = $args->{'cs_email'};
+    my $payments_email = $args->{'payments_email'};
+    my $action         = $args->{'action'};
+    my $payment_type   = $args->{'payment_type'} || 'n/a';    # used for reporting; if not given, not applicable
+    my $currency       = $args->{'currency'};
+    my $amount         = $args->{'amount'};
+    my $error_message  = $args->{'error_msg'};
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned
@@ -568,10 +601,9 @@ sub __output_payments_error_message {
         "Error message : $error_message",
     ];
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
     send_email({
         from    => $cs_email,
-        to      => $app_config->payments->email,
+        to      => $payments_email,
         subject => 'Payment Error: ' . $payment_type . ' [' . $client->loginid . ']',
         message => $message,
     });
@@ -617,10 +649,14 @@ sub __client_withdrawal_notes {
 
 ## This endpoint is only available for MLT/MF accounts
 sub transfer_between_accounts {
-    my $arg_ref    = shift;
-    my $client     = $arg_ref->{'client'};
-    my $app_config = $arg_ref->{app_config};
-    my $args       = $arg_ref->{args};
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -635,6 +671,7 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
 
+    my $args         = $params->{args};
     my $loginid_from = $args->{account_from};
     my $loginid_to   = $args->{account_to};
     my $currency     = $args->{currency};
@@ -810,9 +847,14 @@ sub transfer_between_accounts {
 }
 
 sub topup_virtual {
-    my $arg_ref    = shift;
-    my $client     = $arg_ref->{client};
-    my $app_config = $arg_ref->{app_config};
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -828,7 +870,7 @@ sub topup_virtual {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
 
-    if ($client->default_account->balance > $app_config->payments->virtual->minimum_topup_balance) {
+    if ($client->default_account->balance > $params->{minimum_topup_balance}) {
         return $error_sub->(localize('Your balance is higher than the permitted amount.'));
     }
 

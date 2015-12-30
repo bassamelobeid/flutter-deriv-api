@@ -149,8 +149,8 @@ sub get_bid {
         $returnhash{tick_count}      = $contract->tick_count;
         $returnhash{entry_tick}      = $contract->entry_tick->quote;
         $returnhash{entry_tick_time} = $contract->entry_tick->epoch;
-        $returnhash{exit_tick}       = $contract->exit_tick->quote;
-        $returnhash{exit_tick_time}  = $contract->exit_tick->epoch;
+        $returnhash{exit_tick}       = $contract->exit_tick ? $contract->exit_tick->quote : '';
+        $returnhash{exit_tick_time}  = $contract->exit_tick ? $contract->exit_tick->epoch : '';
     } else {
         $returnhash{current_spot} = $contract->current_spot;
         $returnhash{entry_spot}   = $contract->entry_spot;
