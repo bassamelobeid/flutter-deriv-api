@@ -120,6 +120,8 @@ $email_mocked->mock('send_email', sub { return 1 });
 
     $client_vr->set_default_account('EUR');
     $client_cr->set_default_account('EUR');
+    $client_cr->clr_status('disabled');
+    $client_cr->save();
 
     $t = $t->send_ok({
             json => {
