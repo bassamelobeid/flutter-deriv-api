@@ -22,6 +22,9 @@ use BOM::MarketData::EconomicEvent;
 use Sereal qw(encode_sereal decode_sereal looks_like_sereal);
 use Sereal::Encoder;
 use Try::Tiny;
+use BOM::Utility::Log4perl qw(get_logger);
+use BOM::System::Chronicle;
+use BOM::MarketData::EconomicEventChronicle;
 
 has data_location => (
     is       => 'ro',
@@ -118,38 +121,83 @@ my $cache_namespace = 'COUCH_NEWS::';
 
 sub get_latest_events_for_period {
     my ($self, $period) = @_;
+    my $couch_result     = $self->_get_latest_events_for_period($period);
+    my $chronicle_result = [];
+    my $logger           = get_logger();
 
-    my $start  = $period->{from}->epoch;
-    my $end    = $period->{to}->epoch;
-    my $source = $period->{source} ? $period->{source} : $self->{source};
+    try {
+        my $start  = $period->{from}->epoch;
+        my $end    = $period->{to}->epoch;
+        my $source = $period->{source} ? $period->{source} : $self->{source};
 
-    #try to read from Chronicle
-    my $current_ee = BOM::System::Chronicle::get('economic_events', 'economic_events');
-    my $current_ee_count = scalar @$current_ee;
+        #try to read from Chronicle (in-memory data)
+        my $extracted_events = BOM::System::Chronicle::get('economic_events', 'economic_events');
 
-    #what is the period of the release dates of current economic events we have?
-    my $current_start = $current_ee->[0]->{release_date}->epoch;
-    my $current_end   = $current_ee->[$current_ee_count - 1]->{release_date}->epoch;
+        #what is the period of the release dates of current economic events we have?
+        my $current_start = Date::Utility->new($extracted_events->[0]->{release_date})->epoch;
+        #my $current_end   = $extracted_events->[-1]->{release_date}->epoch;
 
-    #while we do not have enough economic events to cover the requested time period, add from Chronicle's DB
-    while ($start->epoch >= $current_start->epoch and $end->epoch <= $current_end->epoch) {
-        #BOM::System::Chronicle::get_for
+        use Data::Dumper;
+        #in case we do not have enough economic events to cover the requested time period, add from Chronicle's DB
+        if ($start < $current_start) {
+            #each element in this array-ref is an array of economic events
+            my $db_events = BOM::System::Chronicle::get_for_period('economic_events', 'economic_events', $start, $end);
+
+            #combine in-memory event with those from database
+            for my $db_event (@$db_events) {
+                push $extracted_events, $_ for @$db_event;
+            }
+        }
+
+        #now filter events that fall in the range we are looking for
+        my %matching_events;
+
+        for my $single_ee (@$extracted_events) {
+            my $ee_epoch = Date::Utility->new($single_ee->{release_date})->epoch;
+
+            #prevent adding repeated economic events by storing in a hash based on a uniqe key
+            my $unique_key = $single_ee->{symbol} . $single_ee->{release_date} . $single_ee->{event_name};
+
+            if ($ee_epoch >= $start and $ee_epoch <= $end) {
+                $matching_events{$unique_key} = BOM::MarketData::EconomicEventChronicle->new($single_ee);
+            }
+        }
+
+        my @matching_events_values = values %matching_events;
+        $chronicle_result = \@matching_events_values;
+    }
+    catch {
+        $logger->warn("Error getting chronicle results: " . $_);
+    };
+
+    $DB::single = 1;
+    #now compare two resultsets
+    $logger->warn("Sizes do not match") if (scalar $couch_result != scalar $chronicle_result);
+    print "Sizes do not match\n" if (scalar $couch_result != scalar $chronicle_result);
+
+    my $first = 1;
+    for my $couch_event (@$couch_result) {
+        #couch_event is of type EconomicEvent
+        print "matching for couch $couch_event->{symbol} $couch_event->{event_name} $couch_event->{release_date} \n" if $first;
+        my $has_a_match = 0;
+        for my $chr_event (@$chronicle_result) {
+            print "matching with $chr_event->{symbol} $chr_event->{event_name} $chr_event->{release_date} \n" if $first;
+            #chr_event is of type EconomicEventChronicle
+            if (   $couch_event->{release_date}->epoch == $chr_event->{release_date}->epoch
+                && $couch_event->{symbol} eq $chr_event->{symbol}
+                && $couch_event->{event_name} eq $chr_event->{event_name})
+            {
+                $has_a_match = 1;
+                last;
+            }
+
+            $logger->warn("couch event <" . $couch_event->{event_name} . "> does not have a match") if !$has_a_match;
+            #print "couch event <" . $couch_event->{event_name} . "> does not have a match" if !$has_a_match;
+        }
+        $first = 0;
     }
 
-    #now delete news items which are outside requested time period
-    my %valid_ee;
-
-    for my $single_ee (@$current_ee) {
-        my $ee_epoch = Date::Utility->new($single_ee->{release_date})->epoch;
-
-        #if this economic event's release date lies in the period that we want, create an object based on it and add it
-        #to the result array (prevent adding repeated economic events by storing in a hash based on a uniqe key)
-        my $unique_key = $single_ee->{symbol} . $single_ee->{release_date} . $single_ee->{event_name};
-
-        $valid_ee{$unique_key} = BOM::MarketData::EconomicEventChrocnicle->new($single_ee) if $ee_epoch >= $start and $ee_epoch <= $end;
-    }
-
-    return $self->_get_latest_events_for_period($period);
+    return $couch_result;
 }
 
 sub _get_latest_events_for_period {
@@ -186,7 +234,7 @@ sub _get_latest_events_for_period {
                 })};
         push @$events,
             @{
-            $self->get_latest_events_for_period({
+            $self->_get_latest_events_for_period({
                     from   => $start_of_next,
                     to     => $end,
                     source => $source
