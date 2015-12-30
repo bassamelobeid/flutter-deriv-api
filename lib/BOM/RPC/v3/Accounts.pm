@@ -12,6 +12,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
+use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -21,11 +22,16 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 
 sub payout_currencies {
-    my $account = shift;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
 
     my $currencies;
-    if ($account) {
-        $currencies = [$account->currency_code];
+    if ($client) {
+        $currencies = [$client->currency];
     } else {
         my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
         $currencies = $lc->legal_allowed_currencies;

@@ -12,6 +12,7 @@ use BOM::Product::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Context;
+use BOM::Platform::Client;
 
 sub buy {
     my $params = shift;

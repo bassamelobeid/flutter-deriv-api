@@ -4,9 +4,6 @@ use Mojo::Base 'Mojolicious';
 use MojoX::JSON::RPC::Service;
 
 use BOM::Database::Rose::DB;
-use BOM::Platform::Runtime;
-use BOM::Platform::Context ();
-use BOM::Platform::Context::Request;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
@@ -15,6 +12,7 @@ use BOM::RPC::v3::MarketDiscovery;
 use BOM::RPC::v3::Offerings;
 use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
+use BOM::RPC::v3::Accounts;
 
 sub startup {
     my $app = shift;
@@ -59,7 +57,8 @@ sub startup {
                     MojoX::JSON::RPC::Service->new->register('paymentagent_transfer', \&BOM::RPC::v3::Cashier::paymentagent_transfer),
                 '/transfer_between_accounts' =>
                     MojoX::JSON::RPC::Service->new->register('transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts),
-                '/topup_virtual' => MojoX::JSON::RPC::Service->new->register('topup_virtual', \&BOM::RPC::v3::Cashier::topup_virtual),
+                '/topup_virtual'     => MojoX::JSON::RPC::Service->new->register('topup_virtual',     \&BOM::RPC::v3::Cashier::topup_virtual),
+                '/payout_currencies' => MojoX::JSON::RPC::Service->new->register('payout_currencies', \&BOM::RPC::v3::Accounts::payout_currencies),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
