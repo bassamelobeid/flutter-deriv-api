@@ -715,6 +715,11 @@ sub transfer_between_accounts {
     }
 
     unless ($is_good) {
+        # $c->app->log->warn("DISABLED " . $client->loginid . ". Tried tampering with transfer input for account transfer. $err_msg");
+        $client->set_status('disabled', 'SYSTEM',
+            "Tried tampering with transfer input for account transfer, illegal from [$loginid_from], to [$loginid_to]");
+        $client->save;
+
         return $error_sub->(localize('The account transfer is unavailable for your account.'));
     }
 
