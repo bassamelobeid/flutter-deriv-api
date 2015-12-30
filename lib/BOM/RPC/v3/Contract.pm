@@ -144,6 +144,14 @@ sub get_bid {
         payout              => $contract->payout,
     );
 
+    if (not $contract->is_valid_to_sell) {
+        $returnhash{validation_error} = $contract->primary_validation_error->message_to_client;
+    }
+
+    if ($contract->is_spread) {
+        return \%returnhash;
+    }
+
     if ($contract->expiry_type eq 'tick') {
         $returnhash{prediction}      = $contract->prediction;
         $returnhash{tick_count}      = $contract->tick_count;
@@ -161,10 +169,6 @@ sub get_bid {
         $returnhash{low_barrier}  = $contract->low_barrier->as_absolute;
     } elsif ($contract->barrier) {
         $returnhash{barrier} = $contract->barrier->as_absolute;
-    }
-
-    if ($contract->expiry_type ne 'tick' and not $contract->is_valid_to_sell) {
-        $returnhash{validation_error} = $contract->primary_validation_error->message_to_client;
     }
 
     return \%returnhash;
