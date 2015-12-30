@@ -19,11 +19,11 @@ my $role;
 
 lives_ok {
     $role = BOM::System::Host::Role->new({
-        name => 'postgres_server',
+        name => 'master_live_server',
     });
 }
 'Instantiate role';
 
-ok($role->has_role('postgres_server'),  'A role has_role postgres_server');
+ok($role->has_role('master_live_server'),  'A role has_role master_live_server');
 ok(!$role->has_role('master_thespian'), 'A role does not has_role ficitious roles');
 

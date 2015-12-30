@@ -1,12 +1,3 @@
----
-paymentapi_server:
-  provides:
-    - paymentapi_server
-    - paymentapi_status_monitoring
-  inherits:
-    - production_unix_server
-    - feed_client
-
 couchdb_client:
   consumes:
     - couchdb
@@ -19,19 +10,7 @@ couchdb_master:
   inherits:
     - couchdb_server
 
-customer_facing_webserver:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - public_web_server
-  inherits:
-    - production_unix_server
-    - feed_client
-    - couchdb_server
-
 dealing_server:
-  inherits:
-    - customer_facing_webserver
 
 feed_distributor:
   provides:
@@ -40,7 +19,6 @@ feed_distributor:
   consumes:
     - bom_raw_feed
     - rmg_unix_server
-    - postgres_feed_server
 
 feed_client:
   consumes:
@@ -53,16 +31,6 @@ feed_relay_source:
   inherits:
     - production_unix_server
 
-feed_server:
-  consumes:
-    - bom_raw_feed
-  provides:
-    - bom_raw_feed
-    - public_web_server
-  inherits:
-    - production_unix_server
-    - couchdb_server
-
 generic_rmg_web_server:
   provides:
     - private_web_server
@@ -72,45 +40,12 @@ generic_rmg_web_server:
 master_live_server:
   consumes:
     - volupd_ssh
-  inherits:
-    - customer_facing_webserver
 
 production_unix_server:
   consumes:
-    - public_web_server
-    - public_mail_server
     - rmg_unix_server
   provides:
     - rmg_unix_server
   inherits:
     - couchdb_client
-
-primary_feed_server:
-  inherits:
-    - feed_server
-
-webapi_server:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - public_web_server
-    - webapi
-  inherits:
-    - production_unix_server
-    - feed_client
-
-webapi_external_server:
-  consumes:
-    - postgres_feed_server
-  provides:
-    - public_web_server
-    - webapi_external
-  inherits:
-    - production_unix_server
-    - customer_facing_webserver
-    - feed_client
-
-web_server:
-  provides:
-    - public_web_server
 

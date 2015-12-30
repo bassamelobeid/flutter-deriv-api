@@ -17,7 +17,7 @@ BOM::System::Host
     my $server = BOM::System::Host->new(
         name           => 'cr-deal01',
         domain         => 'regentmarkets.com',
-        roles          => [ BOM::System::Host::Role::Registry->get('customer_facing_webserver') ],
+        roles          => [ BOM::System::Host::Role::Registry->get('master_live_server') ],
     );
 
 =head1 DESCRIPTION
