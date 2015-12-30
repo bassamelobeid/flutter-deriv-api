@@ -7,6 +7,7 @@ use warnings;
 use DateTime;
 use Date::Utility;
 use BOM::Market::Currency;
+use List::Util qw(min);
 
 # This returns number of days after the trade date which determine the delivery
 # and spot date. Except USDCAD which is 1 day, other are all 2 days.
@@ -275,7 +276,10 @@ sub _EQ_month_and_year_term_vol_expiry_date {
     my ($from, $months) = @{$args}{qw(from months)};
 
     my $last_day;
-    my $expiry_date = Date::Utility->new($from->day_of_month . '-' . $from->months_ahead($months));
+    my $expiry_month  = $from->months_ahead($months);
+    my $days_in_month = Date::Utility->new('1-' . $expiry_month)->days_in_month;
+    my $day_str       = min($days_in_month, $from->day_of_month);
+    my $expiry_date   = Date::Utility->new($day_str . '-' . $from->months_ahead($months));
 
     # Blatant abuse of holes in Date::Utility integrity.
     if ($expiry_date->days_in_month <= $expiry_date->day_of_month) {
