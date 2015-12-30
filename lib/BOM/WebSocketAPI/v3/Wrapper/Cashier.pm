@@ -126,22 +126,26 @@ sub paymentagent_transfer {
 sub transfer_between_accounts {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Cashier::transfer_between_accounts({
-        client     => $c->stash('client'),
-        app_config => $c->app_config,
-        website    => $c->stash('request')->website,
-        args       => $args
-    });
-    if (exists $response->{error}) {
-        $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
-        return $c->new_error('transfer_between_accounts', $response->{error}->{code}, $response->{error}->{message_to_client});
-    }
-
-    return {
-        msg_type                  => 'transfer_between_accounts',
-        transfer_between_accounts => $response->{status},
-        (exists $response->{accounts}) ? (accounts => $response->{accounts}) : (),
-    };
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'transfer_between_accounts',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
+                return $c->new_error('transfer_between_accounts', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type                  => 'transfer_between_accounts',
+                    transfer_between_accounts => $response->{status},
+                    (exists $response->{accounts}) ? (accounts => $response->{accounts}) : (),
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub topup_virtual {
