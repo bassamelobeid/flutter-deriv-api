@@ -131,8 +131,9 @@ $email_mocked->mock('send_email', sub { return 1 });
                 "amount"                    => 100
             }})->message_ok;
     $res = decode_json($t->message->[1]);
-    ok $res->{error}->{message} =~ /The account transfer is unavailable for accounts/, 'The account transfer is unavailable for accounts';
+    ok $res->{error}->{message} =~ /The account transfer is unavailable for your account/, 'The account transfer is unavailable for your account';
 
+    $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
     ok $client_cr->get_status('disabled'), 'is disabled due to tamper';
     $client_cr->clr_status('disabled');
     $client_cr->save();
