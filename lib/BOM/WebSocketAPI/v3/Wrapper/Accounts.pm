@@ -100,9 +100,20 @@ sub profit_table {
 sub get_account_status {
     my ($c, $args) = @_;
 
-    return {
-        msg_type           => 'get_account_status',
-        get_account_status => BOM::RPC::v3::Accounts::get_account_status($c->stash('client'))};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_account_status',
+        sub {
+            my $response = shift;
+            return {
+                msg_type           => 'get_account_status',
+                get_account_status => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub change_password {
