@@ -50,7 +50,11 @@ subtest 'new CR real account' => sub {
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     subtest 'create CR account' => sub {
-        $t = $t->send_ok({json => \%client_details})->message_ok;
+        $t = $t->send_ok({json => \%client_details})
+        sleep(5);
+        $t=$t->message_ok;
+use Data::Dumper;
+print Dumper($t->message);
         my $res = decode_json($t->message->[1]);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);
