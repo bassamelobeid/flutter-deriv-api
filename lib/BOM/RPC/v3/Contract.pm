@@ -147,8 +147,8 @@ sub get_bid {
     if ($contract->expiry_type eq 'tick') {
         $returnhash{prediction}      = $contract->prediction;
         $returnhash{tick_count}      = $contract->tick_count;
-        $returnhash{entry_tick}      = $contract->entry_tick->quote;
-        $returnhash{entry_tick_time} = $contract->entry_tick->epoch;
+        $returnhash{entry_tick}      = $contract->entry_tick ? $contract->entry_tick->quote : '';
+        $returnhash{entry_tick_time} = $contract->entry_tick ? $contract->entry_tick->epoch : '';
         $returnhash{exit_tick}       = $contract->exit_tick ? $contract->exit_tick->quote : '';
         $returnhash{exit_tick_time}  = $contract->exit_tick ? $contract->exit_tick->epoch : '';
     } else {
