@@ -7,14 +7,25 @@ use warnings;
 use JSON;
 
 use BOM::RPC::v3::Accounts;
+use BOM::WebSocketAPI::Websocket_v3;
 
 sub payout_currencies {
     my $c = shift;
 
-    return {
-        msg_type          => 'payout_currencies',
-        payout_currencies => BOM::RPC::v3::Accounts::payout_currencies($c->stash('account')),
-    };
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'payout_currencies',
+        sub {
+            my $response = shift;
+            return {
+                msg_type          => 'payout_currencies',
+                payout_currencies => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub landing_company {
