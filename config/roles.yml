@@ -3,27 +3,9 @@ paymentapi_server:
   provides:
     - paymentapi_server
     - paymentapi_status_monitoring
-  consumes:
-    - postgres_server
   inherits:
     - production_unix_server
     - feed_client
-
-auth_query:
-  consumes:
-    - postgres_auth_server
-  provides:
-    - postgres_auth_server
-  inherits:
-    - production_unix_server
-
-auth_master:
-  consumes:
-    - postgres_auth_server
-  provides:
-    - postgres_auth_server
-  inherits:
-    - production_unix_server
 
 couchdb_client:
   consumes:
@@ -37,13 +19,8 @@ couchdb_master:
   inherits:
     - couchdb_server
 
-customer_database_server:
-  inherits:
-    - postgres_server
-
 customer_facing_webserver:
   consumes:
-    - postgres_server
     - postgres_feed_server
   provides:
     - public_web_server
@@ -79,7 +56,6 @@ feed_relay_source:
 feed_server:
   consumes:
     - bom_raw_feed
-    - postgres_server
   provides:
     - bom_raw_feed
     - public_web_server
@@ -99,35 +75,11 @@ master_live_server:
   inherits:
     - customer_facing_webserver
 
-streaming_server:
-  provides:
-    - public_web_server
-    - streamer
-  inherits:
-    - customer_facing_webserver
-
-dell_omsa:
-  provides:
-    - openmanage_admin_server
-
-openvz_server:
-  inherits:
-    - production_unix_server
-
-postgres_server:
-  consumes:
-    - postgres_server
-  provides:
-    - postgres_server
-  inherits:
-    - production_unix_server
-
 production_unix_server:
   consumes:
     - public_web_server
     - public_mail_server
     - rmg_unix_server
-    - ssh
   provides:
     - rmg_unix_server
   inherits:
@@ -137,21 +89,9 @@ primary_feed_server:
   inherits:
     - feed_server
 
-
-reporting_database_server:
-  inherits:
-    - postgres_server
-
-ssh_server:
-  provides:
-    - ssh
-
-
 webapi_server:
   consumes:
-    - postgres_server
     - postgres_feed_server
-    - postgres_auth_server
   provides:
     - public_web_server
     - webapi
@@ -161,9 +101,7 @@ webapi_server:
 
 webapi_external_server:
   consumes:
-    - postgres_server
     - postgres_feed_server
-    - postgres_auth_server
   provides:
     - public_web_server
     - webapi_external
@@ -172,13 +110,7 @@ webapi_external_server:
     - customer_facing_webserver
     - feed_client
 
-volupd_ssh_server:
-  provides:
-    - volupd_ssh
-
 web_server:
   provides:
     - public_web_server
 
-near_main_db_server:
-   provides: []

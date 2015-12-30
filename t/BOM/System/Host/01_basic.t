@@ -16,14 +16,14 @@ subtest 'BOM::System::Host basic tests' => sub {
     lives_ok {
         my $host = BOM::System::Host->new({
             name           => 'fred',
-            roles          => ['streaming_server', 'loggedout_server'],
+            roles          => ['master_live_server'],
         });
     }
     'Able to instantiate a BOM::System::Host manually';
 
     throws_ok {
         my $host = BOM::System::Host->new({
-            roles          => ['streaming_server'],
+            roles          => ['master_live_server'],
         });
     }
     qr/Attribute \(name\) is required/, 'name is required';
@@ -40,14 +40,14 @@ subtest 'BOM::System::Host basic tests' => sub {
     my $host = BOM::System::Host->new({
         name             => 'fred',
         role_definitions => BOM::Platform::Runtime->instance->host_roles,
-        roles            => [BOM::Platform::Runtime->instance->host_roles->get('streaming_server')],
+        roles            => [BOM::Platform::Runtime->instance->host_roles->get('master_live_server')],
     });
 
     is($host->domain,          'regentmarkets.com',                 'Internal domain is regentmarkets.com');
     is($host->external_domain, 'binary.com',                        'External domain is binary.com');
     is($host->fqdn,            'fred.regentmarkets.com',            'Internal fqdn is fred.regentmarkets.com');
     is($host->external_fqdn,   'fred.binary.com',                   'External fqdn is fred.binary.com');
-    is(1,                      $host->has_role('streaming_server'), 'Host has streaming_server role');
+    is(1,                      $host->has_role('master_live_server'), 'Host has master_live_server role');
     is(undef,                  $host->has_role('fribitz_server'),   'Host does not have fribitz_server role');
     is('/etc/rmg/hosts.yml', BOM::Platform::Runtime->instance->hosts->config_file, 'Correct default location of hosts.yml file');
 
