@@ -91,20 +91,9 @@ sub statement {
 sub profit_table {
     my ($c, $args) = @_;
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'profit_table',
-        sub {
-            my $response = shift;
-            return {
-                msg_type     => 'profit_table',
-                profit_table => $response,
-            };
-        },
-        {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
-    return;
+    return {
+        msg_type => 'profit_table',
+        profit_table => BOM::RPC::v3::Accounts::profit_table($c->stash('client'), $args)};
 }
 
 sub get_account_status {
