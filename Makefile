@@ -2,7 +2,7 @@ v2:
 	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v2
 
 v3:
-	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v3
+	perl -Ilib  t/BOM/WebsocketAPI/v3/55_new_real_account.t
 
 structure:
 	forkprove --timer -I./lib  -I./t t/BOM/*.t
