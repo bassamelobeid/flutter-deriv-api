@@ -650,10 +650,14 @@ sub __client_withdrawal_notes {
 
 ## This endpoint is only available for MLT/MF accounts
 sub transfer_between_accounts {
-    my $arg_ref    = shift;
-    my $client     = $arg_ref->{'client'};
-    my $app_config = $arg_ref->{app_config};
-    my $args       = $arg_ref->{args};
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -668,6 +672,7 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is unavailable for your account: [_1].', $client->loginid));
     }
 
+    my $args         = $params->{args};
     my $loginid_from = $args->{account_from};
     my $loginid_to   = $args->{account_to};
     my $currency     = $args->{currency};
