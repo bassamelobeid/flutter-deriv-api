@@ -100,14 +100,21 @@ sub __build_landing_company {
 }
 
 sub statement {
-    my ($account, $args) = @_;
+    my $params = shift;
+
+    my ($client, $account);
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    $account = $client->default_account if $client;
 
     return {
         transactions => [],
         count        => 0
     } unless ($account);
 
-    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($args, $account);
+    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
     my @txns;
     foreach my $txn (@$results) {
@@ -120,7 +127,7 @@ sub statement {
             contract_id      => $txn->{financial_market_bet_id},
         };
 
-        if ($args->{description}) {
+        if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
 
             if ($struct->{shortcode} && $account->currency_code) {
