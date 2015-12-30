@@ -62,7 +62,9 @@ sub paymentagent_list {
 sub paymentagent_withdraw {
     my ($c, $args) = @_;
 
+    my $r          = $c->stash('request');
     my $app_config = $c->app_config;
+
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'paymentagent_withdraw',
@@ -74,8 +76,7 @@ sub paymentagent_withdraw {
             } else {
                 return {
                     msg_type              => 'paymentagent_withdraw',
-                    paymentagent_withdraw => $response->{status},
-                };
+                    paymentagent_withdraw => $response->{status}};
             }
         },
         {
@@ -83,8 +84,9 @@ sub paymentagent_withdraw {
             client_loginid             => $c->stash('loginid'),
             is_payment_suspended       => $app_config->system->suspend->payments,
             is_payment_agent_suspended => $app_config->system->suspend->payment_agents,
-            cs_email                   => $c->stash('request')->website->config->get('customer_support.email'),
-            payments_email             => $app_config->payments->email
+            cs_email                   => $r->website->config->get('customer_support.email'),
+            payments_email             => $app_config->payments->email,
+            website_name               => $r->website->display_name
         });
     return;
 }
@@ -92,16 +94,33 @@ sub paymentagent_withdraw {
 sub paymentagent_transfer {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Cashier::paymentagent_transfer($c->stash('client'), $c->app_config, $c->stash('request')->website, $args);
-    if (exists $response->{error}) {
-        $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
-        return $c->new_error('paymentagent_transfer', $response->{error}->{code}, $response->{error}->{message_to_client});
-    }
+    my $r          = $c->stash('request');
+    my $app_config = $c->app_config;
 
-    return {
-        msg_type              => 'paymentagent_transfer',
-        paymentagent_transfer => $response->{status},
-    };
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'paymentagent_transfer',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
+                return $c->new_error('paymentagent_transfer', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type              => 'paymentagent_transfer',
+                    paymentagent_transfer => $response->{status}};
+            }
+        },
+        {
+            args                       => $args,
+            client_loginid             => $c->stash('loginid'),
+            is_payment_suspended       => $app_config->system->suspend->payments,
+            is_payment_agent_suspended => $app_config->system->suspend->payment_agents,
+            cs_email                   => $r->website->config->get('customer_support.email'),
+            payments_email             => $app_config->payments->email,
+            website_name               => $r->website->display_name
+        });
+    return;
 }
 
 sub transfer_between_accounts {
