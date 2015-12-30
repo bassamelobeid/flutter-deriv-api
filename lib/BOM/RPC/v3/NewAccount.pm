@@ -80,35 +80,22 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
-    use Data::Dumper;
-    use File::Slurp;
-    File::Slurp::append_file('/tmp/kmz', Dumper($params));
-
     my $args = $params->{args};
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    File::Slurp::append_file('/tmp/kmz', "1");
-
-
     return BOM::RPC::v3::Utility::permission_error() unless $client;
-
-    File::Slurp::append_file('/tmp/kmz', "2");
 
     my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
-
-    File::Slurp::append_file('/tmp/kmz', "3");
 
     unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'invalid',
                 message_to_client => $error_map->{'invalid'}});
     }
-
-    File::Slurp::append_file('/tmp/kmz', "4");
 
     my $details_ref =
         _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
@@ -118,22 +105,11 @@ sub new_account_real {
                 message_to_client => $error_map->{$err}});
     }
 
-    BOM::Platform::User->new({email => $client->email});
-    File::Slurp::append_file('/tmp/kmz', "5\n".Dumper($details_ref));
-    my $acc;
-
-    eval {
-        $acc = BOM::Platform::Account::Real::default::create_account({
+    my $acc = BOM::Platform::Account::Real::default::create_account({
         from_client => $client,
         user        => BOM::Platform::User->new({email => $client->email}),
         details     => $details_ref->{details},
     });
-    };
-    if ($@) {
-        File::Slurp::append_file('/tmp/kmz', "$@\n");
-    }
-
-    File::Slurp::append_file('/tmp/kmz', "6");
 
     if (my $err_code = $acc->{error}) {
         return BOM::RPC::v3::Utility::create_error({
@@ -141,13 +117,7 @@ sub new_account_real {
                 message_to_client => $error_map->{$err_code}});
     }
 
-    File::Slurp::append_file('/tmp/kmz', "7");
-
-
     my $landing_company = $acc->{client}->landing_company;
-
-    File::Slurp::append_file('/tmp/kmz', "8");
-
     return {
         client_id                 => $acc->{client}->loginid,
         landing_company           => $landing_company->name,
