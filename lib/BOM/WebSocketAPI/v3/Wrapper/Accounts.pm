@@ -10,7 +10,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::WebSocketAPI::Websocket_v3;
 
 sub payout_currencies {
-    my $c = shift;
+    my ($c, $args) = @_;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
