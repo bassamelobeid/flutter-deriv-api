@@ -22,14 +22,13 @@ use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize);
 
 sub new_account_virtual {
-    my ($args, $token, $email) = @_;
-
-    my %details = %{$args};
+    my $params = shift;
+    my $args   = $params->{args};
 
     my $err_code;
-    if (_is_session_cookie_valid($token, $email)) {
+    if (_is_session_cookie_valid($params->{token}, $args->{email})) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
-            details        => \%details,
+            details        => $args,
             email_verified => 1
         });
         if (not $acc->{error}) {
@@ -63,13 +62,14 @@ sub _is_session_cookie_valid {
 }
 
 sub verify_email {
-    my ($email, $website, $link) = @_;
-    unless (BOM::Platform::User->new({email => $email})) {
+    my $params = shift;
+
+    unless (BOM::Platform::User->new({email => $params->{email}})) {
         send_email({
-            from               => $website->config->get('customer_support.email'),
-            to                 => $email,
-            subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $website->display_name),
-            message            => [BOM::Platform::Context::localize('Your email address verification code is: ' . $link)],
+            from               => $params->{cs_email},
+            to                 => $params->{email},
+            subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+            message            => [BOM::Platform::Context::localize('Your email address verification code is: ' . $params->{link})],
             use_email_template => 1
         });
     }
@@ -77,60 +77,21 @@ sub verify_email {
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
-sub _get_client_details {
-    my ($args, $client, $broker) = @_;
-
-    my $details = {
-        broker_code                   => $broker,
-        email                         => $client->email,
-        client_password               => $client->password,
-        myaffiliates_token_registered => 0,
-        checked_affiliate_exposures   => 0,
-        source                        => 'websocket-api',
-        latest_environment            => '',
-    };
-
-    my $affiliate_token;
-    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
-    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
-
-    my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer);
-
-    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
-        try {
-            my $dob = DateTime->new(
-                year  => $1,
-                month => $2,
-                day   => $3,
-            );
-            $args->{date_of_birth} = $dob->ymd;
-        }
-        catch { return; } or return {error => 'invalid DOB'};
-    }
-
-    foreach my $key (@fields) {
-        my $value = $args->{$key};
-        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
-
-        if (not $client->is_virtual) {
-            $value ||= $client->$key;
-        }
-        $details->{$key} = $value || '';
-
-        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
-        return {error => 'invalid'} if (not $details->{$key});
-    }
-    return {details => $details};
-}
-
 sub new_account_real {
-    my ($client, $args) = @_;
+    my $params = shift;
+
+    my $args = $params->{args};
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
 
-    unless ($client and $client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
+    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'real') {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'invalid',
                 message_to_client => $error_map->{'invalid'}});
@@ -165,7 +126,15 @@ sub new_account_real {
 }
 
 sub new_account_maltainvest {
-    my ($client, $args) = @_;
+    my $params = shift;
+
+    my $args = $params->{args};
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $response  = 'new_account_maltainvest';
     my $error_map = BOM::Platform::Locale::error_map();
@@ -213,6 +182,53 @@ sub new_account_maltainvest {
         landing_company           => $landing_company->name,
         landing_company_shortcode => $landing_company->short
     };
+}
+
+sub _get_client_details {
+    my ($args, $client, $broker) = @_;
+
+    my $details = {
+        broker_code                   => $broker,
+        email                         => $client->email,
+        client_password               => $client->password,
+        myaffiliates_token_registered => 0,
+        checked_affiliate_exposures   => 0,
+        source                        => 'websocket-api',
+        latest_environment            => ''
+    };
+
+    my $affiliate_token;
+    $affiliate_token = delete $args->{affiliate_token} if (exists $args->{affiliate_token});
+    $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
+
+    my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
+        address_city address_state address_postcode phone secret_question secret_answer);
+
+    if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
+        try {
+            my $dob = DateTime->new(
+                year  => $1,
+                month => $2,
+                day   => $3,
+            );
+            $args->{date_of_birth} = $dob->ymd;
+        }
+        catch { return; } or return {error => 'invalid DOB'};
+    }
+
+    foreach my $key (@fields) {
+        my $value = $args->{$key};
+        $value = BOM::Platform::Client::Utility::encrypt_secret_answer($value) if ($key eq 'secret_answer' and $value);
+
+        if (not $client->is_virtual) {
+            $value ||= $client->$key;
+        }
+        $details->{$key} = $value || '';
+
+        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
+        return {error => 'invalid'} if (not $details->{$key});
+    }
+    return {details => $details};
 }
 
 1;
