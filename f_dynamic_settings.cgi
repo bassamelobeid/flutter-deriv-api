@@ -55,8 +55,6 @@ if (scalar @{$settings_list;} == 0) {
 
 my $submitted = request()->param('submitted');
 
-my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
-
 if (not BOM::System::Config::is_master_server()) {
     print "<div id=\"message\"><div id=\"error\">This server is not Dynamic Settings Master and your changes won't be saved.</div></div><br />";
 } else {
