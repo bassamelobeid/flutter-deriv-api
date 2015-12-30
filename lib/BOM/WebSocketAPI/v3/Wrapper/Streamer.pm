@@ -73,7 +73,10 @@ sub proposal {
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
-        my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
+        my $id;
+        if (!defined $args->{is_stream} || $args->{is_stream}) {
+            $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
+        }
         send_ask($c, $id, $args);
     }
     return;
@@ -104,10 +107,7 @@ sub send_ask {
                     msg_type => 'proposal',
                     echo_req => $args,
                     (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => {
-                        id => $id,
-                        %$response
-                    }}});
+                    proposal => {($id ? (id => $id) : ()), %$response}}});
     }
     return;
 }
