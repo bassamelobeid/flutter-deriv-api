@@ -214,7 +214,14 @@ sub balance {
 }
 
 sub get_account_status {
-    my $client = shift;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return [] unless $client;
 
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
