@@ -55,6 +55,8 @@ sub startup {
                 '/paymentagent_list' => MojoX::JSON::RPC::Service->new->register('paymentagent_list', \&BOM::RPC::v3::Cashier::paymentagent_list),
                 '/paymentagent_withdraw' =>
                     MojoX::JSON::RPC::Service->new->register('paymentagent_withdraw', \&BOM::RPC::v3::Cashier::paymentagent_withdraw),
+                '/paymentagent_transfer' =>
+                    MojoX::JSON::RPC::Service->new->register('paymentagent_transfer', \&BOM::RPC::v3::Cashier::paymentagent_transfer),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;

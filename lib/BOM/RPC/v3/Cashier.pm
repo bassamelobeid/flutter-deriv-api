@@ -143,12 +143,20 @@ sub paymentagent_list {
 }
 
 sub paymentagent_transfer {
-    my ($client_fm, $app_config, $website, $args) = @_;
+    my $params = shift;
+    my ($loginid_fm, $cs_email, $payments_email, $website_name, $args) =
+        ($params->{client_loginid}, $params->{cs_email}, $params->{payments_email}, $params->{website_name}, $params->{args});
 
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
-    my $loginid_fm = $client_fm->loginid;
     my $loginid_to = uc $args->{transfer_to};
+
+    my $client_fm;
+    if ($loginid_fm) {
+        $client_fm = BOM::Platform::Client->new({loginid => $loginid_fm});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client_fm;
 
     my $payment_agent = $client_fm->payment_agent;
 
@@ -164,19 +172,20 @@ sub paymentagent_transfer {
         my $msg = shift;
         return $error_sub->(
             __output_payments_error_message({
-                    client       => $client_fm,
-                    cs_email     => $website->config->get('customer_support.email'),
-                    action       => "transfer - from $loginid_fm to $loginid_to",
-                    error_msg    => $msg,
-                    payment_type => 'Payment Agent transfer',
-                    currency     => $currency,
-                    amount       => $amount,
+                    client         => $client_fm,
+                    cs_email       => $cs_email,
+                    payments_email => $payments_email,
+                    action         => "transfer - from $loginid_fm to $loginid_to",
+                    error_msg      => $msg,
+                    payment_type   => 'Payment Agent transfer',
+                    currency       => $currency,
+                    amount         => $amount,
                 }));
     };
 
     my $error_msg;
-    if (   $app_config->system->suspend->payments
-        or $app_config->system->suspend->payment_agents)
+    if (   $params->{is_payment_suspended}
+        or $params->{is_payment_agent_suspended})
     {
         $error_msg = localize('Sorry, Payment Agent Transfer is temporarily disabled due to system maintenance. Please try again in 30 minutes.');
     } elsif (not $client_fm->landing_company->allows_payment_agents) {
@@ -320,11 +329,11 @@ The funds have been credited into your account.
 
 Kind Regards,
 
-The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website->display_name
+The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $website_name
     );
 
     send_email({
-        'from'               => $website->config->get('customer_support.email'),
+        'from'               => $cs_email,
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
