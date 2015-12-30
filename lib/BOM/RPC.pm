@@ -14,6 +14,7 @@ use BOM::RPC::v3::Offerings;
 use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
+use BOM::RPC::v3::NewAccount;
 
 sub startup {
     my $app = shift;
@@ -62,7 +63,13 @@ sub startup {
                 '/landing_company'   => MojoX::JSON::RPC::Service->new->register('landing_company',   \&BOM::RPC::v3::Accounts::landing_company),
                 '/landing_company_details' =>
                     MojoX::JSON::RPC::Service->new->register('landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details),
-                '/statement' => MojoX::JSON::RPC::Service->new->register('statement', \&BOM::RPC::v3::Accounts::statement),
+                '/statement'        => MojoX::JSON::RPC::Service->new->register('statement',        \&BOM::RPC::v3::Accounts::statement),
+                '/verify_email'     => MojoX::JSON::RPC::Service->new->register('verify_email',     \&BOM::RPC::v3::NewAccount::verify_email),
+                '/new_account_real' => MojoX::JSON::RPC::Service->new->register('new_account_real', \&BOM::RPC::v3::NewAccount::new_account_real),
+                '/new_account_maltainvest' =>
+                    MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
+                '/new_account_virtual' =>
+                    MojoX::JSON::RPC::Service->new->register('new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
