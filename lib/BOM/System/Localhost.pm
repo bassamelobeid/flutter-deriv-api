@@ -30,4 +30,16 @@ sub name {
     return $name[0];
 }
 
+sub domain {
+    return 'regentmarkets.com';
+}
+
+sub external_domain {
+    my $env = BOM::System::Config::env;
+    if ($env =~ /^qa/) {
+        return 'binary' . $env . '.com';
+    }
+    return 'binary.com';
+}
+
 1;
