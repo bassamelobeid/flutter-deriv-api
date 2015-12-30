@@ -119,21 +119,27 @@ sub get_account_status {
 sub change_password {
     my ($c, $args) = @_;
 
-    my $r        = $c->stash('request');
-    my $response = BOM::RPC::v3::Accounts::change_password(
-        $c->stash('client'),
-        $c->stash('token_type'),
-        $r->website->config->get('customer_support.email'),
-        $r->client_ip, $args
-    );
-
-    if (exists $response->{error}) {
-        return $c->new_error('change_password', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type        => 'change_password',
-            change_password => $response->{status}};
-    }
+    my $r = $c->stash('request');
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'change_password',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('change_password', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type        => 'change_password',
+                    change_password => $response->{status}};
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            token_type     => $c->stash('token_type'),
+            cs_email       => $r->website->config->get('customer_support.email'),
+            client_ip      => $r->client_ip
+        });
     return;
 }
 
