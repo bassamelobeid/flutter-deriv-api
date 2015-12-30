@@ -9,7 +9,7 @@ with 'BOM::Utility::Logging';
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
 use BOM::MarketData::EconomicEvent;
-use BOM::MarketData::EconomicEventChronicle;
+use BOM::MarketData::EconomicEventCouch;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Utility::Log4perl;
@@ -45,7 +45,7 @@ sub script_run {
     my @all_events;
 
     foreach my $event_param (@$events_received) {
-        my $eco = BOM::MarketData::EconomicEvent->new($event_param);
+        my $eco = BOM::MarketData::EconomicEventCouch->new($event_param);
         unless (_is_categorized($eco)) {
             warn("Uncategorized economic events name: $event_param->{event_name}, symbol: $event_param->{symbol}, impact: $event_param->{impact}");
         }
@@ -55,7 +55,7 @@ sub script_run {
         $event_param->{recorded_date} = Date::Utility->new->epoch;
 
         try {
-            my $eco_ch = BOM::MarketData::EconomicEventChronicle->new($event_param);
+            my $eco_ch = BOM::MarketData::EconomicEvent->new($event_param);
             push @all_events, $eco_ch;
         }
         catch {
@@ -69,7 +69,6 @@ sub script_run {
     }
 
     try {
-
         @all_events = sort { $a->release_date->epoch cmp $b->release_date->epoch } @all_events;
 
         #now we need to convert these sorted data into their document

@@ -24,7 +24,7 @@ use Sereal::Encoder;
 use Try::Tiny;
 use BOM::Utility::Log4perl qw(get_logger);
 use BOM::System::Chronicle;
-use BOM::MarketData::EconomicEventChronicle;
+use BOM::MarketData::EconomicEventCouch;
 
 has data_location => (
     is       => 'ro',
@@ -91,9 +91,9 @@ sub retrieve_doc_with_view {
 
     my $symbol = $args->{symbol};
     my $release_date =
-        (ref $args->{release_date} eq 'Date::Utility')
-        ? $args->{release_date}->datetime_iso8601
-        : Date::Utility->new($args->{release_date})->datetime_iso8601;
+    (ref $args->{release_date} eq 'Date::Utility')
+    ? $args->{release_date}->datetime_iso8601
+    : Date::Utility->new($args->{release_date})->datetime_iso8601;
     my $event_name = $args->{event_name};
 
     my $query = {key => [$symbol, $release_date, $event_name]};
@@ -120,10 +120,49 @@ Returns all events that will happen on a pre-specified period.
 my $cache_namespace = 'COUCH_NEWS::';
 
 sub get_latest_events_for_period {
-    my ($self, $period) = @_;
+    my ($self, $period, $debug) = @_;
     my $couch_result     = $self->_get_latest_events_for_period($period);
+    my $chronicle_result = $self->_get_latest_events_for_period_chronicle($period);
+
+    #if we are requested to operate in debug mode, then comapre and write output
+    if ( defined $debug and ($debug == 1 or $debug == 2)  ) {
+        #now compare two resultsets
+        print "Sizes do not match\n" if (scalar @$couch_result != scalar @$chronicle_result);
+        print "couch size is " . scalar @$couch_result . "\n";
+        print "chronicle size is " . scalar @$chronicle_result . "\n";
+        print "couch data is " . Dumper($couch_result) . "\n" if $debug == 2;
+        print "chronicle data is" . Dumper($chronicle_result) . "\n" if $debug == 2;
+
+        my $first = 1;
+        for my $couch_event (@$couch_result) {
+            #couch_event is of type EconomicEvent
+            print "matching for couch $couch_event->{symbol} $couch_event->{event_name} $couch_event->{release_date} \n" if $first;
+            my $has_a_match = 0;
+            for my $chr_event (@$chronicle_result) {
+                print "matching with $chr_event->{symbol} $chr_event->{event_name} $chr_event->{release_date} \n" if $first;
+                #chr_event is of type EconomicEventChronicle
+                if (   $couch_event->{release_date}->epoch == $chr_event->{release_date}->epoch
+                    && $couch_event->{symbol} eq $chr_event->{symbol}
+                    && $couch_event->{event_name} eq $chr_event->{event_name})
+                {
+                    $has_a_match = 1;
+                    print "Found a match!\n";
+                    last;
+                }
+
+            }
+            $first = 0;
+            print ">>>>>>>>>>>>>>>>>>>> couch event <" . $couch_event->{event_name} . "> does not have a match\n" if !$has_a_match;
+        }
+    }
+
+    return $chronicle_result;
+}
+
+
+sub _get_latest_events_for_period_chronicle {
+    my ($self, $period) = @_;
     my $chronicle_result = [];
-    my $logger           = get_logger();
 
     try {
         my $start  = $period->{from}->epoch;
@@ -159,7 +198,7 @@ sub get_latest_events_for_period {
             my $unique_key = $single_ee->{symbol} . $single_ee->{release_date} . $single_ee->{event_name};
 
             if ($ee_epoch >= $start and $ee_epoch <= $end) {
-                $matching_events{$unique_key} = BOM::MarketData::EconomicEventChronicle->new($single_ee);
+                $matching_events{$unique_key} = BOM::MarketData::EconomicEvent->new($single_ee);
             }
         }
 
@@ -167,38 +206,12 @@ sub get_latest_events_for_period {
         $chronicle_result = \@matching_events_values;
     }
     catch {
-        $logger->warn("Error getting chronicle results: " . $_);
+        #$logger->warn("Error getting chronicle results: " . $_);
     };
 
-    $DB::single = 1;
-    #now compare two resultsets
-    $logger->warn("Sizes do not match") if (scalar $couch_result != scalar $chronicle_result);
-    print "Sizes do not match\n" if (scalar $couch_result != scalar $chronicle_result);
-
-    my $first = 1;
-    for my $couch_event (@$couch_result) {
-        #couch_event is of type EconomicEvent
-        print "matching for couch $couch_event->{symbol} $couch_event->{event_name} $couch_event->{release_date} \n" if $first;
-        my $has_a_match = 0;
-        for my $chr_event (@$chronicle_result) {
-            print "matching with $chr_event->{symbol} $chr_event->{event_name} $chr_event->{release_date} \n" if $first;
-            #chr_event is of type EconomicEventChronicle
-            if (   $couch_event->{release_date}->epoch == $chr_event->{release_date}->epoch
-                && $couch_event->{symbol} eq $chr_event->{symbol}
-                && $couch_event->{event_name} eq $chr_event->{event_name})
-            {
-                $has_a_match = 1;
-                last;
-            }
-
-            $logger->warn("couch event <" . $couch_event->{event_name} . "> does not have a match") if !$has_a_match;
-            #print "couch event <" . $couch_event->{event_name} . "> does not have a match" if !$has_a_match;
-        }
-        $first = 0;
-    }
-
-    return $couch_result;
+    return $chronicle_result;
 }
+
 
 sub _get_latest_events_for_period {
     my ($self, $period) = @_;
@@ -226,19 +239,19 @@ sub _get_latest_events_for_period {
         my $end_of_first  = $start->truncate_to_day->plus_time_interval('23h59m59s');
         my $start_of_next = $end_of_first->plus_time_interval('1s');
         push @$events,
-            @{
-            $self->_latest_events_for_day_part({
-                    from   => $start,
-                    to     => $end_of_first,
-                    source => $source
-                })};
+        @{
+        $self->_latest_events_for_day_part({
+        from   => $start,
+        to     => $end_of_first,
+        source => $source
+        })};
         push @$events,
-            @{
-            $self->_get_latest_events_for_period({
-                    from   => $start_of_next,
-                    to     => $end,
-                    source => $source
-                })};
+        @{
+        $self->_get_latest_events_for_period({
+        from   => $start_of_next,
+        to     => $end,
+        source => $source
+        })};
     }
 
     return $events;
@@ -292,9 +305,9 @@ sub _get_events {
     my ($self, $args) = @_;
 
     croak 'start date undef during economic events calculation'
-        unless defined $args->{from};
+    unless defined $args->{from};
     croak 'end date undef during economic events calculation'
-        unless defined $args->{to};
+    unless defined $args->{to};
 
     my ($start, $end) = map { Date::Utility->new($_) } @{$args}{'from', 'to'};
     my $source = $args->{source};
@@ -310,7 +323,7 @@ sub _get_events {
     foreach my $data (@{$docs}) {
         my $ee_params = $self->_couchdb->document($data);
         $ee_params->{document_id} //= $data;
-        push @event_objs, BOM::MarketData::EconomicEvent->new($ee_params);
+        push @event_objs, BOM::MarketData::EconomicEventCouch->new($ee_params);
     }
 
     return \@event_objs;
