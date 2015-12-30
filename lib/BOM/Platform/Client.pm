@@ -672,7 +672,7 @@ working going forward with any input, it should die.
 
 sub add_note {
     my ($self, $subject, $content) = @_;
-    return if $ENV{'TRAVIS'};
+    return if -e 'etc/rmg/travis';
     my $to = BOM::Platform::Context::request()->website->config->get('customer_support.email');
     local $\ = undef;
     my $from = $to;
