@@ -1,6 +1,7 @@
 package BOM::MarketData::AutoUpdater;
 
 use Moose;
+use BOM::System::Config;
 use BOM::Utility::Log4perl qw( get_logger );
 use Date::Utility;
 use BOM::Platform::Runtime;
