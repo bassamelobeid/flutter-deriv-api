@@ -80,6 +80,10 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
+    use Data::Dumper;
+    use File::Slurp;
+    File::Slurp::append_file('/tmp/kmz', Dumper($params));
+
     my $args = $params->{args};
     my $client;
     if ($params->{client_loginid}) {
