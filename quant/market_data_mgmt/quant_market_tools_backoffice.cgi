@@ -28,7 +28,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-if (BOM::System::Localhost::is_master_server()) {
+unless (BOM::System::Localhost::is_master_server()) {
     code_exit_BO();
 }
 
