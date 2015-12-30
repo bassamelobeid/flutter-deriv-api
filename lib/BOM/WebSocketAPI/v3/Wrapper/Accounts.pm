@@ -44,23 +44,29 @@ sub landing_company {
                 landing_company => $response
             };
         },
-        $args
-    );
+        {args => $args});
     return;
 }
 
 sub landing_company_details {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Accounts::landing_company_details($args);
-    if (exists $response->{error}) {
-        return $c->new_error('landing_company_details', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type                => 'landing_company_details',
-            landing_company_details => $response
-        };
-    }
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'landing_company_details',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('landing_company_details', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type                => 'landing_company_details',
+                    landing_company_details => $response,
+                };
+            }
+        },
+        {args => $args});
+    return;
 }
 
 sub statement {
