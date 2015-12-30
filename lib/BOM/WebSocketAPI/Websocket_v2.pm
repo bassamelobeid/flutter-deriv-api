@@ -176,8 +176,7 @@ sub __handle {
 
         my $client = $c->stash('client');
         if ($client) {
-            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all',
-                {tags => [$tag, "loginid:$client->{loginid}"]});
+            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v2.authenticated_call.all', {tags => [$tag, "loginid:$client->{loginid}"]});
         }
 
         ## sell expired
