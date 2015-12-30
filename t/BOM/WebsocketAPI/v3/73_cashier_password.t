@@ -125,6 +125,6 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 ok $res->{error}->{message} =~ /Your cashier was not locked/, 'Your cashier was not locked';
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

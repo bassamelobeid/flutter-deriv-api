@@ -91,6 +91,6 @@ if (exists $res->{proposal_open_contract}) {
     test_schema('proposal_open_contract', $res);
 }
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

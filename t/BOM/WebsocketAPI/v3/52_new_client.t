@@ -88,6 +88,6 @@ $t = $t->send_ok({
 my $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'DisabledClient', 'you can not call any authenticated api after disabled.';
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

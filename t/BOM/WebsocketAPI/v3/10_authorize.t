@@ -56,6 +56,6 @@ $t = $t->send_ok({json => {balance => 1}})->message_ok;
 $balance = decode_json($t->message->[1]);
 is($balance->{error}->{code}, 'AuthorizationRequired', 'required again after logout');
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

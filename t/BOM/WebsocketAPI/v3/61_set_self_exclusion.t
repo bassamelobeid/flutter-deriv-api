@@ -203,6 +203,6 @@ is $self_excl->max_balance, 9998, 'set correct in db';
 is $self_excl->exclude_until, $exclude_until . 'T00:00:00', 'exclude_until in db is right';
 is $self_excl->session_duration_limit, 1440, 'all good';
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

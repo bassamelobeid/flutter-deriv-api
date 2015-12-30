@@ -233,7 +233,7 @@ test_schema('paymentagent_list', $res);
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /You are not a Payment Agent/, 'You are not a Payment Agent';
 
-    $t->finish_ok;
+    $t->finished_ok(200);
     $t = build_mojo_test();
 
     my $token = BOM::Database::Model::AccessToken->new->create_token($pa_client->loginid, 'Test Token');
@@ -364,6 +364,6 @@ test_schema('paymentagent_list', $res);
     is $res->{paymentagent_transfer}, 1, 'paymentagent_withdraw ok again';
 }
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

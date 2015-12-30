@@ -26,6 +26,6 @@ my $balance = decode_json($t->message->[1]);
 ok($balance->{balance});
 test_schema('balance', $balance);
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

@@ -136,6 +136,6 @@ $t = $t->send_ok({
 my $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'PermissionDenied', 'got PermissionDenied for api token';
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

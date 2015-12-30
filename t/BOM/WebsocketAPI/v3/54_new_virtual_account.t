@@ -93,4 +93,4 @@ subtest 'insufficient data' => sub {
     is($res->{new_account_virtual}, undef, 'NO account created');
 };
 
-$t->finish_ok;
+$t->finished_ok(200);

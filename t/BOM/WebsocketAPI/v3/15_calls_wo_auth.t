@@ -75,6 +75,6 @@ is_deeply $res->{states_list}->[0],
     };
 test_schema('states_list', $res);
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

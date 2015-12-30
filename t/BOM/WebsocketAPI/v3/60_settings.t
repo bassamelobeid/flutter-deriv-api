@@ -104,6 +104,6 @@ $t = $t->send_ok({
 $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'PermissionDenied';
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();

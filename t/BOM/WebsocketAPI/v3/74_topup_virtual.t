@@ -86,6 +86,6 @@ ok $res->{error}->{message} =~ /Your balance is higher than the permitted amount
 $client_vr = BOM::Platform::Client->new({loginid => $client_vr->loginid});
 ok $old_balance + $topup_amount == $client_vr->default_account->balance, 'balance stays same';
 
-$t->finish_ok;
+$t->finished_ok(200);
 
 done_testing();
