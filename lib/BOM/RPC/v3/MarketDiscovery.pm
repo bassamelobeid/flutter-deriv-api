@@ -9,6 +9,7 @@ use Time::Duration::Concise::Localize;
 
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
+use BOM::Platform::Client;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Offerings;

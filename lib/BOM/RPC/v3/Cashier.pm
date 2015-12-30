@@ -18,6 +18,7 @@ use BOM::RPC::v3::Utility;
 use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw(localize);
+use BOM::Platform::Client;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
 use BOM::Platform::Transaction;
 use BOM::Database::DataMapper::Payment;
