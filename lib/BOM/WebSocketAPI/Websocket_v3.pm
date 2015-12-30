@@ -335,7 +335,7 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all', {tags => [$tag, $descriptor->{category}]});
+        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -368,7 +368,7 @@ sub __handle {
         my $client = $c->stash('client');
         if ($client) {
             DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}"]});
+                {tags => [$tag, "loginid:$client->{loginid}"]});
         }
 
         ## sell expired
@@ -445,7 +445,7 @@ sub rpc {
             my $res = pop;
 
             DataDog::DogStatsd::Helper::stats_timing('rpc.call.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_timing('rpc.call.cpuuage', $cpu->usage(), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_timing('rpc.call.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
