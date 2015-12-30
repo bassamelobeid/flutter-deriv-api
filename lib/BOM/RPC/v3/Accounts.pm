@@ -236,7 +236,18 @@ sub get_account_status {
 }
 
 sub change_password {
-    my ($client, $token_type, $cs_email, $ip, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $token_type, $cs_email, $client_ip, $args) =
+        ($params->{client_loginid}, $params->{token_type}, $params->{cs_email}, $params->{client_ip}, $params->{args});
+
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
+    if (not $client or not(($token_type // '') eq 'session_token')) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     ## only allow for Session Token
     return BOM::RPC::v3::Utility::create_error({
@@ -277,7 +288,7 @@ sub change_password {
                 localize(
                     'The password for your account [_1] has been changed. This request originated from IP address [_2]. If this request was not performed by you, please immediately contact Customer Support.',
                     $client->email,
-                    $ip
+                    $client_ip
                 )
             ],
             use_email_template => 1,
@@ -287,7 +298,7 @@ sub change_password {
 }
 
 sub cashier_password {
-    my ($client, $cs_email, $ip, $args) = @_;
+    my ($client, $cs_email, $client_ip, $args) = @_;
 
     my $unlock_password = $args->{unlock_password} // '';
     my $lock_password   = $args->{lock_password}   // '';
@@ -332,7 +343,7 @@ sub cashier_password {
                         localize(
                             "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
                             $client->loginid,
-                            $ip
+                            $client_ip
                         )
                     ],
                     'use_email_template' => 1,
@@ -357,7 +368,7 @@ sub cashier_password {
                         localize(
                             'This is an automated message to alert you to the fact that there was a failed attempt to unlock the Cashier/Settings section of your account [_1] from IP address [_2]',
                             $client->loginid,
-                            $ip
+                            $client_ip
                         )
                     ],
                     'use_email_template' => 1,
@@ -378,7 +389,7 @@ sub cashier_password {
                         localize(
                             "This is an automated message to alert you that a change was made to your cashier settings section of your account [_1] from IP address [_2]. If you did not perform this update please login to your account and update settings.",
                             $client->loginid,
-                            $ip
+                            $client_ip
                         )
                     ],
                     'use_email_template' => 1,
@@ -411,7 +422,7 @@ sub get_settings {
 }
 
 sub set_settings {
-    my ($client, $website, $ip, $user_agent, $language, $args) = @_;
+    my ($client, $website, $client_ip, $user_agent, $language, $args) = @_;
 
     my $now = Date::Utility->new;
 
@@ -449,7 +460,7 @@ sub set_settings {
     $client->postcode($addressPostcode);
     $client->phone($phone);
 
-    $client->latest_environment($now->datetime . ' ' . $ip . ' ' . $user_agent . ' LANG=' . $language);
+    $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'InternalServerError',
