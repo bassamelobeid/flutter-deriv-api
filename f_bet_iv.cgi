@@ -50,7 +50,7 @@ print '<p>BLOOMBERG DATA LICENSE (BBDL) is an FTP service where we can make requ
  Then wait a minute and download scheduled.out.
 <br>Note2: BBDL TIME field should be in the form HHMM, where HH=00-23 and MM=00-59 and should be in TOKYO time zone as our account attached to TOKYO . TOKYO time= GMT+9.</p>';
 
-if (BOM::System::Localhost::is_master_server()) {
+unless (BOM::System::Localhost::is_master_server()) {
     print
         "<font color=red><b>WARNING! You are not on the Master Live Server. Suggest you use these tools on the Master Live Server instead.</b></font><P>";
 }
