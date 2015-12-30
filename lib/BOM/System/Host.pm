@@ -148,18 +148,6 @@ sub has_role {
     return @roles ? 1 : undef;    # Coding to the coverage tool here
 }
 
-=head2 $self->belongs_to($group)
-
-Returns true if $group is in the list of $self's groups, undef otherwise.
-
-=cut
-
-sub belongs_to {
-    my $self  = shift;
-    my $group = shift;
-    return (grep { $_ eq $group } @{$self->groups}) ? 1 : undef;
-}
-
 =head2 BUILDARGS
 
 As necessary, this method converts:

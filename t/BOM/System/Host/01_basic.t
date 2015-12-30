@@ -50,10 +50,6 @@ subtest 'BOM::System::Host basic tests' => sub {
     is($host->external_fqdn,   'fred.binary.com',                   'External fqdn is fred.binary.com');
     is(1,                      $host->has_role('streaming_server'), 'Host has streaming_server role');
     is(undef,                  $host->has_role('fribitz_server'),   'Host does not have fribitz_server role');
-    is(1,                      $host->belongs_to('rmg'),            'Host belongs to rmg group');
-    is(1, $host->belongs_to('rmg', 'foo'), 'Host belongs to rmg group in multi-value (one match) context');
-    is(1, $host->belongs_to('rmg', 'bom'), 'Host belongs to rmg group in multi-value (multi-match) context');
-    is(undef, $host->belongs_to('foo'), 'Host does not belong to foo group');
     is('/etc/rmg/hosts.yml', BOM::Platform::Runtime->instance->hosts->config_file, 'Correct default location of hosts.yml file');
 
     $host = BOM::System::Host->new({
