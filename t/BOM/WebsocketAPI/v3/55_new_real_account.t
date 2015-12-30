@@ -47,18 +47,11 @@ subtest 'new CR real account' => sub {
         loginid => $vr_client->loginid,
         email   => $vr_client->email,
     )->token;
-    $t = $t->send_ok({json => {authorize => $token}});
-    sleep(5);
-    $t=$t->message_ok;
-    use Data::Dumper;
-    print Dumper($t->message);
+    $t = $t->send_ok({json => {authorize => $token}})->message_ok;
+
 
     subtest 'create CR account' => sub {
-        $t = $t->send_ok({json => \%client_details});
-        sleep(5);
-        $t=$t->message_ok;
-        use Data::Dumper;
-        print Dumper($t->message);
+        $t = $t->send_ok({json => \%client_details})->message_ok;
         my $res = decode_json($t->message->[1]);
         ok($res->{new_account_real});
         test_schema('new_account_real', $res);

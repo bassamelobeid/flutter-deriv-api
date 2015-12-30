@@ -19,10 +19,6 @@ env:
 before_install:
     - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/websocket_schema_update.sh
-    - sudo apt-get update
-    - sudo apt-get install -y --force-yes postfix
-    - sudo service postfix start
-    - ps aux |grep post
 
     - export PATH=/home/git/regentmarkets/cpan/local/bin:$PATH
     - /tmp/travis-scripts/fixHostName.sh
