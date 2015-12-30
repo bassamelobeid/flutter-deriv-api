@@ -12,6 +12,7 @@ use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
+use BOM::Platform::Client;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -21,23 +22,28 @@ use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
 
 sub payout_currencies {
-    my $account = shift;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
 
     my $currencies;
-    if ($account) {
-        $currencies = [$account->currency_code];
+    if ($client) {
+        $currencies = [$client->currency];
     } else {
         my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica');
         $currencies = $lc->legal_allowed_currencies;
     }
 
-    return $currencies,;
+    return $currencies;
 }
 
 sub landing_company {
-    my $args = shift;
+    my $params = shift;
 
-    my $country  = $args->{landing_company};
+    my $country  = $params->{args}->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
     my $c_config = $configs->{$country};
     unless ($c_config) {
@@ -68,9 +74,9 @@ sub landing_company {
 }
 
 sub landing_company_details {
-    my $args = shift;
+    my $params = shift;
 
-    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($args->{landing_company_details});
+    my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
             message_to_client => localize('Unknown landing company.')}) unless $lc;
@@ -94,14 +100,21 @@ sub __build_landing_company {
 }
 
 sub statement {
-    my ($account, $args) = @_;
+    my $params = shift;
+
+    my ($client, $account);
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    $account = $client->default_account if $client;
 
     return {
         transactions => [],
         count        => 0
     } unless ($account);
 
-    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($args, $account);
+    my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
     my @txns;
     foreach my $txn (@$results) {
@@ -114,7 +127,7 @@ sub statement {
             contract_id      => $txn->{financial_market_bet_id},
         };
 
-        if ($args->{description}) {
+        if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
 
             if ($struct->{shortcode} && $account->currency_code) {
