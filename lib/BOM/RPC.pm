@@ -62,8 +62,7 @@ sub startup {
                 '/landing_company'   => MojoX::JSON::RPC::Service->new->register('landing_company',   \&BOM::RPC::v3::Accounts::landing_company),
                 '/landing_company_details' =>
                     MojoX::JSON::RPC::Service->new->register('landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details),
-                '/statement'    => MojoX::JSON::RPC::Service->new->register('statement',    \&BOM::RPC::v3::Accounts::statement),
-                '/profit_table' => MojoX::JSON::RPC::Service->new->register('profit_table', \&BOM::RPC::v3::Accounts::profit_table),
+                '/statement' => MojoX::JSON::RPC::Service->new->register('statement', \&BOM::RPC::v3::Accounts::statement),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;

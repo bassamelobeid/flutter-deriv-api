@@ -146,17 +146,7 @@ sub statement {
 }
 
 sub profit_table {
-    my $params = shift;
-
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
-    return {
-        transactions => [],
-        count        => 0
-    } unless ($client);
+    my ($client, $args) = @_;
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
@@ -168,7 +158,6 @@ sub profit_table {
             )->db,
         });
 
-    my $args = $params->{args};
     $args->{after}  = $args->{date_from} if $args->{date_from};
     $args->{before} = $args->{date_to}   if $args->{date_to};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
