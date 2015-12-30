@@ -37,7 +37,7 @@ sub payout_currencies {
         $currencies = $lc->legal_allowed_currencies;
     }
 
-    return $currencies,;
+    return $currencies;
 }
 
 sub landing_company {
