@@ -25,4 +25,9 @@ sub fqdn {
     return Sys::Hostname::hostname;
 }
 
+sub name {
+    my @name = split(/\./, Sys::Hostname::hostname);
+    return $name[0];
+}
+
 1;
