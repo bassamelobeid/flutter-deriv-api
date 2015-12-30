@@ -5,6 +5,7 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
+use BOM::System::Config;
 use BOM::MarketData::AutoUpdater::ImpliedInterestRates;
 use BOM::Platform::Runtime;
 
@@ -12,7 +13,7 @@ sub documentation { return 'This is a cron that updates interest rates info from
 
 sub script_run {
     my $self = shift;
-    die 'Script only to run on master servers.' unless BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server');
+    die 'Script only to run on master servers.' unless (BOM::System::Config::is_master_server());
     BOM::MarketData::AutoUpdater::ImpliedInterestRates->new->run;
     return $self->return_value();
 }

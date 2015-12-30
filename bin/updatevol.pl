@@ -18,6 +18,7 @@ use lib qw( /home/git/regentmarkets/bom/cgi );
 
 use File::Find::Rule;
 
+use BOM::System::Config;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime;
 use BOM::MarketData::AutoUpdater::Forex;
@@ -40,8 +41,7 @@ sub documentation {
 }
 sub script_run {
     my $self = shift;
-    die 'Script only to run on master servers.'
-    unless BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server');
+    die 'Script only to run on master servers.' unless (BOM::System::Config::is_master_server());
     my $class = $opt1 =~ /(indices|stocks)/ ? 'BOM::MarketData::AutoUpdater::Indices' : 'BOM::MarketData::AutoUpdater::Forex';
     my $filename = $opt1 =~  /indices/ ? 'auto_upload.xls' : 'auto_upload_Euronext.xls';
     my $market = $opt1 !~ /(indices|stocks)/ ? 'forex' : ($opt1 =~ /indices/ ? 'indices' : 'stocks') ;

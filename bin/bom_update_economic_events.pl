@@ -6,6 +6,7 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
+use BOM::System::Config;
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
 use BOM::MarketData::EconomicEvent;
@@ -28,7 +29,7 @@ sub documentation { return 'This script runs economic events update from forex f
 sub script_run {
     my $self = shift;
 
-    die 'Script only to run on master servers.' if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
+    die 'Script only to run on master servers.' unless (BOM::System::Config::is_master_server());
     my $now = Date::Utility->new;
     my $dm  = BOM::MarketData::Fetcher::EconomicEvent->new();
 

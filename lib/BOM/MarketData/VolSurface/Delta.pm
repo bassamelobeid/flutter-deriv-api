@@ -4,6 +4,7 @@ use Moose;
 
 extends 'BOM::MarketData::VolSurface';
 
+use BOM::System::Config;
 use Data::Dumper;
 use Date::Utility;
 use Format::Util::Numbers qw( roundnear );
@@ -309,7 +310,7 @@ sub _build_surface {
 sub _stores_surface {
     my ($self, $cutoff, $surface_hashref) = @_;
 
-    if (BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
+    if (BOM::System::Config::is_master_server()) {
         try {
             my $doc = $self->document;
             $doc->{surfaces} ||= {};
