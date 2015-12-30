@@ -19,6 +19,7 @@ env:
 before_install:
     - sudo cat /etc/security/limits.conf
     - sudo bash -c "> /etc/security/limits.conf"
+    - sudo cat /proc/sys/fs/file-max
     - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
     - /tmp/travis-scripts/websocket_schema_update.sh
 
