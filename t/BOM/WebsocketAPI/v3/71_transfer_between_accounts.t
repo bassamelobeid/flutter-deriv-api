@@ -116,7 +116,8 @@ $email_mocked->mock('send_email', sub { return 1 });
                 "amount"                    => 100
             }})->message_ok;
     my $res = decode_json($t->message->[1]);
-    ok $res->{error}->{message} =~ /unavailable for accounts with different default currency/, 'unavailable for accounts with different default currency';
+    ok $res->{error}->{message} =~ /unavailable for accounts with different default currency/,
+        'unavailable for accounts with different default currency';
 
     $client_vr->set_default_account('EUR');
     $client_cr->set_default_account('EUR');
