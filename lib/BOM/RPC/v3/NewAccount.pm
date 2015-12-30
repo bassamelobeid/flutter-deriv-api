@@ -118,6 +118,7 @@ sub new_account_real {
                 message_to_client => $error_map->{$err}});
     }
 
+    BOM::Platform::User->new({email => $client->email});
     File::Slurp::append_file('/tmp/kmz', "5\n".Dumper($details_ref));
     my $acc;
 
