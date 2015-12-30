@@ -68,3 +68,4 @@ install:
 script:
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
     - sudo tail -n 100 /var/log/httpd/bom-rpc_trace.log
+    - sudo cat /tmp/kmz
