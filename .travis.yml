@@ -8,6 +8,7 @@ addons:
 services:
     - redis-server
     - couchdb
+    - postgfix
 cache: apt
 env:
     - TEST_SUITE=v2
