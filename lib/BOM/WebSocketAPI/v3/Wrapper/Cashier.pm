@@ -62,6 +62,7 @@ sub paymentagent_list {
 sub paymentagent_withdraw {
     my ($c, $args) = @_;
 
+    my $app_config = $c->app_config;
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'paymentagent_withdraw',
