@@ -12,6 +12,7 @@ Determine a value for our curent open positions at risk.
 
 =cut
 use Moose;
+use BOM::System::Config;
 use BOM::Platform::Runtime;
 use lib qw(/home/git/regentmarkets/bom-backoffice/lib/ /home/git/regentmarkets/bom-market/lib/);
 use BOM::RiskReporting::ScenarioAnalysis;
@@ -21,9 +22,8 @@ with 'BOM::Utility::Logging';
 sub script_run {
     my $self = shift;
 
-    my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
-    if (not $localhost->has_role('master_live_server')) {
-        $self->warning("$0 should only run on master live server, not [" . $localhost->name . "]");
+    unless (BOM::System::Config::is_master_server()) {
+        $self->warning("$0 should only run on master live server");
         return $self->return_value(255);
     }
     $self->info('Starting scenario analysis generation.');

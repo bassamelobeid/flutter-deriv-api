@@ -31,7 +31,7 @@ sub daemon_run {
     my $self = shift;
 
     die 'riskd only to run on master servers.'
-        if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
+        unless (BOM::System::Config::is_master_server());
 
     while (1) {
         $self->info('Starting marked-to-model calculation.');
