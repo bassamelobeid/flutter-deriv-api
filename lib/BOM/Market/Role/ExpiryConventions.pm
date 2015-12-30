@@ -276,10 +276,10 @@ sub _EQ_month_and_year_term_vol_expiry_date {
     my ($from, $months) = @{$args}{qw(from months)};
 
     my $last_day;
-    my $expiry_month = $from->months_ahead($months);
-    my $days_in_month = Date::Utility->new('1-'. $expiry_month)->days_in_month;
-    my $day_str = min($days_in_month, $from->day_of_month);
-    my $expiry_date = Date::Utility->new($day_str. '-' . $from->months_ahead($months));
+    my $expiry_month  = $from->months_ahead($months);
+    my $days_in_month = Date::Utility->new('1-' . $expiry_month)->days_in_month;
+    my $day_str       = min($days_in_month, $from->day_of_month);
+    my $expiry_date   = Date::Utility->new($day_str . '-' . $from->months_ahead($months));
 
     # Blatant abuse of holes in Date::Utility integrity.
     if ($expiry_date->days_in_month <= $expiry_date->day_of_month) {
