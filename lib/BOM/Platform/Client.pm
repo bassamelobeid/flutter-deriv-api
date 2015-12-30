@@ -672,10 +672,12 @@ working going forward with any input, it should die.
 
 sub add_note {
     my ($self, $subject, $content) = @_;
+    return if $ENV{'TRAVIS'};
     my $to = BOM::Platform::Context::request()->website->config->get('customer_support.email');
     local $\ = undef;
     my $from = $to;
     $from = $self->email if $self->email;    # breaks SPF and autorepies might accidently get sent to customers!
+
     return Mail::Sender->new()->MailMsg({
         on_errors => 'die',
         smtp      => 'localhost',                     # if this fails, sure, die, see above
