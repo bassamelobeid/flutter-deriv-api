@@ -64,6 +64,7 @@ sub startup {
                 '/landing_company_details' =>
                     MojoX::JSON::RPC::Service->new->register('landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details),
                 '/statement'          => MojoX::JSON::RPC::Service->new->register('statement',          \&BOM::RPC::v3::Accounts::statement),
+                '/profit_table'       => MojoX::JSON::RPC::Service->new->register('profit_table',       \&BOM::RPC::v3::Accounts::profit_table),
                 '/get_account_status' => MojoX::JSON::RPC::Service->new->register('get_account_status', \&BOM::RPC::v3::Accounts::get_account_status),
                 '/change_password'    => MojoX::JSON::RPC::Service->new->register('change_password',    \&BOM::RPC::v3::Accounts::change_password),
                 '/verify_email'       => MojoX::JSON::RPC::Service->new->register('verify_email',       \&BOM::RPC::v3::NewAccount::verify_email),
