@@ -59,7 +59,7 @@ sub startup {
                     MojoX::JSON::RPC::Service->new->register('paymentagent_transfer', \&BOM::RPC::v3::Cashier::paymentagent_transfer),
                 '/transfer_between_accounts' =>
                     MojoX::JSON::RPC::Service->new->register('transfer_between_accounts', \&BOM::RPC::v3::Cashier::transfer_between_accounts),
-                '/topup_virtual' => MojoX::JSON::RPC::Service->new->register('topup_virtual', \&BOM::RPC::v3::Cashier::topup_virtual),
+                '/topup_virtual'    => MojoX::JSON::RPC::Service->new->register('topup_virtual',    \&BOM::RPC::v3::Cashier::topup_virtual),
                 '/new_account_real' => MojoX::JSON::RPC::Service->new->register('new_account_real', \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
