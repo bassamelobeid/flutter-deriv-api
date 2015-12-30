@@ -334,8 +334,8 @@ sub __handle {
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -367,7 +367,7 @@ sub __handle {
 
         my $client = $c->stash('client');
         if ($client) {
-            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.authenticated_call.all',
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}"]});
         }
 
