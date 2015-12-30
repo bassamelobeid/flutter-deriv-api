@@ -848,9 +848,14 @@ sub transfer_between_accounts {
 }
 
 sub topup_virtual {
-    my $arg_ref    = shift;
-    my $client     = $arg_ref->{client};
-    my $app_config = $arg_ref->{app_config};
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -866,7 +871,7 @@ sub topup_virtual {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
 
-    if ($client->default_account->balance > $app_config->payments->virtual->minimum_topup_balance) {
+    if ($client->default_account->balance > $params->{minimum_topup_balance}) {
         return $error_sub->(localize('Your balance is higher than the permitted amount.'));
     }
 
