@@ -1,4 +1,5 @@
 package BOM::MarketData::EconomicEvent;
+#Chornicle Economic Event
 
 =head1 NAME
 
@@ -6,36 +7,28 @@ BOM::MarketData::EconomicEvent
 
 =head1 DESCRIPTION
 
-Represents an economic event in the financial market
-
-    my $eco = BOM::MarketData::EconomicEvent->new({
-        symbol => $symbol,
-        release_date => $rd,
-        impact => $impact,
-        event_name => $event_name,
-        source => $source, # currently just from forexfactory
-        recorded_date => $rdate,
-    });
+This is a temporary module to hold what will be finally stored in EconomicEvent of MarketData.
+We will use this module to write economic events data to Chronicle.
 
 =cut
 
 use Moose;
 extends 'BOM::MarketData';
 
-use Cache::RedisDB;
 use Date::Utility;
-use List::Util qw(first);
-use YAML::CacheLoader qw(LoadFile);
 
 use BOM::Market::Types;
-use BOM::MarketData::Fetcher::EconomicEvent;
 
-has _data_location => (
-    is      => 'ro',
-    default => 'economic_events',
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
 );
 
-with 'BOM::MarketData::Role::VersionedSymbolData';
+sub _build_document {
+    my $self = shift;
+
+    return $self->_document_content;
+}
 
 around _document_content => sub {
     my $orig = shift;
@@ -99,38 +92,6 @@ has event_name => (
     isa     => 'Str',
     default => 'Not Given',
 );
-
-sub _clear_cache {
-    my $redis = Cache::RedisDB->redis;
-    my @results = map { $redis->del($_) } @{$redis->keys('COUCH_NEWS::' . '*')};
-    return @results;
-}
-
-# Update if document exist.
-around save => sub {
-    my $orig = shift;
-    my $self = shift;
-
-    if (my $identical_doc = $self->has_identical_event) {
-        $identical_doc->{recorded_date} = Date::Utility->new->datetime_iso8601;
-        $self->_clear_cache;
-        return $self->_couchdb->document($identical_doc->{_id}, $identical_doc);
-    } else {
-        return $self->$orig;
-    }
-};
-
-sub has_identical_event {
-    my $self = shift;
-
-    my @docs = BOM::MarketData::Fetcher::EconomicEvent->new->retrieve_doc_with_view({
-        symbol       => $self->symbol,
-        release_date => $self->release_date->datetime_iso8601,
-        event_name   => $self->event_name
-    });
-
-    return (@docs) ? $docs[0] : '';
-}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
