@@ -20,7 +20,7 @@ our @EXPORT_OK = qw(send_email);
 $Mail::Sender::NO_X_MAILER = 1;    # avoid hostname/IP leak
 
 sub send_email {
-    my $args_ref           = shift;
+    my $args_ref = shift;
     return if -e 'etc/rmg/travis';
     my $fromemail          = $args_ref->{'from'};
     my $email              = $args_ref->{'to'};
