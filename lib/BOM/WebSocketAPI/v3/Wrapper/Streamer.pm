@@ -74,7 +74,7 @@ sub proposal {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         my $id;
-        if (!defined $args->{is_stream} || $args->{is_stream}) {
+        if (!defined $args->{subscribe} || $args->{subscribe}) {
             $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
         }
         send_ask($c, $id, $args);

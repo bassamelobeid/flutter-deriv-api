@@ -10,7 +10,7 @@
       "pattern": "^1$",
       "required": "1"
     },
-    "is_stream": {
+    "subscribe": {
       "type": "integer",
       "description":" 1 - to stream, 0 - not to stream (default 1)",
       "pattern": "^(0|1)$"
