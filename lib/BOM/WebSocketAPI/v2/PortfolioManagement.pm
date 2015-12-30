@@ -43,7 +43,6 @@ sub buy {
             source        => $source,
         });
         if (my $err = $trx->buy) {
-            $c->app->log->warn("Contract-Buy Fail: " . $err->get_type . " $err->{-message_to_client}: $err->{-mesg}");
             $json->{error}->{message} = $err->{-message_to_client};
             $json->{error}->{code}    = $err->get_type;
             last;
