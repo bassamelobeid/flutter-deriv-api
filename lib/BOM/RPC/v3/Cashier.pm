@@ -36,8 +36,7 @@ sub get_limits {
 
     return BOM::RPC::v3::Utility::permission_error() unless $client;
 
-    # check if Client is not in lock cashier and not virtual account
-    unless (not $client->get_status('cashier_locked') and not $client->documents_expired and $client->broker !~ /^VRT/) {
+    if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
                 message_to_client => localize('Sorry, this feature is not available.')});
