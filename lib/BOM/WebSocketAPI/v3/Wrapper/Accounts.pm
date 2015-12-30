@@ -72,9 +72,20 @@ sub landing_company_details {
 sub statement {
     my ($c, $args) = @_;
 
-    return {
-        msg_type => 'statement',
-        statement => BOM::RPC::v3::Accounts::statement($c->stash('account'), $args)};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'statement',
+        sub {
+            my $response = shift;
+            return {
+                msg_type  => 'statement',
+                statement => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub profit_table {
