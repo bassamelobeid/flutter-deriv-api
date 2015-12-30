@@ -118,13 +118,19 @@ sub new_account_real {
                 message_to_client => $error_map->{$err}});
     }
 
-    File::Slurp::append_file('/tmp/kmz', "5");
+    File::Slurp::append_file('/tmp/kmz', "5\n".Dumper($details_ref));
+    my $acc;
 
-    my $acc = BOM::Platform::Account::Real::default::create_account({
+    eval {
+        $acc = BOM::Platform::Account::Real::default::create_account({
         from_client => $client,
         user        => BOM::Platform::User->new({email => $client->email}),
         details     => $details_ref->{details},
     });
+    };
+    if ($@) {
+        File::Slurp::append_file('/tmp/kmz', "$@\n");
+    }
 
     File::Slurp::append_file('/tmp/kmz', "6");
 
