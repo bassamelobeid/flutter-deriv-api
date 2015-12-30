@@ -41,7 +41,6 @@ subtest 'BOM::System::Host basic tests' => sub {
         name             => 'fred',
         role_definitions => BOM::Platform::Runtime->instance->host_roles,
         roles            => [BOM::Platform::Runtime->instance->host_roles->get('streaming_server')],
-        groups           => ['rmg', 'bom'],
     });
 
     is($host->domain,          'regentmarkets.com',                 'Internal domain is regentmarkets.com');

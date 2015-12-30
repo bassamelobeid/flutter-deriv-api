@@ -102,7 +102,6 @@ sub _configure_localhost {
     unless ($localhost) {
         $localhost = BOM::System::Host->new({
             name             => 'localhost',
-            groups           => ['rmg'],
             role_definitions => $self->role_definitions,
             roles            => ['couchdb_master', 'couchdb_server'],
         });

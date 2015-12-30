@@ -17,7 +17,6 @@ BOM::System::Host
     my $server = BOM::System::Host->new(
         name           => 'cr-deal01',
         domain         => 'regentmarkets.com',
-        groups         => [ 'rmg' ],
         roles          => [ BOM::System::Host::Role::Registry->get('customer_facing_webserver') ],
     );
 
@@ -70,17 +69,6 @@ has external_domain => (
     default => 'binary.com',
 );
 
-=head2 groups
-The group(s) to which this host belongs.
-
-=cut
-
-has groups => (
-    is      => 'rw',
-    isa     => 'ArrayRef[Str]',
-    default => sub { ['rmg'] },
-);
-
 =head2 roles
 
 The role(s) played by this host.
@@ -122,17 +110,6 @@ For difference between I<fqdn> and I<external_fqdn> check I<domain> and I<extern
 sub external_fqdn {
     my $self = shift;
     return $self->name . '.' . $self->external_domain;
-}
-
-=head2 is_collector
-
-Is this a collector (also known as Master Live Server)?
-
-=cut
-
-sub is_collector {
-    my $self = shift;
-    return $self->has_role('master_live_server') ? 1 : 0;
 }
 
 =head2 $self->has_role($role)
