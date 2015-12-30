@@ -5,8 +5,6 @@ use warnings;
 
 use feature "state";
 use YAML::XS;
-use List::MoreUtils qw(any);
-use Sys::Hostname qw();
 
 sub node {
     state $config = YAML::XS::LoadFile('/etc/rmg/node.yml');
@@ -43,24 +41,6 @@ sub third_party {
     sub env {
         return $env;
     }
-}
-
-sub _has_role {
-    my $role = shift;
-    my @roles = @{node()->{node}->{roles}};
-    return (if (any { $_ eq $role } @roles));
-}
-
-sub is_master_server {
-    return _has_role('binary_role_master_server');
-}
-
-sub is_feed_server {
-    return _has_role('binary_role_feed_server');
-}
-
-sub server_name {
-    my $hostname = Sys::Hostname::hostname;
 }
 
 1;
