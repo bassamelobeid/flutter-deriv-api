@@ -2,7 +2,7 @@ v2:
 	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v2
 
 v3:
-	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v3
+	bash /tmp/travis-scripts/tmp.sh
 
 structure:
 	forkprove --timer -I./lib  -I./t t/BOM/*.t
