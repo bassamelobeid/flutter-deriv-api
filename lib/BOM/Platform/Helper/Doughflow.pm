@@ -50,14 +50,21 @@ sub get_sportsbook {
 sub get_doughflow_language_code_for {
     my $lang = shift;
 
-    my %lang_code_for = (ZH_CN => 'zh_CHS');
+    # mapping b/w out lang code and doughflow code
+    my %lang_code_for = (
+        ZH_CN => 'zh_CHS',
+        ZH_TW => 'zh_CHT',
+        JA    => 'jp'
+    );
 
     my $code = 'en';
+    $lang = uc $lang;
+
     if (exists $lang_code_for{$lang}) {
         $code = $lang_code_for{$lang};
     } elsif (
         grep {
-            $_ eq uc $lang
+            $_ eq $lang
         } @{BOM::Platform::Runtime->instance->app_config->cgi->allowed_languages})
     {
         $code = lc $lang;
