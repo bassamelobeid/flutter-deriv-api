@@ -17,7 +17,7 @@ my $token = BOM::Database::Model::AccessToken->new->create_token('CR2002', 'Test
 $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'sy@regentmarkets.com';
-is $authorize->{authorize}->{loginid}, 'CR2002';
+is $authorize->{authorize}->{loginid}, 'CR2002222';
 test_schema('authorize', $authorize);
 
 ## it's ok after authorize
