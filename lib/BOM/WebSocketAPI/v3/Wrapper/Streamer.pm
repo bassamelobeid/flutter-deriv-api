@@ -90,7 +90,6 @@ sub send_ask {
             }
             return {
                 msg_type => 'proposal',
-                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                 proposal => {
                     id => $id,
                     %$response

@@ -450,6 +450,7 @@ sub rpc {
                 1000 * Time::HiRes::tv_interval($tv),
                 {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method"]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
