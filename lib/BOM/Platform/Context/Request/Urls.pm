@@ -167,7 +167,7 @@ sub _build__page_caching_rules {
 
 sub _build__dealing_domain {
     my $self = shift;
-    return $self->broker->server->name . '.' . $self->domain;
+    return $self->broker->server . '.' . $self->domain;
 }
 
 sub _build__localhost_domain {

@@ -142,7 +142,7 @@ sub _build__brokers_on_servers {
 
     my $brokers_on_servers = {};
     foreach my $broker (values %{$self->_brokers}) {
-        my $server = $broker->server->name;
+        my $server = $broker->server;
         $brokers_on_servers->{$server} = [] unless ($brokers_on_servers->{$server});
         push @{$brokers_on_servers->{$server}}, $broker;
     }
