@@ -461,7 +461,7 @@ sub rpc {
             }
             if ($res->is_error) {
                 warn $res->error_message;
-                my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message))
+                my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
                 $data->{echo_req} = $params->{args};
                 $self->send({json => $data});
                 return;
