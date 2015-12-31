@@ -447,14 +447,17 @@ sub get_settings {
 }
 
 sub set_settings {
-    my ($client, $website, $client_ip, $user_agent, $language, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $website, $client_ip, $user_agent, $language, $args) = (
+        $params->{client_loginid}, $params->{website_name}, $params->{cs_email}, $params->{client_ip},
+        $params->{user_agent},     $params->{language},     $params->{args});
 
-    my $now = Date::Utility->new;
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (not $client or $client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Permission denied.')}) if $client->is_virtual;
-
+    my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
     my $addressTown     = $args->{'address_city'};
@@ -527,10 +530,10 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . localize('The [_1] team.', $website->display_name);
+    $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => $website->config->get('customer_support.email'),
+        from               => $cs_email,
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
