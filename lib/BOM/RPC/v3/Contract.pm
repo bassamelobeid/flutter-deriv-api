@@ -187,13 +187,6 @@ sub send_ask {
             details           => $response
         });
     }
-    return {
-        msg_type => 'proposal',
-        echo_req => $args,
-        (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-        proposal => {
-            id => $id,
-            %$response
-        }};
+    return $response;
 }
 1;
