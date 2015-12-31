@@ -1,5 +1,7 @@
 use strict;
 use warnings;
+use Test::MockTime::HiRes;
+use Guard;
 
 use Test::More (tests => 4);
 use Test::Exception;
@@ -87,6 +89,8 @@ my %financial_data = (
 );
 
 subtest 'create account' => sub {
+    set_absolute_time(1456724000);
+    my $guard = guard { restore_time };
     foreach my $broker (keys %$vr_details) {
         my ($real_acc, $vr_client, $real_client, $user);
         lives_ok {
