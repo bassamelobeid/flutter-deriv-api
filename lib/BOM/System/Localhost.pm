@@ -25,6 +25,10 @@ sub fqdn {
     return Sys::Hostname::hostname;
 }
 
+sub external_fqdn {
+    return name() . '.' . external_domain();
+}
+
 sub name {
     my @name = split(/\./, Sys::Hostname::hostname);
     return $name[0];
