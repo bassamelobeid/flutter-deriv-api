@@ -132,7 +132,8 @@ subtest 'create account' => sub {
     my $broker       = 'CR';
     my %t_vr_details = (
         %{$vr_details->{CR}},
-                email => 'foo+nobug@binary.com',);
+        email => 'foo+nobug@binary.com',
+    );
     my ($vr_client, $user, $real_acc, $real_client, $vr_acc);
     lives_ok {
         $vr_acc = create_vr_acc(\%t_vr_details);
@@ -142,22 +143,22 @@ subtest 'create account' => sub {
     $user->email_verified(1);
     $user->save;
 
-    my %t_details = (%real_client_details, 
-    residence => $t_vr_details{residence},
-    broker_code => $broker,
-    first_name => 'foonobug',
-    client_password => $vr_client->password,
-    email => $t_vr_details{email});
-
+    my %t_details = (
+        %real_client_details,
+        residence       => $t_vr_details{residence},
+        broker_code     => $broker,
+        first_name      => 'foonobug',
+        client_password => $vr_client->password,
+        email           => $t_vr_details{email});
 
     # real acc
     lives_ok {
-        $real_acc =     BOM::Platform::Account::Real::default::create_account({
-        from_client => $vr_client,
-        user        => $user,
-        details     => \%t_details,
-        country     => $vr_client->residence,
-    });
+        $real_acc = BOM::Platform::Account::Real::default::create_account({
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+            country     => $vr_client->residence,
+        });
         ($real_client, $user) = @{$real_acc}{'client', 'user'};
     }
     "create $broker acc OK, after verify email";
