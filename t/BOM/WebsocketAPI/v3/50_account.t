@@ -59,6 +59,6 @@ ok($res->{get_limits});
 is $res->{get_limits}->{open_positions}, 60;
 test_schema('get_limits', $res);
 
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();

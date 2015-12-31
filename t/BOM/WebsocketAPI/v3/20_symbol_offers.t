@@ -106,6 +106,6 @@ my $asset_index = decode_json($t->message->[1]);
 ok($asset_index->{asset_index});
 test_schema('asset_index', $asset_index);
 
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();

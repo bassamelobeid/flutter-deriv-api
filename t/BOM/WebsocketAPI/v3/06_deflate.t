@@ -13,7 +13,7 @@ my $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 $t->header_unlike('Sec-WebSocket-Extensions', qr'permessage-deflate');
-$t->finished_ok(200);
+$t->finish_ok;
 
 ## test with deflate
 $t = build_mojo_test({deflate => 1});
@@ -22,6 +22,6 @@ $res = decode_json($t->message->[1]);
 is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 $t->header_like('Sec-WebSocket-Extensions', qr'permessage-deflate');
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();

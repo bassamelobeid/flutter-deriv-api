@@ -18,6 +18,4 @@ $t->send_ok({json => {ticks => 'R_50'}})->message_ok;
 my $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'AlreadySubscribed';
 
-$t->finished_ok(200)
-
 done_testing();

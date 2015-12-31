@@ -42,6 +42,6 @@ is_deeply $res->{residence_list}->[0],
     phone_idd => '93'
     };
 
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();

@@ -14,6 +14,6 @@ my $res = decode_json($t->message->[1]);
 is $res->{error}->{code}, 'SanityCheckFailed';
 test_schema('ping', $res);
 
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();

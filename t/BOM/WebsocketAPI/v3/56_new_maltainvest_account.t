@@ -204,4 +204,4 @@ sub create_vr_account {
     return ($acc->{client}, $acc->{user});
 }
 
-$t->finished_ok(200);
+$t->finish_ok;

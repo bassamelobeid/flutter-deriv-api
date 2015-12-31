@@ -67,7 +67,7 @@ $email_mocked->mock('send_email', sub { return 1 });
     my $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /The account transfer is unavailable/, 'The account transfer is unavailable';
 
-    $t->finished_ok(200);
+    $t->finish_ok;
 }
 
 {
@@ -193,7 +193,7 @@ $email_mocked->mock('send_email', sub { return 1 });
     ok $client_cr->default_account->balance == 90, '-10';
     ok $client_vr->default_account->balance == 10, '+10';
 
-    $t->finished_ok(200);
+    $t->finish_ok;
 }
 
 done_testing();

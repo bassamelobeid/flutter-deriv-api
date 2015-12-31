@@ -83,7 +83,7 @@ is $test_token->{display_name}, 'Test';
 ok !$test_token->{last_used}, 'last_used is null';
 test_schema('api_token', $res);
 
-$t->finished_ok(200);
+$t->finish_ok;
 
 # try with the new token
 $t   = build_mojo_test();
@@ -106,6 +106,6 @@ $t = $t->send_ok({
             delete_token => $test_token->{token},
         }})->message_ok;
 
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();

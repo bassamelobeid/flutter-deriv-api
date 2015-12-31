@@ -23,6 +23,6 @@ my $m = JSON::from_json($t->message->[1]);
 ok $m->{forget_all} or diag explain $m;
 is scalar(@{$m->{forget_all}}), 1;
 test_schema('forget_all', $m);
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();

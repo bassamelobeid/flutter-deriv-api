@@ -25,6 +25,6 @@ is $res->{msg_type}, 'ping';
 is $res->{ping},     'pong';
 test_schema('ping', $res);
 
-$t->finished_ok(200);
+$t->finish_ok;
 
 done_testing();
