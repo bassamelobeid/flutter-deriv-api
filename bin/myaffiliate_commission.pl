@@ -13,7 +13,6 @@ Calculate monthly affiliate's commission, insert into db for data_collection.mya
 =cut
 
 use Moose;
-use BOM::System::Localhost;
 use BOM::Database::ClientDB;
 use DateTime;
 use DateTime::Format::HTTP;
@@ -45,10 +44,6 @@ sub script_run {
     my $self = shift;
 
     my $logger = get_logger();
-
-    unless (BOM::System::Localhost::is_master_server()) {
-        $self->error("$0 should only run on master live server");
-    }
 
     my $start_date = $self->start_date;
     my $end_date   = $self->end_date;
