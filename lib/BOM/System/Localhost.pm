@@ -10,7 +10,7 @@ use Sys::Hostname qw();
 sub _has_role {
     my $role = shift;
     my @roles = @{BOM::System::Config::node()->{node}->{roles}};
-    return (if (any { $_ eq $role } @roles));
+    return (any { $_ eq $role } @roles);
 }
 
 sub is_master_server {
@@ -30,8 +30,8 @@ sub external_fqdn {
 }
 
 sub name {
-    my @name = split(/\./, Sys::Hostname::hostname);
-    return $name[0];
+    my @host_name = split(/\./, Sys::Hostname::hostname);
+    return $host_name[0];
 }
 
 sub domain {
