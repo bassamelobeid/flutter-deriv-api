@@ -89,12 +89,12 @@ sub send_ask {
                 return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
             }
             return {
-                    msg_type => 'proposal',
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => {
-                        id => $id,
-                        %$response
-                    }}});
+                msg_type => 'proposal',
+                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                proposal => {
+                    id => $id,
+                    %$response
+                }};
         },
         {args => $args});
     return;
