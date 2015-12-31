@@ -454,12 +454,16 @@ sub rpc {
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
-                $self->send({json => $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'))});
+                my $data = $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'));
+                $data->{echo_req} = $params->{args};
+                $self->send({json => $data});
                 return;
             }
             if ($res->is_error) {
                 warn $res->error_message;
-                $self->send({json => $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message))});
+                my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message))
+                $data->{echo_req} = $params->{args};
+                $self->send({json => $data});
                 return;
             }
             my $send = 1;
