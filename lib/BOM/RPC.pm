@@ -15,6 +15,7 @@ use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::NewAccount;
+use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 
 sub startup {
@@ -76,6 +77,7 @@ sub startup {
                 '/balance'            => MojoX::JSON::RPC::Service->new->register('balance',            \&BOM::RPC::v3::Accounts::balance),
                 '/api_token'          => MojoX::JSON::RPC::Service->new->register('api_token',          \&BOM::RPC::v3::Accounts::api_token),
                 '/verify_email'       => MojoX::JSON::RPC::Service->new->register('verify_email',       \&BOM::RPC::v3::NewAccount::verify_email),
+                '/send_ask'           => MojoX::JSON::RPC::Service->new->register('send_ask',           \&BOM::RPC::v3::Contract::send_ask),
                 '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
