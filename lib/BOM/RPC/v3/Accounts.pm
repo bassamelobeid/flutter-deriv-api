@@ -455,11 +455,15 @@ sub get_settings {
 
 sub set_settings {
     my $params = shift;
-    my ($client_loginid, $website, $client_ip, $user_agent, $language, $args) = (
+    my ($client_loginid, $website, $cs_email, $client_ip, $user_agent, $language, $args) = (
         $params->{client_loginid}, $params->{website_name}, $params->{cs_email}, $params->{client_ip},
         $params->{user_agent},     $params->{language},     $params->{args});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
     if (not $client or $client->is_virtual) {
         return BOM::RPC::v3::Utility::permission_error();
     }
@@ -602,8 +606,8 @@ sub set_self_exclusion {
         ($params->{client_loginid}, $params->{cs_email}, $params->{compliance_email}, $params->{args});
 
     my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
     }
 
     if (not $client or $client->is_virtual) {
