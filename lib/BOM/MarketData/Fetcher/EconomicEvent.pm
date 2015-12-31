@@ -201,7 +201,7 @@ sub _get_latest_events_for_period_chronicle {
             my $ee_epoch = Date::Utility->new($single_ee->{release_date})->epoch;
 
             #prevent adding repeated economic events by storing in a hash based on a uniqe key
-            my $unique_key = $single_ee->{symbol} . $single_ee->{release_date} . $single_ee->{event_name};
+            my $unique_key = $single_ee->{symbol} // "" . $single_ee->{release_date} // "" . $single_ee->{event_name} // "";
 
             if ($ee_epoch >= $start and $ee_epoch <= $end) {
                 $matching_events{$unique_key} = BOM::MarketData::EconomicEvent->new($single_ee);
