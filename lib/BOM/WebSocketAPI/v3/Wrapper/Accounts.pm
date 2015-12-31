@@ -209,18 +209,28 @@ sub set_settings {
     my ($c, $args) = @_;
 
     my $r = $c->stash('request');
-
-    my $response = BOM::RPC::v3::Accounts::set_settings($c->stash('client'), $r->website, $r->client_ip, $c->req->headers->header('User-Agent'),
-        $r->language, $args);
-
-    if (exists $response->{error}) {
-        return $c->new_error('set_settings', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type     => 'set_settings',
-            set_settings => $response->{status}};
-    }
-
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'set_settings',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('set_settings', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'set_settings',
+                    set_settings => $response->{status}};
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            website_name   => $r->website->display_name,
+            cs_email       => $r->website->config->get('customer_support.email'),
+            client_ip      => $r->client_ip,
+            user_agent     => $c->req->headers->header('User-Agent'),
+            language       => $r->language
+        });
     return;
 }
 
