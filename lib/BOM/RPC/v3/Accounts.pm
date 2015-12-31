@@ -146,7 +146,17 @@ sub statement {
 }
 
 sub profit_table {
-    my ($client, $args) = @_;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return {
+        transactions => [],
+        count        => 0
+    } unless ($client);
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
@@ -158,6 +168,7 @@ sub profit_table {
             )->db,
         });
 
+    my $args = $params->{args};
     $args->{after}  = $args->{date_from} if $args->{date_from};
     $args->{before} = $args->{date_to}   if $args->{date_to};
     my $data = $fmb_dm->get_sold_bets_of_account($args);
@@ -198,7 +209,14 @@ sub send_realtime_balance {
 }
 
 sub balance {
-    my $client = shift;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     return {
         currency => '',
@@ -298,7 +316,17 @@ sub change_password {
 }
 
 sub cashier_password {
-    my ($client, $cs_email, $client_ip, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $cs_email, $client_ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
+
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
+    if (not $client or $client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     my $unlock_password = $args->{unlock_password} // '';
     my $lock_password   = $args->{lock_password}   // '';
@@ -401,7 +429,11 @@ sub cashier_password {
 }
 
 sub get_settings {
-    my ($client, $language) = @_;
+    my $params = shift;
+    my ($client_loginid, $language) = ($params->{client_loginid}, $params->{language});
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     return {
         email         => $client->email,
@@ -422,14 +454,21 @@ sub get_settings {
 }
 
 sub set_settings {
-    my ($client, $website, $client_ip, $user_agent, $language, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $website_name, $cs_email, $client_ip, $user_agent, $language, $args) = (
+        $params->{client_loginid}, $params->{website_name}, $params->{cs_email}, $params->{client_ip},
+        $params->{user_agent},     $params->{language},     $params->{args});
 
-    my $now = Date::Utility->new;
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Permission denied.')}) if $client->is_virtual;
+    if (not $client or $client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
+    my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
     my $address2        = $args->{'address_line_2'} // '';
     my $addressTown     = $args->{'address_city'};
@@ -502,10 +541,10 @@ sub set_settings {
             . "</td></tr>";
     }
     $message .= "</table>";
-    $message .= "\n" . localize('The [_1] team.', $website->display_name);
+    $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => $website->config->get('customer_support.email'),
+        from               => $cs_email,
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
@@ -517,11 +556,19 @@ sub set_settings {
 }
 
 sub get_self_exclusion {
-    my $client = shift;
+    my $params = shift;
 
-    my $self_exclusion     = $client->get_self_exclusion;
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
     my $get_self_exclusion = {};
+    if (not $client or $client->is_virtual) {
+        return $get_self_exclusion;
+    }
 
+    my $self_exclusion = $client->get_self_exclusion;
     if ($self_exclusion) {
         $get_self_exclusion->{max_balance} = $self_exclusion->max_balance
             if $self_exclusion->max_balance;
@@ -554,14 +601,21 @@ sub get_self_exclusion {
 }
 
 sub set_self_exclusion {
-    my ($client, $cs_email, $compliance_email, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $cs_email, $compliance_email, $args) =
+        ($params->{client_loginid}, $params->{cs_email}, $params->{compliance_email}, $params->{args});
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Permission denied.')}) if $client->is_virtual;
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
+    if (not $client or $client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     # get old from above sub get_self_exclusion
-    my $self_exclusion = get_self_exclusion($client);
+    my $self_exclusion = get_self_exclusion({client_loginid => $client_loginid});
 
     ## validate
     my $error_sub = sub {
@@ -692,10 +746,17 @@ sub set_self_exclusion {
 }
 
 sub api_token {
-    my ($client, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $args) = ($params->{client_loginid}, $params->{args});
+
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $rtn;
-
     my $m = BOM::Database::Model::AccessToken->new;
     if ($args->{delete_token}) {
         $m->remove_by_token($args->{delete_token});
