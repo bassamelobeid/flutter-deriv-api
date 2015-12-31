@@ -182,9 +182,8 @@ sub send_ask {
     my $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
     if ($response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
-            code              => 'pricing error',
-            message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'
-            details           => $response}});
+                code              => 'pricing error',
+                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error' details => $response}});
     }
     return {
         msg_type => 'proposal',
@@ -193,6 +192,6 @@ sub send_ask {
         proposal => {
             id => $id,
             %$response
-        }}});
+        }};
 }
 1;
