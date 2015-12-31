@@ -10,6 +10,7 @@ use Data::Dumper;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 
+use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
 use BOM::Platform::SessionCookie;
