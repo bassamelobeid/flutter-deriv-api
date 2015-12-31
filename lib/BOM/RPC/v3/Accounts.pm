@@ -310,7 +310,7 @@ sub change_password {
 
 sub cashier_password {
     my $params = shift;
-    my ($client_loginid, $cs_email, $ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
+    my ($client_loginid, $cs_email, $client_ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
 
     my $client;
     if ($client_loginid) {
@@ -422,7 +422,11 @@ sub cashier_password {
 }
 
 sub get_settings {
-    my ($client, $language) = @_;
+    my $params = shift;
+    my ($client_loginid, $language) = ($params->{client_loginid}, $params->{language});
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     return {
         email         => $client->email,
