@@ -8,7 +8,7 @@ use List::MoreUtils qw(any);
 use Sys::Hostname qw();
 
 sub _has_role {
-    my $role = shift;
+    my $role  = shift;
     my @roles = @{BOM::System::Config::node()->{node}->{roles}};
     return (any { $_ eq $role } @roles);
 }
