@@ -6,8 +6,6 @@ use feature 'state';
 use Data::Dumper;
 
 use BOM::Platform::Runtime::AppConfig;
-use BOM::System::Host::Registry;
-use BOM::System::Host::Role::Registry;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Data::Sources;
 use BOM::Platform::Runtime::Broker::Codes;
@@ -82,28 +80,6 @@ Returns an reference to an BOM::Platform::Runtime::LandingCompany::Registry
 =cut
 
 has 'landing_companies' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-=head2 hosts
-
-Returns an reference to an BOM::System::Host::Registry
-
-=cut
-
-has 'hosts' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-=head2 host_roles
-
-Returns an reference to an BOM::System::Host::Role::Registry
-
-=cut
-
-has 'host_roles' => (
     is         => 'ro',
     lazy_build => 1,
 );
@@ -211,7 +187,6 @@ sub _build_website_list {
 sub _build_broker_codes {
     my $self = shift;
     return BOM::Platform::Runtime::Broker::Codes->new(
-        hosts              => $self->hosts,
         landing_companies  => $self->landing_companies,
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
@@ -223,18 +198,6 @@ sub _build_datasources {
 
 sub _build_landing_companies {
     return BOM::Platform::Runtime::LandingCompany::Registry->new();
-}
-
-sub _build_hosts {
-    my $self = shift;
-    return BOM::System::Host::Registry->new(
-        role_definitions => $self->host_roles,
-    );
-}
-
-sub _build_host_roles {
-    my $self = shift;
-    return BOM::System::Host::Role::Registry->new();
 }
 
 __PACKAGE__->meta->make_immutable;
