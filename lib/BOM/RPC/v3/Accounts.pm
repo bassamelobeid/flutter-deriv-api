@@ -309,7 +309,17 @@ sub change_password {
 }
 
 sub cashier_password {
-    my ($client, $cs_email, $client_ip, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $cs_email, $ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
+
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
+    if (not $client or $client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     my $unlock_password = $args->{unlock_password} // '';
     my $lock_password   = $args->{lock_password}   // '';

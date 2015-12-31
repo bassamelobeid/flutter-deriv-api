@@ -67,6 +67,7 @@ sub startup {
                 '/profit_table'       => MojoX::JSON::RPC::Service->new->register('profit_table',       \&BOM::RPC::v3::Accounts::profit_table),
                 '/get_account_status' => MojoX::JSON::RPC::Service->new->register('get_account_status', \&BOM::RPC::v3::Accounts::get_account_status),
                 '/change_password'    => MojoX::JSON::RPC::Service->new->register('change_password',    \&BOM::RPC::v3::Accounts::change_password),
+                '/cashier_password'   => MojoX::JSON::RPC::Service->new->register('cashier_password',   \&BOM::RPC::v3::Accounts::cashier_password),
                 '/verify_email'       => MojoX::JSON::RPC::Service->new->register('verify_email',       \&BOM::RPC::v3::NewAccount::verify_email),
                 '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
