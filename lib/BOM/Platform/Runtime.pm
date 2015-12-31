@@ -218,7 +218,7 @@ sub _build_broker_codes {
 
 sub _build_datasources {
     my $self = shift;
-    return BOM::Platform::Data::Sources->new(hosts => $self->hosts);
+    return BOM::Platform::Data::Sources->new();
 }
 
 sub _build_landing_companies {
