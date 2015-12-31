@@ -36,7 +36,7 @@ if ($cgi->param('upload_excel')) {
     my @symbols = split ' ' , $symbol_str;
     my $date = $cgi->param('date');
     my $time = $cgi->param('time');
-    my $desciption = $cgi->param('description');
+    my $description = $cgi->param('description');
     # sanity check
     die "Incomplete entry\n" unless ($symbol_str and $date and $time and $description);
     $calendar->{Date::Utility->new($date)->truncate_to_day->epoch}{$time} = \@symbols;
