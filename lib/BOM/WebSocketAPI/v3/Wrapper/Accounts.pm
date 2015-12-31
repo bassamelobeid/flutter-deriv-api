@@ -236,29 +236,47 @@ sub set_settings {
 
 sub get_self_exclusion {
     my ($c, $args) = @_;
-    return {
-        msg_type           => 'get_self_exclusion',
-        get_self_exclusion => BOM::RPC::v3::Accounts::get_self_exclusion($c->stash('client'))};
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_self_exclusion',
+        sub {
+            my $response = shift;
+            return {
+                msg_type           => 'get_self_exclusion',
+                get_self_exclusion => $response
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub set_self_exclusion {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Accounts::set_self_exclusion(
-        $c->stash('client'),
-        $c->stash('request')->website->config->get('customer_support.email'),
-        $c->app_config->compliance->email, $args
-    );
-    if (exists $response->{error}) {
-        my $err = $c->new_error('set_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
-        $err->{error}->{field} = $response->{error}->{details} if (exists $response->{error}->{details});
-        return $err;
-    } else {
-        return {
-            msg_type           => 'set_self_exclusion',
-            set_self_exclusion => $response->{status}};
-    }
-
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'set_self_exclusion',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                my $err = $c->new_error('set_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
+                $err->{error}->{field} = $response->{error}->{details} if (exists $response->{error}->{details});
+                return $err;
+            } else {
+                return {
+                    msg_type           => 'set_self_exclusion',
+                    set_self_exclusion => $response->{status}};
+            }
+        },
+        {
+            args             => $args,
+            client_loginid   => $c->stash('loginid'),
+            cs_email         => $c->stash('request')->website->config->get('customer_support.email'),
+            compliance_email => $c->app_config->compliance->email
+        });
     return;
 }
 
