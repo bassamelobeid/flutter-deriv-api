@@ -7,7 +7,6 @@ use Test::More (tests => 5);
 use Test::Exception;
 use Test::NoWarnings;
 
-use BOM::System::Host;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
 
