@@ -1,7 +1,6 @@
 package BOM::MarketData::AutoUpdater;
 
 use Moose;
-use BOM::System::Config;
 use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use Date::Utility;
@@ -28,7 +27,7 @@ has _logger => (
 
 sub should_send_email {
     my $self = shift;
-    return (BOM::System::Config::env eq 'production') ? 1 : 0;
+    return (BOM::System::Localhost::name() eq 'collector01') ? 1 : 0;
 }
 
 sub run {
