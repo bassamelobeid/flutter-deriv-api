@@ -2,7 +2,7 @@ v2:
 	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v2
 
 v3:
-	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v3
+	bash -e /tmp/travis-scripts/websocket_tests.sh
 
 structure:
 	forkprove --timer -I./lib  -I./t t/BOM/*.t
@@ -14,7 +14,7 @@ stress:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
 	sudo netstat -anlpt |grep 500
-	cd /home/git/regentmarkets/stress;go run stress.go -insert 10000;go run stress.go -workers 2 -noecho
+	cd /home/git/regentmarkets/stress;go run stress.go -insert 100;go run stress.go -workers 2 -noecho
 
 tidy:
 	find . -name '*.p?.bak' -delete
