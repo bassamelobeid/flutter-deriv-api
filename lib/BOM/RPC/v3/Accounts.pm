@@ -455,7 +455,7 @@ sub get_settings {
 
 sub set_settings {
     my $params = shift;
-    my ($client_loginid, $website, $cs_email, $client_ip, $user_agent, $language, $args) = (
+    my ($client_loginid, $website_name, $cs_email, $client_ip, $user_agent, $language, $args) = (
         $params->{client_loginid}, $params->{website_name}, $params->{cs_email}, $params->{client_ip},
         $params->{user_agent},     $params->{language},     $params->{args});
 
