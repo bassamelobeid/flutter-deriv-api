@@ -284,14 +284,13 @@ sub balance {
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
-
     if ($client->default_account and exists $args->{subscribe}) {
         my $redis             = $c->stash('redis');
         my $channel           = 'TXNUPDATE::balance_' . $client->default_account->id;
         my $subscriptions     = $c->stash('subscribed_channels') // {};
         my $already_subsribed = $subscriptions->{$channel};
 
-        if ($args->{subscribe} eq '1') {
+        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
             if (!$already_subsribed) {
                 $redis->subscribe([$channel], sub { });
                 $subscriptions->{$channel} = 1;
@@ -310,9 +309,24 @@ sub balance {
         }
     }
 
-    return {
-        msg_type => 'balance',
-        balance  => BOM::RPC::v3::Accounts::balance($client)};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'balance',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('balance', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type => 'balance',
+                    balance  => $response
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub send_realtime_balance {
