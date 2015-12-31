@@ -133,6 +133,7 @@ subtest 'create account' => sub {
     my %t_vr_details = (
         email => 'fixbugemail@binary.com',
         %{$vr_details->{CR}});
+    my ($vr_client, $user, $real_acc, $real_client);
     lives_ok {
         my $vr_acc = create_vr_acc(\%t_vr_details);
         ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
