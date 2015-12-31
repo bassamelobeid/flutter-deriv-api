@@ -545,11 +545,19 @@ sub set_settings {
 }
 
 sub get_self_exclusion {
-    my $client = shift;
+    my $params = shift;
 
-    my $self_exclusion     = $client->get_self_exclusion;
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
     my $get_self_exclusion = {};
+    if (not $client or $client->is_virtual) {
+        return $get_self_exclusion;
+    }
 
+    my $self_exclusion = $client->get_self_exclusion;
     if ($self_exclusion) {
         $get_self_exclusion->{max_balance} = $self_exclusion->max_balance
             if $self_exclusion->max_balance;
@@ -582,14 +590,21 @@ sub get_self_exclusion {
 }
 
 sub set_self_exclusion {
-    my ($client, $cs_email, $compliance_email, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $cs_email, $compliance_email, $args) =
+        ($params->{client_loginid}, $params->{cs_email}, $params->{compliance_email}, $params->{args});
 
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Permission denied.')}) if $client->is_virtual;
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    if (not $client or $client->is_virtual) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     # get old from above sub get_self_exclusion
-    my $self_exclusion = get_self_exclusion($client);
+    my $self_exclusion = get_self_exclusion({client_loginid => $client_loginid});
 
     ## validate
     my $error_sub = sub {
