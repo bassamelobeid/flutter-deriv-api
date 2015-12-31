@@ -209,7 +209,14 @@ sub send_realtime_balance {
 }
 
 sub balance {
-    my $client = shift;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     return {
         currency => '',
