@@ -1393,7 +1393,8 @@ subtest 'economic events blockout period' => sub {
         {
             symbol       => 'USD',
             impact       => 5,
-            release_date => $now->minus_time_interval('15m1s')});
+            release_date => $now->minus_time_interval('15m1s'),
+            recorded_date => $now->minus_time_interval('15m1s')});
 
     my $bet_params = {
         underlying   => $underlying_symbol,
@@ -1414,6 +1415,7 @@ subtest 'economic events blockout period' => sub {
         {
             symbol       => 'AUD',
             impact       => 5,
+            recorded_date => $now->minus_time_interval('14m59s'),
             release_date => $now->minus_time_interval('14m59s')});
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
@@ -1423,6 +1425,7 @@ subtest 'economic events blockout period' => sub {
         {
             symbol       => 'USD',
             impact       => 4,
+            recorded_date => $now->minus_time_interval('14m59s'),
             release_date => $now->minus_time_interval('14m59s')});
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
@@ -1432,6 +1435,7 @@ subtest 'economic events blockout period' => sub {
         {
             symbol       => 'USD',
             impact       => 5,
+            recorded_date => $now->minus_time_interval('14m58s'),
             release_date => $now->minus_time_interval('14m58s')});
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
