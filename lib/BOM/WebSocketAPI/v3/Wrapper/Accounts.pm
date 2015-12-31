@@ -158,17 +158,25 @@ sub cashier_password {
     my ($c, $args) = @_;
 
     my $r = $c->stash('request');
-    my $response =
-        BOM::RPC::v3::Accounts::cashier_password($c->stash('client'), $r->website->config->get('customer_support.email'), $r->client_ip, $args);
-
-    if (exists $response->{error}) {
-        return $c->new_error('cashier_password', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type         => 'cashier_password',
-            cashier_password => $response->{status},
-        };
-    }
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'cashier_password',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('cashier_password', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type         => 'cashier_password',
+                    cashier_password => $response->{status}};
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            cs_email       => $r->website->config->get('customer_support.email'),
+            client_ip      => $r->client_ip
+        });
     return;
 }
 
