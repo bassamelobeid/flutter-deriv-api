@@ -89,8 +89,6 @@ my %financial_data = (
 );
 
 subtest 'create account' => sub {
-    set_absolute_time(1456724000);
-    my $guard = guard { restore_time };
     foreach my $broker (keys %$vr_details) {
         my ($real_acc, $vr_client, $real_client, $user);
         lives_ok {
@@ -126,6 +124,32 @@ subtest 'create account' => sub {
             is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
         }
     }
+
+    # test create account in 2016-02-29
+    set_absolute_time(1456724000);
+    my $guard = guard { restore_time };
+
+    my $broker       = 'CR';
+    my %t_vr_details = (
+        email => 'fixbugemail@binary.com',
+        %{$vr_details->{CR}});
+    lives_ok {
+        my $vr_acc = create_vr_acc(\%t_vr_details);
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc';
+
+    $user->email_verified(1);
+    $user->save;
+
+    # real acc
+    lives_ok {
+        $real_acc = create_real_acc($vr_client, $user, $broker);
+        ($real_client, $user) = @{$real_acc}{'client', 'user'};
+    }
+    "create $broker acc OK, after verify email";
+    is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
+
 };
 
 subtest 'get_real_acc_opening_type' => sub {
