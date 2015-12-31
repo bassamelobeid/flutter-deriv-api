@@ -51,9 +51,6 @@ sub ticks_history {
                         return $c->new_error('ticks_history', 'AlreadySubscribed',
                             $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
                     }
-                } else {
-                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $response->{publish});
-                    return;
                 }
             }
             return {
@@ -82,33 +79,23 @@ sub proposal {
 sub send_ask {
     my ($c, $id, $args) = @_;
 
-    my %details  = %{$args};
-    my $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-    if ($response->{error}) {
-        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
-
-        my $proposal = {id => $id};
-        $proposal->{longcode}  = delete $response->{longcode}  if $response->{longcode};
-        $proposal->{ask_price} = delete $response->{ask_price} if $response->{ask_price};
-        $c->send({
-                json => {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => $proposal,
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'send_ask',
+        sub {
+            my $response = shift;
+            if ($response and exists $response->{error}) {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
+            }
+            return {
+                msg_type => 'proposal',
+                proposal => {
+                    id => $id,
                     %$response
-                }});
-    } else {
-        $c->send({
-                json => {
-                    msg_type => 'proposal',
-                    echo_req => $args,
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    proposal => {
-                        id => $id,
-                        %$response
-                    }}});
-    }
+                }};
+        },
+        {args => $args});
     return;
 }
 

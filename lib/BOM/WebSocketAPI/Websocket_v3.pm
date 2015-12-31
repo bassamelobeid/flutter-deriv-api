@@ -334,8 +334,8 @@ sub __handle {
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -367,8 +367,9 @@ sub __handle {
 
         my $client = $c->stash('client');
         if ($client) {
-            DataDog::DogStatsd::Helper::stats_inc('websocket_api_v3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}"]});
+            my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.authenticated_call.all',
+                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
         }
 
         ## sell expired
@@ -444,19 +445,27 @@ sub rpc {
         sub {
             my $res = pop;
 
-            DataDog::DogStatsd::Helper::stats_timing('rpc.call.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_timing('rpc.call.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_timing(
+                'bom-websocket-api.v3.rpc.call.timing',
+                1000 * Time::HiRes::tv_interval($tv),
+                {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method"]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
-                $self->send({json => $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'))});
+                my $data = $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'));
+                $data->{echo_req} = $params->{args};
+                $self->send({json => $data});
                 return;
             }
             if ($res->is_error) {
                 warn $res->error_message;
-                $self->send({json => $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message))});
+                my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
+                $data->{echo_req} = $params->{args};
+                $self->send({json => $data});
                 return;
             }
             my $send = 1;
