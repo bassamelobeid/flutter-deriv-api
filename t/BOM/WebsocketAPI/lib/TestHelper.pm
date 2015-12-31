@@ -17,7 +17,7 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
 use base 'Exporter';
 use vars qw/@EXPORT_OK/;
-@EXPORT_OK = qw/test_schema build_mojo_test build_test_R_50_data/;
+@EXPORT_OK = qw/test_schema ws_connection_ok build_mojo_test build_test_R_50_data/;
 
 my ($version) = (__FILE__ =~ m{/(v\d+)/});
 die 'unknown version' unless $version;
@@ -35,6 +35,20 @@ sub build_mojo_test {
     $t->websocket_ok($url => $headers);
 
     return $t;
+}
+
+sub ws_connection_ok {
+    my $t = shift;
+
+    my $args = shift || {};
+
+    my $headers = {};
+    if ($args->{deflate}) {
+        $headers = {'Sec-WebSocket-Extensions' => 'permessage-deflate'};
+    }
+    my $url = "/websockets/$version";
+    $url .= '?l=' . $args->{language} if $args->{language};
+    $t->websocket_ok($url => $headers);
 }
 
 sub test_schema {
