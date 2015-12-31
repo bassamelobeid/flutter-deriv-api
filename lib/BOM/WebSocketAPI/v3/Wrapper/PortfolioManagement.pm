@@ -5,7 +5,6 @@ use warnings;
 
 use JSON;
 
-use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
@@ -40,17 +39,16 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         @fmbs = $client->open_bets;
     }
 
-    # need to do it in wrapper as we subscribe to feed_channel and is implementation specific
+    # don't touch args as we send them in echo_req
+    my $details = {%$args};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            # these keys needs to be deleted from args (check send_proposal)
-            # populating here cos we stash them in redis channel
-            $args->{short_code}  = $fmb->short_code;
-            $args->{contract_id} = $fmb->id;
-            $args->{currency}    = $client->currency;
+            $details->{short_code}  = $fmb->short_code;
+            $details->{contract_id} = $fmb->id;
+            $details->{currency}    = $client->currency;
             my $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
-                'proposal_open_contract:' . JSON::to_json($args));
-            send_proposal($c, $id, $args);
+                'proposal_open_contract:' . JSON::to_json($details));
+            send_proposal($c, $id, $args, $details);
         }
     } else {
         return {
@@ -60,19 +58,25 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 }
 
 sub send_proposal {
-    my ($c, $id, $args) = @_;
+    my ($c, $id, $args, $details) = @_;
 
-    my $details = {%$args};
-    my $latest = BOM::RPC::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
-
-    $c->send({
-            json => {
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_bid',
+        sub {
+            my $response = shift;
+            return {
                 msg_type               => 'proposal_open_contract',
-                echo_req               => $details,
                 proposal_open_contract => {
                     id => $id,
-                    %$latest
-                }}});
+                    %$response
+                }};
+        },
+        {
+            args        => $args,
+            short_code  => $details->{short_code},
+            contract_id => $details->{contract_id},
+            currency    => $details->{currency}});
     return;
 }
 
