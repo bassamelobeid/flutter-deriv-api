@@ -742,10 +742,17 @@ sub set_self_exclusion {
 }
 
 sub api_token {
-    my ($client, $args) = @_;
+    my $params = shift;
+    my ($client_loginid, $args) = ($params->{client_loginid}, $params->{args});
+
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $rtn;
-
     my $m = BOM::Database::Model::AccessToken->new;
     if ($args->{delete_token}) {
         $m->remove_by_token($args->{delete_token});

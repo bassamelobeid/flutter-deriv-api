@@ -73,6 +73,7 @@ sub startup {
                 '/get_self_exclusion' => MojoX::JSON::RPC::Service->new->register('get_self_exclusion', \&BOM::RPC::v3::Accounts::get_self_exclusion),
                 '/set_self_exclusion' => MojoX::JSON::RPC::Service->new->register('set_self_exclusion', \&BOM::RPC::v3::Accounts::set_self_exclusion),
                 '/balance'            => MojoX::JSON::RPC::Service->new->register('balance',            \&BOM::RPC::v3::Accounts::balance),
+                '/api_token'          => MojoX::JSON::RPC::Service->new->register('api_token',          \&BOM::RPC::v3::Accounts::api_token),
                 '/verify_email'       => MojoX::JSON::RPC::Service->new->register('verify_email',       \&BOM::RPC::v3::NewAccount::verify_email),
                 '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
