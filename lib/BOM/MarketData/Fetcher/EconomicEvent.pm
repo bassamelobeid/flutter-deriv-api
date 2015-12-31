@@ -70,6 +70,8 @@ sub create_doc {
         $self->_couchdb->document($doc_id, $data);
     };
 
+    BOM::MarketData::EconomicEvent->new($data)->save;
+
     return $doc_id;
 }
 
@@ -91,9 +93,9 @@ sub retrieve_doc_with_view {
 
     my $symbol = $args->{symbol};
     my $release_date =
-    (ref $args->{release_date} eq 'Date::Utility')
-    ? $args->{release_date}->datetime_iso8601
-    : Date::Utility->new($args->{release_date})->datetime_iso8601;
+        (ref $args->{release_date} eq 'Date::Utility')
+        ? $args->{release_date}->datetime_iso8601
+        : Date::Utility->new($args->{release_date})->datetime_iso8601;
     my $event_name = $args->{event_name};
 
     my $query = {key => [$symbol, $release_date, $event_name]};
@@ -125,12 +127,12 @@ sub get_latest_events_for_period {
     my $chronicle_result = $self->_get_latest_events_for_period_chronicle($period);
 
     #if we are requested to operate in debug mode, then comapre and write output
-    if ( defined $debug and ($debug == 1 or $debug == 2)  ) {
+    if (defined $debug and ($debug == 1 or $debug == 2)) {
         #now compare two resultsets
         print "Sizes do not match\n" if (scalar @$couch_result != scalar @$chronicle_result);
         print "couch size is " . scalar @$couch_result . "\n";
         print "chronicle size is " . scalar @$chronicle_result . "\n";
-        print "couch data is " . Dumper($couch_result) . "\n" if $debug == 2;
+        print "couch data is " . Dumper($couch_result) . "\n"        if $debug == 2;
         print "chronicle data is" . Dumper($chronicle_result) . "\n" if $debug == 2;
 
         my $first = 1;
@@ -158,7 +160,6 @@ sub get_latest_events_for_period {
 
     return $chronicle_result;
 }
-
 
 sub _get_latest_events_for_period_chronicle {
     my ($self, $period) = @_;
@@ -203,6 +204,7 @@ sub _get_latest_events_for_period_chronicle {
         }
 
         my @matching_events_values = values %matching_events;
+        @matching_events_values = sort { $a->release_date->epoch <=> $b->release_date->epoch } @matching_events_values;
         $chronicle_result = \@matching_events_values;
     }
     catch {
@@ -211,7 +213,6 @@ sub _get_latest_events_for_period_chronicle {
 
     return $chronicle_result;
 }
-
 
 sub _get_latest_events_for_period {
     my ($self, $period) = @_;
@@ -239,19 +240,19 @@ sub _get_latest_events_for_period {
         my $end_of_first  = $start->truncate_to_day->plus_time_interval('23h59m59s');
         my $start_of_next = $end_of_first->plus_time_interval('1s');
         push @$events,
-        @{
-        $self->_latest_events_for_day_part({
-        from   => $start,
-        to     => $end_of_first,
-        source => $source
-        })};
+            @{
+            $self->_latest_events_for_day_part({
+                    from   => $start,
+                    to     => $end_of_first,
+                    source => $source
+                })};
         push @$events,
-        @{
-        $self->_get_latest_events_for_period({
-        from   => $start_of_next,
-        to     => $end,
-        source => $source
-        })};
+            @{
+            $self->_get_latest_events_for_period({
+                    from   => $start_of_next,
+                    to     => $end,
+                    source => $source
+                })};
     }
 
     return $events;
@@ -305,9 +306,9 @@ sub _get_events {
     my ($self, $args) = @_;
 
     croak 'start date undef during economic events calculation'
-    unless defined $args->{from};
+        unless defined $args->{from};
     croak 'end date undef during economic events calculation'
-    unless defined $args->{to};
+        unless defined $args->{to};
 
     my ($start, $end) = map { Date::Utility->new($_) } @{$args}{'from', 'to'};
     my $source = $args->{source};

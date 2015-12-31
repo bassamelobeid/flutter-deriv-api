@@ -1,6 +1,8 @@
 package BOM::MarketData::EconomicEvent;
 #Chornicle Economic Event
 
+use BOM::System::Chronicle;
+
 =head1 NAME
 
 BOM::MarketData::EconomicEvent
@@ -92,6 +94,22 @@ has event_name => (
     isa     => 'Str',
     default => 'Not Given',
 );
+
+#this is supposed to only be called during tests.
+#In order to save an economic event in live system you need to call update script which 
+#in turn calls Fetcher::EconomicEvent
+sub save {
+    my $self = shift;
+    my $current_set = BOM::System::Chronicle::get('economic_events', 'economic_events');
+
+    #if this is the first event ever
+    $current_set //= [];
+
+    #current_set is an array-ref
+    push $current_set, $self->document;
+
+    BOM::System::Chronicle::set('economic_events', 'economic_events', $current_set);
+}
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

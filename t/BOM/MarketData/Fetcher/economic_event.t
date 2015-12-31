@@ -18,8 +18,10 @@ subtest create_doc => sub {
     my $eco = BOM::MarketData::Fetcher::EconomicEvent->new();
     can_ok($eco, 'create_doc');
     my %test_data = (
-        recorded_date => '12-12-12',
-        release_date  => Date::Utility->new('12-Dec-12 01:00')->epoch
+        recorded_date => '2012-12-12',
+        release_date  => Date::Utility->new('12-Dec-12 01:00')->epoch,
+        source        => 'forexfactory',
+        symbol        => 'USD'
     );
     my $doc_id;
     ok($doc_id = $eco->create_doc(\%test_data), 'create_doc lives');
@@ -55,11 +57,13 @@ subtest get_latest_events_for_period => sub {
     plan tests => 7;
     my $today = Date::Utility->new->truncate_to_day;
 
+    use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
             recorded_date => $today,
-            release_date  => Date::Utility->new($today->epoch + 3600),
+            release_date  => Date::Utility->new($today->epoch + 2600),
             date          => Date::Utility->new(),
         },
     );
@@ -68,7 +72,7 @@ subtest get_latest_events_for_period => sub {
         'economic_events',
         {
             recorded_date => $today,
-            release_date  => Date::Utility->new($today->epoch + 2600),
+            release_date  => Date::Utility->new($today->epoch + 3600),
             date          => Date::Utility->new(),
         },
     );

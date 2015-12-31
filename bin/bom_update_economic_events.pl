@@ -69,9 +69,8 @@ sub script_run {
     }
 
     try {
-        @all_events = sort { $a->release_date->epoch cmp $b->release_date->epoch } @all_events;
-
-        #now we need to convert these sorted data into their document
+        #no need to sort events, when they are retrieved by get_latest_... method, they will be sorted
+        #now we need to convert these data into their document
         my @all_documents;
         push @all_documents, $_->document for @all_events;
         BOM::System::Chronicle::set("economic_events", "economic_events", \@all_documents);
