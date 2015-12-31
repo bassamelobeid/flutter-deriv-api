@@ -120,7 +120,8 @@ sub get_ask {
 }
 
 sub get_bid {
-    my ($short_code, $contract_id, $currency) = @_;
+    my $params = shift;
+    my ($short_code, $contract_id, $currency) = ($params->{short_code}, $params->{contract_id}, $params->{currency});
 
     my $contract = produce_contract($short_code, $currency);
 
