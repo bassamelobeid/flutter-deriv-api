@@ -9,8 +9,16 @@ BOM::MarketData::EconomicEvent
 
 =head1 DESCRIPTION
 
-This is a temporary module to hold what will be finally stored in EconomicEvent of MarketData.
-We will use this module to write economic events data to Chronicle.
+Represents an economic event in the financial market
+ 
+     my $eco = BOM::MarketData::EconomicEvent->new({
+         symbol => $symbol,
+         release_date => $rd,
+         impact => $impact,
+         event_name => $event_name,
+         source => $source, # currently just from forexfactory
+         recorded_date => $rdate,
+     });
 
 =cut
 

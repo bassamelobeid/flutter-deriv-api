@@ -69,7 +69,7 @@ sub script_run {
     }
 
     try {
-        #no need to sort events, when they are retrieved by get_latest_... method, they will be sorted
+        @all_events = sort { $a->release_date->epoch cmp $b->release_date->epoch } @all_events;
         #now we need to convert these data into their document
         my @all_documents;
         push @all_documents, $_->document for @all_events;
