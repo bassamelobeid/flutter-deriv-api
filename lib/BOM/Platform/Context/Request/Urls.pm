@@ -172,7 +172,7 @@ sub _build__dealing_domain {
 
 sub _build__localhost_domain {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->hosts->localhost->name . '.' . $self->domain;
+    return BOM::System::Localhost::name() . '.' . $self->domain;
 }
 
 1;

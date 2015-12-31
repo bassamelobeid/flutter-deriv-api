@@ -341,7 +341,8 @@ sub _build_cookie_domain {
 
 sub _build_domain_name {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->hosts->localhost->external_fqdn;
+
+    return BOM::System::Localhost::external_fqdn;
 }
 
 sub _build_broker_code {
