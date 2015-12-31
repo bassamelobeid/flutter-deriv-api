@@ -51,9 +51,6 @@ sub ticks_history {
                         return $c->new_error('ticks_history', 'AlreadySubscribed',
                             $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
                     }
-                } else {
-                    _feed_channel($c, 'unsubscribe', $args->{ticks_history}, $response->{publish});
-                    return;
                 }
             }
             return {
