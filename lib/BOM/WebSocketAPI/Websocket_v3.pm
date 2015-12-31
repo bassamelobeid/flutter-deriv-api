@@ -367,7 +367,7 @@ sub __handle {
 
         my $client = $c->stash('client');
         if ($client) {
-            my $account_type = $client->{loginid} =~ /^vrtc/ ? 'virtual' : 'real';
+            my $account_type = $client->{loginid} =~ /^VRTC/ ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
         }
