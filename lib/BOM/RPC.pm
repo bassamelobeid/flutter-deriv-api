@@ -16,6 +16,7 @@ use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
+use BOM::RPC::v3::PortfolioManagement;
 
 sub startup {
     my $app = shift;
@@ -65,8 +66,16 @@ sub startup {
                 '/landing_company_details' =>
                     MojoX::JSON::RPC::Service->new->register('landing_company_details', \&BOM::RPC::v3::Accounts::landing_company_details),
                 '/statement'          => MojoX::JSON::RPC::Service->new->register('statement',          \&BOM::RPC::v3::Accounts::statement),
+                '/profit_table'       => MojoX::JSON::RPC::Service->new->register('profit_table',       \&BOM::RPC::v3::Accounts::profit_table),
                 '/get_account_status' => MojoX::JSON::RPC::Service->new->register('get_account_status', \&BOM::RPC::v3::Accounts::get_account_status),
                 '/change_password'    => MojoX::JSON::RPC::Service->new->register('change_password',    \&BOM::RPC::v3::Accounts::change_password),
+                '/cashier_password'   => MojoX::JSON::RPC::Service->new->register('cashier_password',   \&BOM::RPC::v3::Accounts::cashier_password),
+                '/get_settings'       => MojoX::JSON::RPC::Service->new->register('get_settings',       \&BOM::RPC::v3::Accounts::get_settings),
+                '/set_settings'       => MojoX::JSON::RPC::Service->new->register('set_settings',       \&BOM::RPC::v3::Accounts::set_settings),
+                '/get_self_exclusion' => MojoX::JSON::RPC::Service->new->register('get_self_exclusion', \&BOM::RPC::v3::Accounts::get_self_exclusion),
+                '/set_self_exclusion' => MojoX::JSON::RPC::Service->new->register('set_self_exclusion', \&BOM::RPC::v3::Accounts::set_self_exclusion),
+                '/balance'            => MojoX::JSON::RPC::Service->new->register('balance',            \&BOM::RPC::v3::Accounts::balance),
+                '/api_token'          => MojoX::JSON::RPC::Service->new->register('api_token',          \&BOM::RPC::v3::Accounts::api_token),
                 '/verify_email'       => MojoX::JSON::RPC::Service->new->register('verify_email',       \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'           => MojoX::JSON::RPC::Service->new->register('send_ask',           \&BOM::RPC::v3::Contract::send_ask),
                 '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
@@ -74,6 +83,7 @@ sub startup {
                     MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
                 '/new_account_virtual' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual),
+                '/portfolio' => MojoX::JSON::RPC::Service->new->register('portfolio', \&BOM::RPC::v3::PortfolioManagement::portfolio),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;

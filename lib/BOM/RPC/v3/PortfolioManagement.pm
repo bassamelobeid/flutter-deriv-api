@@ -8,11 +8,19 @@ use Date::Utility;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
+use BOM::Platform::Client;
 
 sub portfolio {
-    my $client = shift;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
 
     my $portfolio = {contracts => []};
+    return $portfolio unless $client;
+
     foreach my $row (@{__get_open_contracts($client)}) {
         my %trx = (
             contract_id    => $row->{id},
