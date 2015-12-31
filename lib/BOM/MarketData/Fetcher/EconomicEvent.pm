@@ -93,9 +93,9 @@ sub retrieve_doc_with_view {
 
     my $symbol = $args->{symbol};
     my $release_date =
-    (ref $args->{release_date} eq 'Date::Utility')
-    ? $args->{release_date}->datetime_iso8601
-    : Date::Utility->new($args->{release_date})->datetime_iso8601;
+        (ref $args->{release_date} eq 'Date::Utility')
+        ? $args->{release_date}->datetime_iso8601
+        : Date::Utility->new($args->{release_date})->datetime_iso8601;
     my $event_name = $args->{event_name};
 
     my $query = {key => [$symbol, $release_date, $event_name]};
@@ -125,8 +125,8 @@ sub get_latest_events_for_period {
     my ($self, $period, $debug) = @_;
     my $couch_result     = $self->_get_latest_events_for_period($period);
     my $chronicle_result = $self->_get_latest_events_for_period_chronicle($period);
-    my $start  = $period->{from}->epoch;
-    my $end    = $period->{to}->epoch;
+    my $start            = $period->{from}->epoch;
+    my $end              = $period->{to}->epoch;
 
     my $logger = get_logger();
     $logger->warn("Economic Events reading - Sizes do not match - period ($start, $end)") if (scalar @$couch_result != scalar @$chronicle_result);
@@ -168,7 +168,7 @@ sub get_latest_events_for_period {
 sub _get_latest_events_for_period_chronicle {
     my ($self, $period) = @_;
     my $chronicle_result = [];
-    my $logger = get_logger();
+    my $logger           = get_logger();
 
     try {
         my $start  = $period->{from}->epoch;
@@ -196,13 +196,13 @@ sub _get_latest_events_for_period_chronicle {
 
         #now filter events that fall in the range we are looking for
         my %matching_events;
-        
+
         for my $single_ee (@$extracted_events) {
             my $ee_epoch = Date::Utility->new($single_ee->{release_date})->epoch;
 
-            $single_ee->{symbol} //= "";
+            $single_ee->{symbol}       //= "";
             $single_ee->{release_date} //= "";
-            $single_ee->{event_name} //= "";
+            $single_ee->{event_name}   //= "";
 
             #prevent adding repeated economic events by storing in a hash based on a uniqe key
             my $unique_key = $single_ee->{symbol} . $single_ee->{release_date} . $single_ee->{event_name};
@@ -214,6 +214,7 @@ sub _get_latest_events_for_period_chronicle {
 
         my @matching_events_values = values %matching_events;
         @matching_events_values = sort { $a->release_date->epoch <=> $b->release_date->epoch } @matching_events_values;
+        $chronicle_result = \@matching_events_values;
     }
     catch {
         $logger->warn("Error getting chronicle results: " . $_);
@@ -221,7 +222,6 @@ sub _get_latest_events_for_period_chronicle {
 
     return $chronicle_result;
 }
-
 
 sub _get_latest_events_for_period {
     my ($self, $period) = @_;
@@ -249,12 +249,12 @@ sub _get_latest_events_for_period {
         my $end_of_first  = $start->truncate_to_day->plus_time_interval('23h59m59s');
         my $start_of_next = $end_of_first->plus_time_interval('1s');
         push @$events,
-        @{
-        $self->_latest_events_for_day_part({
-        from   => $start,
-        to     => $end_of_first,
-        source => $source
-        })};
+            @{
+            $self->_latest_events_for_day_part({
+                    from   => $start,
+                    to     => $end_of_first,
+                    source => $source
+                })};
         push @$events,
             @{
             $self->_get_latest_events_for_period({
@@ -315,9 +315,9 @@ sub _get_events {
     my ($self, $args) = @_;
 
     croak 'start date undef during economic events calculation'
-    unless defined $args->{from};
+        unless defined $args->{from};
     croak 'end date undef during economic events calculation'
-    unless defined $args->{to};
+        unless defined $args->{to};
 
     my ($start, $end) = map { Date::Utility->new($_) } @{$args}{'from', 'to'};
     my $source = $args->{source};

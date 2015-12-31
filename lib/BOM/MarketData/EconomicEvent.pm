@@ -104,7 +104,7 @@ has event_name => (
 );
 
 #this is supposed to only be called during tests.
-#In order to save an economic event in live system you need to call update script which 
+#In order to save an economic event in live system you need to call update script which
 #in turn calls Fetcher::EconomicEvent
 sub save {
     my $self = shift;
