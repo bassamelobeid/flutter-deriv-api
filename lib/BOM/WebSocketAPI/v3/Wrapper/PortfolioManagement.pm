@@ -5,7 +5,6 @@ use warnings;
 
 use JSON;
 
-use BOM::RPC::v3::Contract;
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
@@ -40,7 +39,6 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
         @fmbs = $client->open_bets;
     }
 
-    # need to do it in wrapper as we subscribe to feed_channel and is implementation specific
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
             # these keys needs to be deleted from args (check send_proposal)
@@ -63,16 +61,24 @@ sub send_proposal {
     my ($c, $id, $args) = @_;
 
     my $details = {%$args};
-    my $latest = BOM::RPC::v3::Contract::get_bid(delete $details->{short_code}, delete $details->{contract_id}, delete $details->{currency});
-
-    $c->send({
-            json => {
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_bid',
+        sub {
+            my $response = shift;
+            return {
                 msg_type               => 'proposal_open_contract',
-                echo_req               => $details,
                 proposal_open_contract => {
                     id => $id,
-                    %$latest
-                }}});
+                    %$response
+                }};
+        },
+        {
+            short_code  => delete $details->{short_code},
+            contract_id => delete $details->{contract_id},
+            currency    => delete $details->{currency},
+            args        => $details
+        });
     return;
 }
 
