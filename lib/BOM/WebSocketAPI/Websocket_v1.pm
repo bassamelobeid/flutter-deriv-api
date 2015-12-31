@@ -101,8 +101,13 @@ sub __handle {
 
         my $client = $c->stash('client');
         if ($client) {
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v1.authenticated_call.all',
-                {tags => [$tag, $dispatch->[0], "loginid:$client->{loginid}"]});
+            my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
+            DataDog::DogStatsd::Helper::stats_inc(
+                'bom-websocket-api.v1.authenticated_call.all',
+                {
+                    tags => [$tag, $dispatch->[0], "loginid:$client->{loginid}"],
+                    "account_type:$account_type"
+                });
         }
 
         return $dispatch->[1]->($c, $p1);

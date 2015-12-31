@@ -176,8 +176,9 @@ sub __handle {
 
         my $client = $c->stash('client');
         if ($client) {
+            my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v2.authenticated_call.all',
-                {tags => [$tag, $dispatch->[0], "loginid:$client->{loginid}"]});
+                {tags => [$tag, $dispatch->[0], "loginid:$client->{loginid}", "account_type:$account_type"]});
         }
 
         ## sell expired
