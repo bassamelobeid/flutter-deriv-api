@@ -10,7 +10,6 @@ use lib qw(/home/git/regentmarkets/bom-backoffice/lib/);
 use Time::Duration::Concise::Localize;
 use BOM::Platform::Runtime;
 
-use BOM::System::Localhost;
 use BOM::RiskReporting::Dashboard;
 use BOM::RiskReporting::MarkedToModel;
 
@@ -30,9 +29,6 @@ sub documentation {
 
 sub daemon_run {
     my $self = shift;
-
-    die 'riskd only to run on master servers.'
-        unless (BOM::System::Localhost::is_master_server());
 
     while (1) {
         $self->info('Starting marked-to-model calculation.');
