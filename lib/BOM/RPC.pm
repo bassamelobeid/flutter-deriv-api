@@ -15,6 +15,7 @@ use BOM::RPC::v3::Authorize;
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::NewAccount;
+use BOM::RPC::v3::PortfolioManagement;
 
 sub startup {
     my $app = shift;
