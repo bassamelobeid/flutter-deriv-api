@@ -349,15 +349,24 @@ sub send_realtime_balance {
 sub api_token {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Accounts::api_token($c->stash('client'), $args);
-    if (exists $response->{error}) {
-        return $c->new_error('api_token', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type  => 'api_token',
-            api_token => $response,
-        };
-    }
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'api_token',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('api_token', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type  => 'api_token',
+                    api_token => $response
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 1;
