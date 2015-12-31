@@ -5,16 +5,27 @@ use warnings;
 
 use JSON;
 
-use BOM::RPC::v3::PortfolioManagement;
 use BOM::RPC::v3::Contract;
+use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub portfolio {
     my ($c, $args) = @_;
 
-    return {
-        msg_type  => 'portfolio',
-        portfolio => BOM::RPC::v3::PortfolioManagement::portfolio($c->stash('client'))};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'portfolio',
+        sub {
+            my $response = shift;
+            return {
+                msg_type  => 'portfolio',
+                portfolio => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
