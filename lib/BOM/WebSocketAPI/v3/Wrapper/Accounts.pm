@@ -183,9 +183,26 @@ sub cashier_password {
 sub get_settings {
     my ($c, $args) = @_;
 
-    return {
-        msg_type => 'get_settings',
-        get_settings => BOM::RPC::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language)};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_settings',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('get_settings', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'get_settings',
+                    get_settings => $response
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            language       => $c->stash('request')->language
+        });
+    return;
 }
 
 sub set_settings {
