@@ -51,7 +51,7 @@ sub save {
         }
     }
 
-    return BOM::System::Chronicle::set('holidays', 'holidays', \%relevant_holidays);
+    return BOM::System::Chronicle::set('holidays', 'holidays', \%relevant_holidays, $self->recorded_date);
 }
 
 sub get_holidays_for {

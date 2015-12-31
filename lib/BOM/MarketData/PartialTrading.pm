@@ -58,7 +58,7 @@ sub save {
         }
     }
 
-    return BOM::System::Chronicle::set('partial_trading', $self->type, \%relevant_dates);
+    return BOM::System::Chronicle::set('partial_trading', $self->type, \%relevant_dates, $self->recorded_date);
 }
 
 sub get_partial_trading_for {

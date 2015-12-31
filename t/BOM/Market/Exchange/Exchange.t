@@ -1,5 +1,6 @@
 #!/usr/bin/perl
 
+use Test::MockTime qw( :all );
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
@@ -7,7 +8,6 @@ use Test::Most;
 use Test::MockModule;
 use File::Spec;
 use Test::FailWarnings;
-use Test::MockTime qw( :all );
 use Test::MockObject::Extends;
 use Test::MockModule;
 use JSON qw(decode_json);
