@@ -108,6 +108,11 @@ has event_name => (
 #in turn calls Fetcher::EconomicEvent
 sub save {
     my $self = shift;
+
+    if (not defined BOM::System::Chronicle::get('economic_events', 'economic_events')) {
+        BOM::System::Chronicle::set('economic_events', 'economic_events', []);
+    }
+
     my $current_set = BOM::System::Chronicle::get('economic_events', 'economic_events');
 
     #if this is the first event ever
@@ -116,7 +121,7 @@ sub save {
     #current_set is an array-ref
     push $current_set, $self->document;
 
-    BOM::System::Chronicle::set('economic_events', 'economic_events', $current_set);
+    return BOM::System::Chronicle::set('economic_events', 'economic_events', $current_set);
 }
 
 no Moose;

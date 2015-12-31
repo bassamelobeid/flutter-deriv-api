@@ -129,7 +129,6 @@ sub get_latest_events_for_period {
     my $end              = $period->{to}->epoch;
 
     my $logger = get_logger();
-    $logger->warn("Economic Events reading - Sizes do not match - period ($start, $end)") if (scalar @$couch_result != scalar @$chronicle_result);
 
     #if we are requested to operate in debug mode, then comapre and write output
     if (defined $debug and ($debug == 1 or $debug == 2)) {
