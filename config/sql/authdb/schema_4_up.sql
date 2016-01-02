@@ -9,7 +9,7 @@ CREATE TABLE oauth.clients (
     binary_user_id BIGINT NOT NULL,
     active boolean NOT NULL DEFAULT true
 );
-insert into oauth.clients (id, client_secret, display_name, binary_user_id) values ('binarycom', 'bin2Sec', 'Binary.com', 1);
+insert into oauth.clients (id, secret, name, binary_user_id) values ('binarycom', 'bin2Sec', 'Binary.com', 1);
 GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.clients TO write;
 GRANT SELECT ON oauth.clients TO read;
 
