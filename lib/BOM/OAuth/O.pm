@@ -91,6 +91,26 @@ sub access_token {
         });
 }
 
+sub __get_client {
+    my $c = shift;
+
+    my $request        = $c->stash('request');       # from before_dispatch
+    my $session_cookie = $request->session_cookie;
+    return unless $session_cookie and $session_cookie->token;
+
+    my $client = BOM::Platform::Client->new({loginid => $session_cookie->loginid});
+    return if $client->get_status('disabled');
+
+    if ($client->get_self_exclusion and $client->get_self_exclusion->exclude_until) {
+        my $limit_excludeuntil = $client->get_self_exclusion->exclude_until;
+        if (Date::Utility->new->is_before(Date::Utility->new($limit_excludeuntil))) {
+            return;
+        }
+    }
+
+    return $client;
+}
+
 sub __bad_request {
     my ($c, $error) = @_;
 
