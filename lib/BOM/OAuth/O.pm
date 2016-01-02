@@ -1,4 +1,4 @@
-package BOM::OAuth::C;
+package BOM::OAuth::O;
 
 use Mojo::Base 'Mojolicious::Controller';
 use BOM::Database::Model::OAuth;
