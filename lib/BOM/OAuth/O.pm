@@ -34,7 +34,7 @@ sub authorize {
         # we need to redirect back to oauth/authorize after
         # login (with the original params)
         my $query = $c->url_with->query;
-        $c->session('redirect_after_login' => $query);
+        $c->session('oauth_authorize_query' => $query);
         return $c->redirect_to('/login');
     }
 
