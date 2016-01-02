@@ -60,9 +60,9 @@ sub access_token {
     (grep { $_ eq $grant_type } ('authorization_code', 'refresh_token'))
         or return $c->__bad_request('the request was missing valid grant_type');
     ($grant_type eq 'authorization_code' and not $auth_code)
-        or return $c->__bad_request('the request was missing code');
+        and return $c->__bad_request('the request was missing code');
     ($grant_type eq 'refresh_token' and not $auth_code)
-        or return $c->__bad_request('the request was missing refresh_token');
+        and return $c->__bad_request('the request was missing refresh_token');
 
     my $oauth_model = __oauth_model();
 
