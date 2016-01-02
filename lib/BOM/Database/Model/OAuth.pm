@@ -26,10 +26,8 @@ sub verify_client {
 sub store_auth_code {
     my ($self, $client_id, $loginid) = @_;
 
-    my $dbh = $self->dbh;
-
-    my $auth_code = Data::UUID->new()->create_str();
-
+    my $dbh          = $self->dbh;
+    my $auth_code    = Data::UUID->new()->create_str();
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + 600)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
     $dbh->do("INSERT INTO oauth.auth_code (auth_code, client_id, loginid, expires, verified) VALUES (?, ?, ?, ?, false)",
         undef, $auth_code, $client_id, $loginid, $expires_time);
