@@ -51,7 +51,7 @@ sub verify_auth_code {
     return if $auth_row->{verified};
     return unless Date::Utility->new->is_before(Date::Utility->new($auth_row->{expires}));
 
-    $dbh->do("UPDATE auth.oauth_auth_code SET verified=true WHERE auth_code = ?", undef, $auth_code);
+    $dbh->do("UPDATE oauth.auth_code SET verified=true WHERE auth_code = ?", undef, $auth_code);
 
     return $auth_row->{loginid};
 }
