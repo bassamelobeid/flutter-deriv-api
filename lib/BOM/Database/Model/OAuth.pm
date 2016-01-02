@@ -66,8 +66,8 @@ sub store_access_token {
     my $refresh_token = Data::UUID->new()->create_str();
 
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.access_token (access_token, refresh_token, client_id, loginid, expires) VALUES (?, ?, ?, ?, ?)",
-        undef, $access_token, $refresh_token, $client_id, $loginid, $expires_time);
+    $dbh->do("INSERT INTO oauth.access_token (access_token, client_id, loginid, expires) VALUES (?, ?, ?, ?)",
+        undef, $access_token, $client_id, $loginid, $expires_time);
 
     $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, client_id, loginid) VALUES (?, ?, ?)", undef, $refresh_token, $client_id, $loginid);
 
