@@ -30,7 +30,7 @@ sub startup {
             my ($c, $error_code, $error_description) = @_;
 
             return $c->render(
-                status => 400,
+                status => 200, # 400, ## use 200 for now since 400 will return an error page without message
                 json   => {
                     error             => $error_code,
                     error_description => $error_description
