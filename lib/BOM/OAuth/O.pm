@@ -33,9 +33,9 @@ sub authorize {
     unless ($client) {
         # we need to redirect back to oauth/authorize after
         # login (with the original params)
-        my $uri = join('?', $c->url_for('current'), $c->url_with->query);
+        my $uri = join($c->url_with->query);
         $c->session('redirect_after_login' => $uri);
-        return $c->redirect_to('/login?redirect_uri=oauth');
+        return $c->redirect_to('/login');
     }
 
     my $loginid = $client->loginid;
