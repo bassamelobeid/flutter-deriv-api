@@ -16,13 +16,10 @@ sub _build_dbh {
 
 ## client
 sub verify_client {
-    my ($c, $client_id) = @_;
+    my ($self, $client_id) = @_;
 
     my $dbh = $self->dbh;
     return $dbh->selectrow_hashref("SELECT * FROM oauth.clients WHERE id = ? AND active", undef, $client_id);
-    return (0, 'unauthorized_client') unless $client;
-
-    return (1, $client);
 }
 
 ## store auth code
@@ -72,8 +69,7 @@ sub store_access_token {
     $dbh->do("INSERT INTO oauth.access_token (access_token, refresh_token, client_id, loginid, expires) VALUES (?, ?, ?, ?, ?)",
         undef, $access_token, $refresh_token, $client_id, $loginid, $expires_time);
 
-    $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, client_id, loginid) VALUES (?, ?, ?)",
-        undef, $refresh_token, $client_id, $loginid);
+    $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, client_id, loginid) VALUES (?, ?, ?)", undef, $refresh_token, $client_id, $loginid);
 
     return ($access_token, $refresh_token, $expires_in);
 }
