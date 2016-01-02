@@ -66,7 +66,7 @@ sub access_token {
 
     my $app_client = $oauth_model->verify_client($client_id);
     unless ($app_client and $app_client->{secret} eq $client_secret) {
-        return $c->__throw_error('unauthorized_client');
+        return $c->throw_error('unauthorized_client');
     }
 
     my $loginid;
@@ -77,7 +77,7 @@ sub access_token {
         $loginid = $oauth_model->verify_auth_code($client_id, $auth_code);
     }
     if (!$loginid) {
-        return $c->__throw_error('invalid_grant');
+        return $c->throw_error('invalid_grant');
     }
 
     my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($client_id, $loginid);
@@ -91,21 +91,10 @@ sub access_token {
         });
 }
 
-sub __throw_error {
-    my ($c, $error_code, $error_description) = @_;
-
-    return $c->render(
-        status => 400,
-        json   => {
-            error             => $error_code,
-            error_description => $error_description
-        });
-}
-
 sub __bad_request {
     my ($c, $error) = @_;
 
-    return __throw_error($c, 'invalid_request', $error);
+    return $c->throw_error('invalid_request', $error);
 }
 
 1;

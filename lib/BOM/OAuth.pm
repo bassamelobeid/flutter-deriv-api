@@ -25,6 +25,18 @@ sub startup {
     $app->plugin(charset => {charset => 'utf-8'});
     $app->secrets([BOM::System::Config::aes_keys->{web_secret}{1}]);
 
+    $app->helper(
+        throw_error => sub {
+            my ($c, $error_code, $error_description) = @_;
+
+            return $c->render(
+                status => 400,
+                json   => {
+                    error             => $error_code,
+                    error_description => $error_description
+                });
+        } );
+
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
@@ -35,8 +47,8 @@ sub startup {
         });
 
     my $r = $app->routes;
-    $r->get('/oauth/authorize')->to('O#authorize');
-    $r->any('/oauth/access_token')->to('O#access_token');
+    $r->get('/oauth2/authorize')->to('O#authorize');
+    $r->any('/oauth2/access_token')->to('O#access_token');
 }
 
 1;
