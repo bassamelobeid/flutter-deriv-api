@@ -44,13 +44,13 @@ sub verify_auth_code {
     my $dbh = $self->dbh;
 
     my $auth_row = $dbh->selectrow_hashref("
-        SELECT * FROM oauth.auth_code WHERE auth_code = ? AND client_id = ?
+        SELECT * FROM oauth.auth_code WHERE auth_code = ? AND client_id = ? AND NOT verified
     ", undef, $auth_code, $client_id);
 
     return unless $auth_row;
-    return if $auth_row->{verified};
     return unless Date::Utility->new->is_before(Date::Utility->new($auth_row->{expires}));
 
+    # set verified to avoid code-reuse
     $dbh->do("UPDATE oauth.auth_code SET verified=true WHERE auth_code = ?", undef, $auth_code);
 
     return $auth_row->{loginid};
@@ -79,16 +79,15 @@ sub verify_refresh_token {
 
     my $dbh = $self->dbh;
 
-    my $refresh_token_row = $dbh->selectrow_hashref("
-        SELECT * FROM oauth.refresh_token WHERE refresh_token = ? AND client_id = ?
+    my ($loginid) = $dbh->selectrow_array("
+        SELECT loginid FROM oauth.refresh_token WHERE refresh_token = ? AND client_id = ? AND NOT revoked
     ", undef, $refresh_token, $client_id);
+    return unless $loginid;
 
-    return unless $refresh_token_row;
-    return if $refresh_token_row->{revoked};
-
+    # set revoked to avoid code-reuse
     $dbh->do("UPDATE oauth.refresh_token SET revoked=true WHERE refresh_token = ?", undef, $refresh_token);
 
-    return $refresh_token_row->{loginid};
+    return $loginid;
 }
 
 no Moose;
