@@ -29,8 +29,9 @@ sub startup {
         throw_error => sub {
             my ($c, $error_code, $error_description) = @_;
 
+            ## use 200 for now since 400 will return an error page without message
             return $c->render(
-                status => 200,    # 400, ## use 200 for now since 400 will return an error page without message
+                status => 200,    # 400,
                 json   => {
                     error             => $error_code,
                     error_description => $error_description

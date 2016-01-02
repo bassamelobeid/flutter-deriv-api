@@ -18,12 +18,14 @@ sub authorize {
     $client_id    or return $c->__bad_request('the request was missing client_id');
     $redirect_uri or return $c->__bad_request('the request was missing redirect_uri');
 
-    my $oauth_model = __oauth_model();
+    ## The redirection endpoint URI MUST be an absolute URI
+    my $uri = Mojo::URL->new($redirect_uri);
+    $uri->host or return $c->__bad_request('invalid redirect_uri');
 
-    my $uri        = Mojo::URL->new($redirect_uri);
-    my $app_client = $oauth_model->verify_client($client_id);
+    my $oauth_model = __oauth_model();
+    my $app_client  = $oauth_model->verify_client($client_id);
     unless ($app_client) {
-        $uri->query->append('error' => 'unauthorized_client');
+        $uri->query->append('error' => 'invalid_client');
         $uri->query->append(state => $state) if defined $state;
         return $c->redirect_to($uri);
     }
@@ -68,7 +70,7 @@ sub access_token {
 
     my $app_client = $oauth_model->verify_client($client_id);
     unless ($app_client and $app_client->{secret} eq $client_secret) {
-        return $c->throw_error('unauthorized_client');
+        return $c->throw_error('invalid_client');
     }
 
     my $loginid;
