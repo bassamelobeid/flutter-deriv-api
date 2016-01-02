@@ -1,6 +1,8 @@
 package BOM::OAuth::O;
 
 use Mojo::Base 'Mojolicious::Controller';
+use Date::Utility;
+use BOM::Platform::Client;
 use BOM::Database::Model::OAuth;
 
 sub __oauth_model {
