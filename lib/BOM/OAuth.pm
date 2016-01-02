@@ -3,8 +3,6 @@ package BOM::OAuth;
 use Mojo::Base 'Mojolicious';
 
 use BOM::System::Config;
-use BOM::Database::AuthDB;
-
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 
@@ -25,14 +23,7 @@ sub startup {
     $log->warn("Log Level        is " . $log->level);
 
     $app->plugin(charset => {charset => 'utf-8'});
-
     $app->secrets([BOM::System::Config::aes_keys->{web_secret}{1}]);
-
-    $app->helper(
-        'auth_db' => sub {
-            state $auth_db = BOM::Database::AuthDB::rose_db;
-            return $auth_db;
-        });
 
     $app->hook(
         before_dispatch => sub {
