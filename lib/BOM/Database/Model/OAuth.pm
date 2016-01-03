@@ -2,7 +2,7 @@ package BOM::Database::Model::OAuth;
 
 use Moose;
 use Date::Utility;
-use Data::UUID;
+use String::Random ();
 use BOM::Database::AuthDB;
 
 has 'dbh' => (
@@ -27,7 +27,7 @@ sub store_auth_code {
     my ($self, $client_id, $loginid) = @_;
 
     my $dbh          = $self->dbh;
-    my $auth_code    = Data::UUID->new()->create_str();
+    my $auth_code    = String::Random::random_regex('[a-zA-Z0-9]{32}');
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + 600)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
     $dbh->do("INSERT INTO oauth.auth_code (auth_code, client_id, loginid, expires, verified) VALUES (?, ?, ?, ?, false)",
         undef, $auth_code, $client_id, $loginid, $expires_time);
@@ -60,8 +60,8 @@ sub store_access_token {
 
     my $dbh           = $self->dbh;
     my $expires_in    = 3600;
-    my $access_token  = Data::UUID->new()->create_str();
-    my $refresh_token = Data::UUID->new()->create_str();
+    my $access_token  = String::Random::random_regex('[a-zA-Z0-9]{32}');
+    my $refresh_token = String::Random::random_regex('[a-zA-Z0-9]{32}');
 
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
     $dbh->do("INSERT INTO oauth.access_token (access_token, client_id, loginid, expires) VALUES (?, ?, ?, ?)",
