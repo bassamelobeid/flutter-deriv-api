@@ -28,7 +28,6 @@ sub documentation { return 'This script runs economic events update from forex f
 sub script_run {
     my $self = shift;
 
-    die 'Script only to run on master servers.' if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
     my $now = Date::Utility->new;
     my $dm  = BOM::MarketData::Fetcher::EconomicEvent->new();
 
