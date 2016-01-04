@@ -184,10 +184,10 @@ sub send_ask {
     my $response;
     try {
         $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-        if ($response->{error}) {
-            return BOM::RPC::v3::Utility::create_error({
-                code              => $response->{code},
-                message_to_client => $response->{message},
+        if (exists $response->{error}) {
+            $response = BOM::RPC::v3::Utility::create_error({
+                code              => $response->{error}->{code},
+                message_to_client => $response->{error}->{message},
             });
         }
     }
