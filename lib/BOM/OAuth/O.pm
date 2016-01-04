@@ -57,6 +57,9 @@ sub access_token {
 
     $client_id or return $c->__bad_request('the request was missing client_id');
 
+    $grant_type ||= ''; # fix warnings
+    $client_secret ||= '';
+
     # grant_type=authorization_code, plus auth_code
     # grant_type=refresh_token, plus refresh_token
     (grep { $_ eq $grant_type } ('authorization_code', 'refresh_token'))
