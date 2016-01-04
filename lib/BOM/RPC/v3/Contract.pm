@@ -179,8 +179,16 @@ sub send_ask {
     my $params = shift;
     my $args   = $params->{args};
 
-    my %details  = %{$args};
-    my $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
+    my %details = %{$args};
+    my $response;
+    try {
+        $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
+    }
+        || do {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'pricing error',
+                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+        };
     if ($response->{error}) {
         return BOM::RPC::v3::Utility::create_error({
             code              => 'pricing error',
