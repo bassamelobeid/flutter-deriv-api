@@ -39,9 +39,9 @@ sub domain {
 }
 
 sub external_domain {
-    my $env = BOM::System::Config::env;
-    if ($env =~ /^qa/) {
-        return 'binary' . $env . '.com';
+    my $name = name();
+    if ($name =~ /^qa\d+$/) {
+        return 'binary' . $name . '.com';
     }
     return 'binary.com';
 }

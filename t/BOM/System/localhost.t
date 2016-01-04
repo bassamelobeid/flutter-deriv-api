@@ -7,7 +7,7 @@ use Test::NoWarnings;
 use BOM::System::Localhost;
 
 my $name = BOM::System::Localhost::name();
-like ($name, qr/qa\d{2}/, 'localhost name');
+like ($name, qr/qa\d+/, 'localhost name');
 
 my $domain = BOM::System::Localhost::domain();
 is $domain, 'regentmarkets.com', 'domain';
