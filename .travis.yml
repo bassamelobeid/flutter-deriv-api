@@ -44,4 +44,4 @@ install:
     - . /tmp/travis-scripts/setup_perl5lib.sh
 
 script:
-    - prove -r t/BOM/
+    - prove -lr t/BOM/
