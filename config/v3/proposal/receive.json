@@ -28,10 +28,6 @@
           "type": "number",
           "description": "Example: 5.14"
         },
-        "bid_price": {
-          "type": "number",
-          "description": "Example: 5.14"
-        },
         "display_value": {
           "type": "number",
           "description": "Example: 5.14, same as ask_price except for spread contracts"
