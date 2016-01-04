@@ -11,7 +11,7 @@ use BOM::Product::ContractFactory qw(produce_contract make_similar_contract);
 use BOM::Product::Transaction;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
-use BOM::Platform::Context;
+use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
 
 sub buy {

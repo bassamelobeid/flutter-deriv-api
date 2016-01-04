@@ -8,7 +8,7 @@ use List::MoreUtils qw(none);
 
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 
@@ -123,6 +123,8 @@ sub get_bid {
     my $params = shift;
     my ($short_code, $contract_id, $currency) = ($params->{short_code}, $params->{contract_id}, $params->{currency});
 
+    BOM::Platform::Context::request()->language($params->{language});
+
     my $contract = produce_contract($short_code, $currency);
 
     my %returnhash = (
@@ -178,6 +180,8 @@ sub get_bid {
 sub send_ask {
     my $params = shift;
     my $args   = $params->{args};
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my %details = %{$args};
     my $response;
