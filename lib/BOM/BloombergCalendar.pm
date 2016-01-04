@@ -7,9 +7,7 @@ use warnings;
 use BOM::MarketData::Holiday;
 use BOM::MarketData::PartialTrading;
 use BOM::Platform::Context;
-use File::Temp ();
 use Try::Tiny;
-use File::Copy;
 use Text::CSV::Slurp;
 use Date::Utility;
 use YAML::CacheLoader qw(LoadFile);
@@ -104,16 +102,6 @@ sub generate_holiday_upload_form {
     ) || die BOM::Platform::Context::template->error();
 
     return $form;
-}
-
-sub backup_file {
-    my $file = shift;
-
-    my $fh = File::Temp->new(SUFFIX => '.csv');
-    my $filename = $fh->filename;
-    copy($file, $filename);
-
-    return;
 }
 
 sub _process {

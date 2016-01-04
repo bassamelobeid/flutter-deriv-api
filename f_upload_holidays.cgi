@@ -4,7 +4,8 @@ package main;
 use strict 'vars';
 
 use BOM::BloombergCalendar;
-#use f_brokerincludeall;
+use File::Temp ();
+use File::Copy;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -19,8 +20,10 @@ my $calendar;
 
 if ($cgi->param('upload_excel')) {
     my $file = $cgi->param('filetoupload');
-    BOM::BloombergCalendar::backup_file($file);
-    $calendar = BOM::BloombergCalendar::parse_calendar($file, $calendar_type);
+    my $fh = File::Temp->new(SUFFIX => '.csv');
+    my $filename = $fh->filename;
+    copy($file, $filename);
+    $calendar = BOM::BloombergCalendar::parse_calendar($filename, $calendar_type);
 } elsif ($cgi->param('manual_holiday_upload')) {
     my $calendar_type = $cgi->param('calendar-type');
     my $symbol_str = $cgi->param('symbol');
