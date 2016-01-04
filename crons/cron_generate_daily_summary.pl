@@ -9,6 +9,7 @@ use warnings;
 use Getopt::Long;
 
 use Date::Utility;
+use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::Email qw(send_email);
@@ -38,10 +39,8 @@ $for_date ||= Date::Utility->new->date_yyyymmdd;
 my @brokercodes = ($brokercodes) ? split(/,/, $brokercodes) : BOM::Platform::Runtime->instance->broker_codes->all_codes;
 my @currencies  = ($currencies)  ? split(/,/, $currencies)  : BOM::Platform::Runtime->instance->landing_companies->all_currencies;
 
-# This report will now only be run on the MLS.
-if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
-    exit 0;
-}
+# This report will now only be run on the master server
+exit 0 unless (BOM::System::Localhost::is_master_server());
 
 my $run_for = Date::Utility->new($for_date);
 

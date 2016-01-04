@@ -11,13 +11,6 @@ BOM::Platform::Sysinit::init();
 
 PrintContentType();
 
-if (    BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')
-    and BOM::Platform::Runtime->instance->app_config->system->on_production)
-{
-    print "NOT RELEVANT FOR MASTER LIVE SERVER";
-    code_exit_BO();
-}
-
 BOM::Backoffice::Auth0::can_access(['CS']);
 
 my $broker       = request()->param('broker');

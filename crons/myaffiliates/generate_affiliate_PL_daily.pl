@@ -7,6 +7,7 @@ use FileHandle;
 
 use Date::Utility;
 use BOM::Utility::Log4perl;
+use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::ActivityReporter;
 use BOM::Platform::Sysinit ();
@@ -75,7 +76,7 @@ send_email({
     from    => BOM::Platform::Runtime->instance->app_config->system->email,
     to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
     subject => 'CRON generate_affiliate_PL_daily: Report from '
-        . BOM::Platform::Runtime->instance->hosts->localhost->name
+        . BOM::System::Localhost::name()
         . ' for date range '
         . $from_date->date_yyyymmdd . ' - '
         . $to_date->date_yyyymmdd,
