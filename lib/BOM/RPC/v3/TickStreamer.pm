@@ -96,8 +96,6 @@ sub ticks {
 sub candles {
     my $args = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     $args = _validate_start_end($args);
 
     my $ul          = $args->{ul} || die 'no underlying';
