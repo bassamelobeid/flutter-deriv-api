@@ -18,10 +18,12 @@ use Moose;
 use List::MoreUtils qw(notall);
 
 use BOM::Platform::Runtime;
-use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use Sereal qw(encode_sereal decode_sereal looks_like_sereal);
 use Sereal::Encoder;
 use Try::Tiny;
+use BOM::Utility::Log4perl qw(get_logger);
+use BOM::System::Chronicle;
 
 has data_location => (
     is       => 'ro',
@@ -66,6 +68,8 @@ sub create_doc {
         $doc_id = $self->_couchdb->create_document();
         $self->_couchdb->document($doc_id, $data);
     };
+
+    BOM::MarketData::EconomicEvent->new($data)->save;
 
     return $doc_id;
 }
@@ -119,85 +123,11 @@ my $cache_namespace = 'COUCH_NEWS::';
 sub get_latest_events_for_period {
     my ($self, $period) = @_;
 
-    # We may do this from time to time.
-    # I claim it's under control.
-    ## no critic(TestingAndDebugging::ProhibitNoWarnings)
-    no warnings 'recursion';
+    my $start            = $period->{from};
+    my $end              = $period->{to};
+    my $ee_cal = BOM::MarketData::EconomicEventCalendar->new({for_date => $start});
 
-    my $events = [];
-    my $start  = $period->{from};
-    my $end    = $period->{to};
-    my $source = $period->{source} ? $period->{source} : $self->{source};
-
-    # Guard against mal-formed queries.
-    return $events if ($end->is_before($start));
-
-    if ($start->days_since_epoch == $end->days_since_epoch) {
-        # A single (partial?) day. We can do a simple request.
-        $period->{source} //= $source;
-        $events = $self->_latest_events_for_day_part($period);
-    } else {
-        # More than a day.  We need to chop it up.
-        # Since we keep shifting days off the front, the above will notice when we might go past the end of day.
-        my $end_of_first  = $start->truncate_to_day->plus_time_interval('23h59m59s');
-        my $start_of_next = $end_of_first->plus_time_interval('1s');
-        push @$events,
-            @{
-            $self->_latest_events_for_day_part({
-                    from   => $start,
-                    to     => $end_of_first,
-                    source => $source
-                })};
-        push @$events,
-            @{
-            $self->get_latest_events_for_period({
-                    from   => $start_of_next,
-                    to     => $end,
-                    source => $source
-                })};
-    }
-
-    return $events;
-}
-
-sub _latest_events_for_day_part {
-    my ($self, $period) = @_;
-
-    my $events    = [];
-    my $start     = $period->{from};
-    my $end       = $period->{to};
-    my $source    = $period->{source};
-    my $day       = $start->truncate_to_day;
-    my $redis     = $self->_redis;
-    my $cache_key = $cache_namespace . $day->date . '_' . $source;
-
-    if ($redis->exists($cache_key)) {
-        my $docs = $redis->zrangebyscore($cache_key, $start->epoch, $end->epoch);
-        foreach my $data (@{$docs}) {
-            push @$events, decode_sereal($data) if looks_like_sereal($data);
-        }
-    } else {
-        my $whole_day = {
-            view   => 'by_release_date',
-            from   => $day,
-            to     => $day->plus_time_interval('23h59m59s'),    # Do not put 0000UTC events in two days.
-            source => $source,
-        };
-
-        $events = $self->_get_events($whole_day);
-        if (not scalar @$events) {
-            $redis->zadd($cache_key, 0, 'fake_doc_id');         # Make sure the key comes into existence.
-        } else {
-            foreach my $event (@$events) {
-                $redis->zadd($cache_key, $event->release_date->epoch, Sereal::Encoder->new({protocol_version => 2})->encode($event));
-            }
-        }
-        $redis->expire($cache_key, 613);
-        # Should hit the cache this time through
-        $events = $self->_latest_events_for_day_part($period);
-    }
-
-    return $events;
+    return $ee_cal->get_latest_events_for_period($period);
 }
 
 sub _redis {
@@ -226,7 +156,7 @@ sub _get_events {
     foreach my $data (@{$docs}) {
         my $ee_params = $self->_couchdb->document($data);
         $ee_params->{document_id} //= $data;
-        push @event_objs, BOM::MarketData::EconomicEvent->new($ee_params);
+        push @event_objs, BOM::MarketData::EconomicEventCouch->new($ee_params);
     }
 
     return \@event_objs;
