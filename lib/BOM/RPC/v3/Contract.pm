@@ -191,11 +191,11 @@ sub send_ask {
             });
         }
     }
-        || do {
-        return BOM::RPC::v3::Utility::create_error({
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
-        };
+    };
 
     return $response;
 }
