@@ -25,6 +25,9 @@ unit_test_system:
 unit_test_myaffiliates_extended:
 	@export EXTENDED_TESTING=1; unset SKIP_MYAFFILIATES; $(PROVE) -r t/BOM/Platform/MyAffiliates/
 
+leaktest:
+	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/leak/v3
+
 tidy:
 	find . -name '*.p?.bak' -delete
 	. /etc/profile.d/perl5.sh;find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
