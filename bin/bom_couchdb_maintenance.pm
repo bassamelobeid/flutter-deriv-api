@@ -6,6 +6,7 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
+use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use Array::Utils qw(array_minus);
 use Time::HiRes qw(sleep);
@@ -110,7 +111,6 @@ sub _delays {
 
 sub script_run {
     my $self      = shift;
-    my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
 
     if ($self->getOption('show-delays')) {
         $self->info($self->_list_delays);
@@ -124,7 +124,7 @@ sub script_run {
     }
 
     if ($self->getOption('update-replication-indicator')) {
-        unless ($localhost->has_role('couchdb_master')) {
+        unless (BOM::System::Localhost::is_master_server()) {
             $self->debug("Replication indicator is only updated from Master CouchDB. Doing nothing.");
             return 0;
         }
@@ -162,7 +162,8 @@ sub script_run {
 
     # the master database doesn't replicate from anywhere
     # it is the source from where everybody else replicates :-)
-    if ($localhost->has_role('couchdb_master')) {
+
+    if (BOM::System::Localhost::is_master_server()) {
         unless ($ENV{FORCEONMASTER}) {    # development only. intentionally undocumented.
             $self->debug("Master CouchDB doesn't replicate from anywhere. Doing nothing.");
             return 0;
