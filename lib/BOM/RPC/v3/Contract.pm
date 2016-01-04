@@ -90,10 +90,7 @@ sub get_ask {
                 error => {
                     message => $pve->message_to_client,
                     code    => "ContractBuyValidationError"
-                },
-                longcode  => $contract->longcode,
-                ask_price => sprintf('%.2f', $contract->ask_price),
-            };
+                }};
         }
         return {
             error => {
@@ -187,18 +184,19 @@ sub send_ask {
     my $response;
     try {
         $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
+        if ($response->{error}) {
+            return BOM::RPC::v3::Utility::create_error({
+                code              => $response->{code},
+                message_to_client => $response->{message},
+            });
+        }
     }
         || do {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'pricing error',
                 message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
         };
-    if ($response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'pricing error',
-            message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'},
-        });
-    }
+
     return $response;
 }
 1;
