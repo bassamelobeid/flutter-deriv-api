@@ -1,7 +1,6 @@
 BEGIN;
 
 CREATE SCHEMA oauth;
-GRANT CONNECT ON DATABASE oauth to read, write;
 GRANT USAGE ON SCHEMA oauth TO read, write, monitor;
 
 CREATE TABLE oauth.clients (
