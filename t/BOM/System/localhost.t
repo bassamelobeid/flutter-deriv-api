@@ -13,7 +13,7 @@ my $domain = BOM::System::Localhost::domain();
 is $domain, 'regentmarkets.com', 'domain';
 
 my $external_domain = BOM::System::Localhost::external_domain();
-is BOM::System::Localhost::external_domain(), 'binary'.$name.'.com', 'external domain';
+is $external_domain, 'binary'.$name.'.com', 'external domain';
 
 is BOM::System::Localhost::fqdn(), $name.'.'.$domain, 'fqdn';
 is BOM::System::Localhost::external_fqdn(), $name.'.'.$external_domain, 'external fqdn';
