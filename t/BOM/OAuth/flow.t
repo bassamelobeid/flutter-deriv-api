@@ -9,6 +9,7 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 my $t = Test::Mojo->new('BOM::OAuth');
 
 $t = $t->get_ok("/authorize");
+diag Dumper(\$t->tx->res); use Data::Dumper;
 $t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing client_id/);
 
 $t = $t->get_ok("/authorize?client_id=binarycom");
