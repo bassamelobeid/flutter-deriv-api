@@ -142,7 +142,7 @@ subtest 'Market builds or configs test' => sub {
         ok !$commodities->foreign_bs_probability;
         ok $commodities->absolute_barrier_multiplier;
 
-        cmp_deeply($commodities->providers,, ['idata', 'sd'],);
+        cmp_deeply($commodities->providers,, ['idata', 'sd', 'panda'],);
 
         is $commodities->license, 'realtime';
         ok !$commodities->official_ohlc;

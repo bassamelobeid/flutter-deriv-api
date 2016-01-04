@@ -47,6 +47,7 @@ commodities:
     providers:
         - 'idata'
         - 'sd'
+        - 'panda'
     intradays_must_be_same_day: 1
     markups:
         apply_traded_markets_markup: 1
