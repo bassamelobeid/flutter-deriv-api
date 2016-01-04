@@ -3,7 +3,6 @@ use warnings;
 
 use Test::NoLeaks;
 use Test::More;
-use Test::Exception;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Runtime;
 use BOM::Platform::Account;

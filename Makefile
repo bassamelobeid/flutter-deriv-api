@@ -26,7 +26,7 @@ unit_test_myaffiliates_extended:
 	@export EXTENDED_TESTING=1; unset SKIP_MYAFFILIATES; $(PROVE) -r t/BOM/Platform/MyAffiliates/
 
 leaktest:
-	forkprove --timer -I./lib  -I./t -r t/BOM/leaks
+	$(PROVE) -r t/BOM/leaks
 
 tidy:
 	find . -name '*.p?.bak' -delete
