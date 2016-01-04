@@ -45,11 +45,6 @@ sub script_run {
 
     my $logger = get_logger();
 
-    my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
-    if (not $localhost->has_role('master_live_server')) {
-        $self->error("$0 should only run on master live server, not [" . $localhost->name . "]");
-    }
-
     my $start_date = $self->start_date;
     my $end_date   = $self->end_date;
 
