@@ -125,6 +125,7 @@ forex:
         - 'idata'
         - 'olsen'
         - 'smart'
+        - 'panda'
     markups:
         apply_traded_markets_markup: 1
         apply_butterfly_markup: 1
