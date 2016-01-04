@@ -96,7 +96,7 @@ subtest 'Market builds or configs test' => sub {
         ok $forex->foreign_bs_probability;
         ok $forex->absolute_barrier_multiplier;
 
-        cmp_deeply($forex->providers, ['idata', 'olsen', 'smart']);
+        cmp_deeply($forex->providers, ['idata', 'olsen', 'smart', 'panda']);
 
         is $forex->license, 'realtime';
         ok !$forex->official_ohlc;
