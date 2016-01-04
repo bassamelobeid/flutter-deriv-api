@@ -26,13 +26,12 @@ my $token = BOM::Platform::SessionCookie->new(
     email   => 'sy@regentmarkets.com',
 )->token;
 $t->ua->cookie_jar->add(
-  Mojo::Cookie::Response->new(
-    name   => 'login',
-    value  => $token,
-    domain => $t->tx->req->url->host,
-    path   => '/'
-  )
-);
+    Mojo::Cookie::Response->new(
+        name   => 'login',
+        value  => $token,
+        domain => $t->tx->req->url->host,
+        path   => '/'
+    ));
 
 $t = $t->get_ok("/authorize?client_id=binarycom&redirect_uri=http://localhost/");
 ok $t->tx->res->headers->location =~ 'http://localhost/', 'redirect to localhost';
@@ -56,22 +55,21 @@ $t = $t->post_ok("/access_token?client_id=binarycom&client_secret=WrongSEC&grant
 $t->json_is('/error', 'invalid_client');
 
 $t = $t->post_ok("/access_token?client_id=binarycom&client_secret=bin2Sec&grant_type=authorization_code&code=$code");
-my $json = $t->tx->res->json;
+my $json          = $t->tx->res->json;
 my $refresh_token = $json->{refresh_token};
 ok $json->{refresh_token}, 'access token ok';
-ok $json->{access_token}, 'access token ok';
+ok $json->{access_token},  'access token ok';
 
 $t = $t->post_ok("/access_token?client_id=binarycom&client_secret=bin2Sec&grant_type=authorization_code&code=$code");
-$t->json_is('/error', 'invalid_grant'); # can not re-use
+$t->json_is('/error', 'invalid_grant');    # can not re-use
 
 ## try refresh token
-$t = $t->post_ok("/access_token?client_id=binarycom&client_secret=bin2Sec&grant_type=refresh_token&refresh_token=$refresh_token");
+$t    = $t->post_ok("/access_token?client_id=binarycom&client_secret=bin2Sec&grant_type=refresh_token&refresh_token=$refresh_token");
 $json = $t->tx->res->json;
 ok $json->{refresh_token}, 'refresh token ok';
-ok $json->{access_token}, 'refresh token ok';
+ok $json->{access_token},  'refresh token ok';
 
 $t = $t->post_ok("/access_token?client_id=binarycom&client_secret=bin2Sec&grant_type=refresh_token&refresh_token=$refresh_token");
-$t->json_is('/error', 'invalid_grant'); # can not re-use
-
+$t->json_is('/error', 'invalid_grant');    # can not re-use
 
 done_testing();

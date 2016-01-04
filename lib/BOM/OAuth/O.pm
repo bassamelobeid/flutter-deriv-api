@@ -57,7 +57,7 @@ sub access_token {
 
     $client_id or return $c->__bad_request('the request was missing client_id');
 
-    $grant_type ||= ''; # fix warnings
+    $grant_type ||= '';      # fix warnings
     $client_secret ||= '';
 
     # grant_type=authorization_code, plus auth_code
