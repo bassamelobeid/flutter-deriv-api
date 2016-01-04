@@ -92,9 +92,20 @@ sub statement {
 sub profit_table {
     my ($c, $args) = @_;
 
-    return {
-        msg_type => 'profit_table',
-        profit_table => BOM::RPC::v3::Accounts::profit_table($c->stash('client'), $args)};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'profit_table',
+        sub {
+            my $response = shift;
+            return {
+                msg_type     => 'profit_table',
+                profit_table => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub get_account_status {
@@ -147,72 +158,125 @@ sub cashier_password {
     my ($c, $args) = @_;
 
     my $r = $c->stash('request');
-    my $response =
-        BOM::RPC::v3::Accounts::cashier_password($c->stash('client'), $r->website->config->get('customer_support.email'), $r->client_ip, $args);
-
-    if (exists $response->{error}) {
-        return $c->new_error('cashier_password', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type         => 'cashier_password',
-            cashier_password => $response->{status},
-        };
-    }
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'cashier_password',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('cashier_password', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type         => 'cashier_password',
+                    cashier_password => $response->{status}};
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            cs_email       => $r->website->config->get('customer_support.email'),
+            client_ip      => $r->client_ip
+        });
     return;
 }
 
 sub get_settings {
     my ($c, $args) = @_;
 
-    return {
-        msg_type => 'get_settings',
-        get_settings => BOM::RPC::v3::Accounts::get_settings($c->stash('client'), $c->stash('request')->language)};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_settings',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('get_settings', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'get_settings',
+                    get_settings => $response
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            language       => $c->stash('request')->language
+        });
+    return;
 }
 
 sub set_settings {
     my ($c, $args) = @_;
 
     my $r = $c->stash('request');
-
-    my $response = BOM::RPC::v3::Accounts::set_settings($c->stash('client'), $r->website, $r->client_ip, $c->req->headers->header('User-Agent'),
-        $r->language, $args);
-
-    if (exists $response->{error}) {
-        return $c->new_error('set_settings', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type     => 'set_settings',
-            set_settings => $response->{status}};
-    }
-
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'set_settings',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('set_settings', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'set_settings',
+                    set_settings => $response->{status}};
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            website_name   => $r->website->display_name,
+            cs_email       => $r->website->config->get('customer_support.email'),
+            client_ip      => $r->client_ip,
+            user_agent     => $c->req->headers->header('User-Agent'),
+            language       => $r->language
+        });
     return;
 }
 
 sub get_self_exclusion {
     my ($c, $args) = @_;
-    return {
-        msg_type           => 'get_self_exclusion',
-        get_self_exclusion => BOM::RPC::v3::Accounts::get_self_exclusion($c->stash('client'))};
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'get_self_exclusion',
+        sub {
+            my $response = shift;
+            return {
+                msg_type           => 'get_self_exclusion',
+                get_self_exclusion => $response
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub set_self_exclusion {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Accounts::set_self_exclusion(
-        $c->stash('client'),
-        $c->stash('request')->website->config->get('customer_support.email'),
-        $c->app_config->compliance->email, $args
-    );
-    if (exists $response->{error}) {
-        my $err = $c->new_error('set_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
-        $err->{error}->{field} = $response->{error}->{details} if (exists $response->{error}->{details});
-        return $err;
-    } else {
-        return {
-            msg_type           => 'set_self_exclusion',
-            set_self_exclusion => $response->{status}};
-    }
-
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'set_self_exclusion',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                my $err = $c->new_error('set_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
+                $err->{error}->{field} = $response->{error}->{details} if (exists $response->{error}->{details});
+                return $err;
+            } else {
+                return {
+                    msg_type           => 'set_self_exclusion',
+                    set_self_exclusion => $response->{status}};
+            }
+        },
+        {
+            args             => $args,
+            client_loginid   => $c->stash('loginid'),
+            cs_email         => $c->stash('request')->website->config->get('customer_support.email'),
+            compliance_email => $c->app_config->compliance->email
+        });
     return;
 }
 
@@ -220,14 +284,13 @@ sub balance {
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
-
     if ($client->default_account and exists $args->{subscribe}) {
         my $redis             = $c->stash('redis');
         my $channel           = 'TXNUPDATE::balance_' . $client->default_account->id;
         my $subscriptions     = $c->stash('subscribed_channels') // {};
         my $already_subsribed = $subscriptions->{$channel};
 
-        if ($args->{subscribe} eq '1') {
+        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
             if (!$already_subsribed) {
                 $redis->subscribe([$channel], sub { });
                 $subscriptions->{$channel} = 1;
@@ -246,9 +309,24 @@ sub balance {
         }
     }
 
-    return {
-        msg_type => 'balance',
-        balance  => BOM::RPC::v3::Accounts::balance($client)};
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'balance',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('balance', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type => 'balance',
+                    balance  => $response
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 sub send_realtime_balance {
@@ -271,15 +349,24 @@ sub send_realtime_balance {
 sub api_token {
     my ($c, $args) = @_;
 
-    my $response = BOM::RPC::v3::Accounts::api_token($c->stash('client'), $args);
-    if (exists $response->{error}) {
-        return $c->new_error('api_token', $response->{error}->{code}, $response->{error}->{message_to_client});
-    } else {
-        return {
-            msg_type  => 'api_token',
-            api_token => $response,
-        };
-    }
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'api_token',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('api_token', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type  => 'api_token',
+                    api_token => $response
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
 }
 
 1;
