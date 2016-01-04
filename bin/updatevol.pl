@@ -40,8 +40,6 @@ sub documentation {
 }
 sub script_run {
     my $self = shift;
-    die 'Script only to run on master servers.'
-    unless BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server');
     my $class = $opt1 =~ /(indices|stocks)/ ? 'BOM::MarketData::AutoUpdater::Indices' : 'BOM::MarketData::AutoUpdater::Forex';
     my $filename = $opt1 =~  /indices/ ? 'auto_upload.xls' : 'auto_upload_Euronext.xls';
     my $market = $opt1 !~ /(indices|stocks)/ ? 'forex' : ($opt1 =~ /indices/ ? 'indices' : 'stocks') ;
