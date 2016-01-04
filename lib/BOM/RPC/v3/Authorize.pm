@@ -9,12 +9,14 @@ use BOM::System::AuditLog;
 use BOM::Platform::Client;
 use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::AccessToken;
 use BOM::RPC::v3::Utility;
 
 sub authorize {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $err = BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidToken',

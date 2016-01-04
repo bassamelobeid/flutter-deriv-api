@@ -5,12 +5,14 @@ use warnings;
 
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder;
 use BOM::Product::Contract::Finder::Japan;
 
 sub contracts_for {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $args   = $params->{args};
     my $symbol = $args->{contracts_for};
