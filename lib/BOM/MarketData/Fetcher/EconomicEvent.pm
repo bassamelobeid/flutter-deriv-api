@@ -161,6 +161,7 @@ sub get_latest_events_for_period {
             print ">>>>>>>>>>>>>>>>>>>> couch event <" . $couch_event->{event_name} . "> does not have a match\n" if !$has_a_match;
         }
     }
+    #$logger->warn("read " . (scalar @$chronicle_result) . " economic events for ($start, $end) from chronicle");
     return $chronicle_result;
 }
 
