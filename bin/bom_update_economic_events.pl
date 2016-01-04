@@ -9,7 +9,6 @@ with 'BOM::Utility::Logging';
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
 use BOM::MarketData::EconomicEvent;
-use BOM::MarketData::EconomicEventCouch;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Utility::Log4perl;
@@ -44,35 +43,21 @@ sub script_run {
     my @all_events;
 
     foreach my $event_param (@$events_received) {
-        my $eco = BOM::MarketData::EconomicEventCouch->new($event_param);
-        unless (_is_categorized($eco)) {
-            warn("Uncategorized economic events name: $event_param->{event_name}, symbol: $event_param->{symbol}, impact: $event_param->{impact}");
-        }
-        $eco->save;
-
-        $event_param->{release_date}  = $event_param->{release_date}->epoch;
-        $event_param->{recorded_date} = Date::Utility->new->epoch;
-
-        try {
-            my $eco_ch = BOM::MarketData::EconomicEvent->new($event_param);
-            push @all_events, $eco_ch;
-        }
-        catch {
-            print 'Error occured when reading events: ' . $_;
-        };
+        push @all_events, $event_param;
 
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
         BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS',         $event_param->{release_date}, JSON::to_json($event_param));
         BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS_TRIMMED', $event_param->{release_date}, JSON::to_json($event_param));
-
     }
 
     try {
-        @all_events = sort { $a->release_date->epoch cmp $b->release_date->epoch } @all_events;
-        #now we need to convert these data into their document
-        my @all_documents;
-        push @all_documents, $_->document for @all_events;
-        BOM::System::Chronicle::set("economic_events", "economic_events", \@all_documents);
+        @all_events = sort { $a->{release_date}->epoch cmp $b->{release_date}->epoch } @all_events;
+
+        BOM::MarketData::EconomicEventCalendar->new({
+            events          => \@all_events,
+            recorded_date   => Date::Utility->new(),
+        })->save;
+
         print "stored " . (scalar @all_events) . " events in chronicle...\n";
     }
     catch {

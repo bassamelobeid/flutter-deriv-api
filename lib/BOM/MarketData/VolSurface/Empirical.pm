@@ -150,20 +150,23 @@ sub _get_economic_events {
 
     my $underlying = $self->underlying;
 
-    my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-            from => Date::Utility->new($start),
-            to   => Date::Utility->new($end)});
+    #load calendar data
+    #setting for_date does not make a harm because EEC will check date of the document in Redis
+    #If received for_date is older than the document, then it will load from database.
+    my $ee_calendar = BOM::MarketData::EconomicEventCalendar->new({for_date => Date::Utility->new($start)});
+    my $events_array = $ee_calendar->events;
+    
     # static duration that needs to be replaced.
     my @events;
-    foreach my $event (@$raw_events) {
-        my $event_name = $event->event_name;
+    foreach my $event (@$events_array) {
+        my $event_name = $event->{event_name};
         $event_name =~ s/\s/_/g;
-        my $key             = $underlying->symbol . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name;
-        my $default         = $underlying->symbol . '_' . $event->symbol . '_' . $event->impact . '_default';
+        my $key             = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name;
+        my $default         = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_default';
         my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
 
         next unless $news_parameters;
-        $news_parameters->{release_time} = $event->release_date->epoch;
+        $news_parameters->{release_time} = $event->{release_date}->epoch;
         push @events, $news_parameters;
     }
 
