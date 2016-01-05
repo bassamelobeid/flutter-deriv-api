@@ -314,27 +314,28 @@ sub __handle {
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
 
-    if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => Data::UUID->new()->create_str());
-    }
-    my $limiting_service = 'websocket_call';
-    if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
-        $limiting_service = 'websocket_call_expensive';
-    }
-    if (
-        not within_rate_limits({
-                service  => $limiting_service,
-                consumer => $c->stash('connection_id'),
-            }))
-    {
-        return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
-    }
-
     my @handler_descriptors =
         sort { $a->{order} <=> $b->{order} }
         grep { defined }
         map  { $dispatch_handler_for{$_} } keys $p1;
     for my $descriptor (@handler_descriptors) {
+
+        if (not $c->stash('connection_id')) {
+            $c->stash('connection_id' => Data::UUID->new()->create_str());
+        }
+        my $limiting_service = 'websocket_call';
+        if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
+            $limiting_service = 'websocket_call_expensive';
+        }
+        if (
+            not within_rate_limits({
+                    service  => $limiting_service,
+                    consumer => $c->stash('connection_id'),
+                }))
+        {
+            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+        }
+
         my $t0 = [Time::HiRes::gettimeofday];
 
         my $input_validation_result = $descriptor->{in_validator}->validate($p1);
