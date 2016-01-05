@@ -353,8 +353,7 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
-            {tags => [$tag, "category:$descriptor->{category}"]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
