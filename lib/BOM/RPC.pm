@@ -1,5 +1,7 @@
 package BOM::RPC;
 
+use 5.010;                      # `state`
+
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
@@ -103,7 +105,9 @@ sub startup {
     $app->hook(
         after_dispatch => sub {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-            $0 = "bom-rpc: (idle)";
+            state $request_counter = 1;
+            $0 = "bom-rpc: (idle $request_counter)";
+            $request_counter++;
         });
 
     # set $0 after forking children
