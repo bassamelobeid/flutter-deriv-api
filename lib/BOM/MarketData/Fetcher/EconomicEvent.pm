@@ -23,7 +23,6 @@ use Sereal qw(encode_sereal decode_sereal looks_like_sereal);
 use Sereal::Encoder;
 use Try::Tiny;
 use BOM::Utility::Log4perl qw(get_logger);
-use BOM::System::Chronicle;
 
 has data_location => (
     is       => 'ro',
@@ -128,50 +127,6 @@ sub get_latest_events_for_period {
     my $ee_cal = BOM::MarketData::EconomicEventCalendar->new({for_date => $start});
 
     return $ee_cal->get_latest_events_for_period($period);
-}
-
-sub _redis {
-    return Cache::RedisDB->redis;
-}
-
-sub _get_events {
-    my ($self, $args) = @_;
-
-    croak 'start date undef during economic events calculation'
-        unless defined $args->{from};
-    croak 'end date undef during economic events calculation'
-        unless defined $args->{to};
-
-    my ($start, $end) = map { Date::Utility->new($_) } @{$args}{'from', 'to'};
-    my $source = $args->{source};
-    # Here we just fill the cache then send them back to get it from there.
-    my $query = {
-        startkey => [$source, $start->datetime_iso8601],
-        endkey   => [$source, $end->datetime_iso8601],
-    };
-
-    my $docs = $self->_couchdb->view($args->{view}, $query);
-
-    my @event_objs;
-    foreach my $data (@{$docs}) {
-        my $ee_params = $self->_couchdb->document($data);
-        $ee_params->{document_id} //= $data;
-        push @event_objs, BOM::MarketData::EconomicEventCouch->new($ee_params);
-    }
-
-    return \@event_objs;
-}
-
-sub _clear_event_cache {
-    my $self = shift;
-
-    my $redis = $self->_redis;
-
-    # Don't bother trying to figure out which events they are adding.
-    # Just assume that everything is wrong.
-    my @results = map { $redis->del($_) } @{$redis->keys($cache_namespace . '*')};
-
-    return scalar @results;
 }
 
 no Moose;
