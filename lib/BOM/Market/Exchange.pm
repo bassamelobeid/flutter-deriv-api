@@ -997,39 +997,19 @@ sub _times_dst_key {
 Get total number of seconds of trading time between two epochs accounting for breaks.
 
 =cut
+my $full_day = 86400;
 
 sub seconds_of_trading_between_epochs {
     my ($self, $start_epoch, $end_epoch) = @_;
 
     my $result = 0;
 
-    my $full_day = 86400;
-
-    if ($start_epoch < $end_epoch) {
-
+    while($start_epoch < $end_epoch) {
         my $day_start = $start_epoch - ($start_epoch % $full_day);
-        my $day_end   = $end_epoch -   ($end_epoch % $full_day) - 1;
-
-        if ($day_start == $start_epoch and $day_end == $end_epoch) {
-            if ($day_end - $day_start > 86399) {
-                my $day_earlier = $end_epoch - $full_day;
-                $result =
-                    $self->seconds_of_trading_between_epochs($start_epoch, $day_earlier) +
-                    $self->_computed_trading_seconds($day_earlier + 1, $end_epoch);
-            } else {
-                $result = $self->_computed_trading_seconds($start_epoch, $end_epoch);
-            }
-        } else {
-            my $start_eod = $day_start + 86399;
-            if ($end_epoch <= $start_eod) {
-                $result = $self->_computed_trading_seconds($start_epoch, $end_epoch);
-            } else {
-                $result =
-                    $self->_computed_trading_seconds($start_epoch, $start_eod) +
-                    $self->seconds_of_trading_between_epochs($start_eod + 1, $day_end) +
-                    $self->_computed_trading_seconds($day_end + 1, $end_epoch);
-            }
-        }
+        my $next_day  = $day_start + 86399;
+        my $seconds_per_day = $self->_computed_trading_seconds($start_epoch, min($next_day, $end_epoch));
+        $result += $seconds_per_day;
+        $start_epoch = $next_day + 1;
     }
 
     return $result;
