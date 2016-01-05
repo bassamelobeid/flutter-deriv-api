@@ -333,9 +333,12 @@ sub __handle {
             my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
+        my $XForwarded = $c->req->headers->header('X-Forwarded-For') || '';
 
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category},
+            {tags => [$tag, "ip:" . $XForwarded]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
+            {tags => [$tag, "category:$descriptor->{category}", "ip:" . $XForwarded]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -445,12 +448,24 @@ sub rpc {
         sub {
             my $res = pop;
 
+            my $XForwarded = $self->req->headers->header('X-Forwarded-For') || '';
+
             DataDog::DogStatsd::Helper::stats_timing(
                 'bom-websocket-api.v3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
-                {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method"]});
+                {tags => ["rpc:$method", "ip:" . $XForwarded]});
+            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage',
+                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $XForwarded]});
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count',
+                {tags => ["rpc:$method", "ip:" . $XForwarded]});
+
+            my $rpc_time = delete $res->result->{rpc_time};
+            if ($rpc_time) {
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom-websocket-api.v3.rpc.call.timing.connection',
+                    1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
+                    {tags => ["rpc:$method", "ip:" . $XForwarded]});
+            }
 
             my $client_guard = guard { undef $client };
             if (!$res) {
@@ -469,6 +484,7 @@ sub rpc {
                 return;
             }
             my $send = 1;
+
             my $data = &$callback($res->result);
 
             if (not $data) {
@@ -486,7 +502,15 @@ sub rpc {
                 $data->{echo_req} = $args;
             }
             if ($send) {
+                $tv = [Time::HiRes::gettimeofday];
+
                 $self->send({json => $data});
+
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom-websocket-api.v3.rpc.call.timing.sent',
+                    1000 * Time::HiRes::tv_interval($tv),
+                    {tags => ["rpc:$method", "ip:" . $XForwarded]});
+
             }
             return;
         });
