@@ -335,9 +335,9 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category},
-            {tags => [$tag, "ip:" . $c->stash('request')->client_ip]});
+            {tags => [$tag, "ip:" . $c->req->headers->header('X-Forwarded-For')]});
         DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
-            {tags => [$tag, "category:$descriptor->{category}", "ip:" . $c->stash('request')->client_ip]});
+            {tags => [$tag, "category:$descriptor->{category}", "ip:" . $c->req->headers->header('X-Forwarded-For')]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -450,11 +450,11 @@ sub rpc {
             DataDog::DogStatsd::Helper::stats_timing(
                 'bom-websocket-api.v3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
-                {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
+                {tags => ["rpc:$method", "ip:" . $self->req->headers->header('X-Forwarded-For')]});
             DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage',
-                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
+                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $self->req->headers->header('X-Forwarded-For')]});
             DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count',
-                {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
+                {tags => ["rpc:$method", "ip:" . $self->req->headers->header('X-Forwarded-For')]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
@@ -497,7 +497,7 @@ sub rpc {
                 DataDog::DogStatsd::Helper::stats_timing(
                     'bom-websocket-api.v3.rpc.call.timing.sent',
                     1000 * Time::HiRes::tv_interval($tv),
-                    {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
+                    {tags => ["rpc:$method", "ip:" . $self->req->headers->header('X-Forwarded-For')]});
 
             }
             return;
