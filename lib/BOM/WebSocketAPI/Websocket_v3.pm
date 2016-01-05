@@ -317,9 +317,13 @@ sub __handle {
     if (not $c->stash('connection_id')) {
         $c->stash('connection_id' => Data::UUID->new()->create_str());
     }
+    my $limiting_service = 'websocket_call';
+    if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
+        $limiting_service = 'websocket_call_expensive';
+    }
     if (
         not within_rate_limits({
-                service  => 'websocket_call',
+                service  => $limiting_service,
                 consumer => $c->stash('connection_id'),
             }))
     {
