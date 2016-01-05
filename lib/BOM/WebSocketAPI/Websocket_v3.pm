@@ -367,8 +367,9 @@ sub __handle {
 
         my $client = $c->stash('client');
         if ($client) {
+            my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}"]});
+                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
         }
 
         ## sell expired
@@ -449,6 +450,7 @@ sub rpc {
                 1000 * Time::HiRes::tv_interval($tv),
                 {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method"]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
