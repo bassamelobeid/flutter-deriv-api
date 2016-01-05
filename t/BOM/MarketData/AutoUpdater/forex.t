@@ -24,13 +24,6 @@ my $fake_date = Date::Utility->new('2012-08-13 15:55:55');
 set_absolute_time($fake_date->epoch);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw(USD JPY GBP INR SEK CHF CAD NOK AUD EUR CZK PLN NZD);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
@@ -42,14 +35,14 @@ BOM::Market::Underlying->new({symbol => 'frxGBPINR'})->set_combined_realtime({
     quote => 100,
 });
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => 'FOREX',
-        recorded_date => $fake_date,
-        date          => Date::Utility->new,
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('holiday', {
+    recorded_date => $fake_date,
+    calendar => {
+        '2013-01-01' => {
+            'New Year' => ['FOREX'],
+        }
+    },
     });
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {

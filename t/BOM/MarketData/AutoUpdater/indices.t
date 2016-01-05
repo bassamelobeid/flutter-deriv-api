@@ -15,12 +15,6 @@ use File::Basename qw(dirname);
 use BOM::MarketData::AutoUpdater::Indices;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'JSE',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'ZAR',

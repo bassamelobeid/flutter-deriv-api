@@ -29,9 +29,9 @@ use Memoize;
 use Carp;
 use Scalar::Util qw(looks_like_number);
 
+use BOM::MarketData::Holiday;
+use BOM::MarketData::PartialTrading;
 use Date::Utility;
-use BOM::Market::Currency;
-use BOM::MarketData::ExchangeConfig;
 use Memoize::HashKey::Ignore;
 use BOM::Platform::Runtime;
 use Time::Duration::Concise;
@@ -60,10 +60,6 @@ Amount the feed for this exchange needs to be delayed, in minutes.
 =head2 representative_trading_date
 
 A Date::Utility for a non-DST day which we believe represents normal trading for this exchange.
-
-=head2 open_on_weekends
-
-Is this exchange available for trading on a weekend?
 
 =cut
 
@@ -99,11 +95,14 @@ has [qw(
 
 Exchange's main currency.
 
+=head2 for_date
+
+for_date is to for historical search of holiday information
+
 =cut
 
-has currency => (
-    is  => 'ro',
-    isa => 'Maybe[BOM::Market::Currency]',
+has [qw( for_date currency )] => (
+    is => 'ro',
 );
 
 =head2 holidays
@@ -115,9 +114,48 @@ that day.
 =cut
 
 has holidays => (
-    is  => 'rw',
-    isa => 'HashRef',
+    is         => 'ro',
+    lazy_build => 1,
 );
+
+sub _build_holidays {
+    my $self = shift;
+
+    my $ref = BOM::MarketData::Holiday::get_holidays_for($self->symbol, $self->for_date);
+    my %exchange_holidays = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
+    # pseudo-holidays for exchanges are 1 week before and after Christmas Day.
+    my $year            = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
+    my $christmas_day   = Date::Utility->new('25-Dec-' . $year);
+    my $pseudo_start    = $christmas_day->minus_time_interval('7d');
+    my %pseudo_holidays = map { $pseudo_start->plus_time_interval($_ . 'd')->days_since_epoch => 'pseudo-holiday' } (0 .. 14);
+
+    my $holidays = {%pseudo_holidays, %exchange_holidays,};
+
+    return $holidays;
+}
+
+has [qw(early_closes late_opens)] => (
+    is         => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_early_closes {
+    my $self = shift;
+
+    my $ref = BOM::MarketData::PartialTrading::get_partial_trading_for('early_closes', $self->symbol, $self->for_date);
+    my %early_closes = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
+
+    return \%early_closes;
+}
+
+sub _build_late_opens {
+    my $self = shift;
+
+    my $ref = BOM::MarketData::PartialTrading::get_partial_trading_for('late_opens', $self->symbol, $self->for_date);
+    my %late_opens = map { Date::Utility->new($_)->days_since_epoch => $ref->{$_} } keys %$ref;
+
+    return \%late_opens;
+}
 
 ## PRIVATE attribute market_times
 #
@@ -133,11 +171,6 @@ has is_affected_by_dst => (
     is         => 'ro',
     isa        => 'Bool',
     lazy_build => 1,
-);
-
-has open_on_weekends => (
-    is      => 'ro',
-    default => 0,
 );
 
 =head2 trading_days
@@ -204,32 +237,13 @@ has [qw(trading_timezone tenfore_trading_timezone)] => (
 );
 
 sub BUILDARGS {
-    my ($class, $symbol) = @_;
+    my ($class, $symbol, $for_date) = @_;
 
     croak "Exchange symbol must be specified" unless $symbol;
-    my $params_ref = BOM::MarketData::ExchangeConfig->new({symbol => $symbol})->get_parameters;
+    my $params_ref = LoadFile('/home/git/regentmarkets/bom-market/config/files/exchange.yml')->{$symbol};
     $params_ref->{symbol} = $symbol;
+    $params_ref->{for_date} = $for_date if $for_date;
 
-    if (defined $params_ref->{currency}) {
-        my $currency = uc $params_ref->{currency};
-        if (length($currency) != 3 or $currency eq 'NA') {
-            delete $params_ref->{currency};
-        } else {
-            $params_ref->{currency} = BOM::Market::Currency->new($currency);
-        }
-    } else {
-        delete $params_ref->{currency};
-    }
-
-    my %holidays          = ();
-    my $today_since_epoch = Date::Utility::today->days_since_epoch;
-
-    for (keys %{$params_ref->{holidays}}) {
-        my $when = Date::Utility->new($_);
-        $holidays{$when->days_since_epoch} = $params_ref->{holidays}->{$_};
-    }
-
-    $params_ref->{holidays} = \%holidays;
     foreach my $key (keys %{$params_ref->{market_times}}) {
         foreach my $trading_segment (keys %{$params_ref->{market_times}->{$key}}) {
             if ($trading_segment eq 'day_of_week_extended_trading_breaks') { next; }
@@ -267,16 +281,9 @@ Is this an over the counter exchange?
 =cut
 
 has is_OTC => (
-    is         => 'ro',
-    isa        => 'Bool',
-    init_arg   => undef,
-    lazy_build => 1,
+    is      => 'ro',
+    default => 0,
 );
-
-sub _build_is_OTC {
-    my $self = shift;
-    return ($self->symbol eq 'FOREX' or $self->symbol eq 'RANDOM' or $self->symbol eq 'RANDOM_NOCTURNE');
-}
 
 =head1 METHODS
 
@@ -298,7 +305,7 @@ sub _object_expired {
 }
 
 sub new {
-    my ($self, $symbol) = @_;
+    my ($self, $symbol, $for_date) = @_;
 
     state %cached_objects;
 
@@ -307,7 +314,7 @@ sub new {
 
     my $ex = $cached_objects{$key};
     if (not $ex or $ex->_object_expired) {
-        $ex = $self->_new($symbol);
+        $ex = $self->_new($symbol, $for_date);
         $cached_objects{$key} = $ex;
     }
 
@@ -838,7 +845,7 @@ sub closes_early_on {
 
     my $closes_early;
     if ($self->trades_on($when)) {
-        my $listed = $self->market_times->{early_closes}->{$when->date_ddmmmyyyy};
+        my $listed = $self->early_closes->{$when->days_since_epoch};
         if ($listed) {
             $closes_early = $when->truncate_to_day->plus_time_interval($listed);
         } elsif (my $scheduled_changes = $self->regularly_adjusts_trading_hours_on($when)) {
@@ -861,7 +868,7 @@ sub opens_late_on {
 
     my $opens_late;
     if ($self->trades_on($when)) {
-        my $listed = $self->market_times->{late_opens}->{$when->date_ddmmmyyyy};
+        my $listed = $self->late_opens->{$when->days_since_epoch};
         if ($listed) {
             $opens_late = $when->truncate_to_day->plus_time_interval($listed);
         } elsif (my $scheduled_changes = $self->regularly_adjusts_trading_hours_on($when)) {

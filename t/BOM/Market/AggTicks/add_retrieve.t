@@ -16,13 +16,6 @@ use BOM::Platform::Runtime;
 
 use BOM::Market::AggTicks;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-        trading_days => 'weekdays',
-    });
 BOM::Test::Data::Utility::FeedTestDatabase::setup_ticks('frxUSDJPY/14-Mar-12.dump');
 
 my $retention     = 120;

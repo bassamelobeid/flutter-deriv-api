@@ -15,9 +15,10 @@ my $currency = BOM::Market::Currency->new({ symbol => 'AUD'});
 use Carp;
 use Moose;
 use Scalar::Util qw(looks_like_number);
+use List::Util qw(first);
 
 use Date::Utility;
-use BOM::MarketData::CurrencyConfig;
+use BOM::MarketData::Holiday;
 use BOM::MarketData::InterestRate;
 use BOM::MarketData::ImpliedRate;
 
@@ -40,25 +41,6 @@ has 'for_date' => (
     default => undef,
 );
 
-=head2 date
-Represents date of which currency document is saved
-=cut
-
-has date => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-has _parameters => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__parameters {
-    my $self = shift;
-    return BOM::MarketData::CurrencyConfig->new({symbol => $self->symbol})->get_parameters;
-}
-
 has daycount => (
     is         => 'rw',
     lazy_build => 1,
@@ -66,7 +48,10 @@ has daycount => (
 
 sub _build_daycount {
     my $self = shift;
-    return $self->_parameters->{daycount};
+
+    return 360 if first { $self->symbol eq $_ } qw(AED CHF CZK EGP EUR IDR JPY MXN NOK SAR SEK USD XAG XAU);
+    return 365 if first { $self->symbol eq $_ } qw(AUD BRL CAD CNY GBP HKD INR KRW NZD PLN RUB SGD ZAR);
+    return;
 }
 
 has holidays => (
@@ -75,9 +60,13 @@ has holidays => (
 );
 
 sub _build_holidays {
-    my $self         = shift;
-    my $holidays_ref = $self->_parameters->{holidays};
-    my %holidays     = map { Date::Utility->new($_)->days_since_epoch => $holidays_ref->{$_} } keys %$holidays_ref;
+    my $self = shift;
+
+    my $holidays_ref = BOM::MarketData::Holiday::get_holidays_for($self->symbol, $self->for_date);
+    my %holidays = map { Date::Utility->new($_)->days_since_epoch => $holidays_ref->{$_} } keys %$holidays_ref;
+    my $year = $self->for_date ? $self->for_date->year : Date::Utility->new->year;
+    # pseudo-holiday for country is on 24-Dec and 31-Dec annually
+    $holidays{Date::Utility->new($_ . '-' . $year)->days_since_epoch} = 'pseudo-holiday' for qw(24-Dec 31-Dec);
 
     return \%holidays;
 }
@@ -91,9 +80,9 @@ sub weight_on {
     my ($self, $when) = @_;
     my $weight = $self->holidays->{$when->days_since_epoch};
     return
-          (!defined $weight)         ? 1.0
-        : looks_like_number($weight) ? $weight
-        :                              0.0;
+          (!defined $weight)            ? 1.0
+        : ($weight eq 'pseudo-holiday') ? 0.5
+        :                                 0.0;
 }
 
 =head2 has_holiday_on
@@ -105,7 +94,7 @@ return 0 for them.
 sub has_holiday_on {
     my ($self, $when) = @_;
     my $weight = $self->holidays->{$when->days_since_epoch};
-    return defined $weight && !looks_like_number($weight);
+    return defined $weight && $weight ne 'pseudo-holiday';
 }
 
 =head2 interest

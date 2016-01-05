@@ -8,8 +8,6 @@ use BOM::Market::Exchange;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'GBP'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {symbol => 'LSE'});
 
 # check that cache is flushed after exchanges.yml is touched
 my $LSE = BOM::Market::Exchange->new('LSE');
