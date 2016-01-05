@@ -20,7 +20,8 @@ our @EXPORT_OK = qw(send_email);
 $Mail::Sender::NO_X_MAILER = 1;    # avoid hostname/IP leak
 
 sub send_email {
-    my $args_ref           = shift;
+    my $args_ref = shift;
+    return if -e '/etc/rmg/travis';
     my $fromemail          = $args_ref->{'from'};
     my $email              = $args_ref->{'to'};
     my $subject            = $args_ref->{'subject'};
@@ -32,14 +33,6 @@ sub send_email {
     croak 'No email provided' unless $email;
 
     my $template_loginid = $args_ref->{template_loginid} || (request && request->loginid);
-
-    # Replace _DEVELOPER_ with the developer's actual email address
-    if (BOM::Platform::Runtime->instance->app_config->system->on_development) {
-        my $email_id = Sys::Hostname::hostname;
-        $email_id =~ s/dev//g;
-        my $developer = "$email_id\@binary.com";
-        $email =~ s/_DEVELOPER_/$developer/g;
-    }
 
     my $logger = get_logger();
     if (not $fromemail) {
@@ -58,7 +51,10 @@ sub send_email {
     # strip carriage returns in subject
     $subject =~ s/[\r\n\f\t]/ /g;
     my $prefix = BOM::Platform::Runtime->instance->app_config->system->alerts->email_subject_prefix;
-    my $server = BOM::Platform::Runtime->instance->hosts->localhost->canonical_name;
+
+    my @name = split(/\./, Sys::Hostname::hostname);
+    my $server = $name[0];
+
     $prefix =~ s/_HOST_/$server/g;
     $prefix =~ s/\[//;
     $prefix =~ s/\]//;

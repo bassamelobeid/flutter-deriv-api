@@ -83,7 +83,7 @@ sub _split_transactions_by_destination_dealing_server {
         if ($BOM_account =~ /^([A-Z]+)\d+$/) {
             my $broker = $1;
             if (any { $broker eq $_ } @allow_broker) {
-                $server = BOM::Platform::Runtime->instance->broker_codes->dealing_server_for($broker)->canonical_name;
+                $server = BOM::Platform::Runtime->instance->broker_codes->dealing_server_for($broker);
             }
         }
 
