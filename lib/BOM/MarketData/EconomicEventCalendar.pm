@@ -1,4 +1,4 @@
-package BOM::MarketData::EconomicEvent;
+package BOM::MarketData::EconomicEventCalendar;
 #Chornicle Economic Event
 
 use BOM::System::Chronicle;
@@ -58,6 +58,25 @@ has events => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+sub get_latest_events_for_period {
+    my ($self, $period) = @_;
+
+    my $from = Date::Utility->new($period->{from})->epoch;
+    my $to = Date::Utility->new($period->{to})->epoch;
+
+    my @matching_events;
+
+    for my $event (@$self->events) {
+        $event->{release_date} = Date::Utility->new($event->{release_date});
+        my $epoch = $event->{release_date}->epoch;
+
+        push @matching_events, $event if ($epoch >= $from and $epoch <= $to);
+    }
+
+    return \@matching_events;
+}
+
 
 sub _build_events {
      my $self = shift;

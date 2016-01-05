@@ -6,9 +6,8 @@ use Moose;
 with 'App::Base::Script';
 with 'BOM::Utility::Logging';
 
-use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
-use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Utility::Log4perl;
@@ -28,7 +27,6 @@ sub script_run {
     my $self = shift;
 
     my $now = Date::Utility->new;
-    my $dm  = BOM::MarketData::Fetcher::EconomicEvent->new();
 
     my @messages;
     my $parser          = ForexFactory->new();
@@ -38,20 +36,14 @@ sub script_run {
 
     my $file_timestamp = Date::Utility->new->date_yyyymmdd;
 
-    #this will be an array of all extracted economic events. Later we will store
-    #the sorted array (by release date) in chronicle
-    my @all_events;
-
     foreach my $event_param (@$events_received) {
-        push @all_events, $event_param;
-
-        Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
-        BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS',         $event_param->{release_date}, JSON::to_json($event_param));
-        BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS_TRIMMED', $event_param->{release_date}, JSON::to_json($event_param));
+        $event_param->{release_date}  = $event_param->{release_date}->datetime_iso8601;
     }
 
     try {
-        @all_events = sort { $a->{release_date}->epoch cmp $b->{release_date}->epoch } @all_events;
+        #this will be an array of all extracted economic events. Later we will store
+        #the sorted array (by release date) in chronicle
+        my @all_events = sort { $a->{release_date} cmp $b->{release_date} } @$events_received;
 
         BOM::MarketData::EconomicEventCalendar->new({
             events          => \@all_events,

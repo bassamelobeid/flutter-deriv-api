@@ -12,7 +12,7 @@ use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::CacheLoader qw(LoadFile);
 
-use BOM::MarketData::Fetcher::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
@@ -150,15 +150,13 @@ sub _get_economic_events {
 
     my $underlying = $self->underlying;
 
-    #load calendar data
-    #setting for_date does not make a harm because EEC will check date of the document in Redis
-    #If received for_date is older than the document, then it will load from database.
-    my $ee_calendar = BOM::MarketData::EconomicEventCalendar->new({for_date => Date::Utility->new($start)});
-    my $events_array = $ee_calendar->events;
-    
+    my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => Date::Utility->new($start),
+            to   => Date::Utility->new($end)});
+
     # static duration that needs to be replaced.
     my @events;
-    foreach my $event (@$events_array) {
+    foreach my $event (@$raw_events) {
         my $event_name = $event->{event_name};
         $event_name =~ s/\s/_/g;
         my $key             = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name;
@@ -166,7 +164,7 @@ sub _get_economic_events {
         my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
 
         next unless $news_parameters;
-        $news_parameters->{release_time} = $event->{release_date}->epoch;
+        $news_parameters->{release_time} = Date::Utility->new($event->{release_date})->epoch;
         push @events, $news_parameters;
     }
 
