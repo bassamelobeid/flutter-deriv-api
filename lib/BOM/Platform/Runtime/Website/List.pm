@@ -111,11 +111,6 @@ has 'broker_codes' => (
     required => 1,
 );
 
-has 'localhost' => (
-    is       => 'ro',
-    required => 1,
-);
-
 has '_websites' => (
     is         => 'ro',
     lazy_build => 1,
@@ -130,7 +125,6 @@ sub _build__websites {
 
         $website_definition->{name}         = $website;
         $website_definition->{broker_codes} = $self->_broker_objects($website_definition->{broker_codes});
-        $website_definition->{localhost}    = $self->localhost;
 
         if ($website_definition->{primary_url}) {
             my $hostname = hostname;
