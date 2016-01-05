@@ -31,14 +31,6 @@ $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platf
 
 initialize_realtime_ticks_db();
 
-foreach my $symbol (qw(NYSE FSE LSE TSE SES ASX FOREX)) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => $symbol,
-            recorded_date   => Date::Utility->new,
-        });
-}
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -52,32 +44,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => $_,
         recorded_date => Date::Utility->new,
     }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol                   => 'RANDOM',
-        delay_amount             => 0,
-        offered                  => 'yes',
-        display_name             => 'Randoms',
-        trading_timezone         => 'UTC',
-        tenfore_trading_timezone => 'NA',
-        trading_days             => 'everyday',
-        open_on_weekends         => 1,
-        currency                 => 'NA',
-        bloomberg_calendar_code  => 'NA',
-        holidays                 => {},
-        market_times             => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-            partial_trading => {},
-        },
-        recorded_date => Date::Utility->new,
-    });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',

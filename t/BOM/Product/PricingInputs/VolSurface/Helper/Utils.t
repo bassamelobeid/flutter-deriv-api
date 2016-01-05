@@ -9,47 +9,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::MarketData::VolSurface::Utils;
 use BOM::Market::Underlying;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'ODLS',
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'NYSE_SPC',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => 'ASX',
-        market_times => {
-            dst => {
-                daily_close      => '5h',
-                daily_open       => '-1h',
-                daily_settlement => '8h',
-            },
-            standard => {
-                daily_close      => '6h',
-                daily_open       => '0s',
-                daily_settlement => '9h'
-            },
-            partial_trading => {
-                dst_open       => '-1h',
-                dst_close      => '3h10m',
-                standard_open  => '0h',
-                standard_close => '4h10m',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
 subtest "default_bloomberg_cutoff" => sub {
     plan tests => 3;
     my $forex = BOM::Market::Underlying->new('frxUSDJPY');

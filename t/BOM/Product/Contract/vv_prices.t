@@ -18,13 +18,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 my $now = Date::Utility->new('2014-11-11');
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        recorded_date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
@@ -64,12 +57,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             },
         }});
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
-    }) for qw( JPY USD );
 
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'frxUSDJPY',
@@ -116,12 +103,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'EURONEXT',
-        recorded_date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'AEX',
@@ -139,8 +120,8 @@ $c = produce_contract({
     currency   => 'EUR',
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->bs_probability->amount), 0.5992, 'correct bs probability for indices contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.0251, 'correct market supplement';
+is roundnear(0.0001, $c->bs_probability->amount), 0.5995, 'correct bs probability for indices contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), -0.025, 'correct market supplement';
 
 $c = produce_contract({
     %$params,
@@ -151,6 +132,6 @@ $c = produce_contract({
     currency     => 'EUR',
 });
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
-is roundnear(0.0001, $c->bs_probability->amount), 0.263, 'correct bs probability for indices contract';
-is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0173, 'correct market supplement';
+is roundnear(0.0001, $c->bs_probability->amount), 0.2629, 'correct bs probability for indices contract';
+is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0172, 'correct market supplement';
 BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface($orig);

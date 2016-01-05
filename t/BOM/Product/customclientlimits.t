@@ -31,19 +31,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for (qw/USD EUR/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( USD EUR );
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FSE RANDOM/);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
     {
         symbol => 'R_100',

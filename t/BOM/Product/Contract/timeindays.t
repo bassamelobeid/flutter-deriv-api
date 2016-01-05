@@ -25,38 +25,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw( :init );
 use Date::Utility;
 use BOM::Test::Data::Utility::UnitTestRedis;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => 'LSE',
-        market_times => {
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m',
-            },
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( GBP JPY USD );
-
 my $FRW_frxUSDJPY_ON = BOM::Market::Underlying->new('FRW_frxUSDJPY_ON');
 my $FRW_frxUSDJPY_TN = BOM::Market::Underlying->new('FRW_frxUSDJPY_TN');
 my $FRW_frxUSDJPY_1W = BOM::Market::Underlying->new('FRW_frxUSDJPY_1W');

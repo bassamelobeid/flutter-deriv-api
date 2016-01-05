@@ -13,13 +13,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 initialize_realtime_ticks_db();
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FSE EURONEXT SES/);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         recorded_date => Date::Utility->new,

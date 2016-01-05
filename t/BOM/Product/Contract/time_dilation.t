@@ -26,12 +26,6 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now,
     quote      => 1
 });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => 'FOREX',
-        recorded_date => Date::Utility->new,
-    });
 
 my %bet_params = (
     bet_type     => 'NOTOUCH',

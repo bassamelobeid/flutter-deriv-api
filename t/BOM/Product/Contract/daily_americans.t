@@ -17,12 +17,6 @@ initialize_realtime_ticks_db();
 my $ul   = BOM::Market::Underlying->new('DJI');
 my $when = Date::Utility->new('2015-11-08 16:00:00');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'NYSE',
-        date   => Date::Utility->new
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'USD',

@@ -19,42 +19,12 @@ use Date::Utility;
 my $now = Date::Utility->new;
 use BOM::Test::Data::Utility::UnitTestCouchDB;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => 'RANDOM',
-        trading_days => 'everyday',
-        date         => $now,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol          => $_,
         recorded_date   => $now->minus_time_interval('5m'),
     }) for qw(USD JPY JPY-USD);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => 'RANDOM_NOCTURNE',
-        trading_days => 'everyday',
-        date         => $now,
-        market_times => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '11h59m59s',
-                daily_open       => '-12h',
-                daily_settlement => '11h59m59s',
-            },
-            partial_trading => {},
-        },
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol       => 'FOREX',
-        trading_days => 'weekdays',
-        date         => $now,
-    });
 subtest 'forward starting with payout/stake' => sub {
     my $c = produce_contract({
         bet_type     => 'CALL',
