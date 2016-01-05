@@ -27,6 +27,7 @@ use Time::Out qw(timeout);
 use Guard;
 use Proc::CPUUsage;
 use feature "state";
+use RateLimitations qw(within_rate_limits);
 
 sub ok {
     my $c      = shift;
@@ -312,6 +313,13 @@ sub __handle {
 
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
+
+    if not ($c->stash('connection_id')) {
+        $c->stash('connection_id' => Data::UUID->new()->create_str());
+    }
+    if  (not within_rate_limits({ service  => 'websocket_call', consumer => $c->stash('connection_id'),})) {
+        return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+    }
 
     my @handler_descriptors =
         sort { $a->{order} <=> $b->{order} }
