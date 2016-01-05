@@ -7,6 +7,7 @@ use JSON;
 
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
+use BOM::WebSocketAPI::v3::Wrapper::System;
 
 sub portfolio {
     my ($c, $args) = @_;
