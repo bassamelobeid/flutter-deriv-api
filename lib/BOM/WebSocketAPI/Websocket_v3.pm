@@ -486,7 +486,15 @@ sub rpc {
                 $data->{echo_req} = $args;
             }
             if ($send) {
+                $tv = [Time::HiRes::gettimeofday];
+
                 $self->send({json => $data});
+
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom-websocket-api.v3.rpc.call.timing.sent',
+                    1000 * Time::HiRes::tv_interval($tv),
+                    {tags => ["rpc:$method"]});
+
             }
             return;
         });

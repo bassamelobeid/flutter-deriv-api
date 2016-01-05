@@ -37,7 +37,6 @@ sub build_mojo_test {
     return $t;
 }
 
-
 sub test_schema {
     my ($type, $data) = @_;
 
