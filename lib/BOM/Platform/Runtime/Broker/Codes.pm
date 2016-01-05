@@ -78,7 +78,7 @@ sub landing_company_for {
 
 =head2 $self->dealing_server_for($broker_code|$client_loginid)
 
-Return dealing server (BOM::System::Runtime::Server) for given broker code or client login ID
+Return dealing server name for given broker code or client login ID
 
 =cut
 
@@ -96,12 +96,6 @@ sub dealing_server_for {
 
 has 'broker_definitions' => (
     is       => 'ro',
-    required => 1,
-);
-
-has hosts => (
-    is       => 'ro',
-    weak_ref => 1,
     required => 1,
 );
 
@@ -129,7 +123,6 @@ sub _build__brokers {
         my %args = map { $_ => $broker_definition->{$_} } grep { !/^code$/ } keys %$broker_definition;
 
         my $ref_broker = $broker_definition->{code}[0];
-        $args{server} = $self->_valid_dealing_server($args{server}, $ref_broker);
         $args{landing_company} = $self->_valid_landing_company($args{landing_company}, $ref_broker);
 
         for my $code (@{$broker_definition->{code}}) {
@@ -149,23 +142,12 @@ sub _build__brokers_on_servers {
 
     my $brokers_on_servers = {};
     foreach my $broker (values %{$self->_brokers}) {
-        my $server = $broker->server->name;
+        my $server = $broker->server;
         $brokers_on_servers->{$server} = [] unless ($brokers_on_servers->{$server});
         push @{$brokers_on_servers->{$server}}, $broker;
     }
 
     return $brokers_on_servers;
-}
-
-sub _valid_dealing_server {
-    my $self       = shift;
-    my $server     = shift;
-    my $ref_broker = shift;
-
-    my $dealing_server = $self->hosts->get($server);
-    get_logger->logdie("Unknown server $server for broker ", $ref_broker) unless $dealing_server;
-
-    return $dealing_server;
 }
 
 sub _valid_landing_company {

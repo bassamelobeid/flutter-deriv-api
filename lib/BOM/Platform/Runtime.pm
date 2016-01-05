@@ -212,14 +212,13 @@ sub _build_website_list {
 sub _build_broker_codes {
     my $self = shift;
     return BOM::Platform::Runtime::Broker::Codes->new(
-        hosts              => $self->hosts,
         landing_companies  => $self->landing_companies,
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
 
 sub _build_datasources {
     my $self = shift;
-    return BOM::Platform::Data::Sources->new(hosts => $self->hosts);
+    return BOM::Platform::Data::Sources->new();
 }
 
 sub _build_landing_companies {
