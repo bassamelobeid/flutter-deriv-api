@@ -205,7 +205,6 @@ sub _build_website_list {
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
         definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
-        localhost    => $self->hosts->localhost,
     );
 }
 
