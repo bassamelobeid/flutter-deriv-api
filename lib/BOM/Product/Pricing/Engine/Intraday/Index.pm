@@ -52,7 +52,7 @@ sub _build_probability {
     my $self = shift;
 
     my $bet      = $self->bet;
-    my $coef_ref = $self->_calibration_coefficient->{$bet->date_start->month_as_string};
+    my $coef_ref = $self->_calibration_coefficient;
 
     # if calibration coefficients are not present, we could not price
     if (not $coef_ref) {
