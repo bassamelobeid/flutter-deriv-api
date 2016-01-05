@@ -16,7 +16,7 @@ initialize_realtime_ticks_db();
 use Finance::Asset;
 use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD JPY);
 my $now = Date::Utility->new('2015-08-21 05:30:00');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

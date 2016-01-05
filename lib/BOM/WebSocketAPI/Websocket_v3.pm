@@ -334,8 +334,10 @@ sub __handle {
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category},
+            {tags => [$tag, "ip:" . $c->tx->remote_address]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
+            {tags => [$tag, "category:$descriptor->{category}", "ip:" . $c->tx->remote_address]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -448,9 +450,11 @@ sub rpc {
             DataDog::DogStatsd::Helper::stats_timing(
                 'bom-websocket-api.v3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
-                {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method"]});
+                {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
+            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage',
+                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count',
+                {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
@@ -493,7 +497,7 @@ sub rpc {
                 DataDog::DogStatsd::Helper::stats_timing(
                     'bom-websocket-api.v3.rpc.call.timing.sent',
                     1000 * Time::HiRes::tv_interval($tv),
-                    {tags => ["rpc:$method"]});
+                    {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
 
             }
             return;
