@@ -3,9 +3,10 @@ package main;
 
 use strict 'vars';
 
-use f_brokerincludeall;
+use BOM::BloombergCalendar;
+use File::Temp ();
+use File::Copy;
 use BOM::Platform::Plack qw( PrintContentType );
-use BOM::MarketData::HolidayCalendar;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 PrintContentType();
@@ -13,33 +14,37 @@ PrintContentType();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
 # Upload holiday files
-my $cgi                                   = new CGI;
-my $filetoupload                          = $cgi->param('filetoupload');
-my $manually_update_individual_holiday    = $cgi->param('manually_update_individual_holiday');
-my $upload_exchange_currencies_excel_file = $cgi->param('upload_exchange_currencies_excel_file');
-my $update_pseudo_holiday                 = $cgi->param('update_pseudo_holiday');
-my $symbol                                = $cgi->param('symbol');
-my $holiday_date                          = $cgi->param('holiday_date');
-my $holiday_event                         = $cgi->param('holiday_name');
-my $source                                = $cgi->param('source');
-my $type                                  = $cgi->param('type');
-my $pseudo_start_date                     = $cgi->param('pseudo_start_date');
-my $pseudo_end_date                       = $cgi->param('pseudo_end_date');
-my $parser                                = BOM::MarketData::HolidayCalendar->new;
+my $cgi = new CGI;
+my $calendar_type = $cgi->param('calendar-type');
+my $calendar;
 
-my ($surfaces, $filename) = $parser->process_holidays({
-        'filetoupload'                          => $filetoupload,
-        'manual_update_individual_holiday'      => $manually_update_individual_holiday,
-        'upload_exchange_currencies_excel_file' => $upload_exchange_currencies_excel_file,
-        'update_pseudo_holiday'                 => $update_pseudo_holiday,
-        'symbol'                                => $symbol,
-        'holiday_date'                          => $holiday_date,
-        'holiday_event'                         => $holiday_event,
-        'source'                                => $source,
-        'pseudo_start_date'                     => $pseudo_start_date,
-        'pseudo_end_date'                       => $pseudo_end_date,
-        'type'                                  => $type,
+if ($cgi->param('upload_excel')) {
+    my $file = $cgi->param('filetoupload');
+    my $fh = File::Temp->new(SUFFIX => '.csv');
+    my $filename = $fh->filename;
+    copy($file, $filename);
+    $calendar = BOM::BloombergCalendar::parse_calendar($filename, $calendar_type);
+} elsif ($cgi->param('manual_holiday_upload')) {
+    my $calendar_type = $cgi->param('calendar-type');
+    my $symbol_str = $cgi->param('symbol');
+    my @symbols = split ' ' , $symbol_str;
+    my $holiday_date = $cgi->param('holiday_date');
+    my $holiday_desc = $cgi->param('holiday_desc');
+    # sanity check
+    die "Incomplete entry\n" unless ($symbol_str and $holiday_date and $holiday_desc);
+    $calendar->{Date::Utility->new($holiday_date)->truncate_to_day->epoch}{$holiday_desc} = \@symbols;
+} elsif ($cgi->param('manual_partial_trading_upload')) {
+    my $calendar_type = $cgi->param('calendar-type');
+    my $symbol_str = $cgi->param('symbol');
+    my @symbols = split ' ' , $symbol_str;
+    my $date = $cgi->param('date');
+    my $time = $cgi->param('time');
+    my $description = $cgi->param('description');
+    # sanity check
+    die "Incomplete entry\n" unless ($symbol_str and $date and $time and $description);
+    $calendar->{Date::Utility->new($date)->truncate_to_day->epoch}{$time} = \@symbols;
+}
 
-});
+BOM::BloombergCalendar::save_calendar($calendar, $calendar_type);
 
 code_exit_BO();

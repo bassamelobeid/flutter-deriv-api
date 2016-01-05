@@ -24,12 +24,6 @@ my $plus5mins  = Date::Utility->new(time + 300);
 my $plus30mins = Date::Utility->new(time + 1800);
 my $minus5mins = Date::Utility->new(time - 300);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange', {
-        symbol          => $_,
-        date            => Date::Utility->new,
-    }) for (qw/FOREX RANDOM/);
-
 my %date_string = (
     R_50      => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
     frxEURCHF => [$minus5mins->datetime, $now->datetime, $plus5mins->datetime],
