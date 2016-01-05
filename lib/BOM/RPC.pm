@@ -55,6 +55,11 @@ sub startup {
     $app->moniker('rpc');
     $app->plugin('Config' => {file => $ENV{RPC_CONFIG} || '/etc/rmg/rpc.conf'});
 
+    # hard-wire this here. A worker of this service is supposed to handle only
+    # one request at a time. Hence, it must also C<accept> only one connection
+    # at a time.
+    $app->config->{hypnotoad}->{multi_accept} = 1;
+
     my $log = $app->log;
 
     my $signature = "Binary.com RPC";
