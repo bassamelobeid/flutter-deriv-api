@@ -10,8 +10,6 @@ use Test::NoWarnings;
 use Test::MockModule;
 use JSON qw(decode_json);
 
-use Sys::Hostname;
-use BOM::System::Host;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context::Request;
 
