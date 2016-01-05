@@ -67,7 +67,7 @@ sub get_latest_events_for_period {
 
     my @matching_events;
 
-    for my $event (@$self->events) {
+    for my $event (@{$self->events}) {
         $event->{release_date} = Date::Utility->new($event->{release_date});
         my $epoch = $event->{release_date}->epoch;
 
@@ -126,11 +126,12 @@ sub save {
     my $self = shift;
 
     if (not defined BOM::System::Chronicle::get(EE, EE)) {
-        BOM::System::Chronicle::set(EE, EE, []);
+        BOM::System::Chronicle::set(EE, EE, {});
     }
 
     return BOM::System::Chronicle::set(EE, EE, $self->_document_content, $self->recorded_date);
 }
+
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
