@@ -44,15 +44,8 @@ sub _build__calibration_coefficient {
     my $bet  = $self->bet;
     my $coef = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/intraday_index_calibration_coefficient.yml')
         ->{$bet->underlying->symbol};
-    my %ref;
 
-    foreach my $key (keys %$coef) {
-        my $val = $coef->{$key};
-        my @months = split '-', $key;
-        %ref = map { $_ => $val } @months;
-    }
-
-    return \%ref;
+    return $coef;
 }
 
 sub _build_probability {
