@@ -80,7 +80,7 @@ sub get_ask {
 
     my $response;
     try {
-        my $contract = produce_contract({%p2});
+        my $contract = produce_contract({%$p2});
 
         if (!$contract->is_valid_to_buy) {
             if (my $pve = $contract->primary_validation_error) {
