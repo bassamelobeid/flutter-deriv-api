@@ -11,6 +11,7 @@ use BOM::Market::Underlying;
 use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
+use Time::HiRes;
 
 sub validate_symbol {
     my $symbol    = shift;
@@ -178,6 +179,8 @@ sub send_ask {
     my $params = shift;
     my $args   = $params->{args};
 
+    my $tv = [Time::HiRes::gettimeofday];
+
     BOM::Platform::Context::request()->language($params->{language});
 
     my %details = %{$args};
@@ -196,6 +199,8 @@ sub send_ask {
                 code              => 'pricing error',
                 message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
     };
+
+    $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
 
     return $response;
 }
