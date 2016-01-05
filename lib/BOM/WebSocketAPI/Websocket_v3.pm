@@ -314,10 +314,15 @@ sub __handle {
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
 
-    if not ($c->stash('connection_id')) {
+    if (not $c->stash('connection_id')) {
         $c->stash('connection_id' => Data::UUID->new()->create_str());
     }
-    if  (not within_rate_limits({ service  => 'websocket_call', consumer => $c->stash('connection_id'),})) {
+    if (
+        not within_rate_limits({
+                service  => 'websocket_call',
+                consumer => $c->stash('connection_id'),
+            }))
+    {
         return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
     }
 
@@ -343,8 +348,7 @@ sub __handle {
         }
         my $XForwarded = $c->req->headers->header('X-Forwarded-For') || '';
 
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category},
-            {tags => [$tag, "ip:" . $XForwarded]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag, "ip:" . $XForwarded]});
         DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
             {tags => [$tag, "category:$descriptor->{category}", "ip:" . $XForwarded]});
 
@@ -462,10 +466,8 @@ sub rpc {
                 'bom-websocket-api.v3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
                 {tags => ["rpc:$method", "ip:" . $XForwarded]});
-            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage',
-                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $XForwarded]});
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count',
-                {tags => ["rpc:$method", "ip:" . $XForwarded]});
+            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method", "ip:" . $XForwarded]});
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method", "ip:" . $XForwarded]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
