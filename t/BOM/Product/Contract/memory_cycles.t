@@ -16,14 +16,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 my $recorded_date = Date::Utility->new;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => 'FOREX',
-        recorded_date => $recorded_date,
-        date          => Date::Utility->new,
-    });
-
 subtest 'Check BOM::Product::Contract for memory cycles' => sub {
     use_ok('BOM::Product::Contract');
     my $params = {

@@ -15,14 +15,6 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use Date::Utility;
 
 my $now = Date::Utility->new;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'RANDOM',
-        holidays         => {},
-        open_on_weekends => 1,
-        trading_days     => 'everyday',
-    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',

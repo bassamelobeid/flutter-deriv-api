@@ -16,13 +16,6 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 my $date_pricing = '8-Nov-12';
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        recorded_date   => Date::Utility->new($date_pricing),
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

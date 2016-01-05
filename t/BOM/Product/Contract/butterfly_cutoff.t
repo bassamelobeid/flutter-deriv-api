@@ -30,13 +30,6 @@ my $dm               = BOM::MarketData::Fetcher::VolSurface->new;
 
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        recorded_date   => $bet_start,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

@@ -33,202 +33,45 @@ my $tick_params = {
 
 my $tick = BOM::Market::Data::Tick->new($tick_params);
 
-foreach my $symbol (qw(FOREX NYSE TSE SES ASX)) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => $symbol,
-            date   => Date::Utility->new,
-        });
-}
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
+    'holiday',
     {
-        symbol           => 'RANDOM',
-        open_on_weekends => 1,
-        trading_days     => 'everyday',
-        holidays         => {},
-        market_times     => {
-            early_closes => {},
-            standard     => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
+        recorded_date => Date::Utility->new,
+        calendar => {
+            "25-Dec-12"  => {
+                "Christmas Day" => ['FSE'],
             },
-            partial_trading => {},
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'FSE',
-        currency         => 'EUR',
-        delay_amount     => 15,
-        trading_timezone => 'Europe/Berlin',
-        holidays         => {
-            "25-Dec-12"  => "Christmas Day",
-            "26-Dec-12"  => "Christmas Holiday",
-            "31-Dec-12"  => " New Year's Eve",
-            "1-Jan-13"   => "New Year's Day",
-            "29-Mar-13"  => "Good Friday",
-            "1-Apr-13"   => "Easter Monday",
-            "1-May-13"   => "Labpur Day",
-            "24-Dec-13"  => "Christmas Eve",
-            "25-Dec-13"  => "Christmas Day",
-            "26-Dec-13"  => "Christmas Holiday",
-            "31-Dec-13"  => "New Year's Eve",
-            "2013-12-20" => "pseudo-holiday",
-            "2013-12-23" => "pseudo-holiday",
-            "2013-12-27" => "pseudo-holiday",
-            "2013-12-30" => "pseudo-holiday",
-            "1-Jan-14"   => "New Year's Day",
-            "18-Apr-14"  => "Good Friday",
-            "21-Apr-14"  => "Easter Monday",
-            "1-May-14"   => "Labour Day",
-            "25-Dec-14"  => "Christmas Day",
-            "26-Dec-14"  => "Boxing Day",
-            "31-Dec-14"  => "New Year's Eve",
-            "2014-01-02" => "pseudo-holiday",
-            "2014-01-03" => "pseudo-holiday",
-        },
-        market_times => {
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m',
+            "26-Dec-12"  => {
+                "Christmas Holiday" => ['FSE'],
             },
-            partial_trading => {
-                dst_open       => '7h',
-                dst_close      => '12h',
-                standard_open  => '8h',
-                standard_close => '13h',
+            "31-Dec-12"  => {
+                " New Year's Eve" => ['FSE'],
             },
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m'
+            "1-Jan-13" => {
+                "New Year" => ['FSE'],
+            },
+            "29-Mar-13"  => {
+                "Good Friday" => ['FSE'],
+            },
+            "1-Apr-13"   => {
+                "Easter Monday" => ['FSE'],
             },
         },
-        date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
+    'partial_trading',
     {
-        symbol           => 'EURONEXT',
-        currency         => 'EUR',
-        delay_amount     => 15,
-        trading_timezone => 'Europe/London',
-        holidays         => {
-            "1-Jan-13"   => "New Year's Day",
-            "29-Mar-13"  => "Good Friday",
-            "1-Apr-13"   => "Easter Monday",
-            "6-May-13"   => "Early May Bank Holiday",
-            "27-May-13"  => "Late May Bank Holiday",
-            "26-Aug-13"  => "Summer Bank Holiday",
-            "25-Dec-13"  => "Christmas Day",
-            "26-Dec-13"  => "Boxing Day",
-            "2013-12-20" => "pseudo-holiday",
-            "2013-12-23" => "pseudo-holiday",
-            "2013-12-24" => "pseudo-holiday",
-            "2013-12-27" => "pseudo-holiday",
-            "2013-12-30" => "pseudo-holiday",
-            "2013-12-31" => "pseudo-holiday",
-            "1-Jan-14"   => "New Year's Day",
-            "18-Apr-14"  => "Good Friday",
-            "21-Apr-14"  => "Easter Monday",
-            "5-May-14"   => "Early May Bank Holiday",
-            "26-May-14"  => "Late May Bank Holiday",
-            "25-Aug-14"  => "Summer Bank Holiday",
-            "25-Dec-14"  => "Christmas Day",
-            "26-Dec-14"  => "Boxing Day",
-            "2014-01-02" => "pseudo-holiday",
-            "2014-01-03" => "pseudo-holiday",
-        },
-        market_times => {
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m',
+        type => 'early_closes',
+        recorded_date => Date::Utility->new,
+        calendar => {
+            '24-Dec-10' => {
+                '12h30m' => ['EURONEXT','LSE'],
             },
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m'
-            },
-            partial_trading => {
-                dst_open       => '7h',
-                dst_close      => '11h30m',
-                standard_open  => '8h',
-                standard_close => '12h30m',
-            },
-            early_closes => {
-                '24-Dec-10' => '12h30m',
-                '24-Dec-13' => '12h30m',
+            '24-Dec-13' => {
+                '12h30m' => ['EURONEXT','LSE'],
             },
         },
-        date => Date::Utility->new,
     });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'LSE',
-        currency         => 'GBP',
-        delay_amount     => 15,
-        trading_timezone => 'Europe/London',
-        holidays         => {
-            "1-Jan-13"   => "New Year's Day",
-            "29-Mar-13"  => "Good Friday",
-            "1-Apr-13"   => "Easter Monday",
-            "6-May-13"   => "Early May Bank Holiday",
-            "27-May-13"  => "Late May Bank Holiday",
-            "26-Aug-13"  => "Summer Bank Holiday",
-            "25-Dec-13"  => "Christmas Day",
-            "26-Dec-13"  => "Boxing Day",
-            "2013-12-20" => "pseudo-holiday",
-            "2013-12-23" => "pseudo-holiday",
-            "2013-12-24" => "pseudo-holiday",
-            "2013-12-27" => "pseudo-holiday",
-            "2013-12-30" => "pseudo-holiday",
-            "2013-12-31" => "pseudo-holiday",
-            "1-Jan-14"   => "New Year's Day",
-            "18-Apr-14"  => "Good Friday",
-            "21-Apr-14"  => "Easter Monday",
-            "5-May-14"   => "Early May Bank Holiday",
-            "26-May-14"  => "Late May Bank Holiday",
-            "25-Aug-14"  => "Summer Bank Holiday",
-            "25-Dec-14"  => "Christmas Day",
-            "26-Dec-14"  => "Boxing Day",
-            "2014-01-02" => "pseudo-holiday",
-            "2014-01-03" => "pseudo-holiday",
-        },
-        market_times => {
-            dst => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m',
-            },
-            standard => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m'
-            },
-            partial_trading => {
-                dst_open       => '7h',
-                dst_close      => '11h30m',
-                standard_open  => '8h',
-                standard_close => '12h30m',
-            },
-            early_closes => {
-                '24-Dec-10' => '12h30m',
-                '24-Dec-13' => '12h30m',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -287,13 +130,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date  => $an_hour_earlier,
         spot_reference => $tick->quote,
     });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        recorded_date   => Date::Utility->new,
-    }) for qw( JPY USD EUR AUD SGD );
 
 my $orig_suspended = BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types;
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types(['RANGE']), 'Suspended RANGE bet purchases!');
@@ -1077,7 +913,6 @@ subtest 'invalid lifetimes.. how rude' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet                        = produce_contract($bet_params);
-
     $expected_reasons = [qr/enough trading.*calendar days/];
     test_error_list('buy', $bet, $expected_reasons);
 };
@@ -1178,7 +1013,7 @@ subtest '10% barrier check for double barrier contract' => sub {
 };
 
 subtest 'intraday indices duration test' => sub {
-    my $now = Date::Utility->new('2015-04-08 10:00:00');
+    my $now = Date::Utility->new('2015-04-08 00:30:00');
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
@@ -1227,7 +1062,7 @@ subtest 'intraday indices duration test' => sub {
     $c = produce_contract($params);
     my $expected_reasons = [qr/Intraday duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
-    $params->{duration} = '6h';
+    $params->{duration} = '5h1s';
     $c                  = produce_contract($params);
     $expected_reasons   = [qr/Intraday duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
@@ -1245,23 +1080,26 @@ subtest 'intraday indices duration test' => sub {
             recorded_date   => $an_hour_earlier,
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => 'LSE',
-            date   => Date::Utility->new,
-        });
-
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_moneyness',
         {
             symbol         => 'FTSE',
             recorded_date  => $now,
             spot_reference => $tick->quote,
         });
+    $params->{date_start} = Date::Utility->new('2015-04-08 07:15:00');
+    my $ftse_tick = BOM::Market::Data::Tick->new({
+            epoch      => $params->{date_start}->epoch,
+            underlying => 'FTSE',
+            quote      => 100.012,
+            bid        => 100.015,
+            ask        => 100.021
+    });
 
+    $params->{date_pricing} = $params->{date_start};
     $params->{underlying} = 'FTSE';
     $params->{currency}   = 'GBP';
     $params->{duration}   = '15m';
+    $params->{current_tick} = $ftse_tick;
     $c                    = produce_contract($params);
     $expected_reasons = [qr/trying unauthorised/, qr/Intraday duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
@@ -1300,7 +1138,7 @@ subtest 'intraday index missing pricing coefficient' => sub {
 };
 
 subtest 'expiry_daily expiration time' => sub {
-    my $now         = Date::Utility->new('2014-10-08 10:00:00');
+    my $now         = Date::Utility->new('2014-10-08 00:15:00');
     my $tick_params = {
         symbol => 'not_checked',
         epoch  => $now->epoch,
@@ -1312,7 +1150,7 @@ subtest 'expiry_daily expiration time' => sub {
         underlying   => 'AS51',
         date_start   => $now,
         date_pricing => $now,
-        duration     => '25h',
+        duration     => '23h',
         currency     => 'AUD',
         current_tick => $tick,
         payout       => 100,

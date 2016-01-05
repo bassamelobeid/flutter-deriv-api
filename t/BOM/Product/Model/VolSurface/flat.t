@@ -13,13 +13,6 @@ my $flat_vol        = rand(5);
 my $flat_atm_spread = rand;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'RANDOM',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
         symbol          => $ul->symbol,

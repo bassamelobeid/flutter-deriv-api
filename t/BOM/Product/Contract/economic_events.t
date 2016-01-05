@@ -19,13 +19,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 my $now = Date::Utility->new('7-Jan-14 12:00');
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

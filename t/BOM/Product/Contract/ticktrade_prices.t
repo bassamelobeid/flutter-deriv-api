@@ -29,12 +29,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date   => $now,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'RANDOM',
-        recorded_date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
         symbol        => 'R_100',

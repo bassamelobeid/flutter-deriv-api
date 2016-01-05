@@ -53,13 +53,6 @@ foreach my $code (@codes) {
         }) for (qw/GBP USD/);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol => $_,
-            recorded_date   => $now,
-        }) for (qw/FOREX RANDOM/);
-
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',
         {
             symbol        => 'frxGBPUSD',

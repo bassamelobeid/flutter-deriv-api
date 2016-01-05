@@ -14,19 +14,17 @@ use BOM::Product::Contract::Finder::Japan qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_flyby);
 use BOM::Market::Underlying;
 use Date::Utility;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange',        {symbol => 'FOREX'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD JPY AUD CAD EUR);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 subtest "predefined contracts for symbol" => sub {
     my $now = Date::Utility->new('2015-08-21 05:30:00');
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol   => 'FOREX',
-            date     => $now,
-            holidays => {
-                "01-Jan-15" => "Christmas Day",
+        'holiday', {
+            recorded_date => $now,
+            calendar => {
+                "01-Jan-15" => {
+                    "Christmas Day" => ['FOREX'],
+                },
             },
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -121,7 +119,6 @@ subtest "predefined trading_period" => sub {
         'Expected total contract after included predefined trading period'
     );
     is(scalar(@{$got{$_}}), $expected_count{trading_period}{$_}, "Expected total trading period on $_") for (keys %{$expected_count{trading_period}});
-
     foreach my $bet_type (keys %expected_trading_period) {
 
         my @got_duration = map { $got{$bet_type}[$_]{duration} } keys $got{$bet_type};

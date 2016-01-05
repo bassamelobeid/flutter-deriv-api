@@ -21,15 +21,6 @@ use BOM::Product::ContractFactory::Parser qw(
     financial_market_bet_to_parameters
 );
 
-use BOM::Product::ContractFactory qw( produce_contract );
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
 subtest 'financial_market_bet_to_parameters' => sub {
     plan tests => 10;
 

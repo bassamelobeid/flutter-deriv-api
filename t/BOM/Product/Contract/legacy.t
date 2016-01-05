@@ -9,13 +9,6 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Product::ContractFactory qw( produce_contract );
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
 subtest 'BOM::Product::Contract::Invalid' => sub {
     use_ok('BOM::Product::Contract::Invalid');
 };
