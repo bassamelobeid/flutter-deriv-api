@@ -52,7 +52,7 @@ sub test_schema {
 sub build_test_R_50_data {
     initialize_realtime_ticks_db();
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD);
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_flat',
         {

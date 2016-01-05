@@ -116,10 +116,27 @@ $email_mocked->mock('send_email', sub { return 1 });
                 "amount"                    => 100
             }})->message_ok;
     my $res = decode_json($t->message->[1]);
-    ok $res->{error}->{message} =~ /The account transfer is unavailable for accounts/, 'The account transfer is unavailable for accounts';
+    ok $res->{error}->{message} =~ /unavailable for accounts with different default currency/,
+        'unavailable for accounts with different default currency';
 
     $client_vr->set_default_account('EUR');
     $client_cr->set_default_account('EUR');
+
+    $t = $t->send_ok({
+            json => {
+                "transfer_between_accounts" => "1",
+                "account_from"              => $client_cr->loginid,
+                "account_to"                => 'MLT999999',
+                "currency"                  => "EUR",
+                "amount"                    => 100
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
+    ok $res->{error}->{message} =~ /The account transfer is unavailable for your account/, 'The account transfer is unavailable for your account';
+
+    $client_cr = BOM::Platform::Client->new({loginid => $client_cr->loginid});
+    ok $client_cr->get_status('disabled'), 'is disabled due to tamper';
+    $client_cr->clr_status('disabled');
+    $client_cr->save();
 
     $t = $t->send_ok({
             json => {
