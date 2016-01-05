@@ -52,17 +52,7 @@ sub test_schema {
 sub build_test_R_50_data {
     initialize_realtime_ticks_db();
 
-    my @exchange = ('RANDOM');
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
-        'exchange',
-        {
-            symbol           => $_,
-            date             => Date::Utility->new,
-            trading_days     => 'everyday',
-            open_on_weekends => 1
-        }) for @exchange;
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency',        {symbol => $_}) for qw(USD);
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency_config', {symbol => $_}) for qw(USD);
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_flat',
         {
