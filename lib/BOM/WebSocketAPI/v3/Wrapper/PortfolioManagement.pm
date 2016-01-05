@@ -66,12 +66,22 @@ sub send_proposal {
         'get_bid',
         sub {
             my $response = shift;
-            return {
-                msg_type               => 'proposal_open_contract',
-                proposal_open_contract => {
-                    id => $id,
-                    %$response
-                }};
+            if ($response) {
+                if (exists $response->{error}) {
+                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                    return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
+                } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
+                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                }
+                return {
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => {
+                        id => $id,
+                        %$response
+                    }};
+            } else {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+            }
         },
         {
             short_code  => delete $details->{short_code},
