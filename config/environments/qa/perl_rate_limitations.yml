@@ -10,3 +10,6 @@ virtual_batch_sell:
 websocket_call:
     1m:  60
     1h: 3600
+websocket_call_expensive:
+    1m: 10
+    1h: 600
