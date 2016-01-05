@@ -8,7 +8,6 @@ use YAML::XS;
 my $broker_codes;
 lives_ok {
     $broker_codes = BOM::Platform::Runtime::Broker::Codes->new(
-        hosts              => BOM::Platform::Runtime->instance->hosts,
         landing_companies  => BOM::Platform::Runtime->instance->landing_companies,
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
