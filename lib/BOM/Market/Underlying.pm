@@ -673,7 +673,7 @@ sub _build_exchange {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
-    return BOM::Market::Exchange->new($self->exchange_name);
+    return BOM::Market::Exchange->new($self->exchange_name, $self->for_date);
 }
 
 has _exchange_refreshed => (
