@@ -33,7 +33,6 @@ my $binary = new_ok(
         name            => 'Binary',
         primary_url     => 'www.binary.com',
         broker_codes    => [$cr,],
-        localhost       => BOM::Platform::Runtime->instance->hosts->localhost,
     ],
 );
 
