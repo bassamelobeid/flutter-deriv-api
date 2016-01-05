@@ -15,18 +15,6 @@ use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FSE',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,

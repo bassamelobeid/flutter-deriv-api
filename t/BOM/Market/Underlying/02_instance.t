@@ -14,7 +14,6 @@ use JSON qw(decode_json);
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
-use BOM::Test::Mock::Exchanges qw(:init);
 use DateTime;
 use Cache::RedisDB;
 use Date::Utility;
@@ -32,145 +31,8 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         date   => Date::Utility->new,
     }) for (qw/AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw(AUD EUR GBP HKD IDR JPY NZD SGD USD XAU ZAR);
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'TSE',
-        open_on_weekends => 0,
-        delay_amount     => 1440,
-        holidays         => {
-            '14-Oct-13' => 'Health Sport Day',
-            '4-Nov-13'  => 'Culture Day',
-            '1-Jan-16'  => 'New Year Day',
-
-        },
-        market_times => {
-            standard => {
-                daily_close      => '6h',
-                daily_open       => '0s',
-                daily_settlement => '9h',
-                trading_breaks   => [['2h30m', '3h30m']]
-            },
-        },
-        date => Date::Utility->new,
-    });
-
 # INCORRECT DATA in support of in_quiet_period testing, only.
 # Update if you want to test some other exchange info here.
-foreach my $symbol (qw(ASX LSE SES)) {
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'exchange',
-        {
-            symbol           => $symbol,
-            open_on_weekends => 0,
-            delay_amount     => 1440,
-            holidays         => {
-                '1-Jan-16' => 'New Year Day',
-            },
-            market_times => {
-                standard => {
-                    daily_close      => '16h',
-                    daily_open       => '8h',
-                    daily_settlement => '17h'
-                },
-            },
-            date => Date::Utility->new,
-        });
-}
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'RANDOM',
-        open_on_weekends => 1,
-        delay_amount     => 0,
-        market_times     => {
-            standard => {
-                daily_close      => '23h59m59s',
-                daily_open       => '0s',
-                daily_settlement => '23h59m59s',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'FSE',
-        open_on_weekends => 0,
-        delay_amount     => 15,
-        market_times     => {
-            standard => {
-                daily_close      => '15h30m',
-                daily_open       => '7h',
-                daily_settlement => '18h30m',
-            },
-            dst => {
-                daily_close      => '16h30m',
-                daily_open       => '8h',
-                daily_settlement => '19h30m',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'NYSE',
-        open_on_weekends => 0,
-        delay_amount     => 1440,
-        market_times     => {
-            dst => {
-                daily_close      => '20h',
-                daily_open       => '13h30m',
-                daily_settlement => '22h59m59s',
-            },
-            standard => {
-                daily_close      => '21h',
-                daily_open       => '14h30m',
-                daily_settlement => '23h59m59s',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol           => 'NYSE_SPC',
-        open_on_weekends => 0,
-        delay_amount     => 1440,
-        market_times     => {
-            dst => {
-                daily_close      => '20h',
-                daily_open       => '13h30m',
-                daily_settlement => '22h59m59s',
-            },
-            standard => {
-                daily_close      => '21h',
-                daily_open       => '14h30m',
-                daily_settlement => '23h59m59s',
-            },
-        },
-        date => Date::Utility->new,
-    });
-
 my $looks_like_currency = qr/^[A-Z]{3}/;
 
 # reason: if we only test existing symbols, attributes are set by config file,

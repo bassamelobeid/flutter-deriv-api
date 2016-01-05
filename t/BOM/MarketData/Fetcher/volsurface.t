@@ -23,25 +23,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol => 'EUR',
         date   => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FSE',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'RANDOM',
-        date   => Date::Utility->new,
-    });
-
 my $dm = BOM::MarketData::Fetcher::VolSurface->new;
 
 subtest 'Saving delta then moneyness.' => sub {
