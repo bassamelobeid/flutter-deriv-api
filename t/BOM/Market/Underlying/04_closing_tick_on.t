@@ -14,13 +14,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use Date::Utility;
 use BOM::Market::Underlying;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FOREX NYSE/);
-
 subtest 'closing_tick_on - official OHLC' => sub {
     subtest 'prepare unofficial ohlc - DJI' => sub {
         my @daily = ({

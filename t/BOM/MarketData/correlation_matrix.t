@@ -14,7 +14,6 @@ subtest general => sub {
     plan tests => 3;
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new('2015-05-26')});
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange',           {symbol        => 'EURONEXT'});
 
     my $rho             = BOM::MarketData::CorrelationMatrix->new('indices');
     my $index           = 'FCHI';

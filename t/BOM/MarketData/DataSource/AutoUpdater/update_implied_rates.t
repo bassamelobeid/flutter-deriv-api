@@ -18,19 +18,6 @@ use BOM::MarketData::AutoUpdater::ImpliedInterestRates;
 
 my $data_dir = dirname(__FILE__) . '/../../../../data/bbdl/implied_interest_rates';
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => 'FOREX',
-        date   => Date::Utility->new,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'currency_config',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for qw( JPY USD AUD );
-
 subtest 'invalid input' => sub {
     lives_ok {
         my $updater = BOM::MarketData::AutoUpdater::ImpliedInterestRates->new;

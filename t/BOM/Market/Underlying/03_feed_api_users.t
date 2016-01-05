@@ -18,13 +18,6 @@ use BOM::Market::Underlying;
 use Cache::RedisDB;
 use BOM::Database::FeedDB;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol => $_,
-        date   => Date::Utility->new,
-    }) for (qw/FOREX NYSE EURONEXT/);
-
 subtest 'get_combined_realtime' => sub {
     #Rewind back to a simpler time.
     my $test_time = Date::Utility->new('2012-09-28 20:59:59');
