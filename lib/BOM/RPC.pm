@@ -1,6 +1,6 @@
 package BOM::RPC;
 
-use 5.010;                      # `state`
+use 5.010;    # `state`
 
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
@@ -99,19 +99,19 @@ sub startup {
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            $0 = "bom-rpc: " . $c->req->url->path;
+            $0 = "bom-rpc: " . $c->req->url->path;    ## no critic
         });
 
     $app->hook(
         after_dispatch => sub {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
             state $request_counter = 1;
-            $0 = "bom-rpc: (idle $request_counter)";
+            $0 = "bom-rpc: (idle $request_counter)";    ## no critic
             $request_counter++;
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub {$0 = "bom-rpc: (new)"});
+    Mojo::IOLoop->timer(0, sub { $0 = "bom-rpc: (new)" });    ## no critic
 
     return;
 }
