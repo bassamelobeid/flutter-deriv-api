@@ -8,9 +8,10 @@ use List::MoreUtils qw(none);
 
 use BOM::RPC::v3::Utility;
 use BOM::Market::Underlying;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
+use Time::HiRes;
 
 sub validate_symbol {
     my $symbol    = shift;
@@ -90,10 +91,7 @@ sub get_ask {
                 error => {
                     message => $pve->message_to_client,
                     code    => "ContractBuyValidationError"
-                },
-                longcode  => $contract->longcode,
-                ask_price => sprintf('%.2f', $contract->ask_price),
-            };
+                }};
         }
         return {
             error => {
@@ -122,6 +120,8 @@ sub get_ask {
 sub get_bid {
     my $params = shift;
     my ($short_code, $contract_id, $currency) = ($params->{short_code}, $params->{contract_id}, $params->{currency});
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $contract = produce_contract($short_code, $currency);
 
@@ -179,14 +179,29 @@ sub send_ask {
     my $params = shift;
     my $args   = $params->{args};
 
-    my %details  = %{$args};
-    my $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
-    if ($response->{error}) {
-        return BOM::RPC::v3::Utility::create_error({
-            code              => 'pricing error',
-            message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'},
-        });
+    my $tv = [Time::HiRes::gettimeofday];
+
+    BOM::Platform::Context::request()->language($params->{language});
+
+    my %details = %{$args};
+    my $response;
+    try {
+        $response = BOM::RPC::v3::Contract::get_ask(BOM::RPC::v3::Contract::prepare_ask(\%details));
+        if (exists $response->{error}) {
+            $response = BOM::RPC::v3::Utility::create_error({
+                code              => $response->{error}->{code},
+                message_to_client => $response->{error}->{message},
+            });
+        }
     }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'pricing error',
+                message_to_client => BOM::Platform::Locale::error_map()->{'pricing error'}});
+    };
+
+    $response->{rpc_time} = 1000 * Time::HiRes::tv_interval($tv);
+
     return $response;
 }
 1;

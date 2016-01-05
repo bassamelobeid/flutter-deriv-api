@@ -9,9 +9,12 @@ use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Client;
+use BOM::Platform::Context qw (request);
 
 sub portfolio {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($params->{client_loginid}) {

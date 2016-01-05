@@ -5,7 +5,7 @@ use warnings;
 
 use BOM::Platform::Runtime;
 use BOM::Platform::Locale;
-use BOM::Platform::Context;
+use BOM::Platform::Context qw (request);
 
 sub residence_list {
     my $params = shift;

@@ -10,12 +10,14 @@ use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Contract;
 use BOM::Feed::Data::AnyEvent;
 use BOM::Market::Underlying;
-use BOM::Platform::Context;
+use BOM::Platform::Context qw (localize request);
 use BOM::Product::Contract::Finder qw(available_contracts_for_symbol);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 
 sub ticks_history {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $args   = $params->{args};
     my $symbol = $args->{ticks_history};

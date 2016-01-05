@@ -19,11 +19,13 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
-use BOM::Platform::Context qw (localize);
+use BOM::Platform::Context qw (localize request);
 
 sub new_account_virtual {
     my $params = shift;
     my $args   = $params->{args};
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $err_code;
     if (_is_session_cookie_valid($params->{token}, $args->{email})) {
@@ -64,6 +66,8 @@ sub _is_session_cookie_valid {
 sub verify_email {
     my $params = shift;
 
+    BOM::Platform::Context::request()->language($params->{language});
+
     unless (BOM::Platform::User->new({email => $params->{email}})) {
         send_email({
             from               => $params->{cs_email},
@@ -79,6 +83,8 @@ sub verify_email {
 
 sub new_account_real {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $args = $params->{args};
     my $client;
@@ -127,6 +133,8 @@ sub new_account_real {
 
 sub new_account_maltainvest {
     my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
 
     my $args = $params->{args};
     my $client;
