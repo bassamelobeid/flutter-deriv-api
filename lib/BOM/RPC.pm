@@ -95,9 +95,19 @@ sub startup {
         });
 
     $app->hook(
+        before_dispatch => sub {
+            my $c = shift;
+            $0 = "bom-rpc: " . $c->req->url->path;
+        });
+
+    $app->hook(
         after_dispatch => sub {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+            $0 = "bom-rpc: (idle)";
         });
+
+    # set $0 after forking children
+    Mojo::IOLoop->timer(0, sub {$0 = "bom-rpc: (new)"});
 
     return;
 }
