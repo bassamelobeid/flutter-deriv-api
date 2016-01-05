@@ -22,13 +22,6 @@ initialize_realtime_ticks_db;
 my $recorded_date = Date::Utility->new;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'exchange',
-    {
-        symbol        => 'RANDOM',
-        recorded_date => $recorded_date
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_flat',
     {
         symbol        => 'R_50',
