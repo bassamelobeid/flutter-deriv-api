@@ -11,10 +11,6 @@ use BOM::Platform::Data::CouchDB;
 use LWP::UserAgent;
 use BOM::Platform::Runtime;
 
-#Remove master role from localhost for url generation
-my $localhost = BOM::Platform::Runtime->instance->hosts->localhost;
-$localhost->roles([grep { $_->name ne 'couchdb_master' } @{$localhost->roles}]);
-
 subtest 'host building' => sub {
     lives_ok {
         my $db = BOM::Platform::Runtime->instance->datasources->couchdb->replica;
