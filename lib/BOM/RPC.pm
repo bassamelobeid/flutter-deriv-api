@@ -1,6 +1,6 @@
 package BOM::RPC;
 
-use 5.010;    # `state`
+use Time::HiRes ();
 
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
@@ -128,22 +128,42 @@ sub startup {
             }
         });
 
+    my $request_counter = 0;
+    my $request_start;
+    my @recent;
+
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            $0 = "bom-rpc: " . $c->req->url->path;    ## no critic
+            $0             = "bom-rpc: " . $c->req->url->path;    ## no critic
+            $request_start = [Time::HiRes::gettimeofday];
         });
 
     $app->hook(
         after_dispatch => sub {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
-            state $request_counter = 1;
-            $0 = "bom-rpc: (idle $request_counter)";    ## no critic
             $request_counter++;
+            my $request_end = [Time::HiRes::gettimeofday];
+            my $end         = [gmtime $request_end->[0]];
+            $end = sprintf(
+                '%04d-%02d-%02d %02d:%02d:%06.3f',
+                $end->[5] + 1900,
+                $end->[4] + 1,
+                @{$end}[3, 2, 1],
+                $end->[0] + $request_end->[1] / 1_000_000
+            );
+            push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
+            shift @recent if @recent > 50;
+
+            my $usage = 0;
+            $usage += $_->[1] for @recent;
+            $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
+
+            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
         });
 
     # set $0 after forking children
-    Mojo::IOLoop->timer(0, sub { $0 = "bom-rpc: (new)" });    ## no critic
+    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });    ## no critic
 
     return;
 }
