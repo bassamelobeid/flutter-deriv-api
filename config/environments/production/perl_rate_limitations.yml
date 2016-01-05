@@ -7,3 +7,6 @@ virtual_sell_transaction:
 virtual_batch_sell:
     1m:  10                 # Excessive use of this service indicates an attempt to stay "at the limit"
     1h: 300
+websocket_call:
+    1m:  60
+    1h: 3600
