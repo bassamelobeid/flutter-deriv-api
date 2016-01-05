@@ -395,7 +395,6 @@ sub _build_eod_blackout_expiry {
     return $self->submarket->eod_blackout_expiry;
 }
 
-
 ###
 # End of Attribute section
 ###
