@@ -469,6 +469,9 @@ sub rpc {
             DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method", "ip:" . $XForwarded]});
             DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method", "ip:" . $XForwarded]});
 
+            # unconditionally stop any further processing if client is already disconnected
+            return unless $self->tx;
+
             my $client_guard = guard { undef $client };
             if (!$res) {
                 my $tx_res = $client->tx->res;
