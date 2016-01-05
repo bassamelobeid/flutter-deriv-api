@@ -14,17 +14,13 @@ This class represents a Website in our code.
 
 use Moose;
 use MooseX::StrictConstructor;
-use feature "state";
 use Path::Tiny;
-use File::Slurp;
 use JSON qw(decode_json);
 use List::Util qw(first);
-
-use Data::Hash::DotNotation;
-
-require Locale::Maketext::Lexicon;
 use Carp;
 use URI;
+
+require Locale::Maketext::Lexicon;
 
 =head2 name
 
@@ -149,10 +145,6 @@ has 'default_language' => (
     default => 'EN'
 );
 
-has config => (
-    is => 'rw',
-);
-
 has 'static_path' => (
     is      => 'ro',
     isa     => 'Str',
@@ -164,6 +156,12 @@ has 'static_host' => (
     is      => 'ro',
     isa     => 'Str',
     default => 'binary-com',
+);
+
+has 'static_url' => (
+    is      => 'ro',
+    isa     => 'Str',
+    default => 'https://static.binary.com/',
 );
 
 sub broker_for_new_account {
@@ -202,22 +200,8 @@ sub broker_for_new_virtual {
     return $vr_broker;
 }
 
-sub rebuild_config {
-    my $self        = shift;
-    my $config_file = path($self->static_path)->child('config.json');
-    my $config_json = File::Slurp::read_file($config_file);
-    my $json_data   = decode_json($config_json);
-    return $self->config(Data::Hash::DotNotation->new(data => $json_data));
-}
-
 sub _build_display_name {
     return ucfirst(shift->domain);
-}
-
-sub BUILD {
-    my $self = shift;
-    $self->rebuild_config();
-    return;
 }
 
 no Moose;
