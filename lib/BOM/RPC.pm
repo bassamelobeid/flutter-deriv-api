@@ -20,6 +20,29 @@ use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 
+sub apply_usergroup {
+    my ($cf, $log) = @_;
+
+    if ($> == 0) {    # we are root
+        my $group = $cf->{group};
+        if ($group) {
+            $group = (getgrnam $group)[2] unless $group =~ /^\d+$/;
+            $(     = $group;                                          # rgid
+            $)     = "$group $group";                                 # egid -- reset all group memberships
+            $log->("Switched group: RGID=$( EGID=$)");
+        }
+
+        my $user = $cf->{user} // 'nobody';
+        if ($user) {
+            $user = (getpwnam $user)[2] unless $user =~ /^\d+$/;
+            $<    = $user;                                            # ruid
+            $>    = $user;                                            # euid
+            $log->("Switched user: RUID=$< EUID=$>");
+        }
+    }
+    return;
+}
+
 sub startup {
     my $app = shift;
 
@@ -39,6 +62,10 @@ sub startup {
     $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
+
+    apply_usergroup $app->config->{hypnotoad}, sub {
+        $log->info(@_);
+    };
 
     $app->plugin(
         'json_rpc_dispatcher' => {
