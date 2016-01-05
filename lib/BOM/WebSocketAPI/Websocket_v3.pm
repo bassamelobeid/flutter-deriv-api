@@ -27,6 +27,7 @@ use Time::Out qw(timeout);
 use Guard;
 use Proc::CPUUsage;
 use feature "state";
+use RateLimitations qw(within_rate_limits);
 
 sub ok {
     my $c      = shift;
@@ -313,6 +314,18 @@ sub __handle {
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
 
+    if (not $c->stash('connection_id')) {
+        $c->stash('connection_id' => Data::UUID->new()->create_str());
+    }
+    if (
+        not within_rate_limits({
+                service  => 'websocket_call',
+                consumer => $c->stash('connection_id'),
+            }))
+    {
+        return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+    }
+
     my @handler_descriptors =
         sort { $a->{order} <=> $b->{order} }
         grep { defined }
@@ -335,8 +348,7 @@ sub __handle {
         }
         my $XForwarded = $c->req->headers->header('X-Forwarded-For') || '';
 
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category},
-            {tags => [$tag, "ip:" . $XForwarded]});
+        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag, "ip:" . $XForwarded]});
         DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
             {tags => [$tag, "category:$descriptor->{category}", "ip:" . $XForwarded]});
 
@@ -454,18 +466,8 @@ sub rpc {
                 'bom-websocket-api.v3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
                 {tags => ["rpc:$method", "ip:" . $XForwarded]});
-            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage',
-                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $XForwarded]});
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count',
-                {tags => ["rpc:$method", "ip:" . $XForwarded]});
-
-            my $rpc_time = delete $res->result->{rpc_time};
-            if ($rpc_time) {
-                DataDog::DogStatsd::Helper::stats_timing(
-                    'bom-websocket-api.v3.rpc.call.timing.connection',
-                    1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
-                    {tags => ["rpc:$method", "ip:" . $XForwarded]});
-            }
+            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method", "ip:" . $XForwarded]});
+            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method", "ip:" . $XForwarded]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
@@ -476,6 +478,17 @@ sub rpc {
                 $self->send({json => $data});
                 return;
             }
+
+            my $rpc_time;
+            $rpc_time = delete $res->result->{rpc_time} if (ref($res->result) eq "HASH");
+
+            if ($rpc_time) {
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom-websocket-api.v3.rpc.call.timing.connection',
+                    1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
+                    {tags => ["rpc:$method", "ip:" . $XForwarded]});
+            }
+
             if ($res->is_error) {
                 warn $res->error_message;
                 my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
