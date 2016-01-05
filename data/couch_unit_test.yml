@@ -669,118 +669,18 @@ currency:
       180: 2.498
       365: 2.339
 
-exchange:
-  class_name: 'BOM::MarketData::ExchangeConfig'
+holiday:
+  class_name: 'BOM::MarketData::Holiday'
   data:
-    symbol: FOREX
-    delay_amount: 0
-    offered: yes
-    display_name: Forex
-    trading_timezone: UTC
-    tenfore_trading_timezone: UTC
-    open_on_weekends : 0
-    trading_days: weekdays
-    currency: NA
-    bloomberg_calendar_code: NA
-    holidays:
-      #2013:
-      1-Jan-13: New Year's Day
-      25-Dec-13: Christmas
-      2013-12-20: "pseudo-holiday"
-      2013-12-23: "pseudo-holiday"
-      2013-12-24: "pseudo-holiday"
-      2013-12-26: "pseudo-holiday"
-      2013-12-27: "pseudo-holiday"
-      2013-12-30: "pseudo-holiday"
-      2013-12-31: "pseudo-holiday"
-      #2014
-      1-Jan-14: "New Year's Day"
-      25-Dec-14: Christmas
-      2014-01-02: "pseudo-holiday"
-      2014-01-03: "pseudo-holiday"
-    market_times:
-      early_closes: {}
-      standard:
-        daily_close: 23h59m59s
-        daily_open: 0s
-        daily_settlement: 23h59m59s
-      partial_trading: {}
-
-currency_config:
-  class_name: 'BOM::MarketData::CurrencyConfig'
+    calendar:
+        1420070400:
+          'New Year':
+            - EURONEXT
+            - USD
+partial_trading:
+  class_name: 'BOM::MarketData::PartialTrading'
   data:
-    symbol: USD
-    bloomberg_calendar_code: US
-    bloomberg_country_code: US
-    bloomberg_interest_rates_tickerlist:
-      "6M": "USSWF Curncy"
-      "5M": "USSWE Curncy"
-      "3M": "US0003M Index"
-      "11M": "USSWK Curncy"
-      "1W": "US0001W Index"
-      "ON": "US00O/N Index"
-      "10M": "USSWJ Curncy"
-      "9M": "USSWI Curncy"
-      "2W": "US0002W Index"
-      "7M": "USSWG Curncy"
-      "4M": "USSWD Curncy"
-      "1M": "US0001M Index"
-      "2M": "US0002M Index"
-      "8M": "USSWH Curncy"     
-      "1Y": "USSWAP1 Curncy"
-    daycount: 360
-    holidays:
-      "2012-09-03": "Labor Day"
-      "2013-09-02": "Labor Day"
-      "2012-02-20": "Washington's Birthday (also known as Presidents' Day)"
-      "2014-04-18": "Good Friday"
-      "2013-11-29": "0.5"
-      "2012-07-03": "0.5"
-      "2014-07-04": "Independence Day"
-      "2012-07-04": "Independence Day"
-      "2013-12-25": "Christmas Day"
-      "2012-10-08": "Columbus Day"
-      "2013-12-31": "0.5"
-      "2013-07-04": "Independence Day"
-      "2013-03-29": "Good Friday"
-      "2013-12-24": "0.5"
-      "2012-12-25": "Christmas Day"
-      "2014-11-11": "Veterans' Day"
-      "30-May-11": "Memorial Day"
-      "2014-10-13": "Columbus Day"
-      "2013-11-11": "Veterans' Day"
-      "24-Nov-11": "Thanksgiving Day"
-      "2014-12-31": "0.5"
-      "2013-02-18": "Presidents' Day"
-      "2014-11-27": "Thanksgiving Day"
-      "2014-01-20": "Martin Luther King, Jr. Day"
-      "5-Sep-11": "Labour Day"
-      "2013-11-03": "Daylight Saving Ends"
-      "2013-01-21": "Martin L. King Day"
-      "21-Feb-11": "Washington's Birthday (also known as Presidents' Day)"
-      "2014-02-17": "Washington's Birthday"
-      "2013-11-28": "Thanksgiving Day"
-      "2012-01-02": "New Years Day"
-      "2012-05-28": "Memorial Day"
-      "2012-11-23": "0.5"
-      "2013-01-01": "New Year's Day"
-      "2012-01-16": "Martin Luther King"
-      "2012-12-24": "0.5"
-      "2012-04-06": "Good Friday"
-      "2014-05-26": "Memorial Day"
-      "2013-05-27": "Memorial Day"
-      "2014-12-24": "0.5"
-      "2014-01-01": "New Year's Day"
-      "17-Jan-11": "Martin Luther King, Jr. Day"
-      "2014-12-25": "Christmas"
-      "2013-07-03": "0.5"
-      "2012-11-22": "Thanksgiving Day"
-      "2013-03-10": "Daylight Saving Begins"
-      "2013-10-14": "Columbus Day"
-      "22-Apr-11": "Good Friday"
-      "2011-12-26": "Christmas Day"
-      "2014-09-01": "Labor Day"
-      "4-Jul-11": "Independence Day"
+    calendar: {}
 tick:
   class_name: 'BOM::Market::Data::Tick'
   data:

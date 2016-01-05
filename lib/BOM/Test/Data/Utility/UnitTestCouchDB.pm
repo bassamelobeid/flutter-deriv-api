@@ -29,7 +29,6 @@ use Carp qw( croak );
 use LWP::UserAgent;
 use YAML::XS;
 
-use BOM::MarketData::ExchangeConfig;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Flat;
 use BOM::MarketData::VolSurface::Phased;
@@ -46,8 +45,6 @@ my %couchdb_databases = (
     economic_events      => 'zz' . (time . int(rand 999999)) . 'eco',
     correlation_matrices => 'zz' . (time . int(rand 999999)) . 'cor',
     corporate_actions    => 'zz' . (time . int(rand 999999)) . 'coa',
-    currency_config      => 'zz' . (time . int(rand 999999)) . 'cuc',
-    exchange_config      => 'zz' . (time . int(rand 999999)) . 'exc',
 );
 
 sub initialize_symbol_dividend {
