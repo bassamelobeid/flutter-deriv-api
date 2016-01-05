@@ -396,13 +396,6 @@ sub _build_eod_blackout_expiry {
     return $self->submarket->eod_blackout_expiry;
 }
 
-=head2 esig_symbol
-
-Symbol for this underlying used by e-signal
-
-=cut
-
-has esig_symbol => (is => 'ro');
 
 ###
 # End of Attribute section
