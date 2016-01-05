@@ -335,9 +335,9 @@ sub __handle {
         }
 
         DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category},
-            {tags => [$tag, "ip:" . $c->tx->remote_address]});
+            {tags => [$tag, "ip:" . $c->stash('request')->client_ip]});
         DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
-            {tags => [$tag, "category:$descriptor->{category}", "ip:" . $c->tx->remote_address]});
+            {tags => [$tag, "category:$descriptor->{category}", "ip:" . $c->stash('request')->client_ip]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -450,11 +450,11 @@ sub rpc {
             DataDog::DogStatsd::Helper::stats_timing(
                 'bom-websocket-api.v3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
-                {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
+                {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
             DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage',
-                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
+                $cpu->usage(), {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
             DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count',
-                {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
+                {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
 
             my $client_guard = guard { undef $client };
             if (!$res) {
@@ -497,7 +497,7 @@ sub rpc {
                 DataDog::DogStatsd::Helper::stats_timing(
                     'bom-websocket-api.v3.rpc.call.timing.sent',
                     1000 * Time::HiRes::tv_interval($tv),
-                    {tags => ["rpc:$method", "ip:" . $self->tx->remote_address]});
+                    {tags => ["rpc:$method", "ip:" . $self->stash('request')->client_ip]});
 
             }
             return;
