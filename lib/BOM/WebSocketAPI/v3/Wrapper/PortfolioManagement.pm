@@ -78,11 +78,8 @@ sub send_proposal {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                 }
                 return {
-                    msg_type               => 'proposal_open_contract',
-                    proposal_open_contract => {
-                        $id ? id => $id : (),
-                        %$response
-                    }};
+                    msg_type => 'proposal_open_contract',
+                    proposal_open_contract => {$id ? (id => $id) : (), %$response}};
             } else {
                 BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
             }
