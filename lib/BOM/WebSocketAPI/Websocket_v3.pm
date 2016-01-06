@@ -314,23 +314,28 @@ sub __handle {
     my $log = $c->app->log;
     $log->debug("websocket got json " . $c->dumper($p1));
 
-    if (not $c->stash('connection_id')) {
-        $c->stash('connection_id' => Data::UUID->new()->create_str());
-    }
-    if (
-        not within_rate_limits({
-                service  => 'websocket_call',
-                consumer => $c->stash('connection_id'),
-            }))
-    {
-        return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
-    }
-
     my @handler_descriptors =
         sort { $a->{order} <=> $b->{order} }
         grep { defined }
         map  { $dispatch_handler_for{$_} } keys $p1;
     for my $descriptor (@handler_descriptors) {
+
+        if (not $c->stash('connection_id')) {
+            $c->stash('connection_id' => Data::UUID->new()->create_str());
+        }
+        my $limiting_service = 'websocket_call';
+        if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
+            $limiting_service = 'websocket_call_expensive';
+        }
+        if (
+            not within_rate_limits({
+                    service  => $limiting_service,
+                    consumer => $c->stash('connection_id'),
+                }))
+        {
+            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+        }
+
         my $t0 = [Time::HiRes::gettimeofday];
 
         my $input_validation_result = $descriptor->{in_validator}->validate($p1);
@@ -346,11 +351,9 @@ sub __handle {
             my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
-        my $XForwarded = $c->req->headers->header('X-Forwarded-For') || '';
 
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag, "ip:" . $XForwarded]});
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all',
-            {tags => [$tag, "category:$descriptor->{category}", "ip:" . $XForwarded]});
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $descriptor->{category}, {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -383,7 +386,7 @@ sub __handle {
         my $client = $c->stash('client');
         if ($client) {
             my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.authenticated_call.all',
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
         }
 
@@ -460,14 +463,12 @@ sub rpc {
         sub {
             my $res = pop;
 
-            my $XForwarded = $self->req->headers->header('X-Forwarded-For') || '';
-
             DataDog::DogStatsd::Helper::stats_timing(
-                'bom-websocket-api.v3.rpc.call.timing',
+                'bom_websocket_api.v_3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
-                {tags => ["rpc:$method", "ip:" . $XForwarded]});
-            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method", "ip:" . $XForwarded]});
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method", "ip:" . $XForwarded]});
+                {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
 
             # unconditionally stop any further processing if client is already disconnected
             return unless $self->tx;
@@ -487,9 +488,9 @@ sub rpc {
 
             if ($rpc_time) {
                 DataDog::DogStatsd::Helper::stats_timing(
-                    'bom-websocket-api.v3.rpc.call.timing.connection',
+                    'bom_websocket_api.v_3.rpc.call.timing.connection',
                     1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
-                    {tags => ["rpc:$method", "ip:" . $XForwarded]});
+                    {tags => ["rpc:$method"]});
             }
 
             if ($res->is_error) {
@@ -523,9 +524,9 @@ sub rpc {
                 $self->send({json => $data});
 
                 DataDog::DogStatsd::Helper::stats_timing(
-                    'bom-websocket-api.v3.rpc.call.timing.sent',
+                    'bom_websocket_api.v_3.rpc.call.timing.sent',
                     1000 * Time::HiRes::tv_interval($tv),
-                    {tags => ["rpc:$method", "ip:" . $XForwarded]});
+                    {tags => ["rpc:$method"]});
 
             }
             return;

@@ -14,7 +14,8 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 sub ticks {
     my ($c, $args) = @_;
 
-    my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
+    my @symbols =
+        (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
@@ -48,8 +49,8 @@ sub ticks_history {
             if (exists $args->{subscribe}) {
                 if ($args->{subscribe} eq '1') {
                     if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish})) {
-                        return $c->new_error('ticks_history', 'AlreadySubscribed',
-                            $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
+                        return $c->new_error('ticks_history',
+                            'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
                     }
                 }
             }
@@ -70,7 +71,10 @@ sub proposal {
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
-        my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
+        my $id;
+        if ($args->{subscribe} eq '1') {
+            $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
+        }
         send_ask($c, $id, $args);
     }
     return;
@@ -90,10 +94,7 @@ sub send_ask {
             }
             return {
                 msg_type => 'proposal',
-                proposal => {
-                    id => $id,
-                    %$response
-                }};
+                proposal => {($id ? (id => $id) : ()), %$response}};
         },
         {args => $args});
     return;
@@ -116,14 +117,18 @@ sub process_realtime_events {
                     json => {
                         msg_type => 'tick',
                         echo_req => $arguments,
-                        (exists $arguments->{req_id}) ? (req_id => $arguments->{req_id}) : (),
+                        (exists $arguments->{req_id})
+                        ? (req_id => $arguments->{req_id})
+                        : (),
                         tick => {
                             id     => $feed_channels_type->{$channel}->{uuid},
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
-            send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
+            unless ($arguments->{symbol} =~ /^R_/ and $arguments->{duration_unit} eq 't') {
+                send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
+            }
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
             BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::send_proposal($c, $feed_channels_type->{$channel}->{uuid}, $arguments)
                 if $c->tx;
@@ -134,7 +139,9 @@ sub process_realtime_events {
                     json => {
                         msg_type => 'ohlc',
                         echo_req => $arguments,
-                        (exists $arguments->{req_id}) ? (req_id => $arguments->{req_id}) : (),
+                        (exists $arguments->{req_id})
+                        ? (req_id => $arguments->{req_id})
+                        : (),
                         ohlc => {
                             id          => $feed_channels_type->{$channel}->{uuid},
                             epoch       => $m[1],
