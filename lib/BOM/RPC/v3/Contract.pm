@@ -89,12 +89,13 @@ sub get_ask {
                         message => $pve->message_to_client,
                         code    => "ContractBuyValidationError"
                     }};
+            } else {
+                $response = {
+                    error => {
+                        message => BOM::Platform::Context::localize("Cannot validate contract"),
+                        code    => "ContractValidationError"
+                    }};
             }
-            $response = {
-                error => {
-                    message => BOM::Platform::Context::localize("Cannot validate contract"),
-                    code    => "ContractValidationError"
-                }};
         } else {
             my $ask_price = sprintf('%.2f', $contract->ask_price);
             my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
