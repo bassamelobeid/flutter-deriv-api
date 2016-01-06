@@ -529,8 +529,12 @@ sub _get_economic_events {
         my $event_name = $event->{event_name};
         $event_name =~ s/\s/_/g;
         my $key = first { exists $news_categories->{$_} }
-        map { ($_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name, $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_default') }
-            ($underlying->symbol, $default_underlying);
+        map {
+            (
+                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name,
+                $_ . '_' . $event->{symbol} . '_' . $event->{impact} . '_default'
+                )
+        } ($underlying->symbol, $default_underlying);
 
         my $news_parameters = $news_categories->{$key};
         next unless $news_parameters;
