@@ -29,8 +29,8 @@ is $authorize->{authorize}->{loginid}, 'CR2002';
 
 $t = $t->send_ok(
     {   json => {
-            "proposal" => 1,
-            "subscribe" = 1,
+            "proposal"      => 1,
+            "subscribe"     => 1,
             "amount"        => "10",
             "basis"         => "payout",
             "contract_type" => "CALL",
