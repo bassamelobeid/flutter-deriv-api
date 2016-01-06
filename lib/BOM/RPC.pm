@@ -1,5 +1,7 @@
 package BOM::RPC;
 
+use Time::HiRes ();
+
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
@@ -18,6 +20,29 @@ use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
 
+sub apply_usergroup {
+    my ($cf, $log) = @_;
+
+    if ($> == 0) {    # we are root
+        my $group = $cf->{group};
+        if ($group) {
+            $group = (getgrnam $group)[2] unless $group =~ /^\d+$/;
+            $(     = $group;                                          ## no critic
+            $)     = "$group $group";                                 ## no critic
+            $log->("Switched group: RGID=$( EGID=$)");
+        }
+
+        my $user = $cf->{user} // 'nobody';
+        if ($user) {
+            $user = (getpwnam $user)[2] unless $user =~ /^\d+$/;
+            $<    = $user;                                            ## no critic
+            $>    = $user;                                            ## no critic
+            $log->("Switched user: RUID=$< EUID=$>");
+        }
+    }
+    return;
+}
+
 sub startup {
     my $app = shift;
 
@@ -30,6 +55,11 @@ sub startup {
     $app->moniker('rpc');
     $app->plugin('Config' => {file => $ENV{RPC_CONFIG} || '/etc/rmg/rpc.conf'});
 
+    # hard-wire this here. A worker of this service is supposed to handle only
+    # one request at a time. Hence, it must also C<accept> only one connection
+    # at a time.
+    $app->config->{hypnotoad}->{multi_accept} = 1;
+
     my $log = $app->log;
 
     my $signature = "Binary.com RPC";
@@ -37,6 +67,10 @@ sub startup {
     $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
+
+    apply_usergroup $app->config->{hypnotoad}, sub {
+        $log->info(@_);
+    };
 
     $app->plugin(
         'json_rpc_dispatcher' => {
@@ -94,10 +128,42 @@ sub startup {
             }
         });
 
+    my $request_counter = 0;
+    my $request_start;
+    my @recent;
+
+    $app->hook(
+        before_dispatch => sub {
+            my $c = shift;
+            $0             = "bom-rpc: " . $c->req->url->path;    ## no critic
+            $request_start = [Time::HiRes::gettimeofday];
+        });
+
     $app->hook(
         after_dispatch => sub {
             BOM::Database::Rose::DB->db_cache->finish_request_cycle;
+            $request_counter++;
+            my $request_end = [Time::HiRes::gettimeofday];
+            my $end         = [gmtime $request_end->[0]];
+            $end = sprintf(
+                '%04d-%02d-%02d %02d:%02d:%06.3f',
+                $end->[5] + 1900,
+                $end->[4] + 1,
+                @{$end}[3, 2, 1],
+                $end->[0] + $request_end->[1] / 1_000_000
+            );
+            push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
+            shift @recent if @recent > 50;
+
+            my $usage = 0;
+            $usage += $_->[1] for @recent;
+            $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
+
+            $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
         });
+
+    # set $0 after forking children
+    Mojo::IOLoop->timer(0, sub { @recent = [[Time::HiRes::gettimeofday], 0]; $0 = "bom-rpc: (new)" });    ## no critic
 
     return;
 }
