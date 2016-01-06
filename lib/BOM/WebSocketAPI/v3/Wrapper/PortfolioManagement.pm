@@ -48,7 +48,7 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             $args->{contract_id} = $fmb->id;
             $args->{currency}    = $client->currency;
             my $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
-                'proposal_open_contract:' . JSON::to_json($args));
+                'proposal_open_contract:' . JSON::to_json($args), $args);
             send_proposal($c, $id, $args);
         }
     } else {
