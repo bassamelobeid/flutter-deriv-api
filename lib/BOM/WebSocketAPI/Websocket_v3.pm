@@ -169,11 +169,12 @@ my @dispatch = (
         'ticks_history',
         \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0
     ],
-    ['proposal',   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,  0],
-    ['forget',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget,      0],
-    ['forget_all', \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,  0],
-    ['ping',       \&BOM::WebSocketAPI::v3::Wrapper::System::ping,        0],
-    ['time',       \&BOM::WebSocketAPI::v3::Wrapper::System::server_time, 0],
+    ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,     0],
+    ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,         0],
+    ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,     0],
+    ['ping',           \&BOM::WebSocketAPI::v3::Wrapper::System::ping,           0],
+    ['time',           \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,    0],
+    ['website_status', \&BOM::WebSocketAPI::v3::Wrapper::System::website_status, 0],
     [
         'contracts_for',
         \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for, 0
@@ -327,14 +328,14 @@ sub __handle {
         if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
             $limiting_service = 'websocket_call_expensive';
         }
-        if (
-            not within_rate_limits({
-                    service  => $limiting_service,
-                    consumer => $c->stash('connection_id'),
-                }))
-        {
-            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
-        }
+        # if (
+        #     not within_rate_limits({
+        #             service  => $limiting_service,
+        #             consumer => $c->stash('connection_id'),
+        #         }))
+        # {
+        #     return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+        # }
 
         my $t0 = [Time::HiRes::gettimeofday];
 
