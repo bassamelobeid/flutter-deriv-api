@@ -288,13 +288,13 @@ sub balance {
         my $redis             = $c->stash('redis');
         my $channel           = 'TXNUPDATE::balance_' . $client->default_account->id;
         my $subscriptions     = $c->stash('subscribed_channels') // {};
-        my $already_subsribed = (exists $subscriptions->{$channel}) ? $subscriptions->{$channel}->{is_subscribed} : 0;
+        my $already_subsribed = $subscriptions->{$channel};
 
         if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
             if (!$already_subsribed) {
                 $redis->subscribe([$channel], sub { });
-                $subscriptions->{$channel}->{is_subscribed} = 1;
-                $subscriptions->{$channel}->{args}          = $args;
+                $subscriptions->{$channel} = 1;
+                $subscriptions->{args} = $args;
                 $c->stash('subscribed_channels', $subscriptions);
             } else {
                 warn "Client is already subscribed to the channel $channel; ignoring";
@@ -304,6 +304,7 @@ sub balance {
             if ($already_subsribed) {
                 $redis->unsubscribe([$channel], sub { });
                 delete $subscriptions->{$channel};
+                delete $subscriptions->{args};
                 delete $c->stash->{subscribed_channels};
             } else {
                 warn "Client isn't subscribed to the channel $channel, but trying to unsubscribe; ignoring";
