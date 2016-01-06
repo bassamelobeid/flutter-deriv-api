@@ -73,7 +73,7 @@ sub proposal {
     } else {
         my $id;
         if ($args->{subscribe} eq '1') {
-            unless ($args->{symbol} ~= /^R_/ and $args->{duration_unit} eq 't') {
+            unless ($args->{symbol} =~ /^R_/ and $args->{duration_unit} eq 't') {
                 $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
             }
         }
