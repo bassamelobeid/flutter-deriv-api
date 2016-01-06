@@ -12,7 +12,7 @@ use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
 use YAML::CacheLoader qw(LoadFile);
 
-use BOM::MarketData::EconomicEventCalendar;
+use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::MarketData::Fetcher::VolSurface;
 use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
