@@ -288,12 +288,13 @@ sub balance {
         my $redis             = $c->stash('redis');
         my $channel           = 'TXNUPDATE::balance_' . $client->default_account->id;
         my $subscriptions     = $c->stash('subscribed_channels') // {};
-        my $already_subsribed = $subscriptions->{$channel};
+        my $already_subsribed = (exists $subscriptions->{$channel}) ? $subscriptions->{$channel}->{is_subscribed} : 0;
 
         if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
             if (!$already_subsribed) {
                 $redis->subscribe([$channel], sub { });
-                $subscriptions->{$channel} = 1;
+                $subscriptions->{$channel}->{is_subscribed} = 1;
+                $subscriptions->{$channel}->{args}          = $args;
                 $c->stash('subscribed_channels', $subscriptions);
             } else {
                 warn "Client is already subscribed to the channel $channel; ignoring";
@@ -303,6 +304,7 @@ sub balance {
             if ($already_subsribed) {
                 $redis->unsubscribe([$channel], sub { });
                 delete $subscriptions->{$channel};
+                delete $c->stash->{subscribed_channels};
             } else {
                 warn "Client isn't subscribed to the channel $channel, but trying to unsubscribe; ignoring";
             }
@@ -332,10 +334,12 @@ sub balance {
 sub send_realtime_balance {
     my ($c, $message) = @_;
 
-    my $client = $c->stash('client');
-    my $args   = $c->stash('args');
+    my $client  = $c->stash('client');
+    my $channel = $c->stash('subscribed_channels');
 
     my $payload = JSON::from_json($message);
+    my $args;
+    $args = ($channel and exists $channel->{args}) ? $channel->{args} : {};
 
     $c->send({
             json => {
