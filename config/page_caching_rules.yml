@@ -16,6 +16,9 @@
 "/cashier":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/partners":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/trade/bet_explanation":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -66,6 +69,9 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/group-history":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/group-information":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/charting":
