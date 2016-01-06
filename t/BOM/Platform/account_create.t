@@ -1,5 +1,7 @@
 use strict;
 use warnings;
+use Test::MockTime::HiRes;
+use Guard;
 
 use Test::More (tests => 4);
 use Test::Exception;
@@ -122,6 +124,46 @@ subtest 'create account' => sub {
             is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
         }
     }
+
+    # test create account in 2016-02-29
+    set_absolute_time(1456724000);
+    my $guard = guard { restore_time };
+
+    my $broker       = 'CR';
+    my %t_vr_details = (
+        %{$vr_details->{CR}},
+        email => 'foo+nobug@binary.com',
+    );
+    my ($vr_client, $user, $real_acc, $real_client, $vr_acc);
+    lives_ok {
+        $vr_acc = create_vr_acc(\%t_vr_details);
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc';
+    $user->email_verified(1);
+    $user->save;
+
+    my %t_details = (
+        %real_client_details,
+        residence       => $t_vr_details{residence},
+        broker_code     => $broker,
+        first_name      => 'foonobug',
+        client_password => $vr_client->password,
+        email           => $t_vr_details{email});
+
+    # real acc
+    lives_ok {
+        $real_acc = BOM::Platform::Account::Real::default::create_account({
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+            country     => $vr_client->residence,
+        });
+        ($real_client, $user) = @{$real_acc}{'client', 'user'};
+    }
+    "create $broker acc OK, after verify email";
+    is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
+
 };
 
 subtest 'get_real_acc_opening_type' => sub {
