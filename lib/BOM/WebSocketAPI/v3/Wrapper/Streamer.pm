@@ -126,7 +126,7 @@ sub process_realtime_events {
                             epoch  => $m[1],
                             quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
         } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
-            unless ($arguments->{symbol} =~ /^R_.*/ and $arguments->{duration_unit} eq 't') {
+            unless ($arguments->{symbol} =~ /^R_/ and $arguments->{duration_unit} eq 't') {
                 send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
             }
         } elsif ($type =~ /^proposal_open_contract:/ and $m[0] eq $symbol) {
