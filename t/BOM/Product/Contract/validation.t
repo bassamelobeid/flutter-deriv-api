@@ -825,8 +825,8 @@ subtest 'invalid lifetimes.. how rude' => sub {
 
     $bet_params->{bet_type}     = 'CALL';
     $bet_params->{duration}     = '369d';
-    $bet_params->{date_start}   = $starting;
-    $bet_params->{date_pricing} = $starting;
+    $bet_params->{date_start}   = $starting - 86400;
+    $bet_params->{date_pricing} = $starting - 86400;
 
     $bet                        = produce_contract($bet_params);
 

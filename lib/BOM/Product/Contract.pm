@@ -2691,6 +2691,9 @@ sub _subvalidate_lifetime_days {
     my $duration_days = $exchange->trading_date_for($date_expiry)->days_between($exchange->trading_date_for($date_start));
 
     if ($duration_days < $min->days or $duration_days > $max->days) {
+        if ($duration_days > $max->days) {
+            $self->date_expiry($exchange->closing_on($self->date_start->plus_time_interval($max->days . 'd')));
+        }
         my $message =
             ($self->built_with_bom_parameters)
             ? localize('Resale of this contract is not offered.')
