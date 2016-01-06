@@ -191,4 +191,4 @@
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/cashier/payment_agent_listws":
   header:
-    Cache-Control: "public, max-age=1000"
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
