@@ -2692,7 +2692,7 @@ sub _subvalidate_lifetime_days {
 
     if ($duration_days < $min->days or $duration_days > $max->days) {
         if ($duration_days > $max->days) {
-            $self->date_expiry($self->date_start->plus_time_interval($max->days . 'd'));
+            $self->date_expiry($exchange->closing_on($self->date_start->plus_time_interval($max->days . 'd')));
         }
         my $message =
             ($self->built_with_bom_parameters)
