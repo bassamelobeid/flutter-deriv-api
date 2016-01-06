@@ -249,6 +249,7 @@ sub get_account_status {
 
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
+        next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
         push @status, $s if $client->get_status($s);
     }
 
@@ -446,6 +447,8 @@ sub get_settings {
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     return BOM::RPC::v3::Utility::permission_error() unless $client;
 
+    my $client_tnc_status = $client->get_status('tnc_approval');
+
     return {
         email         => $client->email,
         date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
@@ -460,6 +463,7 @@ sub get_settings {
             address_state    => $client->state,
             address_postcode => $client->postcode,
             phone            => $client->phone,
+            $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
         ),
     };
 }
