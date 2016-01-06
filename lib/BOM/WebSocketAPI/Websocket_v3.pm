@@ -328,14 +328,14 @@ sub __handle {
         if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
             $limiting_service = 'websocket_call_expensive';
         }
-        # if (
-        #     not within_rate_limits({
-        #             service  => $limiting_service,
-        #             consumer => $c->stash('connection_id'),
-        #         }))
-        # {
-        #     return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
-        # }
+        if (
+            not within_rate_limits({
+                    service  => $limiting_service,
+                    consumer => $c->stash('connection_id'),
+                }))
+        {
+            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+        }
 
         my $t0 = [Time::HiRes::gettimeofday];
 
