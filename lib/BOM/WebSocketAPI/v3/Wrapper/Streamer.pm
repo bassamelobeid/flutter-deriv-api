@@ -71,11 +71,9 @@ sub proposal {
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
-        my $id='no-stream';
+        my $id;
         if ($args->{subscribe} eq '1') {
-            unless ($args->{symbol} =~ /^R_.*/ and $args->{duration_unit} eq 't') {
-                $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
-            }
+            $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
         }
         send_ask($c, $id, $args);
     }
