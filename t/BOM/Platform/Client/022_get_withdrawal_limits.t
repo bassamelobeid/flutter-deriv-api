@@ -23,8 +23,6 @@ initialize_realtime_ticks_db();
 
 my $now = Date::Utility->new;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('exchange', {recorded_date => $now});
-
 subtest 'CR0027.' => sub {
     plan tests => 2;
 

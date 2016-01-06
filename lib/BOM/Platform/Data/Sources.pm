@@ -60,8 +60,6 @@ sub _build_couchdb_databases {
         bom                 => 'bom',
         volatility_surfaces => 'volatility_surfaces',
         economic_events     => 'economic_events',
-        currency_config     => 'currency_config',
-        exchange_config     => 'exchange_config',
     };
 }
 

@@ -10,11 +10,8 @@ use Test::NoWarnings;
 use JSON qw(decode_json);
 use Test::MockModule;
 
-use Sys::Hostname;
-use BOM::System::Host;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Runtime;
-my $hostname = hostname();
 
 subtest 'build' => sub {
     subtest 'Defaults' => sub {
