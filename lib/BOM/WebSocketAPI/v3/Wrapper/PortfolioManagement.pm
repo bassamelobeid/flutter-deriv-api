@@ -47,8 +47,11 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
             $args->{short_code}  = $fmb->short_code;
             $args->{contract_id} = $fmb->id;
             $args->{currency}    = $client->currency;
-            my $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
-                'proposal_open_contract:' . JSON::to_json($args), $args);
+            my $id;
+            if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+                $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
+                    'proposal_open_contract:' . JSON::to_json($args), $args);
+            }
             send_proposal($c, $id, $args);
         }
     } else {
@@ -69,19 +72,19 @@ sub send_proposal {
             my $response = shift;
             if ($response) {
                 if (exists $response->{error}) {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
                 } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
-                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                 }
                 return {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
-                        id => $id,
+                        $id ? id => $id : (),
                         %$response
                     }};
             } else {
-                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id);
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
             }
         },
         {
