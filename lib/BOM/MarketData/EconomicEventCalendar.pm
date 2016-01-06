@@ -39,7 +39,7 @@ has document => (
 has symbol => (
     is       => 'ro',
     required => 0,
-    default => EE,
+    default  => EE,
 );
 
 =head2 for_date
@@ -63,7 +63,7 @@ sub get_latest_events_for_period {
     my ($self, $period) = @_;
 
     my $from = Date::Utility->new($period->{from})->epoch;
-    my $to = Date::Utility->new($period->{to})->epoch;
+    my $to   = Date::Utility->new($period->{to})->epoch;
 
     my @matching_events;
 
@@ -77,10 +77,9 @@ sub get_latest_events_for_period {
     return \@matching_events;
 }
 
-
 sub _build_events {
-     my $self = shift;
-     return $self->document->{events};
+    my $self = shift;
+    return $self->document->{events};
 }
 
 =head3
@@ -92,7 +91,7 @@ This function is called when loading an EconomicEventCalendar from Chronicle.
 sub _build_document {
     my $self = shift;
 
-    #document is an array of hash 
+    #document is an array of hash
     #each hash represents a single economic event
     my $document = BOM::System::Chronicle::get(EE, EE);
 
@@ -110,7 +109,7 @@ around _document_content => sub {
     #this will contain symbol, date and events
     my $data = {
         %{$self->$orig},
-        events       => $self->events,
+        events => $self->events,
     };
 
     return $data;
@@ -131,7 +130,6 @@ sub save {
 
     return BOM::System::Chronicle::set(EE, EE, $self->_document_content, $self->recorded_date);
 }
-
 
 no Moose;
 __PACKAGE__->meta->make_immutable;

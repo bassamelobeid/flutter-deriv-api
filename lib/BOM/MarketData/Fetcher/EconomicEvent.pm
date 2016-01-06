@@ -122,8 +122,8 @@ my $cache_namespace = 'COUCH_NEWS::';
 sub get_latest_events_for_period {
     my ($self, $period) = @_;
 
-    my $start            = $period->{from};
-    my $end              = $period->{to};
+    my $start  = $period->{from};
+    my $end    = $period->{to};
     my $ee_cal = BOM::MarketData::EconomicEventCalendar->new({for_date => $start});
 
     return $ee_cal->get_latest_events_for_period($period);
