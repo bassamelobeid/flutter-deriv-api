@@ -29,4 +29,10 @@ sub server_time {
     return time;
 }
 
+sub website_status {
+    my ($app_config) = @_;
+
+    return {terms_conditions_version => $app_config->cgi->terms_conditions_version};
+}
+
 1;
