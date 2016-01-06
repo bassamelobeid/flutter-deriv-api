@@ -77,42 +77,48 @@ sub prepare_ask {
 
 sub get_ask {
     my $p2 = shift;
-    my $contract = try { produce_contract({%$p2}) } || do {
-        my $err = $@;
-        return {
+
+    my $response;
+    try {
+        my $contract = produce_contract({%$p2});
+
+        if (!$contract->is_valid_to_buy) {
+            if (my $pve = $contract->primary_validation_error) {
+                $response = {
+                    error => {
+                        message => $pve->message_to_client,
+                        code    => "ContractBuyValidationError"
+                    }};
+            } else {
+                $response = {
+                    error => {
+                        message => BOM::Platform::Context::localize("Cannot validate contract"),
+                        code    => "ContractValidationError"
+                    }};
+            }
+        } else {
+            my $ask_price = sprintf('%.2f', $contract->ask_price);
+            my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
+
+            $response = {
+                longcode      => $contract->longcode,
+                payout        => $contract->payout,
+                ask_price     => $ask_price,
+                display_value => $display_value,
+                spot          => $contract->current_spot,
+                spot_time     => $contract->current_tick->epoch,
+                date_start    => $contract->date_start->epoch
+            };
+            $response->{spread} = $contract->spread if $contract->is_spread;
+        }
+    }
+    catch {
+        $response = {
             error => {
                 message => BOM::Platform::Context::localize("Cannot create contract"),
                 code    => "ContractCreationFailure"
             }};
     };
-    if (!$contract->is_valid_to_buy) {
-        if (my $pve = $contract->primary_validation_error) {
-            return {
-                error => {
-                    message => $pve->message_to_client,
-                    code    => "ContractBuyValidationError"
-                }};
-        }
-        return {
-            error => {
-                message => BOM::Platform::Context::localize("Cannot validate contract"),
-                code    => "ContractValidationError"
-            }};
-    }
-
-    my $ask_price = sprintf('%.2f', $contract->ask_price);
-    my $display_value = $contract->is_spread ? $contract->buy_level : $ask_price;
-
-    my $response = {
-        longcode      => $contract->longcode,
-        payout        => $contract->payout,
-        ask_price     => $ask_price,
-        display_value => $display_value,
-        spot          => $contract->current_spot,
-        spot_time     => $contract->current_tick->epoch,
-        date_start    => $contract->date_start->epoch
-    };
-    $response->{spread} = $contract->spread if $contract->is_spread;
 
     return $response;
 }
