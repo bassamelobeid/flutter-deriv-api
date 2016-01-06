@@ -27,6 +27,7 @@ use Time::Out qw(timeout);
 use Guard;
 use Proc::CPUUsage;
 use feature "state";
+use RateLimitations qw(within_rate_limits);
 
 sub ok {
     my $c      = shift;
@@ -318,6 +319,23 @@ sub __handle {
         grep { defined }
         map  { $dispatch_handler_for{$_} } keys $p1;
     for my $descriptor (@handler_descriptors) {
+
+        if (not $c->stash('connection_id')) {
+            $c->stash('connection_id' => Data::UUID->new()->create_str());
+        }
+        my $limiting_service = 'websocket_call';
+        if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
+            $limiting_service = 'websocket_call_expensive';
+        }
+        if (
+            not within_rate_limits({
+                    service  => $limiting_service,
+                    consumer => $c->stash('connection_id'),
+                }))
+        {
+            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+        }
+
         my $t0 = [Time::HiRes::gettimeofday];
 
         my $input_validation_result = $descriptor->{in_validator}->validate($p1);
@@ -461,6 +479,17 @@ sub rpc {
                 $self->send({json => $data});
                 return;
             }
+
+            my $rpc_time;
+            $rpc_time = delete $res->result->{rpc_time} if (ref($res->result) eq "HASH");
+
+            if ($rpc_time) {
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom-websocket-api.v3.rpc.call.timing.connection',
+                    1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
+                    {tags => ["rpc:$method"]});
+            }
+
             if ($res->is_error) {
                 warn $res->error_message;
                 my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
@@ -469,6 +498,7 @@ sub rpc {
                 return;
             }
             my $send = 1;
+
             my $data = &$callback($res->result);
 
             if (not $data) {
@@ -486,7 +516,15 @@ sub rpc {
                 $data->{echo_req} = $args;
             }
             if ($send) {
+                $tv = [Time::HiRes::gettimeofday];
+
                 $self->send({json => $data});
+
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom-websocket-api.v3.rpc.call.timing.sent',
+                    1000 * Time::HiRes::tv_interval($tv),
+                    {tags => ["rpc:$method"]});
+
             }
             return;
         });

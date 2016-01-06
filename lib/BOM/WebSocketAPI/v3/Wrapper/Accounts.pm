@@ -299,7 +299,7 @@ sub balance {
                 warn "Client is already subscribed to the channel $channel; ignoring";
             }
         }
-        if ($args->{subscribe} and $args->{subscribe} eq '0') {
+        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
             if ($already_subsribed) {
                 $redis->unsubscribe([$channel], sub { });
                 delete $subscriptions->{$channel};
