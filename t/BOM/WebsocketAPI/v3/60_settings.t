@@ -38,7 +38,7 @@ $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
 $t = $t->send_ok({json => {get_account_status => 1}})->message_ok;
 my $res = decode_json($t->message->[1]);
-ok($res->{get_account_status});
+ok((grep { $_ eq 'unwelcome' } @{$res->{get_account_status}}), 'unwelcome is there');
 test_schema('get_account_status', $res);
 
 $t = $t->send_ok({json => {get_settings => 1}})->message_ok;

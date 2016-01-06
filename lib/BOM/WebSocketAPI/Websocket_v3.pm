@@ -258,8 +258,8 @@ my @dispatch = (
         'topup_virtual',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1
     ],
-    ['api_token',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1],
-    ['get_limits', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits, 1],
+    ['api_token',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,   1],
+    ['get_limits',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,   1],
     ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::tnc_approval, 1],
     [
         'paymentagent_withdraw',

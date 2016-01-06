@@ -194,8 +194,8 @@ sub tnc_approval {
             }
         },
         {
-            args                       => $args,
-            client_loginid             => $c->stash('loginid'),
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
         });
 
     return;
