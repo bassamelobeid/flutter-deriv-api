@@ -97,6 +97,8 @@ sub _build_document {
 
     if ($self->for_date and $self->for_date->epoch < Date::Utility->new($document->{date})->epoch) {
         $document = BOM::System::Chronicle::get_for(EE, EE, $self->for_date->epoch);
+
+        $document //= { events => [] };
     }
 
     return $document;
@@ -127,6 +129,13 @@ sub save {
     if (not defined BOM::System::Chronicle::get(EE, EE)) {
         BOM::System::Chronicle::set(EE, EE, {});
     }
+
+    for my $event (@{$self->events}) {
+         if ( ref($event->{release_date}) eq 'Date::Utility' ) {
+              $event->{release_date} = $event->{release_date}->datetime_iso8601;
+         }
+    }
+
 
     return BOM::System::Chronicle::set(EE, EE, $self->_document_content, $self->recorded_date);
 }
