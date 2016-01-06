@@ -34,11 +34,12 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'economic_events',
     {
+        recorded_date   => $now->minus_time_interval('3h'),
         events => [ {
                 symbol       => 'USD',
                 release_date => $now,
-                recorded_date         => Date::Utility->new(),
-                impact -> 5
+                impact => 5,
+                event_name => 'Unemployment Rate',
             }]
     },
 );
@@ -56,13 +57,13 @@ my $params = {
 };
 my $bet = produce_contract($params);
 is($bet->pricing_engine_name, 'BOM::Product::Pricing::Engine::Intraday::Forex', 'uses Intraday Historical pricing engine');
-is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.15, 'correct spot risk markup');
+is($bet->pricing_engine->economic_events_spot_risk_markup->amount, 0.0122153991947796, 'correct spot risk markup');
 cmp_ok(
     $bet->pricing_engine->economic_events_volatility_risk_markup->amount,
     '<',
     $bet->pricing_engine->economic_events_spot_risk_markup->amount,
     'vol risk markup is lower than higher range'
 );
-is($bet->pricing_engine->economic_events_markup->amount, 0.15, 'economic events markup is max of spot or vol risk markup');
+is($bet->pricing_engine->economic_events_markup->amount, 0.0122153991947796, 'economic events markup is max of spot or vol risk markup');
 
 done_testing;
