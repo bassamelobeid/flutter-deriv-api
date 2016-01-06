@@ -88,7 +88,7 @@ $t = $t->message_ok;
 my $res = decode_json($t->message->[1]);
 
 if (exists $res->{proposal_open_contract}) {
-    ok $res->{proposal_open_contract}->{id};
+    ok $res->{proposal_open_contract}->{contract_id};
     test_schema('proposal_open_contract', $res);
 }
 
