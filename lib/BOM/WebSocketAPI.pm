@@ -13,29 +13,6 @@ use BOM::WebSocketAPI::Websocket_v1();
 use BOM::WebSocketAPI::Websocket_v2();
 use BOM::WebSocketAPI::Websocket_v3();
 
-sub apply_usergroup {
-    my ($cf, $log) = @_;
-
-    if ($> == 0) {    # we are root
-        my $group = $cf->{group};
-        if ($group) {
-            $group = (getgrnam $group)[2] unless $group =~ /^\d+$/;
-            $(     = $group;                                          ## no critic
-            $)     = "$group $group";                                 ## no critic
-            $log->("Switched group: RGID=$( EGID=$)");
-        }
-
-        my $user = $cf->{user} // 'nobody';
-        if ($user) {
-            $user = (getpwnam $user)[2] unless $user =~ /^\d+$/;
-            $<    = $user;                                            ## no critic
-            $>    = $user;                                            ## no critic
-            $log->("Switched user: RUID=$< EUID=$>");
-        }
-    }
-    return;
-}
-
 sub startup {
     my $app = shift;
 
@@ -55,10 +32,6 @@ sub startup {
     $log->info("$signature: Starting.");
     $log->info("Mojolicious Mode is " . $app->mode);
     $log->info("Log Level        is " . $log->level);
-
-    apply_usergroup $app->config->{hypnotoad}, sub {
-        $log->info(@_);
-    };
 
     $app->hook(
         before_dispatch => sub {
