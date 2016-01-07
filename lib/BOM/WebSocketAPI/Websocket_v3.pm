@@ -70,7 +70,6 @@ sub entry_point {
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
-
                 BOM::WebSocketAPI::v3::Wrapper::Accounts::send_realtime_balance($c, $msg)
                     if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg)
@@ -471,6 +470,9 @@ sub rpc {
                 {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
+
+            # unconditionally stop any further processing if client is already disconnected
+            return unless $self->tx;
 
             my $client_guard = guard { undef $client };
             if (!$res) {
