@@ -38,6 +38,10 @@ sub script_run {
 
     foreach my $event_param (@$events_received) {
         $event_param->{release_date}  = $event_param->{release_date}->datetime_iso8601;
+
+        unless (_is_categorized($event_param)) {
+            warn("Uncategorized economic events name: $event_param->{event_name}, symbol: $event_param->{symbol}, impact: $event_param->{impact}");
+        }
     }
 
     try {
@@ -72,10 +76,10 @@ sub _is_categorized {
 
     my $categories    = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
     my @available_cat = keys %$categories;
-    my $name          = $event->event_name;
+    my $name          = $event->{event_name};
     $name =~ s/\s/_/g;
-    my $key            = $event->symbol . '_' . $event->impact . '_' . $name;
-    my $default_key    = $event->symbol . '_' . $event->impact . '_default';
+    my $key            = $event->{symbol} . '_' . $event->{impact} . '_' . $name;
+    my $default_key    = $event->{symbol} . '_' . $event->{impact} . '_default';
     my $is_categorized = first { $_ =~ /($key|$default_key)/ } @available_cat;
 
     return $is_categorized // 0;
