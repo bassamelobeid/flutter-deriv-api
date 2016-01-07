@@ -22,10 +22,10 @@ sub ticks {
             return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
         } else {
             if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-                _feed_channel($c, 'unsubscribe', $symbol, 'tick');
+                _feed_channel($c, 'unsubscribe', $symbol, 'tick', $args);
             } else {
                 my $uuid;
-                if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick')) {
+                if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
                     return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
                 }
             }
@@ -48,7 +48,7 @@ sub ticks_history {
 
             if (exists $args->{subscribe}) {
                 if ($args->{subscribe} eq '1') {
-                    if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish})) {
+                    if (not _feed_channel($c, 'subscribe', $args->{ticks_history}, $response->{publish}, $args)) {
                         return $c->new_error('ticks_history',
                             'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $args->{ticks_history}));
                     }
@@ -73,7 +73,7 @@ sub proposal {
     } else {
         my $id;
         if ($args->{subscribe} eq '1') {
-            $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args));
+            $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args);
         }
         send_ask($c, $id, $args);
     }
@@ -159,7 +159,7 @@ sub process_realtime_events {
 }
 
 sub _feed_channel {
-    my ($c, $subs, $symbol, $type) = @_;
+    my ($c, $subs, $symbol, $type, $args) = @_;
     my $uuid;
 
     my $feed_channel      = $c->stash('feed_channel');
@@ -172,7 +172,7 @@ sub _feed_channel {
         }
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args} = $c->stash('args');
+        $feed_channel_type->{"$symbol;$type"}->{args} = $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
         $redis->subscribe(["FEED::$symbol"], sub { });
     }
