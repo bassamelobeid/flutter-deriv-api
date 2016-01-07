@@ -5,8 +5,8 @@ use strict;
 use warnings;
 
 use JSON;
-use List::Util qw (first);
 
+use BOM::RPC::v3::Accounts;
 use BOM::WebSocketAPI::Websocket_v3;
 
 sub payout_currencies {
@@ -335,38 +335,19 @@ sub balance {
 sub send_realtime_balance {
     my ($c, $message) = @_;
 
-    my $args = {};
-    my $channel;
-    my $subscriptions = $c->stash('subscribed_channels');
-    if ($subscriptions) {
-        $channel = $subscriptions->{(first { m/TXNUPDATE::balance/ } keys %$subscriptions) || ''};
-        $args = exists $subscriptions->{args} ? $subscriptions->{args} : {};
-    }
+    my $client  = $c->stash('client');
+    my $channel = $c->stash('subscribed_channels');
 
-    BOM::WebSocketAPI::Websocket_v3::rpc(
-        $c,
-        'send_realtime_balance',
-        sub {
-            my $response = shift;
-            if (exists $response->{error}) {
-                if ($channel) {
-                    $c->stash('redis')->unsubscribe([$channel], sub { });
-                    delete $subscriptions->{$channel};
-                    delete $subscriptions->{args};
-                    delete $c->stash->{subscribed_channels};
-                }
-                return $c->new_error('balance', $response->{error}->{code}, $response->{error}->{message_to_client});
-            } else {
-                return {
-                    msg_type => 'balance',
-                    balance  => $response
-                };
-            }
-        },
-        {
-            $args ? (args => $args) : (),
-            client_loginid => $c->stash('loginid'),
-            balance_after  => $message->{balance_after}});
+    my $payload = JSON::from_json($message);
+    my $args;
+    $args = ($channel and exists $channel->{args}) ? $channel->{args} : {};
+
+    $c->send({
+            json => {
+                msg_type => 'balance',
+                echo_req => $args,
+                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                balance => BOM::RPC::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
     return;
 }
 
