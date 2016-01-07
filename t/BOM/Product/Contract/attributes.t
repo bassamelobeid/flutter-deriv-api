@@ -24,13 +24,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => Date::Utility->new,
     });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => $_,
@@ -163,14 +156,6 @@ subtest 'Range on R_100.' => sub {
         currency     => 'USD',
         current_spot => 70000,
     };
-
-    # This really shouldn't be necessary :-/
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_flat',
-        {
-            symbol        => 'R_100',
-            recorded_date => Date::Utility->new,
-        });
 
     my $bet          = produce_contract($bet_params);
     my $pricing_args = $bet->pricing_args;

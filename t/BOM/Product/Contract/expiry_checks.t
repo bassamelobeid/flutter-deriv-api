@@ -20,13 +20,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => Date::Utility->new,
-    });
-
 test_with_feed(
     [['2008-01-18', 106.42, 107.59, 106.38, 106.88], ['2008-02-13', 107.36, 108.38, 106.99, 108.27]],
     'Call Long Term' => sub {

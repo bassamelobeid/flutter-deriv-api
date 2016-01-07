@@ -46,13 +46,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_50',
-        recorded_date => Date::Utility->new,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
     {
         symbol => 'R_50',

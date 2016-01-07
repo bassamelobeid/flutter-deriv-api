@@ -94,13 +94,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'RDBULL',
-        recorded_date => $an_hour_earlier,
-    });
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
     {
         symbol        => 'RDBULL',
