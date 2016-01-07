@@ -303,8 +303,6 @@ sub balance {
         if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
             if ($already_subscribed) {
                 $redis->unsubscribe([$channel], sub { });
-                delete $subscriptions->{$channel};
-                delete $subscriptions->{args};
                 delete $c->stash->{subscribed_channels};
             } else {
                 warn "Client isn't subscribed to the channel $channel, but trying to unsubscribe; ignoring";
@@ -335,10 +333,9 @@ sub balance {
 sub send_realtime_balance {
     my ($c, $message) = @_;
 
-    my $client = $c->stash('client');
-
     my $args = {};
     my $channel;
+    my $client        = $c->stash('client');
     my $subscriptions = $c->stash('subscribed_channels');
     if ($subscriptions) {
         $channel = $subscriptions->{(first { m/TXNUPDATE::balance/ } keys %$subscriptions) || ''};
@@ -350,8 +347,8 @@ sub send_realtime_balance {
         $c->send({
                 json => {
                     msg_type => 'balance',
-                    echo_req => $args,
-                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                    $args ? (echo_req => $args) : (),
+                    ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                     balance => {
                         loginid  => $client->loginid,
                         currency => $client->default_account->currency_code,
@@ -359,8 +356,6 @@ sub send_realtime_balance {
     } else {
         if ($channel) {
             $c->stash('redis')->unsubscribe([$channel], sub { });
-            delete $subscriptions->{$channel};
-            delete $subscriptions->{args};
             delete $c->stash->{subscribed_channels};
         }
     }
