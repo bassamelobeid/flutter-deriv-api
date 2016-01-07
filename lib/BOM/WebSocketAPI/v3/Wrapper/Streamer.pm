@@ -5,6 +5,7 @@ use warnings;
 
 use JSON;
 use Data::UUID;
+use Scalar::Util qw (looks_like_number);
 
 use BOM::RPC::v3::TickStreamer;
 use BOM::RPC::v3::Contract;
@@ -139,13 +140,13 @@ sub process_realtime_events {
                     json => {
                         msg_type => 'ohlc',
                         echo_req => $arguments,
-                        (exists $arguments->{req_id})
-                        ? (req_id => $arguments->{req_id})
+                        (exists $arguments->{req_id}) ? (req_id => $arguments->{req_id})
                         : (),
                         ohlc => {
-                            id          => $feed_channels_type->{$channel}->{uuid},
-                            epoch       => $m[1],
-                            open_time   => $m[1] - $m[1] % $type,
+                            id        => $feed_channels_type->{$channel}->{uuid},
+                            epoch     => $m[1],
+                            open_time => ($type and looks_like_number($type)) ? $m[1] - $m[1] % $type
+                            : $m[1] - $m[1] % 60,    #defining default granularity
                             symbol      => $symbol,
                             granularity => $type,
                             open        => $u->pipsized_value($1),
