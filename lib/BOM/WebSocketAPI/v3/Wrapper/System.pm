@@ -73,4 +73,13 @@ sub server_time {
         time     => BOM::RPC::v3::Utility::server_time()};
 }
 
+sub website_status {
+    my ($c, $args) = @_;
+
+    return {
+        msg_type       => 'website_status',
+        website_status => BOM::RPC::v3::Utility::website_status($c->app_config),
+    };
+}
+
 1;
