@@ -1,13 +1,13 @@
 use strict;
 use warnings;
 
-use Test::More (tests => 4);
+use Test::More (tests => 10);
 use Test::Exception;
 use Mail::Sender;
 
-BEGIN { use_ok(BOM::Test::Email qw(get_email_by_address_subject clear_mailbox)); }
+BEGIN { use_ok('BOM::Test::Email', qw(get_email_by_address_subject clear_mailbox)); }
 my $mailbox = $BOM::Test::Email::mailbox;
-ok(-z $mailbox, "mailbox created");
+ok(-e $mailbox, "mailbox created");
 my $address = 'test@test.com';
 my $subject = "test mail sender";
 my $body    = "hello, this is just for test";
@@ -28,7 +28,6 @@ lives_ok {
         })->SendEnc($body)->Close();
 };
 
-ok(-s $mailbox, "email received");
 
 #test arguments
 throws_ok { get_email_by_address_subject() } qr/Need email address and subject regexp/, 'test arguments';
@@ -38,7 +37,7 @@ throws_ok { get_email_by_address_subject(subject => qr/$subject/) } qr/Need emai
 
 my %msg;
 lives_ok { %msg = get_email_by_address_subject(email => $address, subject => qr/$subject/) } 'get email';
-is($msg{body}, $body, 'get correct email');
+like($msg{body}, qr/$body/, 'get correct email');
 clear_mailbox();
 ok(-z $mailbox, "mailbox truncated");
 
