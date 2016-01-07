@@ -328,7 +328,6 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet                   = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we ask for a higher payout, it validates just fine.');
 
-
     $bet_params->{duration} = '15m';
     $bet_params->{barrier}  = 'S8500P';
 
@@ -1230,13 +1229,9 @@ subtest 'economic events blockout period' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
-            recorded_date => $now->minus_time_interval('15m1s'),
-            events => [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('15m1s'),
-                }]
-        });
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('15m1s')});
 
     my $bet_params = {
         underlying   => $underlying_symbol,
@@ -1255,52 +1250,27 @@ subtest 'economic events blockout period' => sub {
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
-            recorded_date => $now->minus_time_interval('14m59s'),
-            events => [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('15m1s'),
-                },{
-                    symbol       => 'AUD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('14m59s')
-                }]
-        });
+            symbol       => 'AUD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m59s')});
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
     ok !$c->_validate_start_date, 'no error if economic_events is not USD';
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
-            recorded_date => $now->minus_time_interval('14m59s'),
-            events => [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('15m1s'),
-                },{
-                    symbol       => 'AUD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('14m59s')
-                },{
-                    symbol       => 'USD',
-                    impact       => 4,
-                    release_date => $now->minus_time_interval('14m59s')
-                }]
-        });
+            symbol       => 'USD',
+            impact       => 4,
+            release_date => $now->minus_time_interval('14m59s')});
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
     ok !$c->_validate_start_date, 'no error if economic_events is not USD level 5';
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
-            recorded_date => $now->minus_time_interval('15m58s'),
-            events => [ {
-
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $now->minus_time_interval('14m58s')
-                }]
-        });
+            symbol       => 'USD',
+            impact       => 5,
+            release_date => $now->minus_time_interval('14m58s')});
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
     ok $c->_validate_start_date, 'error if economic_events is USD level 5';
