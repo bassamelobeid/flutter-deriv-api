@@ -905,26 +905,4 @@ sub topup_virtual {
     };
 }
 
-sub tnc_approval {
-    my $params = shift;
-
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
-
-    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-    my $client_tnc_status   = $client->get_status('tnc_approval');
-
-    if (not $client_tnc_status
-        or ($client_tnc_status->reason ne $current_tnc_version))
-    {
-        $client->set_status('tnc_approval', 'system', $current_tnc_version);
-        $client->save;
-    }
-
-    return {status => 1};
-}
-
 1;

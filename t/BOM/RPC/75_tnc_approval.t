@@ -7,7 +7,6 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Client;
 use BOM::Platform::Runtime;
 
-use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
 
@@ -28,7 +27,7 @@ my $test_loginid = $test_client->loginid;
 # my $res = BOM::RPC::v3::Utility::website_status();
 # is $res->{terms_conditions_version}, 'version 1', 'version 1';
 
-my $res = BOM::RPC::v3::Cashier::tnc_approval({client_loginid => $test_loginid});
+my $res = BOM::RPC::v3::Accounts::tnc_approval({client_loginid => $test_loginid});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
@@ -38,7 +37,7 @@ $res = BOM::RPC::v3::Accounts::get_settings({
 is $res->{client_tnc_status}, 'version 1', 'version 1';
 
 $version = 2;
-$res = BOM::RPC::v3::Cashier::tnc_approval({client_loginid => $test_loginid});
+$res = BOM::RPC::v3::Accounts::tnc_approval({client_loginid => $test_loginid});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({

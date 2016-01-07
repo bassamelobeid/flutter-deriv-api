@@ -87,7 +87,7 @@ sub startup {
                 '/authorize'      => MojoX::JSON::RPC::Service->new->register('authorize',      \&BOM::RPC::v3::Authorize::authorize),
                 '/logout'         => MojoX::JSON::RPC::Service->new->register('logout',         \&BOM::RPC::v3::Authorize::logout),
                 '/get_limits'     => MojoX::JSON::RPC::Service->new->register('get_limits',     \&BOM::RPC::v3::Cashier::get_limits),
-                '/tnc_approval'   => MojoX::JSON::RPC::Service->new->register('tnc_approval',   \&BOM::RPC::v3::Cashier::tnc_approval),
+                '/tnc_approval'   => MojoX::JSON::RPC::Service->new->register('tnc_approval',   \&BOM::RPC::v3::Accounts::tnc_approval),
                 '/paymentagent_list' => MojoX::JSON::RPC::Service->new->register('paymentagent_list', \&BOM::RPC::v3::Cashier::paymentagent_list),
                 '/paymentagent_withdraw' =>
                     MojoX::JSON::RPC::Service->new->register('paymentagent_withdraw', \&BOM::RPC::v3::Cashier::paymentagent_withdraw),
