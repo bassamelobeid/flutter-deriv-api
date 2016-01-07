@@ -72,9 +72,7 @@ sub proposal {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
         my $id;
-        if ($args->{subscribe} eq '1') {
-            $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args);
-        }
+        $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args);
         send_ask($c, $id, $args);
     }
     return;
@@ -127,7 +125,7 @@ sub process_realtime_events {
                             symbol => $symbol,
                             epoch  => $m[1],
                             quote  => BOM::Market::Underlying->new($symbol)->pipsized_value($m[2])}}}) if $c->tx;
-        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol) {
+        } elsif ($type =~ /^proposal:/ and $m[0] eq $symbol and exists $arguments->{subscribe} and $arguments->{subscribe} eq '1') {
             unless ($skip_symbol_list{$arguments->{symbol}} and $skip_type_list{$arguments->{contract_type}} and $arguments->{duration_unit} eq 't') {
                 send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
             }
