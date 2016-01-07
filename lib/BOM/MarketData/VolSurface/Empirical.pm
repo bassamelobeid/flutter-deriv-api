@@ -153,17 +153,18 @@ sub _get_economic_events {
     my $raw_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => Date::Utility->new($start),
             to   => Date::Utility->new($end)});
+
     # static duration that needs to be replaced.
     my @events;
     foreach my $event (@$raw_events) {
-        my $event_name = $event->event_name;
+        my $event_name = $event->{event_name};
         $event_name =~ s/\s/_/g;
-        my $key             = $underlying->symbol . '_' . $event->symbol . '_' . $event->impact . '_' . $event_name;
-        my $default         = $underlying->symbol . '_' . $event->symbol . '_' . $event->impact . '_default';
+        my $key             = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_' . $event_name;
+        my $default         = $underlying->symbol . '_' . $event->{symbol} . '_' . $event->{impact} . '_default';
         my $news_parameters = $news_categories->{$key} // $news_categories->{$default};
 
         next unless $news_parameters;
-        $news_parameters->{release_time} = $event->release_date->epoch;
+        $news_parameters->{release_time} = Date::Utility->new($event->{release_date})->epoch;
         push @events, $news_parameters;
     }
 
