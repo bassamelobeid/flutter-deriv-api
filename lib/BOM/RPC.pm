@@ -109,13 +109,11 @@ sub startup {
                 '/get_self_exclusion' => MojoX::JSON::RPC::Service->new->register('get_self_exclusion', \&BOM::RPC::v3::Accounts::get_self_exclusion),
                 '/set_self_exclusion' => MojoX::JSON::RPC::Service->new->register('set_self_exclusion', \&BOM::RPC::v3::Accounts::set_self_exclusion),
                 '/balance'            => MojoX::JSON::RPC::Service->new->register('balance',            \&BOM::RPC::v3::Accounts::balance),
-                '/send_realtime_balance' =>
-                    MojoX::JSON::RPC::Service->new->register('send_realtime_balance', \&BOM::RPC::v3::Accounts::send_realtime_balance),
-                '/api_token'        => MojoX::JSON::RPC::Service->new->register('api_token',        \&BOM::RPC::v3::Accounts::api_token),
-                '/verify_email'     => MojoX::JSON::RPC::Service->new->register('verify_email',     \&BOM::RPC::v3::NewAccount::verify_email),
-                '/send_ask'         => MojoX::JSON::RPC::Service->new->register('send_ask',         \&BOM::RPC::v3::Contract::send_ask),
-                '/get_bid'          => MojoX::JSON::RPC::Service->new->register('get_bid',          \&BOM::RPC::v3::Contract::get_bid),
-                '/new_account_real' => MojoX::JSON::RPC::Service->new->register('new_account_real', \&BOM::RPC::v3::NewAccount::new_account_real),
+                '/api_token'          => MojoX::JSON::RPC::Service->new->register('api_token',          \&BOM::RPC::v3::Accounts::api_token),
+                '/verify_email'       => MojoX::JSON::RPC::Service->new->register('verify_email',       \&BOM::RPC::v3::NewAccount::verify_email),
+                '/send_ask'           => MojoX::JSON::RPC::Service->new->register('send_ask',           \&BOM::RPC::v3::Contract::send_ask),
+                '/get_bid'            => MojoX::JSON::RPC::Service->new->register('get_bid',            \&BOM::RPC::v3::Contract::get_bid),
+                '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
                 '/new_account_virtual' =>
