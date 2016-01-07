@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Transaction Updates",
+  "description": "Return transaction updates",
+  "properties": {
+    "echo_req": {
+      "title":"Echo request",
+      "description":"Echo of the request made"
+    },
+    "transaction": {
+      "type": "object",
+      "title": "Latest update to transaction",
+      "description": "Realtime stream of user transaction updates.",
+      "properties": {
+          "balance": {
+            "type": "number",
+            "description": "Balance amount",
+            "pattern": "^([.0-9]{1,25})$"
+          },
+          "action": {
+            "type": "string",
+            "description": "Example: buy, sell, deposit, withdrawal",
+            "pattern": "^(|[A-Z]{10})$"
+          },
+          "contract_id": {
+            "type": ["integer", "null"],
+            "description":"It is the contract id Example: 4867502908"
+          },
+          "transaction_id":{
+            "type":"integer",
+            "description":"It is the transaction id. Everyy contract (buy or sell) and every payment has a unique id. Example: 10867502908"
+          },
+          "amount": {
+            "type": "number",
+            "description":"It is the amount of transaction performed Example: -83.2300"
+          }
+      }
+    },
+    "msg_type": {
+        "type": "string",
+        "description": "transaction"
+    },
+    "req_id": {
+        "type": "integer",
+        "description": "Optional field send in request to map to response, present only when request contains req_id"
+    }
+  },
+  "required": [
+    "echo_req",
+    "msg_type"
+  ]
+}
