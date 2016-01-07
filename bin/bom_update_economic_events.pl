@@ -59,7 +59,7 @@ sub script_run {
     try {
         #here we need epochs to sort events
         #the sorted array (by release date) in chronicle
-        my @all_events = sort { $a->{release_date} cmp $b->{release_date} } @$events_received;
+        my @all_events = sort { $a->{release_date} <=> $b->{release_date} } @$events_received;
 
         #now convert release_date to string to be storable in chronicle
         foreach my $event_param (@all_events) {
