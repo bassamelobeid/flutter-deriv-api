@@ -9,8 +9,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 my $ul              = BOM::Market::Underlying->new('R_50');
-my $flat_vol        = rand(5);
-my $flat_atm_spread = rand;
 
 subtest "looks flat" => sub {
     plan tests => 630;
@@ -24,7 +22,7 @@ subtest "looks flat" => sub {
                     day          => $days
                 }
             ),
-            $flat_atm_spread,
+            0.07,
             $days . ' days ATM spread is flat.'
         );
         for (0 .. 19) {
@@ -35,7 +33,7 @@ subtest "looks flat" => sub {
                         strike => $strike
                     }
                 ),
-                $flat_vol,
+                0.5,
                 '.. with a flat vol at a strike of ' . $strike
             );
         }
