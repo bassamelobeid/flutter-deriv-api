@@ -12,8 +12,8 @@
     },
     "subscribe": {
       "type": "integer",
-      "description": "If set to 1, will send updates whenever the balance changes. If set to 0, will unsubscribe from updates.",
-      "pattern": "^1|0$"
+      "description": "If set to 1, will send updates whenever the balance changes.",
+      "pattern": "^1$"
     },
     "passthrough": {
       "type": "object",
