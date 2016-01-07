@@ -54,13 +54,6 @@ sub build_test_R_50_data {
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD);
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_flat',
-        {
-            symbol        => 'R_50',
-            recorded_date => Date::Utility->new,
-        });
-
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'randomindex',
         {
             symbol => 'R_50',
