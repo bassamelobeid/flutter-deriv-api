@@ -914,25 +914,17 @@ sub tnc_approval {
     }
     return BOM::RPC::v3::Utility::permission_error() unless $client;
 
-    my $landing_company = $client->landing_company;
-    if (   $landing_company->short eq 'malta'
-        or $landing_company->short eq 'maltainvest'
-        or $landing_company->short eq 'iom')
+    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    my $client_tnc_status   = $client->get_status('tnc_approval');
+
+    if (not $client_tnc_status
+        or ($client_tnc_status->reason ne $current_tnc_version))
     {
-        my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
-        my $client_tnc_status   = $client->get_status('tnc_approval');
-
-        if (not $client_tnc_status
-            or ($client_tnc_status->reason ne $current_tnc_version))
-        {
-            $client->set_status('tnc_approval', 'system', $current_tnc_version);
-            $client->save;
-        }
-
-        return {status => 1};
+        $client->set_status('tnc_approval', 'system', $current_tnc_version);
+        $client->save;
     }
 
-    return {status => 0};
+    return {status => 1};
 }
 
 1;
