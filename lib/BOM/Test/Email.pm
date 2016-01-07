@@ -28,7 +28,7 @@ sub get_email_by_address_subject {
     die 'Need email address and subject regexp' unless $cond{email} && $cond{subject} && ref($cond{subject}) eq 'Regexp';
 
     my $email          = $cond{email};
-    my $subject_regexp = $subject;
+    my $subject_regexp = $cond{subject};
 
     my $mgr = Mail::Box::Manager->new;
     my ($folder, %msg);
