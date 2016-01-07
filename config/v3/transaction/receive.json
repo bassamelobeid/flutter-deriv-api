@@ -20,8 +20,8 @@
           },
           "action": {
             "type": "string",
-            "description": "Example: buy, sell, deposit, withdrawal",
-            "pattern": "^(|[A-Z]{10})$"
+            "enum": ["deposit","withdrawal","buy","sell"],
+            "description": "Example: buy, sell, deposit, withdrawal"
           },
           "contract_id": {
             "type": ["integer", "null"],
