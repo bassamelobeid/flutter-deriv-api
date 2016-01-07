@@ -702,10 +702,9 @@ ohlc_daily:
     official: 1
 
 economic_events:
-  class_name: 'BOM::MarketData::EconomicEventCalendar'
+  class_name: 'BOM::MarketData::EconomicEvent'
   data:
-    events:
-        - impact: 1
-          event_name: 'US GDP Announcement'
-          symbol: 'USD'
-          source: 'forexfactory'
+    impact: 1
+    event_name: 'US GDP Announcement'
+    symbol: 'USD'
+    source: 'forexfactory'
