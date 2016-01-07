@@ -22,7 +22,7 @@ use strict;
 use warnings;
 
 use BOM::MarketData::CorrelationMatrix;
-use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use CouchDB::Client;
 use Carp qw( croak );
