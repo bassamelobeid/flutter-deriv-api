@@ -76,14 +76,6 @@ sub transaction {
                 $c->stash('transaction_channel', $subscriptions);
             }
         }
-        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-            if ($already_subscribed) {
-                $redis->unsubscribe([$channel], sub { });
-                delete $subscriptions->{$channel};
-                delete $subscriptions->{args};
-                delete $c->stash->{transaction_channel};
-            }
-        }
     }
     return;
 }

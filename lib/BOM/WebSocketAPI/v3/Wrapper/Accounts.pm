@@ -300,14 +300,6 @@ sub balance {
                 warn "Client is already subscribed to the channel $channel; ignoring";
             }
         }
-        if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-            if ($already_subscribed) {
-                $redis->unsubscribe([$channel], sub { });
-                delete $c->stash->{subscribed_channels};
-            } else {
-                warn "Client isn't subscribed to the channel $channel, but trying to unsubscribe; ignoring";
-            }
-        }
     }
 
     BOM::WebSocketAPI::Websocket_v3::rpc(

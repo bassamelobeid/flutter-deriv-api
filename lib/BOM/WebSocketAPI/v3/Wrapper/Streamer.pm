@@ -22,13 +22,8 @@ sub ticks {
         if ($response and exists $response->{error}) {
             return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
         } else {
-            if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-                _feed_channel($c, 'unsubscribe', $symbol, 'tick', $args);
-            } else {
-                my $uuid;
-                if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
-                    return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
-                }
+            if (_feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
+                return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
             }
         }
     }
