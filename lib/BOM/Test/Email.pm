@@ -18,7 +18,7 @@ use strict;
 use warnings;
 use Mail::Box::Manager;
 use base qw(Exporter);
-our @EXPORT_OK = qw(get_email clear_mailbox);
+our @EXPORT_OK = qw(get_email_by_address_subject clear_mailbox);
 
 our $mailbox = "/tmp/default.mailbox";
 
