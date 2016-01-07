@@ -130,22 +130,14 @@ subtest 'Fetch cut.' => sub {
 subtest 'recorded_date on Randoms.' => sub {
     plan tests => 2;
 
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_flat',
-        {
-            symbol        => 'R_100',
-            recorded_date => Date::Utility->new,
-        });
-
-    my $for_date = Date::Utility->new('2012-08-01 10:00:00');
-    my $surface  = $dm->fetch_surface({
-        underlying => BOM::Market::Underlying->new('R_100'),
-        for_date   => $for_date
-    });
-    is($surface->recorded_date->datetime, $for_date->datetime, 'fetch_surface on a Random Index surface with given for_date.');
-
     my $now = Date::Utility->new('2012-08-01 10:00:00');
     set_absolute_time($now->epoch);
+    my $surface  = $dm->fetch_surface({
+        underlying => BOM::Market::Underlying->new('R_100'),
+        for_date   => $now->minus_time_interval('1d'),
+    });
+    is($surface->recorded_date->datetime, $now->datetime, 'fetch_surface on a Random Index surface with given for_date.');
+
     $surface = $dm->fetch_surface({underlying => BOM::Market::Underlying->new('R_100')});
     is($surface->recorded_date->datetime, $now->datetime, 'fetch_surface on a Random Index surface "now".');
     restore_time();
