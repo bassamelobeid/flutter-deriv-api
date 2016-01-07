@@ -285,24 +285,27 @@ sub balance {
 
     my $client = $c->stash('client');
     if ($client->default_account and exists $args->{subscribe}) {
-        my $redis             = $c->stash('redis');
-        my $channel           = 'TXNUPDATE::balance_' . $client->default_account->id;
-        my $subscriptions     = $c->stash('subscribed_channels') // {};
-        my $already_subsribed = $subscriptions->{$channel};
+        my $redis              = $c->stash('redis');
+        my $channel            = 'TXNUPDATE::balance_' . $client->default_account->id;
+        my $subscriptions      = $c->stash('subscribed_channels') // {};
+        my $already_subscribed = $subscriptions->{$channel};
 
         if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-            if (!$already_subsribed) {
+            if (!$already_subscribed) {
                 $redis->subscribe([$channel], sub { });
                 $subscriptions->{$channel} = 1;
+                $subscriptions->{args} = $args;
                 $c->stash('subscribed_channels', $subscriptions);
             } else {
                 warn "Client is already subscribed to the channel $channel; ignoring";
             }
         }
         if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-            if ($already_subsribed) {
+            if ($already_subscribed) {
                 $redis->unsubscribe([$channel], sub { });
                 delete $subscriptions->{$channel};
+                delete $subscriptions->{args};
+                delete $c->stash->{subscribed_channels};
             } else {
                 warn "Client isn't subscribed to the channel $channel, but trying to unsubscribe; ignoring";
             }
@@ -332,10 +335,12 @@ sub balance {
 sub send_realtime_balance {
     my ($c, $message) = @_;
 
-    my $client = $c->stash('client');
-    my $args   = $c->stash('args');
+    my $client  = $c->stash('client');
+    my $channel = $c->stash('subscribed_channels');
 
     my $payload = JSON::from_json($message);
+    my $args;
+    $args = ($channel and exists $channel->{args}) ? $channel->{args} : {};
 
     $c->send({
             json => {
