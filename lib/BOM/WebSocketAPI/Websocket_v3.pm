@@ -211,8 +211,9 @@ my @dispatch = (
     ],
 
     # authenticated calls
-    ['sell', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell, 1],
-    ['buy',  \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,  1],
+    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1],
+    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1],
+    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1],
     [
         'portfolio',
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1
