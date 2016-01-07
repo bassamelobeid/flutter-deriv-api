@@ -240,6 +240,7 @@ sub get_account_status {
 
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
+        next if $s eq 'tnc_approval';    # the useful part for tnc_approval is reason
         push @status, $s if $client->get_status($s);
     }
 
@@ -437,6 +438,8 @@ sub get_settings {
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     return BOM::RPC::v3::Utility::permission_error() unless $client;
 
+    my $client_tnc_status = $client->get_status('tnc_approval');
+
     return {
         email         => $client->email,
         date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
@@ -451,6 +454,7 @@ sub get_settings {
             address_state    => $client->state,
             address_postcode => $client->postcode,
             phone            => $client->phone,
+            $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
         ),
     };
 }
@@ -792,6 +796,28 @@ sub api_token {
     $rtn->{tokens} = $m->get_tokens_by_loginid($client->loginid);
 
     return $rtn;
+}
+
+sub tnc_approval {
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
+
+    my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
+    my $client_tnc_status   = $client->get_status('tnc_approval');
+
+    if (not $client_tnc_status
+        or ($client_tnc_status->reason ne $current_tnc_version))
+    {
+        $client->set_status('tnc_approval', 'system', $current_tnc_version);
+        $client->save;
+    }
+
+    return {status => 1};
 }
 
 1;
