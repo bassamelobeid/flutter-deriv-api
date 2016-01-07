@@ -2,7 +2,7 @@ package BOM::Test::Email;
 
 =head1 NAME
 
-BOM::Test::Email;
+BOM::Test::Email
 
 =head1 DESCRIPTION
 
@@ -10,7 +10,13 @@ Staff about email.
 
 =head1 SYNOPSIS
 
-    use BOM::Test::Email qw(get_email);
+    use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
+    my %msg = get_email_by_address_subject(email => 'hello@test.com', subject => qr/this is a subject/);
+    clear_mailbox();
+
+=cut
+
+=head1 Functions
 
 =cut
 
@@ -20,8 +26,15 @@ use Mail::Box::Manager;
 use base qw(Exporter);
 our @EXPORT_OK = qw(get_email_by_address_subject clear_mailbox);
 
+# mailbox is set in the chef postfix part and travis-script/setup-postfix
 our $mailbox = "/tmp/default.mailbox";
 our $timeout = 3;
+
+=head2 get_email_by_address_subject
+
+get email by address and subject(regexp)
+
+=cut
 
 sub get_email_by_address_subject {
     my %cond = @_;
@@ -63,6 +76,10 @@ sub init {
     close($fh);
     __PACKAGE__->export_to_level(1, @_);
 }
+
+=head2 clear_mailbox
+
+=cut
 
 sub clear_mailbox {
     truncate $mailbox, 0;
