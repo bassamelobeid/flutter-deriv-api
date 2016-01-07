@@ -40,8 +40,6 @@ sub script_run {
     my $file_timestamp = Date::Utility->new->date_yyyymmdd;
 
     #this will be an array of all extracted economic events. Later we will store
-    #the sorted array (by release date) in chronicle
-    my @all_events;
 
     foreach my $event_param (@$events_received) {
         my $eco = BOM::MarketData::EconomicEvent->new($event_param);
@@ -60,6 +58,7 @@ sub script_run {
 
     try {
         #here we need epochs to sort events
+        #the sorted array (by release date) in chronicle
         my @all_events = sort { $a->{release_date} cmp $b->{release_date} } @$events_received;
 
         #now convert release_date to string to be storable in chronicle
