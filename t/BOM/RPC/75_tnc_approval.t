@@ -9,6 +9,7 @@ use BOM::Platform::Runtime;
 
 use BOM::RPC::v3::Cashier;
 use BOM::RPC::v3::Accounts;
+use BOM::RPC::v3::Utility;
 
 ## TRICKY but works
 my $version = 1;
@@ -24,7 +25,10 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 my $test_loginid = $test_client->loginid;
 
-my $res = BOM::RPC::v3::Cashier::tnc_approval({client_loginid => $test_loginid});
+my $res = BOM::RPC::v3::Utility::website_status();
+is $res->{terms_conditions_version}, 'version 1', 'version 1';
+
+$res = BOM::RPC::v3::Cashier::tnc_approval({client_loginid => $test_loginid});
 is_deeply $res, {status => 1};
 
 $res = BOM::RPC::v3::Accounts::get_settings({
