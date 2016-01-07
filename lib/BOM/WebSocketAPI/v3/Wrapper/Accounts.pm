@@ -335,19 +335,35 @@ sub balance {
 sub send_realtime_balance {
     my ($c, $message) = @_;
 
-    my $client  = $c->stash('client');
-    my $channel = $c->stash('subscribed_channels');
+    my $client = $c->stash('client');
 
-    my $payload = JSON::from_json($message);
-    my $args;
-    $args = ($channel and exists $channel->{args}) ? $channel->{args} : {};
+    my $args = {};
+    my $channel;
+    my $subscriptions = $c->stash('subscribed_channels');
+    if ($subscriptions) {
+        $channel = $subscriptions->{(first { m/TXNUPDATE::balance/ } keys %$subscriptions) || ''};
+        $args = exists $subscriptions->{args} ? $subscriptions->{args} : {};
+    }
 
-    $c->send({
-            json => {
-                msg_type => 'balance',
-                echo_req => $args,
-                (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                balance => BOM::RPC::v3::Accounts::send_realtime_balance($client, $payload)}}) if $c->tx;
+    if ($client) {
+        my $payload = JSON::from_json($message);
+        $c->send({
+                json => {
+                    msg_type => 'balance',
+                    echo_req => $args,
+                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                    balance => {
+                        loginid  => $client->loginid,
+                        currency => $client->default_account->currency_code,
+                        balance  => $payload->{balance_after}}}}) if $c->tx;
+    } else {
+        if ($channel) {
+            $c->stash('redis')->unsubscribe([$channel], sub { });
+            delete $subscriptions->{$channel};
+            delete $subscriptions->{args};
+            delete $c->stash->{subscribed_channels};
+        }
+    }
     return;
 }
 
