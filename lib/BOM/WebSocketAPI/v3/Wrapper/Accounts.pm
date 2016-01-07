@@ -6,8 +6,8 @@ use warnings;
 
 use JSON;
 
-use BOM::RPC::v3::Accounts;
 use BOM::WebSocketAPI::Websocket_v3;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub payout_currencies {
     my ($c, $args) = @_;
@@ -283,21 +283,12 @@ sub set_self_exclusion {
 sub balance {
     my ($c, $args) = @_;
 
+    my $id;
     my $client = $c->stash('client');
-    if ($client->default_account and exists $args->{subscribe}) {
-        my $redis              = $c->stash('redis');
-        my $channel            = 'TXNUPDATE::balance_' . $client->default_account->id;
-        my $subscriptions      = $c->stash('subscribed_channels') // {};
-        my $already_subscribed = $subscriptions->{$channel};
-
+    if ($client and $client->default_account) {
         if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-            if (!$already_subscribed) {
-                $redis->subscribe([$channel], sub { });
-                $subscriptions->{$channel} = 1;
-                $subscriptions->{args} = $args;
-                $c->stash('subscribed_channels', $subscriptions);
-            } else {
-                warn "Client is already subscribed to the channel $channel; ignoring";
+            if (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $client->default_account->id, $args)) {
+                return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance'));
             }
         }
     }
@@ -308,11 +299,13 @@ sub balance {
         sub {
             my $response = shift;
             if (exists $response->{error}) {
+                BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                 return $c->new_error('balance', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
                     msg_type => 'balance',
-                    balance  => $response
+                    $id ? (id => $id) : (),
+                    balance => $response
                 };
             }
         },
@@ -331,7 +324,7 @@ sub send_realtime_balance {
     my $subscriptions = $c->stash('subscribed_channels');
     if ($subscriptions) {
         $channel = $subscriptions->{(first { m/TXNUPDATE::balance/ } keys %$subscriptions) || ''};
-        $args = exists $subscriptions->{args} ? $subscriptions->{args} : {};
+        $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
     }
 
     if ($client) {
@@ -343,12 +336,12 @@ sub send_realtime_balance {
                     ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                     balance => {
                         loginid  => $client->loginid,
-                        currency => $client->default_account->currency_code,
-                        balance  => $payload->{balance_after}}}}) if $c->tx;
+                        currency => $client->default_account ? $client->default_account->currency_code : '',
+                        balance  => $payload->{balance_after},
+                        ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
     } else {
-        if ($channel) {
-            $c->stash('redis')->unsubscribe([$channel], sub { });
-            delete $c->stash->{subscribed_channels};
+        if ($channel and exists $subscriptions->{$channel}->{account_id}) {
+            BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
         }
     }
     return;
