@@ -206,12 +206,19 @@ sub profit_table {
 }
 
 sub send_realtime_balance {
-    my ($client, $message) = @_;
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     return {
         loginid  => $client->loginid,
         currency => $client->default_account->currency_code,
-        balance  => $message->{balance_after}};
+        balance  => $params->{balance_after}};
 }
 
 sub balance {
