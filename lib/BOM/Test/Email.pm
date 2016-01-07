@@ -24,7 +24,6 @@ our $mailbox = "/tmp/default.mailbox";
 
 sub get_email {
     my %conditions = @_;
-
 }
 
 sub init {
@@ -37,3 +36,6 @@ sub init {
 sub clear_mailbox {
     truncate $mailbox, 0;
 }
+
+1;
+
