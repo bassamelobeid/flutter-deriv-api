@@ -21,6 +21,7 @@ use base qw(Exporter);
 our @EXPORT_OK = qw(get_email_by_address_subject clear_mailbox);
 
 our $mailbox = "/tmp/default.mailbox";
+our $timeout = 3;
 
 sub get_email_by_address_subject {
     my %cond = @_;
@@ -33,7 +34,7 @@ sub get_email_by_address_subject {
     my $mgr = Mail::Box::Manager->new;
     my ($folder, %msg);
     #mailbox maybe late, so we wait 3 seconds
-    WAIT: for (0 .. 5) {
+    WAIT: for (0 .. $timeout) {
         $folder = $mgr->open(
             folder => $mailbox,
         );
