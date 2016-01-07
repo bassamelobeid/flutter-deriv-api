@@ -386,7 +386,6 @@ sub tnc_approval {
         sub {
             my $response = shift;
             if (exists $response->{error}) {
-                $c->app->log->info($response->{error}->{message}) if (exists $response->{error}->{message});
                 return $c->new_error('tnc_approval', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
