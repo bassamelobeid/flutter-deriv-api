@@ -74,8 +74,8 @@ sub _build_document {
     my $document = BOM::System::Chronicle::get(EE, EE);
 
     #extract first event from current document to check whether we need to get back to historical data
-    my $events = $document->{events};
-    my $first_event = $events->[0];
+    my $events           = $document->{events};
+    my $first_event      = $events->[0];
     my $first_event_date = Date::Utility->new($first_event->{release_date});
 
     if ($self->for_date and $self->for_date->epoch < $first_event_date->epoch) {
