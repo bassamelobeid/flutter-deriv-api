@@ -19,6 +19,7 @@ use List::MoreUtils qw(notall);
 
 use BOM::Platform::Runtime;
 use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use Sereal qw(encode_sereal decode_sereal looks_like_sereal);
 use Sereal::Encoder;
 use Try::Tiny;
@@ -123,8 +124,8 @@ sub get_latest_events_for_period {
     my $end    = $period->{to};
     my $ee_cal = BOM::MarketData::EconomicEventCalendar->new({for_date => $start});
 
-    my $from = Date::Utility->new($from)->epoch;
-    my $to   = Date::Utility->new($to)->epoch;
+    my $from = Date::Utility->new($start)->epoch;
+    my $to   = Date::Utility->new($end)->epoch;
 
     my @matching_events;
 
