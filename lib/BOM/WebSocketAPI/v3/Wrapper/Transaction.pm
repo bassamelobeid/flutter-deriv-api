@@ -95,7 +95,7 @@ sub send_transaction_updates {
     my $client        = $c->stash('client');
     my $subscriptions = $c->stash('transaction_channel');
     if ($subscriptions) {
-        $channel = $subscriptions->{(first { m/TXNUPDATE::transaction/ } keys %$subscriptions) || ''};
+        $channel = first { m/TXNUPDATE::transaction/ } keys %$subscriptions;
         $args = exists $subscriptions->{args} ? $subscriptions->{args} : {};
     }
 
