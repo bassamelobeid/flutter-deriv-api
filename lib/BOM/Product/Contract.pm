@@ -1071,7 +1071,6 @@ sub is_valid_to_sell {
 
     if (scalar @{$self->corporate_actions}) {
         $self->add_error({
-            alert             => 1,
             severity          => 100,
             message           => format_error_string('affected by corporate action', symbol => $self->underlying->symbol),
             message_to_client => localize("This contract is affected by corporate action."),
@@ -1241,7 +1240,6 @@ sub _build_entry_tick {
         if ($start_delay->seconds > $max_delay->seconds) {
             $self->add_error({
                     severity => 99,
-                    alert    => 1,
                     message  => format_error_string(
                         'Entry tick too far away',
                         symbol    => $self->underlying->symbol,
@@ -1255,7 +1253,6 @@ sub _build_entry_tick {
     } elsif ($hold_seconds) {
         $self->add_error({
                 severity => 99,
-                alert    => 1,
                 message  => format_error_string(
                     'No entry tick within limit',
                     limit  => $self->hold_for_entry_tick->as_string,
@@ -1990,7 +1987,6 @@ sub _build_exit_tick {
         if (not $first_date->is_before($last_date)) {
             $self->add_error({
                     severity => 100,
-                    alert    => 1,
                     message  => format_error_string(
                         'Start tick is not before expiry tick',
                         symbol => $underlying->symbol,
@@ -2008,7 +2004,6 @@ sub _build_exit_tick {
             {
                 $self->add_error({
                         severity => 99,
-                        alert    => 1,
                         message  => format_error_string(
                             'Missing ticks at close',
                             symbol => $underlying->symbol,
@@ -2020,7 +2015,6 @@ sub _build_exit_tick {
         } elsif ($end_delay->seconds > $max_delay->seconds) {
             $self->add_error({
                     severity => 99,
-                    alert    => 1,
                     message  => format_error_string(
                         'Exit tick too far away',
                         symbol    => $underlying->symbol,
@@ -2034,7 +2028,6 @@ sub _build_exit_tick {
         if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
             $self->add_error({
                     severity => 99,
-                    alert    => 1,
                     message  => format_error_string(
                         'Exit tick date differs from entry tick date on intraday',
                         symbol => $underlying->symbol,
@@ -2049,7 +2042,6 @@ sub _build_exit_tick {
             if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
                 $self->add_error({
                         severity => 100,
-                        alert    => 1,
                         message  => format_error_string(
                             'Tick expiry duration exceeds permitted maximum',
                             symbol    => $underlying->symbol,
@@ -2257,7 +2249,6 @@ sub _validate_stake {
     if (not $contract_stake) {
         push @errors,
             {
-            alert             => 1,
             severity          => 100,
             message           => format_error_string('Empty or zero stake', stake => $contract_stake),
             message_to_client => localize("Invalid stake"),
@@ -2357,7 +2348,6 @@ sub _validate_start_date {
     if (not $self->is_forward_starting and $epoch_start > $when->epoch) {
         push @errors,
             {
-            alert             => 1,
             severity          => 50,
             message           => format_error_string('Forward time for non-forward-starting contract type', code => $self->code),
             message_to_client => localize('Start time is invalid.'),
@@ -2367,7 +2357,6 @@ sub _validate_start_date {
     if (not $self->built_with_bom_parameters and $epoch_start < $when->epoch) {
         push @errors,
             {
-            alert             => 1,
             severity          => 100,
             message           => format_error_string('starts in the past'),
             message_to_client => localize("Start time is in the past"),
@@ -2484,7 +2473,6 @@ sub _validate_expiry_date {
     if ($self->is_expired and not $self->is_path_dependent) {
         push @errors,
             {
-            alert             => 1,
             severity          => 100,
             message           => format_error_string('already expired contract'),
             message_to_client => localize("Contract has already expired."),
@@ -2800,7 +2788,6 @@ sub _validate_volsurface {
     if ($self->build_parameters->{pricing_vol}) {
         push @errors,
             {
-            alert             => 1,
             severity          => 99,
             message           => format_error_string('forced (not calculated) IV'),
             message_to_client => localize("Prevailing market price cannot be determined."),
@@ -2820,7 +2807,6 @@ sub _validate_volsurface {
     if ($surface->get_smile_flags) {
         push @errors,
             {
-            alert             => 1,
             severity          => 99,
             message           => format_error_string('Volsurface has smile flags', symbol => $self->underlying->symbol),
             message_to_client => $standard_message,
@@ -2833,7 +2819,6 @@ sub _validate_volsurface {
     {
         push @errors,
             {
-            alert    => 1,
             severity => 99,
             message  => format_error_string(
                 'volsurface too old',
@@ -2846,7 +2831,6 @@ sub _validate_volsurface {
     } elsif ($self->market->name eq 'indices' and $surface_age->hours > 24 and not $self->is_atm_bet) {
         push @errors,
             {
-            alert    => 1,
             severity => 100,
             set_by   => __PACKAGE__,
             message  => format_error_string(
@@ -2860,7 +2844,6 @@ sub _validate_volsurface {
     } elsif ($surface->recorded_date->days_between($self->exchange->trade_date_before($now)) < 0) {
         push @errors,
             {
-            alert    => 1,
             severity => 99,
             message  => format_error_string(
                 'volsurface too old',
@@ -2879,7 +2862,6 @@ sub _validate_volsurface {
         if ($surface->price_with_parameterized_surface and $surface->calibration_error > $max_acceptable_error) {
             push @errors,
                 {
-                alert    => 1,
                 severity => 100,
                 set_by   => __PACKAGE__,
                 message  => format_error_string(
@@ -2895,7 +2877,6 @@ sub _validate_volsurface {
         if (abs($surface->spot_reference - $self->current_spot) / $self->current_spot * 100 > 5) {
             push @errors,
                 {
-                alert    => 1,
                 severity => 100,
                 set_by   => __PACKAGE__,
                 message  => format_error_string(
