@@ -1070,7 +1070,7 @@ sub is_valid_to_sell {
 
     if (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
-        $self->add_error($self->opposite_bet->all_errors);
+        $self->add_error($self->opposite_bet->primary_validation_error);
     }
 
     if (scalar @{$self->corporate_actions}) {
@@ -1080,6 +1080,7 @@ sub is_valid_to_sell {
         });
     }
 
+    my $passes_validation = $self->primary_validation_error ? 0 : 1;
     return $self->_report_validation_stats('sell', $self->passes_validation);
 }
 
