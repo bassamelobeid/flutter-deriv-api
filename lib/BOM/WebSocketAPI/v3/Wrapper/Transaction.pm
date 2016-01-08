@@ -3,7 +3,10 @@ package BOM::WebSocketAPI::v3::Wrapper::Transaction;
 use strict;
 use warnings;
 
-use BOM::RPC::v3::Transaction;
+use JSON;
+use List::Util qw(first);
+
+use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::System;
 
 sub buy {
@@ -108,7 +111,8 @@ sub send_transaction_updates {
                         action         => $payload->{action_type},
                         contract_id    => $payload->{financial_market_bet_id},
                         amount         => $payload->{amount},
-                        transaction_id => $payload->{id}}}}) if $c->tx;
+                        transaction_id => $payload->{id},
+                        ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
     } else {
         if ($channel and exists $subscriptions->{$channel}->{account_id}) {
             BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
