@@ -2871,7 +2871,7 @@ sub _validate_eod_market_risk {
 }
 
 has primary_validation_error => (
-    is       => 'ro',
+    is       => 'rw',
     init_arg => undef,
 );
 
