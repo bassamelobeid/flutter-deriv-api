@@ -16,7 +16,7 @@
     },
     "type":{
         "type": "string",
-        "description": "two types: account opening and lost password"
+        "description": "two types: account_opening and lost_password"
     },
     "msg_type": {
       "type": "string",
