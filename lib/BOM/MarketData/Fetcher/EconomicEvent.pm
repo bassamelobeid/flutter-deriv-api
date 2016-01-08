@@ -119,24 +119,7 @@ my $cache_namespace = 'COUCH_NEWS::';
 
 sub get_latest_events_for_period {
     my ($self, $period) = @_;
-
-    my $start  = $period->{from};
-    my $end    = $period->{to};
-    my $ee_cal = BOM::MarketData::EconomicEventCalendar->new({for_date => $start});
-
-    my $from = Date::Utility->new($start)->epoch;
-    my $to   = Date::Utility->new($end)->epoch;
-
-    my @matching_events;
-
-    for my $event (@{$ee_cal->events}) {
-        $event->{release_date} = Date::Utility->new($event->{release_date});
-        my $epoch = $event->{release_date}->epoch;
-
-        push @matching_events, $event if ($epoch >= $from and $epoch <= $to);
-    }
-
-    return \@matching_events;
+    return BOM::MarketData::EconomicEventCalendar->new->get_latest_events_for_period($period);
 }
 
 sub get_latest_events_for_period_couch {

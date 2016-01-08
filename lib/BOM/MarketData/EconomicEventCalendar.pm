@@ -122,6 +122,65 @@ sub save {
     return BOM::System::Chronicle::set(EE, EE, $self->_document_content, $self->recorded_date);
 }
 
+sub get_latest_events_for_period {
+    my ($self, $period) = @
+
+    my $from = Date::Utility->new($start)->epoch;
+    my $to   = Date::Utility->new($end)->epoch;
+
+    #get latest events
+    my $document = BOM::System::Chronicle::get(EE, EE);
+
+    #extract first event from current document to check whether we need to get back to historical data
+    my $events           = $document->{events};
+    my $first_event      = $events->[0];
+    my $first_event_date = Date::Utility->new($first_event->{release_date});
+
+    #for live pricing, following condition should be satisfied
+    if ( $from >= $first_event_date->epoch ) {
+        my @matching_events;
+
+        for my $event (@{$events}) {
+            $event->{release_date} = Date::Utility->new($event->{release_date});
+            my $epoch = $event->{release_date}->epoch;
+
+            push @matching_events, $event if ($epoch >= $from and $epoch <= $to);
+        }
+
+        return \@matching_events;
+    }
+
+    #if the requested period lies outside the current data, refer to historical data
+    my $documents = BOM::System::Chronicle::get_for_period(EE, EE, $from->epoch, $to->epoch);
+    my %all_events = {};
+
+    #now combine received data with $events
+    for my $doc (@{$documents}) {
+        #combine $doc->{events} with current $events
+        my $doc_events = $doc->{events};
+
+        for my $doc_event (@{$doc_events}) {
+            my $key = $doc_event->{event_name} . $doc_event->{impact} . $doc_event->{symbol} . $doc_event->{release_date};
+
+            $doc_event->{release_date} = Date::Utility->new($doc_event->{release_date});
+            my $epoch = $event->{release_date}->epoch;
+
+            $all_events{$key} = $doc_event if ($epoch >= $from and $epoch <= $to);
+        }
+    }
+
+    for my $event (@{$events}) {
+        my $key = $event->{event_name} . $event->{impact} . $event->{symbol} . $event->{release_date};
+        $event->{release_date} = Date::Utility->new($event->{release_date});
+        my $epoch = $event->{release_date}->epoch;
+
+        $all_events{$key} = $event if ($epoch >= $from and $epoch <= $to);
+    }
+
+    my @result = values %all_events;
+    return \@result;
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
