@@ -61,6 +61,7 @@ sub sell {
 sub transaction {
     my ($c, $args) = @_;
 
+    my $id;
     my $client = $c->stash('client');
     if ($client and $client->default_account) {
         my $redis              = $c->stash('redis');
