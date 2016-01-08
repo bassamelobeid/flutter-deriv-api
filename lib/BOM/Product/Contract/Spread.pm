@@ -44,7 +44,7 @@ sub BUILD {
     };
     if ($self->amount_per_point < $limits->{min} or $self->amount_per_point > $limits->{max}) {
         $self->amount_per_point($limits->{min});    # set to minimum
-        $self->add_error({
+        $self->add_errors({
                 message => format_error_string(
                     'amount_per_point is not within limits',
                     given => $self->amount_per_point,
@@ -194,7 +194,7 @@ sub _build_current_tick {
     my $current_tick = $self->underlying->spot_tick;
     unless ($current_tick) {
         $current_tick = $self->_pip_size_tick;
-        $self->add_error({
+        $self->add_errors({
             message  => format_error_string('Current tick is undefined', symbol => $self->underlying->symbol),
             severity => 99,
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
@@ -235,7 +235,7 @@ sub _build_entry_tick {
 
     if (not $entry_tick) {
         $entry_tick = $self->current_tick // $self->_pip_size_tick;
-        $self->add_error({
+        $self->add_errors({
             message  => format_error_string('Entry tick is undefined', symbol => $self->underlying->symbol),
             severity => 99,
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),

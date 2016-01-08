@@ -60,7 +60,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 subtest 'invalid operation' => sub {
-    plan tests => 4;
+    plan tests => 3;
     my $invalid_action = {
         11223344 => {
             description    => 'Action with invalid modifier',
