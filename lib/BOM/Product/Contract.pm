@@ -3,6 +3,9 @@ package BOM::Product::Contract;
 use Moose;
 use Carp;
 
+# very bad name, not sure why it needs to be
+# attached to Validatable.
+use MooseX::Role::Validatable::Error;
 use BOM::Market::Currency;
 use BOM::Product::Contract::Category;
 use Time::HiRes qw(time sleep);
@@ -2888,7 +2891,7 @@ sub confirm_validity {
 
     foreach my $method (@validation_methods) {
         if (my @err = $self->$method) {
-            $self->primary_validation_error($err[0]);
+            $self->primary_validation_error(MooseX::Role::Validatable::Error->new($err[0]));
             return;
         }
     }
@@ -2898,7 +2901,7 @@ sub confirm_validity {
 
 sub add_error {
     my ($self, $err) = @_;
-    $self->primary_validation_error($err);
+    $self->primary_validation_error(MooseX::Role::Validatable::Error->new($err));
     return;
 }
 
