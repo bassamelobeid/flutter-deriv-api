@@ -43,7 +43,7 @@ subtest 'entry tick' => sub {
         });
         isa_ok $c, 'BOM::Product::Contract::Spreadu';
         is $c->entry_tick->quote, 0.01, 'entry tick is pip size value if current tick and next tick is undefiend';
-        ok(($c->all_errors)[0], 'error');
+        ok($c->primary_validation_error, 'error');
         my $curr_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
             epoch      => $now->epoch,
@@ -52,7 +52,7 @@ subtest 'entry tick' => sub {
         $c = produce_contract({%$params, current_tick => $curr_tick});
         isa_ok $c, 'BOM::Product::Contract::Spreadu';
         is $c->entry_tick->quote, 100, 'current tick if next tick is undefined';
-        ok(($c->all_errors)[0], 'error');
+        ok($c->primary_validation_error, 'error');
 
         BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
             underlying => 'R_100',
@@ -61,7 +61,7 @@ subtest 'entry tick' => sub {
         });
         $c = produce_contract($params);
         is $c->entry_tick->quote, 104, 'entry tick if it is defined';
-        ok(!($c->all_errors)[0], 'no error');
+        ok(!$c->primary_validation_error, 'no error');
     }
     'spreadup';
 };
@@ -71,7 +71,7 @@ subtest 'current tick' => sub {
     $u->mock('get_combined_realtime_tick', sub { undef });
     my $c = produce_contract($params);
     is $c->current_tick->quote, 0.01, 'current tick is pip size value if current tick is undefined';
-    ok(($c->all_errors)[0], 'error');
+    ok($c->primary_validation_error, 'error');
 };
 
 subtest 'validate amount per point' => sub {
@@ -84,7 +84,7 @@ subtest 'validate amount per point' => sub {
         my @e;
         ok !$c->is_valid_to_buy;
         like(
-            ($c->all_errors)[0]->message_to_client,
+            ($c->primary_validation_error->message_to_client,
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );
@@ -95,7 +95,7 @@ subtest 'validate amount per point' => sub {
         });
         ok !$c->is_valid_to_buy;
         like(
-            ($c->all_errors)[0]->message_to_client,
+            ($c->primary_validation_error->message_to_client,
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );
@@ -118,7 +118,7 @@ subtest 'validate amount per point' => sub {
         });
         ok !$c->is_valid_to_buy;
         like(
-            ($c->all_errors)[0]->message_to_client,
+            ($c->primary_validation_error->message_to_client,
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );

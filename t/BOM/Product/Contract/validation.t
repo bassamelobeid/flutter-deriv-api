@@ -1298,18 +1298,12 @@ my $counter = 0;
 sub test_error_list {
     my ($which, $bet, $expected) = @_;
     $counter++;
-    my @expected_reasons = @{$expected};
-    my $err_count        = scalar @expected_reasons;
     my $val_method       = 'is_valid_to_' . lc $which;
     subtest $bet->shortcode . ' error confirmation' => sub {
-        plan tests => $err_count + 2;
+        plan tests => 2;
 
         ok(!$bet->$val_method, 'Not valid for ' . $which);
-        my @got_reasons = $bet->all_errors;
-        is(scalar @got_reasons, $err_count, '...for ' . $err_count . ' reason(s)');
-        foreach my $expected_reason (@expected_reasons) {
-            is(scalar(grep { $_->message =~ $expected_reason } @got_reasons), 1, '...one of which is ' . $expected_reason);
-        }
+        is $bet->primary_validation_error->message =~ $expected->[0], 'error is expected';
     };
 }
 
