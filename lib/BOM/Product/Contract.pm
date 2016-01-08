@@ -2894,9 +2894,12 @@ sub confirm_validity {
         qw(_validate_lifetime  _validate_volsurface _validate_contract _validate_barrier _validate_underlying _validate_expiry_date _validate_start_date _validate_stake _validate_payout _validate_eod_market_risk);
 
     foreach my $method (@validation_methods) {
-        if (my @err = $self->$method // $self->primary_validation_error) {
+        if (my @err = $self->$method) {
             $err[0]->{set_by} = __PACKAGE__;
             $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%{$err[0]}));
+            return 0;
+        }
+        if ($self->primary_validation_error) {
             return 0;
         }
     }
