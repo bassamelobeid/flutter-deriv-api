@@ -40,9 +40,9 @@ sub forget_one {
 
     my $removed_ids = []
         if ($id =~ /-/) {
-        $removed_ids = _forget_balance_subscription($c, $type, $args);
-        $removed_ids = _forget_transaction_subscription($c, $type, $args) unless (scalar @$removed_ids);
-        $removed_ids = _forget_feed_subscription($c, $type, $args) unless (scalar @$removed_ids);
+        $removed_ids = _forget_balance_subscription($c, $id, $args);
+        $removed_ids = _forget_transaction_subscription($c, $id, $args) unless (scalar @$removed_ids);
+        $removed_ids = _forget_feed_subscription($c, $id, $args) unless (scalar @$removed_ids);
     }
 
     return scalar @$removed_ids;
@@ -113,7 +113,7 @@ sub _forget_feed_subscription {
             my $fsymbol = $1;
             my $ftype   = $2;
             # . 's' while we are still using ticks in this calls. backward compatibility that must be removed.
-            if (($ftype . 's') =~ /^$type/) {
+            if (($ftype . 's') =~ /^$uuid/) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
             }
