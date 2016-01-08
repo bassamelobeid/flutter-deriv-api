@@ -210,6 +210,7 @@ sub _balance_channel {
                 $subscriptions->{$channel}->{args}       = $args if $args;
                 $subscriptions->{$channel}->{uuid}       = $uuid;
                 $subscriptions->{$channel}->{account_id} = $account_id;
+                $subscriptions->{$channel}->{type}       = 'balance';
                 $c->stash('subscribed_channels', $subscriptions);
             }
         } elsif ($action eq 'unsubscribe') {
@@ -241,6 +242,7 @@ sub _transaction_channel {
                 $subscriptions->{$channel}->{args}       = $args if $args;
                 $subscriptions->{$channel}->{uuid}       = $uuid;
                 $subscriptions->{$channel}->{account_id} = $account_id;
+                $subscriptions->{$channel}->{type}       = 'transaction';
                 $c->stash('transaction_channel', $subscriptions);
             }
         } elsif ($action eq 'unsubscribe') {
