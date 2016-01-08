@@ -1081,7 +1081,7 @@ sub is_valid_to_sell {
     }
 
     my $passes_validation = $self->primary_validation_error ? 0 : 1;
-    return $self->_report_validation_stats('sell', $self->passes_validation);
+    return $self->_report_validation_stats('sell', $passes_validation);
 }
 
 # PRIVATE method.
