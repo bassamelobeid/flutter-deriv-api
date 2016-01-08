@@ -38,8 +38,6 @@ require Pricing::Engine::TickExpiry;
 
 require BOM::Product::Pricing::Greeks::BlackScholes;
 
-with 'MooseX::Role::Validatable';
-
 sub is_spread { return 0 }
 
 has [qw(average_tick_count long_term_prediction)] => (
@@ -2949,6 +2947,29 @@ sub _validate_eod_market_risk {
     }
 
     return @errors;
+}
+
+has primary_validation_error => (
+    is       => 'ro',
+    init_arg => undef,
+);
+
+sub confirm_validity {
+    my $self = shift;
+
+    # Add any new validation methods here.
+    # Looking them up can be too slow for pricing speed constraints.
+    my @validation_methods =
+        qw(_validate_lifetime _validate_eod_market_risk _validate_volsurface _validate_contract _validate_expiry_date _validate_start_date _validate_stake _validate_barrier _validate_underlying _validate_payout);
+
+    foreach my $method (@validation_methods) {
+        if (my @err = $self->$method) {
+            $self->primary_validation_error($err->{message_to_client});
+            return 0;
+        }
+    }
+
+    return 1;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
