@@ -10,6 +10,11 @@
       "format": "email",
       "required": "1"
     },
+    "type": {
+      "type": "string",
+      "description": "type of email to be sent",
+      "required": "1"
+    },
     "req_id": {
       "type": "integer",
       "description": "Optional field to map request to response"
