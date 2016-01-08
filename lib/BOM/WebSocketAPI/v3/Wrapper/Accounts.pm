@@ -288,7 +288,7 @@ sub balance {
     if ($client and $client->default_account) {
         if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
             if (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $client->default_account->id, $args)) {
-                return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance'));
+                return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
             }
         }
     }

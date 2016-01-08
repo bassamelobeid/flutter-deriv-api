@@ -224,4 +224,35 @@ sub _balance_channel {
     return $uuid;
 }
 
+sub _transaction_channel {
+    my ($c, $action, $account_id, $args) = @_;
+    my $uuid;
+
+    my $redis              = $c->stash('redis');
+    my $channel            = 'TXNUPDATE::transaction_' . $account_id;
+    my $subscriptions      = $c->stash('transaction_channel');
+    my $already_subscribed = $subscriptions ? $subscriptions->{$channel} : undef;
+
+    if ($action) {
+        if ($action eq 'subscribe') {
+            if (!$already_subscribed) {
+                $uuid = Data::UUID->new->create_str();
+                $redis->subscribe([$channel], sub { });
+                $subscriptions->{$channel}->{args}       = $args;
+                $subscriptions->{$channel}->{uuid}       = $uuid;
+                $subscriptions->{$channel}->{account_id} = $account_id;
+                $c->stash('transaction_channel', $subscriptions);
+            }
+        } elsif ($action eq 'unsubscribe') {
+            if ($already_subscribed) {
+                $redis->unsubscribe([$channel], sub { });
+                delete $subscriptions->{$channel};
+                delete $c->stash->{transaction_channel};
+            }
+        }
+    }
+
+    return $uuid;
+}
+
 1;

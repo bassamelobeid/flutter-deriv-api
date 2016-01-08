@@ -62,21 +62,24 @@ sub transaction {
     my ($c, $args) = @_;
 
     my $client = $c->stash('client');
-    if ($client) {
+    if ($client and $client->default_account) {
         my $redis              = $c->stash('redis');
         my $channel            = 'TXNUPDATE::transaction_' . $client->default_account->id;
-        my $subscriptions      = $c->stash('transaction_channel') // {};
+        my $subscriptions      = $c->stash('transaction_channel');
         my $already_subscribed = $subscriptions->{$channel};
 
         if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-            if (!$already_subscribed) {
-                $redis->subscribe([$channel], sub { });
-                $subscriptions->{$channel} = 1;
-                $subscriptions->{args} = $args;
-                $c->stash('transaction_channel', $subscriptions);
+            if (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $client->default_account->id, $args)) {
+                return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
             }
         }
     }
+
+    $c->send({
+            json => {
+                echo_req => $args,
+                msg_type => 'transaction',
+                transaction => {$id ? (id => $id) : ''}}});
     return;
 }
 
@@ -106,9 +109,8 @@ sub send_transaction_updates {
                         amount         => $payload->{amount},
                         transaction_id => $payload->{id}}}}) if $c->tx;
     } else {
-        if ($channel) {
-            $c->stash('redis')->unsubscribe([$channel], sub { });
-            delete $c->stash->{transaction_channel};
+        if ($channel and exists $subscriptions->{$channel}->{account_id}) {
+            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
         }
     }
     return;
