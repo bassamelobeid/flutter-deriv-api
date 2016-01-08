@@ -38,8 +38,8 @@ sub forget_all {
 sub forget_one {
     my ($c, $id, $reason) = @_;
 
-    my $removed_ids = []
-        if ($id =~ /-/) {
+    my $removed_ids = [];
+    if ($id =~ /-/) {
         $removed_ids = _forget_balance_subscription($c, $id, $args);
         $removed_ids = _forget_transaction_subscription($c, $id, $args) unless (scalar @$removed_ids);
         $removed_ids = _forget_feed_subscription($c, $id, $args) unless (scalar @$removed_ids);
