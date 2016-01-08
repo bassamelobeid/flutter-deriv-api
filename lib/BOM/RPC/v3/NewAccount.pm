@@ -80,16 +80,16 @@ sub verify_email {
                 ],
                 use_email_template => 1
             });
-    }
-
-    unless (BOM::Platform::User->new({email => $params->{email}})) {
-        send_email({
-            from               => $params->{cs_email},
-            to                 => $params->{email},
-            subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-            message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
-            use_email_template => 1
-        });
+    } else {
+        unless (BOM::Platform::User->new({email => $params->{email}})) {
+            send_email({
+                from               => $params->{cs_email},
+                to                 => $params->{email},
+                subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+                message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
+                use_email_template => 1
+            });
+        }
     }
 
     return {status => 1};    # always return 1, so not to leak client's email
