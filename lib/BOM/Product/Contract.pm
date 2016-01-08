@@ -2926,7 +2926,7 @@ sub _build_default_probabilities {
             set_by      => __PACKAGE__,
             base_amount => 0.5,
         });
-    } keys %probabilities
+    } keys %probabilities;
 
     return \%map;
 }
