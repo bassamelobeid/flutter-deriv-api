@@ -119,6 +119,28 @@ my $cache_namespace = 'COUCH_NEWS::';
 sub get_latest_events_for_period {
     my ($self, $period) = @_;
 
+    my $start  = $period->{from};
+    my $end    = $period->{to};
+    my $ee_cal = BOM::MarketData::EconomicEventCalendar->new({for_date => $start});
+
+    my $from = Date::Utility->new($from)->epoch;
+    my $to   = Date::Utility->new($to)->epoch;
+
+    my @matching_events;
+
+    for my $event (@{$ee_cal->events}) {
+        $event->{release_date} = Date::Utility->new($event->{release_date});
+        my $epoch = $event->{release_date}->epoch;
+
+        push @matching_events, $event if ($epoch >= $from and $epoch <= $to);
+    }
+
+    return \@matching_events;
+}
+
+sub get_latest_events_for_period_couch {
+    my ($self, $period) = @_;
+
     # We may do this from time to time.
     # I claim it's under control.
     ## no critic(TestingAndDebugging::ProhibitNoWarnings)
