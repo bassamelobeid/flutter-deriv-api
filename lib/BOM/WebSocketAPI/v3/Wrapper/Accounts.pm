@@ -305,9 +305,7 @@ sub balance {
             } else {
                 return {
                     msg_type => 'balance',
-                    $id ? (id => $id) : (),
-                    balance => $response
-                };
+                    balance => {$id ? (id => $id) : (), %$response}};
             }
         },
         {
