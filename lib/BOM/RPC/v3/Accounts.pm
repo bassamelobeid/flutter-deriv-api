@@ -20,6 +20,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
+use Data::Password::Meter;
 
 sub payout_currencies {
     my $params = shift;
@@ -293,10 +294,14 @@ sub change_password {
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    return $err->(localize('New password is same as old password.'))
-        if $args->{new_password} eq $args->{old_password};
+    my $pwdm = Data::Password::Meter->new(30);
+
     return $err->(localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
+    return $err->(localize('New password is same as old password.'))
+        if $args->{new_password} eq $args->{old_password};
+    return $err->(localize("Password is not strong enough."))
+        if ($pwdm->strong($args->{new_password}));
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
@@ -370,6 +375,10 @@ sub cashier_password {
         if (BOM::System::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
+
+        my $pwdm = Data::Password::Meter->new(30);
+        return $err->(localize("Password is not strong enough."))
+            if ($pwdm->strong($lock_password));
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
