@@ -72,7 +72,7 @@ sub get_email_by_address_subject {
 
 sub init {
     #init mailbox
-    open(my $fh, ">$BddHelper::mailbox") || die "cannot create mailbox";
+    open(my $fh, ">$mailbox") || die "cannot create mailbox";
     close($fh);
     __PACKAGE__->export_to_level(1, @_);
 }
