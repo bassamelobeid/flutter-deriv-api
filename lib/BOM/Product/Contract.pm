@@ -131,7 +131,7 @@ sub _build_basis_tick {
             epoch  => 1,
             symbol => $self->underlying->symbol,
         });
-        $self->add_errors({
+        $self->add_error({
             severity => 110,
             message  => format_error_string('Could not retrieve a quote', symbol => $self->underlying->symbol),
             message_to_client => localize('Trading on [_1] is suspended due to missing market data.', $self->underlying->translated_display_name),
@@ -471,7 +471,7 @@ sub _build_date_settlement {
         if ($self->exchange->trades_on($end_date)) {
             $date_settlement = $self->exchange->settlement_on($end_date);
         } else {
-            $self->add_errors({
+            $self->add_error({
                 severity          => 110,
                 message           => format_error_string('Exchange is closed on expiry date', expiry => $self->date_expiry->date),
                 message_to_client => localize("The contract must expire on a trading day."),
@@ -1066,11 +1066,11 @@ sub is_valid_to_sell {
 
     if (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
-        $self->add_errors($self->opposite_bet->all_errors);
+        $self->add_error($self->opposite_bet->all_errors);
     }
 
     if (scalar @{$self->corporate_actions}) {
-        $self->add_errors({
+        $self->add_error({
             alert             => 1,
             severity          => 100,
             message           => format_error_string('affected by corporate action', symbol => $self->underlying->symbol),
@@ -1239,7 +1239,7 @@ sub _build_entry_tick {
         my $max_delay   = $underlying->max_suspend_trading_feed_delay;
         my $start_delay = Time::Duration::Concise::Localize->new(interval => abs($when - $start->epoch));
         if ($start_delay->seconds > $max_delay->seconds) {
-            $self->add_errors({
+            $self->add_error({
                     severity => 99,
                     alert    => 1,
                     message  => format_error_string(
@@ -1253,7 +1253,7 @@ sub _build_entry_tick {
                 });
         }
     } elsif ($hold_seconds) {
-        $self->add_errors({
+        $self->add_error({
                 severity => 99,
                 alert    => 1,
                 message  => format_error_string(
@@ -1333,7 +1333,7 @@ sub _build_pricing_vol {
         $self->long_term_prediction($volsurface->long_term_prediction);
         $self->average_tick_count($volsurface->average_tick_count);
         if ($volsurface->error) {
-            $self->add_errors({
+            $self->add_error({
                     message => format_error_string(
                         'Too few periods for historical vol calculation',
                         symbol   => $self->underlying->symbol,
@@ -1406,7 +1406,7 @@ sub pricing_spot {
         # This is to prevent undefined spot being passed to BlackScholes formula that causes the code to die!!
         $initial_spot = $self->underlying->tick_at($self->date_pricing->epoch, {allow_inconsistent => 1});
         $initial_spot //= $self->underlying->pip_size;
-        $self->add_errors({
+        $self->add_error({
                 severity => 100,
                 message  => format_error_string(
                     'Undefined spot',
@@ -1988,7 +1988,7 @@ sub _build_exit_tick {
         my $max_delay = $underlying->max_suspend_trading_feed_delay;
         # We should not have gotten here otherwise.
         if (not $first_date->is_before($last_date)) {
-            $self->add_errors({
+            $self->add_error({
                     severity => 100,
                     alert    => 1,
                     message  => format_error_string(
@@ -2006,7 +2006,7 @@ sub _build_exit_tick {
             if (    not $self->is_path_dependent
                 and not $self->_has_ticks_before_close($exchange->closing_on($self->date_expiry)))
             {
-                $self->add_errors({
+                $self->add_error({
                         severity => 99,
                         alert    => 1,
                         message  => format_error_string(
@@ -2018,7 +2018,7 @@ sub _build_exit_tick {
                     });
             }
         } elsif ($end_delay->seconds > $max_delay->seconds) {
-            $self->add_errors({
+            $self->add_error({
                     severity => 99,
                     alert    => 1,
                     message  => format_error_string(
@@ -2032,7 +2032,7 @@ sub _build_exit_tick {
                 });
         }
         if (not $self->expiry_daily and $underlying->intradays_must_be_same_day and $exchange->trading_days_between($first_date, $last_date)) {
-            $self->add_errors({
+            $self->add_error({
                     severity => 99,
                     alert    => 1,
                     message  => format_error_string(
@@ -2047,7 +2047,7 @@ sub _build_exit_tick {
         if ($self->tick_expiry) {
             my $actual_duration = Time::Duration::Concise->new(interval => $last_date->epoch - $first_date->epoch);
             if ($actual_duration->seconds > $self->max_tick_expiry_duration->seconds) {
-                $self->add_errors({
+                $self->add_error({
                         severity => 100,
                         alert    => 1,
                         message  => format_error_string(
@@ -2957,6 +2957,9 @@ has primary_validation_error => (
 sub confirm_validity {
     my $self = shift;
 
+    # if there's initialization error, we will not proceed anyway.
+    return if $self->primary_validation_error;
+
     # Add any new validation methods here.
     # Looking them up can be too slow for pricing speed constraints.
     my @validation_methods =
@@ -2964,12 +2967,18 @@ sub confirm_validity {
 
     foreach my $method (@validation_methods) {
         if (my @err = $self->$method) {
-            $self->primary_validation_error($err->{message_to_client});
-            return 0;
+            $self->primary_validation_error($err[0]);
+            return;
         }
     }
 
     return 1;
+}
+
+sub add_error {
+    my ($self, $err) = @_;
+    $self->primary_validation_error($err);
+    return;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
