@@ -81,7 +81,7 @@ sub _build_document {
     if ($self->for_date and $self->for_date->epoch < $first_event_date->epoch) {
         $document = BOM::System::Chronicle::get_for(EE, EE, $self->for_date->epoch);
 
-        die "Could not find economic events for " . $self->for_date->datetime if not defined $document;
+        $document //= {events => []};
     }
 
     return $document;
