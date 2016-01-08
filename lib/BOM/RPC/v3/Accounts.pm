@@ -377,7 +377,7 @@ sub cashier_password {
         }
 
         my $pwdm = Data::Password::Meter->new(30);
-        return $err->(localize("Password is not strong enough."))
+        return $error_sub->(localize("Password is not strong enough."))
             if ($pwdm->strong($lock_password));
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
