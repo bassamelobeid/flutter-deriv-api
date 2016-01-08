@@ -899,8 +899,9 @@ sub _build_discounted_probability {
 sub _build_bid_probability {
     my $self = shift;
 
-    # Effectively you get the same price as if you bought the other side to cancel.
+    return $self->default_probabilities->{bid_probability} if $self->primary_validation_error;
 
+    # Effectively you get the same price as if you bought the other side to cancel.
     my $marked_down = Math::Util::CalculatedValue::Validatable->new({
         name        => 'bid_probability',
         description => 'The price we would pay for this contract.',
@@ -948,6 +949,8 @@ sub _build_total_markup {
 
 sub _build_ask_probability {
     my $self = shift;
+
+    return $self->default_probabilities->{ask_probability} if $self->primary_validation_error;
 
     # Eventually we'll return the actual object.
     # And start from an actual object.
@@ -2903,6 +2906,27 @@ sub add_error {
     my ($self, $err) = @_;
     $self->primary_validation_error(MooseX::Role::Validatable::Error->new($err));
     return;
+}
+
+has default_probabilities => (
+    is => 'ro',
+    lazy_build => 1,
+);
+
+sub _build_default_probabilities {
+    my $self = shift;
+
+    my %probabilities = (ask_probability => 'The price we request for this contract.', bid_probability => 'The price we would pay for this contract.');
+    my %map = map {
+        $_ => Math::Util::CalculatedValue::Validatable->new({
+            name        => $_,
+            description => $probabilities{$_},
+            set_by      => __PACKAGE__,
+            base_amount => 0.5,
+        });
+    } keys %probabilities
+
+    return \%map;
 }
 
 # Don't mind me, I just need to make sure my attibutes are available.
