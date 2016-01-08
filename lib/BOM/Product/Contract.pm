@@ -2895,7 +2895,7 @@ sub confirm_validity {
     foreach my $method (@validation_methods) {
         if (my @err = $self->$method) {
             $err[0]->{set_by} = __PACKAGE__;
-            $self->primary_validation_error(MooseX::Role::Validatable::Error->new($err[0]));
+            $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%{$err[0]}));
             return;
         }
     }
@@ -2906,7 +2906,7 @@ sub confirm_validity {
 sub add_error {
     my ($self, $err) = @_;
     $err->{set_by} = __PACKAGE__;
-    $self->primary_validation_error(MooseX::Role::Validatable::Error->new($err));
+    $self->primary_validation_error(MooseX::Role::Validatable::Error->new(%$err));
     return;
 }
 
