@@ -21,11 +21,11 @@ sub forget_all {
     my $removed_ids = [];
     if (my $type = $args->{forget_all}) {
         if ($type eq 'balance') {
-            $removed_ids = _forget_balance_subscription($c, $type, $args);
+            $removed_ids = _forget_balance_subscription($c, $type);
         } elsif ($type eq 'transaction') {
-            $removed_ids = _forget_transaction_subscription($c, $type, $args);
+            $removed_ids = _forget_transaction_subscription($c, $type);
         } else {
-            $removed_ids = _forget_feed_subscription($c, $type, $args);
+            $removed_ids = _forget_feed_subscription($c, $type);
         }
     }
 
@@ -40,9 +40,9 @@ sub forget_one {
 
     my $removed_ids = [];
     if ($id =~ /-/) {
-        $removed_ids = _forget_balance_subscription($c, $id, $args);
-        $removed_ids = _forget_transaction_subscription($c, $id, $args) unless (scalar @$removed_ids);
-        $removed_ids = _forget_feed_subscription($c, $id, $args) unless (scalar @$removed_ids);
+        $removed_ids = _forget_balance_subscription($c, $id);
+        $removed_ids = _forget_transaction_subscription($c, $id) unless (scalar @$removed_ids);
+        $removed_ids = _forget_feed_subscription($c, $id) unless (scalar @$removed_ids);
     }
 
     return scalar @$removed_ids;
@@ -74,14 +74,14 @@ sub website_status {
 }
 
 sub _forget_balance_subscription {
-    my ($c, $uuid, $args) = @_;
+    my ($c, $uuid) = @_;
     my $removed_ids  = [];
     my $subscription = $c->stash('subscribed_channels');
     if ($subscription) {
         foreach my $channel (keys %{$subscription}) {
             if ($uuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscription->{$channel}->{account_id}, $args);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscription->{$channel}->{account_id});
             }
         }
     }
@@ -89,14 +89,14 @@ sub _forget_balance_subscription {
 }
 
 sub _forget_transaction_subscription {
-    my ($c, $uuid, $args) = @_;
+    my ($c, $uuid) = @_;
     my $removed_ids  = [];
     my $subscription = $c->stash('transaction_channel');
     if ($subscription) {
         foreach my $channel (keys %{$subscription}) {
             if ($uuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscription->{$channel}->{account_id}, $args);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscription->{$channel}->{account_id});
             }
         }
     }
@@ -104,7 +104,7 @@ sub _forget_transaction_subscription {
 }
 
 sub _forget_feed_subscription {
-    my ($c, $uuid, $args) = @_;
+    my ($c, $uuid) = @_;
     my $removed_ids  = [];
     my $subscription = $c->stash('feed_channel_type');
     if ($subscription) {

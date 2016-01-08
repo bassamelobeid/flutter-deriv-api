@@ -173,7 +173,7 @@ sub _feed_channel {
         }
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args} = $args;
+        $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
         $redis->subscribe(["FEED::$symbol"], sub { });
     }
@@ -207,7 +207,7 @@ sub _balance_channel {
             if (!$already_subscribed) {
                 $uuid = Data::UUID->new->create_str();
                 $redis->subscribe([$channel], sub { });
-                $subscriptions->{$channel}->{args}       = $args;
+                $subscriptions->{$channel}->{args}       = $args if $args;
                 $subscriptions->{$channel}->{uuid}       = $uuid;
                 $subscriptions->{$channel}->{account_id} = $account_id;
                 $c->stash('subscribed_channels', $subscriptions);
@@ -238,7 +238,7 @@ sub _transaction_channel {
             if (!$already_subscribed) {
                 $uuid = Data::UUID->new->create_str();
                 $redis->subscribe([$channel], sub { });
-                $subscriptions->{$channel}->{args}       = $args;
+                $subscriptions->{$channel}->{args}       = $args if $args;
                 $subscriptions->{$channel}->{uuid}       = $uuid;
                 $subscriptions->{$channel}->{account_id} = $account_id;
                 $c->stash('transaction_channel', $subscriptions);
