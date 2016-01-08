@@ -1301,7 +1301,7 @@ subtest 'economic events blockout period' => sub {
             events => [ {
                     symbol       => 'USD',
                     impact       => 5,
-                    release_date => $now->minus_time_interval('14m58s')
+                    release_date => $now->minus_time_interval('15m')
                 }]
         });
     map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
