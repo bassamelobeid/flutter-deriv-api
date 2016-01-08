@@ -84,7 +84,7 @@ subtest 'validate amount per point' => sub {
         my @e;
         ok !$c->is_valid_to_buy;
         like(
-            ($c->primary_validation_error->message_to_client,
+            $c->primary_validation_error->message_to_client,
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );
@@ -95,7 +95,7 @@ subtest 'validate amount per point' => sub {
         });
         ok !$c->is_valid_to_buy;
         like(
-            ($c->primary_validation_error->message_to_client,
+            $c->primary_validation_error->message_to_client,
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );
@@ -118,7 +118,7 @@ subtest 'validate amount per point' => sub {
         });
         ok !$c->is_valid_to_buy;
         like(
-            ($c->primary_validation_error->message_to_client,
+            $c->primary_validation_error->message_to_client,
             qr/Amount Per Point must be between 1 and 100 USD/,
             'throw message when amount per point is zero'
         );
