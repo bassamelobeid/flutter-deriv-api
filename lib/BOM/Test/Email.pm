@@ -22,7 +22,7 @@ Staff about email.
 
 use strict;
 use warnings;
-use Mail::Box::Manager;
+use Email::Folder;
 use base qw(Exporter);
 our @EXPORT_OK = qw(get_email_by_address_subject clear_mailbox);
 
@@ -44,21 +44,18 @@ sub get_email_by_address_subject {
     my $email          = $cond{email};
     my $subject_regexp = $cond{subject};
 
-    my $mgr = Mail::Box::Manager->new;
-    my ($folder, %msg);
+    my %msg;
     #mailbox maybe late, so we wait 3 seconds
     WAIT: for (0 .. $timeout) {
-        $folder = $mgr->open(
-            folder => $mailbox,
-        );
+        my $folder = Email::Folder->new($mailbox);
 
-        MSG: for my $tmsg ($folder->messages) {
-            my @to      = $tmsg->to;
-            my $address = $to[0]->address();
-            my $subject = $tmsg->subject();
+        MSG: while (my $tmsg = $folder->next_message) {
+            my $address = $tmsg->header('To');
+            #my $address = $to[0]->address();
+            my $subject = $tmsg->header('Subject');
 
             if ($address eq $email && $subject =~ $subject_regexp) {
-                $msg{body}    = $tmsg->body->decoded();
+                $msg{body}    = $tmsg->body;
                 $msg{address} = $address;
                 $msg{subject} = $subject;
                 last WAIT;
