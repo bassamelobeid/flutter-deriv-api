@@ -1,0 +1,95 @@
+# CSPECS
+#
+# In addition to the standard ones defined by 
+# Log::Log4Perl::Layout::PatternLayout, the following are defined by our 
+# application:
+#
+# %N, the fully qualified domain name
+# %S, a pretty stack trace
+# %u, REQUEST_URI or $0
+
+
+## Main section
+#
+# log4perl allows you to optimize your logging by calculating complex
+# output only when needed. For instance you can do something like this:
+#
+#   get_logger->debug(sub { Data::Dumper->new([\%complex_data_structure])->Useqq(1)->Sortkeys(1)->Dump });
+#
+# That way, the hash will only be stringified if your loglevel is
+# at least "DEBUG".
+#
+# However, that optimization does NOT work if messages are filtered
+# out using filters like:
+#
+#   log4perl.logger               = DEBUG, ROOT
+#   log4perl.appender.ROOT.Filter = WarnAndHigher
+#
+# Hence, as a rule, try to avoid filters in production.
+
+log4perl.logger                                 = WARN, ROOT
+
+log4perl.appender.ROOT                          = Log::Log4perl::Appender::File
+log4perl.appender.ROOT.filename                 = /var/log/httpd/log4perl.log
+log4perl.appender.ROOT.mode                     = append
+log4perl.appender.ROOT.autoflush                = 1
+log4perl.appender.ROOT.umask                    = 022
+log4perl.appender.ROOT.owner                    = travis
+log4perl.appender.ROOT.group                    = travis
+log4perl.appender.ROOT.utf8                     = 1
+log4perl.appender.ROOT.recreate                 = 1
+log4perl.appender.ROOT.recreate_check_interval  = 5
+log4perl.appender.ROOT.utf8                     = 1
+log4perl.appender.ROOT.Threshold                = WARN
+log4perl.appender.ROOT.layout                   = PatternLayout
+log4perl.appender.ROOT.layout.ConversionPattern = %d{ISO8601} [%5P] [%-5p] [%u{1,20}] [%F{3}:%L] [%A]    %m%n
+    
+log4perl.logger.TRACE                                = TRACE, CALLSTACK
+
+log4perl.appender.CALLSTACK                          = Log::Log4perl::Appender::File
+log4perl.appender.CALLSTACK.filename                 = /var/log/httpd/log4perl_trace.log
+log4perl.appender.CALLSTACK.mode                     = append
+log4perl.appender.CALLSTACK.autoflush                = 1
+log4perl.appender.CALLSTACK.umask                    = 022
+log4perl.appender.CALLSTACK.owner                    = travis
+log4perl.appender.CALLSTACK.group                    = travis
+log4perl.appender.CALLSTACK.utf8                     = 1
+log4perl.appender.CALLSTACK.recreate                 = 1
+log4perl.appender.CALLSTACK.recreate_check_interval  = 5
+log4perl.appender.CALLSTACK.utf8                     = 1
+log4perl.appender.CALLSTACK.layout                   = PatternLayout
+log4perl.appender.CALLSTACK.layout.ConversionPattern = %d{ISO8601} [%5P] [%-5p] [%u{1,20}] [%F{3}:%L] [%A]    %m%S%n
+
+log4perl.logger.BOM.Database.Rose.DB = WARN, DB
+
+log4perl.appender.DB                          = Log::Log4perl::Appender::File
+log4perl.appender.DB.filename                 = /var/log/httpd/db.log
+log4perl.appender.DB.mode                     = append
+log4perl.appender.DB.autoflush                = 1
+log4perl.appender.DB.umask                    = 022
+log4perl.appender.DB.owner                    = travis
+log4perl.appender.DB.group                    = travis
+log4perl.appender.DB.utf8                     = 1
+log4perl.appender.DB.recreate                 = 1
+log4perl.appender.DB.recreate_check_interval  = 5
+log4perl.appender.DB.utf8                     = 1
+log4perl.appender.DB.Threshold                = WARN
+log4perl.appender.DB.layout                   = PatternLayout
+log4perl.appender.DB.layout.ConversionPattern = %d{ISO8601} [%5P] [%-5p] [%u{1,20}] [%F{3}:%L] [%A]    %m%S%n
+
+log4perl.logger.BOM.Platform.Plack = WARN, PLACK
+
+log4perl.appender.PLACK                          = Log::Log4perl::Appender::File
+log4perl.appender.PLACK.filename                 = /var/log/httpd/plack.log
+log4perl.appender.PLACK.mode                     = append
+log4perl.appender.PLACK.autoflush                = 1
+log4perl.appender.PLACK.umask                    = 022
+log4perl.appender.PLACK.owner                    = travis
+log4perl.appender.PLACK.group                    = travis
+log4perl.appender.PLACK.utf8                     = 1
+log4perl.appender.PLACK.recreate                 = 1
+log4perl.appender.PLACK.recreate_check_interval  = 5
+log4perl.appender.PLACK.utf8                     = 1
+log4perl.appender.PLACK.Threshold                = WARN
+log4perl.appender.PLACK.layout                   = PatternLayout
+log4perl.appender.PLACK.layout.ConversionPattern = %d{ISO8601} [%5P] [%-5p] [%u{1,20}] [%F{3}:%L] [%A]    %m%S%n
