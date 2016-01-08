@@ -70,12 +70,16 @@ sub verify_email {
 
     if ($params->{type} eq 'lost_password') {
         send_email({
-            from               => $params->{cs_email},
-            to                 => $params->{email},
-            subject            => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-            message            => [BOM::Platform::Context::localize('Before we can help you change your password, please help us to verify your identity by clicking on the link: ' . $params->{link})],
-            use_email_template => 1
-        });
+                from    => $params->{cs_email},
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
+                message => [
+                    BOM::Platform::Context::localize(
+                        'Before we can help you change your password, please help us to verify your identity by clicking on the link: '
+                            . $params->{link})
+                ],
+                use_email_template => 1
+            });
     }
 
     unless (BOM::Platform::User->new({email => $params->{email}})) {
