@@ -69,8 +69,8 @@ sub get_email_by_address_subject {
 }
 
 sub import {
-    #init mailbox
-    open(my $fh, ">$mailbox") || die "cannot create mailbox";
+    #to be sure there is the mailbox file so that I needn't check it again in the loop
+    open(my $fh, ">>$mailbox") || die "cannot create mailbox";
     close($fh);
     Exporter::export_to_level(__PACKAGE__,1, @_);
 }
