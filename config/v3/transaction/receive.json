@@ -28,7 +28,7 @@
           },
           "transaction_id":{
             "type":"integer",
-            "description":"It is the transaction id. Everyy contract (buy or sell) and every payment has a unique id. Example: 10867502908"
+            "description":"It is the transaction id. Every contract (buy or sell) or payment has a unique id. Example: 10867502908"
           },
           "amount": {
             "type": "number",
