@@ -23,7 +23,8 @@ Staff about email.
 use strict;
 use warnings;
 use Email::Folder;
-use base qw(Exporter);
+use Exporter;
+
 our @EXPORT_OK = qw(get_email_by_address_subject clear_mailbox);
 
 # mailbox is set in the chef postfix part and travis-script/setup-postfix
@@ -67,11 +68,11 @@ sub get_email_by_address_subject {
     return %msg;
 }
 
-sub init {
+sub import {
     #init mailbox
     open(my $fh, ">$mailbox") || die "cannot create mailbox";
     close($fh);
-    __PACKAGE__->export_to_level(1, @_);
+    Exporter::export_to_level(__PACKAGE__,1, @_);
 }
 
 =head2 clear_mailbox
