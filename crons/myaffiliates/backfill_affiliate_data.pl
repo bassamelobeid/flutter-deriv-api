@@ -16,6 +16,7 @@ use warnings;
 
 use BOM::Utility::Log4perl;
 use Date::Utility;
+use BOM::System::Localhost;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::MyAffiliates::BackfillManager;
 use BOM::Platform::Sysinit ();
@@ -39,7 +40,7 @@ send_email({
     from    => 'system@binary.com',
     to      => BOM::Platform::Runtime->instance->app_config->marketing->myaffiliates_email,
     subject => 'CRON backfill_affiliate_data: Report from '
-        . BOM::Platform::Runtime->instance->hosts->localhost->canonical_name . ' for '
+        . BOM::System::Localhost::name() . ' for '
         . $runtime->datetime_yyyymmdd_hhmmss_TZ,
     message => $full_report,
 });
