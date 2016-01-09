@@ -8,8 +8,8 @@ use Mail::Sender;
 #to insure the mailbox file not exist
 BEGIN {
     use_ok('BOM::Test::Email', qw());
-    unlink $BOM::Test::Email;
-    ok(!-e $BOM::Test::Email, "mailbox not exist yet");
+    unlink $BOM::Test::Email::mailbox;
+    ok(!-e $BOM::Test::Email::mailbox, "mailbox not exist yet");
 }
 
 BEGIN {
