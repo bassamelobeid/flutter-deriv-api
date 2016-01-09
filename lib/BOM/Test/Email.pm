@@ -23,7 +23,7 @@ Staff about email.
 use strict;
 use warnings;
 use Email::Folder;
-use Exporter;
+use base qw(Exporter);
 
 our @EXPORT_OK = qw(get_email_by_address_subject clear_mailbox);
 
@@ -72,7 +72,7 @@ sub import {
     #to be sure there is the mailbox file so that I needn't check it again in the loop
     open(my $fh, ">>$mailbox") || die "cannot create mailbox";
     close($fh);
-    Exporter::export_to_level(__PACKAGE__,1, @_);
+    __PACKAGE__->export_to_level(1, @_);
 }
 
 =head2 clear_mailbox
