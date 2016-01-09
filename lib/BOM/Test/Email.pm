@@ -62,7 +62,6 @@ sub get_email_by_address_subject {
                 last WAIT;
             }
         }
-        $folder->close();
         sleep 1;
     }
     return %msg;
