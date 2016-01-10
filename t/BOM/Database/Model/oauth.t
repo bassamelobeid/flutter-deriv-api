@@ -37,19 +37,21 @@ ok(!$m->verify_refresh_token($test_clientid, $access_token),  'access_token is n
 
 ### get app_register/app_list/app_get
 my $test_user_id = 999;
-my $app1         = $m->create_client({
+$m->dbh->do("DELETE FROM oauth.clients WHERE binary_user_id = $test_user_id");    # clear
+
+my $app1 = $m->create_client({
     name     => 'App 1',
     homepage => 'http://www.example.com/',
     github   => 'https://github.com/binary-com/binary-static',
     user_id  => $test_user_id,
 });
-my $get_app = $m->get_client($app1->{client_id});
+my $get_app = $m->get_client($test_user_id, $app1->{client_id});
 is_deeply($app1, $get_app, 'same on get');
+
 my $app2 = $m->create_client({
     name    => 'App 2',
     user_id => $test_user_id,
 });
-
 my $get_apps = $m->get_clients_by_user_id($test_user_id);
 is_deeply($get_apps, [$app1, $app2], 'get_clients_by_user_id ok');
 

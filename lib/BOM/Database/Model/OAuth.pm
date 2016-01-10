@@ -99,7 +99,7 @@ sub create_client {
     my ($self, $app) = @_;
 
     my $id     = $app->{id}     || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
-    my $secret = $app->{secret} || 'sr-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
+    my $secret = $app->{secret} || String::Random::random_regex('[a-zA-Z0-9]{32}');
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.clients
@@ -124,11 +124,11 @@ sub create_client {
 }
 
 sub get_client {
-    my ($self, $client_id) = @_;
+    my ($self, $user_id, $client_id) = @_;
 
     return $self->dbh->selectrow_hashref("
-        SELECT id as client_id, secret as client_secret, name, active FROM oauth.clients WHERE id = ?
-    ", undef, $client_id);
+        SELECT id as client_id, secret as client_secret, name, active FROM oauth.clients WHERE id = ? AND binary_user_id = ?
+    ", undef, $client_id, $user_id);
 }
 
 sub get_clients_by_user_id {
