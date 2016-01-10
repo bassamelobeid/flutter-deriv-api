@@ -11,7 +11,7 @@ sub __call_rpc {
         $c, $method,
         sub {
             my $response = shift;
-            if (exists $response->{error}) {
+            if (ref($response) eq 'HASH' and exists $response->{error}) {
                 return $c->new_error($method, $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
