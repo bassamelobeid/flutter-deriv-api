@@ -15,11 +15,6 @@ sub __pre_hook {
     return BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 }
 
-sub __oauth {
-    state $oauth = BOM::Database::Model::OAuth->new;
-    return $oauth;
-}
-
 sub register {
     my $params = shift;
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
@@ -56,7 +51,7 @@ sub register {
         if length($googleplay)
         and $googleplay !~ m{^https?://play\.google\.com/store/apps/\S+$};
 
-    my $oauth = __oauth();
+    my $oauth = BOM::Database::Model::OAuth->new;
     return $error_sub->(localize('The name is taken.'))
         if $oauth->is_name_taken($user_id, $name);
 
@@ -79,7 +74,7 @@ sub list {
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $oauth = __oauth();
+    my $oauth = BOM::Database::Model::OAuth->new;
     return $oauth->get_clients_by_user_id($user_id);
 }
 
@@ -90,7 +85,7 @@ sub get {
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $oauth     = __oauth();
+    my $oauth     = BOM::Database::Model::OAuth->new;
     my $client_id = $params->{args}->{app_get};
     my $app       = $oauth->get_client($user_id, $client_id);
 
