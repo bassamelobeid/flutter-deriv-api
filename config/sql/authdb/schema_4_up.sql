@@ -35,7 +35,8 @@ CREATE TABLE oauth.access_token (
     access_token         char(32) NOT NULL PRIMARY KEY,
     client_id            varchar(32) NOT NULL REFERENCES oauth.clients(id),
     loginid              character varying(12) NOT NULL,
-    expires              timestamp NOT NULL
+    expires              timestamp NOT NULL,
+    last_used            TIMESTAMP DEFAULT NULL
 );
 GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.access_token TO write;
 GRANT SELECT ON oauth.access_token TO read;

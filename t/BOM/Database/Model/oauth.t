@@ -28,6 +28,8 @@ my ($access_token, $refresh_token) = $m->store_access_token($test_clientid, $tes
 ok $access_token;
 ok $refresh_token;
 ok $access_token ne $refresh_token;
+diag $access_token;
+is $m->get_loginid_by_access_token($access_token), $test_loginid, 'get_loginid_by_access_token';
 
 $loginid = $m->verify_refresh_token($test_clientid, $refresh_token);
 is $loginid, $test_loginid, 'refresh_token ok';

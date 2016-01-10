@@ -73,6 +73,14 @@ sub store_access_token {
     return ($access_token, $refresh_token, $expires_in);
 }
 
+sub get_loginid_by_access_token {
+    my ($self, $token) = @_;
+
+    return $self->dbh->selectrow_array(
+        "UPDATE oauth.access_token SET last_used=NOW() WHERE access_token = ? AND expires > NOW() RETURNING loginid", undef, $token
+    );
+}
+
 sub verify_refresh_token {
     my ($self, $client_id, $refresh_token) = @_;
 
