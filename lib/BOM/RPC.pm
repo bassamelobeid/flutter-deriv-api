@@ -120,6 +120,10 @@ sub startup {
                 '/new_account_virtual' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual),
                 '/portfolio' => MojoX::JSON::RPC::Service->new->register('portfolio', \&BOM::RPC::v3::PortfolioManagement::portfolio),
+
+                '/app_register' => MojoX::JSON::RPC::Service->new->register('app_register', \&BOM::RPC::v3::App::register),
+                '/app_list'     => MojoX::JSON::RPC::Service->new->register('app_list',     \&BOM::RPC::v3::App::list),
+                '/app_get'      => MojoX::JSON::RPC::Service->new->register('app_get',      \&BOM::RPC::v3::App::get),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
