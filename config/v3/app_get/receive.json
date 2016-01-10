@@ -1,14 +1,14 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "App Register Receive",
-  "description": "A message with created application",
+  "title": "App Get Receive",
+  "description": "A message with requested application",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
-    "app_register": {
+    "app_get": {
       "type": "object",
       "title": "Application object",
       "properties": {
@@ -28,7 +28,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "app_register"
+      "description": "app_get"
     },
     "req_id": {
       "type": "integer",
@@ -37,7 +37,7 @@
   },
   "required": [
     "echo_req",
-    "app_register",
+    "app_get",
     "msg_type"
   ]
 }
