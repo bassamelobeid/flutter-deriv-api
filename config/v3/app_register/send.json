@@ -9,6 +9,11 @@
       "pattern": "^1$",
       "required": "1"
     },
+    "name":{
+      "type": "string",
+      "pattern": "^.{1,48}$",
+      "description": "Application name"
+    },
     "homepage":{
       "type": ["string", "null"],
       "pattern": "^.{0,255}$",

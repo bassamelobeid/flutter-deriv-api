@@ -1,17 +1,26 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Set User Settings Receive",
-  "description": "A message with User Settings",
+  "title": "App Register Receive",
+  "description": "A message with created application",
   "properties": {
     "echo_req": {
       "title":"Echo request",
       "description":"Echo of the request made"
     },
     "app_register": {
-      "type": "integer",
-      "title": "Update Status",
-      "description": "1 on success"
+      "type": "object",
+      "title": "Application object",
+      "properties": {
+        "client_id": {
+          "type": "string",
+          "description":"Application client id"
+        },
+        "client_secret": {
+          "type": "string",
+          "description":"Application client secret"
+        }
+      }
     },
     "msg_type": {
       "type": "string",
