@@ -11,6 +11,7 @@ use BOM::Platform::User;
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw (localize request);
 use BOM::Database::Model::AccessToken;
+use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
 
 sub authorize {
@@ -27,6 +28,10 @@ sub authorize {
     if (length $token == 15) {    # access token
         my $m = BOM::Database::Model::AccessToken->new;
         $loginid = $m->get_loginid_by_token($token);
+        return $err unless $loginid;
+    } elsif (length $token == 32 && $token =~ /^a1-/) {
+        my $m = BOM::Database::Model::OAuth->new;
+        $loginid = $m->get_loginid_by_access_token($token);
         return $err unless $loginid;
     } else {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
