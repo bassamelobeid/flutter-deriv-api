@@ -27,6 +27,7 @@ $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->save;
 
+# cleanup
 BOM::Database::Model::OAuth->new->dbh->do("
     DELETE FROM oauth.clients WHERE binary_user_id = ? AND id <> 'binarycom'
 ", undef, $user->id);

@@ -19,6 +19,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
+use BOM::RPC::v3::App;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
