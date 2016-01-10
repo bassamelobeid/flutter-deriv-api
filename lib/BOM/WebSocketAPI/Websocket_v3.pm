@@ -13,6 +13,7 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
+use BOM::WebSocketAPI::v3::Wrapper::App;
 use DataDog::DogStatsd::Helper;
 use JSON::Schema;
 use File::Slurp;
