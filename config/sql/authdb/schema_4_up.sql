@@ -14,9 +14,12 @@ CREATE TABLE oauth.clients (
     binary_user_id BIGINT NOT NULL,
     active boolean NOT NULL DEFAULT true
 );
-insert into oauth.clients (id, secret, name, binary_user_id) values ('binarycom', 'bin2Sec', 'Binary.com', 1);
+CREATE INDEX idx_oauth_clients_binary_user_id ON oauth.clients
+ USING btree (binary_user_id);
 GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.clients TO write;
 GRANT SELECT ON oauth.clients TO read;
+
+INSERT INTO oauth.clients (id, secret, name, binary_user_id) values ('binarycom', 'bin2Sec', 'Binary.com', 1);
 
 CREATE TABLE oauth.auth_code (
     auth_code            char(32) NOT NULL PRIMARY KEY,
