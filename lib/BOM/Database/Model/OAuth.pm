@@ -19,7 +19,7 @@ sub verify_client {
     my ($self, $client_id) = @_;
 
     my $dbh = $self->dbh;
-    return $dbh->selectrow_hashref("SELECT * FROM oauth.clients WHERE id = ? AND active", undef, $client_id);
+    return $dbh->selectrow_hashref("SELECT id, secret FROM oauth.clients WHERE id = ? AND active", undef, $client_id);
 }
 
 ## store auth code

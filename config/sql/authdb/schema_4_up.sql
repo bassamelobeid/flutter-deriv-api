@@ -7,6 +7,10 @@ CREATE TABLE oauth.clients (
     id varchar(32) NOT NULL PRIMARY KEY,
     secret varchar(32) NOT NULL,
     name VARCHAR(48) NOT NULL,
+    homepage VARCHAR(255) DEFAULT NULL,
+    github VARCHAR(255) DEFAULT NULL,
+    appstore VARCHAR(255) DEFAULT NULL,
+    googleplay VARCHAR(255) DEFAULT NULL,
     binary_user_id BIGINT NOT NULL,
     active boolean NOT NULL DEFAULT true
 );
