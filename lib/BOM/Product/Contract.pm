@@ -2923,15 +2923,21 @@ sub _build_default_probabilities {
     my $self = shift;
 
     my %probabilities = (
-        ask_probability => 'The price we request for this contract.',
-        bid_probability => 'The price we would pay for this contract.'
+        ask_probability => {
+            description => 'The price we request for this contract.',
+            default     => 1,
+        },
+        bid_probability => {
+            description => 'The price we would pay for this contract.',
+            default     => 0,
+        },
     );
     my %map = map {
         $_ => Math::Util::CalculatedValue::Validatable->new({
             name        => $_,
-            description => $probabilities{$_},
+            description => $probabilities{$_}{description},
             set_by      => __PACKAGE__,
-            base_amount => 0.5,
+            base_amount => $probabilities{$_}{default},
         });
     } keys %probabilities;
 
