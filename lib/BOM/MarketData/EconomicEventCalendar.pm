@@ -27,11 +27,6 @@ use BOM::Market::Types;
 
 use constant EE => 'economic_events';
 
-has document => (
-    is         => 'rw',
-    lazy_build => 1,
-);
-
 has symbol => (
     is       => 'ro',
     required => 0,
@@ -58,33 +53,6 @@ has events => (
 sub _build_events {
     my $self = shift;
     return $self->document->{events};
-}
-
-=head3
-
-This function is called when loading an EconomicEventCalendar from Chronicle.
-
-=cut
-
-sub _build_document {
-    my $self = shift;
-
-    #document is an array of hash
-    #each hash represents a single economic event
-    my $document = BOM::System::Chronicle::get(EE, EE);
-
-    #extract first event from current document to check whether we need to get back to historical data
-    my $events           = $document->{events};
-    my $first_event      = $events->[0];
-    my $first_event_date = Date::Utility->new($first_event->{release_date});
-
-    if ($self->for_date and $self->for_date->epoch < $first_event_date->epoch) {
-        $document = BOM::System::Chronicle::get_for(EE, EE, $self->for_date->epoch);
-
-        $document //= {events => []};
-    }
-
-    return $document;
 }
 
 around _document_content => sub {
