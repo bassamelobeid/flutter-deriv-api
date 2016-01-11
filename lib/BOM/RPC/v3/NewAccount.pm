@@ -75,7 +75,7 @@ sub verify_email {
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
                     BOM::Platform::Context::localize(
-                        'Before we can help you change your password, please help us to verify your identity by clicking on the link: '
+                        'Before we can help you change your password, please help us to verify your identity by clicking on the following link: '
                             . $params->{link})
                 ],
                 use_email_template => 1
