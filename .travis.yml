@@ -1,11 +1,16 @@
 language: perl
 perl:
     - "5.14.2"
-services:
-    - redis-server
-addons:
-    postgresql: "9.3"
 cache: apt
-
+before_install:
+    - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/regentmarkets/travis-scripts /tmp/travis-scripts
+    - /tmp/travis-scripts/fixHostName.sh
+    - sudo mkdir -p /home/git/binary-com
+    - sudo mkdir -p /home/git/regentmarkets
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
+    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
+install:
+    - source /tmp/travis-scripts/devbox_path.sh
+    - /tmp/travis-scripts/setup_postfix.sh
 script:
     - prove -r t/
