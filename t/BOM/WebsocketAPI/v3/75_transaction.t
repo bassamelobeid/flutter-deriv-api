@@ -14,10 +14,14 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 my $t = build_mojo_test();
 
 # check for authenticated call
-$t = $t->send_ok({json => {transaction => 1, subscribe => 1}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            transaction => 1,
+            subscribe   => 1
+        }})->message_ok;
 my $response = decode_json($t->message->[1]);
 
-is $response->{error}->{code}, 'AuthorizationRequired';
+is $response->{error}->{code},    'AuthorizationRequired';
 is $response->{error}->{message}, 'Please log in.';
 
 my $token = BOM::Platform::SessionCookie->new(
@@ -36,7 +40,11 @@ $response = decode_json($t->message->[1]);
 
 is $response->{error}->{code}, 'InputValidationFailed';
 
-$t = $t->send_ok({json => {transaction => 1, subscribe => 1}})->message_ok;
+$t = $t->send_ok({
+        json => {
+            transaction => 1,
+            subscribe   => 1
+        }})->message_ok;
 $response = decode_json($t->message->[1]);
 
 ok $response->{transaction}->{id};

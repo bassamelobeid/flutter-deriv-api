@@ -76,7 +76,7 @@ sub website_status {
 sub _forget_balance_subscription {
     my ($c, $typeoruuid) = @_;
     my $removed_ids  = [];
-    my $subscription = $c->stash('subscribed_channels');
+    my $subscription = $c->stash('balance_channel');
     if ($subscription) {
         foreach my $channel (keys %{$subscription}) {
             if ($typeoruuid eq $subscription->{$channel}->{type} or $typeoruuid eq $subscription->{$channel}->{uuid}) {
@@ -104,7 +104,7 @@ sub _forget_transaction_subscription {
 }
 
 sub _forget_feed_subscription {
-    my ($c, $uuid) = @_;
+    my ($c, $typeoruuid) = @_;
     my $removed_ids  = [];
     my $subscription = $c->stash('feed_channel_type');
     if ($subscription) {
@@ -112,8 +112,7 @@ sub _forget_feed_subscription {
             $channel =~ /(.*);(.*)/;
             my $fsymbol = $1;
             my $ftype   = $2;
-            # . 's' while we are still using ticks in this calls. backward compatibility that must be removed.
-            if (($ftype . 's') =~ /^$uuid/) {
+            if ($typeoruuid =~ /^$ftype/ or $typeoruuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
             }

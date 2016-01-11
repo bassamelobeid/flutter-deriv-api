@@ -199,7 +199,7 @@ sub _balance_channel {
 
     my $redis              = $c->stash('redis');
     my $channel            = 'TXNUPDATE::balance_' . $account_id;
-    my $subscriptions      = $c->stash('subscribed_channels');
+    my $subscriptions      = $c->stash('balance_channel');
     my $already_subscribed = $subscriptions ? $subscriptions->{$channel} : undef;
 
     if ($action) {
@@ -211,13 +211,13 @@ sub _balance_channel {
                 $subscriptions->{$channel}->{uuid}       = $uuid;
                 $subscriptions->{$channel}->{account_id} = $account_id;
                 $subscriptions->{$channel}->{type}       = 'balance';
-                $c->stash('subscribed_channels', $subscriptions);
+                $c->stash('balance_channel', $subscriptions);
             }
         } elsif ($action eq 'unsubscribe') {
             if ($already_subscribed) {
                 $redis->unsubscribe([$channel], sub { });
                 delete $subscriptions->{$channel};
-                delete $c->stash->{subscribed_channels};
+                delete $c->stash->{balance_channel};
             }
         }
     }

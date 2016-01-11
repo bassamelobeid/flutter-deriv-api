@@ -320,7 +320,7 @@ sub send_realtime_balance {
     my $args = {};
     my $channel;
     my $client        = $c->stash('client');
-    my $subscriptions = $c->stash('subscribed_channels');
+    my $subscriptions = $c->stash('balance_channel');
     if ($subscriptions) {
         $channel = first { m/TXNUPDATE::balance/ } keys %$subscriptions;
         $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
