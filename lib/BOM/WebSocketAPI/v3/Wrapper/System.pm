@@ -112,7 +112,8 @@ sub _forget_feed_subscription {
             $channel =~ /(.*);(.*)/;
             my $fsymbol = $1;
             my $ftype   = $2;
-            if ($typeoruuid =~ /^$ftype/ or $typeoruuid eq $subscription->{$channel}->{uuid}) {
+            # . 's' while we are still using tickS in this calls. backward compatibility that must be removed
+            if ($ftype . 's' =~ $typeoruuid or $typeoruuid eq $subscription->{$channel}->{uuid}) {
                 push @$removed_ids, $subscription->{$channel}->{uuid};
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'unsubscribe', $fsymbol, $ftype);
             }
