@@ -27,22 +27,20 @@ use BOM::Market::Types;
 
 use constant EE => 'economic_events';
 
-has document => (       
-    is         => 'rw',       
-    lazy_build => 1,      
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
 );
-
 
 #this sub needs to be removed as it is no loger used.
 #we use `get_latest_events_for_period` to read economic events.
-sub _build_document {      
-    my $self = shift;     
+sub _build_document {
+    my $self = shift;
 
-    #document is an array of hash     
-    #each hash represents a single economic event     
-    return BOM::System::Chronicle::get(EE, EE);       
-}     
-
+    #document is an array of hash
+    #each hash represents a single economic event
+    return BOM::System::Chronicle::get(EE, EE);
+}
 
 has symbol => (
     is       => 'ro',
