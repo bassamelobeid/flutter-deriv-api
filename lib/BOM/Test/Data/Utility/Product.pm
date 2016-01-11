@@ -5,7 +5,6 @@ use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Market::Underlying;
 use Date::Utility;
 
-
 sub client_buy_bet {
     my ($client, $currency, $amount) = @_;
 
