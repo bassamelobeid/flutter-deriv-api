@@ -137,7 +137,7 @@ sub get_latest_events_for_period {
     my $first_event_date = Date::Utility->new($first_event->{release_date});
 
     #for live pricing, following condition should be satisfied
-    if ( $from >= $first_event_date->epoch ) {
+    if ($from >= $first_event_date->epoch) {
         my @matching_events;
 
         for my $event (@{$events}) {
