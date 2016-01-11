@@ -10,6 +10,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
 install:
+    - apt-get update
     - source /tmp/travis-scripts/devbox_path.sh
     - /tmp/travis-scripts/setup_postfix.sh
 script:
