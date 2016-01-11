@@ -30,7 +30,7 @@ sub client_buy_bet {
         price    => $amount,
         staff    => 'system'
     });
-    $txn->buy(skip_validation => 1);
+    return $txn->buy(skip_validation => 1);
 }
 
 sub buy_bet {
@@ -57,7 +57,7 @@ sub sell_bet {
         staff       => 'UnitTest',
         contract_id => $txn_buy_contract_id,
     });
-    $txn->sell(skip_validation => 1);
+    return $txn->sell(skip_validation => 1);
 }
 
 1;

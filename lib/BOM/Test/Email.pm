@@ -72,6 +72,7 @@ sub import {
     open(my $fh, ">>$mailbox") || die "cannot create mailbox";
     close($fh);
     __PACKAGE__->export_to_level(1, @_);
+    return;
 }
 
 =head2 clear_mailbox
@@ -80,6 +81,7 @@ sub import {
 
 sub clear_mailbox {
     truncate $mailbox, 0;
+    return;
 }
 
 1;
