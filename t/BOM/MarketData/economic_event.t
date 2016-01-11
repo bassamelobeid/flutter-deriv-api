@@ -70,7 +70,6 @@ subtest save_event_to_chronicle => sub {
         ); } 'save didn\'t die';
 
     my $dm   = BOM::MarketData::Fetcher::EconomicEvent->new;
-    $DB::single = 1;
     my @docs = $dm->get_latest_events_for_period({
             from         => $release_date,
             to           => $release_date
