@@ -80,7 +80,7 @@ sub verify_email {
                 ],
                 use_email_template => 1
             });
-    } elsif ($params->{type} eq 'account_opening')) {
+    } elsif ($params->{type} eq 'account_opening') {
         send_email({
             from               => $params->{cs_email},
             to                 => $params->{email},
