@@ -51,7 +51,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         events => [{
                 symbol       => 'USD',
                 release_date => $now->minus_time_interval('3h'),
-                impact => 3,
+                impact => 5,
                 event_name => 'Unemployment Rate',
             },{
                 symbol       => 'USD',
