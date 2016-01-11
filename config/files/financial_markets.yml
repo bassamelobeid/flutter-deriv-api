@@ -125,7 +125,6 @@ forex:
     providers:
         - 'idata'
         - 'olsen'
-        - 'smart'
         - 'panda'
     markups:
         apply_traded_markets_markup: 1
@@ -211,7 +210,6 @@ indices:
         - 'idata'
         - 'telekurs'
         - 'tenfore'
-        - 'synthetic'
     markups:
         apply_traded_markets_markup: 1
         digital_spread:
