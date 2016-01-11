@@ -98,6 +98,8 @@ sub _init {
     initialize_symbol_dividend "RDYANG",  -35;
     initialize_symbol_dividend "RDYIN",   20;
 
+    BOM::System::Chronicle::set(EE, EE, {events => []});
+
     return 1;
 }
 
