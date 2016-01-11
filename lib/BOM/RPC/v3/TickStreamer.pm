@@ -227,6 +227,12 @@ sub _validate_start_end {
     $args->{end}   = $end;
     $args->{count} = $count;
 
+    if ($start > $end) {
+        return BOM::RPC::v3::Utility::create_error({
+            code              => 'InvalidStartEnd',
+            message_to_client => BOM::Platform::Context::localize("Start time [_1] must be before end time [_2]", $start, $end)});
+    }
+
     return $args;
 }
 
