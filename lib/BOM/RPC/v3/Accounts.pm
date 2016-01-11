@@ -294,7 +294,7 @@ sub change_password {
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    my $pwdm = Data::Password::Meter->new(30);
+    my $pwdm = Data::Password::Meter->new(33);
 
     return $err->(localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
@@ -376,7 +376,7 @@ sub cashier_password {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
-        my $pwdm = Data::Password::Meter->new(30);
+        my $pwdm = Data::Password::Meter->new(33);
         return $error_sub->(localize("Password is not strong enough."))
             if ($pwdm->strong($lock_password));
 

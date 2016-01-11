@@ -29,7 +29,7 @@ sub new_account_virtual {
     BOM::Platform::Context::request()->language($params->{language});
 
     my $err_code;
-    my $pwd = Data::Password::Meter->new(30);
+    my $pwd = Data::Password::Meter->new(33);
 
     return $err->(localize("Password is not strong enough."))
         if ($pwdm->strong($args->{client_password}));
