@@ -44,14 +44,14 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => 'frxGBPUSD',
         recorded_date => $now,
     });
-
+$DB::single=1;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'economic_events',
     {
         recorded_date   => $now->minus_time_interval('3h'),
         events => [{
                 symbol       => 'USD',
-                release_date => $now,
+                release_date => $now->minus_time_interval('130m'),
                 impact => 5,
                 event_name => 'Unemployment Rate',
             }],
