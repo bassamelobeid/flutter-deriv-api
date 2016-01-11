@@ -131,6 +131,8 @@ sub get_latest_events_for_period {
     #get latest events
     my $document = BOM::System::Chronicle::get(EE, EE);
 
+    die "No economic events" if not defined $document;
+
     #extract first event from current document to check whether we need to get back to historical data
     my $events           = $document->{events};
     my $first_event      = $events->[0];
