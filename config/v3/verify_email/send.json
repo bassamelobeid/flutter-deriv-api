@@ -12,7 +12,7 @@
     },
     "type": {
       "type": "string",
-      "description": "type of email to be sent",
+      "description": "two types: account_opening and lost_password",
       "required": "1"
     },
     "req_id": {

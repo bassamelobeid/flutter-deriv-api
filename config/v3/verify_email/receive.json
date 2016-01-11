@@ -14,10 +14,6 @@
       "description": "1 for success (secure code has been sent to the email address)",
       "pattern": "^(1|0)$"
     },
-    "type":{
-        "type": "string",
-        "description": "two types: account_opening and lost_password"
-    },
     "msg_type": {
       "type": "string",
       "description": "verify_email"
