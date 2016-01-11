@@ -39,10 +39,9 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/stress
+    - /tmp/travis-scripts/clone_branch.sh chylli/websocket-bench
 
     - /tmp/travis-scripts/redis.sh
-    - cd /tmp && git clone git@github.com:chylli/websocket-bench.git && sudo mv websocket-bench /home/git/regentmarkets
-    -  cd /home/git/regentmarkets/websocket-bench && npm install
 
 install:
     - sudo mkdir /tmp/go;sudo chmod 777 /tmp/go
@@ -50,6 +49,7 @@ install:
     - go get github.com/kavehmz/queue
     - go get golang.org/x/net/websocket
     - go get github.com/garyburd/redigo/redis
+    - cd /home/git/regentmarkets/websocket-bench && npm install && cd $TRAVIS_BUILD_DIR
 
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis; export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
