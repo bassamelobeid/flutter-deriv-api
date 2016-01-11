@@ -1668,9 +1668,9 @@ sub _market_data {
                 } sort {
                 $a->[0] <=> $b->[0]
                 } map {
-                [$_->release_date->epoch, $_]
+                [$_->{release_date}->epoch, $_]
                 } grep {
-                $applicable_symbols{$_->symbol}
+                $applicable_symbols{$_->{symbol}}
                 } @$ee;
 
             return @applicable_news;
