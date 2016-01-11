@@ -331,6 +331,9 @@ sub __handle {
         if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
             $limiting_service = 'websocket_call_expensive';
         }
+        if (grep { $_ eq $descriptor->{category} } ('proposal', 'proposal_open_contract')) {
+            $limiting_service = 'websocket_call_pricing';
+        }
         if (
             not within_rate_limits({
                     service  => $limiting_service,
