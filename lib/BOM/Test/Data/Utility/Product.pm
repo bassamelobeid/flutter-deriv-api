@@ -1,4 +1,6 @@
 package BOM::Test::Data::Utility::Product;
+use strict;
+use warnings;
 
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
