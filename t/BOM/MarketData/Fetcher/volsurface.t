@@ -169,13 +169,6 @@ subtest 'Consecutive saves.' => sub {
         unshift @recorded_dates, $recorded_date;
     }
 
-    my $datasources = BOM::Platform::Runtime->instance->datasources;
-    my $client      = CouchDB::Client->new(uri => $datasources->couchdb->replica->uri);
-    my $db          = $client->newDB($datasources->couchdb_databases->{volatility_surfaces});
-    my $doc         = $db->newDoc($underlying->symbol);
-
-    throws_ok { $doc->fetchAttachment('historical') } qr/No such attachment/, '"Current" doc does not have attachment.';
-
     my $dm = BOM::MarketData::Fetcher::VolSurface->new;
     my $current = $dm->fetch_surface({underlying => $underlying});
     is($current->recorded_date->datetime, $recorded_dates[0]->datetime, 'Current surface has expected date.');
