@@ -20,8 +20,8 @@ stress2:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
 	cd /home/git/regentmarkets/websocket-bench
-  ln /home/git/regentmarkets/bom-websocket-api/t/generator.js
-  bin/websocket-bench -a 100 -c 20 -w 2 -m 1 -g generator.js -t websocket 'http://localhost:5004'
+	ln /home/git/regentmarkets/bom-websocket-api/t/generator.js
+	bin/websocket-bench -a 100 -c 20 -w 2 -m 1 -g generator.js -t websocket 'http://localhost:5004'
 
 tidy:
 	find . -name '*.p?.bak' -delete
