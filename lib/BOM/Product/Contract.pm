@@ -1660,17 +1660,7 @@ sub _market_data {
                 to   => $to
             });
             my @applicable_news =
-                map { {
-                    release_date => $_->[0],
-                    vol_factor   => $_->[1]->get_scaling_factor($underlying->symbol, 'vol'),
-                    spot_factor  => $_->[1]->get_scaling_factor($underlying->symbol, 'spot')}
-                } sort {
-                $a->[0] <=> $b->[0]
-                } map {
-                [$_->release_date->epoch, $_]
-                } grep {
-                $applicable_symbols{$_->symbol}
-                } @$ee;
+                sort { $a->[0] <=> $b->[0] } map { [$_->{release_date}->epoch, $_] } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
             return @applicable_news;
         },
@@ -2416,7 +2406,7 @@ sub _validate_start_date {
             from => $self->date_start->minus_time_interval('15m'),
             to   => $self->date_start,
         });
-        if (my $event = first { $_->impact == 5 and $_->symbol eq 'USD' } @$economic_events) {
+        if (my $event = first { $_->{impact} == 5 and $_->{symbol} eq 'USD' } @$economic_events) {
             push @errors,
                 {
                 message => format_error_string(
@@ -2424,13 +2414,13 @@ sub _validate_start_date {
                     symbol        => $underlying->symbol,
                     duration      => $self->remaining_time->as_concise_string,
                     min           => '2m',
-                    'news impact' => $event->impact,
-                    'news symbol' => $event->symbol,
+                    'news impact' => $event->{impact},
+                    'news symbol' => $event->{symbol},
                 ),
                 severity          => 80,
                 message_to_client => localize(
                     "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
-                    $event->release_date->plus_time_interval('15m')->time_hhmm
+                    $event->{release_date}->plus_time_interval('15m')->time_hhmm
                 ),
                 };
         }

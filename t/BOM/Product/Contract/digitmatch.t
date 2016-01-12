@@ -21,12 +21,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol => 'USD',
         date   => Date::Utility->new
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => $now
-    });
 my $args = {
     bet_type     => 'DIGITMATCH',
     underlying   => 'R_100',
