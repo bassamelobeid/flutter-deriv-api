@@ -205,15 +205,6 @@ sub profit_table {
         count        => scalar(@transactions)};
 }
 
-sub send_realtime_balance {
-    my ($client, $message) = @_;
-
-    return {
-        loginid  => $client->loginid,
-        currency => $client->default_account->currency_code,
-        balance  => $message->{balance_after}};
-}
-
 sub balance {
     my $params = shift;
 
