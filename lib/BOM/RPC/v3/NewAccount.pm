@@ -34,8 +34,8 @@ sub new_account_virtual {
     unless ($pwdm->strong($args->{client_password})) {
         $err_code = 'Password is not strong enough.' . $pwdm->score;
         return BOM::RPC::v3::Utility::create_error({
-            code              => $err_code,
-            message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
+                code              => $err_code,
+                message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
     }
 
     if (_is_session_cookie_valid($params->{token}, $args->{email})) {
