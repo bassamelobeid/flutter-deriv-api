@@ -15,21 +15,13 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 sub ticks {
     my ($c, $args) = @_;
 
-    my @symbols =
-        (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
+    my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
             return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
-        } else {
-            if (exists $args->{subscribe} and $args->{subscribe} eq '0') {
-                _feed_channel($c, 'unsubscribe', $symbol, 'tick', $args);
-            } else {
-                my $uuid;
-                if (not $uuid = _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
-                    return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
-                }
-            }
+        } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
+            return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
         }
     }
     return;
@@ -72,8 +64,7 @@ sub proposal {
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
-        my $id;
-        $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args);
+        my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args);
         send_ask($c, $id, $args);
     }
     return;
@@ -180,7 +171,7 @@ sub _feed_channel {
         }
         $uuid = Data::UUID->new->create_str();
         $feed_channel->{$symbol} += 1;
-        $feed_channel_type->{"$symbol;$type"}->{args} = $args;
+        $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
         $redis->subscribe(["FEED::$symbol"], sub { });
     }
@@ -196,6 +187,62 @@ sub _feed_channel {
 
     $c->stash('feed_channel'      => $feed_channel);
     $c->stash('feed_channel_type' => $feed_channel_type);
+
+    return $uuid;
+}
+
+sub _balance_channel {
+    my ($c, $action, $account_id, $args) = @_;
+    my $uuid;
+
+    my $redis              = $c->stash('redis');
+    my $channel            = 'TXNUPDATE::balance_' . $account_id;
+    my $subscriptions      = $c->stash('balance_channel');
+    my $already_subscribed = $subscriptions ? $subscriptions->{$channel} : undef;
+
+    if ($action) {
+        if ($action eq 'subscribe' and not $already_subscribed) {
+            $uuid = Data::UUID->new->create_str();
+            $redis->subscribe([$channel], sub { });
+            $subscriptions->{$channel}->{args}       = $args if $args;
+            $subscriptions->{$channel}->{uuid}       = $uuid;
+            $subscriptions->{$channel}->{account_id} = $account_id;
+            $subscriptions->{$channel}->{type}       = 'balance';
+            $c->stash('balance_channel', $subscriptions);
+        } elsif ($action eq 'unsubscribe' and $already_subscribed) {
+            $redis->unsubscribe([$channel], sub { });
+            delete $subscriptions->{$channel};
+            delete $c->stash->{balance_channel};
+        }
+    }
+
+    return $uuid;
+}
+
+sub _transaction_channel {
+    my ($c, $action, $account_id, $args) = @_;
+    my $uuid;
+
+    my $redis              = $c->stash('redis');
+    my $channel            = 'TXNUPDATE::transaction_' . $account_id;
+    my $subscriptions      = $c->stash('transaction_channel');
+    my $already_subscribed = $subscriptions ? $subscriptions->{$channel} : undef;
+
+    if ($action) {
+        if ($action eq 'subscribe' and not $already_subscribed) {
+            $uuid = Data::UUID->new->create_str();
+            $redis->subscribe([$channel], sub { });
+            $subscriptions->{$channel}->{args}       = $args if $args;
+            $subscriptions->{$channel}->{uuid}       = $uuid;
+            $subscriptions->{$channel}->{account_id} = $account_id;
+            $subscriptions->{$channel}->{type}       = 'transaction';
+            $c->stash('transaction_channel', $subscriptions);
+        } elsif ($action eq 'unsubscribe' and $already_subscribed) {
+            $redis->unsubscribe([$channel], sub { });
+            delete $subscriptions->{$channel};
+            delete $c->stash->{transaction_channel};
+        }
+    }
 
     return $uuid;
 }
