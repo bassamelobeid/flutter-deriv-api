@@ -30,7 +30,6 @@ use LWP::UserAgent;
 use YAML::XS;
 
 use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Flat;
 use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
