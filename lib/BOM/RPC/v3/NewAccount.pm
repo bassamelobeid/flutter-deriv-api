@@ -32,7 +32,7 @@ sub new_account_virtual {
     my $pwdm = Data::Password::Meter->new(27);
 
     unless ($pwdm->strong($args->{client_password})) {
-        $err_code = 'Password is not strong enough.' . $pwdm->score;
+        $err_code = 'Password is not strong enough.';
         return BOM::RPC::v3::Utility::create_error({
                 code              => $err_code,
                 message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});

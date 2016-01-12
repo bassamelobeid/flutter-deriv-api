@@ -291,7 +291,7 @@ sub change_password {
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
     return $err->(localize('New password is same as old password.'))
         if $args->{new_password} eq $args->{old_password};
-    return $err->(localize("Password is not strong enough." . $pwdm->score))
+    return $err->(localize("Password is not strong enough."))
         unless ($pwdm->strong($args->{new_password}));
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
@@ -368,8 +368,8 @@ sub cashier_password {
         }
 
         my $pwdm = Data::Password::Meter->new(27);
-        return $error_sub->(localize("Password is not strong enough." . $pwdm->score))
-            if ($pwdm->strong($lock_password));
+        return $error_sub->(localize("Password is not strong enough."))
+            unless ($pwdm->strong($lock_password));
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
