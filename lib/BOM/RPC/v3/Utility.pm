@@ -43,7 +43,7 @@ sub site_limits {
         'applies_to' => 'portfolio, statement and proposal',
         'minutely'   => $l[0]->[1],
         'hourly'     => $l[1]->[1]};
-        @l = RateLimitations::rate_limits_for_service('websocket_call_pricing');
+    @l = RateLimitations::rate_limits_for_service('websocket_call_pricing');
     $limits->{'pricing'} = {
         'applies_to' => 'proposal and proposal_open_contract',
         'minutely'   => $l[0]->[1],
