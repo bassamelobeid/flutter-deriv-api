@@ -74,6 +74,8 @@ sub entry_point {
                     if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg)
                     if $channel =~ /^FEED::/;
+                BOM::WebSocketAPI::v3::Wrapper::Transaction::send_transaction_updates($c, $msg)
+                    if $channel =~ /^TXNUPDATE::transaction_/;
             });
         $c->stash->{redis} = $redis;
     }
@@ -209,8 +211,9 @@ my @dispatch = (
     ],
 
     # authenticated calls
-    ['sell', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell, 1],
-    ['buy',  \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,  1],
+    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1],
+    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1],
+    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1],
     [
         'portfolio',
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1
