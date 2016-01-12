@@ -32,13 +32,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw(EUR USD);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => $_,
-        recorded_date => Date::Utility->new,
-    }) for qw/R_50 R_75/;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'GDAXI',
