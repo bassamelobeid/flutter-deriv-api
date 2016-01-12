@@ -39,6 +39,6 @@ is $response->{error}->{code}, 'InputValidationFailed';
 $t = $t->send_ok({json => {sell_expired_contract => 1}})->message_ok;
 $response = decode_json($t->message->[1]);
 
-is $response->{sell_expired_contract}->{count}, 0;
+ok(exists $response->{sell_expired_contract}->{count});
 
 done_testing();
