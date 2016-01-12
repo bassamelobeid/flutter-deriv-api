@@ -73,10 +73,11 @@ sub transaction {
         my $subscriptions      = $c->stash('transaction_channel');
         my $already_subscribed = $subscriptions->{$channel};
 
-        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-            if (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $client->default_account->id, $args)) {
-                return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
-            }
+        if (    exists $args->{subscribe}
+            and $args->{subscribe} eq '1'
+            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $client->default_account->id, $args)))
+        {
+            return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
         }
     }
 
@@ -114,10 +115,8 @@ sub send_transaction_updates {
                         amount         => $payload->{amount},
                         transaction_id => $payload->{id},
                         ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
-    } else {
-        if ($channel and exists $subscriptions->{$channel}->{account_id}) {
-            BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
-        }
+    } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
+        BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
     }
     return;
 }
