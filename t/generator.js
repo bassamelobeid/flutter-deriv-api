@@ -5,7 +5,7 @@ module.exports = {
      * @param {client} client connection
      */
     beforeConnect : function(client) {
-        logger.error('call beforeconnect');
+        // logger.error('call beforeconnect');
         // Example:
         // client.setHeader('Authorization', 'OAuth abcd-1234');
         // client.disable('websocket');
@@ -17,7 +17,7 @@ module.exports = {
      * @param {done} callback function(err) {}
      */
     onConnect : function(client, done) {
-        logger.error('call onconnect');
+        // logger.error('call onconnect');
         // Faye client
         // client.subscribe('/channel', function(message) { });
 
@@ -49,7 +49,7 @@ module.exports = {
         // client.emit('test', { hello: 'world' });
         // client.publish('/test', { hello: 'world' });
         // client.call('com.myapp.add2', [2, 3]).then(function (res) { });
-        logger.error('call sendmessage');
+        // logger.error('call sendmessage');
         done();
     },
 
