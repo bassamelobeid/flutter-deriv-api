@@ -727,7 +727,7 @@ sub _build_volsurface {
     my $self = shift;
 
     # Due to the craziness we have in volsurface cutoff. This complexity is needed!
-    # FX volsurface has cutoffs at either 21:00 or 23:59.
+    # FX volsurface has cutoffs at either 21:00 or 23:59 or the early close time.
     # Index volsurfaces shouldn't have cutoff concept. But due to the system design, an index surface cuts at the close of trading time on a non-DST day.
     my %submarkets = (
         major_pairs => 1,
