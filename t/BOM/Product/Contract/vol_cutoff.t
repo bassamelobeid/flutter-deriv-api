@@ -2,7 +2,7 @@
 
 use strict;
 use warnings;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Exception;
 use Test::NoWarnings;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
@@ -13,6 +13,23 @@ use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Market::Underlying;
 initialize_realtime_ticks_db();
 my $now = Date::Utility->new;
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'partial_trading',
+    {
+        type => 'early_closes',
+        recorded_date => $now,
+        calendar => {
+            '24-Dec-2015' => {
+                '18h00m' => ['FOREX'],
+            },
+            '31-Dec-2015' => {
+                '18h00m' => ['FOREX'],
+            },
+            '18-Jan-2016' => {
+                '18h00m' => ['FOREX'],
+            },
+        },
+    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
@@ -32,7 +49,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date => $now,
     });
 my $exchange = BOM::Market::Underlying->new('frxUSDJPY')->exchange;
-
 subtest 'vol_cutoff_from_thurs_to_sat_on_non_dst' => sub {
     my $date_start = Date::Utility->new('2016-01-07 00:00:00');
     my $c = produce_contract('CALL_FRXUSDJPY_10_' . $date_start->epoch . '_' . $date_start->plus_time_interval('7d')->epoch . 'F_120050000_0', 'USD');
@@ -59,6 +75,14 @@ subtest 'vol_cutoff_during_new_year' => sub {
     my $p = $c->build_parameters;
     compare_cut_off($date_start, 5, $p, $exchange);
 };
+
+subtest 'vol_cutoff_during_early_close' => sub {
+    my $date_start = Date::Utility->new('2016-01-15 00:00:00');
+    my $c = produce_contract('CALL_FRXUSDJPY_10_' . $date_start->epoch . '_' . $date_start->plus_time_interval('7d')->epoch . 'F_120050000_0', 'USD');
+    my $p = $c->build_parameters;
+    compare_cut_off($date_start, 5, $p, $exchange);
+};
+
 
 sub compare_cut_off {
     my ($date_start, $no_of_day, $pricing_param, $exchange) = @_;
