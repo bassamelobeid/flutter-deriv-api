@@ -1217,7 +1217,6 @@ subtest 'economic events blockout period' => sub {
         quote  => 100
     };
     my $tick  = BOM::Market::Data::Tick->new($tick_params);
-    my $redis = Cache::RedisDB->redis;
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
