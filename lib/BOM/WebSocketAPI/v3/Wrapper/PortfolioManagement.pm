@@ -4,10 +4,13 @@ use strict;
 use warnings;
 
 use JSON;
+use Try::Tiny;
 
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::Platform::Runtime;
+use BOM::Product::Transaction;
 
 sub portfolio {
     my ($c, $args) = @_;
@@ -91,6 +94,31 @@ sub send_proposal {
             currency    => delete $details->{currency},
             args        => $details
         });
+    return;
+}
+
+sub sell_expired_contract {
+    my ($c, $args) = @_;
+
+    my $response = {
+        msg_type => 'sell_expired_contract',
+        sell_expired_contract => {count => 0},
+        $args ? (echo_req => $args) : ()};
+
+    if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
+        try {
+            my $res = BOM::Product::Transaction::sell_expired_contracts({
+                client => $c->stash('client'),
+                source => $c->stash('source'),
+            });
+            $response->{sell_expired_contract}->{count} = $res->{number_of_sold_bets} if ($res and exists $res->{number_of_sold_bets});
+        }
+        catch {
+            $response = $c->new_error('sell_expired_contracts', 'SellExpiredContractError', $c->l('There was an error processing the request.'))
+        };
+    }
+
+    $c->send({json => {($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (), %$response}});
     return;
 }
 

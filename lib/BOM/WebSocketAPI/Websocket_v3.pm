@@ -223,8 +223,9 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         1
     ],
-    ['balance',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,   1],
-    ['statement', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement, 1],
+    ['sell_expired_contract', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired_contract, 1],
+    ['balance',               \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                          1],
+    ['statement',             \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,                        1],
     [
         'profit_table',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table, 1
