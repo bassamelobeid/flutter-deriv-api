@@ -22,7 +22,7 @@ use strict;
 use warnings;
 
 use BOM::MarketData::CorrelationMatrix;
-use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use CouchDB::Client;
 use Carp qw( croak );
@@ -96,6 +96,8 @@ sub _init {
     initialize_symbol_dividend "RDVENUS", 0;
     initialize_symbol_dividend "RDYANG",  -35;
     initialize_symbol_dividend "RDYIN",   20;
+
+    BOM::System::Chronicle::set('economic_events', 'economic_events', {events => []});
 
     return 1;
 }
