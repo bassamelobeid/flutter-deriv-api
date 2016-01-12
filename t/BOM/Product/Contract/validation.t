@@ -243,14 +243,14 @@ subtest 'invalid bet payout hobbling around' => sub {
 
     my $bet = produce_contract($bet_params);
 
-    my $expected_reasons = [qr/payout.*acceptable range/, qr/stake.*is not within limits/];
+    my $expected_reasons = [qr/stake.*is not within limits/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount} = 0.75;
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/stake.*is not within limits/, qr/payout.*acceptable range/];
+    $expected_reasons = [qr/stake.*is not within limits/];
     test_error_list('buy', $bet, $expected_reasons);
-    ok($bet->primary_validation_error->message =~ $expected_reasons->[1], '..and the primary one is the most severe.');
+    ok($bet->primary_validation_error->message =~ $expected_reasons->[0], '..and the primary one is the most severe.');
 
     $bet_params->{amount} = 12.345;
     $bet                  = produce_contract($bet_params);
@@ -288,7 +288,7 @@ subtest 'invalid bet types are dull' => sub {
     };
 
     my $bet = produce_contract($bet_params);
-    my $expected_reasons = [qr/suspended for contract type/, qr/unauthorised.*underlying/, qr/duration.*not acceptable/];
+    my $expected_reasons = [qr/duration.*not acceptable/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 
@@ -313,7 +313,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 
     my $bet = produce_contract($bet_params);
 
-    my $expected_reasons = [qr/stake.*is not within limits/, qr/Barrier too far from spot/];
+    my $expected_reasons = [qr/Barrier too far from spot/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount}  = 1e5;
@@ -326,7 +326,7 @@ subtest 'invalid contract stake evokes sympathy' => sub {
 
     $bet = produce_contract($bet_params);
 
-    $expected_reasons = [qr/few period.*vol/, qr/Theo probability.*below the minimum acceptable/];
+    $expected_reasons = [qr/Theo probability.*below the minimum acceptable/];
 
     my $lookback_time = Date::Utility->new($starting - $bet->timeinyears->amount * 86400 * 365);
     my $date          = DateTime->new(
@@ -359,13 +359,13 @@ subtest 'invalid contract stake evokes sympathy' => sub {
     $bet_params->{bet_type} = 'ONETOUCH';
 
     $bet              = produce_contract($bet_params);
-    $expected_reasons = [qr/stake.*same as.*payout/];
+    $expected_reasons = [qr/stake same as payout/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{amount_type} = 'stake';
     $bet_params->{amount}      = 0;
     $bet                       = produce_contract($bet_params);
-    $expected_reasons = [qr/Empty or zero stake/, qr/stake.*is not within limits/, qr/payout.*acceptable range/, qr/stake.*same as.*payout/];
+    $expected_reasons = [qr/Empty or zero stake/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 
@@ -444,7 +444,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 
     my $bet = produce_contract($bet_params);
 
-    my $expected_reasons = [qr/volsurface too old/, qr/Quote.*too old/];
+    my $expected_reasons = [qr/volsurface too old/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{date_start}   = $oft_used_date->epoch;
@@ -466,12 +466,12 @@ subtest 'volsurfaces become old and invalid' => sub {
         current_tick => $tick,
     };
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/volsurface too old/, qr/Quote.*too old/];
+    $expected_reasons = [qr/volsurface too old/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet = produce_contract($bet_params);
     ok($bet->volsurface->set_smile_flag(1, 'fake broken surface'), 'Set smile flags');
-    $expected_reasons = [qr/volsurface too old/, qr/has smile flags/, qr/Quote.*too old/];
+    $expected_reasons = [qr/has smile flags/];
     test_error_list('buy', $bet, $expected_reasons);
 
     my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -483,7 +483,7 @@ subtest 'volsurfaces become old and invalid' => sub {
         });
     my $gdaxi = BOM::Market::Underlying->new('GDAXI');
     my $surface_too_old_date = $gdaxi->exchange->opening_on(Date::Utility->new('2013-03-28'));
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol        => 'GDAXI',
@@ -509,7 +509,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{pricing_vol} = $forced_vol;
     $bet = produce_contract($bet_params);
     is($bet->pricing_args->{iv}, $forced_vol, 'Pricing args contains proper forced vol.');
-    $expected_reasons = [qr/volsurface too old/, qr/forced \(not calculated\) IV/];
+    $expected_reasons = [qr/forced \(not calculated\) IV/];
     test_error_list('buy', $bet, $expected_reasons);
 };
 
@@ -547,8 +547,7 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration} = '-1m';
 
     $bet = produce_contract($bet_params);
-
-    $expected_reasons = [qr/stake same as payout/, qr/^Start must be before expiry/, qr/Intraday duration.*not acceptable/,];
+    $expected_reasons = [qr/Intraday duration.*not acceptable/,];
     test_error_list('buy', $bet, $expected_reasons);
 
     $bet_params->{duration} = '6d';
@@ -619,7 +618,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet = produce_contract($bet_params);
-    $expected_reasons = [qr/end of day start blackout/, qr/Daily duration.*is outside/];
+    $expected_reasons = [qr/Daily duration.*is outside/];
     test_error_list('buy', $bet, $expected_reasons);
 
     $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -710,7 +709,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{duration}     = '14d';
     $bet_params->{current_tick} = $tick;
     $bet                        = produce_contract($bet_params);
-    $expected_reasons = [qr/Calibration fit outside acceptable range/, qr/Barrier too far from spot/];
+    $expected_reasons = [qr/Calibration fit outside acceptable range/];
     test_error_list('buy', $bet, $expected_reasons);
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface("{}"),       'Set');
     ok(BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface($orig_list), 'restored original list');
@@ -1094,12 +1093,12 @@ subtest 'intraday indices duration test' => sub {
     $params->{duration}   = '15m';
     $params->{current_tick} = $ftse_tick;
     $c                    = produce_contract($params);
-    $expected_reasons = [qr/trying unauthorised/, qr/Intraday duration.*not acceptable/];
+    $expected_reasons = [qr/Intraday duration.*not acceptable/];
     test_error_list('buy', $c, $expected_reasons);
 };
 
 subtest 'intraday index missing pricing coefficient' => sub {
-    my $now         = Date::Utility->new('2014-10-08 10:00:00');
+    my $now = Date::Utility->new('2015-04-08 00:30:00');
     my $tick_params = {
         symbol => 'not_checked',
         epoch  => $now->epoch,
@@ -1108,11 +1107,11 @@ subtest 'intraday index missing pricing coefficient' => sub {
     my $tick   = BOM::Market::Data::Tick->new($tick_params);
     my $params = {
         bet_type     => 'FLASHU',
-        underlying   => 'FTSE',
+        underlying   => 'AS51',
         date_start   => $now,
         date_pricing => $now,
         duration     => '15m',
-        currency     => 'GBP',
+        currency     => 'AUD',
         current_tick => $tick,
         payout       => 100,
         barrier      => 'S0P',
@@ -1123,10 +1122,12 @@ subtest 'intraday index missing pricing coefficient' => sub {
             symbol => 'FTSE',
             recorded_date   => Date::Utility->new($params->{date_pricing}),
         });
-    my $mock = Test::MockModule->new('BOM::Product::Contract');
-    $mock->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
+    my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
+    $mock_contract->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
+    my $mock_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Index');
+    $mock_engine->mock('_calibration_coefficient', sub {undef});
     my $c = produce_contract($params);
-    my $expected_reasons = [qr/Calibration coefficient missing/, qr/trying unauthorised/, qr/duration.*not acceptable/];
+    my $expected_reasons = [qr/Calibration coefficient missing/];
     test_error_list('buy', $c, $expected_reasons);
 };
 
@@ -1324,17 +1325,15 @@ my $counter = 0;
 sub test_error_list {
     my ($which, $bet, $expected) = @_;
     $counter++;
-    my @expected_reasons = @{$expected};
-    my $err_count        = scalar @expected_reasons;
     my $val_method       = 'is_valid_to_' . lc $which;
     subtest $bet->shortcode . ' error confirmation' => sub {
-        plan tests => $err_count + 2;
+        plan tests => 2;
 
         ok(!$bet->$val_method, 'Not valid for ' . $which);
-        my @got_reasons = $bet->all_errors;
-        is(scalar @got_reasons, $err_count, '...for ' . $err_count . ' reason(s)');
-        foreach my $expected_reason (@expected_reasons) {
-            is(scalar(grep { $_->message =~ $expected_reason } @got_reasons), 1, '...one of which is ' . $expected_reason);
+        if ($bet->primary_validation_error->message =~ $expected->[0]) {
+            pass 'error is expected';
+        } else {
+            fail 'expected: ' . $expected->[0] . ' got: ' . $bet->primary_validation_error->message;
         }
     };
 }

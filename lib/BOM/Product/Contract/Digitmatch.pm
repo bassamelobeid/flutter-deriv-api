@@ -45,7 +45,7 @@ sub _build_barrier {
     my $self = shift;
 
     if (not defined $self->supplied_barrier) {
-        $self->add_errors({
+        $self->add_error({
             severity          => 110,
             message           => 'supplied barrier for digits is undefined',
             message_to_client => localize('We could not process this contract at this time.'),
