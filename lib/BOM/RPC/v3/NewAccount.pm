@@ -76,7 +76,6 @@ sub verify_email {
                 message => [
                     BOM::Platform::Context::localize(
                         'Before we can help you change your password, please help us to verify your identity by clicking on the following link: '
-                            . '\n'
                             . $params->{link})
                 ],
                 use_email_template => 1
@@ -86,7 +85,7 @@ sub verify_email {
             from               => $params->{cs_email},
             to                 => $params->{email},
             subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-            message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . '\n' . $params->{link})],
+            message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
             use_email_template => 1
         });
     }
