@@ -17,6 +17,7 @@ use Date::Utility;
 use BOM::Platform::Runtime;
 use VolSurface::Utils qw(get_delta_for_strike get_strike_for_moneyness);
 use VolSurface::Calibration::Equities;
+use BOM::System::Chronicle;
 
 use Try::Tiny;
 use Math::Function::Interpolator;
@@ -25,6 +26,41 @@ use List::Util qw(min first);
 use Storable qw( dclone );
 use JSON qw(from_json);
 use BOM::Utility::Log4perl qw( get_logger );
+
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_document {
+    my $self = shift;
+
+    my $document = BOM::System::Chronicle::get('volatility_surfaces', $self->symbol);
+
+    if ($self->for_date and $self->for_date->epoch < Date::Utility->new($document->{date})->epoch) {
+        $document = BOM::System::Chronicle::get_for('volatility_surfaces', $self->symbol, $self->for_date->epoch);
+
+        # This works around a problem with Volatility surfaces and negative dates to expiry.
+        # We have to use the oldest available surface.. and we don't really know when it
+        # was relative to where we are now.. so just say it's from the requested day.
+        # We do not allow saving of historical surfaces, so this should be fine.
+        $document //= {};
+        $document->{date} = $self->for_date->datetime_iso8601;
+    }
+
+    return $document;
+}
+
+sub save {
+    my $self = shift;
+
+    #if chronicle does not have this document, first create it because in document_content we will need it
+    if (not defined BOM::System::Chronicle::get('volatility_surfaces', $self->symbol)) {
+        BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, {});
+    }
+
+    return BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, $self->_document_content, $self->recorded_date);
+}
 
 sub _document_content {
     my $self = shift;
@@ -63,20 +99,6 @@ sub _build_parameterization {
         : $doc->{available_parameterizations} ? $doc->{available_parameterizations}->{sabr}
         :                                       undef;
     return $parameterization;
-}
-
-with 'BOM::MarketData::Role::VersionedSymbolData' => {
-    -alias    => {save => '_save'},
-    -excludes => ['save']};
-
-sub save {
-    my $self = shift;
-
-    #first call original save method to save all data into CouchDB just like before
-    my $result = $self->_save();
-
-    BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, $self->_document_content);
-    return $result;
 }
 
 sub _get_calibrator {
