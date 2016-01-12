@@ -460,9 +460,9 @@ sub rpc {
     my $url;
     if (BOM::System::Config::env eq 'production') {
         # internal-RPC-2093502773.us-east-1.elb.amazonaws.com
-        $url    = 'http://172.30.0.21:5005/' . $method;
+        $url = 'http://172.30.0.21:5005/' . $method;
     } else {
-        $url    = 'http://127.0.0.1:5005/' . $method;
+        $url = 'http://127.0.0.1:5005/' . $method;
     }
 
     my $callobj = {
