@@ -1014,6 +1014,12 @@ sub _market_maturities_interpolation_function {
     };
 }
 
+# Flat does not use VersionedSymbolData
+has for_date => (
+    is      => 'ro',
+    default => undef,
+);
+
 =head2 underlying
 =cut
 

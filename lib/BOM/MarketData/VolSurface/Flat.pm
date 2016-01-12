@@ -1,25 +1,10 @@
 package BOM::MarketData::VolSurface::Flat;
 
+use feature 'state';
+
 use Moose;
-
+use YAML::XS qw(LoadFile);
 extends 'BOM::MarketData::VolSurface';
-
-sub _document_content {
-    my $self = shift;
-
-    my %structure = (
-        flat_vol        => $self->flat_vol,
-        flat_atm_spread => $self->flat_atm_spread,
-        date            => $self->recorded_date->datetime_iso8601,
-        master_cutoff   => $self->cutoff->code,
-        symbol          => $self->symbol,
-        type            => $self->type,
-    );
-
-    return \%structure;
-}
-
-with 'BOM::MarketData::Role::VersionedSymbolData';
 
 =head1 NAME
 
@@ -31,7 +16,8 @@ Represents a flat volatility surface, with vols at all points being the same
 
 =head1 SYNOPSIS
 
-    my $surface = BOM::MarketData::VolSurface::Delta->new({underlying => BOM::Market::Underlying->new('frxUSDJPY')});
+    my $surface = BOM::MarketData::VolSurface::Flat->new({underlying => BOM::Market::Underlying->new('frxUSDJPY')});
+    my $vol     = $surface->get_volatility();
 
 =cut
 
@@ -43,8 +29,15 @@ Return the surface type
 
 =cut
 
+state $vol = LoadFile('/home/git/regentmarkets/bom-market/config/files/flat_volatility.yml');
+
 has '+type' => (
     default => 'flat',
+);
+
+has atm_spread_point => (
+    is      => 'ro',
+    default => '50',
 );
 
 =head2 flat_vol
@@ -55,44 +48,27 @@ The flat volatility returned for all points on this surface.
 
 has flat_vol => (
     is         => 'ro',
-    isa        => 'Num',
     lazy_build => 1,
 );
 
 sub _build_flat_vol {
     my $self = shift;
-
-    return $self->document->{flat_vol};
+    return $vol->{$self->underlying->symbol};
 }
 
+# a fixed 7% of volatility spread
 has flat_atm_spread => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-has atm_spread_point => (
     is      => 'ro',
-    isa     => 'Num',
-    default => '50',
+    default => 0.07,
 );
-
-sub _build_flat_atm_spread {
-    my $self = shift;
-
-    return $self->document->{flat_atm_spread};
-}
 
 =head2 get_volatility
 
-Given a maturity of some form and a barrier of some form, gives you a vol
-from the surface.
+Returns a flat volatility.
 
 USAGE:
 
-  my $vol = $s->get_volatility({delta => 25, days => 7});
-  my $vol = $s->get_volatility({strike => $bet->barrier, tenor => '1M'});
-  my $vol = $s->get_volatility({delta => 50, expiry_date => Date::Utility->new});
+  my $flat_vol = $s->get_volatility();
 
 =cut
 
@@ -118,15 +94,23 @@ sub get_market_rr_bf {
     return $self->SUPER::get_rr_bf_for_smile(\%deltas);
 }
 
-sub BUILD {
-    my $self             = shift;
-    my $atm_spread_point = $self->atm_spread_point;
+# just a flat surface for consistency.
+has surface => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_surface',
+);
 
-    $self->{surface} =
-        {map { $_ => {vol_spread => {$atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
+sub _build_surface {
+    my $self = shift;
 
-    return;
+    return {map { $_ => {vol_spread => {$self->atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
 }
+
+has recorded_date => (
+    is      => 'ro',
+    default => sub { Date::Utility->new },
+);
 
 override is_valid => sub {
     # always true
