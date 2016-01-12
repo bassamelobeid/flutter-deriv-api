@@ -32,7 +32,7 @@ module.exports = {
 
         client.onmessage = function(msg) {
             var data = JSON.parse(msg.data);
-            logger.error('ticks update: ' + data);
+            //logger.error('ticks update: ' + data);
         };
         client.send(JSON.stringify({ticks:'R_100'}));
 
