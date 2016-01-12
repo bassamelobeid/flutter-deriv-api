@@ -71,6 +71,7 @@ sub verify_email {
                 verify_email => $response->{status}};
         },
         {
+            args         => $args,
             email        => $email,
             cs_email     => $r->website->config->get('customer_support.email'),
             website_name => $r->website->display_name,
