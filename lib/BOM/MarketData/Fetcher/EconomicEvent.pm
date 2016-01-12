@@ -19,6 +19,7 @@ use List::MoreUtils qw(notall);
 
 use BOM::Platform::Runtime;
 use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use Sereal qw(encode_sereal decode_sereal looks_like_sereal);
 use Sereal::Encoder;
 use Try::Tiny;
@@ -117,6 +118,11 @@ Returns all events that will happen on a pre-specified period.
 my $cache_namespace = 'COUCH_NEWS::';
 
 sub get_latest_events_for_period {
+    my ($self, $period) = @_;
+    return BOM::MarketData::EconomicEventCalendar->new->get_latest_events_for_period($period);
+}
+
+sub get_latest_events_for_period_couch {
     my ($self, $period) = @_;
 
     # We may do this from time to time.
