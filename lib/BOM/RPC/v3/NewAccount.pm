@@ -85,8 +85,8 @@ sub verify_email {
             send_email({
                 from               => $params->{cs_email},
                 to                 => $params->{email},
-                subject            => bom::platform::context::localize('verify your email address - [_1]', $params->{website_name}),
-                message            => [bom::platform::context::localize('your email address verification link is: ' . $params->{link})],
+                subject            => BOM::Platform::Context::localize('verify your email address - [_1]', $params->{website_name}),
+                message            => [BOM::Platform::Context::localize('your email address verification link is: ' . $params->{link})],
                 use_email_template => 1
             });
         }
