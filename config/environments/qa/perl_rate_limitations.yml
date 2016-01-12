@@ -14,6 +14,6 @@ websocket_call_expensive:
     1m: 20
     1h: 1200
 websocket_call_pricing:
-    1m: 500
-    1h: 30000
+    1m: 30
+    1h: 1800
 
