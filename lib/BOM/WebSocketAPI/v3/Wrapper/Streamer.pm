@@ -20,10 +20,8 @@ sub ticks {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
             return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
-        } else {
-            if (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
-                return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
-            }
+        } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
+            return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
         }
     }
     return;

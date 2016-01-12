@@ -286,11 +286,9 @@ sub balance {
 
     my $id;
     my $client = $c->stash('client');
-    if ($client and $client->default_account) {
-        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-            if (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $client->default_account->id, $args)) {
-                return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
-            }
+    if ($client and $client->default_account and exists $args->{subscribe} and $args->{subscribe} eq '1') {
+        if (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $client->default_account->id, $args)) {
+            return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
         }
     }
 
@@ -321,6 +319,7 @@ sub send_realtime_balance {
     my $channel;
     my $client        = $c->stash('client');
     my $subscriptions = $c->stash('balance_channel');
+
     if ($subscriptions) {
         $channel = first { m/TXNUPDATE::balance/ } keys %$subscriptions;
         $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
@@ -338,10 +337,8 @@ sub send_realtime_balance {
                         currency => $client->default_account ? $client->default_account->currency_code : '',
                         balance  => $payload->{balance_after},
                         ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
-    } else {
-        if ($channel and exists $subscriptions->{$channel}->{account_id}) {
-            BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
-        }
+    } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
+        BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
     }
     return;
 }
