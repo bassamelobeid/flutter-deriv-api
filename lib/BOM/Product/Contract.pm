@@ -1656,17 +1656,7 @@ sub _market_data {
                 to   => $to
             });
             my @applicable_news =
-                map { {
-                    release_date => $_->[0],
-                    vol_factor   => $_->[1]->get_scaling_factor($underlying->symbol, 'vol'),
-                    spot_factor  => $_->[1]->get_scaling_factor($underlying->symbol, 'spot')}
-                } sort {
-                $a->[0] <=> $b->[0]
-                } map {
-                [$_->{release_date}->epoch, $_]
-                } grep {
-                $applicable_symbols{$_->{symbol}}
-                } @$ee;
+                sort { $a->[0] <=> $b->[0] } map { [$_->{release_date}->epoch, $_] } grep { $applicable_symbols{$_->{symbol}} } @$ee;
 
             return @applicable_news;
         },

@@ -125,12 +125,6 @@ subtest 'expiry range' => sub {
             symbol => 'USD',
             date   => Date::Utility->new
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_flat',
-        {
-            symbol        => 'R_100',
-            recorded_date => $now
-        });
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
         underlying => 'R_100',
         epoch      => $now->epoch + 1,

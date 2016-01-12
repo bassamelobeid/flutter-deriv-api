@@ -27,13 +27,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => 'frxUSDJPY',
         recorded_date => $now
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => $now
-    });
-
 my @ticks_to_add = (
     ['frxUSDJPY', $now->epoch                    => 100],
     ['frxUSDJPY', $now->epoch + 1                => 100.001],

@@ -28,12 +28,6 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for ('EUR', 'USD', 'JPY', 'JPY-EUR', 'EUR-JPY', 'EUR-USD');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => $now
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,

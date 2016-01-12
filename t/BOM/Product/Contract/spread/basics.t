@@ -16,13 +16,6 @@ use Date::Utility;
 
 my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => $now
-    });
-
 my $params = {
     bet_type         => 'SPREADU',
     underlying       => 'R_100',

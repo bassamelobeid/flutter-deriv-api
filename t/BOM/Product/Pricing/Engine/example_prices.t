@@ -158,14 +158,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     }) for qw(FTSE GDAXI);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol          => 'SASEIDX',
-        recorded_date   => $recorded_date,
-        flat_vol        => 0.2,
-        flat_atm_spread => 0.07,
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'index',
     {
         symbol        => $_,
@@ -178,13 +170,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => 'SASEIDX',
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'frxUSDSAR',
-        recorded_date => $recorded_date,
-    });
-
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => $recorded_date});
 
 foreach my $underlying ('frxUSDJPY', 'frxEURUSD', 'FTSE', 'GDAXI') {
