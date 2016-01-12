@@ -45,7 +45,7 @@ DefaultReporter.prototype.report = function (steps, monitor, stopwatch) {
 
   this.outputStream.write('#### here is total report ####'.inverse + '\n');
   this.outputStream.write(tableTotal.toString() + '\n');
-
+  return 1;
 };
 
 module.exports = DefaultReporter;
