@@ -64,7 +64,11 @@ sub proposal {
     if ($response and exists $response->{error}) {
         return $c->new_error('proposal', $response->{error}->{code}, $response->{error}->{message_to_client});
     } else {
-        my $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args);
+        my $id;
+        if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
+            return $c->new_error('proposal',
+                'AlreadySubscribedOrLimit', $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
+        }
         send_ask($c, $id, $args);
     }
     return;
@@ -161,12 +165,16 @@ sub _feed_channel {
     my ($c, $subs, $symbol, $type, $args) = @_;
     my $uuid;
 
-    my $feed_channel      = $c->stash('feed_channel');
-    my $feed_channel_type = $c->stash('feed_channel_type');
+    my $feed_channel      = $c->stash('feed_channel')      || {};
+    my $feed_channel_type = $c->stash('feed_channel_type') || {};
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
-        if (exists $feed_channel_type->{"$symbol;$type"}) {
+        my $count = 0;
+        foreach my $k (keys $feed_channel_type) {
+            $count++ if ($k =~ /^.*?;proposal:/);
+        }
+        if ($count > 10 || exists $feed_channel_type->{"$symbol;$type"}) {
             return;
         }
         $uuid = Data::UUID->new->create_str();
