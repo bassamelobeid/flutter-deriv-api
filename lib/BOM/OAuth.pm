@@ -49,7 +49,7 @@ sub startup {
         });
 
     my $r = $app->routes;
-    $r->get('/authorize')->to('O#authorize');
+    $r->any('/authorize')->to('O#authorize');
     $r->any('/access_token')->to('O#access_token');
 }
 

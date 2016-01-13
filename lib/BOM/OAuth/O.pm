@@ -19,6 +19,7 @@ sub authorize {
     $redirect_uri or return $c->__bad_request('the request was missing redirect_uri');
 
     my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
+    unshift @scopes, 'user' unless grep { $_ eq 'user' } @scopes;
 
     ## The redirection endpoint URI MUST be an absolute URI
     my $uri = Mojo::URL->new($redirect_uri);

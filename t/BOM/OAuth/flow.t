@@ -5,11 +5,14 @@ use Test::Mojo;
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
+use BOM::Database::Model::OAuth;
+
+## clear
+BOM::Database::Model::OAuth->new->dbh->do("DELETE FROM oauth.user_scope_confirm");
 
 my $t = Test::Mojo->new('BOM::OAuth');
 
 $t = $t->get_ok("/authorize");
-diag Dumper(\$t->tx->res); use Data::Dumper;
 $t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing client_id/);
 
 $t = $t->get_ok("/authorize?client_id=binarycom");
@@ -34,10 +37,28 @@ $t->ua->cookie_jar->add(
         path   => '/'
     ));
 
-$t = $t->get_ok("/authorize?client_id=binarycom&redirect_uri=http://localhost/");
+# confirm_scopes
+$t = $t->get_ok("/authorize?client_id=binarycom&redirect_uri=http://localhost/")
+    ->content_like(qr/confirm_scopes/);
+
+my $csrftoken = $t->tx->res->dom->at('input[name=csrftoken]')->val;
+ok $csrftoken, 'csrftoken is there';
+
+$t->post_ok("/authorize?client_id=binarycom&redirect_uri=http://localhost/" => form => {
+    confirm_scopes => 1,
+    csrftoken => $csrftoken
+});
 ok $t->tx->res->headers->location =~ 'http://localhost/', 'redirect to localhost';
 my ($code) = ($t->tx->res->headers->location =~ /code=(.*?)$/);
 ok $code, 'got auth code';
+
+## second time won't have confirm scopes
+$t = $t->get_ok("/authorize?client_id=binarycom&redirect_uri=http://localhost/");
+ok $t->tx->res->headers->location =~ 'http://localhost/', 'redirect to localhost';
+
+## but new scope will require confirm_scopes again
+$t = $t->get_ok("/authorize?client_id=binarycom&redirect_uri=http://localhost/&scope=trade")
+    ->content_like(qr/confirm_scopes/);
 
 ## now we come to access_token
 $t = $t->post_ok('/access_token');
