@@ -166,7 +166,11 @@ sub _feed_channel {
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
-        if (exists $feed_channel_type->{"$symbol;$type"}) {
+        my $count=0;
+        foreach my $k (keys $feed_channel_type) {
+            $count++ if ($k =~ /^.*?;proposal:/);
+        }
+        if ($count>10 || exists $feed_channel_type->{"$symbol;$type"}) {
             return;
         }
         $uuid = Data::UUID->new->create_str();
