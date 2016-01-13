@@ -21,13 +21,6 @@ use BOM::Test::Data::Utility::Product;
 initialize_realtime_ticks_db;
 my $recorded_date = Date::Utility->new;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_50',
-        recorded_date => Date::Utility->new,
-    });
-
 my %new_client_details = (
     broker_code     => 'CR',
     residence       => 'br',
