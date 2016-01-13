@@ -23,6 +23,7 @@ sub startup {
     $log->warn("Log Level        is " . $log->level);
 
     $app->plugin(charset => {charset => 'utf-8'});
+    $app->plugin('DefaultHelpers');
     $app->secrets([BOM::System::Config::aes_keys->{web_secret}{1}]);
 
     $app->helper(

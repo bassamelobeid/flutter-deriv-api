@@ -1,0 +1,16 @@
+    <h1>Authorize application</h1>
+
+    <h2><%= $app_client->{name} %> would like permission to access your account <%= $client.loginid %></h2>
+
+    <ul>
+        <li>Read user profile</li>
+    <% if (grep { $_ eq 'trade' } @$scopes) { %>
+        <li>Trading</li>
+    <% } %>
+    </ul>
+
+    <form action="POST">
+    <input type="hidden" name="csrftoken" value="<%= csrftoken %>" />
+    <input type="submit" name="confirm_scopes" value="Grant" />
+    <input type="submit" name="cancel" value="Cancel" />
+    </form>

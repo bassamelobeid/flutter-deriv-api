@@ -13,10 +13,12 @@ sub __oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($client_id, $redirect_uri, $state) = map { $c->param($_) // undef } qw/ client_id redirect_uri state /;
+    my ($client_id, $redirect_uri, $scope, $state) = map { $c->param($_) // undef } qw/ client_id redirect_uri scope state /;
 
     $client_id    or return $c->__bad_request('the request was missing client_id');
     $redirect_uri or return $c->__bad_request('the request was missing redirect_uri');
+
+    my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
 
     ## The redirection endpoint URI MUST be an absolute URI
     my $uri = Mojo::URL->new($redirect_uri);
@@ -41,7 +43,35 @@ sub authorize {
     }
 
     my $loginid = $client->loginid;
-    my $auth_code = $oauth_model->store_auth_code($client_id, $loginid);
+
+    ## confirm scopes
+    my $is_all_approved = 0;
+    if ( $c->req->method eq 'POST' and ($c->csrf_token eq ($c->param('csrftoken') // '')) ) {
+        if ($c->param('confirm_scopes')) {
+            $is_all_approved = $oauth_model->confirm_scope($client_id, $loginid, @scopes);
+        } else {
+            $uri->query->append('error' => 'scope_denied');
+            $uri->query->append(state => $state) if defined $state;
+            return $c->redirect_to($uri);
+        }
+    }
+
+    ## check if it's confirmed
+    $is_all_approved ||= $oauth_model->is_scope_confirmed($client_id, $loginid, @scopes);
+    unless ($is_all_approved) {
+        ## show scope confirms
+        return $c->render(
+            template => 'scope_confirms',
+            layout   => $c->layout,
+
+            app_client => $app_client,
+            client     => $client,
+            scopes     => \@scopes,
+            csrftoken  => $c->csrf_token,
+        );
+    }
+
+    my $auth_code = $oauth_model->store_auth_code($client_id, $loginid, @scopes);
 
     $uri->query->append(code => $auth_code);
     $uri->query->append(state => $state) if defined $state;
@@ -87,7 +117,14 @@ sub access_token {
         return $c->throw_error('invalid_grant');
     }
 
-    my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($client_id, $loginid);
+    my @scope_ids;
+    if ($grant_type eq 'refresh_token') {
+        @scope_ids = $oauth_model->get_scope_ids_by_refresh_token($refresh_token);
+    } else {
+        @scope_ids = $oauth_model->get_scope_ids_by_auth_code($auth_code);
+    }
+
+    my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($client_id, $loginid, @scope_ids);
 
     $c->render(
         json => {
