@@ -56,7 +56,7 @@ sub _build_probability {
 
     # if calibration coefficients are not present, we could not price
     if (not $coef_ref) {
-        $bet->add_errors({
+        $bet->add_error({
             severity => 100,
             message  => format_error_string('Calibration coefficient missing', symbol => $bet->underlying->symbol),
             message_to_client =>

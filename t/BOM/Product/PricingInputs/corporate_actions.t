@@ -60,7 +60,7 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 });
 
 subtest 'invalid operation' => sub {
-    plan tests => 4;
+    plan tests => 3;
     my $invalid_action = {
         11223344 => {
             description    => 'Action with invalid modifier',
@@ -88,7 +88,6 @@ subtest 'invalid operation' => sub {
         };
         my $bet = produce_contract($bet_params);
         ok $bet->barrier->as_absolute, 'barrier built successfully';
-        ok !$bet->initialized_correctly, 'bet is not initialized correctly';
         like $bet->primary_validation_error->message, qr/Could not apply corporate action/, 'error is added';
     }
     'invalid operation added during object initialization';

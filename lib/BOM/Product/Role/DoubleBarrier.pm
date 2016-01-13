@@ -11,7 +11,7 @@ sub BUILD {
 
     if (my $barrier2 = $self->low_barrier and my $barrier1 = $self->high_barrier) {
         if ($barrier2->as_absolute > $barrier1->as_absolute) {
-            $self->add_errors({
+            $self->add_error({
                 severity          => 5,
                 message           => 'High and low barriers inverted',
                 message_to_client => localize('The barriers are improperly entered for this contract.'),
@@ -19,7 +19,7 @@ sub BUILD {
             $self->low_barrier($barrier1);
             $self->high_barrier($barrier2);
         } elsif ($barrier1->as_absolute == $barrier2->as_absolute) {
-            $self->add_errors({
+            $self->add_error({
                 severity          => 100,
                 message           => 'High and low barriers must be different',
                 message_to_client => localize('The barriers are improperly entered for this contract.'),
