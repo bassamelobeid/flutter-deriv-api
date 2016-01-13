@@ -5,11 +5,14 @@ use warnings;
 
 use Date::Utility;
 
+use BOM::RPC::v3::Utility;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Client;
 use BOM::Platform::Context qw (request);
+use BOM::Platform::Runtime;
+use BOM::Product::Transaction;
 
 sub portfolio {
     my $params = shift;
@@ -59,6 +62,34 @@ sub __get_open_contracts {
         });
 
     return $fmb_dm->get_open_bets_of_account();
+}
+
+sub sell_expired {
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
+
+    my $response = {count => 0};
+
+    try {
+        my $res = BOM::Product::Transaction::sell_expired_contracts({
+            client => $client,
+            source => $params->{source},
+        });
+        $response->{count} = $res->{number_of_sold_bets} if ($res and exists $res->{number_of_sold_bets});
+    }
+    catch {
+        $response = BOM::RPC::v3::Utility::create_error({
+                code              => 'SellExpiredError',
+                message_to_client => localize('There was an error processing the request.')});
+    };
+
+    return $response;
 }
 
 1;
