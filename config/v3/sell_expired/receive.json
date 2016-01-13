@@ -4,7 +4,7 @@
   "title": "Sell expired contract",
   "description": "Sell expired contract response",
   "properties": {
-    "sell_expired_contract": {
+    "sell_expired": {
       "type": "object",
       "description": "Sell expired contract object containing count of contracts sold",
       "properties": {
@@ -20,7 +20,7 @@
     },
     "msg_type": {
       "type": "string",
-      "description": "sell_expired_contract"
+      "description": "sell_expired"
     },
     "req_id": {
       "type": "integer",

@@ -14,7 +14,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 my $t = build_mojo_test();
 
 # check for authenticated call
-$t = $t->send_ok({json => {sell_expired_contract => 1}})->message_ok;
+$t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
 my $response = decode_json($t->message->[1]);
 
 is $response->{error}->{code},    'AuthorizationRequired';
@@ -31,14 +31,14 @@ is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR0021';
 
 # wrong call - no 1
-$t = $t->send_ok({json => {sell_expired_contract => 2}})->message_ok;
+$t = $t->send_ok({json => {sell_expired => 2}})->message_ok;
 $response = decode_json($t->message->[1]);
 
 is $response->{error}->{code}, 'InputValidationFailed';
 
-$t = $t->send_ok({json => {sell_expired_contract => 1}})->message_ok;
+$t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
 $response = decode_json($t->message->[1]);
 
-ok(exists $response->{sell_expired_contract}->{count});
+ok(exists $response->{sell_expired}->{count});
 
 done_testing();

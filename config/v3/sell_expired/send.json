@@ -1,10 +1,10 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title":"Sell expired contract",
-  "description": "This call will try to sell expired contract and return the count for sold contracts.",
+  "title":"Sell expired contracts",
+  "description": "This call will try to sell any expired contracts and return the number of sold contracts.",
   "properties": {
-    "sell_expired_contract": {
+    "sell_expired": {
       "type": "integer",
       "description": "Must be 1.",
       "pattern": "^1$",
