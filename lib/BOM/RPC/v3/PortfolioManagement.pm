@@ -11,7 +11,6 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Client;
 use BOM::Platform::Context qw (request);
-use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
 
 sub portfolio {
