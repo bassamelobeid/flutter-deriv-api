@@ -1,6 +1,18 @@
 package BOM::WebSocketAPI::Websocket_v3;
 
 use Mojo::Base 'Mojolicious::Controller';
+use MojoX::JSON::RPC::Client;
+use DataDog::DogStatsd::Helper;
+use JSON::Schema;
+use File::Slurp;
+use JSON;
+use Time::HiRes;
+use Data::UUID;
+use Time::Out qw(timeout);
+use Guard;
+use Proc::CPUUsage;
+use feature "state";
+use RateLimitations qw(within_rate_limits);
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Transaction;
@@ -13,21 +25,8 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
-use DataDog::DogStatsd::Helper;
-use JSON::Schema;
-use File::Slurp;
-use JSON;
-use BOM::Platform::Runtime;
 use BOM::Product::Transaction;
-use Time::HiRes;
 use BOM::Database::Rose::DB;
-use MojoX::JSON::RPC::Client;
-use Data::UUID;
-use Time::Out qw(timeout);
-use Guard;
-use Proc::CPUUsage;
-use feature "state";
-use RateLimitations qw(within_rate_limits);
 
 sub ok {
     my $c      = shift;
@@ -223,9 +222,9 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         1
     ],
-    ['sell_expired_contract', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired_contract, 1],
-    ['balance',               \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                          1],
-    ['statement',             \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,                        1],
+    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1],
+    ['balance',      \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                 1],
+    ['statement',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,               1],
     [
         'profit_table',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table, 1
@@ -400,12 +399,10 @@ sub __handle {
 
         ## sell expired
         if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
-            if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-                BOM::Product::Transaction::sell_expired_contracts({
-                    client => $c->stash('client'),
-                    source => $c->stash('source'),
-                });
-            }
+            BOM::Product::Transaction::sell_expired_contracts({
+                client => $c->stash('client'),
+                source => $c->stash('source'),
+            });
         }
 
         my $result = $descriptor->{handler}->($c, $p1);
