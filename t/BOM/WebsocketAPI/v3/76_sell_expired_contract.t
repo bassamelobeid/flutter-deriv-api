@@ -30,7 +30,7 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   'shuwnyuan@regentmarkets.com';
 is $authorize->{authorize}->{loginid}, 'CR0021';
 
-# wrong call - no 1
+# wrong call
 $t = $t->send_ok({json => {sell_expired => 2}})->message_ok;
 $response = decode_json($t->message->[1]);
 
@@ -39,6 +39,6 @@ is $response->{error}->{code}, 'InputValidationFailed';
 $t = $t->send_ok({json => {sell_expired => 1}})->message_ok;
 $response = decode_json($t->message->[1]);
 
-ok(exists $response->{sell_expired}->{count});
+is $response->{echo_req}->{sell_expired}, 1;
 
 done_testing();
