@@ -4,13 +4,14 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use Try::Tiny;
 
 use BOM::RPC::v3::Utility;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Platform::Client;
-use BOM::Platform::Context qw (request);
+use BOM::Platform::Context qw (request localize);
 use BOM::Product::Transaction;
 
 sub portfolio {
