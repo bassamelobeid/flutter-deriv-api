@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use JSON;
-use Try::Tiny;
 
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
