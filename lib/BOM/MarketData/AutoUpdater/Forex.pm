@@ -139,8 +139,6 @@ sub run {
     $self->_logger->debug(ref($self) . ' starting update.');
     my $surfaces_from_file = $self->surfaces_from_file;
     foreach my $symbol (@{$self->symbols_to_update}) {
-        print "Updating for $symbol...\n";
-
         my $quanto_only = 'NO';
         if (grep { $_ eq $symbol } (@quanto_currencies)) {
             $quanto_only = "YES";
@@ -162,7 +160,6 @@ sub run {
 
         if (defined $volsurface and $volsurface->is_valid and $self->passes_additional_check($volsurface)) {
             $volsurface->save;
-            print "Done for $symbol\n";
             $self->report->{$symbol}->{success} = 1;
         } else {
             if ($quanto_only eq 'NO') {
