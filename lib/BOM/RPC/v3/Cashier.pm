@@ -734,13 +734,23 @@ sub transfer_between_accounts {
         return $error_sub->(localize('The account transfer is unavailable for your account.'));
     }
 
-    my $client_from = $siblings{$loginid_from} // '';
-    my $client_to   = $siblings{$loginid_to}   // '';
+    my $client_from = $siblings{$loginid_from};
+    my $client_to   = $siblings{$loginid_to};
 
-    my $currency_from = $client_from->default_account ? $client_from->default_account->currency_code : '';
-    my $currency_to   = $client_to->default_account   ? $client_to->default_account->currency_code   : '';
-    unless ($currency_from eq $currency and $currency_to eq $currency) {
-        return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'));
+    my %deposited = (
+        $loginid_from => $client_from->default_account ? $client_from->default_account->currency_code : '',
+        $loginid_to   => $client_to->default_account   ? $client_to->default_account->currency_code   : ''
+    );
+
+    if (not $deposited{$loginid_from} and not $deposited{$loginid_to}) {
+        return $error_sub->(localize('The account transfer is unavailable. Please deposit to your account.'));
+    }
+
+    foreach my $c ($loginid_from, $loginid_to) {
+        my $curr = $deposited{$c};
+        if ($curr and $curr ne $currency) {
+            return $error_sub->(localize('The account transfer is unavailable for accounts with different default currency.'));
+        }
     }
 
     BOM::System::AuditLog::log("Account Transfer ATTEMPT, from[$loginid_from], to[$loginid_to], curr[$currency], amount[$amount]", $loginid_from);
