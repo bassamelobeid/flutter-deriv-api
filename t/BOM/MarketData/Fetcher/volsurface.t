@@ -144,7 +144,7 @@ subtest 'recorded_date on Randoms.' => sub {
 };
 
 subtest 'Consecutive saves.' => sub {
-    plan tests => 8;
+    plan tests => 6;
 
     my $underlying = BOM::Market::Underlying->new('frxEURUSD');
 
@@ -192,9 +192,6 @@ subtest 'Consecutive saves.' => sub {
     is($second_historical->recorded_date->datetime, $recorded_dates[2]->datetime, 'Second historical surface has expected date.');
 
     is(scalar keys %{$surface->document->{surfaces}}, 3, 'Cuts remain after surface has been saved to history.');
-
-    # Ensure we cannot save an historical surface.
-    throws_ok { $second_historical->save } qr/Saving historical document not permitted/, 'Cannot save historical surface.';
 };
 
 done_testing;

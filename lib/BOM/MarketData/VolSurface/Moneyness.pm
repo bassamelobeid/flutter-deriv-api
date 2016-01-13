@@ -45,7 +45,6 @@ sub _build_document {
         # was relative to where we are now.. so just say it's from the requested day.
         # We do not allow saving of historical surfaces, so this should be fine.
         $document //= {};
-        $document->{date} = $self->for_date->datetime_iso8601;
     }
 
     return $document;
