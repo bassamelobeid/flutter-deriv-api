@@ -161,8 +161,8 @@ sub _feed_channel {
     my ($c, $subs, $symbol, $type, $args) = @_;
     my $uuid;
 
-    my $feed_channel      = $c->stash('feed_channel');
-    my $feed_channel_type = $c->stash('feed_channel_type');
+    my $feed_channel      = $c->stash('feed_channel')      || {};
+    my $feed_channel_type = $c->stash('feed_channel_type') || {};
 
     my $redis = $c->stash('redis');
     if ($subs eq 'subscribe') {
