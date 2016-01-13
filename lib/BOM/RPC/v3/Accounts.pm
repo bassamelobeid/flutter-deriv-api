@@ -7,6 +7,7 @@ use warnings;
 use Date::Utility;
 
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::PortfolioManagement;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime;
 use BOM::Platform::Email qw(send_email);
@@ -119,6 +120,8 @@ sub statement {
         count        => 0
     } unless ($account);
 
+    BOM::RPC::v3::PortfolioManagement::_sell_expired_contracts($client, $params->{source});
+
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
     my @txns;
@@ -164,6 +167,8 @@ sub profit_table {
         transactions => [],
         count        => 0
     } unless ($client);
+
+    BOM::RPC::v3::PortfolioManagement::_sell_expired_contracts($client, $params->{source});
 
     my $fmb_dm = BOM::Database::DataMapper::FinancialMarketBet->new({
             client_loginid => $client->loginid,
