@@ -24,7 +24,8 @@ sub portfolio {
         },
         {
             args           => $args,
-            client_loginid => $c->stash('loginid')});
+            client_loginid => $c->stash('loginid'),
+            source         => $c->stash('source')});
     return;
 }
 
@@ -91,6 +92,26 @@ sub send_proposal {
             currency    => delete $details->{currency},
             args        => $details
         });
+    return;
+}
+
+sub sell_expired {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'sell_expired',
+        sub {
+            my $response = shift;
+            return {
+                msg_type     => 'sell_expired',
+                sell_expired => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            source         => $c->stash('source')});
     return;
 }
 
