@@ -726,7 +726,7 @@ sub _build_volsurface {
     my $self = shift;
 
     # Due to the craziness we have in volsurface cutoff. This complexity is needed!
-    # FX volsurface has cutoffs at either 21:00 or 23:59.
+    # FX volsurface has cutoffs at either 21:00 or 23:59 or the early close time.
     # Index volsurfaces shouldn't have cutoff concept. But due to the system design, an index surface cuts at the close of trading time on a non-DST day.
     my %submarkets = (
         major_pairs => 1,
@@ -735,11 +735,10 @@ sub _build_volsurface {
     my $vol_utils = BOM::MarketData::VolSurface::Utils->new;
     my $cutoff_str;
     if ($submarkets{$self->underlying->submarket->name}) {
-        my $exchange = $self->exchange;
-        my $when = $exchange->trades_on($self->date_pricing) ? $self->date_pricing : $exchange->representative_trading_date;
-
-        my $effective_date = $vol_utils->effective_date_for($when);
-        my $cutoff_date    = $exchange->closing_on($effective_date);
+        my $exchange       = $self->exchange;
+        my $effective_date = $vol_utils->effective_date_for($self->date_pricing);
+        $effective_date = $exchange->trades_on($effective_date) ? $effective_date : $exchange->trade_date_after($effective_date);
+        my $cutoff_date = $exchange->closing_on($effective_date);
 
         $cutoff_str = $cutoff_date->time_cutoff;
     }
