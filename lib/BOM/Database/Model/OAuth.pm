@@ -146,6 +146,22 @@ sub get_loginid_by_access_token {
     );
 }
 
+sub get_scopes_by_access_token {
+    my ($self, $access_token) = @_;
+
+    my @scopes;
+    my $sth = $self->dbh->prepare("
+        SELECT scope FROM oauth.access_token_scope
+        JOIN oauth.scopes ON scopes.id=access_token_scope.scope_id
+        WHERE access_token = ?
+    ");
+    $sth->execute($access_token);
+    while (my ($scope) = $sth->fetchrow_array) {
+        push @scopes, $scope;
+    }
+    return @scopes;
+}
+
 sub verify_refresh_token {
     my ($self, $client_id, $refresh_token) = @_;
 

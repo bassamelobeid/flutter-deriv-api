@@ -46,6 +46,8 @@ is $loginid, $test_loginid, 'refresh_token ok';
 
 my @scope_ids_rf = $m->get_scope_ids_by_refresh_token($refresh_token);
 is_deeply(\@scope_ids, \@scope_ids_rf, 'scope_ids by refresh_token is same as auth_code');
+my @scopes = $m->get_scopes_by_access_token($access_token);
+is_deeply([sort @scopes], ['trade', 'user'], 'correct scope by access_token');
 
 ok(!$m->verify_refresh_token($test_clientid, $refresh_token), 'can not re-use');
 ok(!$m->verify_refresh_token($test_clientid, $access_token),  'access_token is not for refresh');
