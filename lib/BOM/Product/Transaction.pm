@@ -1229,7 +1229,8 @@ sub _is_valid_to_buy {
     # ask_probability is a lazy_build attribute of a contract. Timing it here will give
     # a pretty accurate representation of contract computation time.
     my $pen = $contract->pricing_engine_name;
-    stats_timing('compute_price.buy.' . $pen . '.timing', 1000 * Time::HiRes::tv_interval($tv));
+    $pen =~ s/://g;
+    stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
 
     return;
 }
@@ -1257,7 +1258,8 @@ sub _is_valid_to_sell {
     # $contract->is_valid_to_sell checks for the validity of the opposite contract.
     # bid_probability is the discounted ask_probability of the oppposite contract.
     my $pen = $contract->pricing_engine_name;
-    stats_timing('compute_price.sell.' . $pen . '.timing', 1000 * Time::HiRes::tv_interval($tv));
+    $pen =~ s/://g;
+    stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
 
     return;
 }
