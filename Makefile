@@ -16,10 +16,55 @@ stress:
 	sudo netstat -anlpt |grep 500
 	cd /home/git/regentmarkets/stress;go run stress.go -insert 100;go run stress.go -workers 2 -noecho
 
+stress1:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
+
 stress2:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 2
+
+stress3:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 3
+
+stress4:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 4
+
+stress5:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 5
+
+stress6:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 6
+
+stress7:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 7
+
+stress8:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 8
+
+stress9:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 9
+
+stress10:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	sleep 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 10
 
 tidy:
 	find . -name '*.p?.bak' -delete
