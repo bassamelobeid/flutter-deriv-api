@@ -68,7 +68,7 @@ sub proposal {
         if (not $id = _feed_channel($c, 'subscribe', $symbol, 'proposal:' . JSON::to_json($args), $args)) {
             return $c->new_error('proposal',
                 'AlreadySubscribedOrLimit',
-                $c->l('You are already subscribed to this proposal or you have hit limit of maximum number of concurreny proposal subscriptions.'));
+                $c->l('You are either already subscribed or you have reached the limit for proposal subscription.'));
         }
         send_ask($c, $id, $args);
     }
