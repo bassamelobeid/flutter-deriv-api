@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "Sell expired contract",
+  "title": "Sell expired contracts",
   "description": "Sell expired contract response",
   "properties": {
     "sell_expired": {
