@@ -26,6 +26,8 @@ sub portfolio {
     my $portfolio = {contracts => []};
     return $portfolio unless $client;
 
+    _sell_expired_contracts($client, $params->{source});
+
     foreach my $row (@{__get_open_contracts($client)}) {
         my %trx = (
             contract_id    => $row->{id},
@@ -71,14 +73,23 @@ sub sell_expired {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (not $client) {
+        return BOM::RPC::v3::Utility::permission_error();
+    } else {
+        return _sell_expired_contracts($client, $params->{source});
+    }
+    return;
+}
+
+sub _sell_expired_contracts {
+    my ($client, $source) = @_;
 
     my $response = {count => 0};
 
     try {
         my $res = BOM::Product::Transaction::sell_expired_contracts({
             client => $client,
-            source => $params->{source},
+            source => $source,
         });
         $response->{count} = $res->{number_of_sold_bets} if ($res and exists $res->{number_of_sold_bets});
     }
