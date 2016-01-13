@@ -103,7 +103,7 @@ sub available_contracts_for_symbol {
             if (first { $o->{contract_type} eq $_ } qw(DIGITEVEN DIGITODD)) {
                 $o->{barriers} = 0;    # override barriers here.
             } else {
-                $o->{last_digit_range} = first { $o->{contract_type} eq $_ } qw(DIGITMATCH DIGITDIFF) ? [0 .. 9] : [1 .. 8];
+                $o->{last_digit_range} = (first { $o->{contract_type} eq $_ } qw(DIGITMATCH DIGITDIFF)) ? [0 .. 9] : [1 .. 8];
             }
         }
 
