@@ -208,6 +208,19 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date   => Date::Utility->new($start_time_5),
     });
 
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'GDAXI',
+        recorded_date   => Date::Utility->new($start_time_5),
+    });
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxEURUSD',
+        recorded_date   => Date::Utility->new($start_time_5),
+    });
+
 my $end_time_5   = $start_time_5 + 900;
 my $contract_5   = produce_contract('FLASHU_GDAXI_100_' . $start_time_5 . '_' . $end_time_5 . '_S0P_0', 'USD');
 my $p_5          = $contract_5->build_parameters;
@@ -233,6 +246,7 @@ my $transaction_5 = BOM::Product::Transaction->new({
     comment       => '',
     purchase_date => $start_time_5,
 });
+
 isnt $transaction_5->buy, 'undef', 'successful buy';
 restore_time;
 my $start_time_6 = Date::Utility->new->epoch;
