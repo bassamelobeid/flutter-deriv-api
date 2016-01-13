@@ -52,6 +52,8 @@ sub available_contracts_for_symbol {
             ];
         }
 
+        # This key is being used to decide whether to show additional
+        # barrier field on the frontend.
         $o->{barriers} =
               $cat->two_barriers    ? 2
             : $cc eq 'asian'        ? 0
@@ -65,8 +67,7 @@ sub available_contracts_for_symbol {
             )
             : die "don't know about contract category $cc";
 
-        if ($o->{barriers}) {
-
+        if ($o->{barriers} and $o->{barrier_category} ne 'non_financial') {
             if ($o->{barriers} == 1) {
                 $o->{barrier} = _default_barrier({
                     underlying   => $underlying,
