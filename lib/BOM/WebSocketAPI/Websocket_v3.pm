@@ -25,7 +25,6 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
-use BOM::Product::Transaction;
 use BOM::Database::Rose::DB;
 
 sub ok {
@@ -395,14 +394,6 @@ sub __handle {
             my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
-        }
-
-        ## sell expired
-        if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
-            BOM::Product::Transaction::sell_expired_contracts({
-                client => $c->stash('client'),
-                source => $c->stash('source'),
-            });
         }
 
         my $result = $descriptor->{handler}->($c, $p1);

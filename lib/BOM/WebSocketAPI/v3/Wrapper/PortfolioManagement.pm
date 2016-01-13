@@ -25,7 +25,8 @@ sub portfolio {
         },
         {
             args           => $args,
-            client_loginid => $c->stash('loginid')});
+            client_loginid => $c->stash('loginid'),
+            source         => $c->stash('source')});
     return;
 }
 
