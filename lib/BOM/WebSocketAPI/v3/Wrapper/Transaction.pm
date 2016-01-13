@@ -84,6 +84,7 @@ sub transaction {
     $c->send({
             json => {
                 echo_req => $args,
+                ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                 msg_type => 'transaction',
                 transaction => {$id ? (id => $id) : ''}}});
     return;
@@ -98,7 +99,7 @@ sub send_transaction_updates {
     my $subscriptions = $c->stash('transaction_channel');
     if ($subscriptions) {
         $channel = first { m/TXNUPDATE::transaction/ } keys %$subscriptions;
-        $args = exists $subscriptions->{args} ? $subscriptions->{args} : {};
+        $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
     }
 
     if ($client) {
