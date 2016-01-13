@@ -105,7 +105,21 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURUSD',
+        recorded_date => $that_morning->minus_time_interval('5d'),
+    });
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxEURUSD',
         recorded_date => $that_morning,
+    });
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'GDAXI',
+        recorded_date => $that_morning->minus_time_interval('5d'),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -430,6 +444,13 @@ subtest 'volsurfaces become old and invalid' => sub {
     my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
     my $starting   = $oft_used_date->epoch + 10 * 86400;
 
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying->symbol,
+            recorded_date => Date::Utility->new($starting)->minus_time_interval('7h'),
+        });
+
     my $bet_params = {
         underlying   => $underlying,
         bet_type     => 'DOUBLEDOWN',
@@ -484,12 +505,12 @@ subtest 'volsurfaces become old and invalid' => sub {
     my $gdaxi = BOM::Market::Underlying->new('GDAXI');
     my $surface_too_old_date = $gdaxi->exchange->opening_on(Date::Utility->new('2013-03-28'));
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol        => 'GDAXI',
-        date          => Date::Utility->new,
-        recorded_date => $surface_too_old_date->plus_time_interval('2h23m20s')
-    });
+        'index',
+        {
+            symbol        => 'GDAXI',
+            date          => Date::Utility->new,
+            recorded_date => $surface_too_old_date->plus_time_interval('2h23m20s')
+        });
 
     $bet_params->{underlying} = $gdaxi;
     $bet_params->{date_start} = $bet_params->{date_pricing} = $surface_too_old_date->plus_time_interval('2h23m20s');
@@ -870,6 +891,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'GDAXI',
+            recorded_date => Date::Utility->new($bet_params->{date_pricing})
+        });
+
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we pick an earlier start date, validates just fine.');
 
@@ -921,13 +949,6 @@ subtest 'underlying with critical corporate actions' => sub {
             symbol => 'FPFP',
             date   => Date::Utility->new,
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_moneyness',
-        {
-            symbol         => 'FPFP',
-            recorded_date  => Date::Utility->new,
-            spot_reference => $tick->quote,
-        });
 
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions([]);
@@ -952,6 +973,20 @@ subtest 'underlying with critical corporate actions' => sub {
             date          => Date::Utility->new,
         recorded_date => Date::Utility->new($bet_params->{date_pricing})
     });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'FPFP',
+            recorded_date => Date::Utility->new($bet_params->{date_pricing}),
+            spot_reference => $tick->quote,
+        });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'FPFP',
+            recorded_date  => Date::Utility->new,
+            spot_reference => $tick->quote,
+        });
     my $bet = produce_contract($bet_params);
     ok $bet->confirm_validity, 'can buy stock';
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['FPFP']);
