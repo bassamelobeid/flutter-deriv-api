@@ -19,7 +19,7 @@ stress:
 stress2:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench;	ln /home/git/regentmarkets/bom-websocket-api/t/generator.js; ln /home/git/regentmarkets/bom-websocket-api/t/reporter.js ; ./run.sh
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh
 
 tidy:
 	find . -name '*.p?.bak' -delete
