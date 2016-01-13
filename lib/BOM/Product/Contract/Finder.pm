@@ -5,6 +5,7 @@ use warnings;
 
 use Date::Utility;
 use Time::Duration::Concise;
+use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
 use BOM::Market::Underlying;
@@ -99,7 +100,11 @@ sub available_contracts_for_symbol {
 
         # digits has a non_financial barrier which is between 0 to 9
         if ($cc eq 'digits') {
-            $o->{last_digit_range} = [0 .. 9];
+            if (first { $o->{contract_type} eq $_ } qw(DIGITEVEN DIGITODD)) {
+                $o->{barriers} = 0;    # override barriers here.
+            } else {
+                $o->{last_digit_range} = first { $o->{contract_type} eq $_ } qw(DIGITMATCH DIGITDIFF) ? [0 .. 9] : [1 .. 8];
+            }
         }
 
         if ($cc eq 'spreads') {
