@@ -12,7 +12,7 @@ sub _build_is_expired {
         $self->two_barriers ? ($self->high_barrier->as_absolute, $self->low_barrier->as_absolute) : ($self->barrier->as_absolute);
     my $spot = $self->entry_spot;
     if ($spot == $barrier or ($barrier2 and $spot == $barrier2)) {
-        $self->add_errors({
+        $self->add_error({
             alert             => 1,
             severity          => 100,
             message           => 'Path-dependent barrier at spot at start',
@@ -67,7 +67,7 @@ sub get_high_low_for_contract_period {
         my $end = $self->date_pricing->is_after($self->date_expiry) ? $self->date_settlement : $self->date_pricing;
         if ($self->entry_tick->epoch > $end->epoch) {
             $start = $end;
-            $self->add_errors({
+            $self->add_error({
                     severity => 100,
                     message  => format_error_string(
                         'No tick received throughout the duration of the contract',

@@ -218,7 +218,7 @@ subtest 'Is contract valid to buy' => sub {
 
     $mock_contract->unmock_all;
 
-    $contract1->add_errors({
+    $contract1->add_error({
         severity          => 1,
         message           => 'Adding error message',
         message_to_client => 'Error message to be sent to client',

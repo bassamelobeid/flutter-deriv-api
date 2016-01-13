@@ -266,12 +266,6 @@ sub produce_contract {
         # just to make sure that we don't accidentally pass in undef barriers
         delete $input_params{$_} for @barriers;
 
-        # Add any new validation methods here.
-        # Looking them up can be too slow for pricing speed constraints.
-        $input_params{validation_methods} = [
-            qw(_validate_lifetime _validate_eod_market_risk _validate_volsurface _validate_contract _validate_expiry_date _validate_start_date _validate_stake _validate_barrier _validate_underlying _validate_payout)
-        ];
-
         $input_params{'build_parameters'} = {%input_params};    # Do not self-cycle.
 
         # This occurs after to hopefully make it more annoying to bypass the Factory.
