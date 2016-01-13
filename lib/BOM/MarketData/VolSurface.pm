@@ -1454,7 +1454,7 @@ sub fetch_historical_surface_date {
     my @dates;
     push @dates, $current_date;
 
-    for (2..$back_to) {
+    for (2 .. $back_to) {
         $vdoc = BOM::System::Chronicle::get_for('volatility_surfaces', $self->symbol, Date::Utility->new($current_date)->epoch - 1);
 
         last if not $vdoc or not %{$vdoc};
