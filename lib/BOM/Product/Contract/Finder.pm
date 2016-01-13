@@ -33,7 +33,6 @@ sub available_contracts_for_symbol {
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
-
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 
@@ -88,6 +87,14 @@ sub available_contracts_for_symbol {
                     barrier_type => 'low'
                 });
             }
+        }
+
+        # The reason why we have to append 't' to tick expiry duration
+        # is because in the backend it is easier to handle them if the
+        # min and max are set as numbers rather than strings.
+        if ($o->{expiry_type} eq 'tick') {
+            $o->{max_contract_duration} .= 't';
+            $o->{min_contract_duration} .= 't';
         }
 
         # digits has a non_financial barrier which is between 0 to 9
