@@ -27,7 +27,9 @@ CREATE TABLE oauth.scopes (
 GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.scopes TO write;
 GRANT SELECT ON oauth.scopes TO read;
 
+INSERT INTO oauth.scopes (scope) VALUES ('user');
 INSERT INTO oauth.scopes (scope) VALUES ('trade');
+INSERT INTO oauth.scopes (scope) VALUES ('cashier');
 
 CREATE TABLE oauth.user_scope_confirm (
     client_id            varchar(32) NOT NULL REFERENCES oauth.clients(id),
