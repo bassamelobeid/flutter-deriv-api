@@ -1218,8 +1218,6 @@ subtest 'economic events blockout period' => sub {
         quote  => 100
     };
     my $tick  = BOM::Market::Data::Tick->new($tick_params);
-    my $redis = Cache::RedisDB->redis;
-    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
@@ -1262,7 +1260,6 @@ subtest 'economic events blockout period' => sub {
                     release_date => $now->minus_time_interval('14m59s')
                 }]
         });
-    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
     ok !$c->_validate_start_date, 'no error if economic_events is not USD';
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -1285,7 +1282,6 @@ subtest 'economic events blockout period' => sub {
                     release_date => $now->minus_time_interval('14m59s')
                 }],
         });
-    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
     ok !$c->_validate_start_date, 'no error if economic_events is not USD level 5';
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -1298,7 +1294,6 @@ subtest 'economic events blockout period' => sub {
                     release_date => $now->minus_time_interval('15m')
                 }]
         });
-    map { $redis->del($_) } @{$redis->keys("COUCH_NEWS::" . '*')};
     $c = produce_contract($bet_params);
     ok $c->_validate_start_date, 'error if economic_events is USD level 5';
     like(
