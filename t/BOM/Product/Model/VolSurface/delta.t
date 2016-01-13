@@ -599,7 +599,7 @@ subtest fetch_historical_surface_date => sub {
         'volsurface_delta',
         {
             symbol        => 'frxUSDJPY',
-            recorded_date => Date::Utility->new,
+            recorded_date => Date::Utility->new->minus_time_interval('5m'),
         });
 
     my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(

@@ -43,7 +43,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol        => 'FTSE',
-        recorded_date => Date::Utility->new,
+        recorded_date   => Date::Utility->new($date_pricing),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
