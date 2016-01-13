@@ -40,6 +40,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/stress
+    - cd /home/git/regentmarkets/stress/websocket-bench && npm install && cd $TRAVIS_BUILD_DIR
 
     - /tmp/travis-scripts/redis.sh
 
