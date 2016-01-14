@@ -145,6 +145,7 @@ sub startup {
             $0    = "bom-rpc: " . $call;     ## no critic
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => [$call]});
         });
 
     $app->hook(
@@ -160,17 +161,17 @@ sub startup {
                 @{$end}[3, 2, 1],
                 $end->[0] + $request_end->[1] / 1_000_000
             );
-            my $tv = Time::HiRes::tv_interval($request_end, $request_start);
-            push @recent, [$request_start, $tv];
+
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => [$call]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => [$call]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage', $cpu->usage(), {tags => [$call]});
+
+            push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
             shift @recent if @recent > 50;
 
             my $usage = 0;
             $usage += $_->[1] for @recent;
             $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
-
-            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => [$call]});
-            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.call.timing', 1000 * $tv,    {tags => [$call]});
-            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage',    $cpu->usage(), {tags => [$call]});
 
             $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
         });
