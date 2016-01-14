@@ -47,7 +47,7 @@ foreach my $key (@{$tokens}) {
 my $create_vr = {
     new_account_virtual => 1,
     email               => $email,
-    client_password     => 'Ac0+-_:@. ',
+    client_password     => 'Ac0+-_:@.',
     residence           => 'au',
     verification_code   => $code
 };
