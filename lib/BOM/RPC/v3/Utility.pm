@@ -33,9 +33,9 @@ sub server_time {
 sub site_limits {
     my @services = RateLimitations::rate_limited_services;
     my $limits;
-    $limits->{max_pricing_channels} = {
+    $limits->{max_proposal_subscription} = {
         'applies_to' => 'subscribing to proposal concurrently',
-        'max'        => 10
+        'max'        => 5
     };
     my @l = RateLimitations::rate_limits_for_service('websocket_call');
     $limits->{'max_requestes_general'} = {
