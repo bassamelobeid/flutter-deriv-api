@@ -20,6 +20,7 @@ use BOM::Platform::User;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
+use Data::Password::Meter;
 
 sub new_account_virtual {
     my $params = shift;
@@ -28,6 +29,15 @@ sub new_account_virtual {
     BOM::Platform::Context::request()->language($params->{language});
 
     my $err_code;
+    my $pwdm = Data::Password::Meter->new(27);
+
+    unless ($pwdm->strong($args->{client_password})) {
+        $err_code = 'Password is not strong enough.';
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err_code,
+                message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
+    }
+
     if (_is_session_cookie_valid($params->{token}, $args->{email})) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
