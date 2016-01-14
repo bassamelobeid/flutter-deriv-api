@@ -1327,6 +1327,7 @@ sub _build_pricing_vol {
             fill_cache            => !$self->backtest,
             current_epoch         => $self->date_pricing->epoch,
             seconds_to_expiration => $self->timeindays->amount * 86400,
+            economic_events       => $self->applicable_economic_events,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
         $self->average_tick_count($volsurface->average_tick_count);
@@ -1348,16 +1349,44 @@ sub _build_pricing_vol {
     return $vol;
 }
 
+has applicable_economic_events => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_applicable_economic_events',
+);
+
+sub _build_applicable_economic_events {
+    my $self = shift;
+
+    my $effective_start   = $self->effective_start;
+    my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
+    my $current_epoch     = $effective_start->epoch;
+    # Go back another hour because we expect the maximum impact on any news would not last for more than an hour.
+    my $start = $current_epoch - $seconds_to_expiration - 3600;
+    # Plus 5 minutes for the shifting logic.
+    # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
+    my $end = $current_epoch + $seconds_to_expiration + 300;
+
+    return BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => Date::Utility->new($start),
+            to   => Date::Utility->new($end)});
+}
+
 sub _build_news_adjusted_pricing_vol {
     my $self = shift;
 
-    my $secs_to_expiry = $self->get_time_to_expiry({from => $self->effective_start})->seconds;
     my $news_adjusted_vol = $self->pricing_vol;
-    if ($secs_to_expiry and $secs_to_expiry > 10) {
+    my $effective_start   = $self->effective_start;
+    my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
+    my $events            = $self->applicable_economic_events;
+
+    # Only recalculated if there's economic_events.
+    if ($seconds_to_expiry > 10 and @$events) {
         $news_adjusted_vol = $self->empirical_volsurface->get_volatility({
             fill_cache            => !$self->backtest,
-            current_epoch         => $self->effective_start->epoch,
-            seconds_to_expiration => $secs_to_expiry,
+            current_epoch         => $effective_start->epoch,
+            seconds_to_expiration => $seconds_to_expiry,
+            economic_events       => $self->applicable_economic_events,
             include_news_impact   => 1,
         });
     }
