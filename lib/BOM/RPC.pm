@@ -127,7 +127,7 @@ sub startup {
                 my ($dispatcher, $err, $m) = @_;
                 my $path = $dispatcher->req->url->path;
                 $path =~ s/\///;
-                DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => [$path]});
+                DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:$path"]});
                 $dispatcher->app->log->error(qq{Internal error: $err});
                 $m->invalid_request('Invalid request');
                 return;
@@ -148,7 +148,7 @@ sub startup {
             $0    = "bom-rpc: " . $call;     ## no critic
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
-            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => [$call]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
         });
 
     $app->hook(
@@ -165,9 +165,12 @@ sub startup {
                 $end->[0] + $request_end->[1] / 1_000_000
             );
 
-            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => [$call]});
-            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.call.timing', (1000 * Time::HiRes::tv_interval($request_start)), {tags => [$call]});
-            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage', $cpu->usage(), {tags => [$call]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => ["rpc:$call"]});
+            DataDog::DogStatsd::Helper::stats_timing(
+                'bom_rpc.v_3.call.timing',
+                (1000 * Time::HiRes::tv_interval($request_start)),
+                {tags => ["rpc:$call"]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$call"]});
 
             push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
             shift @recent if @recent > 50;
