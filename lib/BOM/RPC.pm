@@ -1,7 +1,6 @@
 package BOM::RPC;
 
-use Time::HiRes ();
-
+use feature "state";
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
