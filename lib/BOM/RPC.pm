@@ -1,6 +1,5 @@
 package BOM::RPC;
 
-use feature "state";
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
@@ -136,11 +135,12 @@ sub startup {
     my $request_start;
     my @recent;
     my $call;
+    my $cpu;
 
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            state $cpu = Proc::CPUUsage->new();
+            $cpu = Proc::CPUUsage->new();
             my $call = $c->req->url->path;
             $0 = "bom-rpc: " . $call;    ## no critic
             $call =~ s/\///;
