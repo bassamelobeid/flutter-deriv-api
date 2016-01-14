@@ -36,6 +36,12 @@ sub get_volatility {
         $seconds_to_expiration = 0;    #hard-coded it to zero second
     }
 
+    # for contract where volatility doesn't matter,
+    # we will return the long term vol.
+    if ($args->{uses_flat_vol}) {
+        return $self->long_term_vol;
+    }
+
     my $lookback_interval = Time::Duration::Concise->new(interval => max(900, $seconds_to_expiration) . 's');
     my $fill_cache = $args->{fill_cache} // 1;
 
