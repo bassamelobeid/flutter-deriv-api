@@ -80,7 +80,7 @@ sub get_ask {
 
     my $response;
     try {
-        my $tv = [Time::HiRes::gettimeofday];
+        my $tv       = [Time::HiRes::gettimeofday];
         my $contract = produce_contract({%$p2});
 
         if (!$contract->is_valid_to_buy) {
@@ -133,8 +133,8 @@ sub get_bid {
 
     BOM::Platform::Context::request()->language($params->{language});
 
-    my $tv = [Time::HiRes::gettimeofday];
-    my $contract = produce_contract($short_code, $currency);
+    my $tv         = [Time::HiRes::gettimeofday];
+    my $contract   = produce_contract($short_code, $currency);
     my %returnhash = (
         ask_price           => sprintf('%.2f', $contract->ask_price),
         bid_price           => sprintf('%.2f', $contract->bid_price),
