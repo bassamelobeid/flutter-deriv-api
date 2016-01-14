@@ -1216,7 +1216,6 @@ sub _is_valid_to_buy {
     my $self     = shift;
     my $contract = $self->contract;
 
-    my $tv = [Time::HiRes::gettimeofday];
     if (not $contract->is_valid_to_buy) {
         return Error::Base->cuss(
             -type              => 'InvalidtoBuy',
@@ -1224,13 +1223,6 @@ sub _is_valid_to_buy {
             -message_to_client => $contract->primary_validation_error->message_to_client
         );
     }
-
-    # $contract->is_valid_to_buy checks for ask_probability as well in _validate_stake.
-    # ask_probability is a lazy_build attribute of a contract. Timing it here will give
-    # a pretty accurate representation of contract computation time.
-    my $pen = $contract->pricing_engine_name;
-    $pen =~ s/://g;
-    stats_timing('compute_price.buy.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
 
     return;
 }
@@ -1246,7 +1238,6 @@ sub _is_valid_to_sell {
         $self->contract($contract);
     }
 
-    my $tv = [Time::HiRes::gettimeofday];
     if (not $contract->is_valid_to_sell) {
         return Error::Base->cuss(
             -type              => 'InvalidtoSell',
@@ -1254,12 +1245,6 @@ sub _is_valid_to_sell {
             -message_to_client => $contract->primary_validation_error->message_to_client
         );
     }
-
-    # $contract->is_valid_to_sell checks for the validity of the opposite contract.
-    # bid_probability is the discounted ask_probability of the oppposite contract.
-    my $pen = $contract->pricing_engine_name;
-    $pen =~ s/://g;
-    stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
 
     return;
 }
