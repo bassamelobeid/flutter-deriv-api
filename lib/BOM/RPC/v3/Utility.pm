@@ -48,7 +48,7 @@ sub site_limits {
         'minutely'   => $l[0]->[1],
         'hourly'     => $l[1]->[1]};
     @l = RateLimitations::rate_limits_for_service('websocket_call_pricing');
-    $limits->{'manx_requests_pricing'} = {
+    $limits->{'max_requests_pricing'} = {
         'applies_to' => 'proposal and proposal_open_contract',
         'minutely'   => $l[0]->[1],
         'hourly'     => $l[1]->[1]};
