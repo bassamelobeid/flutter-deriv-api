@@ -1362,10 +1362,10 @@ sub _build_applicable_economic_events {
     my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
     my $current_epoch     = $effective_start->epoch;
     # Go back another hour because we expect the maximum impact on any news would not last for more than an hour.
-    my $start = $current_epoch - $seconds_to_expiration - 3600;
+    my $start = $current_epoch - $seconds_to_expiry - 3600;
     # Plus 5 minutes for the shifting logic.
     # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
-    my $end = $current_epoch + $seconds_to_expiration + 300;
+    my $end = $current_epoch + $seconds_to_expiry + 300;
 
     return BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
             from => Date::Utility->new($start),
