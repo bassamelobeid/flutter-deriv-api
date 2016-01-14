@@ -698,13 +698,12 @@ subtest 'seasonalized volatility with news' => sub {
         recorded_date => $now,
         source        => 'forexfactory'
     };
-    my $mock_ee = Test::MockModule->new('BOM::MarketData::Fetcher::EconomicEvent');
-    $mock_ee->mock('get_latest_events_for_period', sub { [$eco_data] });
     lives_ok {
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxAUDJPY');
         is $vs->get_volatility({
                 current_epoch         => $now->epoch,
                 seconds_to_expiration => 900,
+                economic_events       => [$eco_data],
                 include_news_impact   => 1
             }
             ),
@@ -720,12 +719,12 @@ subtest 'seasonalized volatility with news' => sub {
         recorded_date => $now,
         source        => 'forexfactory'
     };
-    $mock_ee->mock('get_latest_events_for_period', sub { [$uncategorized] });
     lives_ok {
         my $vs = BOM::MarketData::VolSurface::Empirical->new(underlying => 'frxUSDJPY');
         is $vs->get_volatility({
                 current_epoch         => $now->epoch,
                 seconds_to_expiration => 900,
+                economic_events       => [$uncategorized],
                 include_news_impact   => 1
             }
             ),
