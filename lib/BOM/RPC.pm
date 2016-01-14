@@ -140,9 +140,9 @@ sub startup {
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            $cpu = Proc::CPUUsage->new();
-            my $call = $c->req->url->path;
-            $0 = "bom-rpc: " . $call;    ## no critic
+            $cpu  = Proc::CPUUsage->new();
+            $call = $c->req->url->path;
+            $0    = "bom-rpc: " . $call;     ## no critic
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
         });
