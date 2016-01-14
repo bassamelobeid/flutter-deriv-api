@@ -125,6 +125,9 @@ sub startup {
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
+                my $path = $dispatcher->req->url->path;
+                $path =~ s/\///;
+                DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => [$path]});
                 $dispatcher->app->log->error(qq{Internal error: $err});
                 $m->invalid_request('Invalid request');
                 return;
