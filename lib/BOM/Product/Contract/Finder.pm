@@ -5,6 +5,7 @@ use warnings;
 
 use Date::Utility;
 use Time::Duration::Concise;
+use List::Util qw(first);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 
 use BOM::Market::Underlying;
@@ -33,7 +34,6 @@ sub available_contracts_for_symbol {
     my @offerings = $flyby->query({underlying_symbol => $symbol});
 
     for my $o (@offerings) {
-
         my $cc = $o->{contract_category};
         my $bc = $o->{barrier_category};
 
@@ -52,6 +52,8 @@ sub available_contracts_for_symbol {
             ];
         }
 
+        # This key is being used to decide whether to show additional
+        # barrier field on the frontend.
         $o->{barriers} =
               $cat->two_barriers    ? 2
             : $cc eq 'asian'        ? 0
@@ -65,8 +67,7 @@ sub available_contracts_for_symbol {
             )
             : die "don't know about contract category $cc";
 
-        if ($o->{barriers}) {
-
+        if ($o->{barriers} and $o->{barrier_category} ne 'non_financial') {
             if ($o->{barriers} == 1) {
                 $o->{barrier} = _default_barrier({
                     underlying   => $underlying,
@@ -89,9 +90,21 @@ sub available_contracts_for_symbol {
             }
         }
 
+        # The reason why we have to append 't' to tick expiry duration
+        # is because in the backend it is easier to handle them if the
+        # min and max are set as numbers rather than strings.
+        if ($o->{expiry_type} eq 'tick') {
+            $o->{max_contract_duration} .= 't';
+            $o->{min_contract_duration} .= 't';
+        }
+
         # digits has a non_financial barrier which is between 0 to 9
         if ($cc eq 'digits') {
-            $o->{last_digit_range} = [0 .. 9];
+            if (first { $o->{contract_type} eq $_ } qw(DIGITEVEN DIGITODD)) {
+                $o->{barriers} = 0;    # override barriers here.
+            } else {
+                $o->{last_digit_range} = (first { $o->{contract_type} eq $_ } qw(DIGITMATCH DIGITDIFF)) ? [0 .. 9] : [1 .. 8];
+            }
         }
 
         if ($cc eq 'spreads') {
