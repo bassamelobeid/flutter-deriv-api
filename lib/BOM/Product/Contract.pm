@@ -2361,29 +2361,6 @@ sub _validate_start_date {
                     localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
                 };
         }
-
-    } elsif ($underlying->market->name eq 'forex' and ($self->remaining_time->minutes < 2 or $self->tick_expiry)) {
-        my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-            from => $self->date_start->minus_time_interval('15m'),
-            to   => $self->date_start,
-        });
-        if (my $event = first { $_->{impact} == 5 and $_->{symbol} eq 'USD' } @$economic_events) {
-            push @errors,
-                {
-                message => format_error_string(
-                    'too short duration during news event',
-                    symbol        => $underlying->symbol,
-                    duration      => $self->remaining_time->as_concise_string,
-                    min           => '2m',
-                    'news impact' => $event->{impact},
-                    'news symbol' => $event->{symbol},
-                ),
-                message_to_client => localize(
-                    "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
-                    $event->{release_date}->plus_time_interval('15m')->time_hhmm
-                ),
-                };
-        }
     } elsif ($eod_blackout_start and $sec_to_close < $eod_blackout_start->seconds) {
         my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
             interval => $eod_blackout_start->seconds,
