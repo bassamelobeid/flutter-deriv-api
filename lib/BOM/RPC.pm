@@ -5,6 +5,9 @@ use Time::HiRes ();
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use Proc::CPUUsage;
+use Time::HiRes;
 
 use BOM::Database::Rose::DB;
 use BOM::RPC::v3::Accounts;
@@ -133,11 +136,15 @@ sub startup {
     my $request_counter = 0;
     my $request_start;
     my @recent;
+    my $call;
 
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            $0             = "bom-rpc: " . $c->req->url->path;    ## no critic
+            state $cpu = Proc::CPUUsage->new();
+            my $call = $c->req->url->path;
+            $0 = "bom-rpc: " . $call;    ## no critic
+            $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
         });
 
@@ -154,12 +161,17 @@ sub startup {
                 @{$end}[3, 2, 1],
                 $end->[0] + $request_end->[1] / 1_000_000
             );
-            push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
+            my $tv = Time::HiRes::tv_interval($request_end, $request_start);
+            push @recent, [$request_start, $tv];
             shift @recent if @recent > 50;
 
             my $usage = 0;
             $usage += $_->[1] for @recent;
             $usage = sprintf('%.2f', 100 * $usage / Time::HiRes::tv_interval($request_end, $recent[0]->[0]));
+
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => [$call]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.call.timing', 1000 * $tv,    {tags => [$call]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage',    $cpu->usage(), {tags => [$call]});
 
             $0 = "bom-rpc: (idle since $end #req=$request_counter us=$usage%)";    ## no critic
         });
