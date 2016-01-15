@@ -14,7 +14,7 @@ subtest "get_volatility" => sub {
     plan tests => 100;
 
     my $prev_vol = 0;
-    foreach my $start_epoch (0 .. 9) {
+    foreach my $start_epoch (1 .. 9) {
         foreach my $end_epoch (10 .. 19) {
             my $this_vol = $volsurface->get_volatility({start_epoch => $start_epoch, end_epoch => $end_epoch});
             isnt($this_vol, $prev_vol, 'Each period vol is uniquely determined.');
