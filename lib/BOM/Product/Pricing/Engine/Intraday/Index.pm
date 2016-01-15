@@ -43,7 +43,7 @@ sub _build_probability {
         set_by      => __PACKAGE__,
         minimum     => 0,
         maximum     => 1,
-        base_amount => 0.55,
+        base_amount => $self->formula->($self->_formula_args),
     });
 }
 
@@ -54,7 +54,7 @@ sub _build_model_markup {
         name        => 'model_markup',
         description => 'model markup for intraday index',
         set_by      => __PACKAGE__,
-        base_amount => 0,
+        base_amount => 0.05,
     });
 }
 
