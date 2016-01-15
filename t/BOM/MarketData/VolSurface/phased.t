@@ -8,18 +8,6 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Test::Data::Utility::UnitTestRedis;
 
 my $ul              = BOM::Market::Underlying->new('RDVENUS');
-my $flat_vol        = rand(5);
-my $flat_atm_spread = rand;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_phased',
-    {
-        symbol          => $ul->symbol,
-        flat_vol        => $flat_vol,
-        flat_atm_spread => $flat_atm_spread,
-        recorded_date   => Date::Utility->new,
-    });
-
 my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul});
 
 subtest "get_volatility" => sub {
