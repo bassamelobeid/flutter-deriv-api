@@ -11,7 +11,7 @@ my $ul              = BOM::Market::Underlying->new('RDVENUS');
 my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul});
 
 subtest "get_volatility" => sub {
-    plan tests => 100;
+    plan tests => 90;
 
     my $prev_vol = 0;
     foreach my $start_epoch (1 .. 9) {
