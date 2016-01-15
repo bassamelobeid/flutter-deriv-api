@@ -11,7 +11,7 @@
       "required": 1
     },
     "gender" : {
-      "enum": ['m', 'f'],
+      "enum": ["m", "f"],
       "description": "Male (m) or female (f).",
       "required": 1
     },
@@ -112,7 +112,7 @@
     },
     "daily_loss_limit": {
       "type": "integer",
-      "pattern": "^\\d+$"
+      "pattern": "^\\d+$",
       "description": "Daily limit loss in JPY",
       "required": 1
     },
