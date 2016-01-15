@@ -13,7 +13,7 @@ my $volsurface = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({under
 subtest "get_volatility" => sub {
     plan tests => 100;
 
-    my $prev_vol = $flat_vol;
+    my $prev_vol = 0;
     foreach my $start_epoch (0 .. 9) {
         foreach my $end_epoch (10 .. 19) {
             my $this_vol = $volsurface->get_volatility({start_epoch => $start_epoch, end_epoch => $end_epoch});
