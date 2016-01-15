@@ -106,4 +106,37 @@ sub _sell_expired_contracts {
     return $response;
 }
 
+sub proposal_open_contract {
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my @fmbs = ();
+    if ($params->{contract_id}) {
+        @fmbs = grep { $params->{contract_id} eq $_->id } $client->open_bets;
+    } else {
+        @fmbs = $client->open_bets;
+    }
+
+    my $response = {};
+    if (scalar @fmbs > 0) {
+        foreach my $fmb (@fmbs) {
+            my $id = $fmb->id;
+            $response->{$id} = {
+                short_code => $fmb->short_code,
+                currency   => $client->currency
+            };
+        }
+    }
+
+    return $response;
+}
+
 1;
