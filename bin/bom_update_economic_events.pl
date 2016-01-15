@@ -28,8 +28,11 @@ sub script_run {
     my $self = shift;
 
     my @messages;
-    my $parser          = ForexFactory->new();
-    my $events_received = $parser->extract_economic_events;
+    my $parser = ForexFactory->new();
+
+    #read economic events for one week (7-days) starting from 4 days back, so in case of a Monday which
+    #has its last Friday as a holiday, we will still have some events in the cache.
+    my $events_received = $parser->extract_economic_events(0, Date::Utility->new()->minus_time_interval('4d'));
 
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
@@ -53,13 +56,13 @@ sub script_run {
 
         #now convert release_date to string to be storable in chronicle
         foreach my $event_param (@all_events) {
-            $event_param->{release_date}  = Date::Utility->new($event_param->{release_date})->datetime_iso8601;
+            $event_param->{release_date} = Date::Utility->new($event_param->{release_date})->datetime_iso8601;
         }
 
         BOM::MarketData::EconomicEventCalendar->new({
-                events          => \@all_events,
-            recorded_date   => Date::Utility->new(),
-        })->save;
+                events        => \@all_events,
+                recorded_date => Date::Utility->new(),
+            })->save;
 
         print "stored " . (scalar @all_events) . " events in chronicle...\n";
     }
