@@ -141,7 +141,7 @@ sub _default_barrier {
     my $vol_args = ($volsurface->type eq 'phased')
         ? {
         start_epoch => time,
-        $end_epoch  => time + $duration
+        end_epoch   => time + $duration
         }
         : {
         delta => 50,
