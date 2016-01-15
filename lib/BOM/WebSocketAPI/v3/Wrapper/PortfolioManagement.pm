@@ -55,8 +55,11 @@ sub proposal_open_contract {
                         $details->{currency}    = $response->{$contract_id}->{currency};
                         my $id;
                         if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-                            $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
-                                'proposal_open_contract:' . JSON::to_json($details), $details);
+                            $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
+                                $c, 'subscribe',
+                                $response->{$contract_id}->{underlying},
+                                'proposal_open_contract:' . JSON::to_json($details), $details
+                            );
                         }
                         send_proposal($c, $id, $details);
                     }
