@@ -117,6 +117,8 @@ BEGIN
           FROM json_populate_record(NULL::bet.$$ || b_bet_class || $$, $2) tt
     $$ USING v_fmb.id, b_chld;
 
+    PERFORM session_bet_details('buy', v_fmb.id, a_currency, b_short_code);
+
     INSERT INTO transaction.transaction (
         account_id,
         transaction_time,
@@ -153,7 +155,6 @@ BEGIN
                                         || '"transaction_id":"' || v_trans.id || '"}')::JSON)).*
           FROM json_populate_record(NULL::data_collection.quants_bet_variables, q_qv) tt;
 
-        SELECT session_bet_details('buy', v_fmb.id, a_currency, b_short_code);
     END IF;
 
     RETURN NEXT;
