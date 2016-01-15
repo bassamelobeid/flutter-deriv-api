@@ -1,14 +1,14 @@
 BEGIN;
 
 CREATE OR REPLACE FUNCTION session_bet_details (
-    action_type VARCHAR('10'),
+    action_type VARCHAR(10),
     fmb_id bigint,
     currency_code VARCHAR(3),
     short_code VARCHAR(255)
 ) RETURNS VOID AS $def$
 BEGIN
     CREATE TEMPORARY TABLE session_bet_details (
-        action_type  VARCHAR('10'),
+        action_type  VARCHAR(10),
         fmb_id bigint,
         currency_code VARCHAR(3),
         short_code VARCHAR(255)
