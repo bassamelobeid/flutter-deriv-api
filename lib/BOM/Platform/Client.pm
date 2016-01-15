@@ -451,7 +451,7 @@ sub get_limit_for_account_balance {
     my $self = shift;
 
     my @maxbalances = ();
-    push @maxbalances, 300000;
+    push @maxbalances, $self->is_virtual ? 1000000 : 300000;
 
     if ($self->get_self_exclusion and $self->get_self_exclusion->max_balance) {
         push @maxbalances, in_USD($self->get_self_exclusion->max_balance, $self->currency);
