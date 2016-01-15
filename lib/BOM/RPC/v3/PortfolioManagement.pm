@@ -131,7 +131,8 @@ sub proposal_open_contract {
             my $id = $fmb->id;
             $response->{$id} = {
                 short_code => $fmb->short_code,
-                currency   => $client->currency
+                currency   => $client->currency,
+                underlying => $fmb->underlying_symbol
             };
         }
     }
