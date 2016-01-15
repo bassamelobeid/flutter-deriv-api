@@ -18,10 +18,14 @@ Model markup of zero for Intraday Index
 
 =cut
 
-has [qw(probability model_markup)] => (
+has [qw(pricing_vol probability model_markup)] => (
     is         => 'ro',
     lazy_build => 1,
 );
+
+sub _build_pricing_vol {
+    return shift->bet->pricing_args->{iv};
+}
 
 has _supported_types => (
     is      => 'ro',
