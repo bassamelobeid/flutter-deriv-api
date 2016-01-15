@@ -12,16 +12,7 @@ services:
     - couchdb
 cache: apt
 env:
-     - TEST_SUITE=stress1
-     - TEST_SUITE=stress2
-     - TEST_SUITE=stress3
-     - TEST_SUITE=stress4
      - TEST_SUITE=stress5
-     - TEST_SUITE=stress6
-     - TEST_SUITE=stress7
-     - TEST_SUITE=stress8
-     - TEST_SUITE=stress9
-     - TEST_SUITE=stress10
 #    - TEST_SUITE=v2
 #    - TEST_SUITE=v3
 #    - TEST_SUITE=structure
