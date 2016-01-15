@@ -2,8 +2,16 @@ BEGIN;
 
 CREATE OR REPLACE FUNCTION notify_transaction_trigger() RETURNS trigger AS $$
 DECLARE
+  short_code VARCHAR(255) DEFAULT :='';
+  currency_code VARCHAR(3) DEFALUT :='';
+  payment_remark VARCHAR(255) DEFAULT :='';
 BEGIN
-  PERFORM pg_notify('transaction_watchers', NEW.id || ',' || NEW.account_id || ',' || NEW.action_type || ',' || NEW.referrer_type || ',' || COALESCE(NEW.financial_market_bet_id,0) || ',' || COALESCE(NEW.payment_id,0) || ',' || NEW.amount || ',' || NEW.balance_after || ',' || NEW.transaction_time );
+    IF NEW.action == 'buy' OR NEW.action == 'sell' THEN
+        SELECT s.currency_code, s.short_code INTO currency_code,short_code FROM session_bet_details WHERE fmb_id = NEW.financial_market_bet_id AND action_type = NEW.action_type;
+    ELSE
+        --
+    END IF;
+    PERFORM pg_notify('transaction_watchers', NEW.id || ',' || NEW.account_id || ',' || NEW.action_type || ',' || NEW.referrer_type || ',' || COALESCE(NEW.financial_market_bet_id,0) || ',' || COALESCE(NEW.payment_id,0) || ',' || NEW.amount || ',' || NEW.balance_after || ',' || NEW.transaction_time  || ',' || short_code || ',' || currency_code || ',' || payment_remark);
   RETURN new;
 END;
 $$ LANGUAGE plpgsql;
