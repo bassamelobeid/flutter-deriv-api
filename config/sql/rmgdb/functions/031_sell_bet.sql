@@ -71,6 +71,8 @@ BEGIN
           USING p_id, p_chld;
     END IF;
 
+    PERFORM session_bet_details('sell', v_fmb.id,p_currency, v_fmb.short_code);
+
     INSERT INTO transaction.transaction (
         account_id,
         transaction_time,
@@ -106,7 +108,6 @@ BEGIN
         SELECT (json_populate_record(tt, ('{"financial_market_bet_id":"' || v_fmb.id || '",'
                                         || '"transaction_id":"' || v_trans.id || '"}')::JSON)).*
           FROM json_populate_record(NULL::data_collection.quants_bet_variables, p_qv) tt;
-        SELECT session_bet_details('sell', v_fmb.id,b_currency, v_fmb.short_code);
     END IF;
 
     RETURN NEXT;
