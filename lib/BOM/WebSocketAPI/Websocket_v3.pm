@@ -389,12 +389,9 @@ sub __handle {
             return $c->new_error($descriptor->{category}, 'AuthorizationRequired', $c->l('Please log in.'));
         }
 
-        my $client = $c->stash('client');
-        if ($client) {
-            my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
-            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
-        }
+        my $account_type = $loginid =~ /^VRT/ ? 'virtual' : 'real';
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
+            {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
 
         my $result = $descriptor->{handler}->($c, $p1);
 
@@ -406,8 +403,7 @@ sub __handle {
                 return $c->new_error('OutputValidationFailed', $c->l("Output validation failed: ") . $error);
             }
         }
-        $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')]
-            if ref $result;
+        $result->{debug} = [Time::HiRes::tv_interval($t0), $loginid] if ref $result;
         return $result;
     }
 
