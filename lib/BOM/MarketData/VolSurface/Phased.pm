@@ -1,32 +1,10 @@
 package BOM::MarketData::VolSurface::Phased;
 
 use Moose;
-
 extends 'BOM::MarketData::VolSurface';
 
-# I am a horrible person.
-## no critic (BuiltinFunctions::ProhibitStringyEval,RequireCheckingReturnValueOfEval)
-
-sub _document_content {
-    my $self = shift;
-
-    my %structure = (
-        flat_vol            => $self->flat_vol,
-        flat_atm_spread     => $self->flat_atm_spread,
-        date                => $self->recorded_date->datetime_iso8601,
-        master_cutoff       => $self->cutoff->code,
-        symbol              => $self->symbol,
-        type                => $self->type,
-        x_for_epoch_code    => $self->x_for_epoch_code,
-        x2_for_epoch_code   => $self->x2_for_epoch_code,
-        phase_for_x_code    => $self->phase_for_x_code,
-        variance_for_x_code => $self->variance_for_x_code,
-    );
-
-    return \%structure;
-}
-
-with 'BOM::MarketData::Role::VersionedSymbolData';
+use List::Util qw(first);
+use Carp qw(croak);
 
 =head1 NAME
 
@@ -62,184 +40,120 @@ has '+type' => (
     default => 'phased',
 );
 
-=head2 flat_vol
-
-The flat volatility returned for all points on this surface.
-
-=cut
-
-has flat_vol => (
-    is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
-);
-
-sub _build_flat_vol {
+sub BUILD {
     my $self = shift;
 
-    return $self->document->{flat_vol};
+    my %supported_symbols = map {$_ => 1} qw(RDMARS RDVENUS RDMOON RDSUN);
+    unless ($supported_symbols{$self->underlying->symbol}) {
+        croak "Invalid usage of phased volatility for underlying [" . $self->underlying->symbol . "]";
+    }
+
+    return;
+}
+
+sub _phase_for_x {
+    my ($self, $x) = @_;
+
+    my $symbol = $self->underlying->symbol;
+    my $curve;
+    if ($symbol eq 'RDMARS') {
+        $curve = cos($x);
+    } elsif ($symbol eq 'RDVENUS') {
+        $curve = -cos($x);
+    } elsif ($symbol eq 'RDMOON') {
+        $curve = -sin($x);
+    } elsif ($symbol eq 'RDSUN') {
+        $curve = sin($x);
+    }
+
+    return (1.5+$curve);
+}
+
+sub _variance_for_x {
+    my ($self, $x) = @_;
+
+    my $symbol = $self->underlying->symbol;
+
+    if ($symbol eq 'RDMARS') {
+        return (2.75*$x+3*sin($x)+0.25*sin(2*$x));
+    } elsif ($symbol eq 'RDVENUS') {
+        return (2.75*$x-3*sin($x)+0.25*sin(2*$x));
+    } elsif ($symbol eq 'RDMOON') {
+        return (2.75*$x+3*cos($x)-0.25*sin(2*$x));
+    } elsif ($symbol eq 'RDSUN') {
+        return (2.75*$x-3*cos($x)-0.25*sin(2*$x));
+    }
+
+    return;
+}
+
+sub _x_for_epoch {
+    my ($self, $epoch) = @_;
+    my $secs_after = $epoch % 86400;
+    return 3.1415926 * $secs_after / 43200;
+}
+
+sub _x2_for_epoch {
+    my ($self, $epoch, $crosses_day) = @_;
+    my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400  =>  $epoch % 86400;
+    return 3.1415926 * $secs_after / 43200;
 }
 
 has flat_atm_spread => (
     is         => 'ro',
-    isa        => 'Num',
-    lazy_build => 1,
+    default    => 0,
 );
 
 has atm_spread_point => (
     is      => 'ro',
-    isa     => 'Num',
     default => '50',
 );
 
-sub _build_flat_atm_spread {
-    my $self = shift;
-
-    return $self->document->{flat_atm_spread};
-}
-
-has [qw(x_for_epoch_code x2_for_epoch_code)] => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-sub _build_x_for_epoch_code {
-    my $self = shift;
-
-    return $self->document->{x_for_epoch_code};
-}
-
-sub _build_x2_for_epoch_code {
-    my $self = shift;
-
-    return $self->document->{x2_for_epoch_code};
-}
-
-has [qw(_x_for_epoch_func _x2_for_epoch_func)] => (
-    is         => 'ro',
-    isa        => 'CodeRef',
-    lazy_build => 1,
-);
-
-sub _build__x_for_epoch_func {
-    my $self = shift;
-    return eval($self->x_for_epoch_code);
-}
-
-sub _build__x2_for_epoch_func {
-    my $self = shift;
-    return eval($self->x2_for_epoch_code);
-}
-
-has phase_for_x_code => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-sub _build_phase_for_x_code {
-    my $self = shift;
-
-    return $self->document->{phase_for_x_code};
-}
-
-has _phase_for_x_func => (
-    is         => 'ro',
-    isa        => 'CodeRef',
-    lazy_build => 1,
-);
-
-sub _build__phase_for_x_func {
-    my $self = shift;
-    return eval($self->phase_for_x_code);
-}
-
-has variance_for_x_code => (
-    is         => 'ro',
-    isa        => 'Str',
-    lazy_build => 1,
-);
-
-sub _build_variance_for_x_code {
-    my $self = shift;
-
-    return $self->document->{variance_for_x_code};
-}
-
-has _variance_for_x_func => (
-    is         => 'ro',
-    isa        => 'CodeRef',
-    lazy_build => 1,
-);
-
-sub _build__variance_for_x_func {
-    my $self = shift;
-    return eval($self->variance_for_x_code);
-}
-
 =head2 get_volatility
 
-Given a maturity of some form and a barrier of some form, gives you a vol
-from the surface.
+The volatility to use for pricing a contract between two epochs.
+Computed from the forward-looking variance implied by the path the volatility will take.
 
-USAGE:
-
-  my $vol = $s->get_volatility({delta => 25, days => 7});
-  my $vol = $s->get_volatility({strike => $bet->barrier, tenor => '1M'});
-  my $vol = $s->get_volatility({delta => 50, expiry_date => Date::Utility->new});
+    $surface->get_volatility({start_epoch => $starting_epoch, end_epoch => $ending_epoch});
 
 =cut
 
 sub get_volatility {
     my ($self, $args) = @_;
 
-    my $for_epoch = $args->{for_epoch} // time;
-    my $x = $self->_x_for_epoch_func->($for_epoch);
-
-    return $self->flat_vol * $self->_phase_for_x_func->($x);
-}
-
-sub get_smile {
-    my $self = shift;
-
-    return {map { $_ => $self->flat_vol } (qw(25 50 75))};
-}
-
-=head2 get_volatility_for_period
-
-    $surface->get_volatility_for_period($starting_epoch, $ending_epoch);
-
-The volatility to use for pricing a contract between two epochs.
-
-Computed from the forward-looking variance implied by the path the volatility will take.
-
-=cut
-
-sub get_volatility_for_period {
-    my ($self, $start_epoch, $end_epoch) = @_;
+    my ($start_epoch, $end_epoch) = @{$args}{'start_epoch', 'end_epoch'};
 
     # We ask for 0 time volatility sometimes, for both good and bad reasons.
     # Rather than blowing up, turn it into a 1 second request.
     $start_epoch -= 1 if ($start_epoch == $end_epoch);
 
     my $crosses_day = Date::Utility->new($end_epoch)->days_between(Date::Utility->new($start_epoch)) > 0 ? 1 : 0;
-    my $start_x     = $self->_x_for_epoch_func->($start_epoch);
-    my $end_x       = $self->_x2_for_epoch_func->($end_epoch, $crosses_day);
+    my $start_x     = $self->_x_for_epoch($start_epoch);
+    my $end_x       = $self->_x2_for_epoch($end_epoch, $crosses_day);
 
-    my $variance_start = $self->_variance_for_x_func->($start_x);
-    my $variance_end   = $self->_variance_for_x_func->($end_x);
+    my $variance_start = $self->_variance_for_x($start_x);
+    my $variance_end   = $self->_variance_for_x($end_x);
 
     return sqrt(($variance_end - $variance_start) / ($end_x - $start_x));
 }
 
-sub BUILD {
-    my $self             = shift;
-    my $atm_spread_point = $self->atm_spread_point;
-    $self->{surface} =
-        {map { $_ => {vol_spread => {$atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
+# just a flat surface for consistency.
+has surface => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_surface',
+);
 
-    return;
+sub _build_surface {
+    my $self = shift;
+
+    return {map { $_ => {vol_spread => {$self->atm_spread_point => $self->flat_atm_spread}, smile => $self->get_smile($_)} } (qw(1 7 30 90 180 360))};
+}
+
+sub get_smile {
+    my $self = shift;
+
+    return {map { $_ => 1 } (qw(25 50 75))};
 }
 
 override is_valid => sub {
@@ -249,5 +163,4 @@ override is_valid => sub {
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
-
 1;
