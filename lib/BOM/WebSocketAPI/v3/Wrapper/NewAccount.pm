@@ -37,14 +37,25 @@ sub verify_email {
 
     my $r     = $c->stash('request');
     my $email = $args->{verify_email};
+    my $type  = $args->{type};
 
-    my $code = BOM::Platform::SessionCookie->new({
-            email       => $email,
-            expires_in  => 3600,
-            created_for => 'new_account'
-        })->token;
+    my $link;
+    my $code;
+    if ($type eq 'account_opening') {
+        $code = BOM::Platform::SessionCookie->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'new_account'
+            })->token;
+    } elsif ($type eq 'lost_password') {
+        $code = BOM::Platform::SessionCookie->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'lost_password'
+            })->token;
+    }
 
-    my $link = $r->url_for(
+    $link = $r->url_for(
         '/user/validate_link',
         {
             verify_token => $code,
@@ -64,7 +75,8 @@ sub verify_email {
             email        => $email,
             cs_email     => $r->website->config->get('customer_support.email'),
             website_name => $r->website->display_name,
-            link         => $link->to_string
+            link         => $link->to_string,
+            type         => $type
         });
     return;
 }

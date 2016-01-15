@@ -24,7 +24,8 @@ sub portfolio {
         },
         {
             args           => $args,
-            client_loginid => $c->stash('loginid')});
+            client_loginid => $c->stash('loginid'),
+            source         => $c->stash('source')});
     return;
 }
 
@@ -42,17 +43,18 @@ sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
 
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
+            my $details = {%$args};
             # these keys needs to be deleted from args (check send_proposal)
             # populating here cos we stash them in redis channel
-            $args->{short_code}  = $fmb->short_code;
-            $args->{contract_id} = $fmb->id;
-            $args->{currency}    = $client->currency;
+            $details->{short_code}  = $fmb->short_code;
+            $details->{contract_id} = $fmb->id;
+            $details->{currency}    = $client->currency;
             my $id;
             if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
-                    'proposal_open_contract:' . JSON::to_json($args), $args);
+                    'proposal_open_contract:' . JSON::to_json($details), $details);
             }
-            send_proposal($c, $id, $args);
+            send_proposal($c, $id, $details);
         }
     } else {
         return {
@@ -90,6 +92,26 @@ sub send_proposal {
             currency    => delete $details->{currency},
             args        => $details
         });
+    return;
+}
+
+sub sell_expired {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'sell_expired',
+        sub {
+            my $response = shift;
+            return {
+                msg_type     => 'sell_expired',
+                sell_expired => $response,
+            };
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            source         => $c->stash('source')});
     return;
 }
 

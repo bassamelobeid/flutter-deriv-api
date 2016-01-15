@@ -16,12 +16,6 @@ BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => Date::Utility->new->epoch,
     quote      => 100
 });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => Date::Utility->new
-    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'R_100'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
