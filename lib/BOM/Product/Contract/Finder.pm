@@ -136,20 +136,28 @@ sub _default_barrier {
     # latest available spot should be sufficient.
     my $barrier_spot = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
     return unless $barrier_spot;
-    my $tid                 = $duration / 86400;
-    my $tiy                 = $tid / 365;
-    my $vol_args = ($volsurface->type eq 'phased') ? {delta => 50, days => $tid} : {start_epoch => time, $end_epoch => time + $duration};
-    my $volatility = $volsurface->get_volatility($vol_args);
+    my $tid      = $duration / 86400;
+    my $tiy      = $tid / 365;
+    my $vol_args = ($volsurface->type eq 'phased')
+        ? {
+        start_epoch => time,
+        $end_epoch  => time + $duration
+        }
+        : {
+        delta => 50,
+        days  => $tid
+        };
+    my $volatility          = $volsurface->get_volatility($vol_args);
     my $approximate_barrier = get_strike_for_spot_delta({
-            delta       => 0.2,
-            option_type => $option_type,
-            atm_vol     => $volatility,
-            t                => $tiy,
-            r_rate           => 0,
-            q_rate           => 0,
-            spot             => $barrier_spot->quote,
-            premium_adjusted => 0,
-        });
+        delta            => 0.2,
+        option_type      => $option_type,
+        atm_vol          => $volatility,
+        t                => $tiy,
+        r_rate           => 0,
+        q_rate           => 0,
+        spot             => $barrier_spot->quote,
+        premium_adjusted => 0,
+    });
 
     my $strike = BOM::Product::Contract::Strike->new(
         underlying       => $underlying,
