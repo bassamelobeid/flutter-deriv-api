@@ -138,14 +138,12 @@ sub _default_barrier {
     return unless $barrier_spot;
     my $tid                 = $duration / 86400;
     my $tiy                 = $tid / 365;
+    my $vol_args = ($volsurface->type eq 'phased') ? {delta => 50, days => $tid} : {start_epoch => time, $end_epoch => time + $duration};
+    my $volatility = $volsurface->get_volatility($vol_args);
     my $approximate_barrier = get_strike_for_spot_delta({
             delta       => 0.2,
             option_type => $option_type,
-            atm_vol     => $volsurface->get_volatility({
-                    delta => 50,
-                    days  => $tid
-                }
-            ),
+            atm_vol     => $volatility,
             t                => $tiy,
             r_rate           => 0,
             q_rate           => 0,
