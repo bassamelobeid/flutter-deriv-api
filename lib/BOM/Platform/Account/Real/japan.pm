@@ -120,6 +120,11 @@ sub get_financial_assessment_score {
             $data->{total_score} += $score;
         }
     }
+
+    foreach ('trading_purpose', 'hedge_asset', 'hedge_asset_amount') {
+        $data->{$_} = $details->{$_};
+    }
+
     return $data;
 }
 
