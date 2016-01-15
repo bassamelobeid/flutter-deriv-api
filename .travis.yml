@@ -14,4 +14,4 @@ install:
     - /tmp/travis-scripts/setup_postfix.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
 script:
-    - prove -r t/
+    - prove -Ilib -r t/
