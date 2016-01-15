@@ -391,14 +391,6 @@ volsurface_delta:
         vol_spread: 
           50:  0.01
 
-volsurface_flat:
-  class_name: 'BOM::MarketData::VolSurface::Flat'
-  data:
-    symbol: R_100
-    surface: {}
-    flat_atm_spread: 0
-    flat_vol: 1.0
-
 volsurface_phased:
   class_name: 'BOM::MarketData::VolSurface::Phased'
   data:
@@ -702,9 +694,10 @@ ohlc_daily:
     official: 1
 
 economic_events:
-  class_name: 'BOM::MarketData::EconomicEvent'
+  class_name: 'BOM::MarketData::EconomicEventCalendar'
   data:
-    impact: 1
-    event_name: 'US GDP Announcement'
-    symbol: 'USD'
-    source: 'forexfactory'
+    events:
+        - impact: 1
+          event_name: 'US GDP Announcement'
+          symbol: 'USD'
+          source: 'forexfactory'
