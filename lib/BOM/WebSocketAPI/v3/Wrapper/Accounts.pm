@@ -79,10 +79,14 @@ sub statement {
         'statement',
         sub {
             my $response = shift;
-            return {
-                msg_type  => 'statement',
-                statement => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('statement', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type  => 'statement',
+                    statement => $response,
+                };
+            }
         },
         {
             args           => $args,
@@ -99,10 +103,14 @@ sub profit_table {
         'profit_table',
         sub {
             my $response = shift;
-            return {
-                msg_type     => 'profit_table',
-                profit_table => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('profit_table', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'profit_table',
+                    profit_table => $response,
+                };
+            }
         },
         {
             args           => $args,
@@ -119,10 +127,14 @@ sub get_account_status {
         'get_account_status',
         sub {
             my $response = shift;
-            return {
-                msg_type           => 'get_account_status',
-                get_account_status => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('get_account_status', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type           => 'get_account_status',
+                    get_account_status => $response,
+                };
+            }
         },
         {
             args           => $args,
@@ -245,10 +257,14 @@ sub get_self_exclusion {
         'get_self_exclusion',
         sub {
             my $response = shift;
-            return {
-                msg_type           => 'get_self_exclusion',
-                get_self_exclusion => $response
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('get_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type           => 'get_self_exclusion',
+                    get_self_exclusion => $response
+                };
+            }
         },
         {
             args           => $args,

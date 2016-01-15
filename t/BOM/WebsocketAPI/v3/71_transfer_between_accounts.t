@@ -117,8 +117,7 @@ $email_mocked->mock('send_email', sub { return 1 });
             }})->message_ok;
     my $res = decode_json($t->message->[1]);
 
-    ok $res->{error}->{message} =~ /The account transfer is unavailable. Please deposit to your account/,
-        'Not deposited into any account yet';
+    ok $res->{error}->{message} =~ /The account transfer is unavailable. Please deposit to your account/, 'Not deposited into any account yet';
 
     $client_vr->set_default_account('EUR');
     $client_cr->set_default_account('EUR');
