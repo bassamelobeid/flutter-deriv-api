@@ -14,6 +14,7 @@ use BOM::Platform::Account;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
+use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
@@ -244,6 +245,8 @@ sub new_account_japan {
                 code              => $err,
                 message_to_client => $error_map->{$err}});
     }
+    my $details = $details_ref->{details};
+    $details->{$_} = $args->{$_} for ('gender', 'occupation', 'daily_loss_limit');
 
     my %financial_data = map { $_ => $args->{$_} }
         (keys %{BOM::Platform::Account::Real::japan::get_financial_input_mapping()}, 'trading_purpose', 'hedge_asset', 'hedge_asset_amount');
@@ -251,7 +254,7 @@ sub new_account_japan {
     my $acc = BOM::Platform::Account::Real::japan::create_account({
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
-        details        => $details_ref->{details},
+        details        => $details,
         financial_data => \%financial_data,
     });
 
@@ -287,7 +290,7 @@ sub _get_client_details {
     $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
 
     my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer occupation);
+        address_city address_state address_postcode phone secret_question secret_answer);
 
     if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
         try {
@@ -310,8 +313,8 @@ sub _get_client_details {
         }
         $details->{$key} = $value || '';
 
-        # all real a/c has saluation, except Japan. Japan has occupation, but others don't
-        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation occupation));
+        # Japan real a/c has NO salutation
+        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation));
         return {error => 'invalid'} if (not $details->{$key});
     }
     return {details => $details};
