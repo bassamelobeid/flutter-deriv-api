@@ -123,6 +123,10 @@ sub get_volatility {
 
     my ($start_epoch, $end_epoch) = @{$args}{'start_epoch', 'end_epoch'};
 
+    unless ($start_epoch and $end_epoch) {
+        croak "Invalid usage of phased volatility. start_epoch and end_epoch are required.";
+    }
+
     # We ask for 0 time volatility sometimes, for both good and bad reasons.
     # Rather than blowing up, turn it into a 1 second request.
     $start_epoch -= 1 if ($start_epoch == $end_epoch);
