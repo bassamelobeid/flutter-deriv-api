@@ -17,10 +17,14 @@ sub portfolio {
         'portfolio',
         sub {
             my $response = shift;
-            return {
-                msg_type  => 'portfolio',
-                portfolio => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('portfolio', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type  => 'portfolio',
+                    portfolio => $response,
+                };
+            }
         },
         {
             args           => $args,
@@ -103,10 +107,14 @@ sub sell_expired {
         'sell_expired',
         sub {
             my $response = shift;
-            return {
-                msg_type     => 'sell_expired',
-                sell_expired => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('sell_expired', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'sell_expired',
+                    sell_expired => $response,
+                };
+            }
         },
         {
             args           => $args,

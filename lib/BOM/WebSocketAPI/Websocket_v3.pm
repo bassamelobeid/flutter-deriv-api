@@ -362,6 +362,10 @@ sub __handle {
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
         my $loginid = $c->stash('loginid');
+        if ($descriptor->{require_auth} and not $loginid) {
+            return $c->new_error($descriptor->{category}, 'AuthorizationRequired', $c->l('Please log in.'));
+        }
+
         if ($loginid) {
             my $account_type = $loginid =~ /^VRT/ ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
