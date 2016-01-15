@@ -6,7 +6,7 @@ DECLARE
   currency_code VARCHAR(3) :='';
   payment_remark VARCHAR(255) :='';
 BEGIN
-    IF NEW.action_type == 'buy' OR NEW.action_type == 'sell' THEN
+    IF NEW.action_type == 'buy'::TEXT OR NEW.action_type == 'sell'::TEXT THEN
         SELECT s.currency_code, s.short_code INTO currency_code,short_code FROM session_bet_details WHERE fmb_id = NEW.financial_market_bet_id AND action_type = NEW.action_type;
     ELSE
         --
