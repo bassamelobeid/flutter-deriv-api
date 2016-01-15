@@ -8,7 +8,6 @@ before_install:
     - sudo mkdir -p /home/git/binary-com
     - sudo mkdir -p /home/git/regentmarkets
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
-    - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-test
 install:
     - sudo apt-get update
     - source /tmp/travis-scripts/devbox_path.sh
