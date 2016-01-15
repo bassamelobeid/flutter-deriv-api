@@ -57,9 +57,9 @@ sub get_limits {
         open_positions => $client->get_limit_for_open_positions,
     };
 
-    my $numdays       = $wl_config->{for_days};
-    my $numdayslimit  = $wl_config->{limit_for_days};
-    my $lifetimelimit = $wl_config->{lifetime_limit};
+    my $numdays       = $wl_config->for_days;
+    my $numdayslimit  = $wl_config->limit_for_days;
+    my $lifetimelimit = $wl_config->lifetime_limit;
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
