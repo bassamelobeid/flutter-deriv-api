@@ -12,42 +12,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Date::Utility;
 
 my $now = Date::Utility->new()->truncate_to_day->plus_time_interval('1h');
-my %phased_mapper = (
-    RDMOON => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5-sin($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x+3*cos($x)-0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-    RDSUN => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5+sin($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x-3*cos($x)-0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-    RDMARS => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5+cos($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x+3*sin($x)+0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-    RDVENUS => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5-cos($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x-3*sin($x)+0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-);
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_phased',
-    {
-        symbol        => $_,
-        recorded_date => $now,
-        %{$phased_mapper{$_}}}) for qw(RDMOON RDSUN RDMARS RDVENUS);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_}) for qw(RDMARS RDSUN RDMOON RDVENUS);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => 'USD'});
 
