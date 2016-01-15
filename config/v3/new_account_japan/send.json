@@ -158,7 +158,7 @@
     },
     "hedge_asset" : {
       "type": ["string", "null"],
-      "pattern": "^[Foreign currency deposit|Margin FX|Other]$",
+      "pattern": "^(Foreign currency deposit|Margin FX|Other)$",
       "description": "This field is only required if 'Hedging' is selected for 'trading_purpose'."
     },
     "hedge_asset_amount" : {
