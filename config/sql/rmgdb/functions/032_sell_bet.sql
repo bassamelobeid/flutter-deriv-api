@@ -30,7 +30,7 @@ BEGIN
        FOR UPDATE;
 
     SELECT INTO v_r *
-      FROM bet.sell_bet(v_r.id, p_id, p_sell_price, p_sell_time, p_chld,
+      FROM bet.sell_bet(v_r.id, a_currency, p_id, p_sell_price, p_sell_time, p_chld,
                         p_transaction_time, p_staff_loginid, p_remark, p_source, p_qv);
 
     IF FOUND THEN

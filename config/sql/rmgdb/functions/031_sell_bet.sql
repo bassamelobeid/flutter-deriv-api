@@ -22,18 +22,19 @@ BEGIN;
 -- With that function the account is identified by loginid and currency.
 
 CREATE OR REPLACE FUNCTION bet.sell_bet(p_account_id       BIGINT,                     --  1
+                                        p_currency         VARCHAR(3),                 --  2
                                         -- FMB stuff
-                                        p_id               BIGINT,                     --  2
-                                        p_sell_price       NUMERIC,                    --  3
-                                        p_sell_time        TIMESTAMP,                  --  4
-                                        p_chld             JSON,                       --  5
+                                        p_id               BIGINT,                     --  3
+                                        p_sell_price       NUMERIC,                    --  4
+                                        p_sell_time        TIMESTAMP,                  --  5
+                                        p_chld             JSON,                       --  6
                                         -- transaction stuff
-                                        p_transaction_time TIMESTAMP,                  --  6
-                                        p_staff_loginid    VARCHAR(24),                --  7
-                                        p_remark           VARCHAR(800),               --  8
-                                        p_source           BIGINT,                     --  9
+                                        p_transaction_time TIMESTAMP,                  --  7
+                                        p_staff_loginid    VARCHAR(24),                --  8
+                                        p_remark           VARCHAR(800),               --  9
+                                        p_source           BIGINT,                     --  10
                                         -- quants_bets_variables
-                                        p_qv               JSON,                       -- 10
+                                        p_qv               JSON,                       -- 11
                                     OUT v_fmb              bet.financial_market_bet,
                                     OUT v_trans            transaction.transaction)
 RETURNS SETOF RECORD AS $def$
@@ -105,6 +106,7 @@ BEGIN
         SELECT (json_populate_record(tt, ('{"financial_market_bet_id":"' || v_fmb.id || '",'
                                         || '"transaction_id":"' || v_trans.id || '"}')::JSON)).*
           FROM json_populate_record(NULL::data_collection.quants_bet_variables, p_qv) tt;
+        SELECT session_bet_details('sell', v_fmb.id,b_currency, v_fmb.short_code);
     END IF;
 
     RETURN NEXT;
