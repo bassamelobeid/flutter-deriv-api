@@ -19,6 +19,7 @@ sub authorize {
                 return $c->new_error('authorize', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 my $client = BOM::Platform::Client->new({loginid => $response->{loginid}});
+                my $default_account = $client->default_account;
 
                 my $token_type = 'session_token';
                 if (length $token == 15) {
@@ -26,10 +27,11 @@ sub authorize {
                 }
 
                 $c->stash(
-                    loginid    => $response->{loginid},
-                    token_type => $token_type,
-                    client     => $client,
-                    account    => $client->default_account // undef,
+                    loginid              => $response->{loginid},
+                    token_type           => $token_type,
+                    account_id           => $default_account ? $default_account->id : '',
+                    currency             => $default_account ? $default_account->currency_code : '',
+                    landing_company_name => $client->landing_company->short
                 );
                 return {
                     msg_type  => 'authorize',
@@ -59,8 +61,8 @@ sub logout {
             $c->stash(
                 loginid    => undef,
                 token_type => undef,
-                client     => undef,
-                account    => undef
+                account_id => undef,
+                currency   => undef
             );
 
             return {

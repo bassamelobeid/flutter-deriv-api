@@ -303,12 +303,11 @@ sub balance {
     my ($c, $args) = @_;
 
     my $id;
-    my $client = $c->stash('client');
-    if (    $client
-        and $client->default_account
+    my $account_id = $c->stash('account_id');
+    if (    $account_id
         and exists $args->{subscribe}
         and $args->{subscribe} eq '1'
-        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $client->default_account->id, $args)))
+        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $account_id, $args)))
     {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
@@ -338,7 +337,6 @@ sub send_realtime_balance {
 
     my $args = {};
     my $channel;
-    my $client        = $c->stash('client');
     my $subscriptions = $c->stash('balance_channel');
 
     if ($subscriptions) {
@@ -346,7 +344,7 @@ sub send_realtime_balance {
         $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
     }
 
-    if ($client) {
+    if ($c->stash('account_id')) {
         my $payload = JSON::from_json($message);
         $c->send({
                 json => {
@@ -354,8 +352,8 @@ sub send_realtime_balance {
                     $args ? (echo_req => $args) : (),
                     ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                     balance => {
-                        loginid  => $client->loginid,
-                        currency => $client->default_account ? $client->default_account->currency_code : '',
+                        loginid  => $c->stash('loginid'),
+                        currency => $c->stash('currency'),
                         balance  => $payload->{balance_after},
                         ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
     } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
