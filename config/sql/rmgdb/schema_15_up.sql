@@ -2,9 +2,9 @@ BEGIN;
 
 CREATE OR REPLACE FUNCTION notify_transaction_trigger() RETURNS trigger AS $$
 DECLARE
-  short_code VARCHAR(255) DEFAULT :='';
-  currency_code VARCHAR(3) DEFALUT :='';
-  payment_remark VARCHAR(255) DEFAULT :='';
+  short_code VARCHAR(255) :='';
+  currency_code VARCHAR(3) :='';
+  payment_remark VARCHAR(255) :='';
 BEGIN
     IF NEW.action == 'buy' OR NEW.action == 'sell' THEN
         SELECT s.currency_code, s.short_code INTO currency_code,short_code FROM session_bet_details WHERE fmb_id = NEW.financial_market_bet_id AND action_type = NEW.action_type;
