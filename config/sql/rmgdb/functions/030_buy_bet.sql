@@ -15,7 +15,7 @@ BEGIN
     ) ON COMMIT DROP;
     INSERT INTO session_bet_details VALUES (action_type,fmb_id,currency_code,short_code);
 END
-$def$ LANGUAGE plpgsql VOLATILE SECURITY definer;
+$def$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;
 
 CREATE OR REPLACE FUNCTION bet.buy_bet(a_loginid           VARCHAR(12),    --  1
                                        a_currency          VARCHAR(3),     --  2
