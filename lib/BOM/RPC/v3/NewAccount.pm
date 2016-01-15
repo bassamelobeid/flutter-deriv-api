@@ -216,6 +216,59 @@ sub new_account_maltainvest {
     };
 }
 
+sub new_account_japan {
+    my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
+
+    my $args = $params->{args};
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
+
+    my $response  = 'new_account_japan';
+    my $error_map = BOM::Platform::Locale::error_map();
+
+    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'invalid',
+                message_to_client => $error_map->{'invalid'}});
+    }
+
+    my $details_ref = _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
+    if (my $err = $details_ref->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err,
+                message_to_client => $error_map->{$err}});
+    }
+
+    my %financial_data = map { $_ => $args->{$_} }
+        (keys %{BOM::Platform::Account::Real::japan::get_financial_input_mapping()}, 'trading_purpose', 'hedge_asset', 'hedge_asset_amount');
+
+    my $acc = BOM::Platform::Account::Real::japan::create_account({
+        from_client    => $client,
+        user           => BOM::Platform::User->new({email => $client->email}),
+        details        => $details_ref->{details},
+        financial_data => \%financial_data,
+    });
+
+    if (my $err_code = $acc->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err_code,
+                message_to_client => $error_map->{$err_code}});
+    }
+
+    my $landing_company = $acc->{client}->landing_company;
+    return {
+        client_id                 => $acc->{client}->loginid,
+        landing_company           => $landing_company->name,
+        landing_company_shortcode => $landing_company->short
+    };
+}
+
 sub _get_client_details {
     my ($args, $client, $broker) = @_;
 
@@ -234,7 +287,7 @@ sub _get_client_details {
     $details->{myaffiliates_token} = $affiliate_token || $client->myaffiliates_token || '';
 
     my @fields = qw(salutation first_name last_name date_of_birth residence address_line_1 address_line_2
-        address_city address_state address_postcode phone secret_question secret_answer);
+        address_city address_state address_postcode phone secret_question secret_answer occupation);
 
     if ($args->{date_of_birth} and $args->{date_of_birth} =~ /^(\d{4})-(\d\d?)-(\d\d?)$/) {
         try {
@@ -257,7 +310,8 @@ sub _get_client_details {
         }
         $details->{$key} = $value || '';
 
-        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
+        # all real a/c has saluation, except Japan. Japan has occupation, but others don't
+        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation occupation));
         return {error => 'invalid'} if (not $details->{$key});
     }
     return {details => $details};
