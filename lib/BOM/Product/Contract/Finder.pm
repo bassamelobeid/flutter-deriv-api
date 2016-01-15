@@ -136,9 +136,10 @@ sub _default_barrier {
     # latest available spot should be sufficient.
     my $barrier_spot = defined $underlying->spot_tick ? $underlying->spot_tick : $underlying->tick_at(time, {allow_inconsistent => 1});
     return unless $barrier_spot;
-    my $tid      = $duration / 86400;
-    my $tiy      = $tid / 365;
-    my $vol_args = ($volsurface->type eq 'phased')
+    my $tid = $duration / 86400;
+    my $tiy = $tid / 365;
+    my $vol_args =
+        ($volsurface->type eq 'phased')
         ? {
         start_epoch => time,
         end_epoch   => time + $duration
