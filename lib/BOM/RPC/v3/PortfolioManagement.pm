@@ -24,6 +24,10 @@ sub portfolio {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
     my $portfolio = {contracts => []};
     return $portfolio unless $client;
 
@@ -74,12 +78,11 @@ sub sell_expired {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    if (not $client) {
-        return BOM::RPC::v3::Utility::permission_error();
-    } else {
-        return _sell_expired_contracts($client, $params->{source});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
-    return;
+
+    return _sell_expired_contracts($client, $params->{source});
 }
 
 sub _sell_expired_contracts {

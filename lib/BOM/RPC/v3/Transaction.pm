@@ -19,7 +19,12 @@ sub buy {
 
     BOM::Platform::Context::request()->language($params->{language});
 
-    my $client              = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
     my $args                = $params->{args};
@@ -76,6 +81,11 @@ sub sell {
     BOM::Platform::Context::request()->language($params->{language});
 
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
     my $source = $params->{source};
     my $args   = $params->{args};
     my $id     = $args->{sell};
