@@ -43,7 +43,7 @@ has '+type' => (
 sub BUILD {
     my $self = shift;
 
-    my %supported_symbols = map {$_ => 1} qw(RDMARS RDVENUS RDMOON RDSUN);
+    my %supported_symbols = map { $_ => 1 } qw(RDMARS RDVENUS RDMOON RDSUN);
     unless ($supported_symbols{$self->underlying->symbol}) {
         croak "Invalid usage of phased volatility for underlying [" . $self->underlying->symbol . "]";
     }
@@ -66,7 +66,7 @@ sub _phase_for_x {
         $curve = sin($x);
     }
 
-    return (1.5+$curve);
+    return (1.5 + $curve);
 }
 
 sub _variance_for_x {
@@ -75,13 +75,13 @@ sub _variance_for_x {
     my $symbol = $self->underlying->symbol;
 
     if ($symbol eq 'RDMARS') {
-        return (2.75*$x+3*sin($x)+0.25*sin(2*$x));
+        return (2.75 * $x + 3 * sin($x) + 0.25 * sin(2 * $x));
     } elsif ($symbol eq 'RDVENUS') {
-        return (2.75*$x-3*sin($x)+0.25*sin(2*$x));
+        return (2.75 * $x - 3 * sin($x) + 0.25 * sin(2 * $x));
     } elsif ($symbol eq 'RDMOON') {
-        return (2.75*$x+3*cos($x)-0.25*sin(2*$x));
+        return (2.75 * $x + 3 * cos($x) - 0.25 * sin(2 * $x));
     } elsif ($symbol eq 'RDSUN') {
-        return (2.75*$x-3*cos($x)-0.25*sin(2*$x));
+        return (2.75 * $x - 3 * cos($x) - 0.25 * sin(2 * $x));
     }
 
     return;
@@ -95,13 +95,13 @@ sub _x_for_epoch {
 
 sub _x2_for_epoch {
     my ($self, $epoch, $crosses_day) = @_;
-    my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400  =>  $epoch % 86400;
+    my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400;
     return 3.1415926 * $secs_after / 43200;
 }
 
 has flat_atm_spread => (
-    is         => 'ro',
-    default    => 0,
+    is      => 'ro',
+    default => 0,
 );
 
 has atm_spread_point => (
