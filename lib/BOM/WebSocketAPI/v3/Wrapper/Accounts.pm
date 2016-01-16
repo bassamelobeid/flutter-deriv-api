@@ -344,7 +344,7 @@ sub send_realtime_balance {
         $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
     }
 
-    if ($c->stash('account_id')) {
+    if ($c->stash('loginid')) {
         my $payload = JSON::from_json($message);
         $c->send({
                 json => {
