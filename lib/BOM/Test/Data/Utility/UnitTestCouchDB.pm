@@ -58,7 +58,7 @@ sub initialize_symbol_dividend {
 
     my $dv = BOM::MarketData::Dividend->new(symbol => $symbol);
     $dv->document($document);
-    $dv->save;
+    return $dv->save;
 }
 
 sub _init {
