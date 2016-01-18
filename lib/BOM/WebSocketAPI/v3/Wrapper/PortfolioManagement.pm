@@ -61,6 +61,9 @@ sub proposal_open_contract {
                                 'proposal_open_contract:' . JSON::to_json($details), $details
                             );
                         }
+                        # instead of sending bid details through send_proposal i.e make another rpc call, we can also return details
+                        # from proposal_open_contract initially as well but it may slow down initial reponse if client has lot of contracts
+                        # so as of now keeping it as it to make it fast for client
                         send_proposal($c, $id, $details);
                     }
                 } else {
