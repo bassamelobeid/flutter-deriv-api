@@ -37,7 +37,7 @@ sub landing_company {
         'landing_company',
         sub {
             my $response = shift;
-            if (exists $response->{error}) {
+            if ($response and exists $response->{error}) {
                 return $c->new_error('landing_company', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
@@ -127,12 +127,12 @@ sub get_account_status {
         'get_account_status',
         sub {
             my $response = shift;
-            if (exists $response->{error}) {
+            if ($response and exists $response->{error}) {
                 return $c->new_error('get_account_status', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 return {
                     msg_type           => 'get_account_status',
-                    get_account_status => $response,
+                    get_account_status => $response->{status},
                 };
             }
         },
