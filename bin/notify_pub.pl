@@ -79,7 +79,7 @@ sub _msg {
 
     my %msg;
     @msg{qw/id account_id action_type referrer_type financial_market_bet_id
-            payment_id amount balance_after transaction_time/} = split(',', $payload);
+            payment_id amount balance_after transaction_time short_code currency_code/} = split(',', $payload);
 
     return \%msg;
 }
