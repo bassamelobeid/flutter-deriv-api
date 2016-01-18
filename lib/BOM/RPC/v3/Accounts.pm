@@ -266,7 +266,7 @@ sub get_account_status {
         push @status, 'active';
     }
 
-    return \@status;
+    return {status => \@status};
 }
 
 sub change_password {
