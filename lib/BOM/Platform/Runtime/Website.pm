@@ -149,11 +149,6 @@ has 'default_language' => (
     default => 'EN'
 );
 
-has 'localhost' => (
-    is       => 'ro',
-    required => 1,
-);
-
 has config => (
     is => 'rw',
 );

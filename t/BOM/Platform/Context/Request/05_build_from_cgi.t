@@ -18,9 +18,6 @@ use Carp;
     *{"Carp::Croak"} = sub { };
 }
 
-use Sys::Hostname;
-use BOM::System::Host;
-
 use BOM::Platform::Context::Request;
 use BOM::Platform::SessionCookie;
 

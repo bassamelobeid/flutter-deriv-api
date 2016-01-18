@@ -13,7 +13,6 @@ lives_ok {
     $website_list = BOM::Platform::Runtime::Website::List->new(
         definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
         broker_codes => BOM::Platform::Runtime->instance->broker_codes,
-        localhost    => BOM::Platform::Runtime->instance->hosts->localhost,
     );
 }
 'Initialized';

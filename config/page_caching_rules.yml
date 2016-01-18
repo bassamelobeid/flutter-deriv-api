@@ -7,25 +7,16 @@
 "/trading":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/user/statement":
-  header:
-    Cache-Control: "private, must-revalidate, max-age=0"
-"/user/profit_table":
-  header:
-    Cache-Control: "private, must-revalidate, max-age=0"
-"/user/portfolio":
-  header:
-    Cache-Control: "private, must-revalidate, max-age=0"
 "/user/my_account":
   header:
     Cache-Control: "private, must-revalidate, max-age=0"
 "trade_get.cgi":
   header:
     Cache-Control: "private, max-age=240"
-"/resources/asset_index":
+"/cashier":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/cashier":
+"/partners":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/trade/bet_explanation":
@@ -42,21 +33,12 @@
 "/affiliate/signup":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/charting/livechart":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user/logintrouble":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/cashier/payment_agent_list":
   header:
     Cache-Control: "public, max-age=1000"
-"/resources/pricing_table":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/resources/rise_fall_table":
-  header:
-    Cache-Control: "public, max-age=180"
 "/states_list":
   header:
     Cache-Control: "public, max-age=86400, s-maxage=604800"
@@ -65,9 +47,6 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
   exclude_appcache: true
-"/resources/trading_times":
-  header:
-    Cache-Control: "public, max-age=60"
 "/legal/us_patents":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
@@ -87,6 +66,9 @@
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/group-history":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/group-information":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/charting":
@@ -192,12 +174,21 @@
 "/new_account/realws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/home2":
-  header:
-    Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user/settings/securityws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/cashier/account_transferws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/top_up_virtualws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/cashier/payment_agent_listws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/settingsws":
+  header:
+    Cache-Control: "public, max-age=1000, s-maxage=604800"
+"/user/my_accountws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
