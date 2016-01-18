@@ -118,11 +118,17 @@ sub proposal_open_contract {
         return $auth_error;
     }
 
-    my @fmbs = ();
+    my @fmbs    = ();
+    my $account = $client->default_account;
     if ($params->{contract_id}) {
-        @fmbs = grep { $params->{contract_id} eq $_->id } $client->open_bets;
+        @fmbs = @{
+            $account->find_financial_market_bet(
+                query => [
+                    is_sold => 0,
+                    id      => $params->{contract_id}])}
+            if $account;
     } else {
-        @fmbs = $client->open_bets;
+        @fmbs = @{__get_open_contracts($client)};
     }
 
     my $response = {};
