@@ -24,47 +24,47 @@ stress1:
 stress2:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 2
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress3:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 3
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress4:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 4
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress5:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 5
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress6:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 6
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress7:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 7
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress8:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 8
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress9:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 9
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 stress10:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
-	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 10
+	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
 tidy:
 	find . -name '*.p?.bak' -delete
