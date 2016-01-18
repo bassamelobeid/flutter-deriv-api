@@ -22,16 +22,14 @@ use strict;
 use warnings;
 
 use BOM::MarketData::CorrelationMatrix;
-use BOM::MarketData::EconomicEvent;
+use BOM::MarketData::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use CouchDB::Client;
 use Carp qw( croak );
 use LWP::UserAgent;
 use YAML::XS;
 
-use BOM::MarketData::ExchangeConfig;
 use BOM::MarketData::VolSurface::Delta;
-use BOM::MarketData::VolSurface::Flat;
 use BOM::MarketData::VolSurface::Phased;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::System::Chronicle;
@@ -47,8 +45,6 @@ my %couchdb_databases = (
     economic_events      => 'zz' . (time . int(rand 999999)) . 'eco',
     correlation_matrices => 'zz' . (time . int(rand 999999)) . 'cor',
     corporate_actions    => 'zz' . (time . int(rand 999999)) . 'coa',
-    currency_config      => 'zz' . (time . int(rand 999999)) . 'cuc',
-    exchange_config      => 'zz' . (time . int(rand 999999)) . 'exc',
 );
 
 sub initialize_symbol_dividend {
@@ -63,7 +59,7 @@ sub initialize_symbol_dividend {
 
     my $dv = BOM::MarketData::Dividend->new(symbol => $symbol);
     $dv->document($document);
-    $dv->save;
+    return $dv->save;
 }
 
 sub _init {
@@ -101,6 +97,8 @@ sub _init {
     initialize_symbol_dividend "RDVENUS", 0;
     initialize_symbol_dividend "RDYANG",  -35;
     initialize_symbol_dividend "RDYIN",   20;
+
+    BOM::System::Chronicle::set('economic_events', 'economic_events', {events => []});
 
     return 1;
 }
