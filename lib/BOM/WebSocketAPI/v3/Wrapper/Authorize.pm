@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use BOM::WebSocketAPI::Websocket_v3;
-use BOM::Platform::Client;
 
 sub authorize {
     my ($c, $args) = @_;
@@ -18,9 +17,6 @@ sub authorize {
             if (exists $response->{error}) {
                 return $c->new_error('authorize', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
-                my $client = BOM::Platform::Client->new({loginid => $response->{loginid}});
-                my $default_account = $client->default_account;
-
                 my $token_type = 'session_token';
                 if (length $token == 15) {
                     $token_type = 'api_token';
@@ -29,10 +25,9 @@ sub authorize {
                 $c->stash(
                     loginid              => $response->{loginid},
                     token_type           => $token_type,
-                    account_id           => $default_account ? $default_account->id : '',
-                    currency             => $default_account ? $default_account->currency_code : '',
-                    landing_company_name => $client->landing_company->short
-                );
+                    account_id           => delete $response->{account_id},
+                    currency             => $response->{currency},
+                    landing_company_name => delete $response->{landing_company_name});
                 return {
                     msg_type  => 'authorize',
                     authorize => $response,
