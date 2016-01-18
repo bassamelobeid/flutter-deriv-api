@@ -1,6 +1,4 @@
 BEGIN;
-CREATE TABLE IF NOT EXISTS transaction.session_details (enabled boolean);
-GRANT SELECT ON TABLE transaction.session_details TO  read, write;
 
 CREATE OR REPLACE FUNCTION notify_transaction_trigger() RETURNS trigger AS $$
 DECLARE
@@ -8,7 +6,7 @@ DECLARE
   currency_code VARCHAR(3) :='';
   payment_remark VARCHAR(255) :='';
 BEGIN
-    IF EXISTS(SELECT * FROM transaction.session_details limit 1) THEN
+    IF EXISTS (SELECT relname FROM pg_class WHERE relname = 'session_bet_details') THEN
         IF NEW.action_type = 'buy'::VARCHAR OR NEW.action_type = 'sell'::VARCHAR THEN
             SELECT s.currency_code, s.short_code INTO currency_code,short_code FROM session_bet_details s WHERE fmb_id = NEW.financial_market_bet_id AND action_type = NEW.action_type;
         ELSE
