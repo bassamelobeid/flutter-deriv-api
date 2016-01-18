@@ -8,7 +8,6 @@ with 'BOM::Utility::Logging';
 
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
-use BOM::MarketData::EconomicEvent;
 use BOM::MarketData::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Date::Utility;
@@ -28,12 +27,12 @@ sub documentation { return 'This script runs economic events update from forex f
 sub script_run {
     my $self = shift;
 
-    my $now = Date::Utility->new;
-    my $dm  = BOM::MarketData::Fetcher::EconomicEvent->new();
-
     my @messages;
-    my $parser          = ForexFactory->new();
-    my $events_received = $parser->extract_economic_events;
+    my $parser = ForexFactory->new();
+
+    #read economic events for one week (7-days) starting from 4 days back, so in case of a Monday which
+    #has its last Friday as a holiday, we will still have some events in the cache.
+    my $events_received = $parser->extract_economic_events(0, Date::Utility->new()->minus_time_interval('4d'));
 
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
@@ -42,12 +41,6 @@ sub script_run {
     #this will be an array of all extracted economic events. Later we will store
 
     foreach my $event_param (@$events_received) {
-        my $eco = BOM::MarketData::EconomicEvent->new($event_param);
-        unless (_is_categorized($eco)) {
-            warn("Uncategorized economic events name: $event_param->{event_name}, symbol: $event_param->{symbol}, impact: $event_param->{impact}");
-        }
-        $eco->save;
-
         $event_param->{release_date}  = $event_param->{release_date}->epoch;
         $event_param->{recorded_date} = Date::Utility->new->epoch;
 
@@ -63,13 +56,13 @@ sub script_run {
 
         #now convert release_date to string to be storable in chronicle
         foreach my $event_param (@all_events) {
-            $event_param->{release_date}  = Date::Utility->new($event_param->{release_date})->datetime_iso8601;
+            $event_param->{release_date} = Date::Utility->new($event_param->{release_date})->datetime_iso8601;
         }
 
         BOM::MarketData::EconomicEventCalendar->new({
-                events          => \@all_events,
-            recorded_date   => Date::Utility->new(),
-        })->save;
+                events        => \@all_events,
+                recorded_date => Date::Utility->new(),
+            })->save;
 
         print "stored " . (scalar @all_events) . " events in chronicle...\n";
     }
