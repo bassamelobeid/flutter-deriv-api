@@ -39,7 +39,7 @@ sub entry_point {
 
     my $log = $c->app->log;
     $log->debug("opening a websocket for " . $c->tx->remote_address);
-    print __FILE__, ":", __LINE__, "\n";
+
     # enable permessage-deflate
     $c->tx->with_compression;
 

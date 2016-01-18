@@ -38,6 +38,7 @@ sub apply_usergroup {
 
 sub startup {
     my $app = shift;
+
     Mojo::IOLoop->singleton->reactor->on(
         error => sub {
             my ($reactor, $err) = @_;
@@ -66,6 +67,7 @@ sub startup {
             $c->cookie(
                 language => '',
                 {expires => 1});
+
             my $request = BOM::Platform::Context::Request::from_mojo({mojo_request => $c->req});
             $request = BOM::Platform::Context::request($request);
             $c->stash(request => $request);
