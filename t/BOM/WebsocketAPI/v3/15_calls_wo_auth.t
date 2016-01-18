@@ -6,6 +6,7 @@ use Data::Dumper;
 use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
+use BOM::Platform::Runtime;
 
 my $t = build_mojo_test();
 
@@ -74,6 +75,11 @@ is_deeply $res->{states_list}->[0],
     text  => 'Johor'
     };
 test_schema('states_list', $res);
+
+## website_status
+$t = $t->send_ok({json => {website_status => 1}})->message_ok;
+$res = decode_json($t->message->[1]);
+is $res->{website_status}->{terms_conditions_version}, BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
 
 $t->finish_ok;
 

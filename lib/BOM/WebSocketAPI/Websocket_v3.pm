@@ -1,6 +1,18 @@
 package BOM::WebSocketAPI::Websocket_v3;
 
 use Mojo::Base 'Mojolicious::Controller';
+use MojoX::JSON::RPC::Client;
+use DataDog::DogStatsd::Helper;
+use JSON::Schema;
+use File::Slurp;
+use JSON;
+use Time::HiRes;
+use Data::UUID;
+use Time::Out qw(timeout);
+use Guard;
+use Proc::CPUUsage;
+use feature "state";
+use RateLimitations qw(within_rate_limits);
 
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 use BOM::WebSocketAPI::v3::Wrapper::Transaction;
@@ -13,20 +25,7 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
-use DataDog::DogStatsd::Helper;
-use JSON::Schema;
-use File::Slurp;
-use JSON;
-use BOM::Platform::Runtime;
-use BOM::Product::Transaction;
-use Time::HiRes;
 use BOM::Database::Rose::DB;
-use MojoX::JSON::RPC::Client;
-use Data::UUID;
-use Time::Out qw(timeout);
-use Guard;
-use Proc::CPUUsage;
-use feature "state";
 
 sub ok {
     my $c      = shift;
@@ -69,11 +68,12 @@ sub entry_point {
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
-
                 BOM::WebSocketAPI::v3::Wrapper::Accounts::send_realtime_balance($c, $msg)
                     if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg)
                     if $channel =~ /^FEED::/;
+                BOM::WebSocketAPI::v3::Wrapper::Transaction::send_transaction_updates($c, $msg)
+                    if $channel =~ /^TXNUPDATE::transaction_/;
             });
         $c->stash->{redis} = $redis;
     }
@@ -168,11 +168,12 @@ my @dispatch = (
         'ticks_history',
         \&BOM::WebSocketAPI::v3::Wrapper::Streamer::ticks_history, 0
     ],
-    ['proposal',   \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,  0],
-    ['forget',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget,      0],
-    ['forget_all', \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,  0],
-    ['ping',       \&BOM::WebSocketAPI::v3::Wrapper::System::ping,        0],
-    ['time',       \&BOM::WebSocketAPI::v3::Wrapper::System::server_time, 0],
+    ['proposal',       \&BOM::WebSocketAPI::v3::Wrapper::Streamer::proposal,     0],
+    ['forget',         \&BOM::WebSocketAPI::v3::Wrapper::System::forget,         0],
+    ['forget_all',     \&BOM::WebSocketAPI::v3::Wrapper::System::forget_all,     0],
+    ['ping',           \&BOM::WebSocketAPI::v3::Wrapper::System::ping,           0],
+    ['time',           \&BOM::WebSocketAPI::v3::Wrapper::System::server_time,    0],
+    ['website_status', \&BOM::WebSocketAPI::v3::Wrapper::System::website_status, 0],
     [
         'contracts_for',
         \&BOM::WebSocketAPI::v3::Wrapper::Offerings::contracts_for, 0
@@ -208,8 +209,9 @@ my @dispatch = (
     ],
 
     # authenticated calls
-    ['sell', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell, 1],
-    ['buy',  \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,  1],
+    ['sell',        \&BOM::WebSocketAPI::v3::Wrapper::Transaction::sell,        1],
+    ['buy',         \&BOM::WebSocketAPI::v3::Wrapper::Transaction::buy,         1],
+    ['transaction', \&BOM::WebSocketAPI::v3::Wrapper::Transaction::transaction, 1],
     [
         'portfolio',
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::portfolio, 1
@@ -219,8 +221,9 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::proposal_open_contract,
         1
     ],
-    ['balance',   \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,   1],
-    ['statement', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement, 1],
+    ['sell_expired', \&BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement::sell_expired, 1],
+    ['balance',      \&BOM::WebSocketAPI::v3::Wrapper::Accounts::balance,                 1],
+    ['statement',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::statement,               1],
     [
         'profit_table',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::profit_table, 1
@@ -257,8 +260,9 @@ my @dispatch = (
         'topup_virtual',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1
     ],
-    ['api_token',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1],
-    ['get_limits', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits, 1],
+    ['api_token',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,    1],
+    ['get_limits',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1],
+    ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1],
     [
         'paymentagent_withdraw',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw, 1
@@ -318,6 +322,26 @@ sub __handle {
         grep { defined }
         map  { $dispatch_handler_for{$_} } keys $p1;
     for my $descriptor (@handler_descriptors) {
+
+        if (not $c->stash('connection_id')) {
+            $c->stash('connection_id' => Data::UUID->new()->create_str());
+        }
+        my $limiting_service = 'websocket_call';
+        if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
+            $limiting_service = 'websocket_call_expensive';
+        }
+        if (grep { $_ eq $descriptor->{category} } ('proposal', 'proposal_open_contract')) {
+            $limiting_service = 'websocket_call_pricing';
+        }
+        if (
+            not within_rate_limits({
+                    service  => $limiting_service,
+                    consumer => $c->stash('connection_id'),
+                }))
+        {
+            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+        }
+
         my $t0 = [Time::HiRes::gettimeofday];
 
         my $input_validation_result = $descriptor->{in_validator}->validate($p1);
@@ -334,8 +358,8 @@ sub __handle {
             return $c->new_error('error', 'InputValidationFailed', $message, $details);
         }
 
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.' . $descriptor->{category}, {tags => [$tag]});
-        DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $descriptor->{category}, {tags => [$tag]});
+        DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
         ## refetch account b/c stash client won't get updated in websocket
         if ($descriptor->{require_auth}
@@ -368,18 +392,8 @@ sub __handle {
         my $client = $c->stash('client');
         if ($client) {
             my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.authenticated_call.all',
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
-        }
-
-        ## sell expired
-        if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
-            if (BOM::Platform::Runtime->instance->app_config->quants->features->enable_portfolio_autosell) {
-                BOM::Product::Transaction::sell_expired_contracts({
-                    client => $c->stash('client'),
-                    source => $c->stash('source'),
-                });
-            }
         }
 
         my $result = $descriptor->{handler}->($c, $p1);
@@ -446,11 +460,14 @@ sub rpc {
             my $res = pop;
 
             DataDog::DogStatsd::Helper::stats_timing(
-                'bom-websocket-api.v3.rpc.call.timing',
+                'bom_websocket_api.v_3.rpc.call.timing',
                 1000 * Time::HiRes::tv_interval($tv),
                 {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_timing('bom-websocket-api.v3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
-            DataDog::DogStatsd::Helper::stats_inc('bom-websocket-api.v3.rpc.call.count', {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_websocket_api.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$method"]});
+            DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.rpc.call.count', {tags => ["rpc:$method"]});
+
+            # unconditionally stop any further processing if client is already disconnected
+            return unless $self->tx;
 
             my $client_guard = guard { undef $client };
             if (!$res) {
@@ -461,6 +478,17 @@ sub rpc {
                 $self->send({json => $data});
                 return;
             }
+
+            my $rpc_time;
+            $rpc_time = delete $res->result->{rpc_time} if (ref($res->result) eq "HASH");
+
+            if ($rpc_time) {
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom_websocket_api.v_3.rpc.call.timing.connection',
+                    1000 * Time::HiRes::tv_interval($tv) - $rpc_time,
+                    {tags => ["rpc:$method"]});
+            }
+
             if ($res->is_error) {
                 warn $res->error_message;
                 my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
@@ -469,6 +497,7 @@ sub rpc {
                 return;
             }
             my $send = 1;
+
             my $data = &$callback($res->result);
 
             if (not $data) {
@@ -486,7 +515,15 @@ sub rpc {
                 $data->{echo_req} = $args;
             }
             if ($send) {
+                $tv = [Time::HiRes::gettimeofday];
+
                 $self->send({json => $data});
+
+                DataDog::DogStatsd::Helper::stats_timing(
+                    'bom_websocket_api.v_3.rpc.call.timing.sent',
+                    1000 * Time::HiRes::tv_interval($tv),
+                    {tags => ["rpc:$method"]});
+
             }
             return;
         });

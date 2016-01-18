@@ -11,26 +11,11 @@ use Finance::Asset;
 use BOM::Test::Data::Utility::UnitTestCouchDB;
 use Date::Utility;
 use BOM::Test::Data::Utility::FeedTestDatabase;
-my @exchange = map { BOM::Market::Underlying->new($_)->exchange_name } Finance::Asset->instance->symbols;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(    # .. why isn't this in the testdb by default anyway?
-    'exchange',
-    {
-        symbol           => $_,
-        date             => Date::Utility->new,
-        trading_days     => 'everyday',
-        open_on_weekends => 1
-    }) for @exchange;
 BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_100',
     epoch      => Date::Utility->new->epoch,
     quote      => 100
 });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_flat',
-    {
-        symbol        => 'R_100',
-        recorded_date => Date::Utility->new
-    });
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => 'R_100'});
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',

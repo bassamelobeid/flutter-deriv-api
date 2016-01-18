@@ -24,7 +24,7 @@ my $t = build_mojo_test();
 my $email = 'test@binary.com';
 
 subtest 'verify_email' => sub {
-    $t = $t->send_ok({json => {verify_email => $email}})->message_ok;
+    $t = $t->send_ok({json => {verify_email => $email, type => 'account_opening'}})->message_ok;
     my $res = decode_json($t->message->[1]);
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
@@ -47,7 +47,7 @@ foreach my $key (@{$tokens}) {
 my $create_vr = {
     new_account_virtual => 1,
     email               => $email,
-    client_password     => 'Ac0+-_:@. ',
+    client_password     => 'Ac0+-_:@.',
     residence           => 'au',
     verification_code   => $code
 };

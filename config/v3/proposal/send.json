@@ -10,6 +10,11 @@
       "pattern": "^1$",
       "required": "1"
     },
+    "subscribe": {
+        "type": "integer",
+        "description": "1 - to stream. Note that certain contracts, such as tick trades on Random Indices, have constant prices and hence won't stream.",
+        "pattern": "^1$"
+    },
     "amount": {
       "type": "number",
       "description":"Proposed payout or stake value"

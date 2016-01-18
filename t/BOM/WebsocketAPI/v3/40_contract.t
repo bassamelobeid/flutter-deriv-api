@@ -30,6 +30,7 @@ is $authorize->{authorize}->{loginid}, 'CR2002';
 $t = $t->send_ok({
         json => {
             "proposal"      => 1,
+            "subscribe"     => 1,
             "amount"        => "10",
             "basis"         => "payout",
             "contract_type" => "CALL",
@@ -87,7 +88,7 @@ $t = $t->message_ok;
 my $res = decode_json($t->message->[1]);
 
 if (exists $res->{proposal_open_contract}) {
-    ok $res->{proposal_open_contract}->{id};
+    ok $res->{proposal_open_contract}->{contract_id};
     test_schema('proposal_open_contract', $res);
 }
 
