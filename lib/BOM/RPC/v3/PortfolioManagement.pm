@@ -134,12 +134,11 @@ sub proposal_open_contract {
     my $response = {};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id = $fmb->id;
+            my $id = $fmb->{id};
             $response->{$id} = {
-                short_code => $fmb->short_code,
+                short_code => $fmb->{short_code},
                 currency   => $client->currency,
-                underlying => $fmb->underlying_symbol
-            };
+                underlying => $fmb->{underlying_symbol}};
         }
     }
 
