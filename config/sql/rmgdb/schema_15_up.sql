@@ -1,5 +1,5 @@
 BEGIN;
-CREATE TABLE IF NOT EXISTS transaction.session_details (enbled boolean);
+CREATE TABLE IF NOT EXISTS transaction.session_details (enabled boolean);
 GRANT SELECT ON TABLE transaction.session_details TO  read, write;
 
 CREATE OR REPLACE FUNCTION notify_transaction_trigger() RETURNS trigger AS $$
