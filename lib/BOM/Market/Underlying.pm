@@ -33,7 +33,6 @@ use BOM::Market::Asset;
 use BOM::Market::Currency;
 use BOM::Market::Exchange;
 use BOM::Market::SubMarket::Registry;
-use BOM::MarketData::ExchangeConfig;
 use BOM::Market;
 use BOM::Market::Registry;
 use Format::Util::Numbers qw(roundnear);
@@ -396,14 +395,6 @@ sub _build_eod_blackout_expiry {
     return $self->submarket->eod_blackout_expiry;
 }
 
-=head2 esig_symbol
-
-Symbol for this underlying used by e-signal
-
-=cut
-
-has esig_symbol => (is => 'ro');
-
 ###
 # End of Attribute section
 ###
@@ -674,7 +665,7 @@ sub _build_exchange {
     my $self = shift;
 
     $self->_exchange_refreshed(time);
-    return BOM::Market::Exchange->new($self->exchange_name);
+    return BOM::Market::Exchange->new($self->exchange_name, $self->for_date);
 }
 
 has _exchange_refreshed => (

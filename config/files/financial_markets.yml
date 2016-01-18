@@ -47,6 +47,7 @@ commodities:
     providers:
         - 'idata'
         - 'sd'
+        - 'panda'
     intradays_must_be_same_day: 1
     markups:
         apply_traded_markets_markup: 1
@@ -124,7 +125,7 @@ forex:
     providers:
         - 'idata'
         - 'olsen'
-        - 'smart'
+        - 'panda'
     markups:
         apply_traded_markets_markup: 1
         apply_butterfly_markup: 1
@@ -209,7 +210,6 @@ indices:
         - 'idata'
         - 'telekurs'
         - 'tenfore'
-        - 'synthetic'
     markups:
         apply_traded_markets_markup: 1
         digital_spread:

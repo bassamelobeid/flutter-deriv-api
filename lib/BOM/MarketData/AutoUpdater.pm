@@ -1,6 +1,7 @@
 package BOM::MarketData::AutoUpdater;
 
 use Moose;
+use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use Date::Utility;
 use BOM::Platform::Runtime;
@@ -24,19 +25,9 @@ has _logger => (
     },
 );
 
-has _fqdn => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__fqdn {
-    my $fqdn = BOM::Platform::Runtime->instance->hosts->localhost->fqdn;
-    return $fqdn;
-}
-
 sub should_send_email {
     my $self = shift;
-    return ($self->_fqdn =~ /collector01/) ? 1 : 0;
+    return (BOM::System::Localhost::name() eq 'collector01') ? 1 : 0;
 }
 
 sub run {
@@ -77,7 +68,7 @@ sub run {
     if (($number_failures > 0 or $error > 0) and $time_from_last_email > 3600) {
         Cache::RedisDB->set_nw('QUANT_EMAIL', 'FOREX_VOL', time);
 
-        my $body = 'Run on: ' . $self->_fqdn . "\n\n";
+        my $body = 'Run on: ' . BOM::System::Localhost::name() . "\n\n";
         $body .= join "\n", (@successes, @failures, @errors);
 
         my $sender = Mail::Sender->new({

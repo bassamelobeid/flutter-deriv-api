@@ -26,8 +26,8 @@ use BOM::Platform::Runtime;
 use BOM::MarketData::CorrelationMatrix;
 use BOM::MarketData::ImpliedRate;
 use BOM::MarketData::InterestRate;
-use BOM::MarketData::CurrencyConfig;
 use BOM::MarketData::Dividend;
+use Bloomberg::CurrencyConfig;
 use Try::Tiny;
 
 sub script_run {
@@ -140,7 +140,8 @@ sub _collect_rates_ages {
     }
 
 
-    my @currencies_to_update = @{BOM::MarketData::CurrencyConfig->new->{currency_list}};
+    my %list = Bloomberg::CurrencyConfig::get_interest_rate_list();
+    my @currencies_to_update = keys %list;
     foreach my $currency_symbol_to_update (@currencies_to_update) {
         if ($currency_symbol_to_update eq 'XAU' or $currency_symbol_to_update eq 'XAG'){
             next;

@@ -8,8 +8,7 @@ with 'BOM::Utility::Logging';
 
 use BOM::MarketData::Fetcher::EconomicEvent;
 use ForexFactory;
-use BOM::MarketData::EconomicEvent;
-use BOM::MarketData::EconomicEventChronicle;
+use BOM::MarketData::EconomicEventCalendar;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::Utility::Log4perl;
@@ -28,54 +27,43 @@ sub documentation { return 'This script runs economic events update from forex f
 sub script_run {
     my $self = shift;
 
-    die 'Script only to run on master servers.' if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
-    my $now = Date::Utility->new;
-    my $dm  = BOM::MarketData::Fetcher::EconomicEvent->new();
-
     my @messages;
-    my $parser          = ForexFactory->new();
-    my $events_received = $parser->extract_economic_events;
+    my $parser = ForexFactory->new();
+
+    #read economic events for one week (7-days) starting from 4 days back, so in case of a Monday which
+    #has its last Friday as a holiday, we will still have some events in the cache.
+    my $events_received = $parser->extract_economic_events(0, Date::Utility->new()->minus_time_interval('4d'));
 
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
     my $file_timestamp = Date::Utility->new->date_yyyymmdd;
 
     #this will be an array of all extracted economic events. Later we will store
-    #the sorted array (by release date) in chronicle
-    my @all_events;
 
     foreach my $event_param (@$events_received) {
-        my $eco = BOM::MarketData::EconomicEvent->new($event_param);
-        unless (_is_categorized($eco)) {
-            warn("Uncategorized economic events name: $event_param->{event_name}, symbol: $event_param->{symbol}, impact: $event_param->{impact}");
-        }
-        $eco->save;
-
         $event_param->{release_date}  = $event_param->{release_date}->epoch;
         $event_param->{recorded_date} = Date::Utility->new->epoch;
-
-        try {
-            my $eco_ch = BOM::MarketData::EconomicEventChronicle->new($event_param);
-            push @all_events, $eco_ch;
-        }
-        catch {
-            print 'Error occured when reading events: ' . $_;
-        };
 
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
         BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS',         $event_param->{release_date}, JSON::to_json($event_param));
         BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS_TRIMMED', $event_param->{release_date}, JSON::to_json($event_param));
-
     }
 
     try {
+        #here we need epochs to sort events
+        #the sorted array (by release date) in chronicle
+        my @all_events = sort { $a->{release_date} <=> $b->{release_date} } @$events_received;
 
-        @all_events = sort { $a->release_date->epoch cmp $b->release_date->epoch } @all_events;
+        #now convert release_date to string to be storable in chronicle
+        foreach my $event_param (@all_events) {
+            $event_param->{release_date} = Date::Utility->new($event_param->{release_date})->datetime_iso8601;
+        }
 
-        #now we need to convert these sorted data into their document
-        my @all_documents;
-        push @all_documents, $_->document for @all_events;
-        BOM::System::Chronicle::set("economic_events", "economic_events", \@all_documents);
+        BOM::MarketData::EconomicEventCalendar->new({
+                events        => \@all_events,
+                recorded_date => Date::Utility->new(),
+            })->save;
+
         print "stored " . (scalar @all_events) . " events in chronicle...\n";
     }
     catch {
