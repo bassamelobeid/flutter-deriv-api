@@ -339,7 +339,7 @@ sub __handle {
                     consumer => $c->stash('connection_id'),
                 }))
         {
-            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit for [_1].', $descriptor->{category}));
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
