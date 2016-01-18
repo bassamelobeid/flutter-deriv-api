@@ -28,7 +28,7 @@ sub authorize {
                     $token_type = 'oauth_token';
                     ## scopes
                     my $m = BOM::Database::Model::OAuth->new;
-                    my @scopes = $m->get_scopes_by_access_token($access_token);
+                    my @scopes = $m->get_scopes_by_access_token($token);
                     $c->stash('oauth_scopes' => \@scopes);
                 }
 
