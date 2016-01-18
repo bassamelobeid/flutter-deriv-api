@@ -112,7 +112,7 @@ sub generate {
 
                 if ($bet->is_expired) {
                     $self->logger->debug(
-                        'expired_unsold: ' . join('::', $open_fmb_id, $value, $bet->shortcode, $bet->is_expired, $bet->initialized_correctly));
+                        'expired_unsold: ' . join('::', $open_fmb_id, $value, $bet->shortcode, $bet->is_expired, $bet->primary_validation_error));
                     $total_expired++;
                     $dbh->do(qq{INSERT INTO accounting.expired_unsold (financial_market_bet_id, market_price) VALUES(?,?)},
                         undef, $open_fmb_id, $value);
@@ -275,7 +275,7 @@ sub sell_expired_contracts {
         # Regardless, expiry check will exercise them and we need that info in a couple line anyway.
         my $expired = $bet->is_expired;
 
-        if (not $bet->initialized_correctly) {
+        if ($bet->primary_validation_error) {
             $bet_info->{reason} = $bet->primary_validation_error->message;
         } elsif (not $expired) {
             $bet_info->{reason} = 'not expired';

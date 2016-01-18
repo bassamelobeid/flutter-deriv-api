@@ -15,7 +15,7 @@ BrokerPresentation("QUANT BACKOFFICE");
 
 use Mail::Sender;
 use ForexFactory;
-use BOM::MarketData::EconomicEvent;
+use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use Date::Utility;
 use BOM::MarketData::Fetcher::EconomicEvent;
@@ -27,7 +27,7 @@ BOM::Backoffice::Auth0::can_access(['Quants']);
 
 if ($broker !~ /^\w+$/) { die "Bad broker code $broker in $0"; }
 
-if (not BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server')) {
+unless (BOM::System::Localhost::is_master_server()) {
     code_exit_BO();
 }
 
@@ -81,13 +81,7 @@ my $autoupdate          = request()->param('autoupdate');
 
 if ($autoupdate) {
     eval {
-        my $events_updated = ForexFactory->new()->extract_economic_events;
-
-        foreach my $event_param (@$events_updated){
-              my $eco = BOM::MarketData::EconomicEvent->new($event_param);
-              $eco->save;
-        }
-        print scalar(@$events_updated) . ' economic events were successfully saved on couch.</br></br>';
+        print "Not implemented yet";
     };
     if (my $error = $@) {
         my $msg    = 'Error while fetching economic events on date [' . Date::Utility->new->datetime . ']';
@@ -115,9 +109,7 @@ if ($autoupdate) {
             impact       => $impact,
             symbol       => $symbol,
         };
-        my $event = BOM::MarketData::EconomicEvent->new($event_param);
-        $event->save;
-        print 'Econmic Announcement saved!</br></br>';
+        print 'Econmic Announcement NOT saved!</br></br>';
         $save_economic_event = 0;
     }
 }

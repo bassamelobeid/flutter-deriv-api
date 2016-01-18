@@ -16,6 +16,7 @@ BOM::RiskReport::Base->new->generate;
 use strict;
 use warnings;
 
+use BOM::System::Localhost;
 use BOM::Utility::CurrencyConverter qw(in_USD);
 
 local $\ = undef;    # Sigh.
@@ -95,7 +96,7 @@ sub _build_live_open_bets {
 
 before generate => sub {
     exit 0
-        unless (BOM::Platform::Runtime->instance->hosts->localhost->has_role('master_live_server'));
+        unless (BOM::System::Localhost::is_master_server());
 };
 
 sub generate {
