@@ -59,10 +59,11 @@ sub logout {
             $r->session_cookie->end_session if $r->session_cookie;
 
             $c->stash(
-                loginid    => undef,
-                token_type => undef,
-                account_id => undef,
-                currency   => undef
+                loginid              => undef,
+                token_type           => undef,
+                account_id           => undef,
+                currency             => undef,
+                landing_company_name => undef
             );
 
             return {
