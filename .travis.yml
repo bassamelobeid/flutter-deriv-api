@@ -70,4 +70,5 @@ install:
 script:
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
     - cat /var/log/httpd/bom-websocket-api_trace.log
-
+    - cat /tmp/tmp.log
+    
