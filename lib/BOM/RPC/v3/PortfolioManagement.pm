@@ -24,6 +24,10 @@ sub portfolio {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
     my $portfolio = {contracts => []};
     return $portfolio unless $client;
 
@@ -74,12 +78,11 @@ sub sell_expired {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    if (not $client) {
-        return BOM::RPC::v3::Utility::permission_error();
-    } else {
-        return _sell_expired_contracts($client, $params->{source});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
-    return;
+
+    return _sell_expired_contracts($client, $params->{source});
 }
 
 sub _sell_expired_contracts {
@@ -99,6 +102,45 @@ sub _sell_expired_contracts {
                 code              => 'SellExpiredError',
                 message_to_client => localize('There was an error processing the request.')});
     };
+
+    return $response;
+}
+
+sub proposal_open_contract {
+    my $params = shift;
+
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my @fmbs    = ();
+    my $account = $client->default_account;
+    if ($params->{contract_id}) {
+        @fmbs = @{
+            $account->find_financial_market_bet(
+                query => [
+                    is_sold => 0,
+                    id      => $params->{contract_id}])}
+            if $account;
+    } else {
+        @fmbs = @{__get_open_contracts($client)};
+    }
+
+    my $response = {};
+    if (scalar @fmbs > 0) {
+        foreach my $fmb (@fmbs) {
+            my $id = $fmb->{id};
+            $response->{$id} = {
+                short_code => $fmb->{short_code},
+                currency   => $client->currency,
+                underlying => $fmb->{underlying_symbol}};
+        }
+    }
 
     return $response;
 }
