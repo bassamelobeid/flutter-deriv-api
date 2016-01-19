@@ -8,16 +8,6 @@ use BOM::WebSocketAPI::Websocket_v3;
 sub get_limits {
     my ($c, $args) = @_;
 
-    my $client = $c->stash('client');
-
-    # need to do it here instead of RPC else it will send no response as it dies in creating landing company for virtuals
-    if ((not $client) or $client->is_virtual) {
-        return $c->new_error('get_limits', 'FeatureNotAvailable', $c->l('Sorry, this feature is not available.'));
-    }
-
-    my $landing_company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short;
-    my $wl_config       = $c->app_config->payments->withdrawal_limits->$landing_company;
-
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'get_limits',
@@ -34,11 +24,7 @@ sub get_limits {
         },
         {
             args           => $args,
-            client_loginid => $client->loginid,
-            for_days       => $wl_config->for_days,
-            limit_for_days => $wl_config->limit_for_days,
-            lifetime_limit => $wl_config->lifetime_limit
-        });
+            client_loginid => $c->stash('loginid')});
     return;
 }
 
@@ -50,10 +36,14 @@ sub paymentagent_list {
         'paymentagent_list',
         sub {
             my $response = shift;
-            return {
-                msg_type          => 'paymentagent_list',
-                paymentagent_list => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('paymentagent_list', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type          => 'paymentagent_list',
+                    paymentagent_list => $response,
+                };
+            }
         },
         {
             args           => $args,
