@@ -442,11 +442,17 @@ sub rpc {
             return unless $self->tx;
 
             my $client_guard = guard { undef $client };
+
+            my ($data, $req_id);
+            my $args = $params->{args};
+            $req_id = $args->{req_id} if ($args and exists $args->{req_id});
+
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
-                my $data = $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'));
-                $data->{echo_req} = $params->{args};
+                $data = $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'));
+                $data->{echo_req} = $args;
+                $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
                 return;
             }
@@ -463,29 +469,28 @@ sub rpc {
 
             if ($res->is_error) {
                 warn $res->error_message;
-                my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
-                $data->{echo_req} = $params->{args};
+                $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
+                $data->{echo_req} = $args;
+                $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
                 return;
             }
             my $send = 1;
 
-            my $data = &$callback($res->result);
+            $data = &$callback($res->result);
 
             if (not $data) {
                 $send = undef;
                 $data = {};
             }
-
-            my $args = $params->{args};
-            $data->{echo_req} = $args;
-            $data->{req_id} = $args->{req_id} if ($args and exists $args->{req_id});
-
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
                 $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
-                $data->{echo_req} = $args;
             }
+
+            $data->{echo_req} = $args;
+            $data->{req_id} = $req_id if $req_id;
+
             if ($send) {
                 $tv = [Time::HiRes::gettimeofday];
 
