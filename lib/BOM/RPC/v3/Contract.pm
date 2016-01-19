@@ -190,8 +190,8 @@ sub get_bid {
     catch {
         $response = {
             error => {
-                message => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
-                code    => "GetProposalFailure"
+                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+                code              => "GetProposalFailure"
             }};
     };
 
