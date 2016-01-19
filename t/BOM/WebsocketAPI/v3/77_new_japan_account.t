@@ -34,7 +34,6 @@ my %client_details = (
     phone               => '+81 3 4333 6908',
     secret_question     => 'Favourite dish',
     secret_answer       => 'nasi lemak,teh tarik',
-    not_fatca           => 1,
     annual_income       => '50-100 million JPY',
     financial_asset     => 'Over 100 million JPY',
     daily_loss_limit    => 100000,
@@ -47,8 +46,18 @@ my %client_details = (
     trading_experience_option_trading           => 'Less than 6 months',
     trading_purpose                             => 'Hedging',
     hedge_asset                                 => 'Foreign currency deposit',
-    hedge_asset_amount                          => 1000000
-
+    hedge_asset_amount                          => 1000000,
+    agree_use_electronic_doc                    => 1,
+    agree_warnings_and_policies                 => 1,
+    confirm_understand_own_judgment             => 1,
+    confirm_understand_trading_mechanism        => 1,
+    confirm_understand_judgment_time            => 1,
+    confirm_understand_total_loss               => 1,
+    confirm_understand_sellback_loss            => 1,
+    confirm_understand_shortsell_loss           => 1,
+    confirm_understand_company_profit           => 1,
+    confirm_understand_expert_knowledge         => 1,
+    declare_not_fatca                           => 1,
 );
 
 subtest 'new JP real account' => sub {
