@@ -38,6 +38,10 @@ sub new_account_virtual {
                 message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
     }
 
+    if (exists $args->{affiliate_token}) {
+        $args->{myaffiliates_token} = delete $args->{affiliate_token};
+    }
+
     if (_is_session_cookie_valid($params->{token}, $args->{email})) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
