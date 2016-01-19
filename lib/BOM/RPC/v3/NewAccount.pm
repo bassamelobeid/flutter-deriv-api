@@ -14,6 +14,7 @@ use BOM::Platform::Account;
 use BOM::Platform::Account::Virtual;
 use BOM::Platform::Account::Real::default;
 use BOM::Platform::Account::Real::maltainvest;
+use BOM::Platform::Account::Real::japan;
 use BOM::Platform::Locale;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::User;
@@ -224,6 +225,64 @@ sub new_account_maltainvest {
     };
 }
 
+sub new_account_japan {
+    my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
+
+    my $args = $params->{args};
+    my $client;
+    if ($params->{client_loginid}) {
+        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    return BOM::RPC::v3::Utility::permission_error() unless $client;
+
+    my $response  = 'new_account_japan';
+    my $error_map = BOM::Platform::Locale::error_map();
+
+    unless ($client->is_virtual and (BOM::Platform::Account::get_real_acc_opening_type({from_client => $client}) || '') eq 'japan') {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => 'invalid',
+                message_to_client => $error_map->{'invalid'}});
+    }
+
+    my $details_ref = _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
+    if (my $err = $details_ref->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err,
+                message_to_client => $error_map->{$err}});
+    }
+    my $details = $details_ref->{details};
+    $details->{$_} = $args->{$_} for ('gender', 'occupation', 'daily_loss_limit');
+
+    my %financial_data = map { $_ => $args->{$_} }
+        (keys %{BOM::Platform::Account::Real::japan::get_financial_input_mapping()}, 'trading_purpose', 'hedge_asset', 'hedge_asset_amount');
+
+    my %agreement = map { $_ => $args->{$_} } (BOM::Platform::Account::Real::japan::agreement_fields());
+
+    my $acc = BOM::Platform::Account::Real::japan::create_account({
+        from_client    => $client,
+        user           => BOM::Platform::User->new({email => $client->email}),
+        details        => $details,
+        financial_data => \%financial_data,
+        agreement      => \%agreement,
+    });
+
+    if (my $err_code = $acc->{error}) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => $err_code,
+                message_to_client => $error_map->{$err_code}});
+    }
+
+    my $landing_company = $acc->{client}->landing_company;
+    return {
+        client_id                 => $acc->{client}->loginid,
+        landing_company           => $landing_company->name,
+        landing_company_shortcode => $landing_company->short
+    };
+}
+
 sub _get_client_details {
     my ($args, $client, $broker) = @_;
 
@@ -265,7 +324,8 @@ sub _get_client_details {
         }
         $details->{$key} = $value || '';
 
-        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode));
+        # Japan real a/c has NO salutation
+        next if (any { $key eq $_ } qw(address_line_2 address_state address_postcode salutation));
         return {error => 'invalid'} if (not $details->{$key});
     }
     return {details => $details};
