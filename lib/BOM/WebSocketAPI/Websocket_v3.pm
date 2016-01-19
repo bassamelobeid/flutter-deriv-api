@@ -336,7 +336,7 @@ sub __handle {
                     consumer => $c->stash('connection_id'),
                 }))
         {
-            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit for [_1].', $descriptor->{category}));
+            return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('Rate limit has been hit for [_1].', $descriptor->{category}));
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
@@ -352,7 +352,7 @@ sub __handle {
                 }
             }
             my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-            return $c->new_error('error', 'InputValidationFailed', $message, $details);
+            return $c->new_error($descriptor->{category}, 'InputValidationFailed', $message, $details);
         }
 
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $descriptor->{category}, {tags => [$tag]});
@@ -376,7 +376,7 @@ sub __handle {
             if (not $output_validation_result) {
                 my $error = join(" - ", $output_validation_result->errors);
                 $log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-                return $c->new_error('OutputValidationFailed', $c->l("Output validation failed: ") . $error);
+                return $c->new_error($descriptor->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
             }
         }
         $result->{debug} = [Time::HiRes::tv_interval($t0), $loginid ? $loginid : ''] if ref $result;
@@ -450,7 +450,7 @@ sub rpc {
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
-                $data = $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'));
+                $data = $self->new_error($method, 'WrongResponse', $self->l('Wrong response.'));
                 $data->{echo_req} = $args;
                 $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
@@ -469,7 +469,7 @@ sub rpc {
 
             if ($res->is_error) {
                 warn $res->error_message;
-                $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
+                $data = $self->new_error($method, 'CallError', $self->l('Call error.' . $res->error_message));
                 $data->{echo_req} = $args;
                 $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
