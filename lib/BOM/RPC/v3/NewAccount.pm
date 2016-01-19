@@ -29,7 +29,7 @@ sub new_account_virtual {
     BOM::Platform::Context::request()->language($params->{language});
 
     my $err_code;
-    my $pwdm = Data::Password::Meter->new(27);
+    my $pwdm = Data::Password::Meter->new(14);
 
     unless ($pwdm->strong($args->{client_password})) {
         $err_code = 'Password is not strong enough.';
