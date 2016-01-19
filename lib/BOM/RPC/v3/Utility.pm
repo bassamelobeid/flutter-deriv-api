@@ -64,4 +64,29 @@ sub website_status {
     };
 }
 
+sub check_authorization {
+    my $client = shift;
+
+    return create_error({
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.')}) unless $client;
+
+    return create_error({
+            code              => 'DisabledClient',
+            message_to_client => localize('This account is unavailable.')}) if $client->get_status('disabled');
+
+    my $self_excl = $client->get_self_exclusion;
+    my $lim;
+    if (    $self_excl
+        and $lim = $self_excl->exclude_until
+        and Date::Utility->new->is_before(Date::Utility->new($lim)))
+    {
+        return create_error({
+                code              => 'ClientSelfExclusion',
+                message_to_client => localize('Sorry, you have excluded yourself until [_1].', $lim)});
+    }
+
+    return;
+}
+
 1;

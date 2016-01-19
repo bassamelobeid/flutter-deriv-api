@@ -39,6 +39,10 @@ sub new_account_virtual {
                 message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
     }
 
+    if (exists $args->{affiliate_token}) {
+        $args->{myaffiliates_token} = delete $args->{affiliate_token};
+    }
+
     if (_is_session_cookie_valid($params->{token}, $args->{email})) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
@@ -111,13 +115,14 @@ sub new_account_real {
 
     BOM::Platform::Context::request()->language($params->{language});
 
-    my $args = $params->{args};
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $response  = 'new_account_real';
     my $error_map = BOM::Platform::Locale::error_map();
@@ -128,6 +133,7 @@ sub new_account_real {
                 message_to_client => $error_map->{'invalid'}});
     }
 
+    my $args = $params->{args};
     my $details_ref =
         _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => $args->{residence})->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
@@ -161,15 +167,17 @@ sub new_account_maltainvest {
 
     BOM::Platform::Context::request()->language($params->{language});
 
-    my $args = $params->{args};
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $response  = 'new_account_maltainvest';
+    my $args      = $params->{args};
     my $error_map = BOM::Platform::Locale::error_map();
 
     unless ($args->{accept_risk} == 1

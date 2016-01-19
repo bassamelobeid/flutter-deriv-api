@@ -37,13 +37,18 @@ sub get_limits {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     if ($client->get_status('cashier_locked') or $client->documents_expired or $client->is_virtual) {
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'FeatureNotAvailable',
                 message_to_client => localize('Sorry, this feature is not available.')});
     }
+
+    my $landing_company = BOM::Platform::Runtime->instance->broker_codes->landing_company_for($client->broker)->short;
+    my $wl_config       = BOM::Platform::Runtime->instance->app_config->payments->withdrawal_limits->$landing_company;
 
     my $limit = +{
         map ({
@@ -52,9 +57,9 @@ sub get_limits {
         open_positions => $client->get_limit_for_open_positions,
     };
 
-    my $numdays       = $params->{for_days};
-    my $numdayslimit  = $params->{limit_for_days};
-    my $lifetimelimit = $params->{lifetime_limit};
+    my $numdays       = $wl_config->for_days;
+    my $numdayslimit  = $wl_config->limit_for_days;
+    my $lifetimelimit = $wl_config->lifetime_limit;
 
     if ($client->client_fully_authenticated) {
         $numdayslimit  = 99999999;
@@ -162,7 +167,9 @@ sub paymentagent_transfer {
         $client_fm = BOM::Platform::Client->new({loginid => $loginid_fm});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client_fm;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client_fm)) {
+        return $auth_error;
+    }
 
     my $payment_agent = $client_fm->payment_agent;
 
@@ -358,18 +365,20 @@ sub paymentagent_withdraw {
     my ($client_loginid, $cs_email, $payments_email, $website_name, $args) =
         ($params->{client_loginid}, $params->{cs_email}, $params->{payments_email}, $params->{website_name}, $params->{args});
 
-    my $currency             = $args->{currency};
-    my $amount               = $args->{amount};
-    my $further_instruction  = $args->{description} // '';
-    my $paymentagent_loginid = $args->{paymentagent_loginid};
-    my $reference            = Data::UUID->new()->create_str();
-
     my $client;
     if ($client_loginid) {
         $client = BOM::Platform::Client->new({loginid => $client_loginid});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $currency             = $args->{currency};
+    my $amount               = $args->{amount};
+    my $further_instruction  = $args->{description} // '';
+    my $paymentagent_loginid = $args->{paymentagent_loginid};
+    my $reference            = Data::UUID->new()->create_str();
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -667,7 +676,9 @@ sub transfer_between_accounts {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;
@@ -882,7 +893,9 @@ sub topup_virtual {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $error_sub = sub {
         my ($message_to_client, $message) = @_;

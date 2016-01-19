@@ -42,11 +42,13 @@ sub authorize {
     my $account = $client->default_account;
 
     return {
-        fullname => $client->full_name,
-        loginid  => $client->loginid,
-        balance  => ($account ? $account->balance : 0),
-        currency => ($account ? $account->currency_code : ''),
-        email    => $client->email,
+        fullname             => $client->full_name,
+        loginid              => $client->loginid,
+        balance              => ($account ? $account->balance : 0),
+        currency             => ($account ? $account->currency_code : ''),
+        email                => $client->email,
+        account_id           => ($account ? $account->id : ''),
+        landing_company_name => $client->landing_company->short
     };
 }
 
