@@ -37,5 +37,6 @@
     "confirm_understand_sellback_loss"        : 1,
     "confirm_understand_shortsell_loss"       : 1,
     "confirm_understand_company_profit"       : 1,
-    "confirm_understand_expert_knowledge"     : 1
+    "confirm_understand_expert_knowledge"     : 1,
+    "declare_not_fatca"                       : 1
 }
