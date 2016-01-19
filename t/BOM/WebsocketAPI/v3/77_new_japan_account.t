@@ -19,24 +19,24 @@ $email_mocked->mock('send_email', sub { return 1 });
 my $t = build_mojo_test();
 
 my %client_details = (
-    new_account_japan   => 1,
-    gender              => 'f',
-    first_name          => 'first\'name',
-    last_name           => 'last-name',
-    date_of_birth       => '1990-12-30',
-    occupation          => 'Director',
-    residence           => 'jp',
-    address_line_1      => 'Hiroo Miyata Bldg 3F',
-    address_line_2      => '9-16, Hiroo 1-chome',
-    address_city        => 'Shibuya-ku',
-    address_state       => 'Tokyo',
-    address_postcode    => '150-0012',
-    phone               => '+81 3 4333 6908',
-    secret_question     => 'Favourite dish',
-    secret_answer       => 'nasi lemak,teh tarik',
-    annual_income       => '50-100 million JPY',
-    financial_asset     => 'Over 100 million JPY',
-    daily_loss_limit    => 100000,
+    new_account_japan                           => 1,
+    gender                                      => 'f',
+    first_name                                  => 'first\'name',
+    last_name                                   => 'last-name',
+    date_of_birth                               => '1990-12-30',
+    occupation                                  => 'Director',
+    residence                                   => 'jp',
+    address_line_1                              => 'Hiroo Miyata Bldg 3F',
+    address_line_2                              => '9-16, Hiroo 1-chome',
+    address_city                                => 'Shibuya-ku',
+    address_state                               => 'Tokyo',
+    address_postcode                            => '150-0012',
+    phone                                       => '+81 3 4333 6908',
+    secret_question                             => 'Favourite dish',
+    secret_answer                               => 'nasi lemak,teh tarik',
+    annual_income                               => '50-100 million JPY',
+    financial_asset                             => 'Over 100 million JPY',
+    daily_loss_limit                            => 100000,
     trading_experience_equities                 => 'Over 5 years',
     trading_experience_commodities              => 'Over 5 years',
     trading_experience_foreign_currency_deposit => '3-5 years',
@@ -140,9 +140,9 @@ subtest 'Japan a/c jp residence only' => sub {
         $t = $t->send_ok({json => \%details})->message_ok;
         my $res = decode_json($t->message->[1]);
 
-        is($res->{error}->{code}, 'InputValidationFailed', 'residence must be "jp"');
-        is($res->{error}->{message}, 'Input validation failed: residence', 'jp only');
-        is($res->{new_account_japan}, undef, 'NO account created');
+        is($res->{error}->{code},     'InputValidationFailed',              'residence must be "jp"');
+        is($res->{error}->{message},  'Input validation failed: residence', 'jp only');
+        is($res->{new_account_japan}, undef,                                'NO account created');
     };
 };
 
@@ -172,9 +172,9 @@ subtest 'VR Residence check' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code}, 'invalid', 'NO VR nl residence');
-            is($res->{error}->{message}, 'Sorry, account opening is unavailable.', 'jp only');
-            is($res->{new_account_japan}, undef, 'NO account created');
+            is($res->{error}->{code},     'invalid',                                'NO VR nl residence');
+            is($res->{error}->{message},  'Sorry, account opening is unavailable.', 'jp only');
+            is($res->{new_account_japan}, undef,                                    'NO account created');
         };
     };
 
@@ -200,13 +200,12 @@ subtest 'VR Residence check' => sub {
             $t = $t->send_ok({json => \%details})->message_ok;
             my $res = decode_json($t->message->[1]);
 
-            is($res->{error}->{code}, 'invalid', 'VR residence must be "jp"');
-            is($res->{error}->{message}, 'Sorry, account opening is unavailable.', 'VR jp only');
-            is($res->{new_account_japan}, undef, 'NO account created');
+            is($res->{error}->{code},     'invalid',                                'VR residence must be "jp"');
+            is($res->{error}->{message},  'Sorry, account opening is unavailable.', 'VR jp only');
+            is($res->{new_account_japan}, undef,                                    'NO account created');
         };
     };
 };
-
 
 sub create_vr_account {
     my $args = shift;
