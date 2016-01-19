@@ -2,12 +2,11 @@ package BOM::WebSocketAPI;
 
 use Mojo::Base 'Mojolicious';
 use Mojo::Redis2;
+use Mojo::IOLoop;
 use Try::Tiny;
 
-use BOM::Platform::Runtime;
 use BOM::Platform::Context ();
 use BOM::Platform::Context::Request;
-
 # pre-load controlleres to have more shared code among workers (COW)
 use BOM::WebSocketAPI::Websocket_v1();
 use BOM::WebSocketAPI::Websocket_v2();
@@ -76,11 +75,6 @@ sub startup {
                 $c->res->headers->header('Content-Language' => $lang);
             }
         });
-
-    # add few helpers
-    # pre-load config to be shared among workers
-    my $app_config = BOM::Platform::Runtime->instance->app_config;
-    $app->helper(app_config => sub { return $app_config });
 
     $app->helper(
         l => sub {
