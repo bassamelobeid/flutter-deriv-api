@@ -56,9 +56,7 @@ sub paymentagent_list {
 sub paymentagent_withdraw {
     my ($c, $args) = @_;
 
-    my $r          = $c->stash('request');
-    my $app_config = $c->app_config;
-
+    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'paymentagent_withdraw',
@@ -74,13 +72,10 @@ sub paymentagent_withdraw {
             }
         },
         {
-            args                       => $args,
-            client_loginid             => $c->stash('loginid'),
-            is_payment_suspended       => $app_config->system->suspend->payments,
-            is_payment_agent_suspended => $app_config->system->suspend->payment_agents,
-            cs_email                   => $r->website->config->get('customer_support.email'),
-            payments_email             => $app_config->payments->email,
-            website_name               => $r->website->display_name
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            cs_email       => $r->website->config->get('customer_support.email'),
+            website_name   => $r->website->display_name
         });
     return;
 }
@@ -88,9 +83,7 @@ sub paymentagent_withdraw {
 sub paymentagent_transfer {
     my ($c, $args) = @_;
 
-    my $r          = $c->stash('request');
-    my $app_config = $c->app_config;
-
+    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'paymentagent_transfer',
@@ -106,13 +99,10 @@ sub paymentagent_transfer {
             }
         },
         {
-            args                       => $args,
-            client_loginid             => $c->stash('loginid'),
-            is_payment_suspended       => $app_config->system->suspend->payments,
-            is_payment_agent_suspended => $app_config->system->suspend->payment_agents,
-            cs_email                   => $r->website->config->get('customer_support.email'),
-            payments_email             => $app_config->payments->email,
-            website_name               => $r->website->display_name
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            cs_email       => $r->website->config->get('customer_support.email'),
+            website_name   => $r->website->display_name
         });
     return;
 }
@@ -161,10 +151,8 @@ sub topup_virtual {
             }
         },
         {
-            args                  => $args,
-            client_loginid        => $c->stash('loginid'),
-            minimum_topup_balance => $c->app_config->payments->virtual->minimum_topup_balance
-        });
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
     return;
 }
 
