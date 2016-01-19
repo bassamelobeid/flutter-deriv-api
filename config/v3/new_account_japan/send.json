@@ -166,6 +166,66 @@
       "pattern": "^\\d{0,20}$",
       "description": "Hedge asset amount in JPY. This field is only required if 'Hedging' is selected for 'trading_purpose'."
     },
+    "agree_use_electronic_doc" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "agree_warnings_and_policies" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_own_judgment" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_trading_mechanism" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_judgment_time" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_total_loss" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_sellback_loss" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_shortsell_loss" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_company_profit" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
+    "confirm_understand_expert_knowledge" : {
+      "type": "integer",
+      "description": "Client must agree on the T&C",
+      "pattern": "^1$",
+      "required": 1
+    },
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
