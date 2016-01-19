@@ -341,7 +341,7 @@ sub __handle {
                     consumer => $c->stash('connection_id'),
                 }))
         {
-            return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('Rate limit has been hit for [_1].', $descriptor->{category}));
+            return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
@@ -455,7 +455,7 @@ sub rpc {
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
-                $data = $self->new_error($method, 'WrongResponse', $self->l('Wrong response.'));
+                $data = $self->new_error($method, 'WrongResponse', $self->l('Sorry, an error occurred while processing your request.'));
                 $data->{echo_req} = $args;
                 $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
@@ -474,7 +474,7 @@ sub rpc {
 
             if ($res->is_error) {
                 warn $res->error_message;
-                $data = $self->new_error($method, 'CallError', $self->l('Call error.' . $res->error_message));
+                $data = $self->new_error($method, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
                 $data->{echo_req} = $args;
                 $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
