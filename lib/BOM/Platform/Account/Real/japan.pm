@@ -25,8 +25,8 @@ sub _validate {
 
 sub create_account {
     my $args = shift;
-    my ($from_client, $user, $country, $details, $financial_data) =
-        @{$args}{'from_client', 'user', 'country', 'details', 'financial_data'};
+    my ($from_client, $user, $country, $details, $financial_data, $agreement_input) =
+        @{$args}{'from_client', 'user', 'country', 'details', 'financial_data', 'agreement'};
 
     my $daily_loss_limit = delete $details->{daily_loss_limit};
 
@@ -38,6 +38,11 @@ sub create_account {
     if ($financial_assessment->{income_asset_score} < 3 or $financial_assessment->{trading_experience_score} < 10) {
         return {error => 'insufficient score'};
     }
+    # store agreement fields in financial_assessment table
+    my $agreement = get_agreement($agreement_input);
+    return $agreement if ($agreement->{error});
+
+    $financial_assessment->{agreement} = $agreement;
 
     my $register = BOM::Platform::Account::Real::default::_register_client($details);
     return $register if ($register->{error});
@@ -55,6 +60,37 @@ sub create_account {
         user    => $user,
         details => $details,
     });
+}
+
+sub agreement_fields {
+    return (
+        qw/ agree_use_electronic_doc
+            agree_warnings_and_policies
+            confirm_understand_own_judgment
+            confirm_understand_trading_mechanism
+            confirm_understand_judgment_time
+            confirm_understand_total_loss
+            confirm_understand_sellback_loss
+            confirm_understand_shortsell_loss
+            confirm_understand_company_profit
+            confirm_understand_expert_knowledge
+            declare_not_fatca /
+    );
+}
+
+sub get_agreement {
+    my $args = shift;
+
+    my $now = Date::Utility->new->datetime;
+    my $agreement;
+    for (agreement_fields()) {
+        unless (($args->{$_} // '') == 1) {
+            return {error => 'T&C Error'};
+        }
+
+        $agreement->{$_} = $now;
+    }
+    return $agreement;
 }
 
 sub _get_input_to_category_mapping {
