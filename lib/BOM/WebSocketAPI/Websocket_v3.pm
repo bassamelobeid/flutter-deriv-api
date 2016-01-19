@@ -277,6 +277,10 @@ my @dispatch = (
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real, 1
     ],
     [
+        'new_account_japan',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_japan, 1
+    ],
+    [
         'new_account_maltainvest',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_maltainvest,
         1

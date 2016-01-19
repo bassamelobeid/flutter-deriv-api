@@ -127,4 +127,27 @@ sub new_account_maltainvest {
     return;
 }
 
+sub new_account_japan {
+    my ($c, $args) = @_;
+
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'new_account_japan',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('new_account_japan', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type          => 'new_account_japan',
+                    new_account_japan => $response
+                };
+            }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid')});
+    return;
+}
+
 1;
