@@ -19,7 +19,7 @@ sub verify_client {
     my ($self, $client_id) = @_;
 
     return $self->dbh->selectrow_hashref("
-        SELECT id, secret FROM oauth.clients WHERE id = ? AND active
+        SELECT id, secret, name FROM oauth.clients WHERE id = ? AND active
     ", undef, $client_id);
 }
 
