@@ -73,7 +73,8 @@ sub agreement_fields {
             confirm_understand_sellback_loss
             confirm_understand_shortsell_loss
             confirm_understand_company_profit
-            confirm_understand_expert_knowledge /
+            confirm_understand_expert_knowledge
+            declare_not_fatca /
     );
 }
 
