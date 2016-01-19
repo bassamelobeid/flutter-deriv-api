@@ -2,9 +2,12 @@ package BOM::RPC::v3::Utility;
 
 use strict;
 use warnings;
+
 use RateLimitations;
+use Date::Utility;
 
 use BOM::Platform::Context qw (localize);
+use BOM::Platform::Runtime;
 
 sub create_error {
     my $args = shift;
@@ -56,10 +59,9 @@ sub site_limits {
 }
 
 sub website_status {
-    my ($app_config) = @_;
 
     return {
-        terms_conditions_version => $app_config->cgi->terms_conditions_version,
+        terms_conditions_version => BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version,
         api_call_limits          => site_limits
     };
 }
