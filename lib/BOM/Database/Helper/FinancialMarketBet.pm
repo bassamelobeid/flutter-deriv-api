@@ -236,7 +236,7 @@ sub batch_sell_bet {
     #       are necessary.
     my $sql = '
 WITH
-acc(account_id)  AS (SELECT id
+acc(account_id,currency_code)  AS (SELECT id, currency_code
                        FROM transaction.account
                       WHERE client_loginid=$1
                         AND currency_code=$2
@@ -258,6 +258,7 @@ SELECT (s.v_fmb).*, (s.v_trans).*
   FROM bets b
  CROSS JOIN acc a
  CROSS JOIN LATERAL bet.sell_bet(a.account_id,
+                                 a.currency_code,
                                  b.id,
                                  b.sell_price,
                                  b.sell_time,

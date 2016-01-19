@@ -1,5 +1,22 @@
 BEGIN;
 
+CREATE OR REPLACE FUNCTION session_bet_details (
+    action_type VARCHAR(10),
+    fmb_id bigint,
+    currency_code VARCHAR(3),
+    short_code VARCHAR(255)
+) RETURNS VOID AS $def$
+BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS session_bet_details (
+        action_type  VARCHAR(10),
+        fmb_id bigint,
+        currency_code VARCHAR(3),
+        short_code VARCHAR(255)
+    ) ON COMMIT DROP;
+    INSERT INTO session_bet_details VALUES (action_type,fmb_id,currency_code,short_code);
+END
+$def$ LANGUAGE plpgsql VOLATILE SECURITY INVOKER;
+
 CREATE OR REPLACE FUNCTION bet.buy_bet(a_loginid           VARCHAR(12),    --  1
                                        a_currency          VARCHAR(3),     --  2
                                        -- FMB stuff
@@ -100,6 +117,8 @@ BEGIN
           FROM json_populate_record(NULL::bet.$$ || b_bet_class || $$, $2) tt
     $$ USING v_fmb.id, b_chld;
 
+    PERFORM session_bet_details('buy', v_fmb.id, a_currency, b_short_code);
+
     INSERT INTO transaction.transaction (
         account_id,
         transaction_time,
@@ -135,6 +154,7 @@ BEGIN
         SELECT (json_populate_record(tt, ('{"financial_market_bet_id":"' || v_fmb.id || '",'
                                         || '"transaction_id":"' || v_trans.id || '"}')::JSON)).*
           FROM json_populate_record(NULL::data_collection.quants_bet_variables, q_qv) tt;
+
     END IF;
 
     RETURN NEXT;
