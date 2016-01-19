@@ -122,6 +122,8 @@ sub startup {
                     MojoX::JSON::RPC::Service->new->register('new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual),
                 '/portfolio'    => MojoX::JSON::RPC::Service->new->register('portfolio',    \&BOM::RPC::v3::PortfolioManagement::portfolio),
                 '/sell_expired' => MojoX::JSON::RPC::Service->new->register('sell_expired', \&BOM::RPC::v3::PortfolioManagement::sell_expired),
+                '/proposal_open_contract' =>
+                    MojoX::JSON::RPC::Service->new->register('proposal_open_contract', \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
