@@ -27,6 +27,18 @@ use Storable qw( dclone );
 use JSON qw(from_json);
 use BOM::Utility::Log4perl qw( get_logger );
 
+=head2 for_date
+
+The date for which we wish data
+
+=cut
+
+has for_date => (
+    is      => 'ro',
+    isa     => 'Maybe[Date::Utility]',
+    default => undef,
+);
+
 has document => (
     is         => 'rw',
     lazy_build => 1,
