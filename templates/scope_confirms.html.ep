@@ -14,7 +14,7 @@
         <% } %>
     </ul>
 
-    <form action="POST">
+    <form method="POST">
     <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
     <input type="submit" name="confirm_scopes" value="Grant" />
     <input type="submit" name="cancel" value="Cancel" />
