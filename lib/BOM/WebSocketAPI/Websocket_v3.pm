@@ -256,13 +256,10 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1
     ],
-    [
-        'topup_virtual',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1
-    ],
-    ['api_token',    \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,    1],
-    ['get_limits',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1],
-    ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1],
+    ['api_token',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,    1],
+    ['tnc_approval',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1],
+    ['topup_virtual', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1],
+    ['get_limits',    \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1],
     [
         'paymentagent_withdraw',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw, 1
@@ -343,7 +340,7 @@ sub __handle {
                     consumer => $c->stash('connection_id'),
                 }))
         {
-            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit for [_1].', $descriptor->{category}));
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
@@ -365,39 +362,15 @@ sub __handle {
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $descriptor->{category}, {tags => [$tag]});
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
-        ## refetch account b/c stash client won't get updated in websocket
-        if ($descriptor->{require_auth}
-            and my $loginid = $c->stash('loginid'))
-        {
-            my $client = BOM::Platform::Client->new({loginid => $loginid});
-            return $c->new_error('error', 'InvalidClient', $c->l('Invalid client account.'))
-                unless $client;
-            return $c->new_error('error', 'DisabledClient', $c->l('This account is unavailable.'))
-                if $client->get_status('disabled');
-            $c->stash(
-                client  => $client,
-                account => $client->default_account // undef
-            );
-
-            my $self_excl = $client->get_self_exclusion;
-            my $lim;
-            if (    $self_excl
-                and $lim = $self_excl->exclude_until
-                and Date::Utility->new->is_before(Date::Utility->new($lim)))
-            {
-                return $c->new_error('error', 'ClientSelfExclusion', $c->l('Sorry, you have excluded yourself until [_1].', $lim));
-            }
-        }
-
-        if ($descriptor->{require_auth} and not $c->stash('client')) {
+        my $loginid = $c->stash('loginid');
+        if ($descriptor->{require_auth} and not $loginid) {
             return $c->new_error($descriptor->{category}, 'AuthorizationRequired', $c->l('Please log in.'));
         }
 
-        my $client = $c->stash('client');
-        if ($client) {
-            my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
+        if ($loginid) {
+            my $account_type = $loginid =~ /^VRT/ ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
+                {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
         }
 
         my $result = $descriptor->{handler}->($c, $p1);
@@ -410,8 +383,7 @@ sub __handle {
                 return $c->new_error('OutputValidationFailed', $c->l("Output validation failed: ") . $error);
             }
         }
-        $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')]
-            if ref $result;
+        $result->{debug} = [Time::HiRes::tv_interval($t0), $loginid ? $loginid : ''] if ref $result;
         return $result;
     }
 
