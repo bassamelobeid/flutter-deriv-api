@@ -118,6 +118,7 @@ sub startup {
                 '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
+                '/new_account_japan' => MojoX::JSON::RPC::Service->new->register('new_account_japan', \&BOM::RPC::v3::NewAccount::new_account_japan),
                 '/new_account_virtual' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual),
                 '/portfolio'    => MojoX::JSON::RPC::Service->new->register('portfolio',    \&BOM::RPC::v3::PortfolioManagement::portfolio),
