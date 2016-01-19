@@ -127,6 +127,7 @@ sub entry_point {
             if ($l > 328000) {
                 $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
                 $data->{echo_req} = $p1;
+                $data->{req_id} = $p1->{req_id} if (exists $p1->{req_id});
             }
             if ($send) {
                 $c->send({json => $data});
