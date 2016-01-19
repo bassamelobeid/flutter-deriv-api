@@ -40,7 +40,7 @@ sub create_account {
     }
     # store agreement fields in financial_assessment table
     my $agreement = get_agreement($agreement_input);
-    if (my $err = $agreement->{error}) { return $err; }
+    return $agreement if ($agreement->{error});
 
     $financial_assessment->{agreement} = $agreement;
 
