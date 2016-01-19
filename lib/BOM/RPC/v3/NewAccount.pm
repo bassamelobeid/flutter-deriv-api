@@ -259,11 +259,14 @@ sub new_account_japan {
     my %financial_data = map { $_ => $args->{$_} }
         (keys %{BOM::Platform::Account::Real::japan::get_financial_input_mapping()}, 'trading_purpose', 'hedge_asset', 'hedge_asset_amount');
 
+    my %agreement = map { $_ => $args->{$_} } (BOM::Platform::Account::Real::japan::agreement_fields());
+
     my $acc = BOM::Platform::Account::Real::japan::create_account({
         from_client    => $client,
         user           => BOM::Platform::User->new({email => $client->email}),
         details        => $details,
         financial_data => \%financial_data,
+        agreement      => \%agreement,
     });
 
     if (my $err_code = $acc->{error}) {
