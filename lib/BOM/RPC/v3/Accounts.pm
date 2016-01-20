@@ -132,7 +132,7 @@ sub statement {
     foreach my $txn (@$results) {
         my $struct = {
             transaction_id   => $txn->{id},
-            transaction_time => $txn->{t_epoch},
+            transaction_time => Date::Utility->new($txn->{purchase_time})->epoch,
             amount           => $txn->{amount},
             action_type      => $txn->{action_type},
             balance_after    => $txn->{balance_after},
