@@ -330,11 +330,6 @@ quants:
           global: 1
           isa: Bool
           default: 0
-        enable_parameterized_surface:
-          description: "A switch to turn on/off parameterized surface for all underlyings"
-          isa: Bool
-          default: 1
-          global: 1
     internal:
       description: "Internal configuration, probably not exposed to dynamic setitngs directly."
       isa: section
