@@ -71,7 +71,7 @@ BEGIN
           USING p_id, p_chld;
     END IF;
 
-    PERFORM session_bet_details('sell', v_fmb.id,p_currency, v_fmb.short_code, v_fmb.purchase_time, v_fmb.purchase_price);
+    PERFORM session_bet_details('sell', v_fmb.id,p_currency, v_fmb.short_code, v_fmb.purchase_time, v_fmb.buy_price);
 
     INSERT INTO transaction.transaction (
         account_id,
