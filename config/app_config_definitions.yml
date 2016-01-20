@@ -480,11 +480,6 @@ quants:
       description: "Tunable parameters for market data"
       isa: section
       contains:
-        volsurface_calibration_error_threshold:
-          description: "VolSurface calibration is bad if it exceeds this number"
-          isa: Num
-          default: 20
-          global: 1
         interest_rates_source:
           description: "Determine whether we use market rates or implied rates"
           isa: Str
