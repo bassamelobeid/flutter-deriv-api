@@ -1,5 +1,8 @@
 <!DOCTYPE html>
 <html>
-  <head><title><%= title %></title></head>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='https://static.binary.com/css/binary.min.css?51ebc181993e5bd0006c24d415ad037a'/>
+  </head>
   <body><%= content %></body>
 </html>

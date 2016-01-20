@@ -1,21 +1,48 @@
-    <h1>Authorize application</h1>
-
-    <h2><%= $app_client->{name} %> would like permission to access your account <%= $client->loginid %></h2>
-
-    <ul>
-        <% if (grep { $_ eq 'user' } @$scopes) { %>
+<div class="grd-container grd-default-container">
+  <div class="grd-grid-12">
+    <div class="grd-grid-2 grd-grid-mobile-12">
+      <img class="responsive" src="[% request.url_for('images/pages/binary-symbol-logo.svg') %]" style="width:50%; margin-left:25%"/>
+    </div>
+    <div class="grd-grid-10 grd-grid-mobile-12">
+      <h1>Authorize application</h1>
+      <p><%= $app_client->{name} %> would like permission to access your account <strong><%= $client->loginid %></strong></p>
+      <div class="separator-line"></div>
+      <p><strong>Review Permissions</strong></p>
+      <div class="grd-grid-12">
+        <div class="grd-grid-6 grd-grid-mobile-12" style="background-color:#f2f2f2">
+          <ul class="bullet">
+            <% if (grep { $_ eq 'user' } @$scopes) { %>
             <li>Read user profile</li>
-        <% } %>
-        <% if (grep { $_ eq 'trade' } @$scopes) { %>
-            <li>Trading</li>
-        <% } %>
-        <% if (grep { $_ eq 'cashier' } @$scopes) { %>
-            <li>Cashier</li>
-        <% } %>
-    </ul>
+            <% } %>
+            <% if (grep { $_ eq 'trade' } @$scopes) { %>
+                <li>Trading</li>
+            <% } %>
+            <% if (grep { $_ eq 'cashier' } @$scopes) { %>
+                <li>Cashier</li>
+            <% } %>
+          </ul>
+        </div>
+        <div class="grd-grid-6 grd-hide-mobile"></div>
+      </div>
+      <div class="grd-grid-12">
+        <div class="grd-grid-mobile-2"></div>
+        <form method="POST">
+        <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
+        <div class="grd-grid-6 grd-grid-mobile-10" style="margin-top:1em; padding-left: 0;">
+          <span class="button button-focus">
+            <button class="button button-focus" name="confirm_scopes" type="submit" style="width: 3.5em;">
+              Grant
+            </button>
+          </span>
+          <span class="button button-focus">
+            <button class="button button-focus" name="cancel" type="submit" style="background: #fff;border: 1px solid #c2c2c2;color: inherit;">
+              Cancel
+            </button>
+          </span>
+        </div>
 
-    <form method="POST">
-    <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
-    <input type="submit" name="confirm_scopes" value="Grant" />
-    <input type="submit" name="cancel" value="Cancel" />
-    </form>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
