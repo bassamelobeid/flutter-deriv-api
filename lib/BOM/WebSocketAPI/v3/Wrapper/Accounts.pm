@@ -291,11 +291,9 @@ sub set_self_exclusion {
             }
         },
         {
-            args             => $args,
-            client_loginid   => $c->stash('loginid'),
-            cs_email         => $c->stash('request')->website->config->get('customer_support.email'),
-            compliance_email => $c->app_config->compliance->email
-        });
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            cs_email       => $c->stash('request')->website->config->get('customer_support.email')});
     return;
 }
 
@@ -387,9 +385,6 @@ sub api_token {
 
 sub tnc_approval {
     my ($c, $args) = @_;
-
-    my $r          = $c->stash('request');
-    my $app_config = $c->app_config;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,

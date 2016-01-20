@@ -69,8 +69,7 @@ sub website_status {
 
     return {
         msg_type       => 'website_status',
-        website_status => BOM::RPC::v3::Utility::website_status($c->app_config),
-    };
+        website_status => BOM::RPC::v3::Utility::website_status()};
 }
 
 sub _forget_balance_subscription {
