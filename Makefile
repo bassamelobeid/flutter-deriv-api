@@ -66,6 +66,9 @@ stress10:
 	sleep 10
 	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh 1
 
+test_avg_stress:
+	cd /home/git/regentmarkets/stress/websocket-bench; bin/test_avg_stress $
+
 tidy:
 	find . -name '*.p?.bak' -delete
 	find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
