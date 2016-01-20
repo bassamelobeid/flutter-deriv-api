@@ -63,10 +63,7 @@ sub rmg_table_format {
             underlying => $volsurface->underlying,
             for_date   => $surface_date
         });
-        my $calibration_error =
-            ($new_volsurface->type eq 'moneyness' and $new_volsurface->parameterization and $new_volsurface->calibration_error)
-            ? roundnear(0.01, $new_volsurface->calibration_error)
-            : 'none';
+        my $calibration_error = 'none';
         my $day          = $surface_date->day_as_string;
         my $date_display = '(' . $day . ') ' . $surface_date->db_timestamp;
         push @{$dates_tt},
@@ -511,12 +508,6 @@ sub print_comparison_between_volsurface {
     my @days = @{$surface->original_term_for_smile};
     my @column_names;
     my $vol_type = $surface->type;
-
-    if ($vol_type eq 'moneyness') {
-        $surface->{price_with_parameterized_surface}     = 0;
-        $ref_surface->{price_with_parameterized_surface} = 0;
-
-    }
 
     my @surface_vol_point = $vol_type eq 'delta' ? @{$surface->deltas} : @{$surface->moneynesses};
     my @surface_spread_point = @{$surface->spread_points};
