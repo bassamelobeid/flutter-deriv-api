@@ -30,7 +30,7 @@
         <input type="hidden" name="csrftoken" value="<%= $csrftoken %>" />
         <div class="grd-grid-6 grd-grid-mobile-10" style="margin-top:1em; padding-left: 0;">
           <span class="button button-focus">
-            <button class="button button-focus" name="confirm_scopes" value="Grant" type="submit" style="width: 3.5em;">
+            <button class="button button-focus" name="confirm_scopes" value="Grant" type="submit" style="border: 1px solid; width: 6.5em;">
               Grant
             </button>
           </span>
