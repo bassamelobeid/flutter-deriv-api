@@ -99,18 +99,38 @@ sub send_transaction_updates {
 
     if ($c->stash('account_id')) {
         my $payload = JSON::from_json($message);
-        $c->send({
-                json => {
-                    msg_type => 'transaction',
-                    $args ? (echo_req => $args) : (),
-                    ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    transaction => {
-                        balance        => $payload->{balance_after},
-                        action         => $payload->{action_type},
-                        contract_id    => $payload->{financial_market_bet_id},
-                        amount         => $payload->{amount},
-                        transaction_id => $payload->{id},
-                        ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
+
+        BOM::WebSocketAPI::Websocket_v3::rpc(
+            $c,
+            'get_contract_details',
+            sub {
+                my $response = shift;
+                my $id = $subscriptions->{$channel}->{uuid} if ($channel and exists $subscriptions->{$channel}->{uuid});
+                if (exists $response->{error}) {
+                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                    return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
+                } else {
+                    $c->send({
+                            json => {
+                                msg_type    => 'transaction',
+                                $args ? (echo_req => $args) : (),
+                                ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                                transaction => {
+                                    balance        => $payload->{balance_after},
+                                    action         => $payload->{action_type},
+                                    contract_id    => $payload->{financial_market_bet_id},
+                                    amount         => $payload->{amount},
+                                    transaction_id => $payload->{id},
+                                    %$response
+                                    $id ? (id => $id) : ()}}});
+                }
+            },
+            {
+                args           => $args,
+                client_loginid => $c->stash('loginid'),
+                shortcode      => $payload->{short_code},
+                currency       => $payload->{currency_code},
+                language       => $c->stash('request')->language});
     } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
     }
