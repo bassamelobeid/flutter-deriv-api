@@ -642,8 +642,8 @@ sub get_self_exclusion {
 
 sub set_self_exclusion {
     my $params = shift;
-    my ($client_loginid, $cs_email, $compliance_email, $args) =
-        ($params->{client_loginid}, $params->{cs_email}, $params->{compliance_email}, $params->{args});
+    my ($client_loginid, $cs_email, $args) =
+        ($params->{client_loginid}, $params->{cs_email}, $params->{args});
 
     BOM::Platform::Context::request()->language($params->{language});
 
@@ -770,7 +770,9 @@ sub set_self_exclusion {
         ## but it should be OK since we check self_exclusion on every call
         BOM::Database::Model::AccessToken->new->remove_by_loginid($client->loginid);
     }
+
     if ($message) {
+        my $compliance_email = BOM::Platform::Runtime->instance->app_config->compliance->email;
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
         send_email({
             from    => $compliance_email,
