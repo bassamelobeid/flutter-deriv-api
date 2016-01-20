@@ -130,14 +130,24 @@ sub statement {
 
     my @txns;
     foreach my $txn (@$results) {
+        my $txn_time;
+        if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
+            if (exists $txn->{action_type} and $txn->{action_type} eq 'buy') {
+                $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
+            } else {
+                $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
+            }
+        } else {
+            $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
+        }
+
         my $struct = {
             transaction_id   => $txn->{id},
-            transaction_time => Date::Utility->new($txn->{purchase_time})->epoch,
+            transaction_time => $txn_time,
             amount           => $txn->{amount},
             action_type      => $txn->{action_type},
             balance_after    => $txn->{balance_after},
-            contract_id      => $txn->{financial_market_bet_id},
-        };
+            contract_id      => $txn->{financial_market_bet_id}};
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
