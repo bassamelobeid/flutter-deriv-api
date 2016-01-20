@@ -29,12 +29,12 @@ sub _document_content {
     my $self = shift;
 
     my %structure = (
-        surfaces         => {$self->cutoff->code => $self->surface},
-        date             => $self->recorded_date->datetime_iso8601,
-        master_cutoff    => $self->cutoff->code,
-        symbol           => $self->symbol,
-        type             => $self->type,
-        spot_reference   => $self->spot_reference,
+        surfaces       => {$self->cutoff->code => $self->surface},
+        date           => $self->recorded_date->datetime_iso8601,
+        master_cutoff  => $self->cutoff->code,
+        symbol         => $self->symbol,
+        type           => $self->type,
+        spot_reference => $self->spot_reference,
     );
 
     return \%structure;
@@ -280,7 +280,7 @@ sub _convert_moneyness_smile_to_delta {
         map { get_strike_for_moneyness({moneyness => $_ / 100, spot => $self->spot_reference,}) => $moneyness_smile->{$_} } keys %$moneyness_smile;
     my %deltas;
     foreach my $strike (keys %strikes) {
-        my $vol = $strikes{$strike};
+        my $vol   = $strikes{$strike};
         my $delta = $self->_convert_strike_to_delta({
             strike => $strike,
             days   => $days,
