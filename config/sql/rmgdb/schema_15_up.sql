@@ -12,7 +12,7 @@ BEGIN
     PERFORM 1 FROM pg_class
         WHERE relname = 'session_bet_details' AND relnamespace = pg_my_temp_schema();
     IF FOUND THEN
-        sell_time = NEW.t_transaction_time;
+        sell_time = NEW.transaction_time;
         IF NEW.action_type = 'buy'::VARCHAR OR NEW.action_type = 'sell'::VARCHAR THEN
             SELECT s.currency_code, s.short_code, s.purchase_time, s.purchase_price INTO currency_code, short_code, purchase_time, purchase_price FROM session_bet_details s WHERE fmb_id = NEW.financial_market_bet_id AND action_type = NEW.action_type;
         END IF;
