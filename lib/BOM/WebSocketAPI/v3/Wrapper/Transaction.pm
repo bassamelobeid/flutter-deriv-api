@@ -66,16 +66,16 @@ sub transaction {
     my ($c, $args) = @_;
 
     my $id;
-    my $client = $c->stash('client');
-    if ($client and $client->default_account) {
+    my $account_id = $c->stash('account_id');
+    if ($account_id) {
         my $redis              = $c->stash('redis');
-        my $channel            = 'TXNUPDATE::transaction_' . $client->default_account->id;
+        my $channel            = 'TXNUPDATE::transaction_' . $account_id;
         my $subscriptions      = $c->stash('transaction_channel');
         my $already_subscribed = $subscriptions->{$channel};
 
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $client->default_account->id, $args)))
+            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, $args)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
         }
@@ -95,14 +95,13 @@ sub send_transaction_updates {
 
     my $args = {};
     my $channel;
-    my $client        = $c->stash('client');
     my $subscriptions = $c->stash('transaction_channel');
     if ($subscriptions) {
         $channel = first { m/TXNUPDATE::transaction/ } keys %$subscriptions;
         $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
     }
 
-    if ($client) {
+    if ($c->stash('account_id')) {
         my $payload = JSON::from_json($message);
         $c->send({
                 json => {
