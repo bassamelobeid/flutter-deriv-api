@@ -132,11 +132,7 @@ sub statement {
     foreach my $txn (@$results) {
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
-            if (exists $txn->{action_type} and $txn->{action_type} eq 'buy') {
-                $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
-            } else {
-                $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
-            }
+            $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
         } else {
             $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
         }
