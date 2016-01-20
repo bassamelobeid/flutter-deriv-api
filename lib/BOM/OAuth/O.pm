@@ -63,7 +63,7 @@ sub authorize {
         ## show scope confirms
         return $c->render(
             template => 'scope_confirms',
-            layout   => $c->layout,
+            layout   => 'default',
 
             app_client => $app_client,
             client     => $client,
