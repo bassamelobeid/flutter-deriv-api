@@ -208,7 +208,6 @@ sub get_settings_by_group {
                 quants.commission.digital_spread.commodities.single_barrier
                 quants.commission.digital_spread.commodities.double_barrier
                 quants.markets.disable_iv
-                quants.features.enable_parameterized_surface
                 quants.features.enable_portfolio_autosell
                 quants.features.enable_pricedebug
                 quants.bet_limits.holiday_blackout_start
