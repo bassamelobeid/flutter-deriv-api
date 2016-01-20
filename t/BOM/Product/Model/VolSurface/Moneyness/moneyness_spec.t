@@ -31,7 +31,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_moneyness',
     {
         symbol           => 'IBEX35',
-        parameterization => undef,
         recorded_date    => Date::Utility->new('12-Sep-12'),
     });
 
