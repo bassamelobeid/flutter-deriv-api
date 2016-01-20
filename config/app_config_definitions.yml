@@ -367,11 +367,6 @@ quants:
           isa: ArrayRef
           default: []
           global: 1
-        price_with_parameterized_surface:
-          description: "A list of underlyings of which contracts are priced with parameterized surface"
-          isa: json_string
-          default: "{}"
-          global: 1
         newly_added:
           description: "Specify the new launched underlyings that need more closely monitoring, eg: KOSPI2, JCI, .."
           isa: ArrayRef
