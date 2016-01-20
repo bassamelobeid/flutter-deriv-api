@@ -230,7 +230,6 @@ sub get_settings_by_group {
                 quants.market_data.interest_rates_source
                 quants.market_data.economic_announcements_source
                 quants.underlyings.disable_autoupdate_vol
-                quants.underlyings.price_with_parameterized_surface
                 quants.underlyings.disabled_due_to_corporate_actions
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
