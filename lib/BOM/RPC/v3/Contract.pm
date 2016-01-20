@@ -227,4 +227,34 @@ sub send_ask {
 
     return $response;
 }
+
+sub get_contract_details {
+    my $params = shift;
+
+    BOM::Platform::Context::request()->language($params->{language});
+
+    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $response;
+    try {
+        my $contract = produce_contract($short_code, $currency);
+        $response = {
+            longcode     => $contract->longcode,
+            symbol       => $contract->underlying->symbol,
+            display_name => $contract->underlying->display_name
+        };
+    }
+    catch {
+        $response = {
+            error => {
+                message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
+                code              => "GetContractDetails"
+            }};
+    };
+    return $response;
+}
+
 1;
