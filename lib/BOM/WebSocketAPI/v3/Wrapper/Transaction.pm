@@ -81,13 +81,9 @@ sub transaction {
         }
     }
 
-    $c->send({
-            json => {
-                echo_req => $args,
-                ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                msg_type => 'transaction',
-                transaction => {$id ? (id => $id) : ''}}});
-    return;
+    return {
+        msg_type => 'transaction',
+        transaction => {$id ? (id => $id) : ''}};
 }
 
 sub send_transaction_updates {
