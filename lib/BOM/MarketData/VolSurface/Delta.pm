@@ -15,6 +15,19 @@ use BOM::Utility::Log4perl qw( get_logger );
 use Math::Function::Interpolator;
 use Storable qw( dclone );
 use Try::Tiny;
+use BOM::System::Chronicle;
+
+=head2 for_date
+
+The date for which we wish data
+
+=cut
+
+has for_date => (
+    is      => 'ro',
+    isa     => 'Maybe[Date::Utility]',
+    default => undef,
+);
 
 sub _document_content {
     my $self = shift;
@@ -30,18 +43,38 @@ sub _document_content {
     return \%structure;
 }
 
-with 'BOM::MarketData::Role::VersionedSymbolData' => {
-    -alias    => {save => '_save'},
-    -excludes => ['save']};
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_document {
+    my $self = shift;
+
+    my $document = BOM::System::Chronicle::get('volatility_surfaces', $self->symbol);
+
+    if ($self->for_date and $self->for_date->epoch < Date::Utility->new($document->{date})->epoch) {
+        $document = BOM::System::Chronicle::get_for('volatility_surfaces', $self->symbol, $self->for_date->epoch);
+
+        # This works around a problem with Volatility surfaces and negative dates to expiry.
+        # We have to use the oldest available surface.. and we don't really know when it
+        # was relative to where we are now.. so just say it's from the requested day.
+        # We do not allow saving of historical surfaces, so this should be fine.
+        $document //= {};
+    }
+
+    return $document;
+}
 
 sub save {
     my $self = shift;
 
-    #first call original save method to save all data into CouchDB just like before
-    my $result = $self->_save();
+    #if chronicle does not have this document, first create it because in document_content we will need it
+    if (not defined BOM::System::Chronicle::get('volatility_surfaces', $self->symbol)) {
+        BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, {});
+    }
 
-    BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, $self->_document_content);
-    return $result;
+    return BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, $self->_document_content, $self->recorded_date);
 }
 
 =head1 NAME
