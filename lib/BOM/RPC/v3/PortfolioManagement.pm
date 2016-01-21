@@ -132,12 +132,12 @@ sub proposal_open_contract {
         foreach my $fmb (@fmbs) {
             my $id = $fmb->{id};
             $response->{$id} = {
-                short_code     => $fmb->{short_code},
-                currency       => $client->currency,
-                underlying     => $fmb->{underlying_symbol},
-                purchase_price => $fmb->{buy_price},
-                sell_price     => $fmb->{sell_price},
-                is_expired     => $fmb->{is_expired}};
+                short_code => $fmb->{short_code},
+                currency   => $client->currency,
+                underlying => $fmb->{underlying_symbol},
+                buy_price  => $fmb->{buy_price},
+                sell_price => $fmb->{sell_price},
+                is_expired => $fmb->{is_expired}};
         }
     }
 
