@@ -27,6 +27,13 @@ subtest 'Check BOM::Product::Contract for memory cycles' => sub {
         currency   => 'USD',
     };
 
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date   => Date::Utility->new(),
+        });
+
     my $bet = produce_contract($params);
 
     isa_ok($bet, 'BOM::Product::Contract', 'Able to create representative bet.');
