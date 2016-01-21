@@ -5,16 +5,18 @@ DECLARE
   short_code VARCHAR(255) :='';
   currency_code VARCHAR(3) :='';
   payment_remark VARCHAR(255) :='';
-  purchase_time TIMESTAMP := '1990-1-1 00:00:01';
-  sell_time TIMESTAMP := '1990-1-1 00:00:01';
+  purchase_time TEXT := '';
+  sell_time TEXT := '';
   purchase_price NUMERIC := 0;
 BEGIN
     PERFORM 1 FROM pg_class
         WHERE relname = 'session_bet_details' AND relnamespace = pg_my_temp_schema();
     IF FOUND THEN
-        sell_time = NEW.transaction_time;
+        IF NEW.action_type = 'sell'::VARCHAR THEN
+            sell_time = NEW.transaction_time::TIMESTAMP(0)::TEXT;
+        END IF;
         IF NEW.action_type = 'buy'::VARCHAR OR NEW.action_type = 'sell'::VARCHAR THEN
-            SELECT s.currency_code, s.short_code, s.purchase_time, s.purchase_price INTO currency_code, short_code, purchase_time, purchase_price FROM session_bet_details s WHERE fmb_id = NEW.financial_market_bet_id AND action_type = NEW.action_type;
+            SELECT s.currency_code, s.short_code, s.purchase_time::TIMESTAMP(0)::TEXT, s.purchase_price INTO currency_code, short_code, purchase_time, purchase_price FROM session_bet_details s WHERE fmb_id = NEW.financial_market_bet_id AND action_type = NEW.action_type;
         END IF;
     END IF;
     PERFORM 1 FROM pg_class
