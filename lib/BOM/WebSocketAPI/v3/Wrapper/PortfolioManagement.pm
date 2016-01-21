@@ -50,11 +50,11 @@ sub proposal_open_contract {
                         my $details = {%$args};
                         # these keys needs to be deleted from args (check send_proposal)
                         # populating here cos we stash them in redis channel
-                        $details->{short_code}     = $response->{$contract_id}->{short_code};
-                        $details->{contract_id}    = $contract_id;
-                        $details->{currency}       = $response->{$contract_id}->{currency};
-                        $details->{purchase_price} = $response->{$contract_id}->{purchase_price};
-                        $details->{sell_price}     = $response->{$contract_id}->{sell_price} // '';
+                        $details->{short_code}  = $response->{$contract_id}->{short_code};
+                        $details->{contract_id} = $contract_id;
+                        $details->{currency}    = $response->{$contract_id}->{currency};
+                        $details->{buy_price}   = $response->{$contract_id}->{buy_price};
+                        $details->{sell_price}  = $response->{$contract_id}->{sell_price} // '';
                         my $id;
                         if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{is_expired}) {
                             $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
@@ -102,8 +102,8 @@ sub send_proposal {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
                         $id ? (id => $id) : (),
-                        purchase_price => delete $details->{purchase_price},
-                        sell_price     => delete $details->{sell_price},
+                        buy_price  => delete $details->{buy_price},
+                        sell_price => delete $details->{sell_price},
                         %$response
                     }};
             } else {
