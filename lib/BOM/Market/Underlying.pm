@@ -173,7 +173,9 @@ has delay_amount => (
 sub _build_delay_amount {
     my $self = shift;
 
-    my $delay_amount = $self->exchange->delay_amount;
+    my $lic = $self->feed_license;
+
+    my $delay_amount = ($lic eq 'realtime') ? 0 : $self->exchange->delay_amount;
 
     return $delay_amount;
 }
