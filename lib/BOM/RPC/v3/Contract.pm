@@ -12,7 +12,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Time::HiRes;
-use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
+use DataDog::DogStatsd::Helper qw(stats_timing);
 
 sub validate_symbol {
     my $symbol    = shift;
@@ -86,7 +86,9 @@ sub get_ask {
         $contract_identifier .= "_$p2->{barrier}"                         if ($p2->{barrier});
         $contract_identifier .= "_$p2->{low_barrier}_$p2->{high_barrier}" if ($p2->{low_barrier} and $p2->{high_barrier});
         $contract_identifier .= '_fs'                                     if $p2->{date_start};
-        stats_inc('unique_proposal_request.count', {tags => ["proposal_request:$contract_identifier"]});
+        open(my $fh, '>>', '/tmp/proposal_request_count.log') or die "cannot write to output file";
+        print $fh "$contract_identifier\n";
+        close $fh;
 
         my $contract = produce_contract({%$p2});
 
