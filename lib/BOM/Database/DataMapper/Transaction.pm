@@ -389,8 +389,10 @@ sub get_transactions_ws {
     my $sql = q{
             SELECT
                 t.*,
-                EXTRACT(EPOCH FROM date_trunc('s', t.transaction_time)) as t_epoch,
                 b.short_code,
+                b.purchase_time,
+                b.sell_time,
+                p.payment_time,
                 p.remark AS payment_remark
             FROM
                 (
