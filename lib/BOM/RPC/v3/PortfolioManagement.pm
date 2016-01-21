@@ -121,11 +121,7 @@ sub proposal_open_contract {
     my @fmbs    = ();
     my $account = $client->default_account;
     if ($params->{contract_id}) {
-        @fmbs = @{
-            $account->find_financial_market_bet(
-                query => [
-                    is_sold => 0,
-                    id      => $params->{contract_id}])}
+        @fmbs = @{$account->find_financial_market_bet(query => [id => $params->{contract_id}])}
             if $account;
     } else {
         @fmbs = @{__get_open_contracts($client)};
@@ -136,9 +132,12 @@ sub proposal_open_contract {
         foreach my $fmb (@fmbs) {
             my $id = $fmb->{id};
             $response->{$id} = {
-                short_code => $fmb->{short_code},
-                currency   => $client->currency,
-                underlying => $fmb->{underlying_symbol}};
+                short_code     => $fmb->{short_code},
+                currency       => $client->currency,
+                underlying     => $fmb->{underlying_symbol},
+                purchase_price => $fmb->{buy_price},
+                sell_price     => $fmb->{sell_price},
+                is_expired     => $fmb->{is_expired}};
         }
     }
 
