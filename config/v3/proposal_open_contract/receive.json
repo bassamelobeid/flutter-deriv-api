@@ -139,7 +139,7 @@
         },
         "sell_price":{
           "type":"number",
-          "description":"sold price, it will have value only when contract has been sold"
+          "description":"sold price, only available for sold contracts"
         },
         "buy_price":{
           "type":"number",
