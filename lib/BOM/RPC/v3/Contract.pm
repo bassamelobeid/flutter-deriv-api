@@ -12,7 +12,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Product::ContractFactory qw(produce_contract);
 use Time::HiRes;
-use DataDog::DogStatsd::Helper qw(stats_timing);
+use DataDog::DogStatsd::Helper qw(stats_timing stats_inc);
 
 sub validate_symbol {
     my $symbol    = shift;
@@ -81,7 +81,13 @@ sub get_ask {
 
     my $response;
     try {
-        my $tv       = [Time::HiRes::gettimeofday];
+        my $tv = [Time::HiRes::gettimeofday];
+        my $contract_identifier = join '_', @{$p2}{'bet_type', 'underlying', 'duration',};
+        $contract_identifier .= "_$p2->{barrier}"                         if ($p2->{barrier});
+        $contract_identifier .= "_$p2->{low_barrier}_$p2->{high_barrier}" if ($p2->{low_barrier} and $p2->{high_barrier});
+        $contract_identifier .= '_fs'                                     if $p2->{date_start};
+        stats_inc('unique_proposal_request.count', {tags => ["proposal_request:$contract_identifier"]});
+
         my $contract = produce_contract({%$p2});
 
         if (!$contract->is_valid_to_buy) {
