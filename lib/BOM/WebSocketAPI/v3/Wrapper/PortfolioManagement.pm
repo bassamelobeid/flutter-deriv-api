@@ -50,11 +50,13 @@ sub proposal_open_contract {
                         my $details = {%$args};
                         # these keys needs to be deleted from args (check send_proposal)
                         # populating here cos we stash them in redis channel
-                        $details->{short_code}  = $response->{$contract_id}->{short_code};
-                        $details->{contract_id} = $contract_id;
-                        $details->{currency}    = $response->{$contract_id}->{currency};
+                        $details->{short_code}     = $response->{$contract_id}->{short_code};
+                        $details->{contract_id}    = $contract_id;
+                        $details->{currency}       = $response->{$contract_id}->{currency};
+                        $details->{purchase_price} = $response->{purchase_price};
+                        $details->{sell_price}     = $response->{sell_price};
                         my $id;
-                        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+                        if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{is_expired}) {
                             $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                 $c, 'subscribe',
                                 $response->{$contract_id}->{underlying},
@@ -97,8 +99,13 @@ sub send_proposal {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                 }
                 return {
-                    msg_type => 'proposal_open_contract',
-                    proposal_open_contract => {$id ? (id => $id) : (), %$response}};
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => {
+                        $id ? (id => $id) : (),
+                        purchase_price => delete $details->{purchase_price},
+                        sell_price     => delete $details->{sell_price},
+                        %$response
+                    }};
             } else {
                 BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
             }
