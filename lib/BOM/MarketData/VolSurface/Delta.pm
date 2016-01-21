@@ -71,7 +71,7 @@ sub save {
 
     #if chronicle does not have this document, first create it because in document_content we will need it
     if (not defined BOM::System::Chronicle::get('volatility_surfaces', $self->symbol)) {
-        #Due to some strange coding of retrieval for recorded_date, there MUST be an existing document (even empty) 
+        #Due to some strange coding of retrieval for recorded_date, there MUST be an existing document (even empty)
         #before one can save a document. As a result, upon the very first storage of an instance of the document, we need to create an empty one.
         BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, {});
     }
