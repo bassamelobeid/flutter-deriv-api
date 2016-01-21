@@ -12,16 +12,16 @@ services:
     - couchdb
 cache: apt
 env:
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
-     - TEST_SUITE=wsstress STRESS_NUM=1
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=1
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=2
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=3
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=4
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=5
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=6
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=7
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=8
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=9
+     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=10
      - TEST_SUITE=test_avg_stress
 #    - TEST_SUITE=v2
 #    - TEST_SUITE=v3
