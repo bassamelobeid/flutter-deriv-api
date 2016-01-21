@@ -322,7 +322,7 @@ sub get_contract_by_id {
         FROM
             bet.financial_market_bet fmb
         WHERE
-            fmb.account_id = ?
+            fmb.id = ?
     };
 
     my $sth = $self->db->dbh->prepare($sql);
