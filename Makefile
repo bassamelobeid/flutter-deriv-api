@@ -1,5 +1,3 @@
-STRESS_NUM=$(stress_num)
-
 v2:
 	forkprove --timer -I./lib  -I./t -r t/BOM/WebsocketAPI/v2
 
@@ -18,7 +16,7 @@ stress:
 	sudo netstat -anlpt |grep 500
 	cd /home/git/regentmarkets/stress;go run stress.go -insert 100;go run stress.go -workers 2 -noecho
 
-wsstress:$(STRESS_NUM)
+wsstress:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	sleep 10
 	cd /home/git/regentmarkets/stress/websocket-bench; ./run.sh $(STRESS_NUM)
