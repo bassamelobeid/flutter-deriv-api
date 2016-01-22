@@ -17,8 +17,6 @@ use BOM::Product::Transaction;
 sub portfolio {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});

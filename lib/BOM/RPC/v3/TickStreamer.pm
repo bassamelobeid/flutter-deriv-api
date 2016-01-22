@@ -17,8 +17,6 @@ use BOM::Product::Offerings qw(get_offerings_with_filter);
 sub ticks_history {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $args   = $params->{args};
     my $symbol = $args->{ticks_history};
 

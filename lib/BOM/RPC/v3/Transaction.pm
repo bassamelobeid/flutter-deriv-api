@@ -17,8 +17,6 @@ use BOM::Platform::Client;
 sub buy {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -77,8 +75,6 @@ sub buy {
 
 sub sell {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 

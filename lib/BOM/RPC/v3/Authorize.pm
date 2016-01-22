@@ -16,8 +16,6 @@ use BOM::RPC::v3::Utility;
 sub authorize {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $err = BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidToken',
             message_to_client => BOM::Platform::Context::localize('The token is invalid.')});
