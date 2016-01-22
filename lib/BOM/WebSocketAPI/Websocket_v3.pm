@@ -421,7 +421,7 @@ sub rpc {
     state $cpu = Proc::CPUUsage->new();
 
     $params->{language} = $self->stash('language');
-    $params->{client_country} = $c->stash('client_country') if ($c->stash('client_country'));
+    $params->{country}  = $c->stash('country') if ($c->stash('country'));
 
     my $client = MojoX::JSON::RPC::Client->new;
     my $url    = 'http://127.0.0.1:5005/' . $method;

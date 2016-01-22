@@ -28,7 +28,7 @@ sub authorize {
                     account_id           => delete $response->{account_id},
                     currency             => $response->{currency},
                     landing_company_name => delete $response->{landing_company_name},
-                    client_country       => delete $response->{country});
+                    country              => delete $response->{country});
                 return {
                     msg_type  => 'authorize',
                     authorize => $response,
