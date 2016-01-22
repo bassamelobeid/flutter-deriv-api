@@ -132,12 +132,13 @@ sub statement {
     foreach my $txn (@$results) {
         my $struct = {
             transaction_id   => $txn->{id},
-            transaction_time => $txn->{t_epoch},
-            amount           => $txn->{amount},
-            action_type      => $txn->{action_type},
-            balance_after    => $txn->{balance_after},
-            contract_id      => $txn->{financial_market_bet_id},
-        };
+            transaction_time => (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id})
+            ? Date::Utility->new($txn->{purchase_time})->epoch
+            : Date::Utility->new($txn->{payment_time})->epoch,
+            amount        => $txn->{amount},
+            action_type   => $txn->{action_type},
+            balance_after => $txn->{balance_after},
+            contract_id   => $txn->{financial_market_bet_id}};
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
@@ -301,7 +302,7 @@ sub change_password {
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    my $pwdm = Data::Password::Meter->new(27);
+    my $pwdm = Data::Password::Meter->new(14);
 
     return $err->(localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
@@ -385,7 +386,7 @@ sub cashier_password {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
 
-        my $pwdm = Data::Password::Meter->new(27);
+        my $pwdm = Data::Password::Meter->new(14);
         return $error_sub->(localize("Password is not strong enough."))
             unless ($pwdm->strong($lock_password));
 
