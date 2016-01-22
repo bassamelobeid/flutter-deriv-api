@@ -93,7 +93,8 @@ sub verify_email {
             my $error_map = BOM::Platform::Locale::error_map();
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'too many requests',
-                    message_to_client => BOM::Platform::Context::localize('Maximum number of attempts exceeded. Please try again after 10 minutes.')}); 
+                    message_to_client => BOM::Platform::Context::localize('Maximum number of attempts exceeded. Please try again after 10 minutes.')}
+            );
         } elsif (BOM::Platform::User->new({email => $params->{email}})) {
             BOM::System::Chronicle->_redis_write->incr($pwd_attempt_key);
             BOM::System::Chronicle->_redis_write->expire($pwd_attempt_key, 600) if (BOM::System::Chronicle->_redis_read->ttl($pwd_attempt_key) == -1);
@@ -103,7 +104,8 @@ sub verify_email {
                     subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                     message => [
                         BOM::Platform::Context::localize(
-                            'Before we can help you change your password, please help us to verify your identity by clicking on the following link: ' . $params->{link})
+                            'Before we can help you change your password, please help us to verify your identity by clicking on the following link: '
+                                . $params->{link})
                     ],
                     use_email_template => 1
                 });
@@ -111,24 +113,30 @@ sub verify_email {
     } elsif ($params->{type} eq 'account_opening') {
         my $verify_attempt_key = 'USER::VERIFY_ATTEMPT_KEY::' . md5_hex($params->{email});
         my $verify_attempt_count = BOM::System::Chronicle->_redis_read->get($verify_attempt_key) || 0;
-        
+
         if ($verify_attempt_count > 6) {
             my $error_map = BOM::Platform::Locale::error_map();
             return BOM::RPC::v3::Utility::create_error({
                     code              => 'too many requests',
-                    message_to_client => BOM::Platform::Context::localize('Maximum number of attempts exceeded. Please try again after 10 minutes.')});
+                    message_to_client => BOM::Platform::Context::localize('Maximum number of attempts exceeded. Please try again after 10 minutes.')}
+            );
         } else {
             BOM::System::Chronicle->_redis_write->incr($verify_attempt_key);
-            BOM::System::Chronicle->_redis_write->expire($verify_attempt_key, 600) if (BOM::System::Chronicle->_redis_read->ttl($verify_attempt_key) == -1);
+            BOM::System::Chronicle->_redis_write->expire($verify_attempt_key, 600)
+                if (BOM::System::Chronicle->_redis_read->ttl($verify_attempt_key) == -1);
 
             if (BOM::Platform::User->new({email => $params->{email}})) {
                 send_email({
-                    from               => $params->{cs_email},
-                    to                 => $params->{email},
-                    subject            => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
-                    message            => [BOM::Platform::Context::localize('Dear Valued Customer, <br />It appears that you have tried to register an email address that is already included in our system. <br />If it was not you, simply ignore this email, or contact our customer support if you have any concerns.')],
-                    use_email_template => 1
-                }); 
+                        from    => $params->{cs_email},
+                        to      => $params->{email},
+                        subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
+                        message => [
+                            BOM::Platform::Context::localize(
+                                'Dear Valued Customer, <br />It appears that you have tried to register an email address that is already included in our system. <br />If it was not you, simply ignore this email, or contact our customer support if you have any concerns.'
+                            )
+                        ],
+                        use_email_template => 1
+                    });
             } else {
                 send_email({
                     from               => $params->{cs_email},
