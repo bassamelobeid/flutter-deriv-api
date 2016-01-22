@@ -1,10 +1,11 @@
 package BOM::Test::Data::Utility::Product;
+use strict;
+use warnings;
 
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Market::Underlying;
 use Date::Utility;
-
 
 sub client_buy_bet {
     my ($client, $currency, $amount) = @_;
@@ -31,7 +32,7 @@ sub client_buy_bet {
         price    => $amount,
         staff    => 'system'
     });
-    $txn->buy(skip_validation => 1);
+    return $txn->buy(skip_validation => 1);
 }
 
 sub buy_bet {
@@ -58,7 +59,7 @@ sub sell_bet {
         staff       => 'UnitTest',
         contract_id => $txn_buy_contract_id,
     });
-    $txn->sell(skip_validation => 1);
+    return $txn->sell(skip_validation => 1);
 }
 
 1;
