@@ -421,8 +421,6 @@ sub rpc {
     state $cpu = Proc::CPUUsage->new();
 
     $params->{language} = $self->stash('language');
-    $params->{client_loginid} = $self->stash('loginid') if ($self->stash('loginid'));
-
     my $country_code = $self->stash('country') ? $self->stash('country') : $self->stash('request')->country_code;
     $params->{country} = $country_code;
 
