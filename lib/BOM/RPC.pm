@@ -6,6 +6,7 @@ use MojoX::JSON::RPC::Service;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
+use Mojo::JSON qw(decode_json);
 
 use BOM::Database::Rose::DB;
 use BOM::RPC::v3::Accounts;
@@ -152,6 +153,18 @@ sub startup {
             $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
             DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
+
+            # instantiate request obj properly
+            my $params = decode_json($c->req->body)->{params};
+            my $args = { country_code => $params->{country} };
+            if ($params->{client_loginid} and $params->{client_loginid} =~ /^(\D+)\d+$/) {
+                $args->{broker_code} = $1;
+            }
+            $args->{language} = $params->{language} if ($params->{language});
+
+            my $r = BOM::Platform::Context::Request->new($args);
+            $r = BOM::Platform::Context::request($r);
+            $c->stash(request => $r);
         });
 
     $app->hook(
