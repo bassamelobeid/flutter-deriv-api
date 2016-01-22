@@ -54,7 +54,7 @@ sub _build_file {
     @non_quanto_filename;
 
     die('Could not find volatility source file for time[' . $now->datetime . ']') unless $file;
-    my $quanto_file = $now->is_a_weekday ? $loc . '/' . $day . '/quantovol.csv' :  $loc . '/' . $day . '/quantovol_wknd.csv';
+    my $quanto_file = $now->is_a_weekday ? $loc . '/' . $day . '/quantovol.csv' : $loc . '/' . $day . '/quantovol_wknd.csv';
 
     my @files = ($file, $quanto_file);
 
