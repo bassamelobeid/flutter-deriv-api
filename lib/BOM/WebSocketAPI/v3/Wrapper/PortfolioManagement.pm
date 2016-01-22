@@ -56,7 +56,7 @@ sub proposal_open_contract {
                         $details->{buy_price}   = $response->{$contract_id}->{buy_price};
                         $details->{sell_price}  = $response->{$contract_id}->{sell_price};
                         my $id;
-                        if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{is_expired}) {
+                        if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
                             $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                 $c, 'subscribe',
                                 $response->{$contract_id}->{underlying},
@@ -97,6 +97,7 @@ sub send_proposal {
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
                 } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                    $id = undef;
                 }
                 my $sell_price = delete $details->{sell_price};
                 return {
