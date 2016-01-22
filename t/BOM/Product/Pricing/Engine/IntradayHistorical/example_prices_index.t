@@ -868,20 +868,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 map { BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_->symbol, date => Date::Utility->new,}) } @symbols;
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => $_,
-        recorded_date => Date::Utility->new,
-    }) for qw(frxEURUSD frxAUDUSD frxUSDCHF);
-
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => 'ISEQ',
-        recorded_date => Date::Utility->new,
-    });
 
 my $data = Text::CSV::Slurp->load(file => '/home/git/regentmarkets/bom/t/data/test_intraday_index.csv');
 
@@ -899,6 +885,21 @@ foreach my $d (@$data) {
             symbol        => $_->symbol,
             recorded_date => Date::Utility->new($d->{date_start}),
         }) for grep { $_->symbol ne 'ISEQ' } @symbols;
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $_,
+            recorded_date => Date::Utility->new($d->{date_start}),
+        }) for qw(frxEURUSD frxAUDUSD frxUSDCHF);
+
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'ISEQ',
+            recorded_date => Date::Utility->new($d->{date_start}),
+        });
 
     my $params = {
         bet_type     => $d->{bet_type},

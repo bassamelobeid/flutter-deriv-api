@@ -26,12 +26,13 @@ Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 my $requestmod = Test::MockModule->new('BOM::Platform::Context::Request');
 $requestmod->mock('session_cookie', sub { return bless({token => 1}, 'BOM::Platform::SessionCookie'); });
 
+my $now       = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
-        symbol => 'USD',
+        symbol => $_,
         date   => Date::Utility->new,
-    });
+    }) for qw(JPY USD JPY-USD);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
@@ -41,13 +42,18 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta', {
+        symbol => 'frxUSDJPY',
+        recorded_date => $now,
+    }
+);
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
     {
         symbol => 'R_100',
         date   => Date::Utility->new
     });
 
-my $now       = Date::Utility->new;
 my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch - 99,
     underlying => 'R_50',
@@ -69,6 +75,11 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     underlying => 'R_50',
 });
 
+my $usdjpy_tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+    epoch      => $now->epoch,
+    underlying => 'frxUSDJPY',
+});
+
 my $tick_r100 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
     underlying => 'R_100',
@@ -84,8 +95,11 @@ sub db {
 }
 
 sub create_client {
+    my $broker = shift;
+    $broker ||= 'CR';
+
     return BOM::Platform::Client->register_and_return_new_client({
-        broker_code      => 'CR',
+        broker_code      => $broker,
         client_password  => BOM::System::Password::hashpw('12345678'),
         salutation       => 'Ms',
         last_name        => 'Doe',
@@ -1263,7 +1277,7 @@ subtest 'max_open_bets validation: selling bets on the way', sub {
 };
 
 subtest 'max_payout_open_bets validation', sub {
-    plan tests => 12;
+    plan tests => 24;
     lives_ok {
         my $cl = create_client;
 
@@ -1309,6 +1323,81 @@ subtest 'max_payout_open_bets validation', sub {
                     client      => $cl,
                     contract    => $contract,
                     price       => 5.20,
+                    payout      => $contract->payout,
+                    amount_type => 'payout',
+                })->buy, undef, '2nd bet bought';
+
+            $txn->buy;
+        };
+        SKIP: {
+            skip 'no error', 5
+                unless isa_ok $error, 'Error::Base';
+
+            is $error->get_type, 'OpenPositionPayoutLimit', 'error is OpenPositionPayoutLimit';
+
+            like $error->{-message_to_client}, qr/aggregate payouts of contracts on your account cannot exceed USD29\.99/,
+                'message_to_client contains balance';
+
+            is $txn->contract_id,    undef, 'txn->contract_id';
+            is $txn->transaction_id, undef, 'txn->transaction_id';
+            is $txn->balance_after,  undef, 'txn->balance_after';
+        }
+
+        # retry with a slightly higher limit should succeed
+        $error = do {
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(get_limit_for_payout => sub { note "mocked Client->get_limit_for_payout returning 30.00"; 30.00 });
+
+            $txn->buy;
+        };
+
+        is $error, undef, 'no error';
+    }
+    'survived';
+    lives_ok {
+        my $cl = create_client('MF');
+        top_up $cl, 'USD', 100;
+
+        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
+
+        my $bal;
+        is + ($bal = $acc_usd->balance + 0), 100, 'USD balance is 100 got: ' . $bal;
+
+        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
+        my $contract = produce_contract({
+            underlying   => 'frxUSDJPY',
+            bet_type     => 'FLASHU',
+            currency     => 'USD',
+            payout       => 10.00,
+            duration     => '6h',
+            current_tick => $usdjpy_tick,
+            barrier      => 'S0P',
+        });
+
+        my $txn = BOM::Product::Transaction->new({
+            client      => $cl,
+            contract    => $contract,
+            price       => 5.37,
+            payout      => $contract->payout,
+            amount_type => 'payout',
+        });
+
+        my $error = do {
+            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+            $mock_client->mock(landing_company_open_positions_payout_limit => sub { note "mocked Client->landing_company_open_positions_payout_limit returning 29.99"; 29.99 });
+
+            is +BOM::Product::Transaction->new({
+                    client      => $cl,
+                    contract    => $contract,
+                    price       => 5.37,
+                    payout      => $contract->payout,
+                    amount_type => 'payout',
+                })->buy, undef, '1st bet bought';
+
+            is +BOM::Product::Transaction->new({
+                    client      => $cl,
+                    contract    => $contract,
+                    price       => 5.37,
                     payout      => $contract->payout,
                     amount_type => 'payout',
                 })->buy, undef, '2nd bet bought';

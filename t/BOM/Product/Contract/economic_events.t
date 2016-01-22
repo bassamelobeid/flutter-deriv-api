@@ -29,7 +29,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxUSDJPY',
-        recorded_date => $now,
+        recorded_date   => $now->minus_time_interval('10m'),
     });
 
 my $mocked = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Forex');
