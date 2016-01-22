@@ -139,11 +139,11 @@
         },
         "sell_price":{
           "type":"number",
-          "description":"sold price, only available for sold contracts"
+          "description": "Price at which contract was sold, only available when contract has been sold."
         },
         "buy_price":{
           "type":"number",
-          "description":"buy price"
+          "description": "Price at which contract was purchased"
         }
       }
     },
