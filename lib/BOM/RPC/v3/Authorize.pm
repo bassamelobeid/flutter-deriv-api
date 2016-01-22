@@ -48,7 +48,8 @@ sub authorize {
         currency             => ($account ? $account->currency_code : ''),
         email                => $client->email,
         account_id           => ($account ? $account->id : ''),
-        landing_company_name => $client->landing_company->short
+        landing_company_name => $client->landing_company->short,
+        country              => $client->residence
     };
 }
 
