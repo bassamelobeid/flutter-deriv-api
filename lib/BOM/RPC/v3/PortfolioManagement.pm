@@ -120,7 +120,10 @@ sub proposal_open_contract {
 
     my @fmbs = ();
     if ($params->{contract_id}) {
-        @fmbs = @{__get_contract_by_id($client, $params->{contract_id})};
+        my $fmb_contract = __get_contract_by_id($client, $params->{contract_id});
+        if ($fmb_contract->{account_id} eq $client->default_account->id) {
+            @fmbs = @{$fmb_contract};
+        }
     } else {
         @fmbs = @{__get_open_contracts($client)};
     }
