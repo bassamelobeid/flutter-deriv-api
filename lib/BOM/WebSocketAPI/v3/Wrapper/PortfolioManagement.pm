@@ -53,8 +53,10 @@ sub proposal_open_contract {
                         $details->{short_code}  = $response->{$contract_id}->{short_code};
                         $details->{contract_id} = $contract_id;
                         $details->{currency}    = $response->{$contract_id}->{currency};
+                        $details->{buy_price}   = $response->{$contract_id}->{buy_price};
+                        $details->{sell_price}  = $response->{$contract_id}->{sell_price};
                         my $id;
-                        if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
+                        if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
                             $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                 $c, 'subscribe',
                                 $response->{$contract_id}->{underlying},
@@ -95,10 +97,17 @@ sub send_proposal {
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
                 } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                    $id = undef;
                 }
+                my $sell_price = delete $details->{sell_price};
                 return {
-                    msg_type => 'proposal_open_contract',
-                    proposal_open_contract => {$id ? (id => $id) : (), %$response}};
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => {
+                        $id ? (id => $id) : (),
+                        buy_price => delete $details->{buy_price},
+                        (defined $sell_price) ? (sell_price => $sell_price) : (),
+                        %$response
+                    }};
             } else {
                 BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
             }
