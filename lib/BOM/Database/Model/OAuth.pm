@@ -242,6 +242,14 @@ sub get_apps_by_user_id {
     ", {Slice => {}}, $user_id);
 }
 
+sub delete_app {
+    my ($self, $user_id, $app_id) = @_;
+
+    return $self->dbh->do("
+        DELETE FROM oauth.apps WHERE id = ? AND binary_user_id = ?
+    ", undef, $app_id, $user_id);
+}
+
 no Moose;
 __PACKAGE__->meta->make_immutable;
 
