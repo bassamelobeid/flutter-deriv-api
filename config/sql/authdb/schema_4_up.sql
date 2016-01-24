@@ -20,6 +20,17 @@ GRANT SELECT ON oauth.apps TO read;
 
 INSERT INTO oauth.apps (id, secret, name, binary_user_id) values ('binarycom', 'bin2Sec', 'Binary.com', 1);
 
+CREATE TABLE oauth.app_redirect_uri (
+    app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    redirect_uri VARCHAR(255) DEFAULT NULL
+);
+CREATE INDEX idx_oauth_app_redirect_uri_app_id ON oauth.app_redirect_uri USING btree (app_id);
+GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.app_redirect_uri TO write;
+GRANT SELECT ON oauth.app_redirect_uri TO read;
+
+INSERT INTO oauth.app_redirect_uri (app_id, redirect_uri) values ('binarycom', 'http://localhost/');
+INSERT INTO oauth.app_redirect_uri (app_id, redirect_uri) values ('binarycom', 'https://www.binary.com/');
+
 CREATE TABLE oauth.scopes (
     id SERIAL PRIMARY KEY,
     scope VARCHAR( 100 ) NOT NULL

@@ -9,9 +9,18 @@ my $m             = BOM::Database::Model::OAuth->new;
 my $test_loginid  = 'CR10002';
 my $test_appid    = 'binarycom';
 
+## clear
+$m->dbh->do("DELETE FROM oauth.app_redirect_uri WHERE app_id <> '$test_appid'");
+$m->dbh->do("DELETE FROM oauth.apps WHERE id <> '$test_appid'");
+
 ## it's in test db
 my $app = $m->verify_app($test_appid);
 is $app->{id}, $test_appid;
+
+ok $m->verify_app_redirect_uri($test_appid, 'http://localhost'), 'verify_app_redirect_uri localhost';
+ok $m->verify_app_redirect_uri($test_appid, 'http://localhost/'), 'verify_app_redirect_uri localhost/';
+ok $m->verify_app_redirect_uri($test_appid, 'https://www.binary.com/'), 'verify_app_redirect_uri binary.com/';
+ok ! $m->verify_app_redirect_uri($test_appid, 'https://www.example.com/'), 'verify_app_redirect_uri example.com/';
 
 $m->dbh->do("DELETE FROM oauth.user_scope_confirm");    # clear
 my $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'user', 'trade');
@@ -54,23 +63,29 @@ ok(!$m->verify_refresh_token($test_appid, $access_token),  'access_token is not 
 
 ### get app_register/app_list/app_get
 my $test_user_id = 999;
-$m->dbh->do("DELETE FROM oauth.apps WHERE binary_user_id = $test_user_id");    # clear
-
 my $app1 = $m->create_app({
     name     => 'App 1',
     homepage => 'http://www.example.com/',
     github   => 'https://github.com/binary-com/binary-static',
     user_id  => $test_user_id,
+    redirect_uri => ['https://www.example.com'],
 });
 my $get_app = $m->get_app($test_user_id, $app1->{app_id});
 is_deeply($app1, $get_app, 'same on get');
 
+ok $m->verify_app_redirect_uri($app1->{app_id}, 'https://www.example.com/'), 'verify_app_redirect_uri example.com/';
+ok ! $m->verify_app_redirect_uri($app1->{app_id}, 'https://www.example2.com/'), 'verify_app_redirect_uri example2.com/';
+
 my $app2 = $m->create_app({
     name    => 'App 2',
     user_id => $test_user_id,
+    redirect_uri => ['https://www.example2.com'],
 });
 my $get_apps = $m->get_apps_by_user_id($test_user_id);
 is_deeply($get_apps, [$app1, $app2], 'get_apps_by_user_id ok');
+
+ok $m->verify_app_redirect_uri($app2->{app_id}, 'https://www.example2.com/'), 'verify_app_redirect_uri example2.com/';
+ok ! $m->verify_app_redirect_uri($app2->{app_id}, 'https://www.example.com/'), 'verify_app_redirect_uri example.com/';
 
 $m->delete_app($test_user_id, $app2->{app_id});
 $get_apps = $m->get_apps_by_user_id($test_user_id);
