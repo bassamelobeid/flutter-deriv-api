@@ -10,6 +10,15 @@ use BOM::System::Password;
 use BOM::RPC::v3::App;
 use BOM::Database::Model::OAuth;
 
+# cleanup
+my $dbh = BOM::Database::Model::OAuth->new->dbh;
+$dbh->do("
+    DELETE FROM oauth.app_redirect_uri WHERE app_id <> 'binarycom'
+");
+$dbh->do("
+    DELETE FROM oauth.apps WHERE id <> 'binarycom'
+");
+
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
 my $hash_pwd    = BOM::System::Password::hashpw($password);
@@ -26,11 +35,6 @@ my $user         = BOM::Platform::User->create(
 $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->save;
-
-# cleanup
-BOM::Database::Model::OAuth->new->dbh->do("
-    DELETE FROM oauth.apps WHERE binary_user_id = ? AND id <> 'binarycom'
-", undef, $user->id);
 
 my $app1 = BOM::RPC::v3::App::register({
         client_loginid => $test_loginid,
