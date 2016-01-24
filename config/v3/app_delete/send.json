@@ -1,10 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-04/schema#",
   "type": "object",
-  "title": "App Get Send",
-  "description":"get created OAuth application by app_id",
+  "title": "App Delete Send",
   "properties": {
-    "app_get": {
+    "app_delete": {
       "type":"string",
       "pattern": "^.{32}$",
       "required": "1",

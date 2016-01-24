@@ -16,13 +16,13 @@
           "type": "string",
           "description":"Application name"
         },
-        "client_id": {
+        "app_id": {
           "type": "string",
-          "description":"Application client id"
+          "description":"Application id"
         },
-        "client_secret": {
+        "app_secret": {
           "type": "string",
-          "description":"Application client secret"
+          "description":"Application secret"
         }
       }
     },
