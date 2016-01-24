@@ -14,45 +14,45 @@ sub _build_dbh {
     return BOM::Database::AuthDB::rose_db->dbh;
 }
 
-## client
-sub verify_client {
-    my ($self, $client_id) = @_;
+## app
+sub verify_app {
+    my ($self, $app_id) = @_;
 
     return $self->dbh->selectrow_hashref("
-        SELECT id, secret, name FROM oauth.clients WHERE id = ? AND active
-    ", undef, $client_id);
+        SELECT id, secret, name FROM oauth.apps WHERE id = ? AND active
+    ", undef, $app_id);
 }
 
 sub confirm_scope {
-    my ($self, $client_id, $loginid, @scopes) = @_;
+    my ($self, $app_id, $loginid, @scopes) = @_;
 
     my $dbh           = $self->dbh;
     my $get_scope_sth = $dbh->prepare("SELECT id FROM oauth.scopes WHERE scope = ?");
     my $insert_sth    = $dbh->prepare("
-       INSERT INTO oauth.user_scope_confirm (client_id, loginid, scope_id) VALUES (?, ?, ?)
+       INSERT INTO oauth.user_scope_confirm (app_id, loginid, scope_id) VALUES (?, ?, ?)
     ");
 
     foreach my $scope (@scopes) {
         $get_scope_sth->execute($scope);
         my ($scope_id) = $get_scope_sth->fetchrow_array;
         next unless $scope_id;
-        $insert_sth->execute($client_id, $loginid, $scope_id);
+        $insert_sth->execute($app_id, $loginid, $scope_id);
     }
 
     return 1;
 }
 
 sub is_scope_confirmed {
-    my ($self, $client_id, $loginid, @scopes) = @_;
+    my ($self, $app_id, $loginid, @scopes) = @_;
 
     my $dbh = $self->dbh;
     my $sth = $dbh->prepare("
         SELECT 1 FROM oauth.user_scope_confirm JOIN oauth.scopes ON user_scope_confirm.scope_id=scopes.id
-        WHERE client_id = ? AND loginid = ? AND scopes.scope = ?
+        WHERE app_id = ? AND loginid = ? AND scopes.scope = ?
     ");
 
     foreach my $scope (@scopes) {
-        $sth->execute($client_id, $loginid, $scope);
+        $sth->execute($app_id, $loginid, $scope);
         my ($is_approved) = $sth->fetchrow_array;
         return 0 unless $is_approved;
     }
@@ -62,13 +62,13 @@ sub is_scope_confirmed {
 
 ## store auth code
 sub store_auth_code {
-    my ($self, $client_id, $loginid, @scopes) = @_;
+    my ($self, $app_id, $loginid, @scopes) = @_;
 
     my $dbh          = $self->dbh;
     my $auth_code    = String::Random::random_regex('[a-zA-Z0-9]{32}');
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + 600)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.auth_code (auth_code, client_id, loginid, expires, verified) VALUES (?, ?, ?, ?, false)",
-        undef, $auth_code, $client_id, $loginid, $expires_time);
+    $dbh->do("INSERT INTO oauth.auth_code (auth_code, app_id, loginid, expires, verified) VALUES (?, ?, ?, ?, false)",
+        undef, $auth_code, $app_id, $loginid, $expires_time);
 
     my $get_scope_sth    = $dbh->prepare("SELECT id FROM oauth.scopes WHERE scope = ?");
     my $insert_scope_sth = $dbh->prepare("INSERT INTO oauth.auth_code_scope (auth_code, scope_id) VALUES (?, ?)");
@@ -84,13 +84,13 @@ sub store_auth_code {
 
 ## validate auth code
 sub verify_auth_code {
-    my ($self, $client_id, $auth_code) = @_;
+    my ($self, $app_id, $auth_code) = @_;
 
     my $dbh = $self->dbh;
 
     my $auth_row = $dbh->selectrow_hashref("
-        SELECT * FROM oauth.auth_code WHERE auth_code = ? AND client_id = ? AND NOT verified
-    ", undef, $auth_code, $client_id);
+        SELECT * FROM oauth.auth_code WHERE auth_code = ? AND app_id = ? AND NOT verified
+    ", undef, $auth_code, $app_id);
 
     return unless $auth_row;
     return unless Date::Utility->new->is_before(Date::Utility->new($auth_row->{expires}));
@@ -115,7 +115,7 @@ sub get_scope_ids_by_auth_code {
 
 ## store access token
 sub store_access_token {
-    my ($self, $client_id, $loginid, @scope_ids) = @_;
+    my ($self, $app_id, $loginid, @scope_ids) = @_;
 
     my $dbh           = $self->dbh;
     my $expires_in    = 3600;
@@ -123,10 +123,10 @@ sub store_access_token {
     my $refresh_token = 'r1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.access_token (access_token, client_id, loginid, expires) VALUES (?, ?, ?, ?)",
-        undef, $access_token, $client_id, $loginid, $expires_time);
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, $expires_time);
 
-    $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, client_id, loginid) VALUES (?, ?, ?)", undef, $refresh_token, $client_id, $loginid);
+    $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid) VALUES (?, ?, ?)", undef, $refresh_token, $app_id, $loginid);
 
     foreach my $related ('access_token', 'refresh_token') {
         my $insert_sth = $dbh->prepare("INSERT INTO oauth.${related}_scope ($related, scope_id) VALUES (?, ?)");
@@ -163,13 +163,13 @@ sub get_scopes_by_access_token {
 }
 
 sub verify_refresh_token {
-    my ($self, $client_id, $refresh_token) = @_;
+    my ($self, $app_id, $refresh_token) = @_;
 
     my $dbh = $self->dbh;
 
     my ($loginid) = $dbh->selectrow_array("
-        SELECT loginid FROM oauth.refresh_token WHERE refresh_token = ? AND client_id = ? AND NOT revoked
-    ", undef, $refresh_token, $client_id);
+        SELECT loginid FROM oauth.refresh_token WHERE refresh_token = ? AND app_id = ? AND NOT revoked
+    ", undef, $refresh_token, $app_id);
     return unless $loginid;
 
     # set revoked to avoid code-reuse
@@ -193,17 +193,17 @@ sub get_scope_ids_by_refresh_token {
 sub is_name_taken {
     my ($self, $user_id, $name) = @_;
 
-    return $self->dbh->selectrow_array("SELECT 1 FROM oauth.clients WHERE binary_user_id = ? AND name = ?", undef, $user_id, $name);
+    return $self->dbh->selectrow_array("SELECT 1 FROM oauth.apps WHERE binary_user_id = ? AND name = ?", undef, $user_id, $name);
 }
 
-sub create_client {
+sub create_app {
     my ($self, $app) = @_;
 
     my $id     = $app->{id}     || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
     my $secret = $app->{secret} || String::Random::random_regex('[a-zA-Z0-9]{32}');
 
     my $sth = $self->dbh->prepare("
-        INSERT INTO oauth.clients
+        INSERT INTO oauth.apps
             (id, secret, name, homepage, github, appstore, googleplay, binary_user_id)
         VALUES
             (? ,?, ?, ?, ?, ?, ?, ?)
@@ -217,28 +217,28 @@ sub create_client {
         $app->{user_id});
 
     return {
-        client_id     => $id,
-        client_secret => $secret,
+        app_id     => $id,
+        app_secret => $secret,
         name          => $app->{name},
         active        => 1,
     };
 }
 
-sub get_client {
-    my ($self, $user_id, $client_id) = @_;
+sub get_app {
+    my ($self, $user_id, $app_id) = @_;
 
     return $self->dbh->selectrow_hashref("
-        SELECT id as client_id, secret as client_secret, name, active FROM oauth.clients WHERE id = ? AND binary_user_id = ?
-    ", undef, $client_id, $user_id);
+        SELECT id as app_id, secret as app_secret, name, active FROM oauth.apps WHERE id = ? AND binary_user_id = ?
+    ", undef, $app_id, $user_id);
 }
 
-sub get_clients_by_user_id {
+sub get_apps_by_user_id {
     my ($self, $user_id) = @_;
 
     return $self->dbh->selectall_arrayref("
         SELECT
-            id as client_id, secret as client_secret, name, active
-        FROM oauth.clients WHERE binary_user_id = ? ORDER BY name
+            id as app_id, secret as app_secret, name, active
+        FROM oauth.apps WHERE binary_user_id = ? ORDER BY name
     ", {Slice => {}}, $user_id);
 }
 
