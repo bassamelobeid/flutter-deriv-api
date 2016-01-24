@@ -110,18 +110,31 @@ sub send_transaction_updates {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
                 } else {
+                    my $txn_time;
+                    if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
+                        if ($payload->{action_type} eq 'sell') {
+                            $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
+                        } else {
+                            $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
+                        }
+                    } else {
+                        $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
+                    }
+
                     $c->send({
                             json => {
-                                msg_type    => 'transaction',
+                                msg_type => 'transaction',
                                 $args ? (echo_req => $args) : (),
                                 ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                                 transaction => {
-                                    balance        => $payload->{balance_after},
-                                    action         => $payload->{action_type},
-                                    contract_id    => $payload->{financial_market_bet_id},
-                                    amount         => $payload->{amount},
-                                    transaction_id => $payload->{id},
-                                    %$response
+                                    balance          => $payload->{balance_after},
+                                    action           => $payload->{action_type},
+                                    contract_id      => $payload->{financial_market_bet_id},
+                                    amount           => $payload->{amount},
+                                    transaction_id   => $payload->{id},
+                                    transaction_time => $txn_time,
+                                    ($payload->{action_type} eq 'sell') ? (purchase_time => Date::Utility->new($payload->{purchase_time})->epoch) : (),
+                                    %$response,
                                     $id ? (id => $id) : ()}}});
                 }
             },
@@ -130,7 +143,8 @@ sub send_transaction_updates {
                 client_loginid => $c->stash('loginid'),
                 shortcode      => $payload->{short_code},
                 currency       => $payload->{currency_code},
-                language       => $c->stash('request')->language});
+                language       => $c->stash('request')->language
+            });
     } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
     }
