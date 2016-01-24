@@ -55,7 +55,7 @@ sub register {
     return $error_sub->(localize('The name is taken.'))
         if $oauth->is_name_taken($user_id, $name);
 
-    my $app = $oauth->create_client({
+    my $app = $oauth->create_app({
         user_id    => $user_id,
         name       => $name,
         homepage   => $homepage,
@@ -75,7 +75,7 @@ sub list {
     my $user_id = $user->id;
 
     my $oauth = BOM::Database::Model::OAuth->new;
-    return $oauth->get_clients_by_user_id($user_id);
+    return $oauth->get_apps_by_user_id($user_id);
 }
 
 sub get {
@@ -85,9 +85,9 @@ sub get {
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $oauth     = BOM::Database::Model::OAuth->new;
-    my $client_id = $params->{args}->{app_get};
-    my $app       = $oauth->get_client($user_id, $client_id);
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $app_id = $params->{args}->{app_get};
+    my $app    = $oauth->get_app($user_id, $app_id);
 
     return BOM::RPC::v3::Utility::create_error({
             code              => 'AppGet',
@@ -95,6 +95,20 @@ sub get {
         }) unless $app;
 
     return $app;
+}
+
+sub delete {
+    my $params = shift;
+    return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
+
+    my $user = BOM::Platform::User->new({email => $client->email});
+    my $user_id = $user->id;
+
+    my $oauth  = BOM::Database::Model::OAuth->new;
+    my $app_id = $params->{args}->{app_delete};
+    my $status = $oauth->delete_app($user_id, $app_id);
+
+    return $status ? 1 : 0;
 }
 
 1;

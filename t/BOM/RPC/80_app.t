@@ -29,7 +29,7 @@ $user->save;
 
 # cleanup
 BOM::Database::Model::OAuth->new->dbh->do("
-    DELETE FROM oauth.clients WHERE binary_user_id = ? AND id <> 'binarycom'
+    DELETE FROM oauth.apps WHERE binary_user_id = ? AND id <> 'binarycom'
 ", undef, $user->id);
 
 my $app1 = BOM::RPC::v3::App::register({
@@ -40,7 +40,7 @@ my $app1 = BOM::RPC::v3::App::register({
 my $get_app = BOM::RPC::v3::App::get({
         client_loginid => $test_loginid,
         args           => {
-            app_get => $app1->{client_id},
+            app_get => $app1->{app_id},
         }});
 is_deeply($app1, $get_app, 'same on get');
 
@@ -61,7 +61,20 @@ my $get_apps = BOM::RPC::v3::App::list({
         args           => {
             app_list => 1,
         }});
-$get_apps = [grep { $_->{client_id} ne 'binarycom' } @$get_apps];
+$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
+
+BOM::RPC::v3::App::delete({
+        client_loginid => $test_loginid,
+        args           => {
+            app_delete => $app2->{app_id},
+        }});
+$get_apps = BOM::RPC::v3::App::list({
+        client_loginid => $test_loginid,
+        args           => {
+            app_list => 1,
+        }});
+$get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
+is_deeply($get_apps, [$app1], 'delete ok');
 
 done_testing();

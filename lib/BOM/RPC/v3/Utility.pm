@@ -33,9 +33,9 @@ sub server_time {
 sub site_limits {
     my @services = RateLimitations::rate_limited_services;
     my $limits;
-    $limits->{max_pricing_channels} = {
+    $limits->{max_proposal_subscription} = {
         'applies_to' => 'subscribing to proposal concurrently',
-        'max'        => 10
+        'max'        => 5
     };
     my @l = RateLimitations::rate_limits_for_service('websocket_call');
     $limits->{'max_requestes_general'} = {
@@ -48,7 +48,7 @@ sub site_limits {
         'minutely'   => $l[0]->[1],
         'hourly'     => $l[1]->[1]};
     @l = RateLimitations::rate_limits_for_service('websocket_call_pricing');
-    $limits->{'manx_requests_pricing'} = {
+    $limits->{'max_requests_pricing'} = {
         'applies_to' => 'proposal and proposal_open_contract',
         'minutely'   => $l[0]->[1],
         'hourly'     => $l[1]->[1]};
@@ -62,6 +62,31 @@ sub website_status {
         terms_conditions_version => $app_config->cgi->terms_conditions_version,
         api_call_limits          => site_limits
     };
+}
+
+sub check_authorization {
+    my $client = shift;
+
+    return create_error({
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.')}) unless $client;
+
+    return create_error({
+            code              => 'DisabledClient',
+            message_to_client => localize('This account is unavailable.')}) if $client->get_status('disabled');
+
+    my $self_excl = $client->get_self_exclusion;
+    my $lim;
+    if (    $self_excl
+        and $lim = $self_excl->exclude_until
+        and Date::Utility->new->is_before(Date::Utility->new($lim)))
+    {
+        return create_error({
+                code              => 'ClientSelfExclusion',
+                message_to_client => localize('Sorry, you have excluded yourself until [_1].', $lim)});
+    }
+
+    return;
 }
 
 1;

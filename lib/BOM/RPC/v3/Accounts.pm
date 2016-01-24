@@ -21,6 +21,7 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
+use Data::Password::Meter;
 
 sub payout_currencies {
     my $params = shift;
@@ -107,12 +108,16 @@ sub statement {
 
     BOM::Platform::Context::request()->language($params->{language});
 
-    my ($client, $account);
+    my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    $account = $client->default_account if $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $account = $client->default_account;
 
     return {
         transactions => [],
@@ -160,6 +165,10 @@ sub profit_table {
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    }
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
 
     return {
@@ -218,7 +227,9 @@ sub balance {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     return {
         currency => '',
@@ -241,7 +252,9 @@ sub get_account_status {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    return [] unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my @status;
     foreach my $s (sort keys %{$client->client_status_types}) {
@@ -253,7 +266,7 @@ sub get_account_status {
         push @status, 'active';
     }
 
-    return \@status;
+    return {status => \@status};
 }
 
 sub change_password {
@@ -269,14 +282,13 @@ sub change_password {
         $client = BOM::Platform::Client->new({loginid => $client_loginid});
     }
 
-    if (not $client or not(($token_type // '') eq 'session_token')) {
-        return BOM::RPC::v3::Utility::permission_error();
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
 
-    ## only allow for Session Token
-    return BOM::RPC::v3::Utility::create_error({
-            code              => 'PermissionDenied',
-            message_to_client => localize('Permission denied.')}) unless ($token_type // '') eq 'session_token';
+    if (not(($token_type // '') eq 'session_token')) {
+        return BOM::RPC::v3::Utility::permission_error();
+    }
 
     my $user = BOM::Platform::User->new({email => $client->email});
 
@@ -289,10 +301,14 @@ sub change_password {
     };
 
     ## args validation is done with JSON::Schema in entry_point, here we do others
-    return $err->(localize('New password is same as old password.'))
-        if $args->{new_password} eq $args->{old_password};
+    my $pwdm = Data::Password::Meter->new(27);
+
     return $err->(localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
+    return $err->(localize('New password is same as old password.'))
+        if $args->{new_password} eq $args->{old_password};
+    return $err->(localize("Password is not strong enough."))
+        unless ($pwdm->strong($args->{new_password}));
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
     $user->password($new_password);
@@ -332,9 +348,11 @@ sub cashier_password {
         $client = BOM::Platform::Client->new({loginid => $client_loginid});
     }
 
-    if (not $client or $client->is_virtual) {
-        return BOM::RPC::v3::Utility::permission_error();
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     my $unlock_password = $args->{unlock_password} // '';
     my $lock_password   = $args->{lock_password}   // '';
@@ -366,6 +384,10 @@ sub cashier_password {
         if (BOM::System::Password::checkpw($lock_password, $user->password)) {
             return $error_sub->(localize('Please use a different password than your login password.'));
         }
+
+        my $pwdm = Data::Password::Meter->new(27);
+        return $error_sub->(localize("Password is not strong enough."))
+            unless ($pwdm->strong($lock_password));
 
         $client->cashier_setting_password(BOM::System::Password::hashpw($lock_password));
         if (not $client->save()) {
@@ -441,7 +463,10 @@ sub get_settings {
     my ($client_loginid, $language) = ($params->{client_loginid}, $params->{language});
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $client_tnc_status = $client->get_status('tnc_approval');
 
@@ -475,9 +500,11 @@ sub set_settings {
         $client = BOM::Platform::Client->new({loginid => $client_loginid});
     }
 
-    if (not $client or $client->is_virtual) {
-        return BOM::RPC::v3::Utility::permission_error();
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
@@ -574,10 +601,12 @@ sub get_self_exclusion {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
-    my $get_self_exclusion = {};
-    if (not $client or $client->is_virtual) {
-        return $get_self_exclusion;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
+
+    my $get_self_exclusion = {};
+    return $get_self_exclusion if $client->is_virtual;
 
     my $self_exclusion = $client->get_self_exclusion;
     if ($self_exclusion) {
@@ -623,9 +652,11 @@ sub set_self_exclusion {
         $client = BOM::Platform::Client->new({loginid => $client_loginid});
     }
 
-    if (not $client or $client->is_virtual) {
-        return BOM::RPC::v3::Utility::permission_error();
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
+
+    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
     # get old from above sub get_self_exclusion
     my $self_exclusion = get_self_exclusion({client_loginid => $client_loginid});
@@ -767,7 +798,9 @@ sub api_token {
         $client = BOM::Platform::Client->new({loginid => $client_loginid});
     }
 
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $rtn;
     my $m = BOM::Database::Model::AccessToken->new;
@@ -810,7 +843,10 @@ sub tnc_approval {
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
+
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
     my $current_tnc_version = BOM::Platform::Runtime->instance->app_config->cgi->terms_conditions_version;
     my $client_tnc_status   = $client->get_status('tnc_approval');

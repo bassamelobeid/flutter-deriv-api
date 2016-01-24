@@ -1,10 +1,11 @@
 package BOM::RPC;
 
-use Time::HiRes ();
-
 use Mojo::Base 'Mojolicious';
 use Mojo::IOLoop;
 use MojoX::JSON::RPC::Service;
+use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
+use Proc::CPUUsage;
+use Time::HiRes;
 
 use BOM::Database::Rose::DB;
 use BOM::RPC::v3::Accounts;
@@ -118,6 +119,7 @@ sub startup {
                 '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
+                '/new_account_japan' => MojoX::JSON::RPC::Service->new->register('new_account_japan', \&BOM::RPC::v3::NewAccount::new_account_japan),
                 '/new_account_virtual' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_virtual', \&BOM::RPC::v3::NewAccount::new_account_virtual),
                 '/portfolio'    => MojoX::JSON::RPC::Service->new->register('portfolio',    \&BOM::RPC::v3::PortfolioManagement::portfolio),
@@ -126,10 +128,16 @@ sub startup {
                 '/app_register' => MojoX::JSON::RPC::Service->new->register('app_register', \&BOM::RPC::v3::App::register),
                 '/app_list'     => MojoX::JSON::RPC::Service->new->register('app_list',     \&BOM::RPC::v3::App::list),
                 '/app_get'      => MojoX::JSON::RPC::Service->new->register('app_get',      \&BOM::RPC::v3::App::get),
+                '/app_delete'   => MojoX::JSON::RPC::Service->new->register('app_delete',   \&BOM::RPC::v3::App::delete),
 
+                '/proposal_open_contract' =>
+                    MojoX::JSON::RPC::Service->new->register('proposal_open_contract', \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
+                my $path = $dispatcher->req->url->path;
+                $path =~ s/\///;
+                DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:$path"]});
                 $dispatcher->app->log->error(qq{Internal error: $err});
                 $m->invalid_request('Invalid request');
                 return;
@@ -139,12 +147,18 @@ sub startup {
     my $request_counter = 0;
     my $request_start;
     my @recent;
+    my $call;
+    my $cpu;
 
     $app->hook(
         before_dispatch => sub {
             my $c = shift;
-            $0             = "bom-rpc: " . $c->req->url->path;    ## no critic
+            $cpu  = Proc::CPUUsage->new();
+            $call = $c->req->url->path;
+            $0    = "bom-rpc: " . $call;     ## no critic
+            $call =~ s/\///;
             $request_start = [Time::HiRes::gettimeofday];
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call.count', {tags => ["rpc:$call"]});
         });
 
     $app->hook(
@@ -160,6 +174,14 @@ sub startup {
                 @{$end}[3, 2, 1],
                 $end->[0] + $request_end->[1] / 1_000_000
             );
+
+            DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_success.count', {tags => ["rpc:$call"]});
+            DataDog::DogStatsd::Helper::stats_timing(
+                'bom_rpc.v_3.call.timing',
+                (1000 * Time::HiRes::tv_interval($request_start)),
+                {tags => ["rpc:$call"]});
+            DataDog::DogStatsd::Helper::stats_timing('bom_rpc.v_3.cpuusage', $cpu->usage(), {tags => ["rpc:$call"]});
+
             push @recent, [$request_start, Time::HiRes::tv_interval($request_end, $request_start)];
             shift @recent if @recent > 50;
 
