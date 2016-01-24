@@ -13,7 +13,9 @@ sub __oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($app_id, $redirect_uri, $scope, $state) = map { $c->param($_) // undef } qw/ app_id redirect_uri scope state /;
+    my ($app_id, $redirect_uri, $scope, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id redirect_uri scope state response_type /;
+
+    $response_type ||= 'code';    # default to Authorization Code
 
     $app_id       or return $c->__bad_request('the request was missing app_id');
     $redirect_uri or return $c->__bad_request('the request was missing redirect_uri');
@@ -21,15 +23,31 @@ sub authorize {
     my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
     unshift @scopes, 'user' unless grep { $_ eq 'user' } @scopes;
 
-    ## The redirection endpoint URI MUST be an absolute URI
-    my $uri = Mojo::URL->new($redirect_uri);
-    $uri->host or return $c->__bad_request('invalid redirect_uri');
+    my $redirect_handle = sub {
+        my ($response_type, $error, $state) = @_;
+
+        my $uri = Mojo::URL->new($redirect_uri);
+        if ($response_type eq 'token') {
+            $uri .= '#error=' . $error;
+            $uri .= '&state=' . $state if defined $state;
+        } else {
+            $uri->query->append('error' => $error);
+            $uri->query->append(state => $state) if defined $state;
+        }
+        return $uri;
+    };
 
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
     unless ($app) {
-        $uri->query->append('error' => 'invalid_app');
-        $uri->query->append(state => $state) if defined $state;
+        my $uri = $redirect_handle->($response_type, 'invalid_app', $state);
+        return $c->redirect_to($uri);
+    }
+
+    ## validate redirect_uri
+    my $is_valid = $oauth_model->verify_app_redirect_uri($app_id, $redirect_uri);
+    unless ($is_valid) {
+        my $uri = $redirect_handle->($response_type, 'invalid_redirect_uri', $state);
         return $c->redirect_to($uri);
     }
 
@@ -51,8 +69,7 @@ sub authorize {
         if ($c->param('confirm_scopes')) {
             $is_all_approved = $oauth_model->confirm_scope($app_id, $loginid, @scopes);
         } else {
-            $uri->query->append('error' => 'scope_denied');
-            $uri->query->append(state => $state) if defined $state;
+            my $uri = $redirect_handle->($response_type, 'scope_denied', $state);
             return $c->redirect_to($uri);
         }
     }
@@ -72,11 +89,16 @@ sub authorize {
         );
     }
 
-    my $auth_code = $oauth_model->store_auth_code($app_id, $loginid, @scopes);
-
-    $uri->query->append(code => $auth_code);
-    $uri->query->append(state => $state) if defined $state;
-
+    my $uri = Mojo::URL->new($redirect_uri);
+    if ($response_type eq 'token') {
+        my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $loginid, @scopes);
+        $uri .= '#token=' . $access_token . '&expires_in=' . $expires_in;
+        $uri .= '&state=' . $state if defined $state;
+    } else {
+        my $auth_code = $oauth_model->store_auth_code($app_id, $loginid, @scopes);
+        $uri->query->append(code => $auth_code);
+        $uri->query->append(state => $state) if defined $state;
+    }
     $c->redirect_to($uri);
 }
 
