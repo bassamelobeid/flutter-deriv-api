@@ -13,9 +13,9 @@ sub __oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($client_id, $redirect_uri, $scope, $state) = map { $c->param($_) // undef } qw/ client_id redirect_uri scope state /;
+    my ($app_id, $redirect_uri, $scope, $state) = map { $c->param($_) // undef } qw/ app_id redirect_uri scope state /;
 
-    $client_id    or return $c->__bad_request('the request was missing client_id');
+    $app_id       or return $c->__bad_request('the request was missing app_id');
     $redirect_uri or return $c->__bad_request('the request was missing redirect_uri');
 
     my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
@@ -26,9 +26,9 @@ sub authorize {
     $uri->host or return $c->__bad_request('invalid redirect_uri');
 
     my $oauth_model = __oauth_model();
-    my $app_client  = $oauth_model->verify_client($client_id);
-    unless ($app_client) {
-        $uri->query->append('error' => 'invalid_client');
+    my $app         = $oauth_model->verify_app($app_id);
+    unless ($app) {
+        $uri->query->append('error' => 'invalid_app');
         $uri->query->append(state => $state) if defined $state;
         return $c->redirect_to($uri);
     }
@@ -47,9 +47,9 @@ sub authorize {
 
     ## confirm scopes
     my $is_all_approved = 0;
-    if ( $c->req->method eq 'POST' and ($c->csrf_token eq ($c->param('csrftoken') // '')) ) {
+    if ($c->req->method eq 'POST' and ($c->csrf_token eq ($c->param('csrftoken') // ''))) {
         if ($c->param('confirm_scopes')) {
-            $is_all_approved = $oauth_model->confirm_scope($client_id, $loginid, @scopes);
+            $is_all_approved = $oauth_model->confirm_scope($app_id, $loginid, @scopes);
         } else {
             $uri->query->append('error' => 'scope_denied');
             $uri->query->append(state => $state) if defined $state;
@@ -58,21 +58,21 @@ sub authorize {
     }
 
     ## check if it's confirmed
-    $is_all_approved ||= $oauth_model->is_scope_confirmed($client_id, $loginid, @scopes);
+    $is_all_approved ||= $oauth_model->is_scope_confirmed($app_id, $loginid, @scopes);
     unless ($is_all_approved) {
         ## show scope confirms
         return $c->render(
             template => 'scope_confirms',
             layout   => 'default',
 
-            app_client => $app_client,
-            client     => $client,
-            scopes     => \@scopes,
-            csrftoken  => $c->csrf_token,
+            app       => $app,
+            client    => $client,
+            scopes    => \@scopes,
+            csrftoken => $c->csrf_token,
         );
     }
 
-    my $auth_code = $oauth_model->store_auth_code($client_id, $loginid, @scopes);
+    my $auth_code = $oauth_model->store_auth_code($app_id, $loginid, @scopes);
 
     $uri->query->append(code => $auth_code);
     $uri->query->append(state => $state) if defined $state;
@@ -83,13 +83,13 @@ sub authorize {
 sub access_token {
     my $c = shift;
 
-    my ($client_id, $client_secret, $grant_type, $auth_code, $refresh_token) =
-        map { $c->param($_) // undef } qw/ client_id client_secret grant_type code refresh_token /;
+    my ($app_id, $app_secret, $grant_type, $auth_code, $refresh_token) =
+        map { $c->param($_) // undef } qw/ app_id app_secret grant_type code refresh_token /;
 
-    $client_id or return $c->__bad_request('the request was missing client_id');
+    $app_id or return $c->__bad_request('the request was missing app_id');
 
-    $grant_type ||= '';      # fix warnings
-    $client_secret ||= '';
+    $grant_type ||= '';    # fix warnings
+    $app_secret ||= '';
 
     # grant_type=authorization_code, plus auth_code
     # grant_type=refresh_token, plus refresh_token
@@ -102,17 +102,17 @@ sub access_token {
 
     my $oauth_model = __oauth_model();
 
-    my $app_client = $oauth_model->verify_client($client_id);
-    unless ($app_client and $app_client->{secret} eq $client_secret) {
-        return $c->throw_error('invalid_client');
+    my $app = $oauth_model->verify_app($app_id);
+    unless ($app and $app->{secret} eq $app_secret) {
+        return $c->throw_error('invalid_app');
     }
 
     my $loginid;
     if ($grant_type eq 'refresh_token') {
-        $loginid = $oauth_model->verify_refresh_token($client_id, $refresh_token);
+        $loginid = $oauth_model->verify_refresh_token($app_id, $refresh_token);
     } else {
         ## authorization_code
-        $loginid = $oauth_model->verify_auth_code($client_id, $auth_code);
+        $loginid = $oauth_model->verify_auth_code($app_id, $auth_code);
     }
     if (!$loginid) {
         return $c->throw_error('invalid_grant');
@@ -125,7 +125,7 @@ sub access_token {
         @scope_ids = $oauth_model->get_scope_ids_by_auth_code($auth_code);
     }
 
-    my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($client_id, $loginid, @scope_ids);
+    my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($app_id, $loginid, @scope_ids);
 
     $c->render(
         json => {

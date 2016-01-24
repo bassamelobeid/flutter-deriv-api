@@ -5,7 +5,7 @@
     </div>
     <div class="grd-grid-10 grd-grid-mobile-12">
       <h1>Authorize application</h1>
-      <p><%= $app_client->{name} %> would like permission to access your account <strong><%= $client->loginid %></strong></p>
+      <p><%= $app->{name} %> would like permission to access your account <strong><%= $client->loginid %></strong></p>
       <div class="separator-line"></div>
       <p><strong>Review Permissions</strong></p>
       <div class="grd-grid-12">
