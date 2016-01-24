@@ -39,7 +39,7 @@ sub get {
     return __call_rpc(shift, 'app_get', @_);
 }
 
-sub delete {
+sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomony
     return __call_rpc(shift, 'app_delete', @_);
 }
 
