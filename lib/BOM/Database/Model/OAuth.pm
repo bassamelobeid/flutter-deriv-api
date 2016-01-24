@@ -154,6 +154,29 @@ sub store_access_token {
     return ($access_token, $refresh_token, $expires_in);
 }
 
+sub store_access_token_only {
+    my ($self, $app_id, $loginid, @scopes) = @_;
+
+    my $dbh           = $self->dbh;
+    my $expires_in    = 3600;
+    my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
+
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, $expires_time);
+
+    my $get_scope_sth    = $dbh->prepare("SELECT id FROM oauth.scopes WHERE scope = ?");
+    my $insert_scope_sth = $dbh->prepare("INSERT INTO oauth.access_token_scope (access_token, scope_id) VALUES (?, ?)");
+    foreach my $scope (@scopes) {
+        $get_scope_sth->execute($scope);
+        my ($scope_id) = $get_scope_sth->fetchrow_array;
+        next unless $scope_id;
+        $insert_scope_sth->execute($access_token, $scope_id);
+    }
+
+    return ($access_token, $expires_in);
+}
+
 sub get_loginid_by_access_token {
     my ($self, $token) = @_;
 
