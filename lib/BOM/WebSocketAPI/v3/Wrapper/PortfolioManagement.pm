@@ -17,10 +17,14 @@ sub portfolio {
         'portfolio',
         sub {
             my $response = shift;
-            return {
-                msg_type  => 'portfolio',
-                portfolio => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('portfolio', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type  => 'portfolio',
+                    portfolio => $response,
+                };
+            }
         },
         {
             args           => $args,
@@ -29,38 +33,53 @@ sub portfolio {
     return;
 }
 
-sub proposal_open_contract {    ## no critic (Subroutines::RequireFinalReturn)
+sub proposal_open_contract {
     my ($c, $args) = @_;
 
-    my $client = $c->stash('client');
-
-    my @fmbs = ();
-    if ($args->{contract_id}) {
-        @fmbs = grep { $args->{contract_id} eq $_->id } $client->open_bets;
-    } else {
-        @fmbs = $client->open_bets;
-    }
-
-    if (scalar @fmbs > 0) {
-        foreach my $fmb (@fmbs) {
-            my $details = {%$args};
-            # these keys needs to be deleted from args (check send_proposal)
-            # populating here cos we stash them in redis channel
-            $details->{short_code}  = $fmb->short_code;
-            $details->{contract_id} = $fmb->id;
-            $details->{currency}    = $client->currency;
-            my $id;
-            if (exists $args->{subscribe} and $args->{subscribe} eq '1') {
-                $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel($c, 'subscribe', $fmb->underlying_symbol,
-                    'proposal_open_contract:' . JSON::to_json($details), $details);
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'proposal_open_contract',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                my @contract_ids = keys %$response;
+                if (scalar @contract_ids) {
+                    foreach my $contract_id (@contract_ids) {
+                        my $details = {%$args};
+                        # these keys needs to be deleted from args (check send_proposal)
+                        # populating here cos we stash them in redis channel
+                        $details->{short_code}  = $response->{$contract_id}->{short_code};
+                        $details->{contract_id} = $contract_id;
+                        $details->{currency}    = $response->{$contract_id}->{currency};
+                        $details->{buy_price}   = $response->{$contract_id}->{buy_price};
+                        $details->{sell_price}  = $response->{$contract_id}->{sell_price};
+                        my $id;
+                        if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
+                            $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
+                                $c, 'subscribe',
+                                $response->{$contract_id}->{underlying},
+                                'proposal_open_contract:' . JSON::to_json($details), $details
+                            );
+                        }
+                        # instead of sending bid details through send_proposal i.e make another rpc call, we can also return details
+                        # from proposal_open_contract initially as well but it may slow down initial reponse if client has lot of contracts
+                        # so as of now keeping it as it to make it fast for client
+                        send_proposal($c, $id, $details);
+                    }
+                } else {
+                    return {
+                        msg_type               => 'proposal_open_contract',
+                        proposal_open_contract => {}};
+                }
             }
-            send_proposal($c, $id, $details);
-        }
-    } else {
-        return {
-            msg_type               => 'proposal_open_contract',
-            proposal_open_contract => {}};
-    }
+        },
+        {
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            contract_id    => $args->{contract_id}});
+    return;
 }
 
 sub send_proposal {
@@ -78,10 +97,17 @@ sub send_proposal {
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
                 } elsif (exists $response->{is_expired} and $response->{is_expired} eq '1') {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                    $id = undef;
                 }
+                my $sell_price = delete $details->{sell_price};
                 return {
-                    msg_type => 'proposal_open_contract',
-                    proposal_open_contract => {$id ? (id => $id) : (), %$response}};
+                    msg_type               => 'proposal_open_contract',
+                    proposal_open_contract => {
+                        $id ? (id => $id) : (),
+                        buy_price => delete $details->{buy_price},
+                        (defined $sell_price) ? (sell_price => $sell_price) : (),
+                        %$response
+                    }};
             } else {
                 BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
             }
@@ -103,10 +129,14 @@ sub sell_expired {
         'sell_expired',
         sub {
             my $response = shift;
-            return {
-                msg_type     => 'sell_expired',
-                sell_expired => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('sell_expired', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'sell_expired',
+                    sell_expired => $response,
+                };
+            }
         },
         {
             args           => $args,

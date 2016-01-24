@@ -39,4 +39,8 @@ sub get {
     return __call_rpc(shift, 'app_get', @_);
 }
 
+sub delete {
+    return __call_rpc(shift, 'app_delete', @_);
+}
+
 1;

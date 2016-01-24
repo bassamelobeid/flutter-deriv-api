@@ -128,6 +128,7 @@ sub entry_point {
             if ($l > 328000) {
                 $data = $c->new_error('error', 'ResponseTooLarge', $c->l('Response too large.'));
                 $data->{echo_req} = $p1;
+                $data->{req_id} = $p1->{req_id} if (exists $p1->{req_id});
             }
             if ($send) {
                 $c->send({json => $data});
@@ -257,18 +258,16 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1
     ],
-    [
-        'topup_virtual',
-        \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1
-    ],
-    ['api_token', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1],
 
     ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1],
     ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1],
     ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1],
+    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1],
 
-    ['get_limits',   \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1],
-    ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1],
+    ['api_token',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,    1],
+    ['tnc_approval',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1],
+    ['topup_virtual', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1],
+    ['get_limits',    \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1],
     [
         'paymentagent_withdraw',
         \&BOM::WebSocketAPI::v3::Wrapper::Cashier::paymentagent_withdraw, 1
@@ -284,6 +283,10 @@ my @dispatch = (
     [
         'new_account_real',
         \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_real, 1
+    ],
+    [
+        'new_account_japan',
+        \&BOM::WebSocketAPI::v3::Wrapper::NewAccount::new_account_japan, 1
     ],
     [
         'new_account_maltainvest',
@@ -345,7 +348,7 @@ sub __handle {
                     consumer => $c->stash('connection_id'),
                 }))
         {
-            return $c->new_error('error', 'RateLimit', $c->l('Rate limit has been hit.'));
+            return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
@@ -361,45 +364,21 @@ sub __handle {
                 }
             }
             my $message = $c->l('Input validation failed: ') . join(', ', (keys %$details, @general));
-            return $c->new_error('error', 'InputValidationFailed', $message, $details);
+            return $c->new_error($descriptor->{category}, 'InputValidationFailed', $message, $details);
         }
 
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.' . $descriptor->{category}, {tags => [$tag]});
         DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.call.all', {tags => [$tag, "category:$descriptor->{category}"]});
 
-        ## refetch account b/c stash client won't get updated in websocket
-        if ($descriptor->{require_auth}
-            and my $loginid = $c->stash('loginid'))
-        {
-            my $client = BOM::Platform::Client->new({loginid => $loginid});
-            return $c->new_error('error', 'InvalidClient', $c->l('Invalid client account.'))
-                unless $client;
-            return $c->new_error('error', 'DisabledClient', $c->l('This account is unavailable.'))
-                if $client->get_status('disabled');
-            $c->stash(
-                client  => $client,
-                account => $client->default_account // undef
-            );
-
-            my $self_excl = $client->get_self_exclusion;
-            my $lim;
-            if (    $self_excl
-                and $lim = $self_excl->exclude_until
-                and Date::Utility->new->is_before(Date::Utility->new($lim)))
-            {
-                return $c->new_error('error', 'ClientSelfExclusion', $c->l('Sorry, you have excluded yourself until [_1].', $lim));
-            }
-        }
-
-        if ($descriptor->{require_auth} and not $c->stash('client')) {
+        my $loginid = $c->stash('loginid');
+        if ($descriptor->{require_auth} and not $loginid) {
             return $c->new_error($descriptor->{category}, 'AuthorizationRequired', $c->l('Please log in.'));
         }
 
-        my $client = $c->stash('client');
-        if ($client) {
-            my $account_type = $client->{loginid} =~ /^VRT/ ? 'virtual' : 'real';
+        if ($loginid) {
+            my $account_type = $loginid =~ /^VRT/ ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
-                {tags => [$tag, $descriptor->{category}, "loginid:$client->{loginid}", "account_type:$account_type"]});
+                {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
         }
 
         my $result = $descriptor->{handler}->($c, $p1);
@@ -409,11 +388,10 @@ sub __handle {
             if (not $output_validation_result) {
                 my $error = join(" - ", $output_validation_result->errors);
                 $log->warn("Invalid output parameter for [ " . JSON::to_json($result) . " error: $error ]");
-                return $c->new_error('OutputValidationFailed', $c->l("Output validation failed: ") . $error);
+                return $c->new_error($descriptor->{category}, 'OutputValidationFailed', $c->l("Output validation failed: ") . $error);
             }
         }
-        $result->{debug} = [Time::HiRes::tv_interval($t0), ($c->stash('client') ? $c->stash('client')->loginid : '')]
-            if ref $result;
+        $result->{debug} = [Time::HiRes::tv_interval($t0), $loginid ? $loginid : ''] if ref $result;
         return $result;
     }
 
@@ -433,7 +411,7 @@ sub _failed_key_value {
     if ($pwd_field{$key}) {
         return;
     } elsif ($key !~ /^[A-Za-z0-9_-]{1,50}$/
-        or $value !~ /^[\s\.A-Za-z0-9\@_:+-\/='&\$]{0,256}$/)
+        or $value !~ /^[\s\.\w\@_:+-\/='&\$]{0,256}$/)
     {
         return ($key, $value);
     }
@@ -476,11 +454,17 @@ sub rpc {
             return unless $self->tx;
 
             my $client_guard = guard { undef $client };
+
+            my ($data, $req_id);
+            my $args = $params->{args};
+            $req_id = $args->{req_id} if ($args and exists $args->{req_id});
+
             if (!$res) {
                 my $tx_res = $client->tx->res;
                 warn $tx_res->message;
-                my $data = $self->new_error('error', 'WrongResponse', $self->l('Wrong response.'));
-                $data->{echo_req} = $params->{args};
+                $data = $self->new_error($method, 'WrongResponse', $self->l('Sorry, an error occurred while processing your request.'));
+                $data->{echo_req} = $args;
+                $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
                 return;
             }
@@ -497,29 +481,28 @@ sub rpc {
 
             if ($res->is_error) {
                 warn $res->error_message;
-                my $data = $self->new_error('error', 'CallError', $self->l('Call error.' . $res->error_message));
-                $data->{echo_req} = $params->{args};
+                $data = $self->new_error($method, 'CallError', $self->l('Sorry, an error occurred while processing your request.'));
+                $data->{echo_req} = $args;
+                $data->{req_id} = $req_id if $req_id;
                 $self->send({json => $data});
                 return;
             }
             my $send = 1;
 
-            my $data = &$callback($res->result);
+            $data = &$callback($res->result);
 
             if (not $data) {
                 $send = undef;
                 $data = {};
             }
-
-            my $args = $params->{args};
-            $data->{echo_req} = $args;
-            $data->{req_id} = $args->{req_id} if ($args and exists $args->{req_id});
-
             my $l = length JSON::to_json($data);
             if ($l > 328000) {
                 $data = $self->new_error('error', 'ResponseTooLarge', $self->l('Response too large.'));
-                $data->{echo_req} = $args;
             }
+
+            $data->{echo_req} = $args;
+            $data->{req_id} = $req_id if $req_id;
+
             if ($send) {
                 $tv = [Time::HiRes::gettimeofday];
 

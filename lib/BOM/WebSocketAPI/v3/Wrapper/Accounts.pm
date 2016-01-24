@@ -79,10 +79,14 @@ sub statement {
         'statement',
         sub {
             my $response = shift;
-            return {
-                msg_type  => 'statement',
-                statement => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('statement', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type  => 'statement',
+                    statement => $response,
+                };
+            }
         },
         {
             args           => $args,
@@ -99,10 +103,14 @@ sub profit_table {
         'profit_table',
         sub {
             my $response = shift;
-            return {
-                msg_type     => 'profit_table',
-                profit_table => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('profit_table', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type     => 'profit_table',
+                    profit_table => $response,
+                };
+            }
         },
         {
             args           => $args,
@@ -119,10 +127,14 @@ sub get_account_status {
         'get_account_status',
         sub {
             my $response = shift;
-            return {
-                msg_type           => 'get_account_status',
-                get_account_status => $response,
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('get_account_status', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type           => 'get_account_status',
+                    get_account_status => $response->{status},
+                };
+            }
         },
         {
             args           => $args,
@@ -245,10 +257,14 @@ sub get_self_exclusion {
         'get_self_exclusion',
         sub {
             my $response = shift;
-            return {
-                msg_type           => 'get_self_exclusion',
-                get_self_exclusion => $response
-            };
+            if (exists $response->{error}) {
+                return $c->new_error('get_self_exclusion', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type           => 'get_self_exclusion',
+                    get_self_exclusion => $response
+                };
+            }
         },
         {
             args           => $args,
@@ -275,11 +291,9 @@ sub set_self_exclusion {
             }
         },
         {
-            args             => $args,
-            client_loginid   => $c->stash('loginid'),
-            cs_email         => $c->stash('request')->website->config->get('customer_support.email'),
-            compliance_email => $c->app_config->compliance->email
-        });
+            args           => $args,
+            client_loginid => $c->stash('loginid'),
+            cs_email       => $c->stash('request')->website->config->get('customer_support.email')});
     return;
 }
 
@@ -287,12 +301,11 @@ sub balance {
     my ($c, $args) = @_;
 
     my $id;
-    my $client = $c->stash('client');
-    if (    $client
-        and $client->default_account
+    my $account_id = $c->stash('account_id');
+    if (    $account_id
         and exists $args->{subscribe}
         and $args->{subscribe} eq '1'
-        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $client->default_account->id, $args)))
+        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $account_id, $args)))
     {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
@@ -322,7 +335,6 @@ sub send_realtime_balance {
 
     my $args = {};
     my $channel;
-    my $client        = $c->stash('client');
     my $subscriptions = $c->stash('balance_channel');
 
     if ($subscriptions) {
@@ -330,7 +342,7 @@ sub send_realtime_balance {
         $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
     }
 
-    if ($client) {
+    if ($c->stash('loginid')) {
         my $payload = JSON::from_json($message);
         $c->send({
                 json => {
@@ -338,8 +350,8 @@ sub send_realtime_balance {
                     $args ? (echo_req => $args) : (),
                     ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                     balance => {
-                        loginid  => $client->loginid,
-                        currency => $client->default_account ? $client->default_account->currency_code : '',
+                        loginid  => $c->stash('loginid'),
+                        currency => $c->stash('currency'),
                         balance  => $payload->{balance_after},
                         ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
     } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
@@ -373,9 +385,6 @@ sub api_token {
 
 sub tnc_approval {
     my ($c, $args) = @_;
-
-    my $r          = $c->stash('request');
-    my $app_config = $c->app_config;
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
