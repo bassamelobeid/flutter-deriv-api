@@ -97,7 +97,7 @@ sub get {
     return $app;
 }
 
-sub delete {
+sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $params = shift;
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
