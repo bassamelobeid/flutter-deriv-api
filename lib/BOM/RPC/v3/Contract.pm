@@ -252,7 +252,8 @@ sub get_contract_details {
         $response = {
             longcode     => $contract->longcode,
             symbol       => $contract->underlying->symbol,
-            display_name => $contract->underlying->display_name
+            display_name => $contract->underlying->display_name,
+            date_expiry  => $contract->date_expiry->epoch
         };
     }
     catch {
