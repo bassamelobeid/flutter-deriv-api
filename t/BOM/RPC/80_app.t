@@ -35,8 +35,8 @@ BOM::Database::Model::OAuth->new->dbh->do("
 my $app1 = BOM::RPC::v3::App::register({
         client_loginid => $test_loginid,
         args           => {
-            name => 'App 1',
-        }});
+            name         => 'App 1',
+            redirect_uri => ['https://www.example.com/']}});
 my $get_app = BOM::RPC::v3::App::get({
         client_loginid => $test_loginid,
         args           => {
@@ -54,8 +54,8 @@ ok $res->{error}->{message_to_client} =~ /The name is taken/, 'The name is taken
 my $app2 = BOM::RPC::v3::App::register({
         client_loginid => $test_loginid,
         args           => {
-            name => 'App 2',
-        }});
+            name         => 'App 2',
+            redirect_uri => ['https://www.example2.com/']}});
 my $get_apps = BOM::RPC::v3::App::list({
         client_loginid => $test_loginid,
         args           => {

@@ -22,12 +22,13 @@ sub register {
     my $user = BOM::Platform::User->new({email => $client->email});
     my $user_id = $user->id;
 
-    my $args       = $params->{args};
-    my $name       = $args->{name};
-    my $homepage   = $args->{homepage} // '';
-    my $github     = $args->{github} // '';
-    my $appstore   = $args->{appstore} // '';
-    my $googleplay = $args->{googleplay} // '';
+    my $args         = $params->{args};
+    my $name         = $args->{name};
+    my $homepage     = $args->{homepage} // '';
+    my $github       = $args->{github} // '';
+    my $appstore     = $args->{appstore} // '';
+    my $googleplay   = $args->{googleplay} // '';
+    my $redirect_uri = $args->{redirect_uri} // [];
 
     ## do some validation
     my $error_sub = sub {
@@ -56,12 +57,13 @@ sub register {
         if $oauth->is_name_taken($user_id, $name);
 
     my $app = $oauth->create_app({
-        user_id    => $user_id,
-        name       => $name,
-        homepage   => $homepage,
-        github     => $github,
-        appstore   => $appstore,
-        googleplay => $googleplay,
+        user_id      => $user_id,
+        name         => $name,
+        homepage     => $homepage,
+        github       => $github,
+        appstore     => $appstore,
+        googleplay   => $googleplay,
+        redirect_uri => $redirect_uri,
     });
 
     return $app;
