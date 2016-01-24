@@ -25,6 +25,10 @@
           "app_secret": {
             "type": "string",
             "description":"Application secret"
+          },
+          "redirect_uri": {
+            "type": "array",
+            "description":"Application redirect_uri"
           }
         }
       }

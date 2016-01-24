@@ -17,6 +17,15 @@ use BOM::Database::Model::OAuth;
 
 my $t = build_mojo_test();
 
+# cleanup
+my $dbh = BOM::Database::Model::OAuth->new->dbh;
+$dbh->do("
+    DELETE FROM oauth.app_redirect_uri WHERE app_id <> 'binarycom'
+");
+$dbh->do("
+    DELETE FROM oauth.apps WHERE id <> 'binarycom'
+");
+
 my $email     = 'abc@binary.com';
 my $password  = 'jskjd8292922';
 my $hash_pwd  = BOM::System::Password::hashpw($password);
@@ -44,16 +53,12 @@ my $authorize = decode_json($t->message->[1]);
 is $authorize->{authorize}->{email},   $email;
 is $authorize->{authorize}->{loginid}, $cr_1;
 
-# cleanup
-BOM::Database::Model::OAuth->new->dbh->do("
-    DELETE FROM oauth.apps WHERE binary_user_id = ? AND id <> 'binarycom'
-", undef, $user->id);
-
 ## app register/list/get
 $t = $t->send_ok({
         json => {
             app_register => 1,
-            name         => 'App 1'
+            name         => 'App 1',
+            redirect_uri => ['https://www.example.com/']
         }})->message_ok;
 my $res = decode_json($t->message->[1]);
 test_schema('app_register', $res);
@@ -71,7 +76,8 @@ is_deeply($res->{app_get}, $app1, 'app_get ok');
 $t = $t->send_ok({
         json => {
             app_register => 1,
-            name         => 'App 2'
+            name         => 'App 2',
+            redirect_uri => ['https://www.example2.com/']
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 test_schema('app_register', $res);
@@ -99,7 +105,7 @@ $t = $t->send_ok({
         }})->message_ok;
 $res = decode_json($t->message->[1]);
 test_schema('app_list', $res);
-my $get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
+$get_apps = [grep { $_->{app_id} ne 'binarycom' } @{$res->{app_list}}];
 is_deeply($get_apps, [$app1], 'app_delete ok');
 
 $t->finish_ok;
