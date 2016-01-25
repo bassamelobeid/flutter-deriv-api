@@ -230,9 +230,9 @@ sub _build_data_set {
 
     my $data_set->{app_config} = Data::Hash::DotNotation->new(data => YAML::CacheLoader::LoadFile('/etc/rmg/app_config.yml'));
 
-    try { $self->_add_app_setttings($data_set, $self->couch->document('app_settings')); }
+    try { $self->_add_app_setttings($data_set, BOM::System::Chronicle::get('app_settings', 'binary')); }
     catch {
-        get_logger->warn("[app_config] Ignoring Couch Settings : " . $_);
+        get_logger->warn("[app_config] Ignoring App settings data : " . $_);
     };
 
     return $data_set;
