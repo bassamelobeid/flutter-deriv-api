@@ -30,7 +30,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
 
     - /tmp/travis-scripts/postgres_restart.sh
-    - /tmp/travis-scripts/redis.sh
+
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
@@ -46,6 +46,7 @@ install:
 
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
+    - /tmp/travis-scripts/redis.sh
 
 script:
     - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
