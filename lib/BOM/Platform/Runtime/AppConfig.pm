@@ -191,7 +191,7 @@ sub _validate_key {
 }
 
 sub save_dynamic {
-    my $self     = shift;
+    my $self = shift;
     my $settings = BOM::System::Chronicle::get('app_settings', 'binary') || {};
 
     #Cleanup globals
