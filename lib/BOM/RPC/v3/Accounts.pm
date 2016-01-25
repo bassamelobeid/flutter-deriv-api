@@ -148,7 +148,7 @@ sub statement {
         } else {
             $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
         }
-        $struct->{transaction_time} => $txn_time;
+        $struct->{transaction_time} = $txn_time;
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
