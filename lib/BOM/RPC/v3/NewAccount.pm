@@ -22,8 +22,6 @@ use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
 use Data::Password::Meter;
-use Digest::MD5 qw(md5_hex);
-use BOM::System::Chronicle;
 
 sub new_account_virtual {
     my $params = shift;
@@ -85,68 +83,38 @@ sub verify_email {
 
     BOM::Platform::Context::request()->language($params->{language});
 
-    if ($params->{type} eq 'lost_password') {
-        my $pwd_attempt_key = 'USER::PWD_ATTEMPT_KEY::' . md5_hex($params->{email});
-        my $pwd_attempt_count = BOM::System::Chronicle->_redis_read->get($pwd_attempt_key) || 0;
-
-        if ($pwd_attempt_count > 6) {
-            my $error_map = BOM::Platform::Locale::error_map();
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'too many requests',
-                    message_to_client => BOM::Platform::Context::localize('Maximum number of attempts exceeded. Please try again after 10 minutes.')}
-            );
-        } elsif (BOM::Platform::User->new({email => $params->{email}})) {
-            BOM::System::Chronicle->_redis_write->incr($pwd_attempt_key);
-            BOM::System::Chronicle->_redis_write->expire($pwd_attempt_key, 600) if (BOM::System::Chronicle->_redis_read->ttl($pwd_attempt_key) == -1);
-            send_email({
-                    from    => $params->{cs_email},
-                    to      => $params->{email},
-                    subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
-                    message => [
-                        BOM::Platform::Context::localize(
-                            'Before we can help you change your password, please help us to verify your identity by clicking on the following link: '
-                                . $params->{link})
-                    ],
-                    use_email_template => 1
-                });
-        }
-    } elsif ($params->{type} eq 'account_opening') {
-        my $verify_attempt_key = 'USER::VERIFY_ATTEMPT_KEY::' . md5_hex($params->{email});
-        my $verify_attempt_count = BOM::System::Chronicle->_redis_read->get($verify_attempt_key) || 0;
-
-        if ($verify_attempt_count > 6) {
-            my $error_map = BOM::Platform::Locale::error_map();
-            return BOM::RPC::v3::Utility::create_error({
-                    code              => 'too many requests',
-                    message_to_client => BOM::Platform::Context::localize('Maximum number of attempts exceeded. Please try again after 10 minutes.')}
-            );
-        } else {
-            BOM::System::Chronicle->_redis_write->incr($verify_attempt_key);
-            BOM::System::Chronicle->_redis_write->expire($verify_attempt_key, 600)
-                if (BOM::System::Chronicle->_redis_read->ttl($verify_attempt_key) == -1);
-
-            if (BOM::Platform::User->new({email => $params->{email}})) {
-                send_email({
-                        from    => $params->{cs_email},
-                        to      => $params->{email},
-                        subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
-                        message => [
-                            BOM::Platform::Context::localize(
-                                'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p>'
-                            )
-                        ],
-                        use_email_template => 1
-                    });
-            } else {
-                send_email({
-                    from               => $params->{cs_email},
-                    to                 => $params->{email},
-                    subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
-                    message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
-                    use_email_template => 1
-                });
-            }
-        }
+    if ($params->{type} eq 'lost_password' && BOM::Platform::User->new({email => $params->{email}})) {
+        send_email({
+                from    => $params->{cs_email},
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
+                message => [
+                    BOM::Platform::Context::localize(
+                        'Before we can help you change your password, please help us to verify your identity by clicking on the following link: '
+                            . $params->{link})
+                ],
+                use_email_template => 1
+            });
+    } elsif ($params->{type} eq 'account_opening' && BOM::Platform::User->new({email => $params->{email}})) {
+        send_email({
+                from    => $params->{cs_email},
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
+                message => [
+                    BOM::Platform::Context::localize(
+                        'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p>'
+                    )
+                ],
+                use_email_template => 1
+            });
+    } else {
+        send_email({
+            from               => $params->{cs_email},
+            to                 => $params->{email},
+            subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
+            message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
+            use_email_template => 1
+        });
     }
     return {status => 1};    # always return 1, so not to leak client's email
 }
