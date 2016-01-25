@@ -113,7 +113,9 @@ sub send_transaction_updates {
 
         if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
             $details->{transaction}->{transaction_time} =
-                ($payload->{action_type} eq 'sell') ? Date::Utility->new($txn->{sell_time})->epoch : Date::Utility->new($txn->{purchase_time})->epoch;
+                ($payload->{action_type} eq 'sell')
+                ? Date::Utility->new($payload->{sell_time})->epoch
+                : Date::Utility->new($payload->{purchase_time})->epoch;
 
             BOM::WebSocketAPI::Websocket_v3::rpc(
                 $c,
@@ -144,7 +146,7 @@ sub send_transaction_updates {
                 });
         } else {
             $details->{transaction}->{longcode}         = $payload->{payment_remark};
-            $details->{transaction}->{transaction_time} = Date::Utility->new($txn->{payment_time})->epoch;
+            $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
             $c->send({json => {%$details, $id ? (id => $id) : ()}});
         }
     } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
