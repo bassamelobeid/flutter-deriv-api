@@ -182,7 +182,7 @@ sub get_bid {
                 $response->{exit_tick_time}  = $contract->exit_tick ? $contract->exit_tick->epoch : '';
             } else {
                 $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-                $response->{entry_spot}   = $contract->entry_spot;
+                $response->{entry_spot} = $contract->entry_spot;
             }
 
             if ($contract->two_barriers) {
