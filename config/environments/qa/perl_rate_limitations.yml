@@ -18,4 +18,5 @@ websocket_call_pricing:
     1h: 3600
 websocket_call_email:
     1m: 3
+    1h: 180
 
