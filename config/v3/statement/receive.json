@@ -39,7 +39,7 @@
                     "description":"It is the time of transaction Example: 1441175849"
                   },
                   "purchase_time": {
-                    "type": "epoch",
+                    "type": "integer",
                     "description": "Time at which contract was purchased, present only for sell transaction"
                   },
                   "action_type":{

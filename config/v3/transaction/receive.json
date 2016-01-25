@@ -39,11 +39,11 @@
             "description": "A stream id that can be used to cancel this stream using the Forget request. Example: 1d6651e7d599bce6c54bd71a8283e579"
           },
           "transaction_time": {
-            "type": "epoch",
+            "type": "integer",
             "description": "Time at which transaction was performed, for buy its purchase time, for sell its sell time"
           },
           "purchase_time": {
-            "type": "epoch",
+            "type": "integer",
             "description": "Time at which contract was purchased, present only for sell transaction"
           },
           "currency": {
@@ -63,7 +63,7 @@
             "description": "Display name of symbol"
           },
           "date_expiry": {
-            "type": "epoch",
+            "type": "integer",
             "description": "Epoch value of the expiry time of the contract"
           }
       }
