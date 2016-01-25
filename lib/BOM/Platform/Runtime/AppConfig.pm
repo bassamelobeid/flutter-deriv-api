@@ -28,19 +28,16 @@ use Carp qw(croak);
 use BOM::Utility::Log4perl qw( get_logger );
 use Try::Tiny;
 
-has 'couch' => (
-    is       => 'ro',
-    required => 1,
-);
+use BOM::System::Chronicle;
 
 sub check_for_update {
     my $self     = shift;
     my $data_set = $self->data_set;
 
     my $app_settings;
-    try { $app_settings = $self->couch->document('app_settings'); }
+    try { $app_settings = BOM::System::Chronicle::get('app_settings', 'binary'); }
     catch {
-        get_logger->warn("[app_config] Ignoring Couch Settings : " . $_);
+        get_logger->warn("[app_config] Ignoring Saved Settings : " . $_);
         return;
     } or return;
 
@@ -203,9 +200,9 @@ sub save_dynamic {
     my $self     = shift;
     my $settings = {};
 
-    try { $settings = $self->couch->document('app_settings'); }
+    try { $settings = BOM::System::Chronicle::get('app_settings', 'binary'); }
     catch {
-        get_logger->warn("[app_config] Save to Couch failed : " . $_);
+        get_logger->warn("[app_config] Loading app_settings data failed : " . $_);
         return;
     } or return;
 
@@ -219,9 +216,9 @@ sub save_dynamic {
 
     $settings->{global} = $global->data;
 
-    try { $settings = $self->couch->document('app_settings', $settings); }
+    try { BOM::System::Chronicle::set('app_settings', 'binary', $settings); }
     catch {
-        get_logger->warn("[app_config] Save to Couch failed : " . $_);
+    get_logger->warn("[app_config] Saving app_settings data failed : " . $_);
         return;
     } or return;
 
