@@ -115,10 +115,12 @@ sub get_ask {
                 payout        => $contract->payout,
                 ask_price     => $ask_price,
                 display_value => $display_value,
-                spot          => $contract->current_spot,
-                spot_time     => $contract->current_tick->epoch,
                 date_start    => $contract->date_start->epoch
             };
+            if ($contract->underlying->feed_license eq 'realtime') {
+                $response->{spot}      = $contract->current_spot;
+                $response->{spot_time} = $contract->current_tick->epoch;
+            }
             $response->{spread} = $contract->spread if $contract->is_spread;
         }
         my $pen = $contract->pricing_engine_name;
