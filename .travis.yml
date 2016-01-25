@@ -51,7 +51,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/stress
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
-    - cd /home/git/regentmarkets/websocket-bench && npm install && cd $TRAVIS_BUILD_DIR
+    - cd /home/git/binary-com/websocket-bench && npm install && cd $TRAVIS_BUILD_DIR
     - /tmp/travis-scripts/redis.sh
 
 install:
