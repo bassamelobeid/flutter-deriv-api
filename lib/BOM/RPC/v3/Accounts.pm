@@ -140,7 +140,7 @@ sub statement {
         my $txn_time;
         if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
             if ($txn->{action_type} eq 'sell') {
-                $struct->{purchase_time} = Date::Utility->new($txn->{purchase_time});
+                $struct->{purchase_time} = Date::Utility->new($txn->{purchase_time})->epoch;
                 $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
             } else {
                 $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
