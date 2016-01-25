@@ -138,7 +138,7 @@ sub send_transaction_updates {
                 {
                     args           => $args,
                     client_loginid => $c->stash('loginid'),
-                    shortcode      => $payload->{short_code},
+                    short_code     => $payload->{short_code},
                     currency       => $payload->{currency_code},
                     language       => $c->stash('request')->language
                 });
