@@ -100,7 +100,8 @@ sub send_transaction_updates {
     if ($c->stash('account_id')) {
         my $payload = JSON::from_json($message);
 
-        my $id = $subscriptions->{$channel}->{uuid} if ($channel and exists $subscriptions->{$channel}->{uuid});
+        my $id;
+        $id = $subscriptions->{$channel}->{uuid} if ($channel and exists $subscriptions->{$channel}->{uuid});
         my $details = {
             msg_type => 'transaction',
             $args ? (echo_req => $args) : (),
