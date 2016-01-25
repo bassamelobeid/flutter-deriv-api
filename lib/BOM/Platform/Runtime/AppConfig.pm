@@ -203,6 +203,7 @@ sub save_dynamic {
     }
 
     $settings->{global} = $global->data;
+    $settings->{_rev}   = time;
     BOM::System::Chronicle::set('app_settings', 'binary', $settings);
 
     return 1;
