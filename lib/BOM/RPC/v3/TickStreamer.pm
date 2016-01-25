@@ -136,14 +136,16 @@ sub candles {
             $first_ohlc->{epoch} = $start_time;
             push @all_ohlc, $first_ohlc;
         }
-        push @all_ohlc,
-            (
-            reverse @{
-                $ul->feed_api->ohlc_start_end({
-                        start_time         => $first_stop,
-                        end_time           => $last_stop - 1,
-                        aggregation_period => $granularity,
-                    })});
+        if ($last_stop > $first_stop) {
+            push @all_ohlc,
+                (
+                reverse @{
+                    $ul->feed_api->ohlc_start_end({
+                            start_time         => $first_stop,
+                            end_time           => $last_stop - 1,
+                            aggregation_period => $granularity,
+                        })});
+        }
         my $last_ohlc = $ul->feed_api->ohlc_daily_list({
                 start_time => $last_stop,
                 end_time   => $end_time

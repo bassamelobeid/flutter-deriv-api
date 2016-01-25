@@ -81,7 +81,15 @@ sub get_ask {
 
     my $response;
     try {
-        my $tv       = [Time::HiRes::gettimeofday];
+        my $tv = [Time::HiRes::gettimeofday];
+        my $contract_identifier = join '_', @{$p2}{'bet_type', 'underlying', 'duration',};
+        $contract_identifier .= "_$p2->{barrier}"                         if ($p2->{barrier});
+        $contract_identifier .= "_$p2->{low_barrier}_$p2->{high_barrier}" if ($p2->{low_barrier} and $p2->{high_barrier});
+        $contract_identifier .= '_fs'                                     if $p2->{date_start};
+        open(my $fh, '>>', '/tmp/proposal_request_count.log') or die "cannot write to output file";
+        print $fh time . ",$contract_identifier\n";
+        close $fh;
+
         my $contract = produce_contract({%$p2});
 
         if (!$contract->is_valid_to_buy) {

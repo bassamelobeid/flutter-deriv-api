@@ -116,15 +116,12 @@ sub proposal_open_contract {
         return $auth_error;
     }
 
-    my @fmbs    = ();
-    my $account = $client->default_account;
+    my @fmbs = ();
     if ($params->{contract_id}) {
-        @fmbs = @{
-            $account->find_financial_market_bet(
-                query => [
-                    is_sold => 0,
-                    id      => $params->{contract_id}])}
-            if $account;
+        @fmbs = @{__get_contract_by_id($client, $params->{contract_id})};
+        if (scalar @fmbs and $fmbs[0]->{account_id} ne $client->default_account->id) {
+            @fmbs = ();
+        }
     } else {
         @fmbs = @{__get_open_contracts($client)};
     }
@@ -136,11 +133,24 @@ sub proposal_open_contract {
             $response->{$id} = {
                 short_code => $fmb->{short_code},
                 currency   => $client->currency,
-                underlying => $fmb->{underlying_symbol}};
+                underlying => $fmb->{underlying_symbol},
+                buy_price  => $fmb->{buy_price},
+                sell_price => $fmb->{sell_price},
+                is_expired => $fmb->{is_expired}};
         }
     }
-
     return $response;
+}
+
+sub __get_contract_by_id {
+    my $client      = shift;
+    my $contract_id = shift;
+
+    my $mapper = BOM::Database::DataMapper::FinancialMarketBet->new({
+        broker_code => $client->broker_code,
+        operation   => 'replica'
+    });
+    return $mapper->get_contract_by_id($contract_id);
 }
 
 1;
