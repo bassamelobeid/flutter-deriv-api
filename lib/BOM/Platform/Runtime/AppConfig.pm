@@ -26,7 +26,6 @@ use Data::Hash::DotNotation;
 
 use Carp qw(croak);
 use BOM::Utility::Log4perl qw( get_logger );
-use Try::Tiny;
 
 use BOM::System::Chronicle;
 
@@ -34,12 +33,7 @@ sub check_for_update {
     my $self     = shift;
     my $data_set = $self->data_set;
 
-    my $app_settings;
-    try { $app_settings = BOM::System::Chronicle::get('app_settings', 'binary'); }
-    catch {
-        get_logger->warn("[app_config] Ignoring Saved Settings : " . $_);
-        return;
-    } or return;
+    my $app_settings = BOM::System::Chronicle::get('app_settings', 'binary');
 
     if ($app_settings and $data_set) {
         my $db_version = $app_settings->{_rev};
@@ -198,13 +192,7 @@ sub _validate_key {
 
 sub save_dynamic {
     my $self     = shift;
-    my $settings = {};
-
-    try { $settings = BOM::System::Chronicle::get('app_settings', 'binary'); }
-    catch {
-        get_logger->warn("[app_config] Loading app_settings data failed : " . $_);
-        return;
-    } or return;
+    my $settings = BOM::System::Chronicle::get('app_settings', 'binary') || {};
 
     #Cleanup globals
     my $global = Data::Hash::DotNotation->new();
@@ -215,12 +203,7 @@ sub save_dynamic {
     }
 
     $settings->{global} = $global->data;
-
-    try { BOM::System::Chronicle::set('app_settings', 'binary', $settings); }
-    catch {
-    get_logger->warn("[app_config] Saving app_settings data failed : " . $_);
-        return;
-    } or return;
+    BOM::System::Chronicle::set('app_settings', 'binary', $settings);
 
     return 1;
 }
@@ -230,10 +213,7 @@ sub _build_data_set {
 
     my $data_set->{app_config} = Data::Hash::DotNotation->new(data => YAML::CacheLoader::LoadFile('/etc/rmg/app_config.yml'));
 
-    try { $self->_add_app_setttings($data_set, BOM::System::Chronicle::get('app_settings', 'binary')); }
-    catch {
-        get_logger->warn("[app_config] Ignoring App settings data : " . $_);
-    };
+    $self->_add_app_setttings($data_set, BOM::System::Chronicle::get('app_settings', 'binary') || {});
 
     return $data_set;
 }
