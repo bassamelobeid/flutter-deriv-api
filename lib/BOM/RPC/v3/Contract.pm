@@ -248,7 +248,7 @@ sub get_contract_details {
 
     my $response;
     try {
-        my $contract = produce_contract($short_code, $currency);
+        my $contract = produce_contract($params->{short_code}, $params->{currency});
         $response = {
             longcode     => $contract->longcode,
             symbol       => $contract->underlying->symbol,
