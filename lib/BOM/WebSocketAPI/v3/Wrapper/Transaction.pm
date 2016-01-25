@@ -100,6 +100,7 @@ sub send_transaction_updates {
     if ($c->stash('account_id')) {
         my $payload = JSON::from_json($message);
 
+        my $id = $subscriptions->{$channel}->{uuid} if ($channel and exists $subscriptions->{$channel}->{uuid});
         my $details = {
             msg_type => 'transaction',
             $args ? (echo_req => $args) : (),
@@ -109,7 +110,8 @@ sub send_transaction_updates {
                 action         => $payload->{action_type},
                 amount         => $payload->{amount},
                 transaction_id => $payload->{id},
-                currency       => $payload->{currency_code}}};
+                currency       => $payload->{currency_code},
+                $id ? (id => $id) : ()}};
 
         if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
             $details->{transaction}->{transaction_time} =
@@ -122,7 +124,6 @@ sub send_transaction_updates {
                 'get_contract_details',
                 sub {
                     my $response = shift;
-                    my $id = $subscriptions->{$channel}->{uuid} if ($channel and exists $subscriptions->{$channel}->{uuid});
                     if (exists $response->{error}) {
                         BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                         return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -134,7 +135,7 @@ sub send_transaction_updates {
                         $details->{transaction}->{symbol}       = $response->{symbol};
                         $details->{transaction}->{display_name} = $response->{display_name};
                         $details->{transaction}->{date_expiry}  = $response->{date_expiry};
-                        $c->send({json => {%$details, $id ? (id => $id) : ()}});
+                        $c->send({json => {%$details}});
                     }
                 },
                 {
@@ -147,7 +148,7 @@ sub send_transaction_updates {
         } else {
             $details->{transaction}->{longcode}         = $payload->{payment_remark};
             $details->{transaction}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
-            $c->send({json => {%$details, $id ? (id => $id) : ()}});
+            $c->send({json => {%$details}});
         }
     } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
