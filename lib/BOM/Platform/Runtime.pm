@@ -106,7 +106,7 @@ has 'countries_list' => (
 
 Returns an active instance of the object.
 
-It actively maintains instance of object using state functionality of perl. 
+It actively maintains instance of object using state functionality of perl.
 This means this class is not a singleton but has capabilities to maintain a single
 copy across the system's execution environment.
 
@@ -173,7 +173,7 @@ sub random_restricted_country {
 
 sub _build_app_config {
     my $self = shift;
-    return BOM::Platform::Runtime::AppConfig->new(couch => $self->datasources->couchdb);
+    return BOM::Platform::Runtime::AppConfig->new();
 }
 
 sub _build_website_list {
