@@ -115,7 +115,9 @@ sub startup {
                 '/verify_email'       => MojoX::JSON::RPC::Service->new->register('verify_email',       \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'           => MojoX::JSON::RPC::Service->new->register('send_ask',           \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'            => MojoX::JSON::RPC::Service->new->register('get_bid',            \&BOM::RPC::v3::Contract::get_bid),
-                '/new_account_real'   => MojoX::JSON::RPC::Service->new->register('new_account_real',   \&BOM::RPC::v3::NewAccount::new_account_real),
+                '/get_contract_details' =>
+                    MojoX::JSON::RPC::Service->new->register('get_contract_details', \&BOM::RPC::v3::Contract::get_contract_details),
+                '/new_account_real' => MojoX::JSON::RPC::Service->new->register('new_account_real', \&BOM::RPC::v3::NewAccount::new_account_real),
                 '/new_account_maltainvest' =>
                     MojoX::JSON::RPC::Service->new->register('new_account_maltainvest', \&BOM::RPC::v3::NewAccount::new_account_maltainvest),
                 '/new_account_japan' => MojoX::JSON::RPC::Service->new->register('new_account_japan', \&BOM::RPC::v3::NewAccount::new_account_japan),
