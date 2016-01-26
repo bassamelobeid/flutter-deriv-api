@@ -64,7 +64,7 @@
           },
           "date_expiry": {
             "type": "integer",
-            "description": "Epoch value of the expiry time of the contract"
+            "description": "Epoch value of the expiry time of the contract. Please note that in case of buy transaction this is approximate value not exact one."
           }
       }
     },
