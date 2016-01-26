@@ -47,6 +47,7 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/redis.sh
-
+    - sudo wget --no-verbose -O /tmp/redis_init.dat "https://gist.githubusercontent.com/kavehmz/9c45849e6c67ed2ebf05/raw/93a34160162029dd4c88d6a4ce9533ea76888dd0/redis_app_server_init.dat"
+    - cat /tmp/redis_init.dat |perl -MBOM::System::Chronicle -MJSON -e 'BOM::System::Chronicle::set("app_settings", "binary", JSON::from_json(<>));'
 script:
     - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
