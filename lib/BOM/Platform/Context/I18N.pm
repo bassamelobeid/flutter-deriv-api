@@ -23,15 +23,13 @@ sub handle_for {
 }
 
 sub _class_for {
-    my $website = BOM::Platform::Runtime->instance->website_list->default_website;
-
     state %classes;
-    my $rclass = "BOM::Platform::Context::I18N::" . $website->static_host;
+    my $rclass = "BOM::Platform::Context::I18N::binary-com";
     $rclass =~ s/\./_/g;
     $rclass =~ s/-/_/g;
     return $rclass if $classes{$rclass};
 
-    my $config = configs_for($website);
+    my $config = configs_for();
     my @where = (__LINE__ + 3, __FILE__);
     eval <<EOP;    ## no critic
 #line $where[0] "$where[1]"
@@ -48,10 +46,9 @@ EOP
 }
 
 sub configs_for {
-    my $website = shift;
-    my $config  = {};
+    my $config = {};
 
-    my $locales_dir = path($website->static_path)->child('config');
+    my $locales_dir = path(BOM::Platform::Static::Config::get_static_path())->child('config');
     carp("Unable to locate locales directory. Looking in $locales_dir") unless (-d $locales_dir);
 
     foreach my $language (@{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}) {
