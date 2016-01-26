@@ -127,7 +127,7 @@ has 'broker_code' => (
 );
 
 has 'language' => (
-    is         => 'rw',
+    is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
 );
