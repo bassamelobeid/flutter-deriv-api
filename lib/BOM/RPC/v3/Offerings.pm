@@ -12,8 +12,6 @@ use BOM::Product::Contract::Finder::Japan;
 sub contracts_for {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $args   = $params->{args};
     my $symbol = $args->{contracts_for};
     my $contracts_for;
