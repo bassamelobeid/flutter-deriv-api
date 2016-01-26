@@ -12,17 +12,17 @@ services:
     - couchdb
 cache: apt
 env:
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=1
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=2
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=3
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=4
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=5
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=6
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=7
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=8
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=9
-     - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=10
-     - TEST_SUITE=test_avg_stress
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=1
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=2
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=3
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=4
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=5
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=6
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=7
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=8
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=9
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=10
+    - TEST_SUITE=test_avg_stress
     - TEST_SUITE=v2
     - TEST_SUITE=v3
     - TEST_SUITE=structure
@@ -79,4 +79,3 @@ install:
     - BOM_CACHE_SERVER='127.0.0.1:6385' REDIS_CACHE_SERVER='127.0.0.1:6385' /home/git/regentmarkets/bom-rpc/bin/binary_rpc.pl  daemon -m production -l http://*:5005/jsonrpc  &
 script:
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
-
