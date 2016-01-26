@@ -23,7 +23,6 @@ sub __call_rpc {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
-            language       => $c->stash('request')->language
         });
 }
 
