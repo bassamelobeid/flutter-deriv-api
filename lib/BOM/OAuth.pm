@@ -50,7 +50,7 @@ sub startup {
 
     my $r = $app->routes;
     $r->any('/authorize')->to('O#authorize');
-    $r->any('/access_token')->to('O#access_token');
+    # $r->any('/access_token')->to('O#access_token');
 }
 
 1;

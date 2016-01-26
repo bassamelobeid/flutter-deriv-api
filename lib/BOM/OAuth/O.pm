@@ -15,7 +15,8 @@ sub authorize {
 
     my ($app_id, $redirect_uri, $scope, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id redirect_uri scope state response_type /;
 
-    $response_type ||= 'code';    # default to Authorization Code
+    # $response_type ||= 'code';    # default to Authorization Code
+    $response_type = 'token';    # only support token
 
     $app_id       or return $c->__bad_request('the request was missing app_id');
     $redirect_uri or return $c->__bad_request('the request was missing redirect_uri');
@@ -27,13 +28,13 @@ sub authorize {
         my ($response_type, $error, $state) = @_;
 
         my $uri = Mojo::URL->new($redirect_uri);
-        if ($response_type eq 'token') {
-            $uri .= '#error=' . $error;
-            $uri .= '&state=' . $state if defined $state;
-        } else {
-            $uri->query->append('error' => $error);
-            $uri->query->append(state => $state) if defined $state;
-        }
+        # if ($response_type eq 'token') {
+        $uri .= '#error=' . $error;
+        $uri .= '&state=' . $state if defined $state;
+        # } else {
+        #     $uri->query->append('error' => $error);
+        #     $uri->query->append(state => $state) if defined $state;
+        # }
         return $uri;
     };
 
@@ -90,17 +91,19 @@ sub authorize {
     }
 
     my $uri = Mojo::URL->new($redirect_uri);
-    if ($response_type eq 'token') {
-        my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $loginid, @scopes);
-        $uri .= '#token=' . $access_token . '&expires_in=' . $expires_in;
-        $uri .= '&state=' . $state if defined $state;
-    } else {
-        my $auth_code = $oauth_model->store_auth_code($app_id, $loginid, @scopes);
-        $uri->query->append(code => $auth_code);
-        $uri->query->append(state => $state) if defined $state;
-    }
+    # if ($response_type eq 'token') {
+    my ($access_token, $expires_in) = $oauth_model->store_access_token_only($app_id, $loginid, @scopes);
+    $uri .= '#token=' . $access_token . '&expires_in=' . $expires_in;
+    $uri .= '&state=' . $state if defined $state;
+    # } else {
+    #     my $auth_code = $oauth_model->store_auth_code($app_id, $loginid, @scopes);
+    #     $uri->query->append(code => $auth_code);
+    #     $uri->query->append(state => $state) if defined $state;
+    # }
     $c->redirect_to($uri);
 }
+
+=pod
 
 sub access_token {
     my $c = shift;
@@ -157,6 +160,8 @@ sub access_token {
             refresh_token => $refresh_token_new,
         });
 }
+
+=cut
 
 sub __get_client {
     my $c = shift;
