@@ -13,6 +13,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Runtime;
 use BOM::Platform::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
 BOM::Platform::Runtime->instance->app_config->system->on_production(1);
 
