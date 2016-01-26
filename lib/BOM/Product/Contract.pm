@@ -1346,6 +1346,13 @@ sub _build_pricing_vol {
         $vol = $self->vol_at_strike;
     }
 
+    if ($vol <= 0) {
+        $self->add_error({
+                message => 'Zero volatility. Invalidate price.'
+                message_to_client => localize('We could not process this contract at this time.'),
+            });
+    }
+
     return $vol;
 }
 
