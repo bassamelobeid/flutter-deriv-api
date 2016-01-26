@@ -6,7 +6,6 @@ use MojoX::JSON::RPC::Service;
 use DataDog::DogStatsd::Helper qw(stats_inc stats_timing);
 use Proc::CPUUsage;
 use Time::HiRes;
-use Mojo::JSON qw(decode_json);
 
 use BOM::Database::Rose::DB;
 use BOM::RPC::v3::Accounts;
