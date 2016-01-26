@@ -1348,7 +1348,7 @@ sub _build_pricing_vol {
 
     if ($vol <= 0) {
         $self->add_error({
-                message => 'Zero volatility. Invalidate price.'
+                message => 'Zero volatility. Invalidate price.',
                 message_to_client => localize('We could not process this contract at this time.'),
             });
     }
