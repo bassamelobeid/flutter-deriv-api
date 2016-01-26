@@ -37,6 +37,7 @@ before_install:
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
     - echo $PATH
+    - sudo cat /etc/sudoers
     - /tmp/travis-scripts/couchdb.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
