@@ -158,12 +158,6 @@ has 'static_host' => (
     default => 'binary-com',
 );
 
-has 'static_url' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => 'https://static.binary.com/',
-);
-
 sub broker_for_new_account {
     my ($self, $country_code) = @_;
 
