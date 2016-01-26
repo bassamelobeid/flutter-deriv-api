@@ -131,18 +131,27 @@ sub statement {
     my @txns;
     foreach my $txn (@$results) {
         my $struct = {
-            transaction_id   => $txn->{id},
-            transaction_time => (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id})
-            ? Date::Utility->new($txn->{purchase_time})->epoch
-            : Date::Utility->new($txn->{payment_time})->epoch,
-            amount        => $txn->{amount},
-            action_type   => $txn->{action_type},
-            balance_after => $txn->{balance_after},
-            contract_id   => $txn->{financial_market_bet_id}};
+            transaction_id => $txn->{id},
+            amount         => $txn->{amount},
+            action_type    => $txn->{action_type},
+            balance_after  => $txn->{balance_after},
+            contract_id    => $txn->{financial_market_bet_id}};
+
+        my $txn_time;
+        if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
+            if ($txn->{action_type} eq 'sell') {
+                $struct->{purchase_time} = Date::Utility->new($txn->{purchase_time})->epoch;
+                $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
+            } else {
+                $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
+            }
+        } else {
+            $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
+        }
+        $struct->{transaction_time} = $txn_time;
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
-
             if ($struct->{shortcode} && $account->currency_code) {
                 $struct->{longcode} = (simple_contract_info($struct->{shortcode}, $account->currency_code))[0];
             }
