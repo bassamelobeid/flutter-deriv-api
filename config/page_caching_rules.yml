@@ -188,4 +188,7 @@
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user/my_account":
   header:
+    Cache-Control: "private, must-revalidate, max-age=0"
+"/user/my_accountws":
+  header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
