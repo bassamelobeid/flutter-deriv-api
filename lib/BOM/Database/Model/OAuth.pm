@@ -244,7 +244,7 @@ sub create_app {
         INSERT INTO oauth.apps
             (id, name, homepage, github, appstore, googleplay, binary_user_id)
         VALUES
-            (? ,?, ?, ?, ?, ?, ?, ?)
+            (? ,?, ?, ?, ?, ?, ?)
     ");
     $sth->execute(
         $id, $app->{name},
