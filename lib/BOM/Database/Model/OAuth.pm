@@ -19,7 +19,7 @@ sub verify_app {
     my ($self, $app_id) = @_;
 
     return $self->dbh->selectrow_hashref("
-        SELECT id, secret, name FROM oauth.apps WHERE id = ? AND active
+        SELECT id, name FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
 }
 
@@ -239,16 +239,15 @@ sub create_app {
     my ($self, $app) = @_;
 
     my $id     = $app->{id}     || 'id-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
-    my $secret = $app->{secret} || String::Random::random_regex('[a-zA-Z0-9]{32}');
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (id, secret, name, homepage, github, appstore, googleplay, binary_user_id)
+            (id, name, homepage, github, appstore, googleplay, binary_user_id)
         VALUES
             (? ,?, ?, ?, ?, ?, ?, ?)
     ");
     $sth->execute(
-        $id, $secret, $app->{name},
+        $id, $app->{name},
         $app->{homepage}   || '',
         $app->{github}     || '',
         $app->{appstore}   || '',
@@ -271,7 +270,6 @@ sub create_app {
 
     return {
         app_id     => $id,
-        app_secret => $secret,
         name          => $app->{name},
         redirect_uri  => \@redirect_uri
     };
@@ -281,7 +279,7 @@ sub get_app {
     my ($self, $user_id, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id as app_id, secret as app_secret, name FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
+        SELECT id as app_id, name FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
     ", undef, $app_id, $user_id);
     return unless $app;
 
@@ -309,7 +307,7 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            id as app_id, secret as app_secret, name
+            id as app_id, name
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
     ", {Slice => {}}, $user_id);
     return [] unless $apps;
