@@ -17,8 +17,6 @@ use BOM::RPC::v3::Utility;
 sub authorize {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $err = BOM::RPC::v3::Utility::create_error({
             code              => 'InvalidToken',
             message_to_client => BOM::Platform::Context::localize('The token is invalid.')});
@@ -53,7 +51,8 @@ sub authorize {
         currency             => ($account ? $account->currency_code : ''),
         email                => $client->email,
         account_id           => ($account ? $account->id : ''),
-        landing_company_name => $client->landing_company->short
+        landing_company_name => $client->landing_company->short,
+        country              => $client->residence
     };
 }
 

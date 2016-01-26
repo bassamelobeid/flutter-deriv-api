@@ -27,8 +27,6 @@ sub new_account_virtual {
     my $params = shift;
     my $args   = $params->{args};
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $err_code;
     my $pwdm = Data::Password::Meter->new(14);
 
@@ -81,8 +79,6 @@ sub _is_session_cookie_valid {
 sub verify_email {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'lost_password') {
         send_email({
                 from    => $params->{cs_email},
@@ -112,8 +108,6 @@ sub verify_email {
 
 sub new_account_real {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($params->{client_loginid}) {
@@ -164,8 +158,6 @@ sub new_account_real {
 
 sub new_account_maltainvest {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($params->{client_loginid}) {
@@ -227,8 +219,6 @@ sub new_account_maltainvest {
 
 sub new_account_japan {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $args = $params->{args};
     my $client;

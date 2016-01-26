@@ -140,8 +140,6 @@ sub get_bid {
     my $params = shift;
     my ($short_code, $contract_id, $currency) = ($params->{short_code}, $params->{contract_id}, $params->{currency});
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $response;
     try {
         my $tv = [Time::HiRes::gettimeofday];
@@ -211,8 +209,6 @@ sub send_ask {
     my $args   = $params->{args};
 
     my $tv = [Time::HiRes::gettimeofday];
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my %details = %{$args};
     my $response;

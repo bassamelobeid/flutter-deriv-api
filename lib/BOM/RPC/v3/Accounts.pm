@@ -78,8 +78,6 @@ sub landing_company {
 sub landing_company_details {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
@@ -105,8 +103,6 @@ sub __build_landing_company {
 
 sub statement {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($params->{client_loginid}) {
@@ -169,8 +165,6 @@ sub statement {
 
 sub profit_table {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($params->{client_loginid}) {
@@ -282,8 +276,6 @@ sub get_account_status {
 sub change_password {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my ($client_loginid, $token_type, $cs_email, $client_ip, $args) =
         ($params->{client_loginid}, $params->{token_type}, $params->{cs_email}, $params->{client_ip}, $params->{args});
 
@@ -350,8 +342,6 @@ sub change_password {
 sub cashier_password {
     my $params = shift;
     my ($client_loginid, $cs_email, $client_ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($client_loginid) {
@@ -654,8 +644,6 @@ sub set_self_exclusion {
     my $params = shift;
     my ($client_loginid, $cs_email, $args) =
         ($params->{client_loginid}, $params->{cs_email}, $params->{args});
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($client_loginid) {
