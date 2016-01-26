@@ -33,6 +33,7 @@ before_install:
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
+    - /tmp/travis-scripts/redis_init.sh
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
