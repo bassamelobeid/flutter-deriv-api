@@ -7,6 +7,11 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Database::Model::OAuth;
 
+ok(1);
+diag "we do not support auth_code.";
+done_testing();
+exit;
+
 ## clear
 BOM::Database::Model::OAuth->new->dbh->do("DELETE FROM oauth.user_scope_confirm");
 
