@@ -7,6 +7,10 @@ sub get_display_languages {
     return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
 }
 
+sub get_static_path {
+    return "/home/git/binary-com/binary-static/";
+}
+
 sub get_static_url {
     return "https://static.binary.com/";
 }
