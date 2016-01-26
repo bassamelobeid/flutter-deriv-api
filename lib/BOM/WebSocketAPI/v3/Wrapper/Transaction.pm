@@ -8,6 +8,7 @@ use List::Util qw(first);
 
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::System;
+use BOM::WebSocketAPI::v3::Wrapper::Streamer;
 
 sub buy {
     my ($c, $args) = @_;
@@ -89,7 +90,7 @@ sub transaction {
 sub send_transaction_updates {
     my ($c, $message) = @_;
 
-    my $args = {};
+    my $args;
     my $channel;
     my $subscriptions = $c->stash('transaction_channel');
     if ($subscriptions) {
@@ -111,7 +112,7 @@ sub send_transaction_updates {
                 action         => $payload->{action_type},
                 amount         => $payload->{amount},
                 transaction_id => $payload->{id},
-                currency       => $payload->{currency_code},
+                $payload->{currency_code} ? (currency => $payload->{currency_code}) : (),
                 $id ? (id => $id) : ()}};
 
         if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
@@ -136,7 +137,7 @@ sub send_transaction_updates {
                         $details->{transaction}->{symbol}       = $response->{symbol};
                         $details->{transaction}->{display_name} = $response->{display_name};
                         $details->{transaction}->{date_expiry}  = $response->{date_expiry};
-                        $c->send({json => {%$details}});
+                        return $details;
                     }
                 },
                 {
