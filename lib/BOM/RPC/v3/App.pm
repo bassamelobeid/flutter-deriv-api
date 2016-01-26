@@ -5,12 +5,11 @@ use strict;
 use warnings;
 
 use BOM::RPC::v3::Utility;
-use BOM::Platform::Context qw (localize request);
+use BOM::Platform::Context qw (localize);
 use BOM::Database::Model::OAuth;
 
 sub __pre_hook {
     my ($params) = @_;
-    BOM::Platform::Context::request()->language($params->{language}) if $params->{language};
     return unless $params->{client_loginid};
     return BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 }

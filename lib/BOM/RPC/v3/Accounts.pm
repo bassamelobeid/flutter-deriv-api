@@ -78,8 +78,6 @@ sub landing_company {
 sub landing_company_details {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $lc = BOM::Platform::Runtime::LandingCompany::Registry->new->get($params->{args}->{landing_company_details});
     return BOM::RPC::v3::Utility::create_error({
             code              => 'UnknownLandingCompany',
@@ -106,8 +104,6 @@ sub __build_landing_company {
 sub statement {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
@@ -131,18 +127,27 @@ sub statement {
     my @txns;
     foreach my $txn (@$results) {
         my $struct = {
-            transaction_id   => $txn->{id},
-            transaction_time => (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id})
-            ? Date::Utility->new($txn->{purchase_time})->epoch
-            : Date::Utility->new($txn->{payment_time})->epoch,
-            amount        => $txn->{amount},
-            action_type   => $txn->{action_type},
-            balance_after => $txn->{balance_after},
-            contract_id   => $txn->{financial_market_bet_id}};
+            transaction_id => $txn->{id},
+            amount         => $txn->{amount},
+            action_type    => $txn->{action_type},
+            balance_after  => $txn->{balance_after},
+            contract_id    => $txn->{financial_market_bet_id}};
+
+        my $txn_time;
+        if (exists $txn->{financial_market_bet_id} and $txn->{financial_market_bet_id}) {
+            if ($txn->{action_type} eq 'sell') {
+                $struct->{purchase_time} = Date::Utility->new($txn->{purchase_time})->epoch;
+                $txn_time = Date::Utility->new($txn->{sell_time})->epoch;
+            } else {
+                $txn_time = Date::Utility->new($txn->{purchase_time})->epoch;
+            }
+        } else {
+            $txn_time = Date::Utility->new($txn->{payment_time})->epoch;
+        }
+        $struct->{transaction_time} = $txn_time;
 
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
-
             if ($struct->{shortcode} && $account->currency_code) {
                 $struct->{longcode} = (simple_contract_info($struct->{shortcode}, $account->currency_code))[0];
             }
@@ -160,8 +165,6 @@ sub statement {
 
 sub profit_table {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($params->{client_loginid}) {
@@ -273,8 +276,6 @@ sub get_account_status {
 sub change_password {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my ($client_loginid, $token_type, $cs_email, $client_ip, $args) =
         ($params->{client_loginid}, $params->{token_type}, $params->{cs_email}, $params->{client_ip}, $params->{args});
 
@@ -341,8 +342,6 @@ sub change_password {
 sub cashier_password {
     my $params = shift;
     my ($client_loginid, $cs_email, $client_ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($client_loginid) {
@@ -645,8 +644,6 @@ sub set_self_exclusion {
     my $params = shift;
     my ($client_loginid, $cs_email, $args) =
         ($params->{client_loginid}, $params->{cs_email}, $params->{args});
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($client_loginid) {
