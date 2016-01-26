@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::Most 0.22 (tests => 1);
+use Test::Most 0.22 (tests => 2);
 use Test::NoWarnings;
 use Test::MockTime 'set_relative_time';
 use Test::MockObject;
