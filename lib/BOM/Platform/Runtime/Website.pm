@@ -145,19 +145,6 @@ has 'default_language' => (
     default => 'EN'
 );
 
-has 'static_path' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => '/home/git/binary-com/binary-static/',
-);
-
-# this is needed for translation to work
-has 'static_host' => (
-    is      => 'ro',
-    isa     => 'Str',
-    default => 'binary-com',
-);
-
 sub broker_for_new_account {
     my ($self, $country_code) = @_;
 
