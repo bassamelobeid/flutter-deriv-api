@@ -47,6 +47,5 @@ install:
     - /tmp/travis-scripts/setup_logs.sh
     - . /tmp/travis-scripts/setup_perl5lib.sh
     - /tmp/travis-scripts/redis.sh
-    - /tmp/travis-scripts/redis_init.sh
 script:
     - make $TEST_SUITE; RC=$?; sudo service binary_pgbouncer status; exit $RC
