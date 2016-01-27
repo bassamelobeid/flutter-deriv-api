@@ -167,10 +167,10 @@ subtest 'url_for' => sub {
     subtest 'simple' => sub {
         is $request->url_for('/why-us'), "$domain/why-us?l=EN", "frontend";
         is $request->url_for('images/pages/open_account/real-money-account.svg'),
-
-            is $request->url_for('errors/500.html'), "$domain/errors/500.html", "errors";
+            'https://static.binary.com/images/pages/open_account/real-money-account.svg';
+        is $request->url_for('errors/500.html'),      "$domain/errors/500.html",      "errors";
         is $request->url_for('EN_appcache.appcache'), "$domain/EN_appcache.appcache", "appcache";
-        is $request->url_for('/'), "$domain/?l=EN", "frontend /";
+        is $request->url_for('/'),                    "$domain/?l=EN",                "frontend /";
     };
 
     subtest 'with domain_type' => sub {
