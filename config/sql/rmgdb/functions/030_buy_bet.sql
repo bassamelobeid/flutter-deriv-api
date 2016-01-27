@@ -167,4 +167,79 @@ BEGIN
 END
 $def$ LANGUAGE plpgsql VOLATILE SECURITY definer SET log_min_messages = LOG;
 
+CREATE OR REPLACE FUNCTION bet.buy_bet_nofail(a_loginid           VARCHAR(12),    --  1
+                                              a_currency          VARCHAR(3),     --  2
+                                              -- FMB stuff
+                                              b_purchase_time     TIMESTAMP,      --  3
+                                              b_underlying_symbol VARCHAR(50),    --  4
+                                              b_payout_price      NUMERIC,        --  5
+                                              b_buy_price         NUMERIC,        --  6
+                                              b_start_time        TIMESTAMP,      --  7
+                                              b_expiry_time       TIMESTAMP,      --  8
+                                              b_settlement_time   TIMESTAMP,      --  9
+                                              b_expiry_daily      BOOLEAN,        -- 10
+                                              b_bet_class         VARCHAR(30),    -- 11
+                                              b_bet_type          VARCHAR(30),    -- 12
+                                              b_remark            VARCHAR(800),   -- 13
+                                              b_short_code        VARCHAR(255),   -- 14
+                                              b_fixed_expiry      BOOLEAN,        -- 15
+                                              b_tick_count        INT,            -- 16
+                                              -- fmb child table
+                                              b_chld              JSON,           -- 17
+                                              -- transaction stuff
+                                              t_transaction_time  TIMESTAMP,      -- 18
+                                              t_staff_loginid     VARCHAR(24),    -- 19
+                                              t_remark            VARCHAR(800),   -- 20
+                                              t_source            BIGINT,         -- 21
+                                              -- quants_bets_variables
+                                              q_qv                JSON,           -- 22
+                                              p_limits            JSON,           -- 23
+                                          OUT r_fmb               bet.financial_market_bet,
+                                          OUT r_trans             transaction.transaction,
+                                          OUT r_ecode             TEXT,
+                                          OUT r_edescription      TEXT)
+RETURNS SETOF RECORD AS $def$
+DECLARE
+    r_ecode            TEXT;
+    r_edescription     TEXT;
+BEGIN
+    SAVEPOINT before;
+    BEGIN
+        SELECT v_fmb INTO r_fmb, v_trans INTO r_trans
+          FROM bet.buy_bet(a_loginid,
+                           a_currency,
+                           -- FMB stuff
+                           b_purchase_time,
+                           b_underlying_symbol,
+                           b_payout_price,
+                           b_buy_price,
+                           b_start_time,
+                           b_expiry_time,
+                           b_settlement_time,
+                           b_expiry_daily,
+                           b_bet_class,
+                           b_bet_type,
+                           b_remark,
+                           b_short_code,
+                           b_fixed_expiry,
+                           b_tick_count,
+                           -- fmb child table
+                           b_chld,
+                           -- transaction stuff
+                           t_transaction_time,
+                           t_staff_loginid,
+                           t_remark,
+                           t_source,
+                           -- quants_bets_variables
+                           q_qv) t;
+        RELEASE SAVEPOINT before;
+    EXCEPTION WHEN OTHERS THEN
+        ROLLBACK TO SAVEPOINT before;
+        GET STACKED DIAGNOSTICS r_ecode = RETURNED_SQLSTATE,
+                                r_edescription = MESSAGE_TEXT;
+    END;
+    RETURN NEXT;
+END
+$def$ LANGUAGE plpgsql VOLATILE SECURITY invoker;
+
 COMMIT;

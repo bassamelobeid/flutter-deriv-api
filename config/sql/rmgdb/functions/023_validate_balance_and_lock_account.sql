@@ -32,6 +32,7 @@ BEGIN
      CROSS JOIN data_collection.exchangeToUSD_rate(a.currency_code, b_purchase_time) e(rate)
      WHERE a.client_loginid=a_loginid
        AND a.currency_code=a_currency
+       AND a.is_default
        FOR UPDATE;
     account := v_r.acc;
     rate    := coalesce(v_r.rate, 1);
