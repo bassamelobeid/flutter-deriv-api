@@ -16,6 +16,7 @@ extends 'BOM::MarketData::VolSurface';
 use Date::Utility;
 use BOM::Platform::Runtime;
 use VolSurface::Utils qw(get_delta_for_strike get_strike_for_moneyness);
+use BOM::System::Chronicle;
 
 use Try::Tiny;
 use Math::Function::Interpolator;
@@ -24,6 +25,54 @@ use List::Util qw(min first);
 use Storable qw( dclone );
 use JSON qw(from_json);
 use BOM::Utility::Log4perl qw( get_logger );
+
+=head2 for_date
+
+The date for which we wish data
+
+=cut
+
+has for_date => (
+    is      => 'ro',
+    isa     => 'Maybe[Date::Utility]',
+    default => undef,
+);
+
+has document => (
+    is         => 'rw',
+    lazy_build => 1,
+);
+
+sub _build_document {
+    my $self = shift;
+
+    my $document = BOM::System::Chronicle::get('volatility_surfaces', $self->symbol);
+
+    if ($self->for_date and $self->for_date->epoch < Date::Utility->new($document->{date})->epoch) {
+        $document = BOM::System::Chronicle::get_for('volatility_surfaces', $self->symbol, $self->for_date->epoch);
+
+        # This works around a problem with Volatility surfaces and negative dates to expiry.
+        # We have to use the oldest available surface.. and we don't really know when it
+        # was relative to where we are now.. so just say it's from the requested day.
+        # We do not allow saving of historical surfaces, so this should be fine.
+        $document //= {};
+    }
+
+    return $document;
+}
+
+sub save {
+    my $self = shift;
+
+    #if chronicle does not have this document, first create it because in document_content we will need it
+    if (not defined BOM::System::Chronicle::get('volatility_surfaces', $self->symbol)) {
+        #Due to some strange coding of retrieval for recorded_date, there MUST be an existing document (even empty)
+        #before one can save a document. As a result, upon the very first storage of an instance of the document, we need to create an empty one.
+        BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, {});
+    }
+
+    return BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, $self->_document_content, $self->recorded_date);
+}
 
 sub _document_content {
     my $self = shift;
@@ -40,6 +89,7 @@ sub _document_content {
     return \%structure;
 }
 
+<<<<<<< HEAD
 with 'BOM::MarketData::Role::VersionedSymbolData' => {
     -alias    => {save => '_save'},
     -excludes => ['save']};
@@ -52,6 +102,58 @@ sub save {
 
     BOM::System::Chronicle::set('volatility_surfaces', $self->symbol, $self->_document_content);
     return $result;
+=======
+=head2 parameterization
+
+The parameterized (and, thus, smoothed) version of this surface.
+
+=cut
+
+has parameterization => (
+    is         => 'rw',
+    isa        => 'Maybe[HashRef]',
+    lazy_build => 1,
+);
+
+sub _build_parameterization {
+    my $self = shift;
+
+    my $doc = $self->document;
+    my $parameterization =
+          $doc->{parameterization}            ? $doc->{parameterization}
+        : $doc->{available_parameterizations} ? $doc->{available_parameterizations}->{sabr}
+        :                                       undef;
+    return $parameterization;
+}
+
+sub _get_calibrator {
+    my $self = shift;
+
+    my $calibrator = VolSurface::Calibration::Equities->new(
+        surface          => $self->surface,
+        term_by_day      => $self->term_by_day,
+        smile_points     => $self->smile_points,
+        parameterization => $self->parameterization
+    );
+
+    return $calibrator;
+}
+
+sub function_to_optimize {
+    my ($self, $params) = @_;
+
+    return $self->_get_calibrator->function_to_optimize($params);
+}
+
+sub compute_parameterization {
+    my $self = shift;
+
+    my $new_params = $self->_get_calibrator->compute_parameterization;
+    $self->parameterization($new_params);
+    $self->clear_calibration_error;
+
+    return $new_params;
+>>>>>>> origin/master
 }
 
 =head2 type
