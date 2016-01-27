@@ -100,6 +100,7 @@ sub _init {
     initialize_symbol_dividend "RDYANG",  -35;
     initialize_symbol_dividend "RDYIN",   20;
 
+    BOM::System::Chronicle::set('interest_rates', 'JPY-USD',JSON::from_json("{\"symbol\":\"JPY-USD\",\"rates\":{\"365\":\"2.339\",\"180\":\"2.498\",\"90\":\"2.599\",\"30\":\"2.599\",\"7\":\"2.686\"},\"date\":\"2016-01-26T17:00:03Z\",\"type\":\"market\"}"));
     BOM::System::Chronicle::set('economic_events', 'economic_events', {events => []});
 
     return 1;
