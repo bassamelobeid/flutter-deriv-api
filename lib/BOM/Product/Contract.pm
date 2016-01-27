@@ -1764,16 +1764,10 @@ sub _vols_at_point {
 
     my $vol_args = {
         delta => 50,
+        days => $self->$days_attr->amount,
     };
 
     my $market_name = $self->underlying->market->name;
-
-    if ($market_name eq 'forex') {
-        $vol_args->{expiry_date} = $end_date;
-    } else {
-        $vol_args->{days} = $self->$days_attr->amount;
-    }
-
     my %vols_to_use;
     foreach my $pair (qw(fordom domqqq forqqq)) {
         my $pair_ref = $self->$pair;
