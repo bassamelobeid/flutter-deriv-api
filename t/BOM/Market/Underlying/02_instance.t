@@ -113,7 +113,7 @@ subtest 'display_decimals' => sub {
 
     subtest 'stocks' => sub {
         my $symbols_decimals = {
-            USAAPL => 4,
+            USAAPL => 2,
             UKBAY  => 4,
         };
         my $underlying;
