@@ -22,12 +22,17 @@ sub get_customer_support_email {
     return 'support@binary.com';
 }
 
+sub read_config {
+    return {
+        binary_static_hash => Data::UUID->new->create_str(),
+    };
+}
+
 {
+    my $config = read_config;
 
     sub get_config {
-        return {
-            binary_static_hash => Data::UUID->new->create_str(),
-        };
+        return $config;
     }
 }
 
