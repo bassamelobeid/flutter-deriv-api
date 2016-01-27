@@ -18,8 +18,6 @@ use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries)
 sub trading_times {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $date = try { Date::Utility->new($params->{args}->{trading_times}) } || Date::Utility->new;
     my $tree = BOM::Product::Contract::Offerings->new(date => $date)->decorate_tree(
         markets     => {name => 'name'},
@@ -60,8 +58,6 @@ sub trading_times {
 
 sub asset_index {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $asset_index = BOM::Product::Contract::Offerings->new->decorate_tree(
         markets => {
@@ -148,8 +144,6 @@ sub asset_index {
 
 sub active_symbols {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     my $landing_company_name = 'costarica';

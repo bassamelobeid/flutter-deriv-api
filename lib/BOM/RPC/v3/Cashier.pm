@@ -30,8 +30,6 @@ use BOM::System::AuditLog;
 sub get_limits {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
@@ -101,8 +99,6 @@ sub paymentagent_list {
     my $params = shift;
     my ($language, $args) = ($params->{language}, $params->{args});
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
@@ -155,8 +151,6 @@ sub paymentagent_transfer {
     my $params = shift;
     my ($loginid_fm, $cs_email, $website_name, $args) =
         ($params->{client_loginid}, $params->{cs_email}, $params->{website_name}, $params->{args});
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
@@ -359,8 +353,6 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 
 sub paymentagent_withdraw {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my ($client_loginid, $cs_email, $website_name, $args) =
         ($params->{client_loginid}, $params->{cs_email}, $params->{website_name}, $params->{args});
@@ -669,8 +661,6 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
@@ -885,8 +875,6 @@ sub transfer_between_accounts {
 
 sub topup_virtual {
     my $params = shift;
-
-    BOM::Platform::Context::request()->language($params->{language});
 
     my $client;
     if ($params->{client_loginid}) {
