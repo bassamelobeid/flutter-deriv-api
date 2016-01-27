@@ -342,6 +342,9 @@ sub __handle {
         if (grep { $_ eq $descriptor->{category} } ('proposal', 'proposal_open_contract')) {
             $limiting_service = 'websocket_call_pricing';
         }
+        if ('verify_email' eq $descriptor->{category}) {
+            $limiting_service = 'websocket_call_email';
+        }
         if (
             not within_rate_limits({
                     service  => $limiting_service,
