@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::WebSocketAPI::Websocket_v3;
+use BOM::Platform::Static::Config;
 
 sub get_limits {
     my ($c, $args) = @_;
@@ -74,7 +75,7 @@ sub paymentagent_withdraw {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
-            cs_email       => $r->website->config->get('customer_support.email'),
+            cs_email       => BOM::Platform::Static::Config::get_customer_support_email(),
             website_name   => $r->website->display_name
         });
     return;
@@ -101,7 +102,7 @@ sub paymentagent_transfer {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
-            cs_email       => $r->website->config->get('customer_support.email'),
+            cs_email       => BOM::Platform::Static::Config::get_customer_support_email(),
             website_name   => $r->website->display_name
         });
     return;

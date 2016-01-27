@@ -12,6 +12,7 @@ use BOM::Product::Transaction;
 use BOM::System::Password;
 use BOM::Platform::Context qw(localize);
 use BOM::Platform::Email qw(send_email);
+use BOM::Platform::Static::Config;
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 
@@ -205,7 +206,7 @@ sub change_password {
     my $r = $c->stash('request');
     BOM::System::AuditLog::log('password has been changed', $client_obj->email);
     send_email({
-            from    => $r->website->config->get('customer_support.email'),
+            from    => BOM::Platform::Static::Config::get_customer_support_email(),
             to      => $client_obj->email,
             subject => localize('Your password has been changed.'),
             message => [
