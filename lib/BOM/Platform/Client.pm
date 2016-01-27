@@ -549,12 +549,21 @@ sub get_limit_for_payout {
     my $val = $self->custom_max_payout;
     return $val if defined $val;
 
+    my $lc_limit = $self->landing_company_open_positions_payout_limit;
+
     $val =
           $self->loginid =~ /^VRT/          ? 1_000_000
+        : $lc_limit                         ? $lc_limit
         : $self->client_fully_authenticated ? 500_000
         :                                     50_000;
 
     return $val;
+}
+
+sub landing_company_open_positions_payout_limit {
+    my $self = shift;
+
+    return ($self->landing_company->short eq 'maltainvest') ? 100_000 : undef;
 }
 
 sub get_limit {
