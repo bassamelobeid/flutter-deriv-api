@@ -4,6 +4,8 @@ use strict;
 use warnings;
 use feature 'state';
 
+use Data::UUID;
+
 sub get_display_languages {
     return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
 }
