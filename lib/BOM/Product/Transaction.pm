@@ -270,17 +270,14 @@ sub calculate_limits {
     my $currency = $contract->currency;
     my $client   = $self->client;
 
-    # formerly _validate_account_balance
     $self->limits->{max_balance} = $client->get_limit_for_account_balance;
 
-    # formerly _validate_account_portfolio
-    $self->limits->{max_open_bets} = $client->get_limit_for_open_positions;
+    if (not $contract->tick_expiry) {
+        $self->limits->{max_open_bets} = $client->get_limit_for_open_positions;
+        $self->limits->{max_payout_open_bets} = $client->get_limit_for_payout;
+        $self->limits->{max_payout_per_symbol_and_bet_type} = $ql->payout_per_symbol_and_bet_type_limit;
+    }
 
-    $self->limits->{max_payout_open_bets} = $client->get_limit_for_payout;
-
-    $self->limits->{max_payout_per_symbol_and_bet_type} = $ql->payout_per_symbol_and_bet_type_limit;
-
-    # formerly _validate_daily_total_turnover_limit
     $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
 
     my $lim;
