@@ -37,7 +37,7 @@ sub check_for_update {
 
     if ($app_settings and $data_set) {
         my $db_version = $app_settings->{_rev};
-        if ($db_version ne $data_set->{version}) {
+        unless ($data_set->{version} and $db_version and $db_version eq $data_set->{version}) {
             $self->_add_app_setttings($data_set, $app_settings);
         }
     }
@@ -271,4 +271,3 @@ __PACKAGE__->meta->make_immutable;
 Copyright 2010 RMG Technology (M) Sdn Bhd
 
 =cut
-
