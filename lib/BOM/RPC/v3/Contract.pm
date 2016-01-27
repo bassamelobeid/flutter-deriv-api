@@ -115,10 +115,12 @@ sub get_ask {
                 payout        => $contract->payout,
                 ask_price     => $ask_price,
                 display_value => $display_value,
-                spot          => $contract->current_spot,
                 spot_time     => $contract->current_tick->epoch,
                 date_start    => $contract->date_start->epoch
             };
+            if ($contract->underlying->feed_license eq 'realtime') {
+                $response->{spot} = $contract->current_spot;
+            }
             $response->{spread} = $contract->spread if $contract->is_spread;
         }
         my $pen = $contract->pricing_engine_name;
@@ -177,8 +179,8 @@ sub get_bid {
                 $response->{exit_tick}       = $contract->exit_tick ? $contract->exit_tick->quote : '';
                 $response->{exit_tick_time}  = $contract->exit_tick ? $contract->exit_tick->epoch : '';
             } else {
-                $response->{current_spot} = $contract->current_spot;
-                $response->{entry_spot}   = $contract->entry_spot;
+                $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+                $response->{entry_spot} = $contract->entry_spot;
             }
 
             if ($contract->two_barriers) {
