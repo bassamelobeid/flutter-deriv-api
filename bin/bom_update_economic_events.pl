@@ -15,8 +15,8 @@ use BOM::Utility::Log4perl;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
 use JSON;
 use Path::Tiny;
+use BOM::System::RedisReplicated;
 use Try::Tiny;
-use BOM::System::Chronicle;
 use List::Util qw(first);
 use YAML::CacheLoader qw(LoadFile);
 
@@ -45,8 +45,8 @@ sub script_run {
         $event_param->{recorded_date} = Date::Utility->new->epoch;
 
         Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
-        BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS',         $event_param->{release_date}, JSON::to_json($event_param));
-        BOM::System::Chronicle->_redis_write->zadd('ECONOMIC_EVENTS_TRIMMED', $event_param->{release_date}, JSON::to_json($event_param));
+        BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS',         $event_param->{release_date}, JSON::to_json($event_param));
+        BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS_TRIMMED', $event_param->{release_date}, JSON::to_json($event_param));
     }
 
     try {
