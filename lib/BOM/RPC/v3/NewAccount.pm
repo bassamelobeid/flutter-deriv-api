@@ -100,9 +100,20 @@ sub verify_email {
                 message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
                 use_email_template => 1
             });
+        } else {
+            send_email({
+                    from    => $params->{cs_email},
+                    to      => $params->{email},
+                    subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
+                    message => [
+                        BOM::Platform::Context::localize(
+                            'Dear Valued Customer, <p style="margin-top:1em;line-height:200%;">It appears that you have tried to register an email address that is already included in our system. If it was not you, simply ignore this email, or contact our customer support if you have any concerns.</p>'
+                        )
+                    ],
+                    use_email_template => 1
+                });
         }
     }
-
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
