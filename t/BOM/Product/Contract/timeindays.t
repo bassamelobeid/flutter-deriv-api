@@ -85,12 +85,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-01-11 10:00:00'),
         date_expiry => Date::Utility->new('13-Jan-12')->plus_time_interval('21h'),
     );
-    is($bet->timeindays->amount, 2, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
+    is($bet->timeindays->amount, 3, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                days   => 2,
+                days   => 3,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
                 r_rate => $bet->r_rate,
