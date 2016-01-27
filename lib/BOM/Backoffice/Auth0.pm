@@ -8,7 +8,7 @@ use BOM::Platform::Runtime;
 use BOM::System::Config;
 use Carp;
 use BOM::System::AuditLog;
-use BOM::System::Chronicle;
+use BOM::System::RedisReplicated;
 
 sub user_by_access_token {
     my $access_token = shift;
@@ -33,8 +33,8 @@ sub login {
     my $user = BOM::Backoffice::Auth0::user_by_access_token($access_token);
     if ($user) {
         $user->{token} = $access_token;
-        BOM::System::Chronicle->_redis_write->set("BINARYBOLOGIN::" . $user->{nickname}, JSON->new->utf8->encode($user));
-        BOM::System::Chronicle->_redis_write->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
+        BOM::System::RedisReplicated::redis_write->set("BINARYBOLOGIN::" . $user->{nickname}, JSON->new->utf8->encode($user));
+        BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $user->{nickname}, 24 * 3600);
 
         return $user;
     }
@@ -43,7 +43,7 @@ sub login {
 
 sub from_cookie {
     my $cookie = shift || BOM::Platform::Context::request()->bo_cookie;
-    if ($cookie and $cookie->clerk and my $user = BOM::System::Chronicle->_redis_read->get("BINARYBOLOGIN::" . $cookie->clerk)) {
+    if ($cookie and $cookie->clerk and my $user = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $cookie->clerk)) {
         return JSON->new->utf8->decode($user);
     }
     return;
@@ -51,7 +51,7 @@ sub from_cookie {
 
 sub loggout {
     my $cookie = BOM::Platform::Context::request()->bo_cookie;
-    if ($cookie and my $user = BOM::System::Chronicle->_redis_write->del("BINARYBOLOGIN::" . $cookie->clerk)) {
+    if ($cookie and my $user = BOM::System::RedisReplicated::redis_write->del("BINARYBOLOGIN::" . $cookie->clerk)) {
         print 'you are logged out.';
     }
     print 'no login found.';
@@ -72,10 +72,10 @@ sub has_authorisation {
     my $groups = shift;
 
     my $cookie = BOM::Platform::Context::request()->bo_cookie;
-    my $cache  = BOM::System::Chronicle->_redis_read->get("BINARYBOLOGIN::" . $cookie->clerk);
+    my $cache  = BOM::System::RedisReplicated::redis_read->get("BINARYBOLOGIN::" . $cookie->clerk);
     my $user;
     if ($cookie and $cache and $user = JSON->new->utf8->decode($cache) and $user->{token} = $cookie->{auth_token}) {
-        BOM::System::Chronicle->_redis_write->expire("BINARYBOLOGIN::" . $cookie->clerk, 24 * 3600);
+        BOM::System::RedisReplicated::redis_write->expire("BINARYBOLOGIN::" . $cookie->clerk, 24 * 3600);
         if (not $groups or not BOM::Platform::Runtime->instance->app_config->system->on_production) {
             return 1;
         }
