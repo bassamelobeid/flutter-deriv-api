@@ -16,6 +16,7 @@ use BOM::Platform::User;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::SessionCookie;
 use BOM::Platform::Account;
+use BOM::Platform::Static::Config;
 
 sub create_account {
     my $args = shift;
@@ -100,7 +101,7 @@ sub create_account {
             || die BOM::Platform::Context::template->error();
 
         send_email({
-            from               => request()->website->config->get('customer_support.email'),
+            from               => BOM::Platform::Static::Config::get_customer_support_email(),
             to                 => $email,
             subject            => localize('Verify your email address - [_1]', request()->website->display_name),
             message            => [$email_content],
