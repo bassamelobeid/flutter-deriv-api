@@ -29,6 +29,7 @@ before_install:
     - /tmp/travis-scripts/setup_logs.sh
 
 install:
+    - export RPC_CONFIG=$PWD/oauth.conf.travis
     - source /tmp/travis-scripts/devbox_path.sh
     - /tmp/travis-scripts/devbox.sh *.yml
 

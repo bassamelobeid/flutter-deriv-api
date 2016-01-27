@@ -9,12 +9,8 @@ use BOM::Platform::Context::Request;
 sub startup {
     my $app = shift;
 
-    # use the log target expected by the init.d starman runner script..
-    $app->log(
-        Mojo::Log->new(
-            path  => $ENV{ERROR_LOG},
-            level => ('warn'),
-        )) unless $app->mode eq 'development';
+    $app->plugin('Config' => {file => $ENV{OAUTH_CONFIG} || '/etc/rmg/oauth.conf'});
+
     my $log = $app->log;
 
     # announce startup and context in logfile
