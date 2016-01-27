@@ -165,14 +165,12 @@ subtest 'url_for' => sub {
     my $request       = BOM::Platform::Context::Request->new(domain_name => 'www.binaryqa01.com');
     my $bo_static_url = BOM::Platform::Runtime->instance->app_config->cgi->backoffice->static_url;
     subtest 'simple' => sub {
-        $request->website->config->set('static.url', 'https://static.binaryqa01.com/');
         is $request->url_for('/why-us'), "$domain/why-us?l=EN", "frontend";
         is $request->url_for('images/pages/open_account/real-money-account.svg'),
-            $request->website->config->get('static.url') . "images/pages/open_account/real-money-account.svg", "Static indexed image";
 
-        is $request->url_for('errors/500.html'),      "$domain/errors/500.html",      "errors";
+            is $request->url_for('errors/500.html'), "$domain/errors/500.html", "errors";
         is $request->url_for('EN_appcache.appcache'), "$domain/EN_appcache.appcache", "appcache";
-        is $request->url_for('/'),                    "$domain/?l=EN",                "frontend /";
+        is $request->url_for('/'), "$domain/?l=EN", "frontend /";
     };
 
     subtest 'with domain_type' => sub {
