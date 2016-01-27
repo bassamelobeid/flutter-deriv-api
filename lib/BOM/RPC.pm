@@ -22,6 +22,7 @@ use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::NewAccount;
 use BOM::RPC::v3::Contract;
 use BOM::RPC::v3::PortfolioManagement;
+use BOM::RPC::v3::App;
 
 sub apply_usergroup {
     my ($cf, $log) = @_;
@@ -141,6 +142,11 @@ sub startup {
                 '/portfolio'                 => register('portfolio',                 \&BOM::RPC::v3::PortfolioManagement::portfolio),
                 '/sell_expired'              => register('sell_expired',              \&BOM::RPC::v3::PortfolioManagement::sell_expired),
                 '/proposal_open_contract'    => register('proposal_open_contract',    \&BOM::RPC::v3::PortfolioManagement::proposal_open_contract),
+
+                '/app_register' => register('app_register', \&BOM::RPC::v3::App::register),
+                '/app_list'     => register('app_list',     \&BOM::RPC::v3::App::list),
+                '/app_get'      => register('app_get',      \&BOM::RPC::v3::App::get),
+                '/app_delete'   => register('app_delete',   \&BOM::RPC::v3::App::delete),
             },
             exception_handler => sub {
                 my ($dispatcher, $err, $m) = @_;
