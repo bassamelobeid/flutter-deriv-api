@@ -1031,7 +1031,7 @@ my %cached_seconds_for_interval;    # key ${epoch1}-${epoch2}, value: seconds
 # there is a strict assumption, that start and end epoch are day boundaries
 sub _seconds_of_trading_between_epochs_days_boundary {
     my ($self, $start_epoch, $end_epoch) = @_;
-    my $cache_key = $start_epoch . '-' . $end_epoch;
+    my $cache_key = join('-', $self->symbol, $start_epoch, $end_epoch);
     my $result = $cached_seconds_for_interval{$cache_key} //= do {
         my $head = $self->_computed_trading_seconds($start_epoch, $start_epoch + 86399);
         if ($end_epoch - $start_epoch > $full_day - 1) {
