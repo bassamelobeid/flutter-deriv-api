@@ -645,6 +645,23 @@ subtest 'trading period' => sub {
     'trading period for HKSE';
 };
 
+subtest "seconds between trading" => sub {
+
+  is $HKSE->seconds_of_trading_between_epochs(1291161600, 1293753600),
+    404280, "Seconds between 1st and 31 of December 2010 (HKSE/late opening)";
+
+  is $FOREX->seconds_of_trading_between_epochs(1385856000, 1388448000),
+    1684784, "Seconds between 1st and 31 of December 2013 (Forex/Christmas holyday)";
+
+  is $LSE->seconds_of_trading_between_epochs(1385856000, 1388448000),
+    597600, "Seconds between 1st and 31 of December 2013 (LSE/early closes)";
+
+  is $RANDOM->seconds_of_trading_between_epochs(1385856000, 1388448000),
+    (1388448000 - 1385856000) - 30, "Seconds between 1st and 31 of December 2013 (Random)";
+
+};
+
+
 done_testing;
 
 1;
