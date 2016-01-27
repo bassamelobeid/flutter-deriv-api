@@ -237,8 +237,6 @@ sub send_ask {
 sub get_contract_details {
     my $params = shift;
 
-    BOM::Platform::Context::request()->language($params->{language});
-
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
