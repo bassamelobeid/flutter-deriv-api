@@ -11,6 +11,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 use BOM::Platform::SessionCookie;
+use BOM::Platform::Static::Config;
 BOM::Platform::Sysinit::init();
 
 PrintContentType();
@@ -53,7 +54,7 @@ BOM::Platform::Context::template->process(
     "email/lost_password.html.tt",
     {
         'link'     => $link,
-        'helpdesk' => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
+        'helpdesk' => BOM::Platform::Static::Config::get_customer_support_email(),
     },
     \$lost_pass_email
 );
@@ -64,7 +65,7 @@ Bar('emailing change password link to ' . $loginID);
 print '<p class="success_message">Emailing change password link to ' . $client_name . ' at ' . $email . ' ...</p>';
 
 my $result = send_email({
-    from               => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
+    from               => BOM::Platform::Static::Config::get_customer_support_email(),
     to                 => $email,
     subject            => localize('New Password Request'),
     message            => [$lost_pass_email,],
