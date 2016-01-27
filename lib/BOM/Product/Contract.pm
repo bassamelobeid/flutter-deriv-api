@@ -666,7 +666,8 @@ sub _build_timeindays {
     # If market is Forex, We go with integer days as per the market convention
     if ($self->market->name eq 'forex' and $self->pricing_engine_name !~ /Intraday::Forex/) {
         my $utils        = BOM::MarketData::VolSurface::Utils->new;
-        $atid = $utils->effective_date_for($self->date_expiry)->days_between($utils->effective_date_for($self->volsurface->recorded_date));
+        my $days_between = $self->date_expiry->days_between($self->date_start);
+        $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
     }
     # If intraday or not FX, then use the exact duration with fractions of a day.
     $atid ||= $self->get_time_to_expiry({
