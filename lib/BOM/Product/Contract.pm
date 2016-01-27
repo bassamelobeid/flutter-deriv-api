@@ -1348,9 +1348,9 @@ sub _build_pricing_vol {
 
     if ($vol <= 0) {
         $self->add_error({
-                message => 'Zero volatility. Invalidate price.',
-                message_to_client => localize('We could not process this contract at this time.'),
-            });
+            message           => 'Zero volatility. Invalidate price.',
+            message_to_client => localize('We could not process this contract at this time.'),
+        });
     }
 
     return $vol;
@@ -1764,7 +1764,7 @@ sub _vols_at_point {
 
     my $vol_args = {
         delta => 50,
-        days => $self->$days_attr->amount,
+        days  => $self->$days_attr->amount,
     };
 
     my $market_name = $self->underlying->market->name;
