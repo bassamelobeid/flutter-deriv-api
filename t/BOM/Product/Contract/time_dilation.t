@@ -30,7 +30,7 @@ my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
 my %bet_params = (
     bet_type     => 'NOTOUCH',
     date_start   => $now,
-    date_expiry  => '20-Jan-2012',
+    date_expiry  => '2012-01-20 23:59:59',
     underlying   => 'frxEURUSD',
     payout       => 100,
     current_tick => $tick,
@@ -156,7 +156,7 @@ my %historical = (
                 recorded_date => '2012-01-19T00:00:00Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.01},
                         smile      => {
                             25 => 0.1615,
@@ -168,7 +168,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:20:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.04},
                         smile      => {
                             25 => 0.1715,
@@ -180,7 +180,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:40:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.03},
                         smile      => {
                             25 => 0.1515,
@@ -193,7 +193,7 @@ my %historical = (
                 recorded_date => '2012-01-19T00:00:00Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.061},
                         smile      => {
                             25 => 0.0975,
@@ -205,7 +205,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:15:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.05},
                         smile      => {
                             25 => 0.0875,
@@ -217,7 +217,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:30:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.10},
                         smile      => {
                             25 => 0.1075,
@@ -230,7 +230,7 @@ my %historical = (
                 recorded_date => '2012-01-19T00:00:00Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.025},
                         smile      => {
                             25 => 0.155,
@@ -242,7 +242,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:18:01Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.05},
                         smile      => {
                             25 => 0.255,
@@ -254,7 +254,7 @@ my %historical = (
                 recorded_date => '2012-01-19T01:48:02Z',
                 master_cutoff => 'New York 10:00',
                 surface       => {
-                    1 => {
+                    2 => {
                         vol_spread => {50 => 0.03},
                         smile      => {
                             25 => 0.165,
@@ -372,7 +372,7 @@ for (my $time = $start->epoch; $time <= $end->epoch; $time += 300) {
     }
     # This is mostly here so that if the integral days thing changes we'll notice.
     # It will break other tests later, if not.
-    is($bet->timeindays->amount, 1, 'One day long bet.');
+    is($bet->timeindays->amount, 2, 'One day long bet.');
 }
 
 foreach my $symbol (sort keys %previous) {

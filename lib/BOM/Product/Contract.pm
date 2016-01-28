@@ -665,8 +665,9 @@ sub _build_timeindays {
     my $atid;
     # If market is Forex, We go with integer days as per the market convention
     if ($self->market->name eq 'forex' and $self->pricing_engine_name !~ /Intraday::Forex/) {
-        my $utils = BOM::MarketData::VolSurface::Utils->new;
-        $atid = $utils->effective_date_for($self->date_expiry)->days_between($utils->effective_date_for($start_date));
+        my $utils        = BOM::MarketData::VolSurface::Utils->new;
+        my $days_between = $self->date_expiry->days_between($self->date_start);
+        $atid = $utils->is_before_rollover($self->date_start) ? ($days_between + 1) : $days_between;
     }
     # If intraday or not FX, then use the exact duration with fractions of a day.
     $atid ||= $self->get_time_to_expiry({
@@ -1345,6 +1346,13 @@ sub _build_pricing_vol {
         $vol = $self->vol_at_strike;
     }
 
+    if ($vol <= 0) {
+        $self->add_error({
+            message           => 'Zero volatility. Invalidate price.',
+            message_to_client => localize('We could not process this contract at this time.'),
+        });
+    }
+
     return $vol;
 }
 
@@ -1368,18 +1376,13 @@ sub _build_news_adjusted_pricing_vol {
 sub _build_vol_at_strike {
     my $self = shift;
 
-    my @tenor =
-          ($self->market->name eq 'forex' and $self->date_expiry->days_between($self->date_start))
-        ? (expiry_date => $self->date_expiry)
-        : (days => $self->timeindays->amount);
-
     my $pricing_spot = $self->pricing_spot;
     my $vol_args     = {
         strike => $self->_barriers_for_pricing->{barrier1},
         q_rate => $self->q_rate,
         r_rate => $self->r_rate,
         spot   => $pricing_spot,
-        @tenor,
+        days   => $self->timeindays->amount,
     };
 
     if ($self->two_barriers) {
@@ -1761,16 +1764,10 @@ sub _vols_at_point {
 
     my $vol_args = {
         delta => 50,
+        days  => $self->$days_attr->amount,
     };
 
     my $market_name = $self->underlying->market->name;
-
-    if ($market_name eq 'forex') {
-        $vol_args->{expiry_date} = $end_date;
-    } else {
-        $vol_args->{days} = $self->$days_attr->amount;
-    }
-
     my %vols_to_use;
     foreach my $pair (qw(fordom domqqq forqqq)) {
         my $pair_ref = $self->$pair;
