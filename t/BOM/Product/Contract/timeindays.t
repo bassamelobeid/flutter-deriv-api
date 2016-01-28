@@ -205,12 +205,12 @@ subtest 'Forex date start after cutoff' => sub {
         date_start  => Date::Utility->new('2012-03-05 22:00:01'),
         date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
     );
-    cmp_ok($bet->timeindays->amount, '==', 3, 'timeindays is 4 days after rollover in non DST.');
+    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 4 days after rollover in non DST.');
     $bet = _sample_bet(
         date_start  => Date::Utility->new('2012-03-05 21:59:59'),
         date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
     );
-    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 5 days before rollover in non DST.');
+    cmp_ok($bet->timeindays->amount, '==', 5, 'timeindays is 5 days before rollover in non DST.');
 };
 
 subtest Equity => sub {
