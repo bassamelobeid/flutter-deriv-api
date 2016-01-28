@@ -95,7 +95,8 @@ sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
     my $dbh = _dbh();
 
-    state $instance // = Data::Chronicle::Writer->new(
+    state $instance;
+    $instance //= Data::Chronicle::Writer->new(
         cache_writer => $redis,
         db_handle    => $dbh
     );
@@ -107,7 +108,8 @@ sub get_chronicle_reader {
     state $redis = BOM::System::RedisReplicated::redis_read();
     my $dbh = _dbh();
 
-    state $instance // = Data::Chronicle::Reader->new(
+    state $instance;
+    $instance //= Data::Chronicle::Reader->new(
         cache_reader => $redis,
         db_handle    => $dbh
     );
