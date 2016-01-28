@@ -51,7 +51,7 @@ subtest 'prices' => sub {
     my %expectations = (
         DIGITMATCH => {
             bs_prob => 0.10,
-            markup  => 0.0015228426395939,
+            markup  => 0.005,
         },
         DIGITDIFF => {
             bs_prob => 0.90,
@@ -67,7 +67,7 @@ subtest 'prices' => sub {
         },
         DIGITOVER => {
             bs_prob => 0.40,
-            markup  => 0.00407317143516382,
+            markup  => 0.005,
         },
         DIGITUNDER => {
             bs_prob => 0.50,
