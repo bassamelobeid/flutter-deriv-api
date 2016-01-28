@@ -519,9 +519,14 @@ sub set_settings {
     if ($client->is_virtual) {
         if ($args->{residence} and not $client->residence) {
             $client->residence($args->{residence});
-        } else {
-            return BOM::RPC::v3::Utility::permission_error();
+            if (not $client->save()) {
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize('Sorry, an error occurred while processing your account.')});
+            }
+            return {status => 1};
         }
+        return BOM::RPC::v3::Utility::permission_error();
     } else {
         # not allow real client to update residence
         return BOM::RPC::v3::Utility::permission_error() if ($args->{residence});
