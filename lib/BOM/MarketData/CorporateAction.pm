@@ -1,5 +1,6 @@
 package BOM::MarketData::CorporateAction;
 
+use BOM::System::Chronicle;
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
 
@@ -50,13 +51,13 @@ has for_date => (
 has chronicle_reader => (
     is      => 'ro',
     isa     => 'Data::Chronicle::Reader',
-    default => BOM::System::Chronicle::get_chronicle_reader(),
+    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
 );
 
 has chronicle_writer => (
     is      => 'ro',
     isa     => 'Data::Chronicle::Writer',
-    default => BOM::System::Chronicle::get_chronicle_writer(),
+    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
 );
 
 =head2 symbol
