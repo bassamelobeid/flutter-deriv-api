@@ -26,7 +26,6 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
-
     - /tmp/travis-scripts/couchdb.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
@@ -41,7 +40,6 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/stress
     - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
-    - cd /home/git/binary-com/websocket-bench && npm install && cd $TRAVIS_BUILD_DIR
     - /tmp/travis-scripts/redis.sh
 
 install:
@@ -50,7 +48,6 @@ install:
     - go get github.com/kavehmz/queue
     - go get golang.org/x/net/websocket
     - go get github.com/garyburd/redigo/redis
-
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis; export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh

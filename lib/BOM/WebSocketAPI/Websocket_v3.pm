@@ -25,6 +25,7 @@ use BOM::WebSocketAPI::v3::Wrapper::PortfolioManagement;
 use BOM::WebSocketAPI::v3::Wrapper::Static;
 use BOM::WebSocketAPI::v3::Wrapper::Cashier;
 use BOM::WebSocketAPI::v3::Wrapper::NewAccount;
+use BOM::WebSocketAPI::v3::Wrapper::App;
 use BOM::Database::Rose::DB;
 
 sub ok {
@@ -257,6 +258,12 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1
     ],
+
+    ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1],
+    ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1],
+    ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1],
+    ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1],
+
     ['api_token',     \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token,    1],
     ['tnc_approval',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1],
     ['topup_virtual', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1],
@@ -334,6 +341,9 @@ sub __handle {
         }
         if (grep { $_ eq $descriptor->{category} } ('proposal', 'proposal_open_contract')) {
             $limiting_service = 'websocket_call_pricing';
+        }
+        if ('verify_email' eq $descriptor->{category}) {
+            $limiting_service = 'websocket_call_email';
         }
         if (
             not within_rate_limits({
@@ -421,6 +431,8 @@ sub rpc {
     state $cpu = Proc::CPUUsage->new();
 
     $params->{language} = $self->stash('language');
+    my $country_code = $self->stash('country') ? $self->stash('country') : $self->stash('request')->country_code;
+    $params->{country} = $country_code;
 
     my $client = MojoX::JSON::RPC::Client->new;
     my $url    = 'http://127.0.0.1:5005/' . $method;
