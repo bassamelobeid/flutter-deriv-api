@@ -85,12 +85,12 @@ subtest Forex => sub {
         date_start  => Date::Utility->new('2012-01-11 10:00:00'),
         date_expiry => Date::Utility->new('13-Jan-12')->plus_time_interval('21h'),
     );
-    is($bet->timeindays->amount, 2, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
+    is($bet->timeindays->amount, 3, 'Wed -> Fri FX bet (expiry: 21:00, rollover: 22:00).');
     cmp_ok(
         $bet->vol_at_strike,
         '==',
         $bet->volsurface->get_volatility({
-                days   => 2,
+                days   => 3,
                 spot   => 100,
                 strike => $bet->barrier->as_absolute,
                 r_rate => $bet->r_rate,
@@ -205,12 +205,12 @@ subtest 'Forex date start after cutoff' => sub {
         date_start  => Date::Utility->new('2012-03-05 22:00:01'),
         date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
     );
-    cmp_ok($bet->timeindays->amount, '==', 3, 'timeindays is 4 days after rollover in non DST.');
+    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 4 days after rollover in non DST.');
     $bet = _sample_bet(
         date_start  => Date::Utility->new('2012-03-05 21:59:59'),
         date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
     );
-    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 5 days before rollover in non DST.');
+    cmp_ok($bet->timeindays->amount, '==', 5, 'timeindays is 5 days before rollover in non DST.');
 };
 
 subtest Equity => sub {
