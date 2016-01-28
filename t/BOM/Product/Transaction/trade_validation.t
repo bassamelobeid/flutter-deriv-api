@@ -38,12 +38,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         recorded_date   => Date::Utility->new,
     }) for (qw/USD JPY GBP JPY-USD/);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_delta',
-    {
-        symbol        => $_,
-        recorded_date => Date::Utility->new,
-    }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'randomindex',
@@ -63,6 +57,13 @@ my $currency   = 'GBP';
 my $account    = $client->default_account;
 my $loginid    = $client->loginid;
 my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => $_,
+        recorded_date => Date::Utility->new($now->epoch - 100),
+    }) for qw/frxUSDJPY frxGBPJPY frxGBPUSD/;
 
 my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
     epoch      => $now->epoch,
