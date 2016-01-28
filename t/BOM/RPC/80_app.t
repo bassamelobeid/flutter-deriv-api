@@ -12,12 +12,7 @@ use BOM::Database::Model::OAuth;
 
 # cleanup
 my $dbh = BOM::Database::Model::OAuth->new->dbh;
-$dbh->do("
-    DELETE FROM oauth.app_redirect_uri WHERE app_id <> 'binarycom'
-");
-$dbh->do("
-    DELETE FROM oauth.apps WHERE id <> 'binarycom'
-");
+$dbh->do("DELETE FROM oauth.apps WHERE id <> 'binarycom'");
 
 my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
@@ -40,7 +35,8 @@ my $app1 = BOM::RPC::v3::App::register({
         client_loginid => $test_loginid,
         args           => {
             name         => 'App 1',
-            redirect_uri => ['https://www.example.com/']}});
+            redirect_uri => 'https://www.example.com/',
+        }});
 my $get_app = BOM::RPC::v3::App::get({
         client_loginid => $test_loginid,
         args           => {
@@ -59,7 +55,8 @@ my $app2 = BOM::RPC::v3::App::register({
         client_loginid => $test_loginid,
         args           => {
             name         => 'App 2',
-            redirect_uri => ['https://www.example2.com/']}});
+            redirect_uri => 'https://www.example2.com/',
+        }});
 my $get_apps = BOM::RPC::v3::App::list({
         client_loginid => $test_loginid,
         args           => {
@@ -68,11 +65,12 @@ my $get_apps = BOM::RPC::v3::App::list({
 $get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
 is_deeply($get_apps, [$app1, $app2], 'list ok');
 
-BOM::RPC::v3::App::delete({
+my $delete_st = BOM::RPC::v3::App::delete({
         client_loginid => $test_loginid,
         args           => {
             app_delete => $app2->{app_id},
         }});
+ok $delete_st;
 $get_apps = BOM::RPC::v3::App::list({
         client_loginid => $test_loginid,
         args           => {
@@ -80,5 +78,13 @@ $get_apps = BOM::RPC::v3::App::list({
         }});
 $get_apps = [grep { $_->{app_id} ne 'binarycom' } @$get_apps];
 is_deeply($get_apps, [$app1], 'delete ok');
+
+# delete again will return 0
+$delete_st = BOM::RPC::v3::App::delete({
+        client_loginid => $test_loginid,
+        args           => {
+            app_delete => $app2->{app_id},
+        }});
+ok !$delete_st, 'was deleted';
 
 done_testing();

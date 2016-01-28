@@ -27,7 +27,7 @@ sub register {
     my $github       = $args->{github} // '';
     my $appstore     = $args->{appstore} // '';
     my $googleplay   = $args->{googleplay} // '';
-    my $redirect_uri = $args->{redirect_uri} // [];
+    my $redirect_uri = $args->{redirect_uri} // '';
 
     ## do some validation
     my $error_sub = sub {
