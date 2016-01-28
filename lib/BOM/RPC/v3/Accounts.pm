@@ -470,8 +470,8 @@ sub get_settings {
 
     my $client_tnc_status = $client->get_status('tnc_approval');
 
-    my $dob_epoch = $client->date_of_birth ? Date::Utility->new($client->date_of_birth)->epoch : '';
-    my ($country_code, $country) = ('', '');
+    my ($dob_epoch, $country_code, $country);
+    $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
     if ($client->residence) {
         $country_code = $client->residence;
         $country = BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $language);
@@ -484,17 +484,17 @@ sub get_settings {
         $client->is_virtual
         ? ()
         : (
-            salutation       => $client->salutation,
-            first_name       => $client->first_name,
-            last_name        => $client->last_name,
-            date_of_birth    => $dob_epoch,
-            address_line_1   => $client->address_1,
-            address_line_2   => $client->address_2,
-            address_city     => $client->city,
-            address_state    => $client->state,
-            address_postcode => $client->postcode,
-            phone            => $client->phone,
-            is_payment_agent => $client->payment_agent ? 1 : 0,
+            salutation                     => $client->salutation,
+            first_name                     => $client->first_name,
+            last_name                      => $client->last_name,
+            date_of_birth                  => $dob_epoch,
+            address_line_1                 => $client->address_1,
+            address_line_2                 => $client->address_2,
+            address_city                   => $client->city,
+            address_state                  => $client->state,
+            address_postcode               => $client->postcode,
+            phone                          => $client->phone,
+            is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
             $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
         ),
     };
