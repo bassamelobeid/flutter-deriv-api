@@ -37,6 +37,11 @@
       "type": ["string", "null"],
       "pattern": "^\\+?[0-9\\s]{0,35}$"
     },
+    "residence": {
+      "type": ["string", "null"],
+      "pattern": "^[a-z]{2}$",
+      "description" : "Optional, accept 2 letter country code. Only allow to set residence for Virtual account without residence yet."
+    }
     "passthrough": {
       "type": "object",
       "description": "Optional field, used to pass data through the websocket, which may be retrieved via the echo_req output field."
