@@ -15,14 +15,8 @@ my $t = Test::Mojo->new('BOM::OAuth');
 $t = $t->get_ok("/authorize");
 $t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing app_id/);
 
-$t = $t->get_ok("/authorize?app_id=binarycom");
-$t->json_is('/error', 'invalid_request')->json_like('/error_description', qr/missing redirect_uri/);
-
 $t = $t->get_ok("/authorize?app_id=XXX&response_type=token");
-ok $t->tx->res->headers->location =~ 'invalid_app', 'redirect to localhost with invalid_app';
-
-# $t = $t->get_ok("/authorize?app_id=binarycom&redirect_uri=http://www.example.com/&response_type=token");
-# ok $t->tx->res->headers->location =~ 'invalid_redirect_uri', 'redirect with invalid_redirect_uri';
+$t->json_like('/error_description', qr/valid app_id/);
 
 $t = $t->get_ok("/authorize?app_id=binarycom&response_type=token");
 is $t->tx->res->headers->location, '/login', 'redirect to /login';
