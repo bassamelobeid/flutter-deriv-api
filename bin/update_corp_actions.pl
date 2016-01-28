@@ -30,8 +30,6 @@ sub script_run {
         my %grouped_actions = $parser->process_data($file);
         foreach my $symbol (keys %grouped_actions) {
             my $corp = BOM::MarketData::CorporateAction->new(
-                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
-                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
                 symbol  => $symbol,
                 actions => $grouped_actions{$symbol});
 
