@@ -273,9 +273,19 @@ sub get_apps_by_user_id {
 sub delete_app {
     my ($self, $user_id, $app_id) = @_;
 
-    return $self->dbh->do("
-        UPDATE oauth.apps SET active=false WHERE id = ? AND binary_user_id = ?
-    ", undef, $app_id, $user_id);
+    my $app = $self->get_app($user_id, $app_id);
+    return 0 unless $app;
+
+    my $dbh = $self->dbh;
+
+    ## delete real delete
+    foreach my $table ('user_scope_confirm', 'auth_code', 'access_token', 'refresh_token') {
+        $dbh->do("DELETE FROM oauth.$table WHERE app_id = ?", undef, $app_id);
+    }
+
+    $dbh->do("DELETE FROM oauth.apps WHERE id = ?", undef, $app_id);
+
+    return 1;
 }
 
 no Moose;

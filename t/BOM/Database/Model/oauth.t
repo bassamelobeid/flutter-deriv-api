@@ -75,8 +75,13 @@ my $app2 = $m->create_app({
 my $get_apps = $m->get_apps_by_user_id($test_user_id);
 is_deeply($get_apps, [$app1, $app2], 'get_apps_by_user_id ok');
 
-$m->delete_app($test_user_id, $app2->{app_id});
+my $delete_st = $m->delete_app($test_user_id, $app2->{app_id});
+ok $delete_st;
 $get_apps = $m->get_apps_by_user_id($test_user_id);
 is_deeply($get_apps, [$app1], 'delete app ok');
+
+## delete again will just return 0
+$delete_st = $m->delete_app($test_user_id, $app2->{app_id});
+ok ! $delete_st, 'was deleted';
 
 done_testing();
