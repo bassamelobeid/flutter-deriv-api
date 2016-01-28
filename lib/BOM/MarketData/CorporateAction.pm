@@ -50,13 +50,13 @@ has for_date => (
 has chronicle_reader => (
     is      => 'ro',
     isa     => 'Data::Chronicle::Reader',
-    default => undef,
+    default => BOM::System::Chronicle::get_chronicle_reader(),
 );
 
 has chronicle_writer => (
     is      => 'ro',
     isa     => 'Data::Chronicle::Writer',
-    default => undef,
+    default => BOM::System::Chronicle::get_chronicle_writer(),
 );
 
 =head2 symbol
