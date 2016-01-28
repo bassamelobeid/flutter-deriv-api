@@ -35,7 +35,7 @@ subtest 'app_config' => sub {
         backoffice  => 1
     );
     ok(BOM::Platform::Context::request($request), 'new request');
-    is(scalar @{BOM::Platform::Context::app_config()->cgi->allowed_languages}, 3, 'new settings');
+    is(scalar @{BOM::Platform::Context::app_config()->cgi->allowed_languages}, 4, 'new settings');
     BOM::Platform::Context::request_completed();
 };
 
