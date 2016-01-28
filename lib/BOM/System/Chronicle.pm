@@ -1,6 +1,5 @@
 package BOM::System::Chronicle;
 
-
 =head1 NAME
 
 BOM::System::Chronicle - Provides efficient data storage for volatile and time-based data
@@ -89,7 +88,6 @@ use DateTime;
 use Date::Utility;
 use BOM::System::RedisReplicated;
 
-
 use Data::Chronicle::Reader;
 use Data::Chronicle::Writer;
 
@@ -97,9 +95,9 @@ sub get_chronicle_writer {
     state $redis = BOM::System::RedisReplicated::redis_write();
     my $dbh = _dbh();
 
-    state $instance //= Data::Chronicle::Writer->new(
-        cache_writer    => $redis,
-        db_handle       => $dbh
+    state $instance // = Data::Chronicle::Writer->new(
+        cache_writer => $redis,
+        db_handle    => $dbh
     );
 
     return $instance;
@@ -109,9 +107,9 @@ sub get_chronicle_reader {
     state $redis = BOM::System::RedisReplicated::redis_read();
     my $dbh = _dbh();
 
-    state $instance //= Data::Chronicle::Reader->new(
-        cache_reader    => $redis,
-        db_handle       => $dbh
+    state $instance // = Data::Chronicle::Reader->new(
+        cache_reader => $redis,
+        db_handle    => $dbh
     );
 
     return $instance;
