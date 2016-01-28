@@ -929,7 +929,7 @@ sub _build_total_markup {
           ($self->pricing_engine_name =~ /Intraday::Forex/ and not $self->is_atm_bet)
         ? ()
         : (maximum => BOM::Platform::Runtime->instance->app_config->quants->commission->maximum_total_markup / 100);
-    my %min = ($self->pricing_engine_name =~ /TickExpiry/) ? () : (minimum => 0);
+    my %min = ($self->pricing_engine_name =~ /TickExpiry/) ? () : (minimum => 0.03 / $self->payout);
 
     my $total_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'total_markup',
