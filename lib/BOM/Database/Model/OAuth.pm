@@ -19,24 +19,8 @@ sub verify_app {
     my ($self, $app_id) = @_;
 
     return $self->dbh->selectrow_hashref("
-        SELECT id, name FROM oauth.apps WHERE id = ? AND active
+        SELECT id, name, redirect_uri FROM oauth.apps WHERE id = ? AND active
     ", undef, $app_id);
-}
-
-sub verify_app_redirect_uri {
-    my ($self, $app_id, $redirect_uri) = @_;
-
-    # to support the uri with / or without
-    my $redirect_uri2 = $redirect_uri;
-    if ($redirect_uri2 =~ m{/$}) {
-        $redirect_uri2 =~ s{/$}{};
-    } else {
-        $redirect_uri2 .= '/';
-    }
-
-    return $self->dbh->selectrow_hashref("
-        SELECT true FROM oauth.app_redirect_uri WHERE app_id = ? AND (redirect_uri = ? OR redirect_uri = ?)
-    ", undef, $app_id, $redirect_uri, $redirect_uri2);
 }
 
 sub confirm_scope {
@@ -242,9 +226,9 @@ sub create_app {
 
     my $sth = $self->dbh->prepare("
         INSERT INTO oauth.apps
-            (id, name, homepage, github, appstore, googleplay, binary_user_id)
+            (id, name, homepage, github, appstore, googleplay, redirect_uri, binary_user_id)
         VALUES
-            (? ,?, ?, ?, ?, ?, ?)
+            (? ,?, ?, ?, ?, ?, ?, ?)
     ");
     $sth->execute(
         $id, $app->{name},
@@ -252,26 +236,13 @@ sub create_app {
         $app->{github}     || '',
         $app->{appstore}   || '',
         $app->{googleplay} || '',
+        $app->{redirect_uri} || '',
         $app->{user_id});
-
-    ## for redirect_uri
-    my @redirect_uri;
-    if ($app->{redirect_uri} and ref($app->{redirect_uri}) eq 'ARRAY') {
-        my $redirect_uri_sth = $self->dbh->prepare("
-            INSERT INTO oauth.app_redirect_uri (app_id, redirect_uri) VALUES (?, ?)
-        ");
-        foreach my $x (@{$app->{redirect_uri}}) {
-            ## validate a bit
-            next unless $x =~ m{^https?://};
-            $redirect_uri_sth->execute($id, $x);
-            push @redirect_uri, $x;
-        }
-    }
 
     return {
         app_id     => $id,
         name          => $app->{name},
-        redirect_uri  => \@redirect_uri
+        redirect_uri  => $app->{redirect_uri}
     };
 }
 
@@ -279,27 +250,11 @@ sub get_app {
     my ($self, $user_id, $app_id) = @_;
 
     my $app = $self->dbh->selectrow_hashref("
-        SELECT id as app_id, name FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
+        SELECT id as app_id, name, redirect_uri FROM oauth.apps WHERE id = ? AND binary_user_id = ? AND active
     ", undef, $app_id, $user_id);
     return unless $app;
 
-    $app->{redirect_uri} = $self->__get_redirect_uri($app_id);
     return $app;
-}
-
-sub __get_redirect_uri {
-    my ($self, $app_id) = @_;
-
-    my @redirect_uri;
-    my $redirect_uri_sth = $self->dbh->prepare("
-        SELECT redirect_uri FROM oauth.app_redirect_uri WHERE app_id = ?
-    ");
-    $redirect_uri_sth->execute($app_id);
-    while (my ($x) = $redirect_uri_sth->fetchrow_array) {
-        push @redirect_uri, $x;
-    }
-
-    return [@redirect_uri];
 }
 
 sub get_apps_by_user_id {
@@ -307,14 +262,10 @@ sub get_apps_by_user_id {
 
     my $apps = $self->dbh->selectall_arrayref("
         SELECT
-            id as app_id, name
+            id as app_id, name, redirect_uri
         FROM oauth.apps WHERE binary_user_id = ? AND active ORDER BY name
     ", {Slice => {}}, $user_id);
     return [] unless $apps;
-
-    foreach (@$apps) {
-        $_->{redirect_uri} = $self->__get_redirect_uri($_->{app_id});
-    }
 
     return $apps;
 }
