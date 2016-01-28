@@ -86,6 +86,11 @@ sub effective_date_for {
     return $date->plus_time_interval((7 + $date->timezone_offset('America/New_York')->hours) * 3600)->truncate_to_day;
 }
 
+sub is_before_rollover {
+    my ($self, $date) = @_;
+
+    return ($date->is_before($self->NY1700_rollover_date_on($date))) ? 1 : 0;
+}
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
