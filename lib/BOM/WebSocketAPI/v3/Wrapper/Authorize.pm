@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use BOM::WebSocketAPI::Websocket_v3;
+use BOM::Database::Model::OAuth;
 
 sub authorize {
     my ($c, $args) = @_;
@@ -20,6 +21,12 @@ sub authorize {
                 my $token_type = 'session_token';
                 if (length $token == 15) {
                     $token_type = 'api_token';
+                } elsif (length $token == 32 && $token =~ /^a1-/) {
+                    $token_type = 'oauth_token';
+                    ## scopes
+                    my $m      = BOM::Database::Model::OAuth->new;
+                    my @scopes = $m->get_scopes_by_access_token($token);
+                    $c->stash('oauth_scopes' => \@scopes);
                 }
 
                 $c->stash(
@@ -27,7 +34,8 @@ sub authorize {
                     token_type           => $token_type,
                     account_id           => delete $response->{account_id},
                     currency             => $response->{currency},
-                    landing_company_name => delete $response->{landing_company_name});
+                    landing_company_name => delete $response->{landing_company_name},
+                    country              => delete $response->{country});
                 return {
                     msg_type  => 'authorize',
                     authorize => $response,
