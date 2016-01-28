@@ -185,6 +185,34 @@ subtest Forex => sub {
     cmp_ok($bet->timeindays->amount, '==', 1 / 24, 'Intraday bet: does not follow integer days convnetion.');
 };
 
+subtest 'Forex date start after cutoff' => sub {
+
+    note('Daylight Savings (DST) for 2012 is from March 11th to November 4th.');
+    note('DST rollover time 21:00GMT, non DST 22:00GMT');
+
+    my $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-12 21:00:01'),
+        date_expiry => Date::Utility->new('2012-03-16 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 4 days after rollover in DST.');
+    $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-12 20:59:59'),
+        date_expiry => Date::Utility->new('2012-03-16 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 5, 'timeindays is 5 days before rollover in DST.');
+
+    $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-05 22:00:01'),
+        date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 3, 'timeindays is 4 days after rollover in non DST.');
+    $bet = _sample_bet(
+        date_start  => Date::Utility->new('2012-03-05 21:59:59'),
+        date_expiry => Date::Utility->new('2012-03-09 21:00:00'),
+    );
+    cmp_ok($bet->timeindays->amount, '==', 4, 'timeindays is 5 days before rollover in non DST.');
+};
+
 subtest Equity => sub {
     plan tests => 1;
 
