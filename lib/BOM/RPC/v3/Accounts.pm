@@ -548,6 +548,11 @@ sub set_settings {
     $client->postcode($addressPostcode);
     $client->phone($phone);
 
+    # only update residence for: Virtual client, without residence
+    if ($client->is_virtual and not $client->residence and $args->{residence}) {
+        $client->residence($args->{residence});
+    }
+
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
         return BOM::RPC::v3::Utility::create_error({
