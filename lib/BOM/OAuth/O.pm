@@ -13,17 +13,23 @@ sub __oauth_model {
 sub authorize {
     my $c = shift;
 
-    my ($app_id, $redirect_uri, $scope, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id redirect_uri scope state response_type /;
+    my ($app_id, $scope, $state, $response_type) = map { $c->param($_) // undef } qw/ app_id scope state response_type /;
 
     # $response_type ||= 'code';    # default to Authorization Code
     $response_type = 'token';    # only support token
 
-    $app_id       or return $c->__bad_request('the request was missing app_id');
-    $redirect_uri or return $c->__bad_request('the request was missing redirect_uri');
+    $app_id or return $c->__bad_request('the request was missing app_id');
 
     my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
     unshift @scopes, 'user' unless grep { $_ eq 'user' } @scopes;
 
+    my $oauth_model = __oauth_model();
+    my $app         = $oauth_model->verify_app($app_id);
+    unless ($app) {
+        return $c->__bad_request('the request was missing valid app_id');
+    }
+
+    my $redirect_uri    = $app->{redirect_uri};
     my $redirect_handle = sub {
         my ($response_type, $error, $state) = @_;
 
@@ -37,19 +43,6 @@ sub authorize {
         # }
         return $uri;
     };
-
-    my $oauth_model = __oauth_model();
-    my $app         = $oauth_model->verify_app($app_id);
-    unless ($app) {
-        my $uri = $redirect_handle->($response_type, 'invalid_app', $state);
-        return $c->redirect_to($uri);
-    }
-
-    ## validate redirect_uri
-    unless ($redirect_uri eq $app->{redirect_uri}) {
-        my $uri = $redirect_handle->($response_type, 'invalid_redirect_uri', $state);
-        return $c->redirect_to($uri);
-    }
 
     ## check user is logined
     my $client = $c->__get_client;
