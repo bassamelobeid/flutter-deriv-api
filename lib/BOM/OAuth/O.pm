@@ -46,8 +46,7 @@ sub authorize {
     }
 
     ## validate redirect_uri
-    my $is_valid = $oauth_model->verify_app_redirect_uri($app_id, $redirect_uri);
-    unless ($is_valid) {
+    unless ($redirect_uri eq $app->{redirect_uri}) {
         my $uri = $redirect_handle->($response_type, 'invalid_redirect_uri', $state);
         return $c->redirect_to($uri);
     }
