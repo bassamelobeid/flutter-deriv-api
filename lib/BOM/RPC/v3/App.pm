@@ -49,7 +49,7 @@ sub register {
         and $appstore !~ m{^https?://itunes\.apple\.com/\S+$};
     return $error_sub->(localize('Invalid URI for googleplay.'))
         if length($googleplay)
-        and $googleplay !~ m{^https?://play\.google\.com/store/apps/\S+$};
+        and $googleplay !~ m{^https?://play\.google\.com/\S+$};
 
     my $oauth = BOM::Database::Model::OAuth->new;
     return $error_sub->(localize('The name is taken.'))
