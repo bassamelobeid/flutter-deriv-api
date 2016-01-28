@@ -19,6 +19,7 @@ stress:
 wsstress:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	cd /home/git/regentmarkets/stress/websocket-bench; ./bin/bom-feed-listener-random.pl --no-pid-file &
+	sleep 5
 	#cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
 test_avg_stress:
