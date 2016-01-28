@@ -515,7 +515,17 @@ sub set_settings {
         return $auth_error;
     }
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+    # Virtual client is only allowed to update residence, if residence not set
+    if ($client->is_virtual) {
+        if ($args->{residence} and not $client->residence) {
+            $client->residence($args->{residence});
+        } else {
+            return BOM::RPC::v3::Utility::permission_error();
+        }
+    } else {
+        # not allow real client to update residence
+        return BOM::RPC::v3::Utility::permission_error() if ($args->{residence});
+    }
 
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
@@ -547,11 +557,6 @@ sub set_settings {
     $client->state($addressState);    # FIXME validate
     $client->postcode($addressPostcode);
     $client->phone($phone);
-
-    # only update residence for: Virtual client, without residence
-    if ($client->is_virtual and not $client->residence and $args->{residence}) {
-        $client->residence($args->{residence});
-    }
 
     $client->latest_environment($now->datetime . ' ' . $client_ip . ' ' . $user_agent . ' LANG=' . $language);
     if (not $client->save()) {
