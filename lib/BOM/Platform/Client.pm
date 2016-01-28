@@ -563,7 +563,7 @@ sub get_limit_for_payout {
 sub landing_company_open_positions_payout_limit {
     my $self = shift;
 
-    return ($self->landing_company->short eq 'maltainvest') ? 250_000 : undef;
+    return ($self->landing_company->short eq 'maltainvest') ? 100_000 : undef;
 }
 
 sub get_limit {
