@@ -1076,22 +1076,6 @@ sub get_volatility {
         sought_point => $sought_point,
     });
 
-    # Error checks:
-    if (not $vol) {
-        my $emsg = "Could not interpolate volatility for " . $self->symbol . " for [$days] days and [$sought_point] delta.";
-        get_logger('QUANT')->error($emsg);
-        die "PricingError";
-    } elsif ($vol < 0) {
-        my $emsg =
-              "Got illegal volatility [$vol] for underlying ["
-            . $self->symbol
-            . "] and recorded date epoch ["
-            . $self->recorded_date->epoch
-            . "] for $days days and $sought_point delta from vol surface.";
-        get_logger('QUANT')->error($emsg);
-        die "PricingError";
-    }
-
     return $vol;
 }
 
