@@ -315,16 +315,6 @@ sub calculate_limits {
         $self->limits->{spread_bet_profit_limit} = $ql->spreads_daily_profit_limit;
     }
 
-    if ($contract->category_code eq 'digits') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            bet_type    => [map { {n => $_} } 'DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITEVEN', 'DIGITODD'],
-            name        => 'digits_turnover_limit',
-            limit       => $ql->digits_turnover_limit,
-            tick_expiry => 1,
-            };
-    }
-
     if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
         push @{$self->limits->{specific_turnover_limits}},
             +{
@@ -376,15 +366,6 @@ sub calculate_limits {
             name    => 'smart_index_turnover_limit',
             limit   => $ql->smart_index_turnover_limit,
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_index'})],
-            };
-    }
-
-    if ($contract->tick_expiry) {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name        => 'tick_expiry_turnover_limit',
-            limit       => $ql->tick_expiry_turnover_limit,
-            tick_expiry => 1
             };
     }
 
