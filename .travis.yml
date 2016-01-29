@@ -3,6 +3,8 @@ perl:
     - "5.14.2"
 go:
     - 1.5
+node_js:
+    - "4.1"
 addons:
     postgresql: "9.3"
 services:
@@ -10,6 +12,17 @@ services:
     - couchdb
 cache: apt
 env:
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=1
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=2
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=3
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=4
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=5
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=6
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=7
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=8
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=9
+    - TEST_SUITE=wsstress STRESS_NUM=1 INSTANCE_NO=10
+    - TEST_SUITE=test_avg_stress
     - TEST_SUITE=v2
     - TEST_SUITE=v3
     - TEST_SUITE=structure
@@ -23,7 +36,6 @@ before_install:
     - /tmp/travis-scripts/fixHostName.sh
     - /tmp/travis-scripts/postgres.sh
     - sudo mkdir -p /home/git/regentmarkets /home/git/binary-com
-
     - /tmp/travis-scripts/couchdb.sh
 
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/cpan
@@ -37,7 +49,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh binary-com/binary-static gh-pages
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-market
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/stress
-
+    - /tmp/travis-scripts/clone_branch.sh binary-com/websocket-bench
     - /tmp/travis-scripts/redis.sh
 
 install:
@@ -46,7 +58,6 @@ install:
     - go get github.com/kavehmz/queue
     - go get golang.org/x/net/websocket
     - go get github.com/garyburd/redigo/redis
-
     - sudo ln -s $PWD /home/git/regentmarkets/bom-websocket-api
     - export WEBSOCKET_CONFIG=$PWD/websocket.conf.travis; export RPC_CONFIG=/home/git/regentmarkets/bom-rpc/rpc.conf.travis
     - /tmp/travis-scripts/devbox.sh

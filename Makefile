@@ -16,6 +16,13 @@ stress:
 	sudo netstat -anlpt |grep 500
 	cd /home/git/regentmarkets/stress;go run stress.go -insert 100;go run stress.go -workers 2 -noecho
 
+wsstress:
+	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
+	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
+
+test_avg_stress:
+	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_avg_stress $(TRAVIS_BUILD_NUMBER)
+
 tidy:
 	find . -name '*.p?.bak' -delete
 	find lib t -name '*.p[lm]' -o -name '*.t' | xargs perltidy -pro=/home/git/regentmarkets/cpan/rc/.perltidyrc --backup-and-modify-in-place -bext=tidyup
