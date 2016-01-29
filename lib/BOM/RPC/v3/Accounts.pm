@@ -470,20 +470,31 @@ sub get_settings {
 
     my $client_tnc_status = $client->get_status('tnc_approval');
 
+    my ($dob_epoch, $country_code, $country);
+    $dob_epoch = Date::Utility->new($client->date_of_birth)->epoch if ($client->date_of_birth);
+    if ($client->residence) {
+        $country_code = $client->residence;
+        $country = BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $language);
+    }
+
     return {
-        email         => $client->email,
-        date_of_birth => Date::Utility->new($client->date_of_birth)->epoch,
-        country       => BOM::Platform::Runtime->instance->countries->localized_code2country($client->residence, $language),
-        country_code  => $client->residence,
+        email        => $client->email,
+        country      => $country,
+        country_code => $country_code,
         $client->is_virtual
         ? ()
         : (
-            address_line_1   => $client->address_1,
-            address_line_2   => $client->address_2,
-            address_city     => $client->city,
-            address_state    => $client->state,
-            address_postcode => $client->postcode,
-            phone            => $client->phone,
+            salutation                     => $client->salutation,
+            first_name                     => $client->first_name,
+            last_name                      => $client->last_name,
+            date_of_birth                  => $dob_epoch,
+            address_line_1                 => $client->address_1,
+            address_line_2                 => $client->address_2,
+            address_city                   => $client->city,
+            address_state                  => $client->state,
+            address_postcode               => $client->postcode,
+            phone                          => $client->phone,
+            is_authenticated_payment_agent => ($client->payment_agent and $client->payment_agent->is_authenticated) ? 1 : 0,
             $client_tnc_status ? (client_tnc_status => $client_tnc_status->reason) : (),
         ),
     };
@@ -504,7 +515,22 @@ sub set_settings {
         return $auth_error;
     }
 
-    return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
+    # Virtual client is only allowed to update residence, if residence not set
+    if ($client->is_virtual) {
+        if ($args->{residence} and not $client->residence) {
+            $client->residence($args->{residence});
+            if (not $client->save()) {
+                return BOM::RPC::v3::Utility::create_error({
+                        code              => 'InternalServerError',
+                        message_to_client => localize('Sorry, an error occurred while processing your account.')});
+            }
+            return {status => 1};
+        }
+        return BOM::RPC::v3::Utility::permission_error();
+    } else {
+        # not allow real client to update residence
+        return BOM::RPC::v3::Utility::permission_error() if ($args->{residence});
+    }
 
     my $now             = Date::Utility->new;
     my $address1        = $args->{'address_line_1'};
