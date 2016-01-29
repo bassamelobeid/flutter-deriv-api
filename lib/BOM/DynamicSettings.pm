@@ -218,13 +218,11 @@ sub get_settings_by_group {
                 quants.bet_limits.maximum_payout_on_less_than_7day_indices_call_put
                 quants.bet_limits.maximum_tick_trade_stake
                 quants.client_limits.intraday_forex_iv
-                quants.client_limits.tick_expiry_turnover_limit
                 quants.client_limits.asian_turnover_limit
                 quants.client_limits.spreads_daily_profit_limit
                 quants.client_limits.smarties_turnover_limit
                 quants.client_limits.intraday_spot_index_turnover_limit
                 quants.client_limits.tick_expiry_engine_turnover_limit
-                quants.client_limits.digits_turnover_limit
                 quants.client_limits.payout_per_symbol_and_bet_type_limit
                 quants.market_data.extra_vol_diff_by_delta
                 quants.market_data.volsurface_calibration_error_threshold
