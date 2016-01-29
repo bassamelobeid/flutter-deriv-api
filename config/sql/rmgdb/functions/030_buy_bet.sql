@@ -200,12 +200,10 @@ CREATE OR REPLACE FUNCTION bet.buy_bet_nofail(a_loginid           VARCHAR(12),  
                                           OUT r_edescription      TEXT)
 RETURNS SETOF RECORD AS $def$
 DECLARE
-    r_ecode            TEXT;
-    r_edescription     TEXT;
+    v_r                RECORD;
 BEGIN
-    SAVEPOINT before;
     BEGIN
-        SELECT v_fmb INTO r_fmb, v_trans INTO r_trans
+        SELECT * INTO v_r
           FROM bet.buy_bet(a_loginid,
                            a_currency,
                            -- FMB stuff
@@ -231,10 +229,11 @@ BEGIN
                            t_remark,
                            t_source,
                            -- quants_bets_variables
-                           q_qv) t;
-        RELEASE SAVEPOINT before;
+                           q_qv,
+                           p_limits) t;
+        r_fmb := v_r.v_fmb;
+        r_trans := v_r.v_trans;
     EXCEPTION WHEN OTHERS THEN
-        ROLLBACK TO SAVEPOINT before;
         GET STACKED DIAGNOSTICS r_ecode = RETURNED_SQLSTATE,
                                 r_edescription = MESSAGE_TEXT;
     END;
