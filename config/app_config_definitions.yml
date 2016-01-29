@@ -178,10 +178,6 @@ payments:
           description: 'The amount by which we want to topup the virtual account'
           isa: Int
           default: 10000
-        maximum_balance:
-          description: 'The maximum allowed balance for virtual accounts'
-          isa: Int
-          default: 1000000
 price_streamer:
   description: "Configuration for price streaming daemon"
   isa: section
