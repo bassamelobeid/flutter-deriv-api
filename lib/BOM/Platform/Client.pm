@@ -479,7 +479,7 @@ sub get_limit_for_daily_turnover {
     $val =
           $self->loginid =~ /^VRT/          ? 1_000_000
         : $self->client_fully_authenticated ? 500_000
-        :                                     30_000;
+        :                                     200_000;
 
     return $excl && $excl < $val ? $excl : $val;
 }
@@ -555,7 +555,7 @@ sub get_limit_for_payout {
           $self->loginid =~ /^VRT/          ? 1_000_000
         : $lc_limit                         ? $lc_limit
         : $self->client_fully_authenticated ? 500_000
-        :                                     50_000;
+        :                                     200_000;
 
     return $val;
 }
