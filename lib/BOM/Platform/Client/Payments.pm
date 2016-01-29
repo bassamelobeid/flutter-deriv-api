@@ -150,7 +150,7 @@ sub deposit_virtual_funds {
     $self->is_virtual || die "not a virtual client";
 
     my $currency = (($self->default_account and $self->default_account->currency_code eq 'JPY') or $self->residence eq 'jp') ? 'JPY' : 'USD';
-    my $amount = BOM::Platform::Runtime->instance->app_config->payments->virtual->topup_amount->{$currency};
+    my $amount = BOM::Platform::Runtime->instance->app_config->payments->virtual->topup_amount->$currency;
 
     my $trx = $self->payment_legacy_payment(
         currency     => $currency,
