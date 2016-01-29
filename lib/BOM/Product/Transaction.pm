@@ -273,8 +273,8 @@ sub calculate_limits {
     $self->limits->{max_balance} = $client->get_limit_for_account_balance;
 
     if (not $contract->tick_expiry) {
-        $self->limits->{max_open_bets} = $client->get_limit_for_open_positions;
-        $self->limits->{max_payout_open_bets} = $client->get_limit_for_payout;
+        $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
+        $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
         $self->limits->{max_payout_per_symbol_and_bet_type} = $ql->payout_per_symbol_and_bet_type_limit;
     }
 
