@@ -48,4 +48,4 @@ subtest 'is_currency_legal' => sub {
     };
 };
 
-cmp_deeply [sort $lc_registry->all_currencies], ['AUD', 'EUR', 'GBP', 'USD'];
+cmp_deeply [sort $lc_registry->all_currencies], ['AUD', 'EUR', 'GBP', 'JPY', 'USD'];
