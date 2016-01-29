@@ -147,8 +147,14 @@ sub validate_payment {
 #######################################
 sub deposit_virtual_funds {
     my $self     = shift;
-    my $amount   = shift || BOM::Platform::Runtime->instance->app_config->payments->virtual->topup_amount;
-    my $currency = shift || 'USD';
+    my $amount   = BOM::Platform::Runtime->instance->app_config->payments->virtual->topup_amount;
+    my $currency = 'USD';
+
+    if ($self->currency eq 'JPY' or $self->residence eq 'jp') {
+        $currency = 'JPY';
+        $amount *= 100;
+    }
+
     $self->is_virtual || die "not a virtual client";
     my $trx = $self->payment_legacy_payment(
         currency     => $currency,
