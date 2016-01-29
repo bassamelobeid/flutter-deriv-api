@@ -458,11 +458,6 @@ quants:
           isa: Num
           default: 5000
           global: 1
-        tick_expiry_turnover_limit:
-          description: "Daily tick expiry turnover limit per client"
-          isa: Num
-          default: 200000
-          global: 1
         intraday_spot_index_turnover_limit:
           description: "Daily intraday spot index turnover limit per client"
           isa: Num
@@ -485,11 +480,6 @@ quants:
           global: 1
         stocks_turnover_limit:
           description: "Daily stocks turnover limit per client"
-          isa: Num
-          default: 5000
-          global: 1
-        digits_turnover_limit:
-          description: "Daily digits turnover limit per client"
           isa: Num
           default: 5000
           global: 1

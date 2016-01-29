@@ -22,13 +22,13 @@ my $daily_turnover_limit = $client->get_limit({
     'for'      => 'daily_turnover',
     'currency' => 'USD',
 });
-is($daily_turnover_limit, 30000, 'turnover limit = 30000');
+is($daily_turnover_limit, 200000, 'turnover limit = 200000');
 
 my $payout_limit = $client->get_limit({
     'for'      => 'payout',
     'currency' => 'USD',
 });
-is($payout_limit, 50000, 'payout limit = 50000');
+is($payout_limit, 200000, 'payout limit = 200000');
 #setting
 
 $client->custom_max_daily_turnover(222222);
@@ -75,4 +75,3 @@ $client->custom_max_daily_turnover(0);
 $client->custom_max_acbal(0);
 $client->custom_max_payout(0);
 $client->save;
-
