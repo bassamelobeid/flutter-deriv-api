@@ -55,7 +55,7 @@ sub entry_point {
                 ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
                 : "redis://$cf->{host}:$cf->{port}";
         };
-
+        $log->debug('redis url:' . $url);
         my $redis = Mojo::Redis2->new(url => $url);
         $redis->on(
             error => sub {
