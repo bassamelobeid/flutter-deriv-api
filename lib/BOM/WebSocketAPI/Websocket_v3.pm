@@ -39,7 +39,6 @@ sub entry_point {
     my $c = shift;
 
     my $log = $c->app->log;
-    $log->info("opening a websocket for " . $c->tx->remote_address);
 
     # enable permessage-deflate
     $c->tx->with_compression;
