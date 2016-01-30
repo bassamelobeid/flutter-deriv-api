@@ -54,7 +54,7 @@ sub entry_point {
                 ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
                 : "redis://$cf->{host}:$cf->{port}";
         };
-        $log->debug('redis url:' . $url);
+        $log->info('redis url:' . $url);
         my $redis = Mojo::Redis2->new(url => $url);
         $redis->on(
             error => sub {
@@ -64,7 +64,7 @@ sub entry_point {
         $redis->on(
             message => sub {
                 my ($self, $msg, $channel) = @_;
-
+                $log->info('redis event triggered');
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;

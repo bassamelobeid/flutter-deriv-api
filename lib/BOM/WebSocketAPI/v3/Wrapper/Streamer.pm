@@ -170,18 +170,18 @@ sub _feed_channel {
     my $feed_channel_type = $c->stash('feed_channel_type') || {};
 
     my $redis = $c->stash('redis');
-    if ($subs eq 'subscribe') {$c->app->log->info(__FILE__, ":", __LINE__);
+    if ($subs eq 'subscribe') {$c->app->log->info(__FILE__. ":". __LINE__);
         my $count = 0;
         foreach my $k (keys $feed_channel_type) {
-            $count++ if ($k =~ /^.*?;proposal:/);$c->app->log->info(__FILE__, ":", __LINE__);
+            $count++ if ($k =~ /^.*?;proposal:/);$c->app->log->info(__FILE__. ":". __LINE__);
         }
         if ($count > 5 || exists $feed_channel_type->{"$symbol;$type"}) {
-            return;$c->app->log->info(__FILE__, ":", __LINE__);
+            return;$c->app->log->info(__FILE__. ":". __LINE__);
         }
-        $uuid = Data::UUID->new->create_str();$c->app->log->info(__FILE__, ":", __LINE__);
+        $uuid = Data::UUID->new->create_str();$c->app->log->info(__FILE__. ":". __LINE__);
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
-        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;$c->app->log->info(__FILE__, ":", __LINE__);
+        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;$c->app->log->info(__FILE__. ":". __LINE__);
         $redis->subscribe(["FEED::$symbol"], sub { });
     }
 
