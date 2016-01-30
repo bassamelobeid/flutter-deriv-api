@@ -22,8 +22,8 @@ wsstress:
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-combinator.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-distributor.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-client.pl --no-pid-file &
-	sleep 500
-	#cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
+	#sleep 500
+	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
 test_avg_stress:
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_avg_stress $(TRAVIS_BUILD_NUMBER)
