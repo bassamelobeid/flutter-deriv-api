@@ -16,7 +16,7 @@ sub ticks {
     my ($c, $args) = @_;
 
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
-    $c->log->debug('here subscrib ticks');
+    $c->app->log->debug('here subscrib ticks');
     foreach my $symbol (@symbols) {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
