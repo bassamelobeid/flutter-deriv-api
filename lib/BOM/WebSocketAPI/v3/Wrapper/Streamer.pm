@@ -16,12 +16,12 @@ sub ticks {
     my ($c, $args) = @_;
 
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
-    $c->app->log->info('here subscrib ticks');
-    foreach my $symbol (@symbols) {
+    foreach my $symbol (@symbols) {    $c->app->log->info('here subscrib ticks');
+
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
-        if ($response and exists $response->{error}) {
+        if ($response and exists $response->{error}) {$c->app->log->info(__FILE__, ":", __LINE__);
             return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
-        } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
+        } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {$c->app->log->info(__FILE__, ":", __LINE__);
             return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
         }
     }
@@ -170,18 +170,18 @@ sub _feed_channel {
     my $feed_channel_type = $c->stash('feed_channel_type') || {};
 
     my $redis = $c->stash('redis');
-    if ($subs eq 'subscribe') {
+    if ($subs eq 'subscribe') {$c->app->log->info(__FILE__, ":", __LINE__);
         my $count = 0;
         foreach my $k (keys $feed_channel_type) {
-            $count++ if ($k =~ /^.*?;proposal:/);
+            $count++ if ($k =~ /^.*?;proposal:/);$c->app->log->info(__FILE__, ":", __LINE__);
         }
         if ($count > 5 || exists $feed_channel_type->{"$symbol;$type"}) {
-            return;
+            return;$c->app->log->info(__FILE__, ":", __LINE__);
         }
-        $uuid = Data::UUID->new->create_str();
+        $uuid = Data::UUID->new->create_str();$c->app->log->info(__FILE__, ":", __LINE__);
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
-        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;
+        $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;$c->app->log->info(__FILE__, ":", __LINE__);
         $redis->subscribe(["FEED::$symbol"], sub { });
     }
 
