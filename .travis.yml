@@ -69,5 +69,5 @@ script:
     - if [ "$TEST_SUITE" == "" ]  ; then true; else make $TEST_SUITE; fi
     - head -n 200 /tmp/l4p.log
     - head -n 200 /var/log/httpd/bom-websocket-api_trace.log
-    - redis-cli -h 127.0.0.1 -p 6380 subscribe FEED::R_50
+    - redis-cli -h 127.0.0.1 -p 6380 subscribe feed::R_50
 
