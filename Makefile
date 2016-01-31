@@ -21,7 +21,8 @@ wsstress:
 	cd /home/git/regentmarkets/stress/websocket-bench; ./bin/bom-feed-listener-random.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-combinator.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-distributor.pl --no-pid-file &
-	REDIS_CACHE_SERVER=127.0.0.1:6380 /home/git/regentmarkets/bom-feed/bin/bom-feed-client.pl --no-pid-file &
+	/home/git/regentmarkets/bom-feed/bin/bom-feed-client.pl --no-pid-file &
+  /home/git/regentmarkets/bom-market/bin/feed_notify_pub.pl &
 	#sleep 500
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
