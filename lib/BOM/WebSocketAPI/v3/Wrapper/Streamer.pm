@@ -98,7 +98,7 @@ sub send_ask {
 sub process_realtime_events {
     my ($c, $message) = @_;
     $c->app->log->info(__FILE__, ":", __LINE__);
-    $c->a0p->log->info($message);
+    $c->app->log->info($message);
     my @m = split(';', $message);
     my $feed_channels_type = $c->stash('feed_channel_type');
     $c->app->log->info(__FILE__, ":", __LINE__);
