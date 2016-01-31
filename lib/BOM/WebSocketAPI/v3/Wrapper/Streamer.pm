@@ -182,14 +182,14 @@ sub _feed_channel {
         $feed_channel->{$symbol} += 1;
         $feed_channel_type->{"$symbol;$type"}->{args} = $args if $args;
         $feed_channel_type->{"$symbol;$type"}->{uuid} = $uuid;$c->app->log->info(__FILE__. ":". __LINE__);
-        $redis->subscribe(["FEED::$symbol"], sub { }); $c->app->log->info("subscribed: FEED::$symbol");
+        $redis->subscribe(["feed::$symbol"], sub { }); $c->app->log->info("subscribed: FEED::$symbol");
     }
 
     if ($subs eq 'unsubscribe') {
         $feed_channel->{$symbol} -= 1;
         delete $feed_channel_type->{"$symbol;$type"};
         if ($feed_channel->{$symbol} <= 0) {
-            $redis->unsubscribe(["FEED::$symbol"], sub { });
+            $redis->unsubscribe(["feed::$symbol"], sub { });
             delete $feed_channel->{$symbol};
         }
     }
