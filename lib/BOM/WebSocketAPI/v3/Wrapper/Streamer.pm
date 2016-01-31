@@ -97,18 +97,18 @@ sub send_ask {
 
 sub process_realtime_events {
     my ($c, $message) = @_;
-    {$c->app->log->info(__FILE__, ":", __LINE__);
+    $c->app->log->info(__FILE__, ":", __LINE__);
     my @m = split(';', $message);
     my $feed_channels_type = $c->stash('feed_channel_type');
-     $c->app->log->info(__FILE__, ":", __LINE__);
+    $c->app->log->info(__FILE__, ":", __LINE__);
     my %skip_symbol_list = map { $_ => 1 } qw(R_100 R_50 R_25 R_75 RDBULL RDBEAR RDYIN RDYANG);
-    my %skip_type_list   = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);$c->app->log->info(__FILE__, ":", __LINE__);
-    foreach my $channel (keys %{$feed_channels_type}) {
-        $channel =~ /(.*);(.*)/;$c->app->log->info(__FILE__, ":", __LINE__);
+    my %skip_type_list   = map { $_ => 1 } qw(CALL PUT DIGITMATCH DIGITDIFF DIGITOVER DIGITUNDER DIGITODD DIGITEVEN);
+    foreach my $channel (keys %{$feed_channels_type}) {$c->app->log->info(__FILE__, ":", __LINE__);
+        $channel =~ /(.*);(.*)/;
         my $symbol    = $1;
         my $type      = $2;
         my $arguments = $feed_channels_type->{$channel}->{args};
-                                 $c->app->log->info(__FILE__, ":", __LINE__);
+
         if ($type eq 'tick' and $m[0] eq $symbol) {$c->app->log->info(__FILE__, ":", __LINE__);
             $c->send({
                     json => {
@@ -127,7 +127,7 @@ sub process_realtime_events {
                 unless ($skip_symbol_list{$arguments->{symbol}}
                     and $skip_type_list{$arguments->{contract_type}}
                     and $arguments->{duration_unit} eq 't')
-                {$c->app->log->info(__FILE__, ":", __LINE__);
+                {
                     send_ask($c, $feed_channels_type->{$channel}->{uuid}, $arguments) if $c->tx;
                 }
             } else {$c->app->log->info(__FILE__, ":", __LINE__);
@@ -157,8 +157,8 @@ sub process_realtime_events {
                             low         => $u->pipsized_value($3),
                             close       => $u->pipsized_value($4)}}}) if $c->tx;
         }$c->app->log->info(__FILE__, ":", __LINE__);
-    }
-                                                                            $c->app->log->info(__FILE__, ":", __LINE__);
+    }$c->app->log->info(__FILE__, ":", __LINE__);
+
     return;
 }
 
