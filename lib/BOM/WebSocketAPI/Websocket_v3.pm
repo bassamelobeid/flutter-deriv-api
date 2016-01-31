@@ -64,7 +64,7 @@ sub entry_point {
         $redis->on(
             message => sub {
                 my ($self, $msg, $channel) = @_;
-                $log->info('redis event triggered');
+                $log->info('redis event triggered:' . $channel);
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^feed::/;
