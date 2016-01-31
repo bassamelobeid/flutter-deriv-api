@@ -20,7 +20,7 @@ wsstress:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	cd /home/git/regentmarkets/stress/websocket-bench; ./bin/bom-feed-listener-random.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-combinator.pl --no-pid-file &
-	#/home/git/regentmarkets/bom-feed/bin/bom-feed-distributor.pl --no-pid-file &
+	/home/git/regentmarkets/bom-feed/bin/bom-feed-distributor.pl --no-pid-file &
 	#/home/git/regentmarkets/bom-feed/bin/bom-feed-client.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom_tick_populator.pl --no-pid-file &
 	/home/git/regentmarkets/bom-market/bin/feed_notify_pub.pl &
