@@ -26,7 +26,11 @@ run_bench:
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
 run_avg_stress:
-	if (($(INSTANCE_NO)!=1)); then true; else cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_avg_stress $(TRAVIS_BUILD_NUMBER); fi
+ifeq ($(INSTANCE_NO),1)
+	true
+else
+	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_avg_stress $(TRAVIS_BUILD_NUMBER)
+endif
 
 wsstress: run_bench run_avg_stress
 
