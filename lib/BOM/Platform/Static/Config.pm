@@ -25,7 +25,7 @@ sub get_customer_support_email {
 sub read_config {
     my $flag = 0;
     my $static_hash;
-    if (open my $fh, '<', '/etc/rmg/version') {
+    if (open my $fh, '<', '/etc/rmg/version') {    ## no critic (RequireBriefOpen)
         while (my $line = <$fh>) {
             chomp $line;
             if ($flag) {
@@ -38,6 +38,7 @@ sub read_config {
                 $flag = 1;
             }
         }
+        close $fh;
     } else {
         $static_hash = Data::UUID->new->create_str();
     }
