@@ -88,91 +88,91 @@ sub _init {
     BOM::System::Chronicle::set(
         'app_settings',
         'binary',
-        JSON::to_json({
-                'global' => {
-                    'payments'  => {},
-                    'marketing' => {},
-                    'system'    => {
-                        'suspend' => {
-                            'new_accounts'   => 0,
-                            'payments'       => 0,
-                            'payment_agents' => 0,
-                            'system'         => '0',
-                            'trading'        => '0',
-                            'all_logins'     => '0',
-                            'logins'         => []}
+        {
+            'global' => {
+                'payments'  => {},
+                'marketing' => {},
+                'system'    => {
+                    'suspend' => {
+                        'new_accounts'   => 0,
+                        'payments'       => 0,
+                        'payment_agents' => 0,
+                        'system'         => '0',
+                        'trading'        => '0',
+                        'all_logins'     => '0',
+                        'logins'         => []}
+                },
+                'cgi' => {
+                    'allowed_languages' => ['EN', 'ID', 'RU', 'ZH_CN'],
+                    'backoffice'               => {'static_url' => 'https://regentmarkets.github.io/binary-static-backoffice/'},
+                    'terms_conditions_version' => 'Version 39 2015-12-04'
+                },
+                'quants' => {
+                    'underlyings' => {'disabled_due_to_corporate_actions' => []},
+                    'markets'     => {
+                        'disabled'   => ['sectors'],
+                        'disable_iv' => []
                     },
-                    'cgi' => {
-                        'allowed_languages' => ['EN', 'ID', 'RU', 'ZH_CN'],
-                        'backoffice'               => {'static_url' => 'https://regentmarkets.github.io/binary-static-backoffice/'},
-                        'terms_conditions_version' => 'Version 39 2015-12-04'
+                    'features' => {
+                        'suspend_claim_types'          => [],
+                        'enable_pricedebug'            => 1,
+                        'enable_parameterized_surface' => '1',
+                        'enable_portfolio_autosell'    => 0
                     },
-                    'quants' => {
-                        'underlyings' => {'disabled_due_to_corporate_actions' => []},
-                        'markets'     => {
-                            'disabled'   => ['sectors'],
-                            'disable_iv' => []
-                        },
-                        'features' => {
-                            'suspend_claim_types'          => [],
-                            'enable_pricedebug'            => 1,
-                            'enable_parameterized_surface' => '1',
-                            'enable_portfolio_autosell'    => 0
-                        },
-                        'client_limits' => {
-                            'asian_turnover_limit'                 => '50000',
-                            'spreads_daily_profit_limit'           => '10000',
-                            'smarties_turnover_limit'              => '100000',
-                            'payout_per_symbol_and_bet_type_limit' => '200000',
-                            'intraday_spot_index_turnover_limit'   => '30000',
-                            'intraday_forex_iv'                    => '{
+                    'client_limits' => {
+                        'asian_turnover_limit'                 => '50000',
+                        'spreads_daily_profit_limit'           => '10000',
+                        'smarties_turnover_limit'              => '100000',
+                        'payout_per_symbol_and_bet_type_limit' => '200000',
+                        'intraday_spot_index_turnover_limit'   => '30000',
+                        'intraday_forex_iv'                    => '{
            "potential_profit" : 35000,
            "realized_profit" : 35000,
            "turnover" : 35000
         }
         ',
-                            'tick_expiry_engine_turnover_limit' => '0.5'
+                        'tick_expiry_engine_turnover_limit' => '0.5'
+                    },
+                    'bet_limits' => {
+                        'maximum_payout_on_less_than_7day_indices_call_put' => '5000',
+                        'maximum_payout'                                    => '',
+                        'maximum_tick_trade_stake'                          => '1000',
+                        'maximum_payout_on_new_markets'                     => '100',
+                        'holiday_blackout_start'                            => '345',
+                        'holiday_blackout_end'                              => '5'
+                    },
+                    'market_data' => {
+                        'interest_rates_source'                  => 'market',
+                        'economic_announcements_source'          => 'forexfactory',
+                        'extra_vol_diff_by_delta'                => '0.1',
+                        'volsurface_calibration_error_threshold' => '20'
+                    },
+                    'commission' => {
+                        'adjustment' => {
+                            'minimum'              => '1',
+                            'maximum'              => '500',
+                            'spread_multiplier'    => '1',
+                            'quanto_scale_factor'  => '1',
+                            'bom_created_bet'      => '100',
+                            'news_factor'          => '1',
+                            'forward_start_factor' => '1.5',
+                            'global_scaling'       => '100'
                         },
-                        'bet_limits' => {
-                            'maximum_payout_on_less_than_7day_indices_call_put' => '5000',
-                            'maximum_payout'                                    => '',
-                            'maximum_tick_trade_stake'                          => '1000',
-                            'maximum_payout_on_new_markets'                     => '100',
-                            'holiday_blackout_start'                            => '345',
-                            'holiday_blackout_end'                              => '5'
-                        },
-                        'market_data' => {
-                            'interest_rates_source'                  => 'market',
-                            'economic_announcements_source'          => 'forexfactory',
-                            'extra_vol_diff_by_delta'                => '0.1',
-                            'volsurface_calibration_error_threshold' => '20'
-                        },
-                        'commission' => {
-                            'adjustment' => {
-                                'minimum'              => '1',
-                                'maximum'              => '500',
-                                'spread_multiplier'    => '1',
-                                'quanto_scale_factor'  => '1',
-                                'bom_created_bet'      => '100',
-                                'news_factor'          => '1',
-                                'forward_start_factor' => '1.5',
-                                'global_scaling'       => '100'
-                            },
-                            'intraday' => {
-                                'historical_iv_risk'    => '10',
-                                'historical_bounceback' => '{}
+                        'intraday' => {
+                            'historical_iv_risk'    => '10',
+                            'historical_bounceback' => '{}
         ',
-                                'historical_fixed'       => '0.0125',
-                                'historical_vol_meanrev' => '0.10'
-                            },
-                            'maximum_total_markup'       => '50',
-                            'minimum_total_markup'       => '0.3',
-                            'resell_discount_factor'     => '0.2',
-                            'equality_discount_retained' => '1',
-                            'digital_spread'             => {'level_multiplier' => '1.4'}}}
-                },
-                '_rev' => 1453762804
-            }));
+                            'historical_fixed'       => '0.0125',
+                            'historical_vol_meanrev' => '0.10'
+                        },
+                        'maximum_total_markup'       => '50',
+                        'minimum_total_markup'       => '0.3',
+                        'resell_discount_factor'     => '0.2',
+                        'equality_discount_retained' => '1',
+                        'digital_spread'             => {'level_multiplier' => '1.4'}}}
+            },
+            '_rev' => 1453762804
+        });
     BOM::Platform::Runtime->instance->app_config->check_for_update;
 
     initialize_symbol_dividend "R_25",    0;
