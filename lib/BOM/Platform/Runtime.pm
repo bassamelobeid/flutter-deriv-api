@@ -115,7 +115,7 @@ copy across the system's execution environment.
 sub instance {
     my ($class, $new) = @_;
     state $instance;
-    $instance = $new if ($new);
+    $instance = $new if (defined $new);
     $instance ||= $class->new;
 
     return $instance;
