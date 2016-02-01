@@ -27,9 +27,9 @@ run_bench:
 
 run_avg_stress:
 ifeq ($(INSTANCE_NO),1)
-	true
-else
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_avg_stress $(TRAVIS_BUILD_NUMBER)
+else
+	true
 endif
 
 wsstress: run_bench run_avg_stress
