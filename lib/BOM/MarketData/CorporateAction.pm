@@ -1,6 +1,8 @@
 package BOM::MarketData::CorporateAction;
 
 use BOM::System::Chronicle;
+use Data::Chronicle::Reader;
+use Data::Chronicle::Writer;
 
 =head1 NAME
 
@@ -44,6 +46,18 @@ has for_date => (
     is      => 'ro',
     isa     => 'Maybe[Date::Utility]',
     default => undef,
+);
+
+has chronicle_reader => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Reader',
+    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
+);
+
+has chronicle_writer => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Writer',
+    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
 );
 
 =head2 symbol
@@ -110,10 +124,10 @@ has document => (
 sub _build_document {
     my $self = shift;
 
-    my $document = BOM::System::Chronicle::get('corporate_actions', $self->symbol);
+    my $document = $self->chronicle_reader->get('corporate_actions', $self->symbol);
 
     if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
-        $document = BOM::System::Chronicle::get_for('corporate_actions', $self->symbol, $self->for_date->epoch);
+        $document = $self->chronicle_reader->get_for('corporate_actions', $self->symbol, $self->for_date->epoch);
 
         # This works around a problem with Volatility surfaces and negative dates to expiry.
         # We have to use the oldest available surface.. and we don't really know when it
@@ -130,11 +144,11 @@ sub save {
     my $self = shift;
 
     #if chronicle does not have this document, first create it because in document_content we will need it
-    if (not defined BOM::System::Chronicle::get('corporate_actions', $self->symbol)) {
-        BOM::System::Chronicle::set('corporate_actions', $self->symbol, {});
+    if (not defined $self->chronicle_reader->get('corporate_actions', $self->symbol)) {
+        $self->chronicle_writer->set('corporate_actions', $self->symbol, {});
     }
 
-    return BOM::System::Chronicle::set('corporate_actions', $self->symbol, $self->_document_content, $self->recorded_date);
+    return $self->chronicle_writer->set('corporate_actions', $self->symbol, $self->_document_content, $self->recorded_date);
 }
 
 =head2 actions
