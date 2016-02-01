@@ -16,7 +16,7 @@ stress:
 	sudo netstat -anlpt |grep 500
 	cd /home/git/regentmarkets/stress;go run stress.go -insert 100;go run stress.go -workers 2 -noecho
 
-wsstress:
+run_bench:
 	cd /home/git/regentmarkets/bom-websocket-api; ./bin/binary_websocket_api.pl daemon  -l 'http://*:5004' & 
 	cd /home/git/regentmarkets/stress/websocket-bench; ./bin/bom-feed-listener-random.pl --no-pid-file &
 	/home/git/regentmarkets/bom-feed/bin/bom-feed-combinator.pl --no-pid-file &
@@ -25,8 +25,10 @@ wsstress:
 	/home/git/regentmarkets/bom-market/bin/feed_notify_pub.pl &
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_server_ready localhost 5004 && bin/run_bench $(STRESS_NUM)
 
-test_avg_stress:
+run_avg_stress:
 	cd /home/git/regentmarkets/stress/websocket-bench; . misc/config.sh; bin/test_avg_stress $(TRAVIS_BUILD_NUMBER)
+
+wsstress: run_bench run_avg_stress
 
 tidy:
 	find . -name '*.p?.bak' -delete
