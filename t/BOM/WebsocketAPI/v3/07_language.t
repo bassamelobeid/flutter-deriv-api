@@ -6,7 +6,6 @@ use FindBin qw/$Bin/;
 use lib "$Bin/../lib";
 use TestHelper qw/build_mojo_test/;
 use Encode;
-use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $t = build_mojo_test();
 $t = $t->send_ok({json => {residence_list => 1}})->message_ok;
