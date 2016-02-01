@@ -11,6 +11,7 @@ use BOM::Database::DataMapper::Payment;
 use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Locale;
 use BOM::Platform::Plack qw( PrintContentType );
+use BOM::Platform::Static::Config;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -73,7 +74,7 @@ foreach my $loginid (@approved, @rejected) {
                 name          => $client_name,
                 currency      => $currency,
                 amount        => $amount,
-                support_email => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
+                support_email => BOM::Platform::Static::Config::get_customer_support_email(),
                 tac_url       => $tac_url,
                 website_name  => $website->name,
             },
@@ -103,7 +104,7 @@ foreach my $loginid (@approved, @rejected) {
 
     if ($input{"${loginid}_notify"}) {
         send_email({
-            from               => BOM::Platform::Context::request()->website->config->get('customer_support.email'),
+            from               => BOM::Platform::Static::Config::get_customer_support_email(),
             to                 => $client->email,
             subject            => $email_subject,
             message            => [$email_content],
