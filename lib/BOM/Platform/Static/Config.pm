@@ -25,7 +25,7 @@ sub get_customer_support_email {
 sub read_config {
     my $flag = 0;
     my $static_hash;
-    if (open my $fh, '/etc/rmg/version') {
+    if (open my $fh, '<', '/etc/rmg/version') {
         while (my $line = <$fh>) {
             chomp $line;
             if ($flag) {
