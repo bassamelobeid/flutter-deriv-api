@@ -23,8 +23,26 @@ sub get_customer_support_email {
 }
 
 sub read_config {
+    my $flag = 0;
+    my $static_hash;
+    if (open my $fh, '/etc/rmg/version') {
+        while (my $line = <$fh>) {
+            chomp $line;
+            if ($flag) {
+                $line =~ s/commit://;
+                $line =~ s/^\s+|\s+$//;
+                $static_hash = $line;
+                last;
+            }
+            if ($line =~ /environment-manifests$/) {
+                $flag = 1;
+            }
+        }
+    } else {
+        $static_hash = Data::UUID->new->create_str();
+    }
     return {
-        binary_static_hash => Data::UUID->new->create_str(),
+        binary_static_hash => $static_hash,
     };
 }
 
