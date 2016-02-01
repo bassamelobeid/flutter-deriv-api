@@ -39,6 +39,7 @@ sub entry_point {
     my $c = shift;
 
     my $log = $c->app->log;
+    $log->debug("opening a websocket for " . $c->tx->remote_address);
 
     # enable permessage-deflate
     $c->tx->with_compression;
@@ -54,7 +55,7 @@ sub entry_point {
                 ? "redis://dummy:$cf->{password}\@$cf->{host}:$cf->{port}"
                 : "redis://$cf->{host}:$cf->{port}";
         };
-        $log->info('redis url:' . $url);
+
         my $redis = Mojo::Redis2->new(url => $url);
         $redis->on(
             error => sub {
@@ -64,7 +65,7 @@ sub entry_point {
         $redis->on(
             message => sub {
                 my ($self, $msg, $channel) = @_;
-                $log->info('redis event triggered:' . $channel);
+
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
