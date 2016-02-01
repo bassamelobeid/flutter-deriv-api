@@ -8216,7 +8216,7 @@
         '75': '0.0642857142857143'
   timeindays: 1
 2016-01-22 08:00:00:
-  ask_probability: 0.562166323929785
+  ask_probability: 0.649598481635898
   surface_data:
     1M:
       smile:
@@ -8320,7 +8320,7 @@
         '75': '0.107142857142857'
   timeindays: 1
 2016-01-22 09:00:00:
-  ask_probability: 0.537582246156756
+  ask_probability: 0.639276876511491
   surface_data:
     1M:
       smile:
@@ -8424,7 +8424,7 @@
         '75': '0.107142857142857'
   timeindays: 1
 2016-01-22 10:00:00:
-  ask_probability: 0.546413931093466
+  ask_probability: 0.640420040433538
   surface_data:
     1M:
       smile:
