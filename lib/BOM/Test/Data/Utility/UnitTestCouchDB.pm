@@ -171,9 +171,9 @@ sub _init {
                         'equality_discount_retained' => '1',
                         'digital_spread'             => {'level_multiplier' => '1.4'}}}
             },
-            '_rev' => 1453762804
+            '_rev' => time
         });
-    BOM::Platform::Runtime->instance->app_config->check_for_update;
+    BOM::Platform::Runtime->instance(undef);
 
     initialize_symbol_dividend "R_25",    0;
     initialize_symbol_dividend "R_50",    0;
