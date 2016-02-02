@@ -88,11 +88,6 @@ subtest 'get surface spot reference' => sub {
     plan tests => 3;
     my $underlying = BOM::Market::Underlying->new('HSI');
     my $date       = Date::Utility->new('2012-06-14 08:00:00');
-    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-        epoch      => $date->epoch,
-        quote      => 100,
-        underlying => 'HSI'
-    });
 
     my $surface = {
         'ON' => {smile => {100 => 0.1}},
