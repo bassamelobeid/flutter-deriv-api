@@ -92,7 +92,7 @@ sub new {    ## no critic RequireArgUnpack
         croak "Error adding new session, missing: " . join(',', @valid)
             if @valid;
 
-        my @passed = keys $self;
+        my @passed = keys %$self;
         @valid = array_minus(@passed, @ALLOWED);
         croak "Error adding new session, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
