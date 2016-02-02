@@ -47,26 +47,33 @@ sub proposal_open_contract {
                 my @contract_ids = keys %$response;
                 if (scalar @contract_ids) {
                     foreach my $contract_id (@contract_ids) {
-                        my $details = {%$args};
-                        # these keys needs to be deleted from args (check send_proposal)
-                        # populating here cos we stash them in redis channel
-                        $details->{short_code}  = $response->{$contract_id}->{short_code};
-                        $details->{contract_id} = $contract_id;
-                        $details->{currency}    = $response->{$contract_id}->{currency};
-                        $details->{buy_price}   = $response->{$contract_id}->{buy_price};
-                        $details->{sell_price}  = $response->{$contract_id}->{sell_price};
-                        my $id;
-                        if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
-                            $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
-                                $c, 'subscribe',
-                                $response->{$contract_id}->{underlying},
-                                'proposal_open_contract:' . JSON::to_json($details), $details
-                            );
+                        if (exists $response->{$contract_id}->{error}) {
+                            return {
+                                msg_type               => 'proposal_open_contract',
+                                proposal_open_contract => {
+                                    contract_id      => $contract_id,
+                                    validation_error => $response->{$contract_id}->{error}->{message_to_client}}};
+                        } else {
+                            my $details = {%$args};
+                            # these keys needs to be deleted from args (check send_proposal)
+                            # populating here cos we stash them in redis channel
+                            $details->{short_code}  = $response->{$contract_id}->{short_code};
+                            $details->{contract_id} = $contract_id;
+                            $details->{currency}    = $response->{$contract_id}->{currency};
+                            $details->{buy_price}   = $response->{$contract_id}->{buy_price};
+                            $details->{sell_price}  = $response->{$contract_id}->{sell_price};
+                            my $id;
+                            if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
+                                $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
+                                    $c, 'subscribe',
+                                    $response->{$contract_id}->{underlying},
+                                    'proposal_open_contract:' . JSON::to_json($details), $details
+                                );
+                            }
+                            return {
+                                msg_type => 'proposal_open_contract',
+                                proposal_open_contract => {$id ? (id => $id) : (), %{$response->{$contract_id}}}};
                         }
-                        # instead of sending bid details through send_proposal i.e make another rpc call, we can also return details
-                        # from proposal_open_contract initially as well but it may slow down initial reponse if client has lot of contracts
-                        # so as of now keeping it as it to make it fast for client
-                        send_proposal($c, $id, $details);
                     }
                 } else {
                     return {
@@ -74,8 +81,8 @@ sub proposal_open_contract {
                         proposal_open_contract => {}};
                 }
             }
-        },
-        {
+        }
+            {
             args           => $args,
             client_loginid => $c->stash('loginid'),
             contract_id    => $args->{contract_id}});
