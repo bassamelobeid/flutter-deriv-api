@@ -55,15 +55,16 @@ sub proposal_open_contract {
                                     validation_error => $response->{$contract_id}->{error}->{message_to_client}}};
                         } else {
                             my $details = {%$args};
-                            # these keys needs to be deleted from args (check send_proposal)
-                            # populating here cos we stash them in redis channel
-                            $details->{short_code}  = $response->{$contract_id}->{shortcode};
-                            $details->{contract_id} = $contract_id;
-                            $details->{currency}    = $response->{$contract_id}->{currency};
-                            $details->{buy_price}   = $response->{$contract_id}->{buy_price};
-                            $details->{sell_price}  = $response->{$contract_id}->{sell_price};
                             my $id;
                             if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
+                                # these keys needs to be deleted from args (check send_proposal)
+                                # populating here cos we stash them in redis channel
+                                $details->{short_code}  = $response->{$contract_id}->{shortcode};
+                                $details->{contract_id} = $contract_id;
+                                $details->{currency}    = $response->{$contract_id}->{currency};
+                                $details->{buy_price}   = $response->{$contract_id}->{buy_price};
+                                $details->{sell_price}  = $response->{$contract_id}->{sell_price};
+
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                     $c, 'subscribe',
                                     $response->{$contract_id}->{underlying},
