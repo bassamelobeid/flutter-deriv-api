@@ -1646,9 +1646,9 @@ subtest 'batch_buy', sub {
         top_up $cl2, 'USD', 10;
         top_up $cl3, 'USD', 10000;
 
-        isnt + ($acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 1st account';
-        isnt + ($acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 2nd account';
-        isnt + ($acc3 = $cl3->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 3rd account';
+        isnt + (my $acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 1st account';
+        isnt + (my $acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 2nd account';
+        isnt + (my $acc3 = $cl3->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 3rd account';
     }
     'setup clients';
 
