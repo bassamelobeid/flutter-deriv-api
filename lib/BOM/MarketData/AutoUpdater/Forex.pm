@@ -44,8 +44,8 @@ sub _build_file {
     }
     my $day                 = $on->date_yyyymmdd;
     my @filenames           = sort { $b cmp $a } File::Find::Rule->file()->name('*.csv')->in($loc . '/' . $day);
-    my @non_quanto_filename = grep { $_ !~ /quantovol/  and $_ !~ /tenors/ } @filenames;
-    my $file = first {
+    my @non_quanto_filename = grep { $_ !~ /quantovol/ and $_ !~ /tenors/ } @filenames;
+    my $file                = first {
         my ($h, $m, $s) = ($_ =~ /(\d{2})(\d{2})(\d{2})_vol_points\.csv$/);
         my $date = Date::Utility->new("$day $h:$m:$s");
         return $date->epoch <= $now->epoch;
