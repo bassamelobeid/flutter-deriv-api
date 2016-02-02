@@ -10,6 +10,7 @@ use Test::NoWarnings;
 use BOM::Product::ContractFactory qw(produce_contract);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::Underlying;
+use BOM::MarketData::Fetcher::VolSurface;
 use Date::Utility;
 use YAML::XS qw(LoadFile DumpFile);
 
@@ -25,13 +26,12 @@ my %skip_category = (
     spreads => 1,
 );
 
-my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/slope_config.yml');
+my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/vv_config.yml');
 my @underlying_symbols =
     ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'RDMARS', 'RDMOON', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
 my $payout_currency = 'USD';
 my $spot            = 100;
 
-my $output;
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -41,7 +41,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     });
     foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol})) {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
-        next if $category_obj->is_path_dependent;
+        next if not $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
             my @barriers = @{
@@ -64,13 +64,9 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         payout       => 1000,
                         %$barrier,
                     };
-
-                    #                       my $c = produce_contract($args);
-                    #                   $output->{$c->shortcode} = {
-                    #                       theo_probability => $c->theo_probability->amount
-                    #                   };
                     lives_ok {
                         my $c = produce_contract($args);
+                        $DB::single=1 if $expectation->{$c->shortcode}->{theo_probability} eq 0.983991092206658;
                         is $c->theo_probability->amount, $expectation->{$c->shortcode}->{theo_probability}, 'theo probability matches [' . $c->shortcode . ']';
                     } 'survived';
                 }
@@ -78,5 +74,3 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         }
     }
 }
-
-#DumpFile('slope_config.yml', $output);
