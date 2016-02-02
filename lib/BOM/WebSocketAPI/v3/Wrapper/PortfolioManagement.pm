@@ -81,8 +81,8 @@ sub proposal_open_contract {
                         proposal_open_contract => {}};
                 }
             }
-        }
-            {
+        },
+        {
             args           => $args,
             client_loginid => $c->stash('loginid'),
             contract_id    => $args->{contract_id}});
