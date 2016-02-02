@@ -172,16 +172,28 @@ payments:
       contains:
         minimum_topup_balance:
           description: 'Minimum balance after which virtual clients can topup'
-          isa: Int
-          default: 1000
+          isa: section
+          contains:
+            USD:
+              description: 'for accounts in USD'
+              isa: Int
+              default: 1000
+            JPY:
+              description: 'for Japan accounts in JPY'
+              isa: Int
+              default: 100000
         topup_amount:
           description: 'The amount by which we want to topup the virtual account'
-          isa: Int
-          default: 10000
-        maximum_balance:
-          description: 'The maximum allowed balance for virtual accounts'
-          isa: Int
-          default: 1000000
+          isa: section
+          contains:
+            USD:
+              description: 'for accounts in USD'
+              isa: Int
+              default: 10000
+            JPY:
+              description: 'for Japan accounts in JPY'
+              isa: Int
+              default: 1000000
 price_streamer:
   description: "Configuration for price streaming daemon"
   isa: section
