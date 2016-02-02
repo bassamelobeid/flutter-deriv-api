@@ -65,17 +65,15 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         %$barrier,
                     };
 
-                    my $c = produce_contract($args);
-                    my @codes = ($c->code,$c->underlying->symbol,$c->date_start->epoch,$c->date_expiry->epoch);
-                    if ($c->category->two_barriers) {
-                        push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
-                    } else {
-                        push @codes, $c->barrier->as_absolute;
-                    }
-                    my $code = join '_', @codes;
-
                     lives_ok {
                         my $c = produce_contract($args);
+                        my @codes = ($c->code,$c->underlying->symbol,$c->date_start->epoch,$c->date_expiry->epoch);
+                        if ($c->category->two_barriers) {
+                            push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
+                        } else {
+                            push @codes, $c->barrier->as_absolute;
+                        }
+                        my $code = join '_', @codes;
                         is $c->theo_probability->amount, $expectation->{$code}->{theo_probability}, 'theo probability matches [' . $c->shortcode . ']';
                     } 'survived';
                 }

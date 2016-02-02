@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 673;
+use Test::More tests => 393;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -32,6 +32,7 @@ my @underlying_symbols =
 my $payout_currency = 'USD';
 my $spot            = 100;
 
+my $output;
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -66,8 +67,14 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                     };
                     lives_ok {
                         my $c = produce_contract($args);
-                        $DB::single=1 if $expectation->{$c->shortcode}->{theo_probability} eq 0.983991092206658;
-                        is $c->theo_probability->amount, $expectation->{$c->shortcode}->{theo_probability}, 'theo probability matches [' . $c->shortcode . ']';
+                        my @codes = ($c->code,$c->underlying->symbol,$c->date_start->epoch,$c->date_expiry->epoch);
+                        if ($c->category->two_barriers) {
+                            push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
+                        } else {
+                            push @codes, $c->barrier->as_absolute;
+                        }
+                        my $code = join '_', @codes;
+                        is $c->theo_probability->amount, $expectation->{$code}, 'theo probability matches [' . $code . ']';
                     } 'survived';
                 }
             }
