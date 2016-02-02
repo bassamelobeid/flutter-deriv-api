@@ -22,8 +22,8 @@
         <tr>
             <th>DATE</th>
             [% FOREACH currency IN dtr.currencies %]
-                <th>[% dtr.buy_label %] ([% currency %])<br><em>[[% dtr.rates.$currency %]]</em></th>
-                <th>[% dtr.sell_label %] ([% currency %])<br><em>[[% dtr.rates.$currency %]]</em></th>
+                <th>[% dtr.buy_label %] ([% currency %])</th>
+                <th>[% dtr.sell_label %] ([% currency %])</th>
             [% END %]
             <th>[% dtr.buy_label %] (USD AGG.)</th>
             <th>[% dtr.sell_label %] (USD AGG.)</th>
