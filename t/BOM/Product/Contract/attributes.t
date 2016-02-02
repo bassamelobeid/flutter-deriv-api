@@ -15,7 +15,7 @@ use BOM::Product::ContractFactory::Parser qw( shortcode_to_parameters );
 
 use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
