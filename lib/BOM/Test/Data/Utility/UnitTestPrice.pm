@@ -65,12 +65,14 @@ sub create_pricing_data {
             }
         }
 
-        my @underlying_list = map { BOM::Market::Underlying->new($_) } @quanto_list;
+        my @underlying_list =
+            map { BOM::Market::Underlying->new($_) } @quanto_list;
         push @underlying_list, $underlying;
 
         foreach my $underlying (@underlying_list) {
             my $surface_data = {};
-            $surface_data = $phased_mapper{$underlying->symbol} if $underlying->volatility_surface_type eq 'phased';
+            $surface_data = $phased_mapper{$underlying->symbol}
+                if $underlying->volatility_surface_type eq 'phased';
             BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 'volsurface_' . $underlying->volatility_surface_type,
                 {
@@ -90,7 +92,7 @@ sub create_pricing_data {
         push @currencies, $underlying->quoted_currency_symbol;
     }
 
-    @currencies = uniq(grep {defined } @currencies);
+    @currencies = uniq(grep { defined } @currencies);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
@@ -148,7 +150,8 @@ sub create_pricing_data {
 sub get_barrier_range {
     my $args = shift;
 
-    my ($underlying, $duration, $spot, $vol) = @{$args}{'underlying', 'duration', 'spot', 'volatility'};
+    my ($underlying, $duration, $spot, $vol) =
+        @{$args}{'underlying', 'duration', 'spot', 'volatility'};
     my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
     my @barriers;
     if ($args->{contract_category}->two_barriers) {
@@ -207,7 +210,9 @@ sub _order_symbol {
     if (not $order{$s1}) {
         return 'frx' . $payout_currency . $s1;
     } else {
-        return ($order{$s1} > $order{$payout_currency}) ? 'frx' . $s1 . $payout_currency : 'frx' . $payout_currency . $s1;
+        return ($order{$s1} > $order{$payout_currency})
+            ? 'frx' . $s1 . $payout_currency
+            : 'frx' . $payout_currency . $s1;
     }
 
     return;
