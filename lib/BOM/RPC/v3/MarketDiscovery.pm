@@ -154,15 +154,25 @@ sub active_symbols {
 
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    return [
-        map { $_ }
-            grep {
-            my $market = $_->{market};
-            grep { $market eq $_ } @{$legal_allowed_markets}
-            }
-            map {
-            _description($_, $params->{args}->{active_symbols})
-            } get_offerings_with_filter('underlying_symbol')];
+    my $uuid = join(",", sort @$legal_allowed_markets);
+
+    my $active_symbols;
+    if ($active_symbols = Cache::RedisDB->get('legal_allowed_markets', $uuid) ) {
+      $active_symbols = JSON::from_json($active_symbols);
+    } else {
+      $active_symbols = [
+          map { $_ }
+              grep {
+              my $market = $_->{market};
+              grep { $market eq $_ } @{$legal_allowed_markets}
+              }
+              map {
+              _description($_, $params->{args}->{active_symbols})
+              } get_offerings_with_filter('underlying_symbol')];
+      Cache::RedisDB->set('legal_allowed_markets', $uuid, JSON::to_json($active_symbols), 60);
+    }
+
+    return $active_symbols;
 }
 
 sub _description {
