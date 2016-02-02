@@ -63,6 +63,8 @@ sub rmg_table_format {
             underlying => $volsurface->underlying,
             for_date   => $surface_date
         });
+        # We are working on a new calibration method.
+        # Will replace this once we have the new calibrator.
         my $calibration_error = 'none';
         my $day          = $surface_date->day_as_string;
         my $date_display = '(' . $day . ') ' . $surface_date->db_timestamp;
