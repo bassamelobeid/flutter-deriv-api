@@ -137,11 +137,13 @@ sub proposal_open_contract {
                 currency    => $client->currency
             });
             if (exists $bid->{error}) {
-                $response = $bid;
+                $response->{$id} = $bid;
             } else {
                 $response->{$id} = {
-                    buy_price  => $fmb->{buy_price},
-                    sell_price => $fmb->{sell_price},
+                    buy_price => $fmb->{buy_price},
+                    $fmb->{sell_price}
+                    ? (sell_price => $fmb->{sell_price})
+                    : (),
                     %$bid
                 };
             }
