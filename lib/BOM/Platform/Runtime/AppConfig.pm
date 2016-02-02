@@ -26,27 +26,18 @@ use Data::Hash::DotNotation;
 
 use Carp qw(croak);
 use BOM::Utility::Log4perl qw( get_logger );
-use Try::Tiny;
 
-has 'couch' => (
-    is       => 'ro',
-    required => 1,
-);
+use BOM::System::Chronicle;
 
 sub check_for_update {
     my $self     = shift;
     my $data_set = $self->data_set;
 
-    my $app_settings;
-    try { $app_settings = $self->couch->document('app_settings'); }
-    catch {
-        get_logger->warn("[app_config] Ignoring Couch Settings : " . $_);
-        return;
-    } or return;
+    my $app_settings = BOM::System::Chronicle::get('app_settings', 'binary');
 
     if ($app_settings and $data_set) {
         my $db_version = $app_settings->{_rev};
-        if ($db_version ne $data_set->{version}) {
+        unless ($data_set->{version} and $db_version and $db_version eq $data_set->{version}) {
             $self->_add_app_setttings($data_set, $app_settings);
         }
     }
@@ -200,14 +191,8 @@ sub _validate_key {
 }
 
 sub save_dynamic {
-    my $self     = shift;
-    my $settings = {};
-
-    try { $settings = $self->couch->document('app_settings'); }
-    catch {
-        get_logger->warn("[app_config] Save to Couch failed : " . $_);
-        return;
-    } or return;
+    my $self = shift;
+    my $settings = BOM::System::Chronicle::get('app_settings', 'binary') || {};
 
     #Cleanup globals
     my $global = Data::Hash::DotNotation->new();
@@ -218,12 +203,8 @@ sub save_dynamic {
     }
 
     $settings->{global} = $global->data;
-
-    try { $settings = $self->couch->document('app_settings', $settings); }
-    catch {
-        get_logger->warn("[app_config] Save to Couch failed : " . $_);
-        return;
-    } or return;
+    $settings->{_rev}   = time;
+    BOM::System::Chronicle::set('app_settings', 'binary', $settings);
 
     return 1;
 }
@@ -233,10 +214,7 @@ sub _build_data_set {
 
     my $data_set->{app_config} = Data::Hash::DotNotation->new(data => YAML::CacheLoader::LoadFile('/etc/rmg/app_config.yml'));
 
-    try { $self->_add_app_setttings($data_set, $self->couch->document('app_settings')); }
-    catch {
-        get_logger->warn("[app_config] Ignoring Couch Settings : " . $_);
-    };
+    $self->_add_app_setttings($data_set, BOM::System::Chronicle::get('app_settings', 'binary') || {});
 
     return $data_set;
 }
@@ -293,4 +271,3 @@ __PACKAGE__->meta->make_immutable;
 Copyright 2010 RMG Technology (M) Sdn Bhd
 
 =cut
-
