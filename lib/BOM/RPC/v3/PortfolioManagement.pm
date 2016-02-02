@@ -141,8 +141,8 @@ sub proposal_open_contract {
             } else {
                 $response->{$id} = {
                     buy_price => $fmb->{buy_price},
-                    $fmb->{sell_price}
-                    ? (sell_price => $fmb->{sell_price})
+                    defined $fmb->{sell_price}
+                    ? (sell_price => sprintf('%.2f', $contract->ask_price))
                     : (),
                     %$bid
                 };
