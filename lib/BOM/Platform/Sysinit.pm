@@ -12,8 +12,9 @@ use File::Copy;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Context qw(request);
 use BOM::Platform::Plack qw( PrintContentType );
-use Try::Tiny::Except ();    # should be preloaded as early as possible (BOM::System::Plack::App).
-                             # this statement here is merely a comment.
+use BOM::Platform::Static::Config;    # called here as we generate hash for static files as it does not change on every request
+use Try::Tiny::Except ();             # should be preloaded as early as possible (BOM::System::Plack::App).
+                                      # this statement here is merely a comment.
 
 sub init {
     $ENV{REQUEST_STARTTIME} = Time::HiRes::time;    ## no critic
