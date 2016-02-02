@@ -272,19 +272,20 @@ sub _admissible_check {
             $barrier = $vol_level / 100 * $S;
             my $h = (2.0 / 100) * $S;
 
-            $vol = $surface->get_volatility({
+            my $cloned = $surface->clone({price_with_parameterized_surface => 0});
+            $vol = $cloned->get_volatility({
                 moneyness => ($vol_level - 2),
                 days      => $day
             });
             my $bet_minus_h = Math::Business::BlackScholes::Binaries::vanilla_call($S, $barrier - $h, $t, $r, $r - $q, $vol);
 
-            $vol = $surface->get_volatility({
+            $vol = $cloned->get_volatility({
                 moneyness => ($vol_level),
                 days      => $day
             });
             my $bet = Math::Business::BlackScholes::Binaries::vanilla_call($S, $barrier, $t, $r, $r - $q, $vol);
 
-            $vol = $surface->get_volatility({
+            $vol = $cloned->get_volatility({
                 moneyness => ($vol_level + 2),
                 days      => $day
             });
