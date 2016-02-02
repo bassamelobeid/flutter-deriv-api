@@ -1076,22 +1076,6 @@ sub get_volatility {
         sought_point => $sought_point,
     });
 
-    # Error checks:
-    if (not $vol) {
-        my $emsg = "Could not interpolate volatility for " . $self->symbol . " for [$days] days and [$sought_point] delta.";
-        get_logger('QUANT')->error($emsg);
-        die "PricingError";
-    } elsif ($vol < 0) {
-        my $emsg =
-              "Got illegal volatility [$vol] for underlying ["
-            . $self->symbol
-            . "] and recorded date epoch ["
-            . $self->recorded_date->epoch
-            . "] for $days days and $sought_point delta from vol surface.";
-        get_logger('QUANT')->error($emsg);
-        die "PricingError";
-    }
-
     return $vol;
 }
 
@@ -1448,17 +1432,20 @@ sub fetch_historical_surface_date {
     my ($self, $args) = @_;
     my $back_to = $args->{back_to} || 1;
 
-    my $params = {
-        startkey   => [$self->symbol, {}],
-        endkey     => [$self->symbol],
-        descending => 1,
-        limit      => $back_to,
-    };
+    my $vdoc = BOM::System::Chronicle::get('volatility_surfaces', $self->symbol);
+    my $current_date = $vdoc->{date};
 
     my @dates;
-    foreach my $vol (@{$self->_couchdb->view('by_date', $params)}) {
-        my $data = $self->_couchdb->document($vol);
-        push @dates, $data->{date};
+    push @dates, $current_date;
+
+    for (2 .. $back_to) {
+        $vdoc = BOM::System::Chronicle::get_for('volatility_surfaces', $self->symbol, Date::Utility->new($current_date)->epoch - 1);
+
+        last if not $vdoc or not %{$vdoc};
+
+        $current_date = $vdoc->{date};
+
+        push @dates, $current_date;
     }
 
     return \@dates;

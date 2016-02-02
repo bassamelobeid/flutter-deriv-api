@@ -998,54 +998,49 @@ Get total number of seconds of trading time between two epochs accounting for br
 
 =cut
 
+my $full_day = 86400;
+
 sub seconds_of_trading_between_epochs {
     my ($self, $start_epoch, $end_epoch) = @_;
 
     my $result = 0;
 
-    my $full_day = 86400;
+    # step 1: calculate non-cached incomplete start-day and end_dates
+    my $day_start = $start_epoch - ($start_epoch % $full_day);
+    my $day_end   = $end_epoch -   ($end_epoch % $full_day);
+    if (($day_start != $start_epoch) && ($start_epoch < $end_epoch)) {
+        $result += $self->_computed_trading_seconds($start_epoch, min($day_start + 86399, $end_epoch));
+        $start_epoch = $day_start + $full_day;
+    }
+    if (($day_end != $end_epoch) && ($start_epoch < $end_epoch)) {
+        $result += $self->_computed_trading_seconds(max($start_epoch, $day_end), $end_epoch);
+        $end_epoch = $day_end;
+    }
 
+    # step 2: calculate intermediated values (which are guaranteed to be day-boundary)
+    # with cache-aware way
     if ($start_epoch < $end_epoch) {
-
-        my $day_start = $start_epoch - ($start_epoch % $full_day);
-        my $day_end   = $end_epoch -   ($end_epoch % $full_day) - 1;
-
-        if ($day_start == $start_epoch and $day_end == $end_epoch) {
-            if ($day_end - $day_start > 86399) {
-                my $day_earlier = $end_epoch - $full_day;
-                $result =
-                    $self->seconds_of_trading_between_epochs($start_epoch, $day_earlier) +
-                    $self->_computed_trading_seconds($day_earlier + 1, $end_epoch);
-            } else {
-                $result = $self->_computed_trading_seconds($start_epoch, $end_epoch);
-            }
-        } else {
-            my $start_eod = $day_start + 86399;
-            if ($end_epoch <= $start_eod) {
-                $result = $self->_computed_trading_seconds($start_epoch, $end_epoch);
-            } else {
-                $result =
-                    $self->_computed_trading_seconds($start_epoch, $start_eod) +
-                    $self->seconds_of_trading_between_epochs($start_eod + 1, $day_end) +
-                    $self->_computed_trading_seconds($day_end + 1, $end_epoch);
-            }
-        }
+        $result += $self->_seconds_of_trading_between_epochs_days_boundary($start_epoch, $end_epoch);
     }
 
     return $result;
 }
 
-# Ignore all times which are not on day boundaries
-tie my %seconds_cache => 'Memoize::HashKey::Ignore',
-    IGNORE            => sub {
-    my @bits = split /,/, shift;
-    return ($bits[1] % 86400 && ($bits[2] + 1) % 86400);
+my %cached_seconds_for_interval;    # key ${epoch1}-${epoch2}, value: seconds
+
+# there is a strict assumption, that start and end epoch are day boundaries
+sub _seconds_of_trading_between_epochs_days_boundary {
+    my ($self, $start_epoch, $end_epoch) = @_;
+    my $cache_key = join('-', $self->symbol, $start_epoch, $end_epoch);
+    my $result = $cached_seconds_for_interval{$cache_key} //= do {
+        my $head = $self->_computed_trading_seconds($start_epoch, $start_epoch + 86399);
+        if ($end_epoch - $start_epoch > $full_day - 1) {
+            my $tail = $self->_seconds_of_trading_between_epochs_days_boundary($start_epoch + $full_day, $end_epoch);
+            $head + $tail;
+        }
     };
-Memoize::memoize(
-    'seconds_of_trading_between_epochs',
-    NORMALIZER   => '_normalize_on_symbol_and_args',
-    SCALAR_CACHE => [HASH => \%seconds_cache],
-);
+    return $result;
+}
 
 ## PRIVATE method _computed_trading_seconds
 #
