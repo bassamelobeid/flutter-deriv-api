@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 673;
+use Test::More tests => 585;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -31,7 +31,6 @@ my @underlying_symbols =
 my $payout_currency = 'USD';
 my $spot            = 100;
 
-my $output;
 foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
     BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
@@ -44,13 +43,14 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         next if $category_obj->is_path_dependent;
         my @duration = map { $_ * 86400 } (7, 14);
         foreach my $duration (@duration) {
+            my $vol = $ul->volatility_surface_type eq 'phased' ? 0.1 : BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({delta => 50, days => $duration /86400});
             my @barriers = @{
                 BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
                         contract_category => $category_obj,
                         underlying        => $ul,
                         duration          => $duration,
                         spot              => $spot,
-                        volatility        => BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({delta => 50, days => $duration /86400}),
+                        volatility        => $vol,
                     })};
             foreach my $barrier (@barriers) {
                 foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
@@ -65,18 +65,21 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         %$barrier,
                     };
 
-                    #                       my $c = produce_contract($args);
-                    #                   $output->{$c->shortcode} = {
-                    #                       theo_probability => $c->theo_probability->amount
-                    #                   };
+                    my $c = produce_contract($args);
+                    my @codes = ($c->code,$c->underlying->symbol,$c->date_start->epoch,$c->date_expiry->epoch);
+                    if ($c->category->two_barriers) {
+                        push @codes, ($c->high_barrier->as_absolute, $c->low_barrier->as_absolute);
+                    } else {
+                        push @codes, $c->barrier->as_absolute;
+                    }
+                    my $code = join '_', @codes;
+
                     lives_ok {
                         my $c = produce_contract($args);
-                        is $c->theo_probability->amount, $expectation->{$c->shortcode}->{theo_probability}, 'theo probability matches [' . $c->shortcode . ']';
+                        is $c->theo_probability->amount, $expectation->{$code}->{theo_probability}, 'theo probability matches [' . $c->shortcode . ']';
                     } 'survived';
                 }
             }
         }
     }
 }
-
-#DumpFile('slope_config.yml', $output);
