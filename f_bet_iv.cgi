@@ -25,6 +25,19 @@ Bar("Update volatilities");
 my @all_markets = BOM::Market::Registry->instance->all_market_names;
 print get_update_volatilities_form({'all_markets' => \@all_markets});
 
+# Calibrate volsurface
+Bar("Volsurface Calibration Tool");
+print '<FORM id="volsurface_calibration" ACTION="'
+    . request()->url_for('backoffice/f_volsurface_calibration.cgi')
+    . '" METHOD="POST" ENCTYPE="multipart/form-data">';
+print '<TABLE>';
+print
+    '<tr><td>Please insert the underlying list (defaults to full list if blank):</td><td> <INPUT type="text" name="underlyings" ></td><td class="underlying_error" style="display:none"></td></tr>';
+print '<tr><td><INPUT type="checkbox" name="calibrate" value="1" checked="checked">Calibrates Volatility Surfaces</td></tr>';
+print '<tr><td><INPUT type="submit" value="GO"></td></tr>';
+print '</TABLE>';
+print '</FORM>';
+
 # Manually update interest rates
 Bar("Update interest rate");
 print get_update_interest_rates_form();
