@@ -325,7 +325,7 @@ This whole thing needs to be reconsidered, eventually.
             });
             my $contract_analogue = produce_contract($params);
             $result = [$contract_analogue->longcode, $contract_analogue->tick_expiry, $contract_analogue->is_spread];
-            Cache::RedisDB->set($sci_keyspace, $cache_key, $result) if ($cache_key);
+            Cache::RedisDB->set($sci_keyspace, $cache_key, $result, $sci_ttl) if ($cache_key);
         }
 
         return ($result) ? @$result : undef;
