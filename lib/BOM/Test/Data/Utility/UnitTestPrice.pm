@@ -8,6 +8,7 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Date::Utility;
 use BOM::Market::Underlying;
+use List::MoreUtils qw(uniq);
 use YAML::XS qw(LoadFile);
 
 my %phased_mapper = (
@@ -80,13 +81,16 @@ sub create_pricing_data {
         }
     }
 
-    my (@dividend_symbols, @currencies);
+    my @dividend_symbols;
+    my @currencies = ($payout_currency);
     if (grep { $underlying->market->name eq $_ } qw(forex commodities)) {
-        @currencies = ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
+        push @currencies, ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
     } else {
         @dividend_symbols = $underlying->symbol;
-        @currencies       = $underlying->quoted_currency_symbol;
+        push @currencies, $underlying->quoted_currency_symbol;
     }
+
+    @currencies = uniq(grep {defined } @currencies);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
@@ -188,17 +192,6 @@ sub get_barrier_range {
     }
 
     return \@barriers;
-}
-
-sub import {
-    my ($class, $init) = @_;
-
-    if ($init && $init eq ':init') {
-        BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source('market');
-        BOM::Platform::Runtime->instance->app_config->quants->features->enable_parameterized_surface(0);
-    }
-
-    return;
 }
 
 sub _order_symbol {
