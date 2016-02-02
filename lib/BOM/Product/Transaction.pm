@@ -270,17 +270,14 @@ sub calculate_limits {
     my $currency = $contract->currency;
     my $client   = $self->client;
 
-    # formerly _validate_account_balance
     $self->limits->{max_balance} = $client->get_limit_for_account_balance;
 
-    # formerly _validate_account_portfolio
-    $self->limits->{max_open_bets} = $client->get_limit_for_open_positions;
+    if (not $contract->tick_expiry) {
+        $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
+        $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
+        $self->limits->{max_payout_per_symbol_and_bet_type} = $ql->payout_per_symbol_and_bet_type_limit;
+    }
 
-    $self->limits->{max_payout_open_bets} = $client->get_limit_for_payout;
-
-    $self->limits->{max_payout_per_symbol_and_bet_type} = $ql->payout_per_symbol_and_bet_type_limit;
-
-    # formerly _validate_daily_total_turnover_limit
     $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
 
     my $lim;
@@ -316,16 +313,6 @@ sub calculate_limits {
 
     if ($contract->is_spread) {
         $self->limits->{spread_bet_profit_limit} = $ql->spreads_daily_profit_limit;
-    }
-
-    if ($contract->category_code eq 'digits') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            bet_type    => [map { {n => $_} } 'DIGITMATCH', 'DIGITDIFF', 'DIGITOVER', 'DIGITUNDER', 'DIGITEVEN', 'DIGITODD'],
-            name        => 'digits_turnover_limit',
-            limit       => $ql->digits_turnover_limit,
-            tick_expiry => 1,
-            };
     }
 
     if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
@@ -379,15 +366,6 @@ sub calculate_limits {
             name    => 'smart_index_turnover_limit',
             limit   => $ql->smart_index_turnover_limit,
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_index'})],
-            };
-    }
-
-    if ($contract->tick_expiry) {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name        => 'tick_expiry_turnover_limit',
-            limit       => $ql->tick_expiry_turnover_limit,
-            tick_expiry => 1
             };
     }
 

@@ -253,32 +253,6 @@ subtest 'Flagging System' => sub {
     ok($surface->set_smile_flag('ON', 'ON is bad.'), 'Set smile flag for ON.');
 };
 
-subtest 'volatility error check' => sub {
-    plan tests => 1;
-    my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_delta',
-        {
-            surface => {
-                7 => {
-                    smile => {
-                        25 => 0.0,
-                        50 => 0.0,
-                        75 => 0.0
-                    }
-                },
-            },
-            recorded_date => Date::Utility->new,
-            save          => 0,
-        });
-    throws_ok {
-        $surface->get_volatility({
-                delta => 50,
-                days  => 7
-            });
-    }
-    qr/PricingError/, 'Get vol from a surface with zero-value vols.';
-};
-
 subtest 'object creaion error check' => sub {
     plan tests => 3;
     my $underlying    = BOM::Market::Underlying->new('frxUSDJPY');
@@ -599,7 +573,7 @@ subtest fetch_historical_surface_date => sub {
         'volsurface_delta',
         {
             symbol        => 'frxUSDJPY',
-            recorded_date => Date::Utility->new,
+            recorded_date => Date::Utility->new->minus_time_interval('5m'),
         });
 
     my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(

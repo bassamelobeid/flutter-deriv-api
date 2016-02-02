@@ -105,7 +105,21 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => 'frxEURUSD',
+        recorded_date => $that_morning->minus_time_interval('5d'),
+    });
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_delta',
+    {
+        symbol        => 'frxEURUSD',
         recorded_date => $that_morning,
+    });
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    'volsurface_moneyness',
+    {
+        symbol        => 'GDAXI',
+        recorded_date => $that_morning->minus_time_interval('5d'),
     });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
@@ -430,6 +444,13 @@ subtest 'volsurfaces become old and invalid' => sub {
     my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
     my $starting   = $oft_used_date->epoch + 10 * 86400;
 
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying->symbol,
+            recorded_date => Date::Utility->new($starting)->minus_time_interval('10d'),
+        });
+
     my $bet_params = {
         underlying   => $underlying,
         bet_type     => 'DOUBLEDOWN',
@@ -446,6 +467,13 @@ subtest 'volsurfaces become old and invalid' => sub {
 
     my $expected_reasons = [qr/volsurface too old/];
     test_error_list('buy', $bet, $expected_reasons);
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying->symbol,
+            recorded_date => Date::Utility->new($starting)->minus_time_interval('2h'),
+        });
 
     $bet_params->{date_start}   = $oft_used_date->epoch;
     $bet_params->{date_pricing} = $oft_used_date->epoch;
@@ -465,6 +493,14 @@ subtest 'volsurfaces become old and invalid' => sub {
         barrier      => 'S0P',
         current_tick => $tick,
     };
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => $underlying->symbol,
+            recorded_date => Date::Utility->new($starting)->minus_time_interval('2d'),
+        });
+
     $bet = produce_contract($bet_params);
     $expected_reasons = [qr/volsurface too old/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -484,12 +520,12 @@ subtest 'volsurfaces become old and invalid' => sub {
     my $gdaxi = BOM::Market::Underlying->new('GDAXI');
     my $surface_too_old_date = $gdaxi->exchange->opening_on(Date::Utility->new('2013-03-28'));
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol        => 'GDAXI',
-        date          => Date::Utility->new,
-        recorded_date => $surface_too_old_date->plus_time_interval('2h23m20s')
-    });
+        'index',
+        {
+            symbol        => 'GDAXI',
+            date          => Date::Utility->new,
+            recorded_date => $surface_too_old_date->plus_time_interval('2h23m20s')
+        });
 
     $bet_params->{underlying} = $gdaxi;
     $bet_params->{date_start} = $bet_params->{date_pricing} = $surface_too_old_date->plus_time_interval('2h23m20s');
@@ -531,6 +567,12 @@ subtest 'invalid start times' => sub {
         current_tick => $tick,
     };
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDJPY',
+            recorded_date => Date::Utility->new($bet_params->{date_start}),
+        });
 
     my $bet = produce_contract($bet_params);
 
@@ -582,13 +624,13 @@ subtest 'invalid start times' => sub {
     $bet_params->{duration}     = '7d';
     $bet_params->{date_start}   = $underlying->exchange->opening_on(Date::Utility->new('2013-03-28'));
     $bet_params->{date_pricing} = $bet_params->{date_start};
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol        => 'GDAXI',
-        date          => Date::Utility->new,
-        recorded_date => Date::Utility->new($bet_params->{date_pricing})
-    });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol        => 'GDAXI',
+            date          => Date::Utility->new,
+            recorded_date => Date::Utility->new($bet_params->{date_pricing})
+        });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
@@ -608,13 +650,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{duration}     = '0d';
     $bet_params->{date_start}   = $underlying->exchange->closing_on(Date::Utility->new('2013-03-28'))->minus_time_interval('1m');
     $bet_params->{date_pricing} = $bet_params->{date_start};
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol        => 'GDAXI',
-        date          => Date::Utility->new,
-        recorded_date => Date::Utility->new($bet_params->{date_pricing})
-    });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol        => 'GDAXI',
+            date          => Date::Utility->new,
+            recorded_date => Date::Utility->new($bet_params->{date_pricing})
+        });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet = produce_contract($bet_params);
@@ -633,13 +675,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{duration}     = '5d';
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{volsurface}   = $volsurface;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol        => 'GDAXI',
-        date          => Date::Utility->new,
-        recorded_date => Date::Utility->new($bet_params->{date_pricing})
-    });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol        => 'GDAXI',
+            date          => Date::Utility->new,
+            recorded_date => Date::Utility->new($bet_params->{date_pricing})
+        });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet              = produce_contract($bet_params);
@@ -663,13 +705,13 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     $bet_params->{date_start}   = Date::Utility->new('2013-03-28 11:00:00');
     $bet_params->{date_pricing} = $bet_params->{date_start};
     $bet_params->{volsurface}   = $volsurface_with_unacceptable_calibration_error;
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol        => 'GDAXI',
-        date          => Date::Utility->new,
-        recorded_date => Date::Utility->new($bet_params->{date_pricing})
-    });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol        => 'GDAXI',
+            date          => Date::Utility->new,
+            recorded_date => Date::Utility->new($bet_params->{date_pricing})
+        });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
 
     $bet                        = produce_contract($bet_params);
@@ -819,6 +861,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{date_start}   = $starting - 86400;
     $bet_params->{date_pricing} = $starting - 86400;
 
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date => Date::Utility->new($bet_params->{date_start}),
+        });
+
     $bet                        = produce_contract($bet_params);
 
     $expected_reasons = [qr/Daily duration.*outside.*range/];
@@ -835,6 +884,13 @@ subtest 'invalid lifetimes.. how rude' => sub {
     $bet_params->{barrier}      = 'S10P';
     $bet                        = produce_contract($bet_params);
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_start})});
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date => Date::Utility->new($bet_params->{date_start}),
+        });
 
     $expected_reasons = [qr/buying suspended between NY1600 and GMT0000/];
     test_error_list('buy', $bet, $expected_reasons);
@@ -869,6 +925,21 @@ subtest 'invalid lifetimes.. how rude' => sub {
             recorded_date => Date::Utility->new($bet_params->{date_pricing})
         });
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('correlation_matrix', {recorded_date => Date::Utility->new($bet_params->{date_pricing})});
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol        => 'GDAXI',
+            recorded_date => Date::Utility->new($bet_params->{date_pricing}),
+            spot_reference => $tick->quote,
+        });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxEURUSD',
+            recorded_date => Date::Utility->new($bet_params->{date_pricing}),
+            spot_reference => $tick->quote,
+        });
 
     $bet                        = produce_contract($bet_params);
     ok($bet->is_valid_to_buy, '..but when we pick an earlier start date, validates just fine.');
@@ -921,13 +992,6 @@ subtest 'underlying with critical corporate actions' => sub {
             symbol => 'FPFP',
             date   => Date::Utility->new,
         });
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'volsurface_moneyness',
-        {
-            symbol         => 'FPFP',
-            recorded_date  => Date::Utility->new,
-            spot_reference => $tick->quote,
-        });
 
     my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions([]);
@@ -952,6 +1016,20 @@ subtest 'underlying with critical corporate actions' => sub {
             date          => Date::Utility->new,
         recorded_date => Date::Utility->new($bet_params->{date_pricing})
     });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'FPFP',
+            recorded_date => Date::Utility->new($bet_params->{date_pricing}),
+            spot_reference => $tick->quote,
+        });
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_moneyness',
+        {
+            symbol         => 'FPFP',
+            recorded_date  => Date::Utility->new,
+            spot_reference => $tick->quote,
+        });
     my $bet = produce_contract($bet_params);
     ok $bet->confirm_validity, 'can buy stock';
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(['FPFP']);
@@ -1169,6 +1247,37 @@ subtest 'spot reference check' => sub {
     test_error_list('buy', $c, $expected_reasons);
 };
 
+subtest 'zero vol' => sub {
+    my $now = Date::Utility->new('2016-01-27');
+    my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDJPY',
+            surface       => {
+                7 => {
+                    smile => {
+                        25 => 0,
+                        50 => 0,
+                        75 => 0,
+                    },
+                },
+            },
+            recorded_date => $now,
+        });
+
+    my $c = produce_contract({
+        bet_type => 'ONETOUCH',
+        underlying => 'frxUSDJPY',
+        date_start => $now,
+        date_pricing => $now,
+        duration => '6d',
+        barrier => 'S0P',
+        currency => 'USD',
+        payout => 1000,
+        });
+    is $c->pricing_vol, 0, 'pricing vol is zero';
+    like($c->primary_validation_error->message, qr/Zero volatility/, 'error');
+};
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
