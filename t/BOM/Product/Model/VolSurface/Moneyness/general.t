@@ -38,6 +38,12 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
 
 subtest clone => sub {
     plan tests => 5;
+    my $now = Date::Utility->new('2012-06-14 08:00:00');
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        epoch      => $now->epoch,
+        quote      => 100,
+        underlying => 'HSI'
+    });
     my $underlying = BOM::Market::Underlying->new('HSI');
     my $surface    = {
         'ON' => {smile => {100 => 0.1}},
@@ -46,7 +52,7 @@ subtest clone => sub {
         underlying     => $underlying,
         spot_reference => $underlying->spot,
         surface        => $surface,
-        recorded_date  => Date::Utility->new('2012-06-14 08:00:00'),
+        recorded_date  => $now,
     );
 
     lives_ok { $volsurface->clone } 'Can clone BOM::MarketData::VolSurface::Moneyness';
