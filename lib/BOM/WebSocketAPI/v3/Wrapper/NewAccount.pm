@@ -6,7 +6,6 @@ use warnings;
 use BOM::RPC::v3::NewAccount;
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::Platform::SessionCookie;
-use BOM::Platform::Static::Config;
 
 sub new_account_virtual {
     my ($c, $args) = @_;
@@ -74,7 +73,6 @@ sub verify_email {
         {
             args         => $args,
             email        => $email,
-            cs_email     => BOM::Platform::Static::Config::get_customer_support_email(),
             website_name => $r->website->display_name,
             link         => $link->to_string,
             type         => $type
