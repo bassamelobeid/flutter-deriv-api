@@ -16,7 +16,6 @@ extends 'BOM::MarketData::VolSurface';
 use Date::Utility;
 use BOM::Platform::Runtime;
 use VolSurface::Utils qw(get_delta_for_strike get_strike_for_moneyness);
-use VolSurface::Calibration::Equities;
 use BOM::System::Chronicle;
 
 use Try::Tiny;
@@ -79,68 +78,15 @@ sub _document_content {
     my $self = shift;
 
     my %structure = (
-        surfaces         => {$self->cutoff->code => $self->surface},
-        date             => $self->recorded_date->datetime_iso8601,
-        master_cutoff    => $self->cutoff->code,
-        symbol           => $self->symbol,
-        type             => $self->type,
-        spot_reference   => $self->spot_reference,
-        parameterization => $self->parameterization,
+        surfaces       => {$self->cutoff->code => $self->surface},
+        date           => $self->recorded_date->datetime_iso8601,
+        master_cutoff  => $self->cutoff->code,
+        symbol         => $self->symbol,
+        type           => $self->type,
+        spot_reference => $self->spot_reference,
     );
 
     return \%structure;
-}
-
-=head2 parameterization
-
-The parameterized (and, thus, smoothed) version of this surface.
-
-=cut
-
-has parameterization => (
-    is         => 'rw',
-    isa        => 'Maybe[HashRef]',
-    lazy_build => 1,
-);
-
-sub _build_parameterization {
-    my $self = shift;
-
-    my $doc = $self->document;
-    my $parameterization =
-          $doc->{parameterization}            ? $doc->{parameterization}
-        : $doc->{available_parameterizations} ? $doc->{available_parameterizations}->{sabr}
-        :                                       undef;
-    return $parameterization;
-}
-
-sub _get_calibrator {
-    my $self = shift;
-
-    my $calibrator = VolSurface::Calibration::Equities->new(
-        surface          => $self->surface,
-        term_by_day      => $self->term_by_day,
-        smile_points     => $self->smile_points,
-        parameterization => $self->parameterization
-    );
-
-    return $calibrator;
-}
-
-sub function_to_optimize {
-    my ($self, $params) = @_;
-
-    return $self->_get_calibrator->function_to_optimize($params);
-}
-
-sub compute_parameterization {
-    my $self = shift;
-
-    my $new_params = $self->_get_calibrator->compute_parameterization;
-    $self->parameterization($new_params);
-    $self->clear_calibration_error;
-
-    return $new_params;
 }
 
 =head2 type
@@ -189,13 +135,6 @@ sub _build_moneynesses {
     return $self->smile_points;
 }
 
-has calibration_param_names => (
-    is      => 'ro',
-    isa     => 'ArrayRef',
-    default => sub {
-        return [@VolSurface::Calibration::Equities::calibration_param_names];
-    });
-
 =head2 corresponding_deltas
 
 Stores the corresponding moneyness smile in terms on delta.
@@ -226,42 +165,6 @@ sub _build_spot_reference {
     my $self = shift;
 
     return $self->document->{spot_reference};
-}
-
-=head2 calibrated_surface
-
-The calibrated surface built from the calibration model
-
-=cut
-
-has calibrated_surface => (
-    is         => 'ro',
-    isa        => 'HashRef',
-    lazy_build => 1,
-);
-
-sub _build_calibrated_surface {
-    my $self = shift;
-
-    return $self->_get_calibrator->get_calibrated_surface;
-}
-
-=head2 calibration_error
-
-The value that determines how good the calibration parameters are
-Current acceptable fit is anything below 21.
-
-=cut
-
-has calibration_error => (
-    is         => 'ro',
-    isa        => 'Maybe[Num]',
-    lazy_build => 1,
-);
-
-sub _build_calibration_error {
-    my $self = shift;
-    return $self->parameterization->{calibration_error};
 }
 
 =head2 get_volatility
@@ -302,58 +205,13 @@ sub get_volatility {
             ? $args->{strike} / $self->spot_reference * 100
             : $args->{moneyness};
 
-        if ($self->price_with_parameterized_surface) {
-            $vol = $self->_get_calibrator->_calculate_calibrated_vol($args->{days}, $sought_point);
-        } else {
-            my $calc_args = {
-                sought_point => $sought_point,
-                days         => $args->{days}};
-            $vol = $self->SUPER::get_volatility($calc_args);
-        }
+        my $calc_args = {
+            sought_point => $sought_point,
+            days         => $args->{days}};
+        $vol = $self->SUPER::get_volatility($calc_args);
     }
 
     return $vol;
-}
-
-=head2 price_with_parameterized_surface
-
-Returns Boolean if a specific underlying should be priced with parameterized surface
-
-=cut
-
-has price_with_parameterized_surface => (
-    is         => 'ro',
-    isa        => 'Bool',
-    lazy_build => 1,
-);
-
-sub _build_price_with_parameterized_surface {
-    my $self = shift;
-
-    return
-        unless BOM::Platform::Runtime->instance->app_config->quants->features->enable_parameterized_surface;
-
-    my $enabled_list = from_json(BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface);
-    return
-           if not $self->parameterization
-        or not $self->calibration_error
-        or not keys %$enabled_list;
-
-    my $underlying = $self->underlying;
-    my $market     = $enabled_list->{$underlying->market->name};
-    my $submarket  = ($market) ? $market->{$underlying->submarket->name} : undef;
-
-    return if not defined $market or not defined $submarket;
-
-    my $is_enabled = 0;
-
-    if (ref $submarket eq 'ARRAY') {
-        $is_enabled = (first { $underlying->symbol eq $_ } @$submarket) ? 1 : 0;
-    } elsif ($submarket eq 'all') {
-        $is_enabled = 1;
-    }
-
-    return $is_enabled;
 }
 
 =head2 interpolate
@@ -457,13 +315,7 @@ sub _convert_moneyness_smile_to_delta {
         map { get_strike_for_moneyness({moneyness => $_ / 100, spot => $self->spot_reference,}) => $moneyness_smile->{$_} } keys %$moneyness_smile;
     my %deltas;
     foreach my $strike (keys %strikes) {
-        my $vol =
-            ($self->price_with_parameterized_surface)
-            ? $self->get_volatility({
-                days   => $days,
-                strike => $strike
-            })
-            : $strikes{$strike};
+        my $vol   = $strikes{$strike};
         my $delta = $self->_convert_strike_to_delta({
             strike => $strike,
             days   => $days,
@@ -536,34 +388,11 @@ sub clone {
         if (not exists $clone_args{recorded_date});
     $clone_args{print_precision} = $self->print_precision
         if (not exists $clone_args{print_precision});
-    $clone_args{parameterization} = $self->parameterization
-        if (not exists $clone_args{parameterization});
     $clone_args{original_term} = dclone($self->original_term)
         if (not exists $clone_args{original_term});
-    $clone_args{price_with_parameterized_surface} = $self->price_with_parameterized_surface
-        if (not exists $clone_args{price_with_parameterized_surface});
 
     return $self->meta->name->new(\%clone_args);
 }
-
-around is_valid => sub {
-    my $orig = shift;
-    my $self = shift;
-
-    my $valid = $self->$orig;
-    return unless $valid;    # don't bother to calibrate if it is invalid.
-
-    if ($valid) {
-        try {
-            $self->compute_parameterization;
-        }
-        catch {
-            $self->validation_error('Die while trying to calibrate surface for [' . $self->symbol . ']');
-        };
-    }
-
-    return !$self->validation_error;
-};
 
 no Moose;
 __PACKAGE__->meta->make_immutable;
