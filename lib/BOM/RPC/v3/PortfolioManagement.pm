@@ -139,10 +139,7 @@ sub proposal_open_contract {
             if (exists $bid->{error}) {
                 $response = $bid;
             } else {
-                # need to do this as get bid has shortcode but proposal_open_contract sends short_code, need to make it consistent in v4
-                delete $bid->{shortcode};
                 $response->{$id} = {
-                    short_code => $fmb->{short_code},
                     buy_price  => $fmb->{buy_price},
                     sell_price => $fmb->{sell_price},
                     %$bid
