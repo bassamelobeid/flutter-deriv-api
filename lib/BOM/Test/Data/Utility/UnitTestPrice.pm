@@ -1,0 +1,223 @@
+package BOM::Test::Data::Utility::UnitTestPrice;
+
+use 5.010;
+use strict;
+use warnings;
+
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use VolSurface::Utils qw(get_strike_for_spot_delta);
+use Date::Utility;
+use BOM::Market::Underlying;
+use YAML::XS qw(LoadFile);
+
+my %phased_mapper = (
+    RDMOON => {
+        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5-sin($x));};',
+        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x+3*cos($x)-0.25*sin(2*$x));};',
+        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+        "x2_for_epoch_code" =>
+            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+    },
+    RDSUN => {
+        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5+sin($x));};',
+        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x-3*cos($x)-0.25*sin(2*$x));};',
+        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+        "x2_for_epoch_code" =>
+            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+    },
+    RDMARS => {
+        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5+cos($x));};',
+        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x+3*sin($x)+0.25*sin(2*$x));};',
+        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+        "x2_for_epoch_code" =>
+            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+    },
+    RDVENUS => {
+        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5-cos($x));};',
+        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x-3*sin($x)+0.25*sin(2*$x));};',
+        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+        "x2_for_epoch_code" =>
+            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
+    },
+);
+
+sub create_pricing_data {
+    my ($underlying_symbol, $payout_currency, $for_date) = @_;
+
+    $for_date = Date::Utility->new unless $for_date;
+    my $underlying = BOM::Market::Underlying->new($underlying_symbol);
+
+    if ($underlying->volatility_surface_type ne 'flat') {
+        my @quanto_list;
+        if ($underlying->market->name eq 'forex') {
+            for ($underlying->asset_symbol, $underlying->quoted_currency_symbol) {
+                if (my $symbol = _order_symbol($_, $payout_currency)) {
+                    push @quanto_list, $symbol;
+                }
+            }
+        } elsif ($underlying->market->name eq 'commodities') {
+            my $symbol = 'frx' . $underlying->asset_symbol . $payout_currency;
+            push @quanto_list, $symbol;
+        } elsif ($underlying->market->name ne 'random') {
+            if (my $symbol = _order_symbol($underlying->quoted_currency_symbol, $payout_currency)) {
+                push @quanto_list, $symbol;
+            }
+        }
+
+        my @underlying_list = map { BOM::Market::Underlying->new($_) } @quanto_list;
+        push @underlying_list, $underlying;
+
+        foreach my $underlying (@underlying_list) {
+            my $surface_data = {};
+            $surface_data = $phased_mapper{$underlying->symbol} if $underlying->volatility_surface_type eq 'phased';
+            BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+                'volsurface_' . $underlying->volatility_surface_type,
+                {
+                    symbol        => $underlying->symbol,
+                    recorded_date => $for_date,
+                    %$surface_data,
+                });
+        }
+    }
+
+    my (@dividend_symbols, @currencies);
+    if (grep { $underlying->market->name eq $_ } qw(forex commodities)) {
+        @currencies = ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
+    } else {
+        @dividend_symbols = $underlying->symbol;
+        @currencies       = $underlying->quoted_currency_symbol;
+    }
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'index',
+        {
+            symbol        => $_,
+            recorded_date => $for_date
+        }) for @dividend_symbols;
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'currency',
+        {
+            symbol        => $_,
+            recorded_date => $for_date
+        }) for @currencies;
+
+    if ($underlying->market->name eq 'indices') {
+        my $corr_data = {
+            $underlying->symbol => {
+                GBP => {
+                    '3M'  => 0.356,
+                    '6M'  => 0.336,
+                    '9M'  => 0.32,
+                    '12M' => 0.307,
+                },
+                USD => {
+                    '3M'  => 0.356,
+                    '6M'  => 0.336,
+                    '9M'  => 0.32,
+                    '12M' => 0.307,
+                },
+                AUD => {
+                    '3M'  => 0.356,
+                    '6M'  => 0.336,
+                    '9M'  => 0.32,
+                    '12M' => 0.307,
+                },
+                EUR => {
+                    '3M'  => 0.356,
+                    '6M'  => 0.336,
+                    '9M'  => 0.32,
+                    '12M' => 0.307,
+                },
+            }};
+        BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+            'correlation_matrix',
+            {
+                symbol        => 'indices',
+                correlations  => $corr_data,
+                recorded_date => $for_date,
+            });
+    }
+
+    return;
+}
+
+sub get_barrier_range {
+    my $args = shift;
+
+    my ($underlying, $duration, $spot) = @{$args}{'underlying', 'duration', 'spot'};
+    my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
+    my @barriers;
+    if ($args->{contract_category}->two_barriers) {
+        my $ref = {
+            high_barrier => 'VANILLA_CALL',
+            low_barrier  => 'VANILLA_PUT',
+        };
+        foreach my $delta (10, 90) {
+            my $highlow;
+            foreach my $type (keys %$ref) {
+                $highlow->{$type} = get_strike_for_spot_delta({
+                    delta            => $delta / 100,
+                    option_type      => $ref->{$type},
+                    atm_vol          => 0.10,
+                    t                => $duration / (86400 * 365),
+                    r_rate           => 0,
+                    q_rate           => 0,
+                    spot             => $spot,
+                    premium_adjusted => $premium_adjusted,
+                });
+            }
+            push @barriers, $highlow;
+        }
+    } else {
+        for my $delta (8 .. 12) {
+            my $barrier = {
+                barrier => get_strike_for_spot_delta({
+                        delta            => ($delta * 5) / 100,
+                        option_type      => 'VANILLA_CALL',
+                        atm_vol          => 0.10,
+                        t                => $duration / (86400 * 365),
+                        r_rate           => 0,
+                        q_rate           => 0,
+                        spot             => $spot,
+                        premium_adjusted => $premium_adjusted,
+                    }
+                ),
+            };
+            push @barriers, $barrier;
+        }
+    }
+
+    return \@barriers;
+}
+
+sub import {
+    my ($class, $init) = @_;
+
+    if ($init && $init eq ':init') {
+        BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source('market');
+        BOM::Platform::Runtime->instance->app_config->quants->features->enable_parameterized_surface(0);
+    }
+
+    return;
+}
+
+sub _order_symbol {
+    my ($s1, $payout_currency) = @_;
+
+    return if $s1 eq $payout_currency;
+    my %order = (
+        USD => 1,
+        EUR => 2,
+        GBP => 3,
+        AUD => 4
+    );
+    if (not $order{$s1}) {
+        return 'frx' . $payout_currency . $s1;
+    } else {
+        return ($order{$s1} > $order{$payout_currency}) ? 'frx' . $s1 . $payout_currency : 'frx' . $payout_currency . $s1;
+    }
+
+    return;
+}
+
+1;
