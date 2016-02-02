@@ -7,6 +7,7 @@ use Date::Utility;
 use Try::Tiny;
 
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Contract;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -129,14 +130,24 @@ sub proposal_open_contract {
     my $response = {};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id = $fmb->{id};
-            $response->{$id} = {
-                short_code => $fmb->{short_code},
-                currency   => $client->currency,
-                underlying => $fmb->{underlying_symbol},
-                buy_price  => $fmb->{buy_price},
-                sell_price => $fmb->{sell_price},
-                is_expired => $fmb->{is_expired}};
+            my $id  = $fmb->{id};
+            my $bid = BOM::RPC::v3::Contract::get_bid({
+                short_code  => $fmb->{short_code},
+                contract_id => $id,
+                currency    => $client->currency
+            });
+            if (exists $bid->{error}) {
+                $response = $bid;
+            } else {
+                # need to do this as get bid has shortcode but proposal_open_contract sends short_code, need to make it consistent in v4
+                delete $bid->{shortcode};
+                $response->{$id} = {
+                    short_code => $fmb->{short_code},
+                    buy_price  => $fmb->{buy_price},
+                    sell_price => $fmb->{sell_price},
+                    %$bid
+                };
+            }
         }
     }
     return $response;
