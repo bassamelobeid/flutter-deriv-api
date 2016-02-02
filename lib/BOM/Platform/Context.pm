@@ -113,15 +113,10 @@ sub localize {
     my @texts = @_;
 
     my $request = request();
-    # use language/website from request, or fallback to defaults
-    my ($language, $website) =
-        $request
-        ? ($request->language, $request->website)
-        : ('EN', runtime()->website_list->default_website);
-    my $version = $website->config->get('static.version');
+    my $language = $request ? $request->language : 'EN';
 
-    my $lh = BOM::Platform::Context::I18N::handle_for($language, $website, $version)
-        || die("could not build locale for language $language, static-version $version, website " . $website->name);
+    my $lh = BOM::Platform::Context::I18N::handle_for($language)
+        || die("could not build locale for language $language");
 
     return $lh->maketext(@texts);
 }
@@ -150,7 +145,7 @@ sub _configure_template_for {
         push @include_path, '/home/git/regentmarkets/bom-backoffice/templates/';
     }
 
-    push @include_path, path($request->website->static_path)->child('templates', 'toolkit');
+    push @include_path, path(BOM::Platform::Static::Config::get_static_path())->child('templates', 'toolkit');
 
     my $template_toolkit = Template->new({
             ENCODING     => 'utf8',
@@ -169,7 +164,6 @@ sub _configure_for_request {
     my $request = shift;
 
     BOM::Platform::Runtime->instance->app_config->check_for_update();
-    $request->website->rebuild_config();
     #Lazy initialization of few params
     $template_config = {};
     $timer           = undef;

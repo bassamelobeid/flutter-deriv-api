@@ -3,37 +3,33 @@ package BOM::Platform::Context::I18N;
 use feature 'state';
 use strict;
 use warnings;
-use BOM::Platform::Runtime;
+
 use Path::Tiny;
 use Carp;
 
+use BOM::Platform::Runtime;
+
 sub handle_for {
     my $language = shift;
-    my $website  = shift || BOM::Platform::Runtime->instance->website_list->default_website;
-    my $version  = shift || BOM::Platform::Runtime->instance->website_list->default_website->config->get('static.version');
 
     state %handles;
     $language = lc $language;
-    my $handle_key = $website->static_host . '_' . $version . '_' . $language;
-    unless (exists $handles{$handle_key}) {
-        my $translation_class = _class_for($website, $version);
-        $handles{$handle_key} = ${translation_class}->get_handle($language);
+    unless (exists $handles{$language}) {
+        my $translation_class = _class_for();
+        $handles{$language} = ${translation_class}->get_handle($language);
     }
 
-    return $handles{$handle_key};
+    return $handles{$language};
 }
 
 sub _class_for {
-    my $website = shift;
-    my $version = shift;
-
     state %classes;
-    my $rclass = "BOM::Platform::Context::I18N::" . $website->static_host . "_$version";
+    my $rclass = "BOM::Platform::Context::I18N::binary-com";
     $rclass =~ s/\./_/g;
     $rclass =~ s/-/_/g;
     return $rclass if $classes{$rclass};
 
-    my $config = configs_for($website, $version);
+    my $config = configs_for();
     my @where = (__LINE__ + 3, __FILE__);
     eval <<EOP;    ## no critic
 #line $where[0] "$where[1]"
@@ -50,11 +46,9 @@ EOP
 }
 
 sub configs_for {
-    my $website = shift;
-    my $version = shift;
-    my $config  = {};
+    my $config = {};
 
-    my $locales_dir = path($website->static_path)->child('config');
+    my $locales_dir = path(BOM::Platform::Static::Config::get_static_path())->child('config');
     carp("Unable to locate locales directory. Looking in $locales_dir") unless (-d $locales_dir);
 
     foreach my $language (@{BOM::Platform::Runtime->instance->app_config->cgi->supported_languages}) {
