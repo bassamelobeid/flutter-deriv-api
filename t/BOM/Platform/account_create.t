@@ -63,7 +63,6 @@ my %real_client_details = (
     phone            => '82083808372',
     secret_question  => 'Mother\'s maiden name',
     secret_answer    => 'sjgjdhgdjgdj',
-    ,
     myaffiliates_token_registered => 0,
     checked_affiliate_exposures   => 0,
     latest_environment            => '',

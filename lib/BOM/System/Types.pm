@@ -103,7 +103,7 @@ A valid ISO currency code in the BetOnMarkets system (AUD, EUR, GBP, USD). Note 
 
 =cut
 
-my @currencies = qw( AUD EUR GBP USD );
+my @currencies = qw( AUD EUR GBP USD JPY );
 subtype 'bom_currency_code', as Str, where { my $regex = '(' . join('|', @currencies) . ')'; /^$regex$/ }, message {
     "Invalid currency $_. Must be one of: " . join(', ', @currencies)
 };
