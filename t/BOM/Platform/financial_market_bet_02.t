@@ -217,7 +217,7 @@ sub buy_multiple_bets {
                     client_loginid => $_->client_loginid,
                     currency_code  => $_->currency_code
                  }
-            } @$acc,
+            } @$acc],
             limits => $limits,
             db     => db,
         });
