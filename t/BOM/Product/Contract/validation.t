@@ -550,7 +550,7 @@ subtest 'volsurfaces become old and invalid' => sub {
 };
 
 subtest 'invalid start times' => sub {
-    plan tests => 16;
+    plan tests => 9;
 
     my $underlying = BOM::Market::Underlying->new('frxUSDJPY');
     my $starting   = $oft_used_date->epoch;
