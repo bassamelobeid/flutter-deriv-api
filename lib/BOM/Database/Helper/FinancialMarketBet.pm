@@ -184,7 +184,7 @@ acc(loginid, limits) AS (VALUES
          map {
              '($' . ($_ * 2 + 22) . '::VARCHAR(12),' .
              ' $' . ($_ * 2 + 23) . '::JSON)';
-         } @acclim) . ')
+         } 0 .. @acclim / 2 - 1) . ')
 SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
   FROM acc
  CROSS JOIN LATERAL
