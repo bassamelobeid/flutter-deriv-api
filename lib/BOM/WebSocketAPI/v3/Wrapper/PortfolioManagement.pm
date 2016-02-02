@@ -100,6 +100,8 @@ sub send_proposal {
         sub {
             my $response = shift;
             if ($response) {
+                my $sell_price = delete $details->{sell_price};
+                my $buy_price  = delete $details->{buy_price};
                 if (exists $response->{error}) {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -107,12 +109,11 @@ sub send_proposal {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     $id = undef;
                 }
-                my $sell_price = delete $details->{sell_price};
                 return {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
                         $id ? (id => $id) : (),
-                        buy_price => delete $details->{buy_price},
+                        buy_price => $buy_price,
                         (defined $sell_price) ? (sell_price => $sell_price) : (),
                         %$response
                     }};

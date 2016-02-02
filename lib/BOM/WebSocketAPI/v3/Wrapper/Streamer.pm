@@ -16,7 +16,7 @@ sub ticks {
     my ($c, $args) = @_;
 
     my $send_error = sub {
-        my ($code, $message) = shift;
+        my ($code, $message) = @_;
         $c->send({
                 json => {
                     msg_type => 'tick',
