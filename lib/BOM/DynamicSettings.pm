@@ -208,7 +208,6 @@ sub get_settings_by_group {
                 quants.commission.digital_spread.commodities.single_barrier
                 quants.commission.digital_spread.commodities.double_barrier
                 quants.markets.disable_iv
-                quants.features.enable_parameterized_surface
                 quants.features.enable_portfolio_autosell
                 quants.features.enable_pricedebug
                 quants.bet_limits.holiday_blackout_start
@@ -225,11 +224,9 @@ sub get_settings_by_group {
                 quants.client_limits.tick_expiry_engine_turnover_limit
                 quants.client_limits.payout_per_symbol_and_bet_type_limit
                 quants.market_data.extra_vol_diff_by_delta
-                quants.market_data.volsurface_calibration_error_threshold
                 quants.market_data.interest_rates_source
                 quants.market_data.economic_announcements_source
                 quants.underlyings.disable_autoupdate_vol
-                quants.underlyings.price_with_parameterized_surface
                 quants.underlyings.disabled_due_to_corporate_actions
                 quants.underlyings.suspend_buy
                 quants.underlyings.suspend_trades
