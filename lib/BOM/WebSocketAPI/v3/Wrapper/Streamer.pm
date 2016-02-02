@@ -30,7 +30,7 @@ sub ticks {
 sub ticks_history {
     my ($c, $args) = @_;
 
-    if ($arfs->{granularity} and not grep { $_ == $arfs->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400)) {
+    if ($args->{granularity} and not grep { $_ == $args->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400)) {
         return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
     }
 
