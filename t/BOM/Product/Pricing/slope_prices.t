@@ -1,0 +1,73 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Test::More tests => 673;
+use Test::Exception;
+use Test::NoWarnings;
+
+use BOM::Product::ContractFactory qw(produce_contract);
+use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::Market::Underlying;
+use Date::Utility;
+use YAML::XS qw(LoadFile DumpFile);
+
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestPrice qw(:init);
+
+my $now = Date::Utility->new('2016-02-01');
+note('Pricing on ' . $now->datetime);
+
+my %skip_category = (
+    asian   => 1,
+    digits  => 1,
+    spreads => 1,
+);
+
+my $expectation = LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Pricing/slope_config.yml');
+my @underlying_symbols =
+    ('frxBROUSD', 'AEX', 'frxXAUUSD', 'RDBEAR', 'RDBULL', 'R_100', 'R_25', 'RDMARS', 'RDMOON', 'WLDEUR', 'frxEURSEK', 'frxUSDJPY');
+my $payout_currency = 'USD';
+my $spot            = 100;
+
+foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
+    BOM::Test::Data::Utility::UnitTestPrice::create_pricing_data($ul->symbol, $payout_currency, $now);
+    BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+        underlying => $ul->symbol,
+        quote      => $spot,
+        epoch      => $now->epoch,
+    });
+    foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category')) {
+        my $category_obj = BOM::Product::Contract::Category->new($contract_category);
+        next if $category_obj->is_path_dependent;
+        my @duration = map { $_ * 86400 } (7, 14);
+        foreach my $duration (@duration) {
+            my @barriers = @{
+                BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
+                        contract_category => $category_obj,
+                        underlying        => $ul,
+                        duration          => $duration,
+                        spot              => $spot,
+                    })};
+            foreach my $barrier (@barriers) {
+                foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
+                    my $args = {
+                        bet_type     => $contract_type,
+                        underlying   => $ul,
+                        date_start   => $now,
+                        date_pricing => $now,
+                        duration     => $duration . 's',
+                        currency     => $payout_currency,
+                        payout       => 1000,
+                        %$barrier,
+                    };
+                    lives_ok {
+                        my $c = produce_contract($args);
+                        is $c->theo_probability->amount, $expectation->{$c->shortcode}->{theo_probability}, 'theo probability matches [' . $c->shortcode . ']';
+                    } 'survived';
+                }
+            }
+        }
+    }
+}
