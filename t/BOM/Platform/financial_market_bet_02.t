@@ -1637,6 +1637,7 @@ SKIP: {
 }
 
 subtest 'batch_buy', sub {
+    my ($cl1, $cl2, $cl3, $acc1, $acc2, $acc3);
     lives_ok {
         my $cl1 = create_client;
         my $cl2 = create_client;
