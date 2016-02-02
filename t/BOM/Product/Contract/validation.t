@@ -1322,6 +1322,38 @@ subtest 'economic events blockout period' => sub {
     ok !$c->_validate_start_date, 'no error if underlying is not FX';
 };
 
+subtest 'zero vol' => sub {
+    my $now = Date::Utility->new('2016-01-27');
+    my $volsurface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+        'volsurface_delta',
+        {
+            symbol        => 'frxUSDJPY',
+            surface       => {
+                7 => {
+                    smile => {
+                        25 => 0,
+                        50 => 0,
+                        75 => 0,
+                    },
+                },
+            },
+            recorded_date => $now,
+        });
+
+    my $c = produce_contract({
+        bet_type => 'ONETOUCH',
+        underlying => 'frxUSDJPY',
+        date_start => $now,
+        date_pricing => $now,
+        duration => '6d',
+        barrier => 'S0P',
+        currency => 'USD',
+        payout => 1000,
+        });
+    is $c->pricing_vol, 0, 'pricing vol is zero';
+    like($c->primary_validation_error->message, qr/Zero volatility/, 'error');
+};
+
 # Let's not surprise anyone else
 ok(BOM::Platform::Runtime->instance->app_config->quants->features->suspend_claim_types($orig_suspended),
     'Switched RANGE bets back on, if they were.');
