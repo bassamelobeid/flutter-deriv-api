@@ -9,7 +9,9 @@ use lib "$Bin/../lib";
 use TestHelper qw/test_schema build_mojo_test/;
 
 use BOM::Platform::SessionCookie;
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+
 
 my $t = build_mojo_test();
 
