@@ -57,7 +57,7 @@ sub proposal_open_contract {
                             my $details = {%$args};
                             # these keys needs to be deleted from args (check send_proposal)
                             # populating here cos we stash them in redis channel
-                            $details->{short_code}  = $response->{$contract_id}->{short_code};
+                            $details->{short_code}  = $response->{$contract_id}->{shortcode};
                             $details->{contract_id} = $contract_id;
                             $details->{currency}    = $response->{$contract_id}->{currency};
                             $details->{buy_price}   = $response->{$contract_id}->{buy_price};
