@@ -4,8 +4,10 @@ use Memoize;
 use Moose::Role;
 use Mojo::URL;
 use YAML::XS;
+
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
+use BOM::Platform::Static::Config;
 
 sub domain {
     my $self   = shift;
@@ -35,7 +37,7 @@ sub url_for {
         if ($internal->{internal_static}) {
             $complete_path = Mojo::URL->new(BOM::Platform::Runtime->instance->app_config->cgi->backoffice->static_url);
         } else {
-            $complete_path = Mojo::URL->new(BOM::Platform::Context::request()->website->config->get('static.url'));
+            $complete_path = Mojo::URL->new(BOM::Platform::Static::Config::get_static_url());
         }
         $complete_path = $complete_path->to_string . $path;
         $url           = $url->parse($complete_path);
