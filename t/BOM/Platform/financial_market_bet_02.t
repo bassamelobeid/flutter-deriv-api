@@ -183,6 +183,49 @@ sub buy_one_bet {
     return ($txn->{id}, $bet->{id}, $txn->{balance_after});
 }
 
+sub buy_multiple_bets {
+    my ($acc, $args) = @_;
+
+    my $buy_price    = delete $args->{buy_price}    // 20;
+    my $payout_price = delete $args->{payout_price} // $buy_price * 10;
+    my $limits       = delete $args->{limits};
+    my $duration     = delete $args->{duration}     // '15s';
+
+    my $now      = Date::Utility->new;
+    my $bet_data = +{
+        underlying_symbol => 'frxUSDJPY',
+        payout_price      => $payout_price,
+        buy_price         => $buy_price,
+        remark            => 'Test Remark',
+        purchase_time     => $now->db_timestamp,
+        start_time        => $now->db_timestamp,
+        expiry_time       => $now->plus_time_interval($duration)->db_timestamp,
+        settlement_time   => $now->plus_time_interval($duration)->db_timestamp,
+        is_expired        => 1,
+        is_sold           => 0,
+        bet_class         => 'higher_lower_bet',
+        bet_type          => 'FLASHU',
+        short_code        => ('FLASHU_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
+        relative_barrier  => 'S0P',
+        %$args,
+    };
+
+    my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
+            bet_data     => $bet_data,
+            account_data => [map {
+                +{
+                    client_loginid => $_->client_loginid,
+                    currency_code  => $_->currency_code
+                 }
+            } @$acc,
+            limits => $limits,
+            db     => db,
+        });
+    my $res = $fmb->batch_buy_bet;
+    # note explain [$res];
+    return $res;
+}
+
 sub buy_one_spread_bet {
     my ($acc, $args) = @_;
 
@@ -1592,6 +1635,29 @@ SKIP: {
         '30day turnover validation passed with slightly higher limits (with open bet)';
     };
 }
+
+subtest 'batch_buy', sub {
+    lives_ok {
+        my $cl1 = create_client;
+        my $cl2 = create_client;
+        my $cl3 = create_client;
+
+        top_up $cl1, 'USD', 10000;
+        top_up $cl2, 'USD', 10;
+        top_up $cl3, 'USD', 10000;
+
+        isnt + ($acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 1st account';
+        isnt + ($acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 2nd account';
+        isnt + ($acc3 = $cl3->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 3rd account';
+    }
+    'setup clients';
+
+    lives_ok {
+        my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
+        note explain $res;
+    }
+    'can buy when hitting max_balance_without_real_deposit exactly';
+};
 
 Test::NoWarnings::had_no_warnings;
 
