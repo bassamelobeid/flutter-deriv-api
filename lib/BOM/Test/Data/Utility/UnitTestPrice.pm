@@ -144,7 +144,7 @@ sub create_pricing_data {
 sub get_barrier_range {
     my $args = shift;
 
-    my ($underlying, $duration, $spot) = @{$args}{'underlying', 'duration', 'spot'};
+    my ($underlying, $duration, $spot, $vol) = @{$args}{'underlying', 'duration', 'spot', 'volatility'};
     my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
     my @barriers;
     if ($args->{contract_category}->two_barriers) {
@@ -158,7 +158,7 @@ sub get_barrier_range {
                 $highlow->{$type} = get_strike_for_spot_delta({
                     delta            => $delta / 100,
                     option_type      => $ref->{$type},
-                    atm_vol          => 0.10,
+                    atm_vol          => $vol,
                     t                => $duration / (86400 * 365),
                     r_rate           => 0,
                     q_rate           => 0,
@@ -174,7 +174,7 @@ sub get_barrier_range {
                 barrier => get_strike_for_spot_delta({
                         delta            => ($delta * 5) / 100,
                         option_type      => 'VANILLA_CALL',
-                        atm_vol          => 0.10,
+                        atm_vol          => $vol,
                         t                => $duration / (86400 * 365),
                         r_rate           => 0,
                         q_rate           => 0,
