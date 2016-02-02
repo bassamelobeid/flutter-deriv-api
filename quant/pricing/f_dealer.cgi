@@ -20,6 +20,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Context;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
+use BOM::Platform::Static::Config;
 use BOM::Product::ContractFactory qw( produce_contract );
 
 BOM::Platform::Sysinit::init();
@@ -43,7 +44,7 @@ my $bet_ref  = request()->param('ref');
 my $subject;
 my @body;
 my $to = BOM::Platform::Runtime->instance->app_config->system->alerts->quants . ','
-    . BOM::Platform::Context::request()->website->config->get('customer_support.email');
+    . BOM::Platform::Static::Config::get_customer_support_email();
 
 # Make transaction on client account
 if (request()->param('whattodo') eq 'maketrans' or request()->param('whattodo') eq 'closeatzero') {

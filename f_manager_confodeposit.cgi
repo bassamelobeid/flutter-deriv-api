@@ -16,6 +16,7 @@ use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Context;
 use BOM::System::AuditLog;
 use BOM::View::Controller::Bet;
+use BOM::Platform::Static::Config;
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
 
@@ -276,7 +277,7 @@ if ($toemail && $informclient) {
         . localize('Kind Regards') . "\n\n"
         . $website->display_name;
 
-    my $support_email = BOM::Platform::Context::request()->website->config->get('customer_support.email');
+    my $support_email = BOM::Platform::Static::Config::get_customer_support_email();
 
     my $result = send_email({
         from               => $support_email,
