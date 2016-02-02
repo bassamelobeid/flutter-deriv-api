@@ -899,7 +899,8 @@ sub topup_virtual {
         return $error_sub->(localize('Sorry, this feature is available to virtual accounts only'));
     }
 
-    if ($client->default_account->balance > BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance) {
+    my $currency = $client->default_account->currency_code;
+    if ($client->default_account->balance > BOM::Platform::Runtime->instance->app_config->payments->virtual->minimum_topup_balance->$currency) {
         return $error_sub->(localize('Your balance is higher than the permitted amount.'));
     }
 
