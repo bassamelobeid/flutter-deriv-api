@@ -154,7 +154,7 @@ sub active_symbols {
 
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    my $uuid = join(",", sort @$legal_allowed_markets);
+    my $uuid = $params->{language} . ':' . join(",", sort @$legal_allowed_markets);
 
     my $active_symbols;
     if ($active_symbols = Cache::RedisDB->get('legal_allowed_markets', $uuid)) {
