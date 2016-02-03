@@ -64,11 +64,10 @@ sub active_symbols {
         'active_symbols',
         sub {
             my $response = shift;
-            $result = {
+            return {
                 msg_type       => 'active_symbols',
                 active_symbols => $response
             };
-            return $result;
         },
         {
             args           => $args,
