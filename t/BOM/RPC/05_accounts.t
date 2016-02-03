@@ -1,7 +1,6 @@
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
-use TestUts;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
