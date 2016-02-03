@@ -180,7 +180,8 @@ subtest $method, sub {
                         }, 'result is correct');
 };
 
-$method = 'get_account_status', sub{
+$method = 'get_account_status';
+subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   my $mock_client = Test::MockModule->new('BOM::Platform::Client');
   my @status = qw(status1 tnc_approval);
