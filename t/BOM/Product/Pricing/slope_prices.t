@@ -46,7 +46,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
             my $vol = $ul->volatility_surface_type eq 'phased' ? 0.1 : BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({delta => 50, days => $duration /86400});
             my @barriers = @{
                 BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
-                        contract_category => $category_obj,
+                        type              => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying        => $ul,
                         duration          => $duration,
                         spot              => $spot,

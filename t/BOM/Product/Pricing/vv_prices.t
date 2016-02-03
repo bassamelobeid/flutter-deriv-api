@@ -47,7 +47,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
         foreach my $duration (@duration) {
             my @barriers = @{
                 BOM::Test::Data::Utility::UnitTestPrice::get_barrier_range({
-                        contract_category => $category_obj,
+                        type              => ($category_obj->two_barriers ? 'double' : 'single'),
                         underlying        => $ul,
                         duration          => $duration,
                         spot              => $spot,
