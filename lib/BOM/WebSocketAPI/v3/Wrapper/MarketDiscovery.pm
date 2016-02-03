@@ -59,15 +59,24 @@ sub asset_index {
 sub active_symbols {
     my ($c, $args) = @_;
 
+    my $landing_company_name = $c->stash('landing_company_name') // 'costarica';
+    my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
+
+    my $cache_key = join('::', $landing_company_name, $args->{active_symbols}, $c->stash('request')->language);
+    my $result;
+    return JSON::from_json($result) if $result = Cache::RedisDB->get("WS_ACTIVESYMBOL", $cache_key);
+
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'active_symbols',
         sub {
             my $response = shift;
-            return {
+            $result = {
                 msg_type       => 'active_symbols',
                 active_symbols => $response
             };
+            Cache::RedisDB->set("WS_ACTIVESYMBOL", $cache_key, JSON::to_json($result), 300 - (time % 300));
+            return $result;
         },
         {
             args           => $args,
