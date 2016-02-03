@@ -76,7 +76,8 @@ sub proposal_open_contract {
                                     'proposal_open_contract:' . JSON::to_json($details), $details
                                 );
                             }
-                            $send_details->({$id ? (id => $id) : (), %{$response->{$contract_id}}});
+                            my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
+                            $send_details->($res);
                         }
                     }
                     return;
