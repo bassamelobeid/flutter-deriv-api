@@ -396,22 +396,6 @@ volsurface_moneyness:
   data:
     spot_reference: 7150
     symbol: GDAXI
-    parameterization:
-      values:
-         atmWingL:       113.142003423835
-         atmWingR:       0.409496613915546
-         atmvol1year:    0.160421052198595
-         atmvolLong:     0.173070384931718
-         atmvolshort:    0.136775241648235
-         kurtosisgrowth: 0.00282238685198852
-         kurtosislong:   88.120950139047
-         kurtosisshort:  0.132977801036087
-         skew1year:      -0.237977419469265
-         skewlong:       -0.382963782994916
-         skewshort:      -0.0348330192855386
-         skewwingL:      7.62591079701648
-         skewwingR:      0.280362812771711
-      calibration_error: 13.4
     surface:
       7:
         smile:
