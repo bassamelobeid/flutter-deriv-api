@@ -126,6 +126,10 @@ my $method = 'statement';
 #  is($result->{transactions}[0]{transaction_time},Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
 #  is($result->{transactions}[1]{transaction_time},Date::Utility->new($txns->[1]{sell_time})->epoch, 'transaction time correct for sell');
 #  is($result->{transactions}[2]{transaction_time},Date::Utility->new($txns->[2]{payment_time})->epoch, 'transaction time correct for payment');
+
+# this function simple_contract_info is 'loaded' into module Accounts, So mock this module
+my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
+  $mocked_account->mock('simple_contract_info',sub {return (123)});
   my $result = $c->tcall($method, {client_loginid => 'CR0021', args => {description => 1}});
   diag(Dumper($result));
 ok(1);
