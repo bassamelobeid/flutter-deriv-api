@@ -15,5 +15,5 @@ my $c = MojoX::JSON::RPC::Client->new( ua => $t->app->ua);
 #}
 #
 #test_call('/payout_currencies',{client_loginid => 'CR0021'},{result => 1}, 'test');
-diag(Dumper($c->call('/payout_currencies',{client_loginid => 'CR0021'})));
+diag(Dumper($c->call('/payout_currencies',{id => Data::UUID->new()->create_str(), method => 'payout_currencies', params => {client_loginid => 'CR0021'}})));
 done_testing();
