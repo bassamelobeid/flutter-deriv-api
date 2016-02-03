@@ -117,10 +117,6 @@ for (my $i = 0; $i < 4; $i++) {
 is $contract_count, 2, 'got correct number of proposal open contracts';
 
 $t = $t->send_ok({json => {forget_all => 'proposal_open_contract'}})->message_ok;
-$res = decode_json($t->message->[1]);
-note explain $res;
-is scalar(@{$res->{forget_all}}), 2, 'correct forgot two proposal open contracts';
-
 $t->finish_ok;
 
 done_testing();
