@@ -48,31 +48,35 @@ sub create_pricing_data {
     $for_date = Date::Utility->new unless $for_date;
     my $underlying = BOM::Market::Underlying->new($underlying_symbol);
 
-    if ($underlying->volatility_surface_type ne 'flat') {
-        my @quanto_list;
-        if ($underlying->market->name eq 'forex') {
-            for ($underlying->asset_symbol, $underlying->quoted_currency_symbol) {
-                if (my $symbol = _order_symbol($_, $payout_currency)) {
-                    push @quanto_list, $symbol;
-                }
-            }
-        } elsif ($underlying->market->name eq 'commodities') {
-            my $symbol = 'frx' . $underlying->asset_symbol . $payout_currency;
-            push @quanto_list, $symbol;
-        } elsif ($underlying->market->name ne 'random') {
-            if (my $symbol = _order_symbol($underlying->quoted_currency_symbol, $payout_currency)) {
+    my @dividend_symbols;
+    my @currencies = ($payout_currency);
+
+    my @quanto_list;
+    if ($underlying->market->name eq 'forex') {
+        for ($underlying->asset_symbol, $underlying->quoted_currency_symbol) {
+            if (my $symbol = _order_symbol($_, $payout_currency)) {
                 push @quanto_list, $symbol;
             }
         }
+    } elsif ($underlying->market->name eq 'commodities') {
+        my $symbol = 'frx' . $underlying->asset_symbol . $payout_currency;
+        push @quanto_list, $symbol;
+    } elsif ($underlying->market->name ne 'random') {
+        if (my $symbol = _order_symbol($underlying->quoted_currency_symbol, $payout_currency)) {
+            push @quanto_list, $symbol;
+        }
+    }
 
-        my @underlying_list =
-            map { BOM::Market::Underlying->new($_) } @quanto_list;
-        push @underlying_list, $underlying;
+    my @underlying_list =
+        map { BOM::Market::Underlying->new($_) } @quanto_list;
+    push @underlying_list, $underlying;
 
-        foreach my $underlying (@underlying_list) {
-            my $surface_data = {};
-            $surface_data = $phased_mapper{$underlying->symbol}
-                if $underlying->volatility_surface_type eq 'phased';
+    foreach my $underlying (@underlying_list) {
+        my $surface_data = {};
+        $surface_data = $phased_mapper{$underlying->symbol}
+            if $underlying->volatility_surface_type eq 'phased';
+        if ($underlying->volatility_surface_type ne 'flat') {
+            next unless $underlying->volatility_surface_type;
             BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 'volsurface_' . $underlying->volatility_surface_type,
                 {
@@ -81,18 +85,17 @@ sub create_pricing_data {
                     %$surface_data,
                 });
         }
+
+        if (grep { $underlying->market->name eq $_ } qw(forex commodities)) {
+            push @currencies, ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
+        } else {
+            @dividend_symbols = $underlying->symbol;
+            push @currencies, $underlying->quoted_currency_symbol;
+        }
     }
 
-    my @dividend_symbols;
-    my @currencies = ($payout_currency);
-    if (grep { $underlying->market->name eq $_ } qw(forex commodities)) {
-        push @currencies, ($underlying->asset_symbol, $underlying->quoted_currency_symbol);
-    } else {
-        @dividend_symbols = $underlying->symbol;
-        push @currencies, $underlying->quoted_currency_symbol;
-    }
-
-    @currencies = uniq(grep { defined } @currencies);
+    @currencies       = uniq(grep { defined } @currencies);
+    @dividend_symbols = uniq(grep { defined } @dividend_symbols);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'index',
@@ -154,7 +157,7 @@ sub get_barrier_range {
         @{$args}{'underlying', 'duration', 'spot', 'volatility'};
     my $premium_adjusted = $underlying->market_convention->{delta_premium_adjusted};
     my @barriers;
-    if ($args->{contract_category}->two_barriers) {
+    if ($args->{type} eq 'double') {
         my $ref = {
             high_barrier => 'VANILLA_CALL',
             low_barrier  => 'VANILLA_PUT',
