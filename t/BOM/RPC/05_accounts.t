@@ -125,7 +125,7 @@ $mocked_transaction->mock('get_transactions_ws',sub {return $txns});
   ok($_sell_expired_is_called, "_sell_expired_contracts is called");
   is($result->{transactions}[0]{transaction_time},Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
   is($result->{transactions}[1]{transaction_time},Date::Utility->new($txns->[1]{sell_time})->epoch, 'transaction time correct for sell');
-  is($result->{transactions}[2]{transaction_time},Date::Utility->new($txns->[2]{sell_time})->epoch, 'transaction time correct for payment');
+  is($result->{transactions}[2]{transaction_time},Date::Utility->new($txns->[2]{payment_time})->epoch, 'transaction time correct for payment');
   $result = $c->tcall($method,{client_loginid => 'CR0021',args => { 'description' => 1}});
   diag(Dumper($result));
 
