@@ -129,10 +129,11 @@ $mocked_transaction->mock('get_transactions_ws',sub {return $txns});
 
 # this function simple_contract_info is 'loaded' into module Accounts, So mock this module
 my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
-  $mocked_account->mock('simple_contract_info',sub {return (123)});
+  $mocked_account->mock('simple_contract_info',sub {return ("mocked info")});
   my $result = $c->tcall($method, {client_loginid => 'CR0021', args => {description => 1}});
-  diag(Dumper($result));
-ok(1);
+  is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
+  is($result->{transactions}[2]{longcode}, $txns->[2]{remark}, "if no short code, then longcode is the remark");
+  
 
 };
 
