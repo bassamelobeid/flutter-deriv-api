@@ -74,7 +74,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                             push @codes, $c->barrier->as_absolute;
                         }
                         my $code = join '_', @codes;
-                        is $c->theo_probability->amount, $expectation->{$code}->{theo_probability}, 'theo probability matches [' . $c->shortcode . ']';
+                        is $c->theo_probability->amount, $expectation->{$code}, 'theo probability matches [' . $c->shortcode . ']';
                     } 'survived';
                 }
             }
