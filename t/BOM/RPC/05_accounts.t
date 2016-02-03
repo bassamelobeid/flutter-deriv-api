@@ -39,6 +39,12 @@ subtest $method => sub {
   ok(!$c->tcall($method, {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
 };
 
-#subtest 'landing_company_details' => sub
+$method = 'landing_company_details';
+subtest $method => sub {
+  is_deeply($c->tcall($method, {args => {landing_company_details => 'ab'}}),
+            {
+             error => {message_to_client => 'Unknown landing company.', code => 'UnknownLandingCompany'}},"no such landing company");
+  
+};
 
 done_testing();
