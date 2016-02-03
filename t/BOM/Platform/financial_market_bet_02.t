@@ -1675,8 +1675,41 @@ subtest 'batch_buy', sub {
     lives_ok {
         my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
         note explain $res;
+
+        my $loginid = $acc1->client_loginid;
+        subtest 'testing result for ' . $loginid, sub {
+            my $r = $res->{$loginid};
+            isnt $r, undef, 'got result hash';
+            is $r->{loginid}, $loginid, 'found loginid';
+            is $r->{e_code}, undef, 'e_code is undef';
+            is $r->{e_description}, undef, 'e_description is undef';
+            isnt $r->{fmb}, undef, 'got FMB';
+            isnt $r->{txn}, undef, 'got TXN';
+        };
+
+        $loginid = $acc2->client_loginid;
+        subtest 'testing result for ' . $loginid, sub {
+            my $r = $res->{$loginid};
+            isnt $r, undef, 'got result hash';
+            is $r->{loginid}, $loginid, 'found loginid';
+            is $r->{e_code}, 'BI003', 'e_code is BI003';
+            like $r->{e_description}, qr/insufficient balance/, 'e_description mentions insufficient balance';
+            is $r->{fmb}, undef, 'no FMB';
+            is $r->{txn}, undef, 'no TXN';
+        };
+
+        $loginid = $acc3->client_loginid;
+        subtest 'testing result for ' . $loginid, sub {
+            my $r = $res->{$loginid};
+            isnt $r, undef, 'got result hash';
+            is $r->{loginid}, $loginid, 'found loginid';
+            is $r->{e_code}, undef, 'e_code is undef';
+            is $r->{e_description}, undef, 'e_description is undef';
+            isnt $r->{fmb}, undef, 'got FMB';
+            isnt $r->{txn}, undef, 'got TXN';
+        };
     }
-    '...';
+    'survived buy_multiple_bets';
 
     my @notifications;
     while (my $notify = $listener->pg_notifies) {
