@@ -50,6 +50,8 @@ sub proposal_open_contract {
                         my $result = shift;
                         $c->send({
                                 json => {
+                                    echo_req => $args,
+                                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
                                     msg_type               => 'proposal_open_contract',
                                     proposal_open_contract => {%$result}}});
                     };
