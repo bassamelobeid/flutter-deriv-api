@@ -1,3 +1,5 @@
+use strict;
+use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
@@ -165,7 +167,7 @@ subtest $method => sub {
 };
 
 $method = 'balance';
-subtest $method, sub {
+subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
@@ -191,6 +193,5 @@ subtest $method => sub{
   is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'status no tnc_approval, but if no result, it will active');
   @status = qw();
   is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'no result, active');
-
 };
 done_testing();
