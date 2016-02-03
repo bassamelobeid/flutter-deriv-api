@@ -188,7 +188,6 @@ sub get_bid {
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
-        warn $_;
         $response = {
             error => {
                 message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
@@ -246,7 +245,6 @@ sub get_contract_details {
         };
     }
     catch {
-        warn $_;
         $response = {
             error => {
                 message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
