@@ -54,7 +54,7 @@ BEGIN
         -- and transforms it into this SELECT:
         --
         -- SELECT array_remove(ARRAY[
-        --                         CASE WHEN b_buy_price_USD +
+        --                         CASE WHEN b_buy_price +
         --                                   coalesce(sum(CASE WHEN (b.underlying_symbol='frxUSDJPY' OR
         --                                                           b.underlying_symbol='frxUSDGBP' OR
         --                                                           b.underlying_symbol='...')
@@ -63,13 +63,13 @@ BEGIN
         --                                                           b.bet_type='...')
         --                                                      THEN b.buy_price END), 0) > 10000
         --                              THEN 'NAME1' END,
-        --                         CASE WHEN b_buy_price_USD +
+        --                         CASE WHEN b_buy_price +
         --                                   coalesce(sum(CASE WHEN (b.bet_type='FLASHU' OR
         --                                                           b.bet_type='FLASHD' OR
         --                                                           b.bet_type='...')
         --                                                      THEN b.buy_price END), 0) > 20000
         --                              THEN 'NAME2' END,
-        --                         CASE WHEN b_buy_price_USD +
+        --                         CASE WHEN b_buy_price +
         --                                   coalesce(sum(CASE WHEN (b.underlying_symbol='frxUSDJPY' OR
         --                                                           b.underlying_symbol='frxUSDGBP' OR
         --                                                           b.underlying_symbol='...')
