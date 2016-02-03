@@ -5,7 +5,7 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
-package MojoX::JSON::RPC::Client::Test;
+package MojoX::JSON::RPC::Client;
 sub tcall{
   my $self = shift;
   my $method = shift;
