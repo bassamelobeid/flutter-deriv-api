@@ -47,6 +47,8 @@ sub landing_company {
 
     my $country  = $params->{args}->{landing_company};
     my $configs  = BOM::Platform::Runtime->instance->countries_list;
+    use Data::Dumper;
+    print Dumper($configs);
     my $c_config = $configs->{$country};
     unless ($c_config) {
         ($c_config) = grep { $configs->{$_}->{name} eq $country and $country = $_ } keys %$configs;
