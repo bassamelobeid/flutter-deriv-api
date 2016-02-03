@@ -26,7 +26,7 @@ subtest 'payout_currencies' => sub{
   is_deeply($c->tcall('payout_currencies', {client_loginid => 'CR0021'}),['USD'],"will return client's currency");
   $mocked_m->mock('legal_allowed_currencies',sub{return $mocked_currency});
   is_deeply($c->tcall('payout_currencies',{}),$mocked_currency,"will return legal currencies");
-}
+};
 
 
 done_testing();
