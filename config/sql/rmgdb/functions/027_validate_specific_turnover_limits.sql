@@ -12,7 +12,6 @@ CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explan
 
 
 CREATE OR REPLACE FUNCTION bet.validate_specific_turnover_limits(p_account           transaction.account,
-                                                                 p_rate              NUMERIC,
                                                                  p_purchase_time     TIMESTAMP,
                                                                  p_buy_price         NUMERIC,
                                                                  p_limits            JSON)
@@ -24,7 +23,7 @@ DECLARE
     v_potential_losses NUMERIC;
 BEGIN
     IF (p_limits -> 'max_losses') IS NOT NULL THEN
-        v_potential_losses:=bet.calculate_potential_losses(p_account.client_loginid);
+        v_potential_losses:=bet.calculate_potential_losses(p_account);
     END IF;
 
     IF (p_limits -> 'specific_turnover_limits') IS NOT NULL OR
@@ -133,8 +132,8 @@ BEGIN
                     WHERE a.client_loginid=$1
                       AND b.purchase_time::DATE=$2::DATE
                  $$;
-        -- RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price * p_rate, v_potential_losses;
-        EXECUTE v_sql INTO v_arr USING p_account.client_loginid, p_purchase_time, p_buy_price * p_rate, v_potential_losses;
+        -- RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price, v_potential_losses;
+        EXECUTE v_sql INTO v_arr USING p_account.client_loginid, p_purchase_time, p_buy_price, v_potential_losses;
         -- RAISE NOTICE '  ==> %, upper: %', v_arr, array_upper(v_arr, 1);
 
         IF array_upper(v_arr, 1)>0 THEN

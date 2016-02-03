@@ -56,28 +56,26 @@ RETURNS SETOF RECORD AS $def$
 DECLARE
     v_r                RECORD;
     v_account          transaction.account;
-    v_rate             NUMERIC;
 BEGIN
     SELECT INTO v_r *
       FROM bet.validate_balance_and_lock_account(a_loginid, a_currency,
-                                                 b_buy_price, b_purchase_time);
+                                                 b_buy_price)
     v_account := v_r.account;
-    v_rate    := v_r.rate;
 
-    PERFORM bet.validate_max_balance(v_account, v_rate, p_limits),
-            bet.validate_max_balance_without_real_deposit(v_account, v_rate, p_limits),
+    PERFORM bet.validate_max_balance(v_account, p_limits),
+            bet.validate_max_balance_without_real_deposit(v_account, p_limits),
             bet.validate_max_open_bets(a_loginid, p_limits),
-            bet.validate_max_payout(v_account, v_rate, b_underlying_symbol,
+            bet.validate_max_payout(v_account, b_underlying_symbol,
                                     b_bet_type, b_payout_price, p_limits),
-            bet.validate_specific_turnover_limits(v_account, v_rate,
+            bet.validate_specific_turnover_limits(v_account,
                                                   b_purchase_time, b_buy_price, p_limits),
-            bet.validate_7day_limits(v_account, v_rate,
+            bet.validate_7day_limits(v_account,
                                      b_purchase_time, b_buy_price, p_limits),
-            bet.validate_30day_limits(v_account, v_rate,
+            bet.validate_30day_limits(v_account,
                                       b_purchase_time, b_buy_price, p_limits),
-            bet.validate_intraday_forex_iv_action(v_account, v_rate, b_purchase_time,
+            bet.validate_intraday_forex_iv_action(v_account, b_purchase_time,
                                                   b_buy_price, b_payout_price, p_limits),
-            bet.validate_spreads_daily_profit_limit(v_account, v_rate, b_purchase_time,
+            bet.validate_spreads_daily_profit_limit(v_account, b_purchase_time,
                                                     b_chld, p_limits);
 
     RESET log_min_messages;
