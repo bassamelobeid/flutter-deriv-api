@@ -1676,6 +1676,15 @@ subtest 'batch_buy', sub {
         my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
         note explain $res;
 
+        my %notifications;
+        while (my $notify = $listener->pg_notifies) {
+            my $n = {};
+            @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after/} =
+                split ',', $notify->[-1];
+            $notifications{$n->{id}} = $n;
+        }
+        note explain \%notifications;
+
         my $acc = $acc1;
         my $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
@@ -1727,13 +1736,6 @@ subtest 'batch_buy', sub {
         };
     }
     'survived buy_multiple_bets';
-
-    my @notifications;
-    while (my $notify = $listener->pg_notifies) {
-        push @notifications, $notify->[-1];
-    }
-
-    note explain \@notifications;
 };
 
 Test::NoWarnings::had_no_warnings;
