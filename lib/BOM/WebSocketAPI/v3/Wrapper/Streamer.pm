@@ -15,13 +15,28 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 sub ticks {
     my ($c, $args) = @_;
 
+    my $send_error = sub {
+        my ($code, $message) = @_;
+        $c->send({
+                json => {
+                    msg_type => 'tick',
+                    echo_req => $args,
+                    (exists $args->{req_id})
+                    ? (req_id => $args->{req_id})
+                    : (),
+                    error => {
+                        code    => $code,
+                        message => $message
+                    }}});
+    };
+
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
-            return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
+            $send_error->($response->{error}->{code}, $response->{error}->{message_to_client});
         } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
-            return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+            $send_error->('AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
         }
     }
     return;
