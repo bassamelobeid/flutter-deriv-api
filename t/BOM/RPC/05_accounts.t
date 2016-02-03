@@ -164,7 +164,7 @@ subtest $method => sub {
 
 };
 
-$method = balance;
+$method = 'balance';
 subtest $method, sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   $mock_client->mock('default_account', sub { undef });
