@@ -28,8 +28,9 @@ subtest 'payout_currencies' => sub{
 };
 
 subtest 'landing_company' => sub {
-  #is_deeply($c->tcall('landing_company', {args => {landing_company => 'ab'}}),{error => 'Unknown landing company.'},"no such landing company");
-  diag(Dumper($c->tcall('landing_company', {args => {landing_company => 'ab'}})));
+  is_deeply($c->tcall('landing_company', {args => {landing_company => 'ab'}}),
+            {error => {message_to_client => 'Unknown landing company.', code => 'UnknownLandingCompany'},"no such landing company");
+  #diag(Dumper($c->tcall('landing_company', {args => {landing_company => 'ab'}})));
 };
 
 done_testing();
