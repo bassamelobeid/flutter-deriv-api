@@ -191,5 +191,5 @@ $method = 'get_account_status', sub{
   @status = qw();
   is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'no result, active');
 
-}
+};
 done_testing();
