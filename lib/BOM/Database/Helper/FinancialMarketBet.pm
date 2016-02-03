@@ -224,7 +224,7 @@ SELECT acc.loginid, b.r_ecode, b.r_edescription, (b.r_fmb).*, (b.r_trans).*
         $qv ? JSON::XS::encode_json(+{map {my $v = $qv->$_; defined $v ? ($_ => $v) : ()} @qv_col}) : undef,
     );
 
-    $stmt->execute(@param);
+    $stmt->execute(@param, @acclim);
 
     my %result;
     while (my $row = $stmt->fetchrow_arrayref) {
