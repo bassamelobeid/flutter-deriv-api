@@ -161,14 +161,14 @@ sub active_symbols {
     if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid)) {
         $active_symbols = JSON::from_json($active_symbols);
     } else {
+        my %allowed_market;
+        undef @allowed_market{@$legal_allowed_markets};
         $active_symbols = [
-                grep {
-                my $market = $_->{market};
-                grep { $market eq $_ } @{$legal_allowed_markets}
-                }
-                map {
-                _description($_, $params->{args}->{active_symbols})
-                } get_offerings_with_filter('underlying_symbol')];
+            map {
+                my $descr = _description($_, $params->{args}->{active_symbols});
+                exists $allowed_market{$descr->{market}} ? $descr : ();
+            } get_offerings_with_filter('underlying_symbol')];
+
         BOM::System::RedisReplicated::redis_write()->set($uuid, JSON::to_json($active_symbols));
         #expire in nearest 5 minute interval
         BOM::System::RedisReplicated::redis_write()->expire($uuid, 300 - time % 300);
