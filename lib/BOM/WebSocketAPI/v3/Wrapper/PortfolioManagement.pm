@@ -46,13 +46,18 @@ sub proposal_open_contract {
             } else {
                 my @contract_ids = keys %$response;
                 if (scalar @contract_ids) {
+                    my $send_details = sub {
+                        my $result = shift;
+                        $c->send({
+                                json => {
+                                    msg_type               => 'proposal_open_contract',
+                                    proposal_open_contract => {%$result}}});
+                    };
                     foreach my $contract_id (@contract_ids) {
                         if (exists $response->{$contract_id}->{error}) {
-                            return {
-                                msg_type               => 'proposal_open_contract',
-                                proposal_open_contract => {
+                            $send_details->({
                                     contract_id      => $contract_id,
-                                    validation_error => $response->{$contract_id}->{error}->{message_to_client}}};
+                                    validation_error => $response->{$contract_id}->{error}->{message_to_client}});
                         } else {
                             my $details = {%$args};
                             my $id;
@@ -71,11 +76,10 @@ sub proposal_open_contract {
                                     'proposal_open_contract:' . JSON::to_json($details), $details
                                 );
                             }
-                            return {
-                                msg_type => 'proposal_open_contract',
-                                proposal_open_contract => {$id ? (id => $id) : (), %{$response->{$contract_id}}}};
                         }
+                        $send_details->({$id ? (id => $id) : (), %{$response->{$contract_id}}});
                     }
+                    return;
                 } else {
                     return {
                         msg_type               => 'proposal_open_contract',
