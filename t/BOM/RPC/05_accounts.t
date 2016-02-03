@@ -49,8 +49,8 @@ subtest $method => sub {
 
 $method = 'statement';
 subtest $method => sub{
-  diag(Dumper($c->tcall($method, {})));
-  ok(1);
+  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+  diag(Dumper($c->tcall($method,{client_loginid => 'CR0021'})));
 };
 
 done_testing();
