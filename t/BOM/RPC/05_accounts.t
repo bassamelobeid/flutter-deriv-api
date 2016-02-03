@@ -23,6 +23,6 @@ is_deeply($c->tcall('payout_currencies', {client_loginid => 'CR0021'}),['USD']);
 my $m = ref(BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica'));
 my $mocked_m = Test::MockModule($m,no_auto => 1);
 my $mocked_currency = [qw(A B C)];
-$mocked_m->mock(legal_allowed_currencies,sub{return $mocked_currency});
+$mocked_m->mock('legal_allowed_currencies',sub{return $mocked_currency});
 is_deeply($c->tcall('payout_currencies',{}),$mocked_currency);
 done_testing();
