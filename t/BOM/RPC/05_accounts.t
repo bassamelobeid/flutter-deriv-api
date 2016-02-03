@@ -123,7 +123,7 @@ subtest $method => sub{
 $mocked_transaction->mock('get_transactions_ws',sub {return $txns});
   my $result = $c->tcall($method,{client_loginid => 'CR0021'});
   ok($_sell_expired_is_called, "_sell_expired_contracts is called");
-  print Dumper($result);
+  diag(Dumper($result));
   #is(result->{transactions}[0]{transaction_time},'1454483594', 'transaction time correct');
 };
 
