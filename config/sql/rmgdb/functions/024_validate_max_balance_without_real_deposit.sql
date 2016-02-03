@@ -9,13 +9,12 @@ SELECT r.*
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
 CREATE OR REPLACE FUNCTION bet.validate_max_balance_without_real_deposit(p_account transaction.account,
-                                                                         p_rate    NUMERIC,
                                                                          p_limits  JSON)
 RETURNS VOID AS $def$
 BEGIN
-    -- limits are given in USD
+    -- limits are given in client's currency
     IF (p_limits -> 'max_balance_without_real_deposit') IS NOT NULL AND
-       p_account.balance * p_rate > (p_limits ->> 'max_balance_without_real_deposit')::NUMERIC THEN
+       p_account.balance > (p_limits ->> 'max_balance_without_real_deposit')::NUMERIC THEN
         PERFORM 1
            FROM payment.payment p
            JOIN transaction.account a ON (a.id=p.account_id)
