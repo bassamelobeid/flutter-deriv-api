@@ -159,7 +159,10 @@ sub active_symbols {
         'legal_allowed_markets::' . $params->{args}->{active_symbols} . '::' . $params->{language} . '::' . join(",", sort @$legal_allowed_markets);
 
     my $active_symbols;
-    if (1==1 and $active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid) and BOM::System::RedisReplicated::redis_read->ttl($uuid) > 0) {
+    if (    1 == 1
+        and $active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid)
+        and BOM::System::RedisReplicated::redis_read->ttl($uuid) > 0)
+    {
         #$active_symbols = JSON::from_json($active_symbols, {utf8 => 1});
     } else {
         my %allowed_market;
