@@ -1,5 +1,6 @@
 use Test::Most;
 use Test::Mojo;
+use Test::MockModule;
 use TestUts;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
