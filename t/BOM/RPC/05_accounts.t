@@ -151,7 +151,7 @@ subtest $method => sub {
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
-# this function simple_contract_info is 'loaded' into module Accounts, So mock this module
+    # this function simple_contract_info is 'loaded' into module Accounts, So mock this module
     my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
     $mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
     my $result = $c->tcall(
@@ -165,14 +165,15 @@ subtest $method => sub {
 };
 
 $method = 'balance';
-subtest $method, sub{
-  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-  $mock_client->mock('default_account', sub { undef });
-  is($c->tcall($method, {client_loginid => 'CR0021'})->{balance}, 0, 'have 0 balance if no default account');
-  is($c->tcall($method, {client_loginid => 'CR0021'})->{currency}, '', 'have no currency if no default account');
-  undef $mock_client;
-  my $result = $c->tcall($method, {client_loginid => 'CR0021'});
-  diag(Dumper($result));
+subtest $method, sub {
+    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid') my $mock_client =
+        Test::MockModule->new('BOM::Platform::Client');
+    $mock_client->mock('default_account', sub { undef });
+    is($c->tcall($method, {client_loginid => 'CR0021'})->{balance},  0,  'have 0 balance if no default account');
+    is($c->tcall($method, {client_loginid => 'CR0021'})->{currency}, '', 'have no currency if no default account');
+    undef $mock_client;
+    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    diag(Dumper($result));
 };
 
 done_testing();
