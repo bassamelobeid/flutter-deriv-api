@@ -173,7 +173,11 @@ subtest $method, sub {
     is($c->tcall($method, {client_loginid => 'CR0021'})->{currency}, '', 'have no currency if no default account');
     undef $mock_client;
     my $result = $c->tcall($method, {client_loginid => 'CR0021'});
-    diag(Dumper($result));
+    is_deeply($result,  {
+               'currency' => 'USD',
+               'balance' => '1505.0000',
+               'loginid' => 'CR0021'
+                        }, 'result is correct');
 };
 
 done_testing();
