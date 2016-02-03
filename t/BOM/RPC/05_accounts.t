@@ -156,7 +156,7 @@ subtest $method => sub {
     # this function simple_contract_info is 'loaded' into module Accounts, So mock this module
     my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
     $mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
-    my $result = $c->tcall(
+    $result = $c->tcall(
         $method,
         {
             client_loginid => 'CR0021',
