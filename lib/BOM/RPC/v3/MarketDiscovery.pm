@@ -14,6 +14,7 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use BOM::System::RedisReplicated;
 
 sub trading_times {
     my $params = shift;
@@ -154,10 +155,10 @@ sub active_symbols {
 
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    my $uuid = $params->{language} . ':' . join(",", sort @$legal_allowed_markets);
+    my $uuid = 'legal_allowed_markets::' . $params->{active_symbols} . '::' . $params->{language} . '::' . join(",", sort @$legal_allowed_markets);
 
     my $active_symbols;
-    if ($active_symbols = Cache::RedisDB->get('legal_allowed_markets', $uuid)) {
+    if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid)) {
         $active_symbols = JSON::from_json($active_symbols);
     } else {
         $active_symbols = [
@@ -169,7 +170,9 @@ sub active_symbols {
                 map {
                 _description($_, $params->{args}->{active_symbols})
                 } get_offerings_with_filter('underlying_symbol')];
-        Cache::RedisDB->set('legal_allowed_markets', $uuid, JSON::to_json($active_symbols), 60);
+        BOM::System::RedisReplicated::redis_write()->set($uuid, JSON::to_json($active_symbols));
+        #expire in nearest 5 minute interval
+        BOM::System::RedisReplicated::redis_write()->expire($uuid, 300 - time % 300);
     }
 
     return $active_symbols;
