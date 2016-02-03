@@ -1676,7 +1676,8 @@ subtest 'batch_buy', sub {
         my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
         note explain $res;
 
-        my $loginid = $acc1->client_loginid;
+        my $acc = $acc1;
+        my $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
@@ -1685,9 +1686,17 @@ subtest 'batch_buy', sub {
             is $r->{e_description}, undef, 'e_description is undef';
             isnt $r->{fmb}, undef, 'got FMB';
             isnt $r->{txn}, undef, 'got TXN';
+
+            my $fmb = $r->{fmb};
+            is $fmb->{account_id}, $acc->id, 'fmb account id matches';
+
+            my $txn = $r->{txn};
+            is $txn->{account_id}, $acc->id, 'txn account id matches';
+            is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
         };
 
-        $loginid = $acc2->client_loginid;
+        $acc = $acc2;
+        $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
@@ -1698,7 +1707,8 @@ subtest 'batch_buy', sub {
             is $r->{txn}, undef, 'no TXN';
         };
 
-        $loginid = $acc3->client_loginid;
+        $acc = $acc3;
+        $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
@@ -1707,6 +1717,13 @@ subtest 'batch_buy', sub {
             is $r->{e_description}, undef, 'e_description is undef';
             isnt $r->{fmb}, undef, 'got FMB';
             isnt $r->{txn}, undef, 'got TXN';
+
+            my $fmb = $r->{fmb};
+            is $fmb->{account_id}, $acc->id, 'fmb account id matches';
+
+            my $txn = $r->{txn};
+            is $txn->{account_id}, $acc->id, 'txn account id matches';
+            is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
         };
     }
     'survived buy_multiple_bets';
