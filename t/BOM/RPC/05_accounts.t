@@ -59,7 +59,7 @@ subtest $method => sub{
   my $_sell_expired_is_called = 0;
   $mock_Portfolio->mock('_sell_expired_contracts',sub {$_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_)});
   my $mocked_transaction = Test::MockModule->new('BOM::Database::DataMapper::Transaction');
-  my $txns = $VAR1 = [{
+  my $txns = [{
           'staff_loginid' => 'CR0021',
           'source' => undef,
           'sell_time' => undef,
