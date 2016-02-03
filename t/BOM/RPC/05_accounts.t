@@ -186,12 +186,12 @@ $method = 'get_account_status';
 subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-  my @status = qw(status1 tnc_approval);
-  $mock_client->mock('client_status_types', sub {return @status});
+  my %status = (status1 => 1, tnc_approval => 1);
+  $mock_client->mock('client_status_types', sub {return \%status});
   is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(status1)], 'status no tnc_approval');
-  @status = qw(tnc_approval);
+  %status = (tnc_approval => 1);
   is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'status no tnc_approval, but if no result, it will active');
-  @status = qw();
+  %status = ();
   is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'no result, active');
 };
 done_testing();
