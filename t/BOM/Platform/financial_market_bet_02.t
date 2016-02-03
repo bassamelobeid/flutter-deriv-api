@@ -1679,7 +1679,7 @@ subtest 'batch_buy', sub {
     '...';
 
     my @notifications;
-    while (my $notify = $dbh->pg_notifies) {
+    while (my $notify = $listener->pg_notifies) {
         push @notifications, $notify->[-1];
     }
 
