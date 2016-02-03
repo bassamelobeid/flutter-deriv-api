@@ -30,7 +30,7 @@ subtest $method => sub{
 
 $method = 'landing_company';
 subtest $method => sub {
-  is_deeply($c->tcall($method, {args => {landing_company => 'ab'}}),
+  is_deeply($c->tcall($method, {args => {landing_company => 'nosuchcountry'}}),
             {error => {message_to_client => 'Unknown landing company.', code => 'UnknownLandingCompany'}},"no such landing company");
   my $ag_lc = $c->tcall($method, {args => {landing_company => 'ag'}});
   ok($ag_lc->{gaming_company}, "ag have gaming company");
@@ -41,10 +41,11 @@ subtest $method => sub {
 
 $method = 'landing_company_details';
 subtest $method => sub {
-  is_deeply($c->tcall($method, {args => {landing_company_details => 'ab'}}),
+  is_deeply($c->tcall($method, {args => {landing_company_details => 'nosuchcountry'}}),
             {
              error => {message_to_client => 'Unknown landing company.', code => 'UnknownLandingCompany'}},"no such landing company");
-  
+  diag(Dumper($c->tcall($method, {args => {landing_company_details => 'costarica'}})));
+
 };
 
 done_testing();
