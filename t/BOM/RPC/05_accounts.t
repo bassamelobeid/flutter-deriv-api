@@ -47,7 +47,7 @@ subtest $method => sub {
   is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name},'Binary (C.R.) S.A.', "details result ok" );
 };
 
-my $method = 'statement';
+$method = 'statement';
 subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   is($c->tcall($method,{client_loginid => 'CR0021'})->{count}, 100, 'have 100 statements');
