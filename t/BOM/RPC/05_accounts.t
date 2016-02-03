@@ -50,6 +50,7 @@ subtest $method => sub {
 $method = 'statement';
 subtest $method => sub{
   diag(Dumper($c->tcall($method, {})));
+  ok(1);
 };
 
 done_testing();
