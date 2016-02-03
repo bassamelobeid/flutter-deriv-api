@@ -81,7 +81,7 @@ sub get_ask {
 
     my $response;
     try {
-        my $tv = [Time::HiRes::gettimeofday];
+        my $tv       = [Time::HiRes::gettimeofday];
         my $contract = produce_contract({%$p2});
 
         if (!$contract->is_valid_to_buy) {
@@ -188,6 +188,7 @@ sub get_bid {
         stats_timing('compute_price.sell.timing', 1000 * Time::HiRes::tv_interval($tv), {tags => ["pricing_engine:$pen"]});
     }
     catch {
+        warn $_;
         $response = {
             error => {
                 message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
@@ -245,6 +246,7 @@ sub get_contract_details {
         };
     }
     catch {
+        warn $_;
         $response = {
             error => {
                 message_to_client => BOM::Platform::Context::localize('Sorry, an error occurred while processing your request.'),
