@@ -45,7 +45,11 @@ subtest $method => sub {
             {
              error => {message_to_client => 'Unknown landing company.', code => 'UnknownLandingCompany'}},"no such landing company");
   is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name},'Binary (C.R.) S.A.', "details result ok" );
-  
 };
+
+$method = 'statement';
+subtest $method => sub{
+  diag(Dumper($c->tcall($method, {})));
+}
 
 done_testing();
