@@ -13,5 +13,5 @@ sub test_call{
   Test::test_call($c,@args);
 }
 
-test_call('/payout_currencies',{client_loginid => CR0021},{result => 1}, 'test');
+test_call('/payout_currencies',{client_loginid => 'CR0021'},{result => 1}, 'test');
 done_testing();
