@@ -50,7 +50,40 @@ subtest $method => sub {
 $method = 'statement';
 subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-  diag(Dumper($c->tcall($method,{client_loginid => 'CR0021'})));
+  is($c->tcall($method,{client_loginid => 'CR0021'})->{count}, 100, 'have 100 statements');
+  my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+  $mock_client->mock('default_account',sub {undef});
+  is($c->tcall($method,{client_loginid => 'CR0021'})->{count}, 0, 'have 0 statements if no default account');
+  $mock_client;
+  my $mock_Portfolio = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
+  my $_sell_expired_is_called = 0;
+  $mock_Portfolio->mock('_sell_expired_contracts',sub {$_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_)});
+  my $result = $c->tcall($method,{client_loginid => 'CR0021'});
+  ok($_sell_expired_is_called, "_sell_expired_contracts is called");
+#  my $mocked_transaction = Test::MockModule->new('BOM::Database::DataMapper::Transaction');
+#my $txns = [
+#            {
+#             id => 1,
+#             amount => 1,
+#             action_type => 'deposit',
+#             balance_after => int(rand(10000000)),
+#             financial_market_bet_id => undef,
+#             payment_time => int(rand(10000000)),
+#            },
+#            {
+#             id => 1,
+#             amount => 1,
+#             action_type => 'buy',
+#             balance_after => int(rand(10000000)),
+#             financial_market_bet_id => int(rand(10000000)),
+#             sell_time => int(rand(10000000)),
+#
+#            },
+#
+#
+#           ]
+#$mocked_transaction->mock('get_transactions_ws',sub {return });
+#is(result->{transactions}[0]{transaction_time},'1454483594', 'transaction time correct');
 };
 
 done_testing();
