@@ -166,8 +166,8 @@ subtest $method => sub {
 
 $method = 'balance';
 subtest $method, sub {
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid') my $mock_client =
-        Test::MockModule->new('BOM::Platform::Client');
+    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
     is($c->tcall($method, {client_loginid => 'CR0021'})->{balance},  0,  'have 0 balance if no default account');
     is($c->tcall($method, {client_loginid => 'CR0021'})->{currency}, '', 'have no currency if no default account');
