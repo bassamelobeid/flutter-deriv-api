@@ -14,6 +14,6 @@ sub test_call{
   TestUts::test_call($c,@args);
 }
 
-test_call('/payout_currencies',{id => Data::UUID->new()->create_str(), method => 'payout_currencies', params => {client_loginid => 'CR0021'}},{result => 1}, 'test');
-#diag(Dumper($c->call('/payout_currencies',{id => Data::UUID->new()->create_str(), method => 'payout_currencies', params => {client_loginid => 'CR0021'}})));
+#test_call('/payout_currencies',{id => Data::UUID->new()->create_str(), method => 'payout_currencies', params => {client_loginid => 'CR0021'}},{result => 1}, 'test');
+diag(Dumper($c->call('/payout_currencies',{id => Data::UUID->new()->create_str(), method => 'payout_currencies', params => {client_loginid => 'CR0021'}})->result));
 done_testing();
