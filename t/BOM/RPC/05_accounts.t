@@ -31,7 +31,9 @@ subtest 'landing_company' => sub {
   is_deeply($c->tcall('landing_company', {args => {landing_company => 'ab'}}),
             {error => {message_to_client => 'Unknown landing company.', code => 'UnknownLandingCompany'}},"no such landing company");
   diag(Dumper($c->tcall('landing_company', {args => {landing_company => 'ag'}})));
-  #is_deeply($c->tcall('landing_company', {args => {landing_company => 'ag'}}), { => 1}, "correct company");
+  my $ag_lc = $c->tcall('landing_company', {args => {landing_company => 'ag'}});
+  ok($ag_lc->{gaming_company}, "ag have gaming company");
+  ok($ag_lc->{financial_company}, "ag have financial company");
 };
 
 done_testing();
