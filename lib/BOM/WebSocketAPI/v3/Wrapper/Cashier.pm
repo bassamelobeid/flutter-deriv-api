@@ -74,7 +74,6 @@ sub paymentagent_withdraw {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
-            cs_email       => $r->website->config->get('customer_support.email'),
             website_name   => $r->website->display_name
         });
     return;
@@ -101,7 +100,6 @@ sub paymentagent_transfer {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
-            cs_email       => $r->website->config->get('customer_support.email'),
             website_name   => $r->website->display_name
         });
     return;

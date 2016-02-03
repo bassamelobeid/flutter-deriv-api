@@ -46,28 +46,43 @@ sub proposal_open_contract {
             } else {
                 my @contract_ids = keys %$response;
                 if (scalar @contract_ids) {
+                    my $send_details = sub {
+                        my $result = shift;
+                        $c->send({
+                                json => {
+                                    echo_req => $args,
+                                    (exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                                    msg_type               => 'proposal_open_contract',
+                                    proposal_open_contract => {%$result}}});
+                    };
                     foreach my $contract_id (@contract_ids) {
-                        my $details = {%$args};
-                        # these keys needs to be deleted from args (check send_proposal)
-                        # populating here cos we stash them in redis channel
-                        $details->{short_code}  = $response->{$contract_id}->{short_code};
-                        $details->{contract_id} = $contract_id;
-                        $details->{currency}    = $response->{$contract_id}->{currency};
-                        $details->{buy_price}   = $response->{$contract_id}->{buy_price};
-                        $details->{sell_price}  = $response->{$contract_id}->{sell_price};
-                        my $id;
-                        if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
-                            $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
-                                $c, 'subscribe',
-                                $response->{$contract_id}->{underlying},
-                                'proposal_open_contract:' . JSON::to_json($details), $details
-                            );
+                        if (exists $response->{$contract_id}->{error}) {
+                            $send_details->({
+                                    contract_id      => $contract_id,
+                                    validation_error => $response->{$contract_id}->{error}->{message_to_client}});
+                        } else {
+                            my $details = {%$args};
+                            my $id;
+                            if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
+                                # these keys needs to be deleted from args (check send_proposal)
+                                # populating here cos we stash them in redis channel
+                                $details->{short_code}  = $response->{$contract_id}->{shortcode};
+                                $details->{contract_id} = $contract_id;
+                                $details->{currency}    = $response->{$contract_id}->{currency};
+                                $details->{buy_price}   = $response->{$contract_id}->{buy_price};
+                                $details->{sell_price}  = $response->{$contract_id}->{sell_price};
+
+                                $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
+                                    $c, 'subscribe',
+                                    $response->{$contract_id}->{underlying},
+                                    'proposal_open_contract:' . JSON::to_json($details), $details
+                                );
+                            }
+                            my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
+                            $send_details->($res);
                         }
-                        # instead of sending bid details through send_proposal i.e make another rpc call, we can also return details
-                        # from proposal_open_contract initially as well but it may slow down initial reponse if client has lot of contracts
-                        # so as of now keeping it as it to make it fast for client
-                        send_proposal($c, $id, $details);
                     }
+                    return;
                 } else {
                     return {
                         msg_type               => 'proposal_open_contract',
@@ -92,6 +107,8 @@ sub send_proposal {
         sub {
             my $response = shift;
             if ($response) {
+                my $sell_price = delete $details->{sell_price};
+                my $buy_price  = delete $details->{buy_price};
                 if (exists $response->{error}) {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -99,12 +116,11 @@ sub send_proposal {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     $id = undef;
                 }
-                my $sell_price = delete $details->{sell_price};
                 return {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
                         $id ? (id => $id) : (),
-                        buy_price => delete $details->{buy_price},
+                        buy_price => $buy_price,
                         (defined $sell_price) ? (sell_price => $sell_price) : (),
                         %$response
                     }};

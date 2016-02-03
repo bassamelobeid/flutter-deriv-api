@@ -15,13 +15,28 @@ use BOM::WebSocketAPI::v3::Wrapper::System;
 sub ticks {
     my ($c, $args) = @_;
 
+    my $send_error = sub {
+        my ($code, $message) = @_;
+        $c->send({
+                json => {
+                    msg_type => 'tick',
+                    echo_req => $args,
+                    (exists $args->{req_id})
+                    ? (req_id => $args->{req_id})
+                    : (),
+                    error => {
+                        code    => $code,
+                        message => $message
+                    }}});
+    };
+
     my @symbols = (ref $args->{ticks}) ? @{$args->{ticks}} : ($args->{ticks});
     foreach my $symbol (@symbols) {
         my $response = BOM::RPC::v3::Contract::validate_underlying($symbol);
         if ($response and exists $response->{error}) {
-            return $c->new_error('ticks', $response->{error}->{code}, $response->{error}->{message_to_client});
+            $send_error->($response->{error}->{code}, $response->{error}->{message_to_client});
         } elsif (not _feed_channel($c, 'subscribe', $symbol, 'tick', $args)) {
-            return $c->new_error('ticks', 'AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
+            $send_error->('AlreadySubscribed', $c->l('You are already subscribed to [_1]', $symbol));
         }
     }
     return;
@@ -29,6 +44,10 @@ sub ticks {
 
 sub ticks_history {
     my ($c, $args) = @_;
+
+    if ($args->{granularity} and not grep { $_ == $args->{granularity} } qw(60 120 180 300 600 900 1800 3600 7200 14400 28800 86400)) {
+        return $c->new_error('ticks_history', "InvalidGranularity", $c->l('Granularity is not valid'));
+    }
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
