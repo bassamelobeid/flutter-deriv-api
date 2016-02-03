@@ -1637,6 +1637,23 @@ SKIP: {
 }
 
 subtest 'batch_buy', sub {
+    use DBD::Pg;
+    use YAML::XS;
+
+    my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
+    my $ip     = $config->{costarica}->{write}->{ip}; # create_client creates CR clients
+    my $pw     = $config->{password};
+
+    my $listener = DBI->connect(
+        "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
+        'write',
+        $pw,
+        {
+            AutoCommit => 1,
+            RaiseError => 1,
+            PrintError => 0
+        });
+
     my ($cl1, $cl2, $cl3, $acc1, $acc2, $acc3);
     lives_ok {
         $cl1 = create_client;
@@ -1653,11 +1670,20 @@ subtest 'batch_buy', sub {
     }
     'setup clients';
 
+    $listener->do("LISTEN transaction_watchers");
+
     lives_ok {
         my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
         note explain $res;
     }
     '...';
+
+    my @notifications;
+    while (my $notify = $dbh->pg_notifies) {
+        push @notifications, $notify->[-1];
+    }
+
+    note explain \@notifications;
 };
 
 Test::NoWarnings::had_no_warnings;
