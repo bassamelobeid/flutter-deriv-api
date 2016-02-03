@@ -8,13 +8,18 @@ use Test::Exception;
 use Test::NoWarnings;
 use Date::Utility;
 
-use BOM::MarketData::CorporateAction;
-use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::System::Chronicle;
+use Quant::Framework::CorporateAction;
+use Quant::Framework::Utils::Test;
 
-is(BOM::MarketData::CorporateAction->new(symbol => 'FPGZ')->document, undef, 'document is not present');
+is(Quant::Framework::CorporateAction->new(symbol => 'FPGZ',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer())->document, undef, 'document is not present');
 
 my $old_date = Date::Utility->new()->minus_time_interval("15m");
-my $int = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_action', {
+my $int = Quant::Framework::Utils::Test::create_doc('corporate_action', {
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         symbol        => 'QWER',
         actions       => {
             "62799500" => {
@@ -33,14 +38,18 @@ my $int = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_actio
 ok $int->save, 'save without error';
 
 lives_ok {
-    my $new = BOM::MarketData::CorporateAction->new(symbol => 'QWER');
+    my $new = Quant::Framework::CorporateAction->new(symbol => 'QWER',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
     ok $new->document;
     is $new->document->{actions}->{62799500}->{type}, "ACQUIS";
     is $new->document->{actions}->{62799500}->{effective_date}, "15-Jul-14";
 } 'successfully retrieved saved document';
 
 lives_ok {
-    my $int = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_action', {
+    my $int = Quant::Framework::Utils::Test::create_doc('corporate_action', {
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             symbol        => 'QWER',
             actions       => {
                 "32799500" => {
@@ -57,9 +66,11 @@ lives_ok {
 
     ok $int->save, 'save again without error';
 
-    my $old_corp_action = BOM::MarketData::CorporateAction->new(
+    my $old_corp_action = Quant::Framework::CorporateAction->new(
         symbol      => 'QWER',
-        for_date    => $old_date);
+        for_date    => $old_date,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 
     is $old_corp_action->document->{actions}->{62799500}->{type}, "ACQUIS";
 } 'successfully reads older corporate actions';
