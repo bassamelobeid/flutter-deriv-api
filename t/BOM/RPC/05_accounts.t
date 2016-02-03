@@ -33,7 +33,7 @@ subtest 'landing_company' => sub {
   my $ag_lc = $c->tcall('landing_company', {args => {landing_company => 'ag'}});
   ok($ag_lc->{gaming_company}, "ag have gaming company");
   ok($ag_lc->{financial_company}, "ag have financial company");
-  ok(!$c->tcall('landing_company', {args => {landing_company => 'ag'}})->{gaming_company}, "de have no gaming_company");
+  ok(!$c->tcall('landing_company', {args => {landing_company => 'de'}})->{gaming_company}, "de have no gaming_company");
   ok(!$c->tcall('landing_company', {args => {landing_company => 'hk'}})->{financial_company}, "hk have no financial_company");
 };
 
