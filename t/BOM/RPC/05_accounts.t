@@ -2,6 +2,7 @@ use Test::Most;
 use Test::Mojo;
 use TestUts;
 use MojoX::JSON::RPC::Client;
+use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 my $t = Test::Mojo->new('BOM::RPC');
