@@ -28,5 +28,8 @@ subtest 'payout_currencies' => sub{
   is_deeply($c->tcall('payout_currencies',{}),$mocked_currency,"will return legal currencies");
 };
 
+subtest 'landing_company' => sub {
+  is_deeply($c->tcall('landing_company', {args => {landing_company => 'ab'}}),['USD'],"will return client's currency");
+};
 
 done_testing();
