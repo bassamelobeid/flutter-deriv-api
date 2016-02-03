@@ -162,7 +162,6 @@ sub active_symbols {
         $active_symbols = JSON::from_json($active_symbols);
     } else {
         $active_symbols = [
-            map { $_ }
                 grep {
                 my $market = $_->{market};
                 grep { $market eq $_ } @{$legal_allowed_markets}
