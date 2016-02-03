@@ -357,6 +357,8 @@ lives_ok {
 }
 'bought AUD bet';
 
+note explain $@;
+
 dies_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
         +{
