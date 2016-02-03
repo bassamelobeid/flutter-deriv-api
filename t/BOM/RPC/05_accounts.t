@@ -8,10 +8,11 @@ my $t = Test::Mojo->new('BOM::RPC');
 
 my $c = MojoX::JSON::RPC::Client->new( ua => $t->app->ua);
 
-sub test_call{
-  my @args = @_;
-  TestUts::test_call($c,@args);
-}
-
-test_call('/payout_currencies',{client_loginid => 'CR0021'},{result => 1}, 'test');
+#sub test_call{
+#  my @args = @_;
+#  TestUts::test_call($c,@args);
+#}
+#
+#test_call('/payout_currencies',{client_loginid => 'CR0021'},{result => 1}, 'test');
+diag(Dumper($c->call('/payout_currencies',{client_loginid => 'CR0021'})));
 done_testing();
