@@ -7,6 +7,7 @@ use Date::Utility;
 use Try::Tiny;
 
 use BOM::RPC::v3::Utility;
+use BOM::RPC::v3::Contract;
 use BOM::Product::ContractFactory qw(simple_contract_info);
 use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
@@ -129,14 +130,23 @@ sub proposal_open_contract {
     my $response = {};
     if (scalar @fmbs > 0) {
         foreach my $fmb (@fmbs) {
-            my $id = $fmb->{id};
-            $response->{$id} = {
-                short_code => $fmb->{short_code},
-                currency   => $client->currency,
-                underlying => $fmb->{underlying_symbol},
-                buy_price  => $fmb->{buy_price},
-                sell_price => $fmb->{sell_price},
-                is_expired => $fmb->{is_expired}};
+            my $id  = $fmb->{id};
+            my $bid = BOM::RPC::v3::Contract::get_bid({
+                short_code  => $fmb->{short_code},
+                contract_id => $id,
+                currency    => $client->currency
+            });
+            if (exists $bid->{error}) {
+                $response->{$id} = $bid;
+            } else {
+                $response->{$id} = {
+                    buy_price => $fmb->{buy_price},
+                    defined $fmb->{sell_price}
+                    ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
+                    : (),
+                    %$bid
+                };
+            }
         }
     }
     return $response;
