@@ -44,7 +44,7 @@ sub create_pricing_data {
         my $surface_data = {};
         $surface_data = $phased_mapper{$underlying->symbol}
             if $underlying->volatility_surface_type eq 'phased';
-        if (grep {$underlying->volatility_surface_type eq $_} qw(delta moneyness)) {
+        if (grep { $underlying->volatility_surface_type eq $_ } qw(delta moneyness)) {
             next unless $underlying->volatility_surface_type;
             BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 'volsurface_' . $underlying->volatility_surface_type,
