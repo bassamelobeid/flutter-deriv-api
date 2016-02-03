@@ -12,7 +12,7 @@ sub read_dbh {
     return DBI->connect_cached(
         "dbi:Pg:dbname=feed;port=5433;host=" . $config->{replica}->{ip},
         "read", $config->{password} )
-      or die $DBI::errstr;
+      || die($DBI::errstr);
 }
 
 sub write_dbh {
@@ -20,7 +20,7 @@ sub write_dbh {
     return DBI->connect_cached(
         "dbi:Pg:dbname=feed;port=5433;host=" . $config->{write}->{ip},
         "write", $config->{password} )
-      or die $DBI::errstr;
+      || die($DBI::errstr);
 }
 
 sub any_event_connection_str {
