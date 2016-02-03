@@ -125,7 +125,7 @@ sub statement {
     my $results = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws($params->{args}, $account);
 
     my @txns;
-    my $printed = {};
+    my %printed;
     foreach my $txn (@$results) {
       unless($printed{$txn->{action_type}}){
         use Data::Dumper;
