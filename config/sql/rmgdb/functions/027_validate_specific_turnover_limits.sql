@@ -61,26 +61,25 @@ BEGIN
         --                                                      AND (b.bet_type='FLASHU' OR
         --                                                           b.bet_type='FLASHD' OR
         --                                                           b.bet_type='...')
-        --                                                      THEN b.buy_price * exch.rate END), 0) > 10000
+        --                                                      THEN b.buy_price END), 0) > 10000
         --                              THEN 'NAME1' END,
         --                         CASE WHEN b_buy_price_USD +
         --                                   coalesce(sum(CASE WHEN (b.bet_type='FLASHU' OR
         --                                                           b.bet_type='FLASHD' OR
         --                                                           b.bet_type='...')
-        --                                                      THEN b.buy_price * exch.rate END), 0) > 20000
+        --                                                      THEN b.buy_price END), 0) > 20000
         --                              THEN 'NAME2' END,
         --                         CASE WHEN b_buy_price_USD +
         --                                   coalesce(sum(CASE WHEN (b.underlying_symbol='frxUSDJPY' OR
         --                                                           b.underlying_symbol='frxUSDGBP' OR
         --                                                           b.underlying_symbol='...')
         --                                                      AND b.tick_count IS NOT NULL
-        --                                                     THEN b.buy_price * exch.rate END), 0) > 30000
+        --                                                     THEN b.buy_price END), 0) > 30000
         --                              THEN 'NAME3' END
         --                     ]::TEXT[],
         --                     NULL) AS failures
         --   FROM bet.financial_market_bet b
         --   JOIN transaction.account a ON a.id=b.account_id
-        --  CROSS JOIN data_collection.exchangeToUSD_rate(a.currency_code, $2) exch
         --  WHERE a.client_loginid=$1
         --    AND b.purchase_time::DATE=$2::DATE
         --
@@ -98,7 +97,7 @@ BEGIN
         -- DBD::Pg.
 
         SELECT INTO v_arr
-               coalesce(array_agg(format('CASE WHEN $3+coalesce(sum(CASE WHEN %s THEN b.buy_price * exch.rate END), 0) > %L THEN %L END',
+               coalesce(array_agg(format('CASE WHEN $3+coalesce(sum(CASE WHEN %s THEN b.buy_price END), 0) > %L THEN %L END',
                                          array_to_string(ARRAY[
                                              '(' || s.s || ')',
                                              '(' || p.t || ')',
@@ -117,23 +116,21 @@ BEGIN
                ) p(t);
 
         IF (p_limits -> 'max_losses') IS NOT NULL THEN
-            v_arr := array_prepend($$CASE WHEN $3+$4+coalesce(sum((b.buy_price - b.sell_price) * exch.rate), 0) > $$ || quote_literal(p_limits ->> 'max_losses') || $$ THEN '_-l' END$$, v_arr);
+            v_arr := array_prepend($$CASE WHEN $3+$4+coalesce(sum(b.buy_price - b.sell_price), 0) > $$ || quote_literal(p_limits ->> 'max_losses') || $$ THEN '_-l' END$$, v_arr);
         END IF;
 
         IF (p_limits -> 'max_turnover') IS NOT NULL THEN
-            v_arr := array_prepend($$CASE WHEN $3+coalesce(sum(b.buy_price * exch.rate), 0) > $$ || quote_literal(p_limits ->> 'max_turnover') || $$ THEN '_-t' END$$, v_arr);
+            v_arr := array_prepend($$CASE WHEN $3+coalesce(sum(b.buy_price), 0) > $$ || quote_literal(p_limits ->> 'max_turnover') || $$ THEN '_-t' END$$, v_arr);
         END IF;
 
         v_sql := $$
                    SELECT array_remove(ARRAY[$$ || array_to_string(v_arr, ', ') || $$]::TEXT[], NULL) AS failures
                      FROM bet.financial_market_bet b
-                     JOIN transaction.account a ON a.id=b.account_id
-                    CROSS JOIN data_collection.exchangeToUSD_rate(a.currency_code, $2) exch
-                    WHERE a.client_loginid=$1
+                    WHERE b.account_id=$1
                       AND b.purchase_time::DATE=$2::DATE
                  $$;
         -- RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price, v_potential_losses;
-        EXECUTE v_sql INTO v_arr USING p_account.client_loginid, p_purchase_time, p_buy_price, v_potential_losses;
+        EXECUTE v_sql INTO v_arr USING p_account.id, p_purchase_time, p_buy_price, v_potential_losses;
         -- RAISE NOTICE '  ==> %, upper: %', v_arr, array_upper(v_arr, 1);
 
         IF array_upper(v_arr, 1)>0 THEN
