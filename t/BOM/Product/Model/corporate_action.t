@@ -10,28 +10,40 @@ use Test::NoWarnings;
 
 use Date::Utility;
 
-use BOM::MarketData::CorporateAction;
+use Quant::Framework::CorporateAction;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+
+use Quant::Framework::CorporateAction;
+use Quant::Framework::Utils::Test;
 
 subtest 'general' => sub {
     plan tests => 5;
-    lives_ok { BOM::MarketData::CorporateAction->new(symbol => 'FPFP') } 'creates corporate action object with symbol';
-    throws_ok { BOM::MarketData::CorporateAction->new } qr/Attribute \(symbol\) is required/, 'throws exception if symbol is not provided';
+    lives_ok { Quant::Framework::CorporateAction->new(symbol => 'FPFP',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()) } 'creates corporate action object with symbol';
+    throws_ok { Quant::Framework::CorporateAction->new } qr/Attribute \(symbol\) is required/, 'throws exception if symbol is not provided';
     lives_ok {
-        my $corp = BOM::MarketData::CorporateAction->new(symbol => 'UKHBSA');
+        my $corp = Quant::Framework::CorporateAction->new(symbol => 'UKHBSA',        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
         isa_ok($corp->actions, 'HASH');
         ok !keys %{$corp->actions}, 'empty hash';
     }
     'does not die if no actions are present on couch';
 };
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_action');
+Quant::Framework::Utils::Test::create_doc('corporate_action',
+    {
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
+    });
 
 subtest 'save new corporate actions' => sub {
     plan tests => 7;
     my $now = Date::Utility->new;
     lives_ok {
-        my $corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
+        my $corp = Quant::Framework::CorporateAction->new(symbol => 'FPFP',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
         my $actions = $corp->actions;
         is keys %$actions, 1, 'has only one action';
         my $new_actions = {
@@ -42,13 +54,17 @@ subtest 'save new corporate actions' => sub {
                 description    => 'Test data 2',
                 flag           => 'N'
             }};
-        my $new_corp = BOM::MarketData::CorporateAction->new(
+        my $new_corp = Quant::Framework::CorporateAction->new(
             symbol        => 'FPFP',
             actions       => $new_actions,
-            recorded_date => $now
+            recorded_date => $now,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
         ok $new_corp->save, 'saves new action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
+        my $after_save_corp = Quant::Framework::CorporateAction->new(symbol => 'FPFP',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 2, 'has two actions';
     }
@@ -63,13 +79,18 @@ subtest 'save new corporate actions' => sub {
                 description    => 'Duplicate action',
                 flag           => 'N'
             }};
-        my $no_dup_corp = BOM::MarketData::CorporateAction->new(
+        my $no_dup_corp = Quant::Framework::CorporateAction->new(
             symbol        => 'FPFP',
             actions       => $new_actions,
             recorded_date => $now,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
         ok $no_dup_corp->save, 'try to save duplicate action';
-        my $after_save = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
+        my $after_save = Quant::Framework::CorporateAction->new(symbol => 'FPFP',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+
         my $action = $after_save->actions;
         cmp_ok($action->{1122334}->{description}, "ne", 'Duplicate action', 'did not save duplicate action');
     }
@@ -89,13 +110,18 @@ subtest 'update existing corporate actions' => sub {
                 description    => 'Update to existing actions',
                 flag           => 'U'
             }};
-        my $new_corp = BOM::MarketData::CorporateAction->new(
+        my $new_corp = Quant::Framework::CorporateAction->new(
             symbol        => 'FPFP',
             actions       => $new_actions,
-            recorded_date => $now
+            recorded_date => $now,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
         );
         ok $new_corp->save, 'saves new action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
+        my $after_save_corp = Quant::Framework::CorporateAction->new(symbol => 'FPFP',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 2, 'has two actions';
         my $updated_action = $new_actions_from_couch->{$action_id};
@@ -118,13 +144,17 @@ subtest 'cancel existing corporate actions' => sub {
                 description    => 'Update to existing actions',
                 flag           => 'D'
             }};
-        my $new_corp = BOM::MarketData::CorporateAction->new(
+        my $new_corp = Quant::Framework::CorporateAction->new(
             symbol        => 'FPFP',
             actions       => $new_actions,
-            recorded_date => $now
+            recorded_date => $now,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
         );
         ok $new_corp->save, 'saves new action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
+        my $after_save_corp = Quant::Framework::CorporateAction->new(symbol => 'FPFP',
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 1, 'has one actions';
         ok !$new_actions_from_couch->{$action_id}, 'action deleted from couch';
@@ -145,13 +175,18 @@ subtest 'save critical actions' => sub {
                 description     => 'Save critical action',
                 flag            => 'N'
             }};
-        my $new_corp = BOM::MarketData::CorporateAction->new(
+        my $new_corp = Quant::Framework::CorporateAction->new(
             symbol        => 'FPFP',
             actions       => $new_actions,
-            recorded_date => $now
+            recorded_date => $now,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
         );
         ok $new_corp->save, 'saves critical action';
-        my $after_save_corp = BOM::MarketData::CorporateAction->new(symbol => 'FPFP');
+        my $after_save_corp = Quant::Framework::CorporateAction->new(symbol => 'FPFP',
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
+
         my $new_actions_from_couch = $after_save_corp->actions;
         is keys %$new_actions_from_couch, 2, 'has two actions';
         ok $new_actions_from_couch->{$action_id}, 'critical action saved on couch';
