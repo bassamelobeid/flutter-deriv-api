@@ -159,8 +159,8 @@ sub active_symbols {
         'legal_allowed_markets::' . $params->{args}->{active_symbols} . '::' . $params->{language} . '::' . join(",", sort @$legal_allowed_markets);
 
     my $active_symbols;
-    if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid) and BOM::System::RedisReplicated::redis_read->ttl($uuid) > 0) {
-        $active_symbols = JSON::from_json($active_symbols);
+    if (1==1 and $active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid) and BOM::System::RedisReplicated::redis_read->ttl($uuid) > 0) {
+        #$active_symbols = JSON::from_json($active_symbols, {utf8 => 1});
     } else {
         my %allowed_market;
         undef @allowed_market{@$legal_allowed_markets};
@@ -170,9 +170,9 @@ sub active_symbols {
                 exists $allowed_market{$descr->{market}} ? $descr : ();
             } get_offerings_with_filter('underlying_symbol')];
 
-        BOM::System::RedisReplicated::redis_write()->set($uuid, JSON::to_json($active_symbols));
+        #BOM::System::RedisReplicated::redis_write()->set($uuid, JSON::to_json($active_symbols, {utf8 => 1}));
         #expire in nearest 5 minute interval
-        BOM::System::RedisReplicated::redis_write()->expire($uuid, 300 - time % 300);
+        #BOM::System::RedisReplicated::redis_write()->expire($uuid, 300 - time % 300);
     }
 
     return $active_symbols;
