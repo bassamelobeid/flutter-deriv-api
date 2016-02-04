@@ -78,7 +78,6 @@ ok $portfolio->{portfolio}->{contracts};
 ok $portfolio->{portfolio}->{contracts}->[0]->{contract_id};
 test_schema('portfolio', $portfolio);
 
-## test portfolio and sell
 $t = $t->send_ok({
         json => {
             proposal_open_contract => 1,

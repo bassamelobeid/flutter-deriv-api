@@ -9,7 +9,6 @@ use List::Util qw(first);
 
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::WebSocketAPI::v3::Wrapper::Streamer;
-use BOM::Platform::Static::Config;
 
 sub payout_currencies {
     my ($c, $args) = @_;
@@ -164,7 +163,6 @@ sub change_password {
             args           => $args,
             client_loginid => $c->stash('loginid'),
             token_type     => $c->stash('token_type'),
-            cs_email       => BOM::Platform::Static::Config::get_customer_support_email(),
             client_ip      => $r->client_ip
         });
     return;
@@ -190,7 +188,6 @@ sub cashier_password {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
-            cs_email       => BOM::Platform::Static::Config::get_customer_support_email(),
             client_ip      => $r->client_ip
         });
     return;
@@ -242,7 +239,6 @@ sub set_settings {
             args           => $args,
             client_loginid => $c->stash('loginid'),
             website_name   => $r->website->display_name,
-            cs_email       => BOM::Platform::Static::Config::get_customer_support_email(),
             client_ip      => $r->client_ip,
             user_agent     => $c->req->headers->header('User-Agent'),
             language       => $r->language
@@ -293,8 +289,7 @@ sub set_self_exclusion {
         },
         {
             args           => $args,
-            client_loginid => $c->stash('loginid'),
-            cs_email       => BOM::Platform::Static::Config::get_customer_support_email()});
+            client_loginid => $c->stash('loginid')});
     return;
 }
 
