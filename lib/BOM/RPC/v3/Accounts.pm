@@ -314,6 +314,7 @@ sub change_password {
         unless ($pwdm->strong($args->{new_password}));
 
     my $new_password = BOM::System::Password::hashpw($args->{new_password});
+    print "new_password after hash in account: $new_password\n";
     $user->password($new_password);
     $user->save;
 
