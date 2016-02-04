@@ -11,7 +11,7 @@ with 'BOM::Utility::Logging';
 use Bloomberg::FileDownloader;
 use Bloomberg::CorporateAction;
 use BOM::MarketData::Fetcher::CorporateAction;
-use BOM::MarketData::CorporateAction;
+use Quant::Framework::CorporateAction;
 use BOM::Platform::Runtime;
 use Mail::Sender;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
@@ -29,9 +29,11 @@ sub script_run {
     foreach my $file (@files) {
         my %grouped_actions = $parser->process_data($file);
         foreach my $symbol (keys %grouped_actions) {
-            my $corp = BOM::MarketData::CorporateAction->new(
+            my $corp = Quant::Framework::CorporateAction->new(
                 symbol  => $symbol,
-                actions => $grouped_actions{$symbol});
+                actions => $grouped_actions{$symbol},
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 
             try {
                 $corp->save;
@@ -65,23 +67,23 @@ sub script_run {
 
     _update_disabled_symbol_list(\%disabled_list);
 
-    if (%report) {
-        my $successes = scalar grep { $report{$_}->{success} } keys %report;
-        my $failures  = scalar grep { not $report{$_}->{success} } keys %report;
+if (%report) {
+    my $successes = scalar grep { $report{$_}->{success} } keys %report;
+    my $failures  = scalar grep { not $report{$_}->{success} } keys %report;
 
-        stats_gauge('corporate_action_updates', $successes);
-    }
+    stats_gauge('corporate_action_updates', $successes);
+}
 
-    $self->return_value();
+$self->return_value();
 }
 
 sub _update_disabled_symbol_list {
     my $list = shift;
     my @new_list         = keys %$list;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(\@new_list);
-    BOM::Platform::Runtime->instance->app_config->save_dynamic;
+BOM::Platform::Runtime->instance->app_config->save_dynamic;
 
-    return;
+return;
 }
 
 no Moose;
