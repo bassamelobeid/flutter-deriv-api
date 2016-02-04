@@ -1788,8 +1788,8 @@ sub _vols_at_point {
     my ($self, $end_date, $days_attr) = @_;
 
     my $vol_args = {
-        delta => 50,
-        days  => $self->$days_attr->amount,
+        delta     => 50,
+        days      => $self->$days_attr->amount,
         for_epoch => $self->effective_start->epoch,
     };
 

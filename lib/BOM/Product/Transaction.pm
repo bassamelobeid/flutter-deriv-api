@@ -1130,7 +1130,7 @@ sub _validate_trade_pricing_adjustment {
             $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
         }
     }
-    my $allowed_move = $commission_markup * 0.5;
+    my $allowed_move = ($self->contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = $amount_type eq 'payout' ? ($self->price, $contract->ask_price) : ($self->payout, $contract->payout);
 
