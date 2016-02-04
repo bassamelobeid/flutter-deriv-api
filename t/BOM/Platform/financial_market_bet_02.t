@@ -357,8 +357,6 @@ lives_ok {
 }
 'bought AUD bet';
 
-note explain $@;
-
 dies_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
         +{
@@ -1773,7 +1771,7 @@ subtest 'batch_buy', sub {
         my $res = buy_multiple_bets [$acc1, $acc4, $acc3];
     }
     'buy_multiple_bets with differing currencies dies';
-    note "exception is $@";
+    # note "exception is $@";
     like $@, qr/^invalid currency/i, 'invalid currency';
 };
 
