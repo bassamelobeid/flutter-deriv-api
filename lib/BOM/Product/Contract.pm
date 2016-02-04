@@ -2809,22 +2809,6 @@ sub _validate_volsurface {
     }
 
     if ($self->volsurface->type eq 'moneyness') {
-        my $max_acceptable_error = BOM::Platform::Runtime->instance->app_config->quants->market_data->volsurface_calibration_error_threshold;
-        $max_acceptable_error *= 5 if $self->is_atm_bet;    # More latitude when vols don't matter so much
-
-        if ($surface->price_with_parameterized_surface and $surface->calibration_error > $max_acceptable_error) {
-            push @errors,
-                {
-                message => format_error_string(
-                    'Calibration fit outside acceptable range',
-                    symbol              => $self->underlying->symbol,
-                    'calibration error' => $surface->calibration_error,
-                    acceptable          => $max_acceptable_error,
-                ),
-                message_to_client => $standard_message,
-                };
-        }
-
         if (abs($surface->spot_reference - $self->current_spot) / $self->current_spot * 100 > 5) {
             push @errors,
                 {

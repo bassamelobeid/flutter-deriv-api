@@ -73,8 +73,6 @@ my $params = {
     currency     => 'USD',
     barrier      => 98,
 };
-my $orig = BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface;
-BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface('{}');
 my $c = produce_contract($params);
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.1496, 'correct bs probability for FX contract';
@@ -134,4 +132,3 @@ $c = produce_contract({
 like $c->pricing_engine_name, qr/VannaVolga/, 'VV engine selected';
 is roundnear(0.0001, $c->bs_probability->amount), 0.2629, 'correct bs probability for indices contract';
 is roundnear(0.0001, $c->pricing_engine->market_supplement->amount), 0.0172, 'correct market supplement';
-BOM::Platform::Runtime->instance->app_config->quants->underlyings->price_with_parameterized_surface($orig);

@@ -314,22 +314,6 @@ volsurface:
                   '50': 0.003
                   '75': 0.003765
     GDAXI:
-        parameterization:
-          values:
-             atmWingL:       113.142003423835
-             atmWingR:       0.409496613915546
-             atmvol1year:    0.160421052198595
-             atmvolLong:     0.173070384931718
-             atmvolshort:    0.136775241648235
-             kurtosisgrowth: 0.00282238685198852
-             kurtosislong:   88.120950139047
-             kurtosisshort:  0.132977801036087
-             skew1year:      -0.237977419469265
-             skewlong:       -0.382963782994916
-             skewshort:      -0.0348330192855386
-             skewwingL:      7.62591079701648
-             skewwingR:      0.280362812771711
-          calibration_error: 58.9875269922372
         surfaces:
               '183':
                 smile:
@@ -507,22 +491,6 @@ volsurface:
                 vol_spread:
                   '100': 0.0039984375
     FTSE:
-        parameterization:
-          values:
-              atmWingL: 0.421206176884513
-              atmWingR: 19.8841470798326
-              atmvol1year: 0.13067124803356
-              atmvolLong: 0.157079446212629
-              atmvolshort: 0.125878498702052
-              kurtosisgrowth: 0.939197906134533
-              kurtosislong: 1.92921675848731
-              kurtosisshort: 0.120635247349189
-              skew1year: -0.190881834274636
-              skewlong: -0.190490510836894
-              skewshort: 0.00787071245035347
-              skewwingL: 7.29342025965918
-              skewwingR: 19.9808227296178
-          calibration_error: 58.9875269922372
         surfaces:
               '183':
                 smile:
