@@ -342,8 +342,7 @@ sub change_password {
 sub cashier_password {
     my $params = shift;
     my ($client_loginid, $cs_email, $client_ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
-    use Data::Dumper;
-    print Dumper($params);
+
     my $client;
     if ($client_loginid) {
         $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -409,8 +408,7 @@ sub cashier_password {
                 });
             return {status => 1};
         }
-      } else {
-        print "cashier_setting_password:" . $client->cashier_setting_password,"\n";
+    } else {
         # unlock operation
         unless (length $client->cashier_setting_password) {
             return $error_sub->(localize('Your cashier was not locked.'));
