@@ -30,7 +30,8 @@ sub get_underlyings_with_corporate_action {
 
     my %list;
     foreach my $underlying_symbol (@stocks_list) {
-        my $corp = Quant::Framework::CorporateAction->new(symbol => $underlying_symbol,
+        my $corp = Quant::Framework::CorporateAction->new(
+            symbol           => $underlying_symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
         $list{$underlying_symbol} = $corp->actions if %{$corp->actions};
