@@ -100,7 +100,7 @@ sub domain_for {
         }
     }
 
-    if (BOM::env->tag eq 'wwwpool00') {
+    if (BOM::System::Localhost::name() eq 'wwwpool00') {
         $domain = 'new.binary.com';
     }
     return $domain;
