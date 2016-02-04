@@ -237,6 +237,8 @@ subtest $method => sub{
   is($c->tcall($method,$params)->{error}{message_to_client}, 'Password is not strong enough.');
   $params->{args}{new_password} = 'Fsfjxljfwkls3@fs9';
   is($c->tcall($method,$params)->{status}, 1,'update password correctly');
+  $user->load;
+  is($user->password, $hash_pwd, 'password updated');
 
 };
 
