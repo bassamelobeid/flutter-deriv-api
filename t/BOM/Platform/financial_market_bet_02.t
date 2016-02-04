@@ -1676,17 +1676,17 @@ subtest 'batch_buy', sub {
 
     lives_ok {
         my $res = buy_multiple_bets [$acc1, $acc2, $acc3];
-        note explain $res;
+        # note explain $res;
 
         my %notifications;
         while (my $notify = $listener->pg_notifies) {
-            note "got notification: $notify->[-1]";
+            # note "got notification: $notify->[-1]";
             my $n = {};
             @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/} =
                 split ',', $notify->[-1];
             $notifications{$n->{id}} = $n;
         }
-        note explain \%notifications;
+        # note explain \%notifications;
 
         my $acc = $acc1;
         my $loginid = $acc->client_loginid;
