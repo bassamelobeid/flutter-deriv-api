@@ -168,7 +168,6 @@ sub _init {
                         'maximum_total_markup'       => '50',
                         'minimum_total_markup'       => '0.3',
                         'resell_discount_factor'     => '0.2',
-                        'equality_discount_retained' => '1',
                         'digital_spread'             => {'level_multiplier' => '1.4'}}}
             },
             '_rev' => time
