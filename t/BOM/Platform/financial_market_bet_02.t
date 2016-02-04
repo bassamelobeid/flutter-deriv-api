@@ -1774,6 +1774,7 @@ subtest 'batch_buy', sub {
     }
     'buy_multiple_bets with differing currencies dies';
     note "exception is $@";
+    like $@, qr/^invalid currency/i, 'invalid currency';
 };
 
 Test::NoWarnings::had_no_warnings;
