@@ -305,6 +305,7 @@ sub change_password {
     ## args validation is done with JSON::Schema in entry_point, here we do others
     my $pwdm = Data::Password::Meter->new(14);
     print "password in Accounts: " . $user->password,"\n";
+    print "new_password: " .$args->{new_password},"\n";
     return $err->(localize("Old password is wrong."))
         unless BOM::System::Password::checkpw($args->{old_password}, $user->password);
     return $err->(localize('New password is same as old password.'))
