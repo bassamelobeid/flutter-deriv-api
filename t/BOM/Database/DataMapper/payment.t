@@ -222,8 +222,9 @@ subtest 'check duplicate payment from remark' => sub {
     'Expect to initialize the object';
 
     ok(
-        $payment_mapper->is_duplicate_payment_by_remark(
-            'datacash credit card deposit ORDERID=77516059288 (71510466288,) TIMESTAMP=31-Jul-09 07h10GMT'),
+        $payment_mapper->is_duplicate_payment(
+            {remark => 'datacash credit card deposit ORDERID=77516059288 (71510466288,) TIMESTAMP=31-Jul-09 07h10GMT'}
+        ),
         'Check if payment is a duplicate by checking the remark'
     );
 };
@@ -242,21 +243,16 @@ subtest 'check account has duplicate payment' => sub {
     'Expect to initialize mapper object';
 
     is(
-        $payment_mapper->is_duplicate_payment({
-                'remark' =>
-                    'Moneybookers deposit REF:MX100111271050920 ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'
-            }
+        $payment_mapper->is_duplicate_payment_by_remark(
+            'Moneybookers deposit REF:MX100111271050920 ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'
         ),
         1,
         'Is a duplicate payment'
     );
 
     is(
-        $payment_mapper->is_duplicate_payment({
-                'remark' =>
-                    'Moneybookers deposit REF:TEST_REF ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'
-            }
-        ),
+        $payment_mapper->is_duplicate_payment_by_remark(
+            'Moneybookers deposit REF:TEST_REF ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'),
         undef,
         'NOT a duplicate payment'
     );
