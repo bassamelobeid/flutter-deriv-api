@@ -1113,9 +1113,7 @@ sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
     # spreads and digits prices don't jump
-    return if $self->contract->is_spread or $self->contract->category->code eq 'digits';
-    # tick expiry on random prices don't jump
-    return if $self->contract->tick_expiry and $self->contract->underlying->market->name eq 'random';
+    return if $self->contract->is_spread;
 
     my $amount_type = $self->amount_type;
     my $contract    = $self->contract;
