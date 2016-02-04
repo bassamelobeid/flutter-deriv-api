@@ -1682,7 +1682,7 @@ subtest 'batch_buy', sub {
         while (my $notify = $listener->pg_notifies) {
             note "got notification: $notify->[-1]";
             my $n = {};
-            @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after/} =
+            @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time shortcode currency_code purchase_time purchase_price sell_time payment_remark/} =
                 split ',', $notify->[-1];
             $notifications{$n->{id}} = $n;
         }
