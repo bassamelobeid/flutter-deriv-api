@@ -163,7 +163,7 @@ sub active_symbols {
     if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid)
         and BOM::System::RedisReplicated::redis_read->ttl($uuid) > 0)
     {
-        $active_symbols = JSON::from_json(Sereal::Decoder->new->decode($active_symbols));
+        $active_symbols = Sereal::Decoder->new->decode($active_symbols);
     } else {
         my %allowed_market;
         undef @allowed_market{@$legal_allowed_markets};
@@ -173,7 +173,7 @@ sub active_symbols {
                 exists $allowed_market{$descr->{market}} ? $descr : ();
             } get_offerings_with_filter('underlying_symbol')];
 
-        BOM::System::RedisReplicated::redis_write()->set($uuid, Sereal::Encoder->new->encode(JSON::to_json($active_symbols)));
+        BOM::System::RedisReplicated::redis_write()->set($uuid, Sereal::Encoder->new->encode($active_symbols));
         #expire in nearest 5 minute interval
         BOM::System::RedisReplicated::redis_write()->expire($uuid, 300 - time % 300);
     }
