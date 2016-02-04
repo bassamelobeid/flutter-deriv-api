@@ -126,7 +126,7 @@ my $payment_mapper = BOM::Database::DataMapper::Payment->new({
     'currency_code'  => $curr,
 });
 
-if ($payment_mapper->is_duplicate_payment({remark => ($params{remark} || '')})) {
+if ($payment_mapper->is_duplicate_payment_by_remark($params{remark} // '')) {
     print "ERROR: did you hit Reload ?  Very similar line already appears on client statement";
     code_exit_BO();
 }
