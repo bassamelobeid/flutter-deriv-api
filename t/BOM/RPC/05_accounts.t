@@ -290,6 +290,12 @@ subtest $method => sub{
   my $mocked_client = Test::MockModule->new(ref($test_client));
   $mocked_client->mock('save',sub {return undef});
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save password');
+  undef $mocked_client;
+  my $send_email_called = 0;
+  my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
+  $mocked_account->mock('send_email', sub { $send_email_called++ });
+  is($c->tcall($method, $params)->{status}, 1,'set password success');
+
 };
 
 done_testing();
