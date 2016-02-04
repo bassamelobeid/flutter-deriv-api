@@ -101,7 +101,7 @@ sub domain_for {
     }
 
     if (BOM::System::Localhost::name() eq 'wwwpool00') {
-      $domain = 'ws.binary.com';
+        $domain = 'beta.binary.com';
     }
     return $domain;
 }
