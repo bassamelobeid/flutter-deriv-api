@@ -125,7 +125,7 @@ sub get_volatility {
     my $for_epoch = $args->{for_epoch};
 
     # get_volatility for a single point in time
-    return $self->_phase_for_x_func->($self->_x_for_epoch_func->($for_epoch)) if ($for_epoch);
+    return $self->_phase_for_x($self->_x_for_epoch($for_epoch)) if ($for_epoch);
 
     unless ($start_epoch and $end_epoch) {
         croak "Invalid usage of phased volatility. start_epoch and end_epoch are required.";
