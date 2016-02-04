@@ -37,8 +37,8 @@ $test_client->email($email);
 $test_client->save;
 
 my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                                                                                broker_code => 'VRTC',
-                                                                               });
+    broker_code => 'VRTC',
+});
 $test_client_vr->email($email);
 $test_client_vr->save;
 
@@ -268,57 +268,75 @@ subtest $method => sub {
 };
 
 $method = 'cashier_password';
-subtest $method => sub{
+subtest $method => sub {
 
-  #test lock
-  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-  is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied', 'need real money account');
-  my $params = {client_loginid => $test_loginid, args => {}};
-  is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
-  my $tmp_password = 'sfjksfSFjsk78Sjlk';
-  my $tmp_new_password = 'bjxljkwFWf278xK';
-  $test_client->cashier_setting_password($tmp_password);
-  $test_client->save;
-  is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
-  $params->{args}{lock_password} = $tmp_new_password;
-  is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was locked.', 'return error if already locked');
-  $test_client->cashier_setting_password('');
-  $test_client->save;
-  $params->{args}{lock_password} = $password;
-  is($c->tcall($method, $params)->{error}{message_to_client}, 'Please use a different password than your login password.', 'return error if lock password same with user password');
-  $params->{args}{lock_password} = '1111111';
-  is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
-  $params->{args}{lock_password} = $tmp_new_password;
-  my $mocked_client = Test::MockModule->new(ref($test_client));
-  $mocked_client->mock('save',sub {return undef});
-  is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save password');
-  $mocked_client->unmock_all;
-  my $send_email_called = 0;
-  my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
-  $mocked_account->mock('send_email', sub { $send_email_called++ });
-  is($c->tcall($method, $params)->{status}, 1,'set password success');
-  ok($send_email_called, "email sent");
+    #test lock
+    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied', 'need real money account');
+    my $params = {
+        client_loginid => $test_loginid,
+        args           => {}};
+    is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
+    my $tmp_password     = 'sfjksfSFjsk78Sjlk';
+    my $tmp_new_password = 'bjxljkwFWf278xK';
+    $test_client->cashier_setting_password($tmp_password);
+    $test_client->save;
+    is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
+    $params->{args}{lock_password} = $tmp_new_password;
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was locked.', 'return error if already locked');
+    $test_client->cashier_setting_password('');
+    $test_client->save;
+    $params->{args}{lock_password} = $password;
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Please use a different password than your login password.',
+        'return error if lock password same with user password'
+    );
+    $params->{args}{lock_password} = '1111111';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
+    $params->{args}{lock_password} = $tmp_new_password;
+    my $mocked_client = Test::MockModule->new(ref($test_client));
+    $mocked_client->mock('save', sub { return undef });
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, an error occurred while processing your account.',
+        'return error if cannot save password'
+    );
+    $mocked_client->unmock_all;
+    my $send_email_called = 0;
+    my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
+    $mocked_account->mock('send_email', sub { $send_email_called++ });
+    is($c->tcall($method, $params)->{status}, 1, 'set password success');
+    ok($send_email_called, "email sent");
 
-  # test unlock
-  $test_client->cashier_setting_password('');
-  $test_client->save;
-  delete $params->{args}{lock_password};
-  $params->{args}{unlock_password} = '123456';
-  is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
-  $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
-  $test_client->save;
-  $send_email_called = 0;
-  is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, you have entered an incorrect cashier password', 'return error if not correct');
-  ok($send_email_called, 'send email if entered wrong password');
-  $mocked_client->mock('save',sub {return undef});
-  $params->{args}{unlock_password} = $tmp_password;
-  is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
-  $mocked_client->unmock_all;
-  $send_email_called = 0;
-  is($c->tcall($method, $params)->{status},0, 'unlock password ok');
-  $test_client->load;
-  ok(!$test_client->cashier_setting_password, 'cashier password unset');
-  ok($send_email_called, 'send email after unlock cashier');
+    # test unlock
+    $test_client->cashier_setting_password('');
+    $test_client->save;
+    delete $params->{args}{lock_password};
+    $params->{args}{unlock_password} = '123456';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
+    $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
+    $test_client->save;
+    $send_email_called = 0;
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, you have entered an incorrect cashier password',
+        'return error if not correct'
+    );
+    ok($send_email_called, 'send email if entered wrong password');
+    $mocked_client->mock('save', sub { return undef });
+    $params->{args}{unlock_password} = $tmp_password;
+    is(
+        $c->tcall($method, $params)->{error}{message_to_client},
+        'Sorry, an error occurred while processing your account.',
+        'return error if cannot save'
+    );
+    $mocked_client->unmock_all;
+    $send_email_called = 0;
+    is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
+    $test_client->load;
+    ok(!$test_client->cashier_setting_password, 'cashier password unset');
+    ok($send_email_called,                      'send email after unlock cashier');
 };
 
 done_testing();
