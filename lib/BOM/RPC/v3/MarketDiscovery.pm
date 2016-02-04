@@ -14,6 +14,8 @@ use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Product::Contract::Offerings;
 use BOM::Product::Offerings qw(get_offerings_with_filter get_permitted_expiries);
+use BOM::System::RedisReplicated;
+use Sereal::Encoder;
 
 sub trading_times {
     my $params = shift;
@@ -154,15 +156,29 @@ sub active_symbols {
 
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    return [
-        map { $_ }
-            grep {
-            my $market = $_->{market};
-            grep { $market eq $_ } @{$legal_allowed_markets}
-            }
+    my $key =
+        'legal_allowed_markets::' . $params->{args}->{active_symbols} . '::' . $params->{language} . '::' . join(",", sort @$legal_allowed_markets);
+
+    my $active_symbols;
+    if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
+        and BOM::System::RedisReplicated::redis_read->ttl($key) > 0)
+    {
+        $active_symbols = Sereal::Decoder->new->decode($active_symbols);
+    } else {
+        my %allowed_market;
+        undef @allowed_market{@$legal_allowed_markets};
+        $active_symbols = [
             map {
-            _description($_, $params->{args}->{active_symbols})
+                my $descr = _description($_, $params->{args}->{active_symbols});
+                exists $allowed_market{$descr->{market}} ? $descr : ();
             } get_offerings_with_filter('underlying_symbol')];
+
+        BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new->encode($active_symbols));
+        #expire in nearest 5 minute interval
+        BOM::System::RedisReplicated::redis_write()->expire($key, 300 - time % 300);
+    }
+
+    return $active_symbols;
 }
 
 sub _description {

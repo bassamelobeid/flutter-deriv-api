@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use Date::Utility;
+use Data::Password::Meter;
 
 use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::PortfolioManagement;
@@ -14,6 +15,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
 use BOM::Platform::Client;
+use BOM::Platform::Static::Config;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
 use BOM::System::Password;
@@ -21,7 +23,6 @@ use BOM::Database::DataMapper::FinancialMarketBet;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::AccessToken;
 use BOM::Database::DataMapper::Transaction;
-use Data::Password::Meter;
 
 sub payout_currencies {
     my $params = shift;
@@ -276,8 +277,8 @@ sub get_account_status {
 sub change_password {
     my $params = shift;
 
-    my ($client_loginid, $token_type, $cs_email, $client_ip, $args) =
-        ($params->{client_loginid}, $params->{token_type}, $params->{cs_email}, $params->{client_ip}, $params->{args});
+    my ($client_loginid, $token_type, $client_ip, $args) =
+        ($params->{client_loginid}, $params->{token_type}, $params->{client_ip}, $params->{args});
 
     my $client;
     if ($client_loginid) {
@@ -323,7 +324,7 @@ sub change_password {
 
     BOM::System::AuditLog::log('password has been changed', $client->email);
     send_email({
-            from    => $cs_email,
+            from    => BOM::Platform::Static::Config::get_customer_support_email(),
             to      => $client->email,
             subject => localize('Your password has been changed.'),
             message => [
@@ -341,7 +342,7 @@ sub change_password {
 
 sub cashier_password {
     my $params = shift;
-    my ($client_loginid, $cs_email, $client_ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
+    my ($client_loginid, $client_ip, $args) = ($params->{client_loginid}, $params->{client_ip}, $params->{args});
 
     my $client;
     if ($client_loginid) {
@@ -394,7 +395,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => $cs_email,
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
                     'to'      => $client->email,
                     'subject' => $client->loginid . " cashier password updated",
                     'message' => [
@@ -419,7 +420,7 @@ sub cashier_password {
         if (!BOM::System::Password::checkpw($unlock_password, $cashier_password)) {
             BOM::System::AuditLog::log('Failed attempt to unlock cashier', $client->loginid);
             send_email({
-                    'from'    => $cs_email,
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
                     'to'      => $client->email,
                     'subject' => $client->loginid . "-Failed attempt to unlock cashier section",
                     'message' => [
@@ -440,7 +441,7 @@ sub cashier_password {
             return $error_sub->(localize('Sorry, an error occurred while processing your account.'));
         } else {
             send_email({
-                    'from'    => $cs_email,
+                    'from'    => BOM::Platform::Static::Config::get_customer_support_email(),
                     'to'      => $client->email,
                     'subject' => $client->loginid . " cashier password updated",
                     'message' => [
@@ -502,9 +503,8 @@ sub get_settings {
 
 sub set_settings {
     my $params = shift;
-    my ($client_loginid, $website_name, $cs_email, $client_ip, $user_agent, $language, $args) = (
-        $params->{client_loginid}, $params->{website_name}, $params->{cs_email}, $params->{client_ip},
-        $params->{user_agent},     $params->{language},     $params->{args});
+    my ($client_loginid, $website_name, $client_ip, $user_agent, $language, $args) =
+        ($params->{client_loginid}, $params->{website_name}, $params->{client_ip}, $params->{user_agent}, $params->{language}, $params->{args});
 
     my $client;
     if ($client_loginid) {
@@ -608,7 +608,7 @@ sub set_settings {
     $message .= "\n" . localize('The [_1] team.', $website_name);
 
     send_email({
-        from               => $cs_email,
+        from               => BOM::Platform::Static::Config::get_customer_support_email(),
         to                 => $client->email,
         subject            => $client->loginid . ' ' . localize('Change in account settings'),
         message            => [$message],
@@ -668,8 +668,8 @@ sub get_self_exclusion {
 
 sub set_self_exclusion {
     my $params = shift;
-    my ($client_loginid, $cs_email, $args) =
-        ($params->{client_loginid}, $params->{cs_email}, $params->{args});
+    my ($client_loginid, $args) =
+        ($params->{client_loginid}, $params->{args});
 
     my $client;
     if ($client_loginid) {
@@ -800,7 +800,7 @@ sub set_self_exclusion {
         $message = "Client $client set the following self-exclusion limits:\n\n$message";
         send_email({
             from    => $compliance_email,
-            to      => $compliance_email . ',' . $cs_email,
+            to      => $compliance_email . ',' . BOM::Platform::Static::Config::get_customer_support_email(),
             subject => "Client set self-exclusion limits",
             message => [$message],
         });
