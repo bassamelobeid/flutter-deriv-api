@@ -342,6 +342,7 @@ sub change_password {
 sub cashier_password {
     my $params = shift;
     my ($client_loginid, $cs_email, $client_ip, $args) = ($params->{client_loginid}, $params->{cs_email}, $params->{client_ip}, $params->{args});
+    use Data::Dumper;
     print Dumper($params);
     my $client;
     if ($client_loginid) {
