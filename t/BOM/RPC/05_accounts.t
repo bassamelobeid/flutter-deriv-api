@@ -189,11 +189,11 @@ subtest $method => sub{
   my %status = (status1 => 1, tnc_approval => 1);
   $mock_client->mock('client_status_types', sub {return \%status});
   $mock_client->mock('get_status',sub {my ($self, $status) = @_; return $status{$status}});
-  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(status1)], 'status no tnc_approval');
+  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),{status => [qw(status1)]}, 'status no tnc_approval');
   %status = (tnc_approval => 1);
-  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'status no tnc_approval, but if no result, it will active');
+  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),{status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
   %status = ();
-  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'no result, active');
+  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),{status => [qw(active)]}, 'no result, active');
 };
 
 $method = 'change_password';
