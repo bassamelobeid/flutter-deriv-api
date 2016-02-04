@@ -128,7 +128,7 @@ my $payment_mapper = BOM::Database::DataMapper::Payment->new({
 
 if (
     $payment_mapper->is_duplicate_manual_payment({
-            remark => $params{remark} // '',
+            remark => ($params{remark} || ''),
             date   => Date::Utility->new,
             amount => $signed_amount
         }))
