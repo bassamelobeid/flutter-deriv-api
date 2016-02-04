@@ -292,7 +292,7 @@ subtest $method => sub{
   my $mocked_client = Test::MockModule->new(ref($test_client));
   $mocked_client->mock('save',sub {return undef});
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save password');
-  undef $mocked_client;
+  $mocked_client->unmock_all;
   my $send_email_called = 0;
   my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
   $mocked_account->mock('send_email', sub { $send_email_called++ });
@@ -309,7 +309,14 @@ subtest $method => sub{
   $test_client->save;
   $send_email_called = 0;
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, you have entered an incorrect cashier password', 'return error if not correct');
-
+  ok($send_email_called, 'send email if entered wrong password');
+  $mocked_client->mock('save',sub {return undef});
+  $params->{args}{unlock_password} = $tmp_password;
+  is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
+  $mocked_client->unmock_all;
+  is($c->tcall($method, $params)->{status},1, 'unlock password ok');
+  $test_client->load;
+  ok(!test_client->cashier_setting_password, 'cashier password unset');
 };
 
 done_testing();
