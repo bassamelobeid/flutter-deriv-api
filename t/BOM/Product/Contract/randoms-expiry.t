@@ -16,12 +16,6 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use Date::Utility;
 
 my $now = Date::Utility->new()->truncate_to_day->plus_time_interval('1h');
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_phased',
-    {
-        symbol        => $_,
-        recorded_date => $now,
-    }) for qw(RDMOON RDSUN RDMARS RDVENUS);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index', {symbol => $_}) for qw(RDMARS RDSUN RDMOON RDVENUS);
 
 my @test_cases = ({

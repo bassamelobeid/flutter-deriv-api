@@ -88,7 +88,7 @@ sub get_high_low_for_contract_period {
                 })}{'high', 'low', 'close'};
         # The two intraday queries run off different tables, so we have to make sure our consistent
         # exit tick was included. expiry_daily may have differences, but should be fine anyway.
-        $ok_through_expiry = 1 if ($exit_tick and ($self->expiry_daily or $exit_tick->quote == $close));
+        $ok_through_expiry = 1 if ($exit_tick and $close and ($self->expiry_daily or $exit_tick->quote == $close));
     }
 
     return ($high, $low, $ok_through_expiry);
