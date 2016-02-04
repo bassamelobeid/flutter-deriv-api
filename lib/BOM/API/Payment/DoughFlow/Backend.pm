@@ -280,14 +280,20 @@ sub check_predicates {
         return $rejection if $rejection;
     }
 
-    my $comment = $c->comment;
     if (
         $doughflow_datamapper->is_duplicate_payment({
-                remark         => $comment,
                 trace_id       => $trace_id,
                 transaction_id => $args->{transaction_id}}))
     {
-        $rejection = "Detected duplicate transaction [" . $comment . "] while processing request for " . $c->type . " with trace id " . $trace_id;
+        $rejection =
+              "Detected duplicate transaction ["
+            . $c->comment
+            . "] while processing request for "
+            . $c->type
+            . " with trace id "
+            . $trace_id
+            . " and transaction id "
+            . $args->{transaction_id};
     }
 
     return $rejection;
