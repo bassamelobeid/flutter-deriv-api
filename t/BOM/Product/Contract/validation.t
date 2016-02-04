@@ -1254,8 +1254,6 @@ subtest 'economic events blockout period' => sub {
     my $c = produce_contract($bet_params);
     ok !$c->_validate_start_date, 'no error if economic_events is not within period';
 
-
-    
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'economic_events',
         {
