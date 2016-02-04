@@ -361,7 +361,10 @@ sub is_duplicate_payment {
         query           => [
             client_loginid => $self->client_loginid,
             currency_code  => $self->currency_code,
-            remark         => {like => '%' . $args->{remark} . '%'},
+            or             => [
+                remark         => {like => '%' . $args->{remark} . '%'},
+                trace_id       => $args->{trace_id},
+                transaction_id => $args->{transaction_id}]
         ],
         db => $self->db,
     );
