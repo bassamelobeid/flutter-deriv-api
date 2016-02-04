@@ -244,12 +244,15 @@ subtest $method => sub{
   isnt($user->password, $hash_pwd, 'client password updated');
   $params->{args}{new_password} = $password;
   $params->{args}{old_password} = $new_password;
+  my $send_email_called = 0;
+  my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
+  $mocked_account->mock('send_email', sub { $send_email_called++ });
   is($c->tcall($method,$params)->{status}, 1,'update password back correctly');
   $user->load;
   is($user->password, $hash_pwd , 'user password updated');
   $test_client->load;
   is($user->password, $hash_pwd, 'client password updated');
-
+  ok($send_email_called, 'send_email called');
 };
 
 done_testing();
