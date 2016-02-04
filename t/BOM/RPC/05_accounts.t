@@ -269,6 +269,8 @@ subtest $method => sub {
 
 $method = 'cashier_password';
 subtest $method => sub{
+
+  #test lock
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied', 'need real money account');
   my $params = {client_loginid => $test_loginid, args => {}};
@@ -295,6 +297,14 @@ subtest $method => sub{
   my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
   $mocked_account->mock('send_email', sub { $send_email_called++ });
   is($c->tcall($method, $params)->{status}, 1,'set password success');
+  ok($send_email_called, "email sent");
+
+  # test unlock
+  $test_client->cashier_setting_password('');
+  $test_client->save;
+  delete $params->{lock_password};
+  $params->{unlock_password} = $tmp_password;
+  is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
 
 };
 
