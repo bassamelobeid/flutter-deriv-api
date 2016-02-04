@@ -1656,19 +1656,22 @@ subtest 'batch_buy', sub {
             PrintError => 0
         });
 
-    my ($cl1, $cl2, $cl3, $acc1, $acc2, $acc3);
+    my ($cl1, $cl2, $cl3, $cl4, $acc1, $acc2, $acc3, $acc4);
     lives_ok {
         $cl1 = create_client;
         $cl2 = create_client;
         $cl3 = create_client;
+        $cl4 = create_client;
 
         top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 10;
         top_up $cl3, 'USD', 10000;
+        top_up $cl4, 'AUD', 10000;
 
         isnt + ($acc1 = $cl1->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 1st account';
         isnt + ($acc2 = $cl2->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 2nd account';
         isnt + ($acc3 = $cl3->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got 3rd account';
+        isnt + ($acc4 = $cl4->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got 4th account';
     }
     'setup clients';
 
@@ -1765,6 +1768,12 @@ subtest 'batch_buy', sub {
         };
     }
     'survived buy_multiple_bets';
+
+    dies_ok {
+        my $res = buy_multiple_bets [$acc1, $acc4, $acc3];
+    }
+    'buy_multiple_bets with differing currencies dies';
+    note "exception is $@";
 };
 
 Test::NoWarnings::had_no_warnings;
