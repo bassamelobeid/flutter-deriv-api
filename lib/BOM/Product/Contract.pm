@@ -1790,6 +1790,7 @@ sub _vols_at_point {
     my $vol_args = {
         delta => 50,
         days  => $self->$days_attr->amount,
+        for_epoch => $self->effective_start->epoch,
     };
 
     my $market_name = $self->underlying->market->name;
