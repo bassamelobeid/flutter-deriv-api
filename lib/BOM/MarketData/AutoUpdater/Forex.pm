@@ -150,7 +150,6 @@ sub run {
             next;
         }
         my $underlying     = BOM::Market::Underlying->new($symbol);
-        next if $underlying->volatility_surface_type eq 'flat';
         my $raw_volsurface = $surfaces_from_file->{$symbol};
         my $volsurface     = BOM::MarketData::VolSurface::Delta->new({
             underlying    => $underlying,
