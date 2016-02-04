@@ -196,7 +196,7 @@ subtest $method => sub{
 };
 
 $method = 'change_password';
-sub $method => sub{
+subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   diag(Dumper($c->tcall($method, {})->{error}{code}));
 };
