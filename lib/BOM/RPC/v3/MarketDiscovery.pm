@@ -156,12 +156,12 @@ sub active_symbols {
 
     my $legal_allowed_markets = BOM::Platform::Runtime::LandingCompany::Registry->new->get($landing_company_name)->legal_allowed_markets;
 
-    my $uuid =
+    my $key =
         'legal_allowed_markets::' . $params->{args}->{active_symbols} . '::' . $params->{language} . '::' . join(",", sort @$legal_allowed_markets);
 
     my $active_symbols;
-    if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($uuid)
-        and BOM::System::RedisReplicated::redis_read->ttl($uuid) > 0)
+    if ($active_symbols = BOM::System::RedisReplicated::redis_read()->get($key)
+        and BOM::System::RedisReplicated::redis_read->ttl($key) > 0)
     {
         $active_symbols = Sereal::Decoder->new->decode($active_symbols);
     } else {
@@ -173,9 +173,9 @@ sub active_symbols {
                 exists $allowed_market{$descr->{market}} ? $descr : ();
             } get_offerings_with_filter('underlying_symbol')];
 
-        BOM::System::RedisReplicated::redis_write()->set($uuid, Sereal::Encoder->new->encode($active_symbols));
+        BOM::System::RedisReplicated::redis_write()->set($key, Sereal::Encoder->new->encode($active_symbols));
         #expire in nearest 5 minute interval
-        BOM::System::RedisReplicated::redis_write()->expire($uuid, 300 - time % 300);
+        BOM::System::RedisReplicated::redis_write()->expire($key, 300 - time % 300);
     }
 
     return $active_symbols;
