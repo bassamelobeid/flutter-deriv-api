@@ -31,15 +31,15 @@ my $email       = 'abc@binary.com';
 my $password    = 'jskjd8292922';
 my $hash_pwd    = BOM::System::Password::hashpw($password);
 my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-                                                                             broker_code => 'MF',
-                                                                            });
+    broker_code => 'MF',
+});
 $test_client->email($email);
 $test_client->save;
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::Platform::User->create(
-                                               email    => $email,
-                                               password => $hash_pwd
-                                              );
+    email    => $email,
+    password => $hash_pwd
+);
 $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->save;
@@ -198,57 +198,65 @@ subtest $method => sub {
     is($c->tcall($method, {client_loginid => 'CR0021'})->{currency}, '', 'have no currency if no default account');
     undef $mock_client;
     my $result = $c->tcall($method, {client_loginid => 'CR0021'});
-    is_deeply($result,  {
-               'currency' => 'USD',
-               'balance' => '1505.0000',
-               'loginid' => 'CR0021'
-                        }, 'result is correct');
+    is_deeply(
+        $result,
+        {
+            'currency' => 'USD',
+            'balance'  => '1505.0000',
+            'loginid'  => 'CR0021'
+        },
+        'result is correct'
+    );
 };
 
 $method = 'get_account_status';
-subtest $method => sub{
-  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid'); 
-  my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-  my %status = (status1 => 1, tnc_approval => 1, status2 => 0);
-  $mock_client->mock('client_status_types', sub {return \%status});
-  $mock_client->mock('get_status',sub {my ($self, $status) = @_; return $status{$status}});
-  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),{status => [qw(status1)]}, 'no tnc_approval, no status with value 0');
-  %status = (tnc_approval => 1);
-  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),{status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
-  %status = ();
-  is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),{status => [qw(active)]}, 'no result, active');
+subtest $method => sub {
+    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+    my %status      = (
+        status1      => 1,
+        tnc_approval => 1,
+        status2      => 0
+    );
+    $mock_client->mock('client_status_types', sub { return \%status });
+    $mock_client->mock('get_status', sub { my ($self, $status) = @_; return $status{$status} });
+    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(status1)]}, 'no tnc_approval, no status with value 0');
+    %status = (tnc_approval => 1);
+    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
+    %status = ();
+    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(active)]}, 'no result, active');
 };
 
 $method = 'change_password';
-subtest $method => sub{
-  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-  my $params = {client_loginid => $test_loginid};
-  is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
-  $params->{token_type} = 'hello';
-  is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
-  $params->{token_type} = 'session_token';
-  $params->{args}{old_password} = 'old_password';
-  $params->{cs_email} = 'cs@binary.com';
-  $params->{client_ip} = '127.0.0.1';
-  is($c->tcall($method,$params)->{error}{message_to_client}, 'Old password is wrong.');
-  $params->{args}{old_password} = $password;
-  $params->{args}{new_password} = $password;
+subtest $method => sub {
+    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    my $params = {client_loginid => $test_loginid};
+    is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
+    $params->{token_type} = 'hello';
+    is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
+    $params->{token_type}         = 'session_token';
+    $params->{args}{old_password} = 'old_password';
+    $params->{cs_email}           = 'cs@binary.com';
+    $params->{client_ip}          = '127.0.0.1';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Old password is wrong.');
+    $params->{args}{old_password} = $password;
+    $params->{args}{new_password} = $password;
 
-  is($c->tcall($method,$params)->{error}{message_to_client}, 'New password is same as old password.');
-  $params->{args}{new_password} = '111111111';
-  is($c->tcall($method,$params)->{error}{message_to_client}, 'Password is not strong enough.');
-  my $new_password = 'Fsfjxljfwkls3@fs9';
-  $params->{args}{new_password} = $new_password;
-  my $send_email_called = 0;
-  my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
-  $mocked_account->mock('send_email', sub { $send_email_called++ });
-  is($c->tcall($method,$params)->{status}, 1,'update password correctly');
-  $user->load;
-  isnt($user->password, $hash_pwd , 'user password updated');
-  $test_client->load;
-  isnt($user->password, $hash_pwd, 'client password updated');
-  ok($send_email_called, 'send_email called');
-  $password = $new_password;
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
+    $params->{args}{new_password} = '111111111';
+    is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
+    my $new_password = 'Fsfjxljfwkls3@fs9';
+    $params->{args}{new_password} = $new_password;
+    my $send_email_called = 0;
+    my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
+    $mocked_account->mock('send_email', sub { $send_email_called++ });
+    is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
+    $user->load;
+    isnt($user->password, $hash_pwd, 'user password updated');
+    $test_client->load;
+    isnt($user->password, $hash_pwd, 'client password updated');
+    ok($send_email_called, 'send_email called');
+    $password = $new_password;
 };
 
 done_testing();
