@@ -122,11 +122,14 @@ sub get_volatility {
     my ($self, $args) = @_;
 
     my ($start_epoch, $end_epoch) = @{$args}{'start_epoch', 'end_epoch'};
+    my $for_epoch = $args->{for_epoch};
+
+    # get_volatility for a single point in time
+    return $self->_phase_for_x_func->($self->_x_for_epoch_func->($for_epoch)) if ($for_epoch);
 
     unless ($start_epoch and $end_epoch) {
         croak "Invalid usage of phased volatility. start_epoch and end_epoch are required.";
     }
-
     # We ask for 0 time volatility sometimes, for both good and bad reasons.
     # Rather than blowing up, turn it into a 1 second request.
     $start_epoch -= 1 if ($start_epoch == $end_epoch);
