@@ -1370,9 +1370,9 @@ expected_result:
                 barrier: 1
                 spot: 9518.2
                 duration: 5t
-                ask_prob: 0.105
+                ask_prob: 0.1015
                 theo_prob: 0.1
-                total_markup: 0.005
-                commission_markup: 0.005
+                total_markup: 0.0015
+                commission_markup: 0.0015
                 risk_markup: 0
                 price_engine: BOM::Product::Pricing::Engine::Digits
