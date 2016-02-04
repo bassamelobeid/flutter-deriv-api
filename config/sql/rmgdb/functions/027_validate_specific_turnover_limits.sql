@@ -79,12 +79,11 @@ BEGIN
         --                     ]::TEXT[],
         --                     NULL) AS failures
         --   FROM bet.financial_market_bet b
-        --   JOIN transaction.account a ON a.id=b.account_id
-        --  WHERE a.client_loginid=$1
+        --  WHERE b.account_id=$1
         --    AND b.purchase_time::DATE=$2::DATE
         --
         -- This query basically aggregates the turnover of all bets bought on the day of purchase_time
-        -- over all segments. For each limit specified in the JSON structure, a CASE statement is
+        -- for account. For each limit specified in the JSON structure, a CASE statement is
         -- generated in the select list which sums up the turnover that matches the specified condition.
         -- Then that sum is compared with its limit. If the limit is exceeded the outer CASE evalutes
         -- to the name of the limit specified in JSON. Otherwise, the outer CASE evaluates to NULL.
@@ -129,7 +128,7 @@ BEGIN
                     WHERE b.account_id=$1
                       AND b.purchase_time::DATE=$2::DATE
                  $$;
-        -- RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.client_loginid, p_purchase_time, p_buy_price, v_potential_losses;
+        -- RAISE NOTICE 'v_sql: % using 1: %, 2: %, 3: %, 4: %', v_sql, p_account.id, p_purchase_time, p_buy_price, v_potential_losses;
         EXECUTE v_sql INTO v_arr USING p_account.id, p_purchase_time, p_buy_price, v_potential_losses;
         -- RAISE NOTICE '  ==> %, upper: %', v_arr, array_upper(v_arr, 1);
 
