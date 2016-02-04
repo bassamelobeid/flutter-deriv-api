@@ -280,6 +280,10 @@ subtest $method => sub{
   is($c->tcall($method, $params)->{status}, 1, 'no unlock_password && lock_password, and set password before, status will be 1');
   $params->{args}{lock_password} = $tmp_new_password;
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was locked.', 'return error if already locked');
+  $test_client->cashier_setting_password('');
+  $test_client->save;
+  $params->{args}{lock_password} = $password;
+  is($c->tcall($method, $params)->{error}{message_to_client}, 'Please use a different password than your login password.', 'return error if lock password same with user password');
 };
 
 done_testing();
