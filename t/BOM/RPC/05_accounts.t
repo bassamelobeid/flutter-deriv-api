@@ -286,6 +286,10 @@ subtest $method => sub{
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Please use a different password than your login password.', 'return error if lock password same with user password');
   $params->{args}{lock_password} = '1111111';
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
+  $params->{args}{lock_password} = $tmp_new_password;
+  my $mocked_client = Test::MockModule->new(ref($test_client));
+  $mocked_client->mock('save',sub {return undef});
+  is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save password);
 };
 
 done_testing();
