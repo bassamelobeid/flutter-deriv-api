@@ -408,7 +408,8 @@ sub cashier_password {
                 });
             return {status => 1};
         }
-    } else {
+      } else {
+        print "cashier_setting_password:" . $client->cashier_setting_password,"\n";
         # unlock operation
         unless (length $client->cashier_setting_password) {
             return $error_sub->(localize('Your cashier was not locked.'));
