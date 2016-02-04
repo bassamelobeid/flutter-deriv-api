@@ -231,6 +231,7 @@ subtest $method => sub{
   is($c->tcall($method,$params)->{error}{message_to_client}, 'Old password is wrong.');
   $params->{old_password} = $password;
   $params->{new_password} = $password;
+  diag(Dumper($params));
   is($c->tcall($method,$params)->{error}{message_to_client}, 'New password is same as old password.');
   $params->{new_password} = '111111111';
   is($c->tcall($method,$params)->{error}{message_to_client}, 'Password is not strong enough.');
