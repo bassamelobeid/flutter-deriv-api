@@ -15,6 +15,9 @@ sub get_static_path {
 }
 
 sub get_static_url {
+    if (BOM::System::Localhost::name() eq 'wwwpool00') {
+      return "https://beta.binary.com/";
+    }
     return "https://static.binary.com/";
 }
 
