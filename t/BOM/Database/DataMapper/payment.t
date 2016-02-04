@@ -74,20 +74,14 @@ subtest 'get total deposit & withdrawal' => sub {
 
 subtest 'get_payment_count_exclude_gateway' => sub {
     cmp_ok(
-        $payment_data_mapper->get_payment_count_exclude_gateway({
-                'exclude' => [
-                    'free_gift',
-                    $BOM::Database::Model::Constants::PAYMENT_GATEWAY_DATACASH
-                ]}
+        $payment_data_mapper->get_payment_count_exclude_gateway(
+            {'exclude' => ['free_gift', $BOM::Database::Model::Constants::PAYMENT_GATEWAY_DATACASH]}
         ),
         '==', 0,
         'check payment count exlude free gift, datacash'
     );
 
-    cmp_ok(
-        $payment_data_mapper->get_payment_count_exclude_gateway({'exclude' => ['free_gift']}),
-        '==', 1, 'check payment count exlude free gift'
-    );
+    cmp_ok($payment_data_mapper->get_payment_count_exclude_gateway({'exclude' => ['free_gift']}), '==', 1, 'check payment count exlude free gift');
 
     cmp_ok($payment_data_mapper->get_payment_count_exclude_gateway(), '==', 2, 'check payment count exlude free gift, datacash');
 };
@@ -125,8 +119,7 @@ subtest 'Prepare for other tests' => sub {
 
     $payment_data_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
 
-    my $count = $payment_data_mapper->get_client_payment_count_by(
-        {payment_gateway_code => 'payment_fee'});
+    my $count = $payment_data_mapper->get_client_payment_count_by({payment_gateway_code => 'payment_fee'});
     is($count, 0, 'no payment count');
 
     $count = $payment_data_mapper->get_client_payment_count_by({
@@ -144,8 +137,7 @@ subtest 'Prepare for other tests' => sub {
     }
     'Insert new payment deposit';
 
-    $count = $payment_data_mapper->get_client_payment_count_by(
-        {payment_gateway_code => 'payment_fee'});
+    $count = $payment_data_mapper->get_client_payment_count_by({payment_gateway_code => 'payment_fee'});
     is($count, 1, 'has payment count');
 
     $count = $payment_data_mapper->get_client_payment_count_by({
@@ -164,8 +156,8 @@ subtest 'affiliate reward' => sub {
     lives_ok {
         my $account = $client->default_account;
 
-        my $remark               = 'Reward from affiliate program for trades done by CR34285';
-        my $amount               = 149.99;
+        my $remark = 'Reward from affiliate program for trades done by CR34285';
+        my $amount = 149.99;
 
         my $trx = $client->payment_affiliate_reward(
             amount   => $amount,
@@ -252,9 +244,7 @@ subtest 'check account has duplicate payment' => sub {
     is(
         $payment_mapper->is_duplicate_payment({
                 'remark' =>
-                    'Moneybookers deposit REF:MX100111271050920 ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT',
-                'date'   => Date::Utility->new({datetime => '09-Mar-11 06h22GMT'}),
-                'amount' => 2000,
+                    'Moneybookers deposit REF:MX100111271050920 ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'
             }
         ),
         1,
@@ -264,9 +254,7 @@ subtest 'check account has duplicate payment' => sub {
     is(
         $payment_mapper->is_duplicate_payment({
                 'remark' =>
-                    'Moneybookers deposit REF:TEST_REF ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT',
-                'date'   => Date::Utility->new({datetime => '10-Mar-11 06h22GMT'}),
-                'amount' => 2000,
+                    'Moneybookers deposit REF:TEST_REF ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'
             }
         ),
         undef,
