@@ -21,7 +21,7 @@ my $enable  = $cgi->param('enable');
 
 my $response;
 try {
-    my $corp = BOM::MarketData::CorporateAction->new(symbol => $symbol,
+    my $corp = Quant::Framework::CorporateAction->new(symbol => $symbol,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
     );
