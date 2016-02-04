@@ -316,7 +316,7 @@ subtest $method => sub{
   $mocked_client->unmock_all;
   is($c->tcall($method, $params)->{status},1, 'unlock password ok');
   $test_client->load;
-  ok(!test_client->cashier_setting_password, 'cashier password unset');
+  ok(!$test_client->cashier_setting_password, 'cashier password unset');
 };
 
 done_testing();
