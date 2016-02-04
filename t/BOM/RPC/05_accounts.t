@@ -184,7 +184,7 @@ subtest $method => sub {
 
 $method = 'get_account_status';
 subtest $method => sub{
-  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid'); 
   my $mock_client = Test::MockModule->new('BOM::Platform::Client');
   my %status = (status1 => 1, tnc_approval => 1);
   $mock_client->mock('client_status_types', sub {return \%status});
@@ -194,4 +194,11 @@ subtest $method => sub{
   %status = ();
   is_deeply($c->tcall($method, {client_loginid => 'CR0021'}),[qw(active)], 'no result, active');
 };
+
+$method = 'change_password';
+sub $method => sub{
+  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+  diag(Dumper($c->tcall($method, {})->{error}{code}));
+};
+
 done_testing();
