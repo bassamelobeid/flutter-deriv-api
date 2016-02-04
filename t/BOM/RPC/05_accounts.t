@@ -271,7 +271,8 @@ $method = 'cashier_password';
 subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied', 'need real money account');
-
+  my $params = {client_loginid => $test_loginid, args => {}};
+  is($c->tcall($method, $params)->{status}, 0, 'no unlock_password && lock_password, and not set password before, status will be 0');
 };
 
 done_testing();
