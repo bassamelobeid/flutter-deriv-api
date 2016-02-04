@@ -1662,7 +1662,7 @@ subtest 'batch_buy', sub {
         $cl2 = create_client;
         $cl3 = create_client;
 
-        top_up $cl1, 'USD', 10000;
+        top_up $cl1, 'USD', 5000;
         top_up $cl2, 'USD', 10;
         top_up $cl3, 'USD', 10000;
 
@@ -1682,7 +1682,7 @@ subtest 'batch_buy', sub {
         while (my $notify = $listener->pg_notifies) {
             note "got notification: $notify->[-1]";
             my $n = {};
-            @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time shortcode currency_code purchase_time purchase_price sell_time payment_remark/} =
+            @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/} =
                 split ',', $notify->[-1];
             $notifications{$n->{id}} = $n;
         }
@@ -1704,7 +1704,20 @@ subtest 'batch_buy', sub {
 
             my $txn = $r->{txn};
             is $txn->{account_id}, $acc->id, 'txn account id matches';
+            is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
+            is $txn->{amount}, '-20.0000', 'txn amount';
+            is $txn->{balance_after}, '4980.0000', 'txn balance_after';
+
+            my $note = $notifications{$txn->{id}};
+            isnt $note, undef, 'found notification';
+            is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
+            for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
+                is $note->{$name}, $txn->{$name}, "note{$name} eq txn{$name}";
+            }
+            for my $name (qw/buy_price purchase_time sell_time short_code/) {
+                is $note->{$name}, $fmb->{$name}, "note{$name} eq fmb{$name}";
+            }
         };
 
         $acc = $acc2;
@@ -1735,7 +1748,20 @@ subtest 'batch_buy', sub {
 
             my $txn = $r->{txn};
             is $txn->{account_id}, $acc->id, 'txn account id matches';
+            is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
+            is $txn->{amount}, '-20.0000', 'txn amount';
+            is $txn->{balance_after}, '9980.0000', 'txn balance_after';
+
+            my $note = $notifications{$txn->{id}};
+            isnt $note, undef, 'found notification';
+            is $note->{currency_code}, 'USD', "note{currency_code} eq USD";
+            for my $name (qw/account_id action_type amount balance_after financial_market_bet_id transaction_time/) {
+                is $note->{$name}, $txn->{$name}, "note{$name} eq txn{$name}";
+            }
+            for my $name (qw/buy_price purchase_time sell_time short_code/) {
+                is $note->{$name}, $fmb->{$name}, "note{$name} eq fmb{$name}";
+            }
         };
     }
     'survived buy_multiple_bets';
