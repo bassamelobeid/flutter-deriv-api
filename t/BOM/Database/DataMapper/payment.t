@@ -243,16 +243,25 @@ subtest 'check account has duplicate payment' => sub {
     'Expect to initialize mapper object';
 
     is(
-        $payment_mapper->is_duplicate_payment_by_remark(
-            'Moneybookers deposit REF:MX100111271050920 ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'
+        $payment_mapper->is_duplicate_manual_payment({
+                remark =>
+                    'Moneybookers deposit REF:MX100111271050920 ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT',
+                'date'   => Date::Utility->new({datetime => '09-Mar-11 06h22GMT'}),
+                'amount' => 2000,
+            }
         ),
         1,
         'Is a duplicate payment'
     );
 
     is(
-        $payment_mapper->is_duplicate_payment_by_remark(
-            'Moneybookers deposit REF:TEST_REF ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT'),
+        $payment_mapper->is_duplicate_manual_payment({
+                remark =>
+                    'Moneybookers deposit REF:TEST_REF ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT',
+                'date'   => Date::Utility->new({datetime => '10-Mar-11 06h22GMT'}),
+                'amount' => 2000
+            }
+        ),
         undef,
         'NOT a duplicate payment'
     );
