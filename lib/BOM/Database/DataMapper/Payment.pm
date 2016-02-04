@@ -395,7 +395,7 @@ sub is_duplicate_manual_payment {
             currency_code  => $self->currency_code,
             remark         => {ilike => '%' . $args->{remark} . '%'},
             payment_time   => {ge => DateTime->from_epoch(epoch => $epoch_before)},
-            payment_time   => {lt => DateTime->from_epoch(epoch => $epoch_before)},
+            payment_time   => {lt => DateTime->from_epoch(epoch => $epoch_after)},
             amount         => $args->{amount}
         ],
         db => $self->db,
