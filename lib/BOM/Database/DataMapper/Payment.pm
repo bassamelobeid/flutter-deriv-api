@@ -348,7 +348,7 @@ sub get_transaction_id_of_account_by_comment {
 
 =item is_duplicate_payment
 
-Check the remark (comment), trace_id, transaction_id of payments to find duplicate, used during doughflow validation
+Check the trace_id, transaction_id of payments to find duplicate, used during doughflow validation
 
 =cut
 
@@ -362,7 +362,6 @@ sub is_duplicate_payment {
             client_loginid => $self->client_loginid,
             currency_code  => $self->currency_code,
             or             => [
-                remark         => {like => '%' . $args->{remark} . '%'},
                 trace_id       => $args->{trace_id},
                 transaction_id => $args->{transaction_id}]
         ],
