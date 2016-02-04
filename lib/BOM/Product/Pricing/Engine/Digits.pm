@@ -129,7 +129,6 @@ sub _build_model_markup {
         name        => 'commission_markup',
         description => 'equivalent to tick trades',
         set_by      => __PACKAGE__,
-        minimum     => 0.005,
         base_amount => $winning_digits_commission[$self->winning_digits],
     });
 
