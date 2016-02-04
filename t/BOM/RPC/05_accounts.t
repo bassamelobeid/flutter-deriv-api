@@ -314,9 +314,11 @@ subtest $method => sub{
   $params->{args}{unlock_password} = $tmp_password;
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, an error occurred while processing your account.', 'return error if cannot save');
   $mocked_client->unmock_all;
-  is($c->tcall($method, $params)->{status},1, 'unlock password ok');
+  $send_email_called = 0;
+  is($c->tcall($method, $params)->{status},0, 'unlock password ok');
   $test_client->load;
   ok(!$test_client->cashier_setting_password, 'cashier password unset');
+  ok($send_email_called, 'send email after unlock cashier');
 };
 
 done_testing();
