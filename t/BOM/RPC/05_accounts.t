@@ -35,6 +35,13 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
+
+my $test_client_vr = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
+                                                                                broker_code => 'VRTC',
+                                                                               });
+$test_client_vr->email($email);
+$test_client_vr->save;
+
 my $test_loginid = $test_client->loginid;
 my $user         = BOM::Platform::User->create(
     email    => $email,
@@ -42,6 +49,7 @@ my $user         = BOM::Platform::User->create(
 );
 $user->save;
 $user->add_loginid({loginid => $test_loginid});
+$user->add_loginid({loginid => $test_client_vr->loginid});
 $user->save;
 ################################################################################
 # test
@@ -257,6 +265,13 @@ subtest $method => sub {
     isnt($user->password, $hash_pwd, 'client password updated');
     ok($send_email_called, 'send_email called');
     $password = $new_password;
+};
+
+$method = 'cashier_password';
+subtest $method => sub{
+  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+  is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied', 'need real money account');
+
 };
 
 done_testing();
