@@ -239,7 +239,7 @@ subtest $method => sub{
   $params->{args}{new_password} = $new_password;
   is($c->tcall($method,$params)->{status}, 1,'update password correctly');
   $user->load;
-  isnt($user->password, $hass_pwd , 'user password updated');
+  isnt($user->password, $hash_pwd , 'user password updated');
   $test_client->load;
   isnt($user->password, $hash_pwd, 'client password updated');
   $params->{args}{new_password} = $password;
