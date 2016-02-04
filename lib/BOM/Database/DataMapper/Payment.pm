@@ -381,12 +381,10 @@ Check the remark, date and amount of payment to find duplicate, used for manual 
 =cut
 
 sub is_duplicate_manual_payment {
-    my $self   = shift;
-    my $args   = shift;
-    my $remark = $args->{'remark'};
-    my $date   = $args->{'date'};
-    my $amount = $args->{'amount'};
+    my $self = shift;
+    my $args = shift;
 
+    my $date         = $args->{'date'};
     my $epoch_before = $date->epoch - $date->seconds_after_midnight;
     my $epoch_after  = $epoch_before + 24 * 60 * 60;
 
@@ -395,9 +393,10 @@ sub is_duplicate_manual_payment {
         query           => [
             client_loginid => $self->client_loginid,
             currency_code  => $self->currency_code,
-            remark         => {ilike => '%' . $remark . '%'},
+            remark         => {ilike => '%' . $args->{remark} . '%'},
             payment_time   => {ge => DateTime->from_epoch(epoch => $epoch_before)},
-            payment_time   => {ge => DateTime->from_epoch(epoch => $epoch_before)}
+            payment_time   => {lt => DateTime->from_epoch(epoch => $epoch_before)},
+            amount         => $args->{amount}
         ],
         db => $self->db,
     );
