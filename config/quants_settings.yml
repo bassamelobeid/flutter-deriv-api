@@ -1,0 +1,52 @@
+commission:
+  resell_discount_factor: 0.2
+  intraday:
+    historical_fixed: 0.0125
+    historical_bounceback: '{}'
+    historical_vol_meanrev: 0.10
+    historical_iv_risk: 10
+  digital_spread:
+    level_multiplier: 1.4
+  minimum_total_markup: 0.3
+  maximum_total_markup: 50
+  adjustment:
+    minimum: 1
+    maximum: 500
+    bom_created_bet: 100
+    spread_multiplier: 1
+    news_factor: 1
+    forward_start_factor: 1.5
+    quanto_scale_factor: 1
+
+features:
+  enable_portfolio_autosell: 1
+  enable_pricedebug: 1
+
+internal:
+# global setting not to be saved from UI
+  custom_client_limits: {}
+
+markets:
+  disable_iv: []
+
+bet_limits:
+  maximum_payout_on_new_markets: 100
+  maximum_payout:
+  maximum_payout_on_less_than_7day_indices_call_put: 5000
+  holiday_blackout_start: 345
+  holiday_blackout_end: 5
+  maximum_tick_trade_stake: 1000
+
+client_limits:
+  payout_per_symbol_and_bet_type_limit: 200000
+  intraday_spot_index_turnover_limit: 30000
+  smart_index_turnover_limit: 5000
+  stocks_turnover_limit: 5000
+
+market_data:
+  interest_rates_source: "implied"
+  economic_announcements_source: "forexfactory"
+  extra_vol_diff_by_delta: 0.1
+
+email_vol_autoupdate_report: 0
+
