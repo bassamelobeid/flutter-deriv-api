@@ -6,6 +6,7 @@ use warnings;
 use DateTime;
 use Try::Tiny;
 use List::MoreUtils qw(any);
+use Data::Password::Meter;
 use Crypt::NamedKeys;
 Crypt::NamedKeys::keyfile '/etc/rmg/aes_keys.yml';
 
@@ -21,7 +22,7 @@ use BOM::Platform::User;
 use BOM::Platform::Context::Request;
 use BOM::Platform::Client::Utility;
 use BOM::Platform::Context qw (localize request);
-use Data::Password::Meter;
+use BOM::Platform::Static::Config;
 
 sub new_account_virtual {
     my $params = shift;
@@ -81,7 +82,7 @@ sub verify_email {
 
     if (BOM::Platform::User->new({email => $params->{email}}) && $params->{type} eq 'lost_password') {
         send_email({
-                from    => $params->{cs_email},
+                from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
                 subject => BOM::Platform::Context::localize('[_1] New Password Request', $params->{website_name}),
                 message => [
@@ -94,7 +95,7 @@ sub verify_email {
     } elsif ($params->{type} eq 'account_opening') {
         unless (BOM::Platform::User->new({email => $params->{email}})) {
             send_email({
-                from               => $params->{cs_email},
+                from               => BOM::Platform::Static::Config::get_customer_support_email(),
                 to                 => $params->{email},
                 subject            => BOM::Platform::Context::localize('Verify your email address - [_1]', $params->{website_name}),
                 message            => [BOM::Platform::Context::localize('Your email address verification link is: ' . $params->{link})],
@@ -102,7 +103,7 @@ sub verify_email {
             });
         } else {
             send_email({
-                    from    => $params->{cs_email},
+                    from    => BOM::Platform::Static::Config::get_customer_support_email(),
                     to      => $params->{email},
                     subject => BOM::Platform::Context::localize('A Duplicate Email Address Has Been Submitted - [_1]', $params->{website_name}),
                     message => [

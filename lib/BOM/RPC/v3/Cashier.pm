@@ -19,6 +19,7 @@ use BOM::Platform::Locale;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context qw (localize request);
 use BOM::Platform::Client;
+use BOM::Platform::Static::Config;
 use BOM::Utility::CurrencyConverter qw(amount_from_to_currency in_USD);
 use BOM::Platform::Transaction;
 use BOM::Database::DataMapper::Payment;
@@ -149,8 +150,8 @@ sub paymentagent_list {
 
 sub paymentagent_transfer {
     my $params = shift;
-    my ($loginid_fm, $cs_email, $website_name, $args) =
-        ($params->{client_loginid}, $params->{cs_email}, $params->{website_name}, $params->{args});
+    my ($loginid_fm, $website_name, $args) =
+        ($params->{client_loginid}, $params->{website_name}, $params->{args});
 
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
@@ -180,7 +181,6 @@ sub paymentagent_transfer {
         return $error_sub->(
             __output_payments_error_message({
                     client       => $client_fm,
-                    cs_email     => $cs_email,
                     action       => "transfer - from $loginid_fm to $loginid_to",
                     error_msg    => $msg,
                     payment_type => 'Payment Agent transfer',
@@ -340,7 +340,7 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
     );
 
     send_email({
-        'from'               => $cs_email,
+        'from'               => BOM::Platform::Static::Config::get_customer_support_email(),
         'to'                 => $client_to->email,
         'subject'            => localize('Acknowledgement of Money Transfer'),
         'message'            => [$emailcontent],
@@ -354,8 +354,8 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
-    my ($client_loginid, $cs_email, $website_name, $args) =
-        ($params->{client_loginid}, $params->{cs_email}, $params->{website_name}, $params->{args});
+    my ($client_loginid, $website_name, $args) =
+        ($params->{client_loginid}, $params->{website_name}, $params->{args});
 
     my $client;
     if ($client_loginid) {
@@ -385,7 +385,6 @@ sub paymentagent_withdraw {
         return $error_sub->(
             __output_payments_error_message({
                     client       => $client,
-                    cs_email     => $cs_email,
                     action       => 'Withdraw - from ' . $client_loginid . ' to Payment Agent ' . $paymentagent_loginid,
                     error_msg    => $msg,
                     payment_type => 'Payment Agent Withdrawal',
@@ -519,7 +518,7 @@ sub paymentagent_withdraw {
     }
 
     if ($amount_transferred > 1500) {
-        my $support = $cs_email;
+        my $support = BOM::Platform::Static::Config::get_customer_support_email();
         my $message = "Client $client_loginid transferred \$$amount_transferred to payment agent today";
         send_email({
             from    => $support,
@@ -577,7 +576,7 @@ sub paymentagent_withdraw {
         localize('The [_1] team.', $website_name),
     ];
     send_email({
-        from               => $cs_email,
+        from               => BOM::Platform::Static::Config::get_customer_support_email(),
         to                 => $paymentagent->email,
         subject            => localize('Acknowledgement of Withdrawal Request'),
         message            => $emailcontent,
@@ -590,13 +589,13 @@ sub paymentagent_withdraw {
 sub __output_payments_error_message {
     my $args           = shift;
     my $client         = $args->{'client'};
-    my $cs_email       = $args->{'cs_email'};
     my $action         = $args->{'action'};
     my $payment_type   = $args->{'payment_type'} || 'n/a';                                # used for reporting; if not given, not applicable
     my $currency       = $args->{'currency'};
     my $amount         = $args->{'amount'};
     my $error_message  = $args->{'error_msg'};
     my $payments_email = BOM::Platform::Runtime->instance->app_config->payments->email;
+    my $cs_email       = BOM::Platform::Static::Config::get_customer_support_email();
 
     # amount is not always exist because error may happen before client submit the form
     # or when redirected from 3rd party site to failure script where no data is returned
