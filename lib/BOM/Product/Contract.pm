@@ -1316,7 +1316,10 @@ sub _build_pricing_vol {
     my $vol;
     my $pen = $self->pricing_engine_name;
     if ($self->volsurface->type eq 'phased') {
-        $vol = $self->volsurface->get_volatility_for_period($self->effective_start->epoch, $self->date_expiry->epoch);
+        $vol = $self->volsurface->get_volatility({
+            start_epoch => $self->effective_start->epoch,
+            end_epoch   => $self->date_expiry->epoch
+        });
     } elsif ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
             days  => $self->timeindays->amount,
@@ -1614,7 +1617,10 @@ sub _market_data {
             # if there's new surface data, calculate vol from that.
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
             } elsif ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
@@ -1628,7 +1634,10 @@ sub _market_data {
             my $args = shift;
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
             } else {
                 $args->{delta} = 50;
                 $vol = $volsurface->get_volatility($args);
