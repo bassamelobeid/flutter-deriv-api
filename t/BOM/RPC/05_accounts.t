@@ -199,8 +199,13 @@ subtest $method => sub{
 $method = 'change_password';
 subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-  is($c->tcall($method, {client_loginid => 'CR0021'})->{error}{code}, 'PermissionDenied', 'need token_type');
-
+  my $params = {client_loginid => 'CR0021'};
+  is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
+  $params->{token_type} = 'hello';
+  is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
+  $params->{token_type} = 'session_token';
+  $params->{old_password} = 'old_password';
+  is($c->tcall($method,$params)->{error}{message_to_client}, 'Old password is wrong');
 };
 
 done_testing();
