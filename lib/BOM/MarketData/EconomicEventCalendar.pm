@@ -2,6 +2,8 @@ package BOM::MarketData::EconomicEventCalendar;
 #Chornicle Economic Event
 
 use BOM::System::Chronicle;
+use Data::Chronicle::Reader;
+use Data::Chronicle::Writer;
 
 =head1 NAME
 
@@ -32,6 +34,18 @@ has document => (
     lazy_build => 1,
 );
 
+has chronicle_reader => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Reader',
+    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
+);
+
+has chronicle_writer => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Writer',
+    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
+);
+
 #this sub needs to be removed as it is no loger used.
 #we use `get_latest_events_for_period` to read economic events.
 sub _build_document {
@@ -39,7 +53,7 @@ sub _build_document {
 
     #document is an array of hash
     #each hash represents a single economic event
-    return BOM::System::Chronicle::get(EE, EE);
+    return $self->chronicle_reader->get(EE, EE);
 }
 
 has symbol => (
@@ -92,8 +106,8 @@ Saves the calendar into Chronicle
 sub save {
     my $self = shift;
 
-    if (not defined BOM::System::Chronicle::get(EE, EE)) {
-        BOM::System::Chronicle::set(EE, EE, {});
+    if (not defined $self->chronicle_reader->get(EE, EE)) {
+        $self->chronicle_writer->set(EE, EE, {});
     }
 
     for my $event (@{$self->events}) {
@@ -102,7 +116,7 @@ sub save {
         }
     }
 
-    return BOM::System::Chronicle::set(EE, EE, $self->_document_content, $self->recorded_date);
+    return $self->chronicle_writer->set(EE, EE, $self->_document_content, $self->recorded_date);
 }
 
 sub get_latest_events_for_period {
@@ -112,7 +126,7 @@ sub get_latest_events_for_period {
     my $to   = Date::Utility->new($period->{to})->epoch;
 
     #get latest events
-    my $document = BOM::System::Chronicle::get(EE, EE);
+    my $document = $self->chronicle_reader->get(EE, EE);
 
     die "No economic events" if not defined $document;
 
@@ -136,7 +150,7 @@ sub get_latest_events_for_period {
     }
 
     #if the requested period lies outside the current Redis data, refer to historical data
-    my $documents = BOM::System::Chronicle::get_for_period(EE, EE, $from, $to);
+    my $documents = $self->chronicle_reader->get_for_period(EE, EE, $from, $to);
 
     #we use a hash-table to remove duplicate news
     my %all_events;
