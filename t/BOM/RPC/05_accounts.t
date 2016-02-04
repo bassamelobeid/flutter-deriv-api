@@ -228,7 +228,10 @@ subtest $method => sub{
   is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
   $params->{token_type} = 'session_token';
   $params->{old_password} = 'old_password';
-  is($c->tcall($method,$params)->{error}{message_to_client}, 'Old password is wrong');
+  is($c->tcall($method,$params)->{error}{message_to_client}, 'Old password is wrong.');
+  $params->{old_password} = $password;
+  $params->{new_password} = $password;
+  is($c->tcall($method,$params)->{error}{message_to_client}, 'New password is same as old password.');
 };
 
 done_testing();
