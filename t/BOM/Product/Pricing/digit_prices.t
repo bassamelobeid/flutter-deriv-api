@@ -90,10 +90,10 @@ subtest 'prices' => sub {
     }
 
     $params->{barrier} = 9;
-    $params->{bet_type} = 'DIGITMATCH';
+    $params->{bet_type} = 'DIGITDIFF';
     my $c = produce_contract($params);
-    _check_amount($c->bs_probability, 0.1, 'bs_prob');
-    _check_amount($c->total_markup,   0.00909090909090909,  'markup');
+    _check_amount($c->bs_probability, 0.9, 'bs_prob');
+    _check_amount($c->total_markup,   0.00909090909090909,  'markup not the minmum');
 };
 
 subtest 'invalid selections' => sub {
