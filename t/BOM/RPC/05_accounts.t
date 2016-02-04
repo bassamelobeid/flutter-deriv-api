@@ -306,6 +306,7 @@ subtest $method => sub{
   $params->{args}{unlock_password} = '123456';
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
   $test_client->cashier_setting_password($tmp_password);
+  $test_client->save;
   $send_email_called = 0;
   is($c->tcall($method, $params)->{error}{message_to_client}, 'Sorry, you have entered an incorrect cashier password', 'return error if not correct');
 
