@@ -1113,9 +1113,7 @@ sub _validate_trade_pricing_adjustment {
     my $self = shift;
 
     # spreads and digits prices don't jump
-    return if $self->contract->is_spread or $self->contract->category->code eq 'digits';
-    # tick expiry on random prices don't jump
-    return if $self->contract->tick_expiry and $self->contract->underlying->market->name eq 'random';
+    return if $self->contract->is_spread;
 
     my $amount_type = $self->amount_type;
     my $contract    = $self->contract;
@@ -1132,7 +1130,7 @@ sub _validate_trade_pricing_adjustment {
             $commission_markup = $contract->ask_probability->peek_amount('commission_markup') || 0;
         }
     }
-    my $allowed_move = $commission_markup * 0.5;
+    my $allowed_move = ($self->contract->category->code eq 'digits') ? $commission_markup : ($commission_markup * 0.5);
     $allowed_move = 0 if $recomputed == 1;
     my ($amount, $recomputed_amount) = $amount_type eq 'payout' ? ($self->price, $contract->ask_price) : ($self->payout, $contract->payout);
 
