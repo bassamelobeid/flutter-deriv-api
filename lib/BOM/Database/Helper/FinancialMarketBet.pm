@@ -169,9 +169,10 @@ sub batch_buy_bet {
     my $limits = $self->limits || [];
 
     $currency = $accs->[0]->{currency_code};
-    die "Invalid currency" unless $currency;
+    die "Invalid currency for loginid $accs->[0]->{client_loginid}" unless $currency;
 
     for (my $i = 0; $i < @$accs; $i++) {
+        die "Invalid currency for loginid $accs->[$i]->{client_loginid}" unless $accs->[$i]->{currency_code} eq $currency;
         push @acclim, $accs->[$i]->{client_loginid}, $limits->[$i] ? JSON::XS::encode_json($limits->[$i]) : undef;
     }
 
