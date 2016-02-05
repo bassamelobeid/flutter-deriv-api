@@ -369,6 +369,7 @@ subtest $method => sub{
 
   $params->{client_loginid} => $test_loginid;
   $test_client->set_status('tnc_approval','system',1);
+  $test_client->save;
   is($c->tcall($method, $params)->{client_tnc_status},1,'tnc status set');
 };
 done_testing();
