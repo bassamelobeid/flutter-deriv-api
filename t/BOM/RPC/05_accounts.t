@@ -339,4 +339,10 @@ subtest $method => sub {
     ok($send_email_called,                      'send email after unlock cashier');
 };
 
+$method = 'get_settings';
+subtest $method => sub{
+  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+  my $params = {client_loginid = $test_loginid, language => 'EN'};
+  diag(Dumper($c->tcall($method, $params)));
+};
 done_testing();
