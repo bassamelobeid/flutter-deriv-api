@@ -459,12 +459,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(intraday_spot_index_turnover_limit =>
-                    sub { note "mocked app_config->quants->client_limits->intraday_spot_index_turnover_limit returning 149.99"; 149.99 });
+            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit} returning 149.99";
+            BOM::Platform::Static::Config->quants->{client_limits}->{intraday_spot_index_turnover_limit} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
@@ -512,12 +508,8 @@ subtest 'intraday_spot_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_date_pricing => sub { note "mocked Transaction->_validate_date_pricing returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(intraday_spot_index_turnover_limit =>
-                    sub { note "mocked app_config->quants->client_limits->intraday_spot_index_turnover_limit returning 150"; 150 });
+            note "mocked quants->{client_limits}->{intraday_spot_index_turnover_limit} returning 150";
+            BOM::Platform::Static::Config->quants->{client_limits}->{intraday_spot_index_turnover_limit} = 150;
 
             # create a new transaction object to get pristine (undef) contract_id and the like
             $txn = BOM::Product::Transaction->new({
@@ -577,12 +569,8 @@ subtest 'smart_index_turnover_limit', sub {
             $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
             $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
 
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(smart_index_turnover_limit =>
-                    sub { note "mocked app_config->quants->client_limits->smarties_turnover_limit returning 149.99"; 149.99 });
+            note "mocked quants->{client_limits}->{smart_index_turnover_limit returning 149.99";
+            BOM::Platform::Static::Config->quants->{client_limits}->{smart_index_turnover_limit} = 149.99;
 
             is $txn->buy, undef, 'bought 1st contract';
             is $txn->buy, undef, 'bought 2nd contract';
