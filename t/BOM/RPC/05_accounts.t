@@ -276,7 +276,8 @@ subtest $method => sub {
 
     #test lock
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied', 'need real money account');
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code},             'AuthorizationRequired', 'need a valid client');
+    is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied',      'need real money account');
     my $params = {
         client_loginid => $test_loginid,
         args           => {}};
