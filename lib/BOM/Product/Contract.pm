@@ -930,7 +930,17 @@ sub _build_total_markup {
           ($self->pricing_engine_name =~ /Intraday::Forex/ and not $self->is_atm_bet)
         ? ()
         : (maximum => BOM::Platform::Runtime->instance->app_config->quants->commission->maximum_total_markup / 100);
-    my %min = ($self->pricing_engine_name =~ /TickExpiry/) ? () : (minimum => 0);
+
+    my %min;
+    if ($self->pricing_engine_name =~ /TickExpiry/) {
+        # we allowed tick expiry total markup to be less than zero
+        # because of equal tick discount.
+        %min = ();
+    } elsif ($self->has_payout) {
+        %min = (minimum => 0.02 / $self->payout);
+    } else {
+        %min = (minimum => 0);
+    }
 
     my $total_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'total_markup',
@@ -1106,7 +1116,13 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    return roundnear(0.01, $self->ask_price / $self->ask_probability->amount);
+    my $payout            = $self->ask_price / $self->ask_probability->amount;
+    my $dollar_commission = $payout * $self->total_markup->amount;
+    if ($dollar_commission < 0.02) {
+        $payout -= (0.02 - $dollar_commission);
+    }
+
+    return roundnear(0.01, $payout);
 }
 
 sub _build_theo_probability {
@@ -1316,7 +1332,10 @@ sub _build_pricing_vol {
     my $vol;
     my $pen = $self->pricing_engine_name;
     if ($self->volsurface->type eq 'phased') {
-        $vol = $self->volsurface->get_volatility_for_period($self->effective_start->epoch, $self->date_expiry->epoch);
+        $vol = $self->volsurface->get_volatility({
+            start_epoch => $self->effective_start->epoch,
+            end_epoch   => $self->date_expiry->epoch
+        });
     } elsif ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
             days  => $self->timeindays->amount,
@@ -1614,7 +1633,10 @@ sub _market_data {
             # if there's new surface data, calculate vol from that.
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
             } elsif ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
@@ -1628,7 +1650,10 @@ sub _market_data {
             my $args = shift;
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
             } else {
                 $args->{delta} = 50;
                 $vol = $volsurface->get_volatility($args);
@@ -1763,8 +1788,9 @@ sub _vols_at_point {
     my ($self, $end_date, $days_attr) = @_;
 
     my $vol_args = {
-        delta => 50,
-        days  => $self->$days_attr->amount,
+        delta     => 50,
+        days      => $self->$days_attr->amount,
+        for_epoch => $self->effective_start->epoch,
     };
 
     my $market_name = $self->underlying->market->name;

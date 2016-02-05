@@ -165,7 +165,7 @@ sub produce_contract {
                 delete $input_params{$at};
             }
         }
-        if ($input_params{amount} && first { $_ eq $input_params{amount_type} } (@available_amount_types)) {
+        if (defined $input_params{amount} && first { $_ eq $input_params{amount_type} } (@available_amount_types)) {
             if ($input_params{amount_type} eq 'payout') {
                 $input_params{payout} = $input_params{amount};
             } elsif ($input_params{amount_type} eq 'stake') {

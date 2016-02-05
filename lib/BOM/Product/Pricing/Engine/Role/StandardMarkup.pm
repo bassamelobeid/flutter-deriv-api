@@ -544,12 +544,6 @@ sub _get_economic_events {
     return \@events;
 }
 
-# a flag to double the volatility_risk_markup in case of USD level 5 news
-has double_volatility_risk_markup => (
-    is      => 'rw',
-    default => 0
-);
-
 sub _build_economic_events_spot_risk_markup {
     my $self = shift;
 

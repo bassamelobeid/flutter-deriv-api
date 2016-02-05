@@ -16,12 +16,6 @@ my $now = Date::Utility->new;
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('currency', {symbol => $_}) for qw(USD JPY AUD CAD EUR);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('index',    {symbol => $_}) for qw(AEX SYNAEX frxXAUUSD frxXPDUSD);
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_phased',
-    {
-        symbol        => 'RDMARS',
-        recorded_date => $now
-    });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {
         symbol        => $_,
