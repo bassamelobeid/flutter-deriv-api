@@ -234,7 +234,7 @@ subtest $method => sub{
                                                          ]});
   my $result = $c->tcall($method,{client_loginid => 'CR0021'});
   is($result->{count}, 1, 'result is correct' );
-  diag($result);
+  diag(Dumper($result));
 #  is_deeply($result->{transactions}[0],                              {
 #                                                                      'sell_price' => '237.5',
 #                                                                      'contract_id' => '202319',
