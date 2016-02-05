@@ -4,12 +4,11 @@ use warnings;
 
 use YAML::XS qw(LoadFile);
 
-my $config = LoadFile('/etc/rmg/quants_config.yml');
+my $config = LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
 
-has config => (
-    is      => 'ro',
-    default => sub {$config},
-);
+sub config {
+    return $config;
+};
 
 1;
 
