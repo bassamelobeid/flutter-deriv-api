@@ -345,37 +345,45 @@ subtest $method => sub {
 };
 
 $method = 'get_settings';
-subtest $method => sub{
-  #diag(Dumper($c->tcall($method, {})));
-  is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-  my $params = {client_loginid => 'CR0021', language => 'EN'};
-  my $result = $c->tcall($method, $params);
-  is_deeply($result,{
-                     'country' => 'Australia',
-                     'salutation' => 'Ms',
-                     'is_authenticated_payment_agent' => '0',
-                     'country_code' => 'au',
-                     'date_of_birth' => '315532800',
-                     'address_state' => '',
-                     'address_postcode' => '85010',
-                     'phone' => '069782001',
-                     'last_name' => 'tee',
-                     'email' => 'shuwnyuan@regentmarkets.com',
-                     'address_line_2' => 'Jln Address 2 Jln Address 3 Jln Address 4',
-                     'address_city' => 'Segamat',
-                     'address_line_1' => '53, Jln Address 1',
-                     'first_name' => 'shuwnyuan'
-                    });
+subtest $method => sub {
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    my $params = {
+        client_loginid => 'CR0021',
+        language       => 'EN'
+    };
+    my $result = $c->tcall($method, $params);
+    is_deeply(
+        $result,
+        {
+            'country'                        => 'Australia',
+            'salutation'                     => 'Ms',
+            'is_authenticated_payment_agent' => '0',
+            'country_code'                   => 'au',
+            'date_of_birth'                  => '315532800',
+            'address_state'                  => '',
+            'address_postcode'               => '85010',
+            'phone'                          => '069782001',
+            'last_name'                      => 'tee',
+            'email'                          => 'shuwnyuan@regentmarkets.com',
+            'address_line_2'                 => 'Jln Address 2 Jln Address 3 Jln Address 4',
+            'address_city'                   => 'Segamat',
+            'address_line_1'                 => '53, Jln Address 1',
+            'first_name'                     => 'shuwnyuan'
+        });
 
-  $params->{client_loginid} = $test_loginid;
-  $test_client->set_status('tnc_approval','system',1);
-  $test_client->save;
-  is($c->tcall($method, $params)->{client_tnc_status},1,'tnc status set');
-  $params->{client_loginid} = $test_client_vr->loginid;
-  #diag(Dumper($c->tcall($method,$params)));
-  is_deeply($c->tcall($method,$params),   {'email' => 'abc@binary.com',
-               'country' => 'Indonesia',
-               'country_code' => 'id'}, 'vr client return less messages'
-           );
+    $params->{client_loginid} = $test_loginid;
+    $test_client->set_status('tnc_approval', 'system', 1);
+    $test_client->save;
+    is($c->tcall($method, $params)->{client_tnc_status}, 1, 'tnc status set');
+    $params->{client_loginid} = $test_client_vr->loginid;
+    is_deeply(
+        $c->tcall($method, $params),
+        {
+            'email'        => 'abc@binary.com',
+            'country'      => 'Indonesia',
+            'country_code' => 'id'
+        },
+        'vr client return less messages'
+    );
 };
 done_testing();
