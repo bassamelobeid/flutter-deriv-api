@@ -49,7 +49,7 @@ has chronicle_writer => (
     is      => 'ro',
     isa     => 'Data::Chronicle::Writer',
     default => sub { BOM::System::Chronicle::get_chronicle_writer() },
-};
+);
 
 around _document_content => sub {
     my $orig = shift;
