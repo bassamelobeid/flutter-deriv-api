@@ -224,7 +224,14 @@ subtest 'check duplicate payment from remark' => sub {
     }
     'Expect to initialize the object';
 
-    ok($doughflow_datamapper->is_duplicate_payment({trace_id => 1}), 'Check if payment is a duplicate by checking the trace_id');
+    ok(
+        $doughflow_datamapper->is_duplicate_payment({
+                transaction_type => 'deposit',
+                trace_id         => 1
+            }
+        ),
+        'Check if payment is a duplicate by checking the trace_id'
+    );
 };
 
 subtest 'check account has duplicate payment' => sub {
