@@ -10,6 +10,7 @@ use Test::Exception;
 use Date::Utility;
 use BOM::Database::Model::Account;
 use BOM::Database::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::Constants;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
