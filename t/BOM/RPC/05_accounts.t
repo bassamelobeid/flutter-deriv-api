@@ -350,7 +350,23 @@ subtest $method => sub{
   is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   my $params = {client_loginid => 'CR0021', language => 'EN'};
   my $result = $c->tcall($method, $params);
-  diag(Dumper($result));
+  is_deeply($result,{
+                     'country' => 'Australia',
+                     'salutation' => 'Ms',
+                     'is_authenticated_payment_agent' => '0',
+                     'country_code' => 'au',
+                     'date_of_birth' => '315532800',
+                     'address_state' => '',
+                     'address_postcode' => '85010',
+                     'phone' => '069782001',
+                     'last_name' => 'tee',
+                     'email' => 'shuwnyuan@regentmarkets.com',
+                     'address_line_2' => 'Jln Address 2 Jln Address 3 Jln Address 4',
+                     'address_city' => 'Segamat',
+                     'address_line_1' => '53, Jln Address 1',
+                     'first_name' => 'shuwnyuan'
+                    });
+
   ok(1);
 };
 done_testing();
