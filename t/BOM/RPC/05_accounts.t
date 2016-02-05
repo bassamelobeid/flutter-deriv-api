@@ -105,6 +105,7 @@ subtest $method => sub {
 $method = 'statement';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 100, 'have 100 statements');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
@@ -200,6 +201,7 @@ subtest $method => sub {
 $method = 'balance';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
     is($c->tcall($method, {client_loginid => 'CR0021'})->{balance},  0,  'have 0 balance if no default account');
@@ -220,6 +222,7 @@ subtest $method => sub {
 $method = 'get_account_status';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     my %status      = (
         status1      => 1,
@@ -238,6 +241,7 @@ subtest $method => sub {
 $method = 'change_password';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     my $params = {client_loginid => $test_loginid};
     is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
     $params->{token_type} = 'hello';
@@ -272,7 +276,8 @@ subtest $method => sub {
 
     #test lock
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied', 'need real money account');
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code},             'AuthorizationRequired', 'need a valid client');
+    is($c->tcall($method, {client_loginid => $test_client_vr->loginid})->{error}{code}, 'PermissionDenied',      'need real money account');
     my $params = {
         client_loginid => $test_loginid,
         args           => {}};
