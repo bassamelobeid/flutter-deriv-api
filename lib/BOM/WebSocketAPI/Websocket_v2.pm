@@ -19,7 +19,7 @@ use BOM::Platform::Context::Request;
 use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
-use BOM::Platform::QuantsConfig;
+use BOM::Platform::Static::Config;
 
 sub ok {
     my $c      = shift;
@@ -184,7 +184,7 @@ sub __handle {
 
         ## sell expired
         if (grep { $_ eq $dispatch->[0] } ('portfolio', 'statement', 'profit_table')) {
-            if (BOM::Platform::QuantsConfig->config->{enable_portfolio_autosell}) {
+            if (BOM::Platform::Static::Config->quants->{enable_portfolio_autosell}) {
                 BOM::Product::Transaction::sell_expired_contracts({
                     client => $c->stash('client'),
                     source => $c->stash('source'),
