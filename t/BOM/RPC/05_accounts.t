@@ -372,6 +372,10 @@ subtest $method => sub{
   $test_client->save;
   is($c->tcall($method, $params)->{client_tnc_status},1,'tnc status set');
   $params->{client_loginid} = $test_client_vr->loginid;
-  diag(Dumper($c->tcall($method,$params)));
+  #diag(Dumper($c->tcall($method,$params)));
+  is_deeply($c->tcall($method,$params),   {'email' => 'abc@binary.com',
+               'country' => 'Indonesia',
+               'country_code' => 'id'}, 'vr client return less messages'
+           );
 };
 done_testing();
