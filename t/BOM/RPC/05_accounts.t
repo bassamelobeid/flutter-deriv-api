@@ -207,7 +207,16 @@ subtest $method => sub{
   $mock_Portfolio->mock('_sell_expired_contracts',
                         sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
   my $result = $c->tcall($method,{client_loginid => 'CR0021'});
-  diag(Dumper($result));
+  is($result->{count}, 42, 'result is correct' );
+  is_deeply($result->{transactions}[0],                              {
+                                                                      'sell_price' => '237.5',
+                                                                      'contract_id' => '202319',
+                                                                      'transaction_id' => '204419',
+                                                                      'sell_time' => '1454659963',
+                                                                      'buy_price' => '125',
+                                                                      'purchase_time' => '1127285160'
+                                                                     },
+           'result is correct');
 
 };
 
