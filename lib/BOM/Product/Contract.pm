@@ -31,6 +31,7 @@ use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::MarketData::VolSurface::Utils;
+use BOM::Platform::Static::Config;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -1193,7 +1194,7 @@ sub _build_model_markup {
                 name        => 'sell_discount',
                 description => 'Discount on sell',
                 set_by      => __PACKAGE__,
-                base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor,
+                base_amount => BOM::Platform::Static::Config->quants->{commission}->{resell_discount_factor},
             });
             $commission_markup->include_adjustment('multiply', $sell_discount);
         }

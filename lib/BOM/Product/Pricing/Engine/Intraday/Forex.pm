@@ -14,6 +14,7 @@ use BOM::Utility::ErrorStrings qw( format_error_string );
 use Math::Business::BlackScholes::Binaries::Greeks::Delta;
 use Math::Business::BlackScholes::Binaries::Greeks::Vega;
 use VolSurface::Utils qw( get_delta_for_strike );
+use BOM::Platform::Static::Config;
 
 sub clone {
     my ($self, $changes) = @_;
@@ -437,7 +438,7 @@ sub _build_commission_markup {
     my $bet = $self->bet;
     my $comm_base_amount =
         ($self->bet->built_with_bom_parameters)
-        ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
+        ? BOM::Platform::Static::Config->quants->{commission}->{resell_discount_factor}
         : 1;
 
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({

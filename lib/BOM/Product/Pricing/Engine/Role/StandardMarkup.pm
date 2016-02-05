@@ -22,6 +22,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use BOM::MarketData::VolSurface::Utils;
 use BOM::MarketData::Fetcher::EconomicEvent;
+use BOM::Platform::Static::Config;
 
 =head1 ATTRIBUTES
 
@@ -368,7 +369,7 @@ sub _build_commission_markup {
 
     my $comm_base_amount =
         ($self->bet->built_with_bom_parameters)
-        ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
+        ? BOM::Platform::Static::Config->quants->{commission}->{resell_discount_factor}
         : 1;
 
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
