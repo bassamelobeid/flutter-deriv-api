@@ -12,12 +12,15 @@ sub get_display_languages {
 }
 
 sub get_static_path {
+    if (BOM::System::Localhost::name() eq 'wwwpool00') {
+        return "/home/git/binary-static/binary-static-www2/";
+    }
     return "/home/git/binary-com/binary-static/";
 }
 
 sub get_static_url {
     if (BOM::System::Localhost::name() eq 'wwwpool00') {
-        return "https://static-beta.binary.com/";
+        return "https://static-www2.binary.com/";
     }
     return "https://static.binary.com/";
 }
