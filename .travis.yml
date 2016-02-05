@@ -22,6 +22,7 @@ before_install:
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-platform
     - /tmp/travis-scripts/clone_branch.sh regentmarkets/bom-postgres
+    - /tmp/travis-scripts/redis.sh
 
 install:
     - /tmp/travis-scripts/devbox.sh
