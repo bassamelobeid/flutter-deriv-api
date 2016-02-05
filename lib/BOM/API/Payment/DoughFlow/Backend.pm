@@ -282,8 +282,9 @@ sub check_predicates {
 
     if (
         $doughflow_datamapper->is_duplicate_payment({
-                trace_id       => $trace_id,
-                transaction_id => $args->{transaction_id}}))
+                transaction_type => $c->type,
+                trace_id         => $trace_id,
+                transaction_id   => $args->{transaction_id}}))
     {
         $rejection =
               "Detected duplicate transaction ["
