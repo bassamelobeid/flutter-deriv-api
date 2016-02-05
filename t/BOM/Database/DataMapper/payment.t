@@ -213,20 +213,17 @@ subtest 'get txn id by comment' => sub {
 };
 
 subtest 'check duplicate payment from remark' => sub {
+
+    my $doughflow_datamapper;
     lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'MX0016',
-            'currency_code'  => 'GBP',
+        $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
+            client_loginid => 'CR9999',
+            currency_code  => 'USD'
         });
     }
     'Expect to initialize the object';
 
-    ok(
-        $payment_mapper->is_duplicate_payment(
-            {remark => 'datacash credit card deposit ORDERID=77516059288 (71510466288,) TIMESTAMP=31-Jul-09 07h10GMT'}
-        ),
-        'Check if payment is a duplicate by checking the remark'
-    );
+    ok($doughflow_datamapper->is_duplicate_payment({trace_id => 1}), 'Check if payment is a duplicate by checking the trace_id');
 };
 
 subtest 'check account has duplicate payment' => sub {
