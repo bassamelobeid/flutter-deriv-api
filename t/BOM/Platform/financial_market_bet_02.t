@@ -200,7 +200,7 @@ sub buy_multiple_bets {
         is_sold           => 0,
         bet_class         => 'higher_lower_bet',
         bet_type          => 'FLASHU',
-        short_code        => ('FLASHU_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
+        short_code        => ('FLASHU_R_50_200_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
         relative_barrier  => 'S0P',
     };
 
