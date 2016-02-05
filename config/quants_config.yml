@@ -14,9 +14,8 @@ commission:
     spread_multiplier: 1
     forward_start_factor: 1.5
 
-features:
-  enable_portfolio_autosell: 1
-  enable_pricedebug: 1
+enable_portfolio_autosell: 1
+enable_pricedebug: 1
 
 bet_limits:
   holiday_blackout_start: 345

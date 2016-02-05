@@ -5,6 +5,13 @@ use warnings;
 use feature 'state';
 
 use Data::UUID;
+use YAML::XS qw(LoadFile);
+
+my $quants_config = LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
+
+sub quants {
+    return $quants_config;
+};
 
 sub get_display_languages {
     return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
