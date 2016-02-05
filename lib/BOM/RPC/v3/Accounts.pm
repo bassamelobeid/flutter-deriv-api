@@ -462,7 +462,10 @@ sub get_settings {
     my $params = shift;
     my ($client_loginid, $language) = ($params->{client_loginid}, $params->{language});
 
-    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    my $client;
+    if ($client_loginid) {
+        $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    }
 
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;

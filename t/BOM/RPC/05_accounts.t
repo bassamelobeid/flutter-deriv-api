@@ -346,6 +346,7 @@ subtest $method => sub {
 
 $method = 'get_settings';
 subtest $method => sub {
+    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     my $params = {
         client_loginid => 'CR0021',
