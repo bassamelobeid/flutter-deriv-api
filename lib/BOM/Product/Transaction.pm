@@ -34,6 +34,7 @@ use BOM::Product::CustomClientLimits;
 use BOM::Database::Helper::FinancialMarketBet;
 use BOM::Utility::Log4perl qw/get_logger/;
 use BOM::Product::Offerings qw/get_offerings_with_filter/;
+use BOM::Platform::Static::Config;
 
 extends 'BOM::Platform::Transaction';
 

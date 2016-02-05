@@ -12,6 +12,7 @@ use Guard;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::Platform::Client::Utility;
+use BOM::Platform::Static::Config;
 
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( produce_contract );
