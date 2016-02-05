@@ -250,10 +250,12 @@ sub balance {
 }
 
 sub get_account_status {
-    my $params = shift;
-
+  my $params = shift;
+  use Data::Dumper;
+    print "params: " . $Dumper($params);
     my $client;
-    if ($params->{client_loginid}) {
+  if ($params->{client_loginid}) {
+    print "here called??????????????\n";
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
     }
 
