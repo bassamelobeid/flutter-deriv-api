@@ -198,6 +198,12 @@ subtest $method => sub {
 
 };
 
+$method = 'profit_table';
+subtest $method => sub{
+  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+  is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
+};
+
 $method = 'balance';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
