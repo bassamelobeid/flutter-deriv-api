@@ -341,8 +341,8 @@ subtest $method => sub {
 
 $method = 'get_settings';
 subtest $method => sub{
-  diag(Dumper($c->tcall($method, {})));
-  #is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+  #diag(Dumper($c->tcall($method, {})));
+  is($c->tcall($method, {loginid => '12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   my $params = {client_loginid => $test_loginid, language => 'EN'};
   diag(Dumper($c->tcall($method, $params)));
   ok(1);
