@@ -178,7 +178,7 @@ sub batch_buy_bet {
 
     # NOTE, the parens around v_fmb and v_trans in the SQL statement
     #       are necessary.
-    my $stmt = $self->db->dbh->prepare(my $sql='
+    my $stmt = $self->db->dbh->prepare('
 WITH
 acc(loginid, limits) AS (VALUES
     ' . join(",\n    ",
