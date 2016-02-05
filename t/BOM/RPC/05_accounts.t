@@ -207,7 +207,8 @@ subtest $method => sub{
   $mock_Portfolio->mock('_sell_expired_contracts',
                         sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
   my $mock_fmb = Test::MockModule->new('BOM::Database::DataMapper::FinancialMarketBet');
-  $mock_fmb->mock('get_sold_bets_of_account',sub {return [{
+  my $get_sold_bets_of_account_args;
+  $mock_fmb->mock('get_sold_bets_of_account',sub {shift; $get_sold_bets_of_account_args = shift;  return [{
             'sell_time' => '2005-09-21 09:46:00',,
             'txn_id' => '204419',
             'expiry_time' => undef,
@@ -243,7 +244,13 @@ subtest $method => sub{
                                                                       'purchase_time' => '1127285160'
                                                                      },
            'result is correct');
-
+  $result = $c->call(        "/$method",
+                             {
+                              id     => Data::UUID->new()->create_str(),
+                              method => $method,
+                              params => $params
+                             });
+  diag(Dumper($result));
 };
 
 $method = 'balance';
