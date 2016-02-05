@@ -264,7 +264,8 @@ sub stats_stop {
 sub calculate_limits {
     my $self = shift;
 
-    my $ql = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+    my $app_config = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+    my $static_config = BOM::Platform::Static::Config->quants->{client_limits};
 
     my $contract = $self->contract;
     my $currency = $contract->currency;
@@ -275,7 +276,7 @@ sub calculate_limits {
     if (not $contract->tick_expiry) {
         $self->limits->{max_open_bets}                      = $client->get_limit_for_open_positions;
         $self->limits->{max_payout_open_bets}               = $client->get_limit_for_payout;
-        $self->limits->{max_payout_per_symbol_and_bet_type} = $ql->payout_per_symbol_and_bet_type_limit;
+        $self->limits->{max_payout_per_symbol_and_bet_type} = $static_config->{payout_per_symbol_and_bet_type_limit};
     }
 
     $self->limits->{max_turnover} = $client->get_limit_for_daily_turnover;
@@ -293,7 +294,7 @@ sub calculate_limits {
         and $self->limits->{max_30day_losses} = $lim;
 
     if ($client->loginid !~ /^VRT/ and $contract->market->name eq 'forex' and $contract->is_intraday and not $contract->is_atm_bet) {
-        $lim = $self->limits->{intraday_forex_iv_action} = from_json($ql->intraday_forex_iv);
+        $lim = $self->limits->{intraday_forex_iv_action} = from_json($app_config->intraday_forex_iv);
         for (keys %$lim) {
             delete $lim->{$_} if $lim->{$_} == 0;
         }
@@ -312,7 +313,7 @@ sub calculate_limits {
     }
 
     if ($contract->is_spread) {
-        $self->limits->{spread_bet_profit_limit} = $ql->spreads_daily_profit_limit;
+        $self->limits->{spread_bet_profit_limit} = $app_config->spreads_daily_profit_limit;
     }
 
     if ($contract->pricing_engine_name eq 'Pricing::Engine::TickExpiry') {
@@ -320,7 +321,7 @@ sub calculate_limits {
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'tick_expiry_engine_turnover_limit',
-            limit    => $ql->tick_expiry_engine_turnover_limit,
+            limit    => $app_config->tick_expiry_engine_turnover_limit,
             symbols  => [
                 map { {n => $_} } get_offerings_with_filter(
                     'underlying_symbol',
@@ -337,7 +338,7 @@ sub calculate_limits {
             +{
             bet_type => [map { {n => $_} } 'CALL', 'PUT'],
             name     => 'intraday_spot_index_turnover_limit',
-            limit    => $ql->intraday_spot_index_turnover_limit,
+            limit    => $static_config->{intraday_spot_index_turnover_limit},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'indices'})],
             };
     }
@@ -346,7 +347,7 @@ sub calculate_limits {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             name    => 'smarties_turnover_limit',
-            limit   => $ql->smarties_turnover_limit,
+            limit   => $app_config->smarties_turnover_limit,
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => ['smart_fx', 'smart_index']})],
             };
     }
@@ -355,7 +356,7 @@ sub calculate_limits {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             name    => 'stocks_turnover_limit',
-            limit   => $ql->stocks_turnover_limit,
+            limit   => $static_config->{stocks_turnover_limit},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'stocks'})],
             };
     }
@@ -364,7 +365,7 @@ sub calculate_limits {
         push @{$self->limits->{specific_turnover_limits}},
             +{
             name    => 'smart_index_turnover_limit',
-            limit   => $ql->smart_index_turnover_limit,
+            limit   => $static_config->{smart_index_turnover_limit},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_index'})],
             };
     }
@@ -374,7 +375,7 @@ sub calculate_limits {
             +{
             bet_type    => [map { {n => $_} } 'ASIANU', 'ASIAND'],
             name        => 'asian_turnover_limit',
-            limit       => $ql->asian_turnover_limit,
+            limit       => $app_config->asian_turnover_limit,
             tick_expiry => 1,
             };
     }
