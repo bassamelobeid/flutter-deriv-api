@@ -5,6 +5,7 @@ use warnings;
 use feature 'state';
 
 use Data::UUID;
+use BOM::System::Localhost;
 
 sub get_display_languages {
     return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
@@ -15,6 +16,9 @@ sub get_static_path {
 }
 
 sub get_static_url {
+    if (BOM::System::Localhost::name() eq 'wwwpool00') {
+        return "https://static-beta.binary.com/";
+    }
     return "https://static.binary.com/";
 }
 

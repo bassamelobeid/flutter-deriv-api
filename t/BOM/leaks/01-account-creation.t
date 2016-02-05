@@ -12,17 +12,17 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 BOM::Platform::Runtime->instance->app_config->system->on_production(1);
 
 my $passes_count = 0;
-test_noleaks (
-    code          => sub {
+test_noleaks(
+    code => sub {
         $passes_count++;
         my $account = BOM::Platform::Account::Virtual::create_account({
-            details => {
-                email           => 'leak-test@binary.com',
-                client_password => 'does-not-matter',
-                residence       => 'US',
-        }});
+                details => {
+                    email           => 'leak-test@binary.com',
+                    client_password => 'does-not-matter',
+                    residence       => 'US',
+                }});
         BAIL_OUT("expectations does not met")
-          unless $account->{error} eq 'invalid residence';
+            unless $account->{error} eq 'invalid residence';
     },
     track_memory  => 1,
     track_fds     => 1,
