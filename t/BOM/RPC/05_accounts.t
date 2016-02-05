@@ -202,6 +202,13 @@ $method = 'profit_table';
 subtest $method => sub{
   is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
+  my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
+  my $_sell_expired_is_called = 0;
+  $mock_Portfolio->mock('_sell_expired_contracts',
+                        sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
+  my $result = $c->tcall($method,{client_loginid => 'CR0021'});
+  diag(Dumper($result));
+
 };
 
 $method = 'balance';
