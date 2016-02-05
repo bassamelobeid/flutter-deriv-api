@@ -49,8 +49,8 @@ has daycount => (
 sub _build_daycount {
     my $self = shift;
 
-    return 360 if first { $self->symbol eq $_ } qw(AED CHF CZK EGP EUR IDR JPY MXN NOK SAR SEK USD XAG XAU);
-    return 365 if first { $self->symbol eq $_ } qw(AUD BRL CAD CNY GBP HKD INR KRW NZD PLN RUB SGD ZAR);
+    return 360 if first { $self->symbol eq $_ } qw(AED CHF CZK EGP EUR IDR JPY MXN NOK SAR SEK USD XAG XAU TRY);
+    return 365 if first { $self->symbol eq $_ } qw(AUD BRL CAD CNY GBP HKD INR KRW NZD PLN RUB SGD ZAR KWD);
     return;
 }
 
