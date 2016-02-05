@@ -350,7 +350,7 @@ subtest $method => sub{
   is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need loginid');
   my $params = {client_loginid => 'CR0021', language => 'EN'};
   my $result = $c->tcall($method, $params);
-  dia(Dumper($result));
+  diag(Dumper($result));
   ok(1);
 };
 done_testing();
