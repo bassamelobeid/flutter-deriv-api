@@ -184,30 +184,24 @@ sub buy_one_bet {
 }
 
 sub buy_multiple_bets {
-    my ($acc, $args) = @_;
-
-    my $buy_price    = delete $args->{buy_price}    // 20;
-    my $payout_price = delete $args->{payout_price} // $buy_price * 10;
-    my $limits       = delete $args->{limits};
-    my $duration     = delete $args->{duration}     // '15s';
+    my ($acc) = @_;
 
     my $now      = Date::Utility->new;
     my $bet_data = +{
         underlying_symbol => 'frxUSDJPY',
-        payout_price      => $payout_price,
-        buy_price         => $buy_price,
+        payout_price      => 200,
+        buy_price         => 20,
         remark            => 'Test Remark',
         purchase_time     => $now->db_timestamp,
         start_time        => $now->db_timestamp,
-        expiry_time       => $now->plus_time_interval($duration)->db_timestamp,
-        settlement_time   => $now->plus_time_interval($duration)->db_timestamp,
+        expiry_time       => $now->plus_time_interval('15s')->db_timestamp,
+        settlement_time   => $now->plus_time_interval('15s')->db_timestamp,
         is_expired        => 1,
         is_sold           => 0,
         bet_class         => 'higher_lower_bet',
         bet_type          => 'FLASHU',
         short_code        => ('FLASHU_R_50_' . $payout_price . '_' . $now->epoch . '_' . $now->plus_time_interval($duration)->epoch . '_S0P_0'),
         relative_barrier  => 'S0P',
-        %$args,
     };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
@@ -218,7 +212,7 @@ sub buy_multiple_bets {
                     currency_code  => $_->currency_code
                  }
             } @$acc],
-            limits => $limits,
+            limits => undef,
             db     => db,
         });
     my $res = $fmb->batch_buy_bet;
