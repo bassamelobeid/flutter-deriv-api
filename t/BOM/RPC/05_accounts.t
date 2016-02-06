@@ -275,7 +275,10 @@ subtest $method => sub {
         {
             after       => '2015-07-01',
             before      => '2015-08-01',
-            description => 1
+         date_from   => '2015-07-01',
+         date_to     => '2015-08-01',
+
+         description => 1
         },
         'the args feeded to get_sold_bets_of_account is correct'
     );
