@@ -199,52 +199,68 @@ subtest $method => sub {
 };
 
 $method = 'profit_table';
-subtest $method => sub{
-  is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-  is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
-  my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
-  my $_sell_expired_is_called = 0;
-  $mock_Portfolio->mock('_sell_expired_contracts',
-                        sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
-  my $mock_fmb = Test::MockModule->new('BOM::Database::DataMapper::FinancialMarketBet');
-  my $get_sold_bets_of_account_args;
-  $mock_fmb->mock('get_sold_bets_of_account',sub {shift; $get_sold_bets_of_account_args = shift;  return [{
-            'sell_time' => '2005-09-21 09:46:00',,
-            'txn_id' => '204419',
-            'expiry_time' => undef,
-            'sell_price' => '237.5',
-            'id' => '202319',
-            'purchase_time' => '2005-09-21 06:46:00',
-            'fixed_expiry' => undef,
-            'short_code' => 'RUNBET_DOUBLEDOWN_USD2500_frxUSDJPY_5',
-            'is_expired' => 1,
-            'remark' => 'frxUSDJPY forecast=DOWN Run=111.518,111.514,111.529,111.523,111.525,111.513,',
-            'expiry_daily' => 0,
-            'start_time' => undef,
-            'bet_class' => 'run_bet',
-            'is_sold' => 1,
-            'payout_price' => '250',
-            'account_id' => '200359',
-            'bet_type' => 'RUNBET_DOUBLEDOWN',
-            'underlying_symbol' => 'frxUSDJPY',
-            'buy_price' => '125',
-            'settlement_time' => undef,
-            'tick_count' => undef
-          },
+subtest $method => sub {
+    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
+    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
+    my $_sell_expired_is_called = 0;
+    $mock_Portfolio->mock('_sell_expired_contracts',
+        sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
+    my $mock_fmb = Test::MockModule->new('BOM::Database::DataMapper::FinancialMarketBet');
+    my $get_sold_bets_of_account_args;
+    $mock_fmb->mock(
+        'get_sold_bets_of_account',
+        sub {
+            shift;
+            $get_sold_bets_of_account_args = shift;
+            return [{
+                    'sell_time' => '2005-09-21 09:46:00',
+                    ,
+                    'txn_id'            => '204419',
+                    'expiry_time'       => undef,
+                    'sell_price'        => '237.5',
+                    'id'                => '202319',
+                    'purchase_time'     => '2005-09-21 06:46:00',
+                    'fixed_expiry'      => undef,
+                    'short_code'        => 'RUNBET_DOUBLEDOWN_USD2500_frxUSDJPY_5',
+                    'is_expired'        => 1,
+                    'remark'            => 'frxUSDJPY forecast=DOWN Run=111.518,111.514,111.529,111.523,111.525,111.513,',
+                    'expiry_daily'      => 0,
+                    'start_time'        => undef,
+                    'bet_class'         => 'run_bet',
+                    'is_sold'           => 1,
+                    'payout_price'      => '250',
+                    'account_id'        => '200359',
+                    'bet_type'          => 'RUNBET_DOUBLEDOWN',
+                    'underlying_symbol' => 'frxUSDJPY',
+                    'buy_price'         => '125',
+                    'settlement_time'   => undef,
+                    'tick_count'        => undef
+                },
 
-                                                         ]});
-  my $result = $c->tcall($method,{client_loginid => 'CR0021'});
-  is($result->{count}, 1, 'result is correct' );
-  is_deeply($result->{transactions}[0],                              {
-                                                                      'sell_price' => '237.5',
-                                                                      'contract_id' => '202319',
-                                                                      'transaction_id' => '204419',
-                                                                      'sell_time' => '1127295960',
-                                                                      'buy_price' => '125',
-                                                                      'purchase_time' => '1127285160'
-                                                                     },
-           'result is correct');
-  diag(Dumper($c->tcall($method,{client_loginid => 'CR0021',{description => 1}})));
+            ];
+        });
+    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    is($result->{count}, 1, 'result is correct');
+    is_deeply(
+        $result->{transactions}[0],
+        {
+            'sell_price'     => '237.5',
+            'contract_id'    => '202319',
+            'transaction_id' => '204419',
+            'sell_time'      => '1127295960',
+            'buy_price'      => '125',
+            'purchase_time'  => '1127285160'
+        },
+        'result is correct'
+    );
+    diag(
+        Dumper(
+            $c->tcall(
+                $method,
+                {
+                    'client_loginid' => 'CR0021',
+                    args => {description => 1}})));
 };
 
 $method = 'balance';
