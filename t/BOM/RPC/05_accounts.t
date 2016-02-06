@@ -244,13 +244,7 @@ subtest $method => sub{
                                                                       'purchase_time' => '1127285160'
                                                                      },
            'result is correct');
-  $result = $c->call(        "/$method",
-                             {
-                              id     => Data::UUID->new()->create_str(),
-                              method => $method,
-                              params => {client_loginid => 'CR0021'}
-                             });
-  diag(Dumper($result));
+  diag(Dumper$c->tcall($method,{client_loginid => 'CR0021',{description => 1}}));
 };
 
 $method = 'balance';
