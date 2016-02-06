@@ -213,9 +213,9 @@ subtest $method => sub {
         sub {
             shift;
             $get_sold_bets_of_account_args = shift;
+            print Dumper($get_sold_bets_of_account_args);
             return [{
                     'sell_time' => '2005-09-21 09:46:00',
-                    ,
                     'txn_id'            => '204419',
                     'expiry_time'       => undef,
                     'sell_price'        => '237.5',
