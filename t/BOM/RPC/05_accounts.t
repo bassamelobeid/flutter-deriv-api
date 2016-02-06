@@ -268,6 +268,7 @@ subtest $method => sub {
             }});
 
     is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
+    diag(Dumper($get_sold_bets_of_account_args));
     is_deeply(
         $get_sold_bets_of_account_args,
         {
