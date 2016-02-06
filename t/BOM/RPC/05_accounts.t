@@ -214,9 +214,9 @@ subtest $method => sub {
             shift;
             $get_sold_bets_of_account_args = shift;
             #clone this args because it is changed in the caller function.
-            $get_sold_bets_of_account_args = {%{$get_sold_bets_of_account_args}}; 
+            $get_sold_bets_of_account_args = {%{$get_sold_bets_of_account_args}};
             return [{
-                    'sell_time' => '2005-09-21 09:46:00',
+                    'sell_time'         => '2005-09-21 09:46:00',
                     'txn_id'            => '204419',
                     'expiry_time'       => undef,
                     'sell_price'        => '237.5',
@@ -269,16 +269,15 @@ subtest $method => sub {
             }});
 
     is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
-    diag("in test:" . Dumper($get_sold_bets_of_account_args));
     is_deeply(
         $get_sold_bets_of_account_args,
         {
-            after       => '2015-07-01',
-            before      => '2015-08-01',
-         date_from   => '2015-07-01',
-         date_to     => '2015-08-01',
+            after     => '2015-07-01',
+            before    => '2015-08-01',
+            date_from => '2015-07-01',
+            date_to   => '2015-08-01',
 
-         description => 1
+            description => 1
         },
         'the args feeded to get_sold_bets_of_account is correct'
     );
