@@ -261,10 +261,22 @@ subtest $method => sub {
         $method,
         {
             'client_loginid' => 'CR0021',
-            args             => {description => 1}});
+            args             => {
+                date_from   => '2015-07-01',
+                date_to     => '2015-08-01',
+                description => 1
+            }});
 
     is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
-
+    is_deeply(
+        $get_sold_bets_of_account_args,
+        {
+            after       => '2015-07-01',
+            before      => '2015-08-01',
+            description => 1
+        },
+        'the args feeded to get_sold_bets_of_account is correct'
+    );
 };
 
 $method = 'balance';
