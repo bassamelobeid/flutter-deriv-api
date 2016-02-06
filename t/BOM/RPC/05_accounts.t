@@ -253,7 +253,10 @@ subtest $method => sub {
             'purchase_time'  => '1127285160'
         },
         'result is correct'
-    );
+             );
+        my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
+    $mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
+
     diag(
         Dumper(
             $c->tcall(
