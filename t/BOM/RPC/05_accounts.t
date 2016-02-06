@@ -213,7 +213,7 @@ subtest $method => sub {
         sub {
             shift;
             $get_sold_bets_of_account_args = shift;
-            print Dumper($get_sold_bets_of_account_args);
+            print "in functon:" . Dumper($get_sold_bets_of_account_args);
             return [{
                     'sell_time' => '2005-09-21 09:46:00',
                     'txn_id'            => '204419',
@@ -268,7 +268,7 @@ subtest $method => sub {
             }});
 
     is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
-    diag(Dumper($get_sold_bets_of_account_args));
+    diag("in test:" . Dumper($get_sold_bets_of_account_args));
     is_deeply(
         $get_sold_bets_of_account_args,
         {
