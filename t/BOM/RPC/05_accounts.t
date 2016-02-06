@@ -214,7 +214,7 @@ subtest $method => sub {
             shift;
             $get_sold_bets_of_account_args = shift;
             #clone this args because it is changed in the caller function.
-            $get_sold_bets_of_account_args = %{$get_sold_bets_of_account_args}; 
+            $get_sold_bets_of_account_args = {%{$get_sold_bets_of_account_args}}; 
             return [{
                     'sell_time' => '2005-09-21 09:46:00',
                     'txn_id'            => '204419',
