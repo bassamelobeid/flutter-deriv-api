@@ -244,7 +244,7 @@ subtest $method => sub{
                                                                       'purchase_time' => '1127285160'
                                                                      },
            'result is correct');
-  diag(Dumper$c->tcall($method,{client_loginid => 'CR0021',{description => 1}}));
+  diag(Dumper($c->tcall($method,{client_loginid => 'CR0021',{description => 1}})));
 };
 
 $method = 'balance';
