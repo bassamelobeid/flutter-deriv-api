@@ -6,13 +6,14 @@ use feature 'state';
 
 use Data::UUID;
 use BOM::System::Localhost;
+use BOM::System::Config;
 
 sub get_display_languages {
     return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
 }
 
 sub get_static_path {
-    if (BOM::System::Localhost::name() eq 'wwwpool00') {
+    if (BOM::System::Localhost::name() eq 'wwwpool00' or BOM::System::Config::env =~ /^qa\d+$/) {
         return "/home/git/binary-static/binary-static-www2/";
     }
     return "/home/git/binary-com/binary-static/";
