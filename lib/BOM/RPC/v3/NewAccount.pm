@@ -116,7 +116,7 @@ sub verify_email {
         }
     } elsif ($params->{type} eq 'payment_agent_withdrawal' && BOM::Platform::User->new({email => $params->{email}})) {
         send_email({
-                from    => $params->{cs_email},
+                from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
                 subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
                 message => [
