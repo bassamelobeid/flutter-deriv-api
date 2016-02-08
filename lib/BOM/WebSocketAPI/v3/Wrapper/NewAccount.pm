@@ -53,8 +53,13 @@ sub verify_email {
                 expires_in  => 3600,
                 created_for => 'lost_password'
             })->token;
+    } elsif ($type eq 'payment_agent_withdrawal') {
+        $code = BOM::Platform::SessionCookie->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'payment_agent_withdrawal'
+            })->token;
     }
-
     $link = $r->url_for(
         '/user/validate_link',
         {
