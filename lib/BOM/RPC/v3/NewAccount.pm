@@ -114,7 +114,21 @@ sub verify_email {
                     use_email_template => 1
                 });
         }
+    } elsif ($params->{type} eq 'payment_agent_withdrawal' && BOM::Platform::User->new({email => $params->{email}})) {
+        send_email({
+                from    => $params->{cs_email},
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                message => [
+                    BOM::Platform::Context::localize(
+                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please click on the following link: </p><p> '
+                            . $params->{link} . ' </p>'
+                    )
+                ],
+                use_email_template => 1
+            });
     }
+
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
