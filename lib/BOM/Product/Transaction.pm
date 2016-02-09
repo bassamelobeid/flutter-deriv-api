@@ -488,7 +488,7 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
         $error_status = $self->_validate_buy_transaction_rate        and return $self->stats_stop($stats_data, $error_status);
         $error_status = $self->_validate_iom_withdrawal_limit        and return $self->stats_stop($stats_data, $error_status);
         my $client = $self->client;
-        $self->client(undef);
+        undef $self->{client};
         $error_status = $self->_is_valid_to_buy                      and return $self->stats_stop($stats_data, $error_status);
         $error_status = $self->_validate_date_pricing                and return $self->stats_stop($stats_data, $error_status);
         $error_status = $self->_validate_trade_pricing_adjustment    and return $self->stats_stop($stats_data, $error_status);
@@ -506,7 +506,7 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
     }
 
     my $client = $self->client;
-    $self->client(undef);
+    undef $self->{client};
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
     $self->client($client);
     return $self->stats_stop($stats_data, $error_status) if $error_status;
