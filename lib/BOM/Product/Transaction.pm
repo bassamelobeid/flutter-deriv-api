@@ -387,8 +387,6 @@ sub prepare_bet_data_for_buy {
 
     my $client   = $self->client;
     my $contract = $self->contract;
-    my $loginid  = $client->loginid;
-    my $currency = $contract->currency;
 
     if ($self->purchase_date->is_after($contract->date_start)) {
         my $d1 = $self->purchase_date->datetime_yyyymmdd_hhmmss;
@@ -407,8 +405,6 @@ sub prepare_bet_data_for_buy {
     $self->price(Format::Util::Numbers::roundnear(0.01, $self->price));
 
     my $bet_params = {
-        loginid           => $loginid,
-        currency          => $currency,
         quantity          => 1,
         short_code        => scalar $contract->shortcode,
         buy_price         => $self->price,
@@ -472,12 +468,7 @@ sub prepare_bet_data_for_buy {
                 source        => $self->source,
             },
             bet_data     => $bet_params,
-            account_data => {
-                client_loginid => $loginid,
-                currency_code  => $currency
-            },
             quants_bet_variables => $quants_bet_variables,
-            limits               => $self->limits,
         });
 }
 
@@ -523,6 +514,11 @@ sub buy {    ## no critic (RequireArgUnpacking)
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
+        account_data => {
+            client_loginid => $self->client->loginid,
+            currency_code  => $self->contract->currency,
+        },
+        limits => $self->limits,
         db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
     );
 
