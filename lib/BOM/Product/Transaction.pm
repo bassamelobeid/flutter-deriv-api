@@ -38,7 +38,7 @@ use BOM::Product::Offerings qw/get_offerings_with_filter/;
 extends 'BOM::Platform::Transaction';
 
 has client => (
-    is  => 'rw',
+    is  => 'ro',
     isa => 'BOM::Platform::Client',
 );
 
@@ -492,7 +492,7 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
         $error_status = $self->_is_valid_to_buy                      and return $self->stats_stop($stats_data, $error_status);
         $error_status = $self->_validate_date_pricing                and return $self->stats_stop($stats_data, $error_status);
         $error_status = $self->_validate_trade_pricing_adjustment    and return $self->stats_stop($stats_data, $error_status);
-        $self->client($client);
+        $self->{client} = $client;
         $error_status = $self->_validate_payout_limit                and return $self->stats_stop($stats_data, $error_status);
         $error_status = $self->_validate_stake_limit                 and return $self->stats_stop($stats_data, $error_status);
         $error_status = $self->_validate_jurisdictional_restrictions and return $self->stats_stop($stats_data, $error_status);
@@ -509,7 +509,7 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
     my $client = $self->client;
     undef $self->{client};
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
-    $self->client($client);
+    $self->{client} = $client;
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
