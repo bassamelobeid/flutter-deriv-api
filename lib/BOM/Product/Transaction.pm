@@ -505,6 +505,7 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
         $self->comment($self->_build_pricing_comment) unless defined $self->comment;
     }
 
+    $self->staff;               # build staff before undef client
     my $client = $self->client;
     undef $self->{client};
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
