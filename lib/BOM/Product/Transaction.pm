@@ -38,7 +38,7 @@ use BOM::Product::Offerings qw/get_offerings_with_filter/;
 extends 'BOM::Platform::Transaction';
 
 has client => (
-    is  => 'ro',
+    is  => 'rw',
     isa => 'BOM::Platform::Client',
 );
 
@@ -485,28 +485,30 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
         # ask your friendly DBA team if in doubt
         #
         # Keep the transaction rate test first to limit the impact of abusive buyers
-        $error_status = $self->$_ and return $self->stats_stop($stats_data, $error_status)
-            for (
-            qw/
-            _validate_buy_transaction_rate
-            _validate_iom_withdrawal_limit
-            _validate_payout_limit
-            _is_valid_to_buy
-            _validate_date_pricing
-            _validate_trade_pricing_adjustment
-            _validate_stake_limit
-            _validate_jurisdictional_restrictions
-            _validate_client_status
-            _validate_client_self_exclusion
-            _validate_currency/
-            );
+        $error_status = $self->_validate_buy_transaction_rate        and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_iom_withdrawal_limit        and return $self->stats_stop($stats_data, $error_status);
+        my $client = $self->client;
+        $self->client(undef);
+        $error_status = $self->_is_valid_to_buy                      and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_date_pricing                and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_trade_pricing_adjustment    and return $self->stats_stop($stats_data, $error_status);
+        $self->client($client);
+        $error_status = $self->_validate_payout_limit                and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_stake_limit                 and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_jurisdictional_restrictions and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_client_status               and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_client_self_exclusion       and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->_validate_currency                    and return $self->stats_stop($stats_data, $error_status);
 
         $self->calculate_limits;
 
         $self->comment($self->_build_pricing_comment) unless defined $self->comment;
     }
 
+    my $client = $self->client;
+    $self->client(undef);
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
+    $self->client($client);
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
