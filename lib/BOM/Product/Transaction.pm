@@ -472,12 +472,11 @@ sub prepare_bet_data_for_buy {
         });
 }
 
-sub buy {    ## no critic (RequireArgUnpacking)
-    my $self    = shift;
+sub prepare_buy { ## no critic (RequireArgUnpacking)
+    my $self = shift;
     my %options = @_;
 
     my $error_status;
-
     my $stats_data = $self->stats_start('buy');
 
     unless ($options{skip_validation}) {
@@ -511,6 +510,16 @@ sub buy {    ## no critic (RequireArgUnpacking)
     return $self->stats_stop($stats_data, $error_status) if $error_status;
 
     $self->stats_validation_done($stats_data);
+
+    return $error_status, $stats_data, $bet_data;
+}
+
+sub buy { ## no critic (RequireArgUnpacking)
+    my $self    = shift;
+    my @options = @_;
+
+    my ($error_status, $stats_data, $bet_data) = $self->prepare_buy(@options);
+    return $error_status if $error_status;
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
