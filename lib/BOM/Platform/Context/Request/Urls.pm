@@ -100,6 +100,9 @@ sub domain_for {
         }
     }
 
+    if (BOM::System::Localhost::name() eq 'wwwpool00') {
+        $domain = 'www2.binary.com';
+    }
     return $domain;
 }
 
