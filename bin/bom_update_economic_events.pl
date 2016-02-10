@@ -36,6 +36,17 @@ sub script_run {
 
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
+    my $file_timestamp = Date::Utility->new->date_yyyymmdd;
+
+    #this will be an array of all extracted economic events. Later we will store
+
+    foreach my $event_param (@$events_received) {
+        $event_param->{release_date}  = $event_param->{release_date}->epoch;
+        $event_param->{recorded_date} = Date::Utility->new->epoch;
+
+        Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
+    }
+
     try {
         #here we need epochs to sort events
         #the sorted array (by release date) in chronicle
