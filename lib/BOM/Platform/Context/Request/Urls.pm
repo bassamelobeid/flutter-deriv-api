@@ -8,6 +8,7 @@ use YAML::XS;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::Platform::Static::Config;
+use BOM::System::Config;
 
 sub domain {
     my $self   = shift;
@@ -100,7 +101,7 @@ sub domain_for {
         }
     }
 
-    if (BOM::System::Localhost::name() eq 'wwwpool00') {
+    if (BOM::System::Config::node->{www2} eq 'true') {
         $domain = 'www2.binary.com';
     }
     return $domain;
