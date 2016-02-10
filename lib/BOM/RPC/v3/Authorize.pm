@@ -8,10 +8,7 @@ use Date::Utility;
 use BOM::System::AuditLog;
 use BOM::Platform::Client;
 use BOM::Platform::User;
-use BOM::Platform::SessionCookie;
 use BOM::Platform::Context qw (localize request);
-use BOM::Database::Model::AccessToken;
-use BOM::Database::Model::OAuth;
 use BOM::RPC::v3::Utility;
 
 sub authorize {
@@ -21,23 +18,8 @@ sub authorize {
             code              => 'InvalidToken',
             message_to_client => BOM::Platform::Context::localize('The token is invalid.')});
 
-    my $loginid;
-    my $token = $params->{token};
-    if (length $token == 15) {    # access token
-        my $m = BOM::Database::Model::AccessToken->new;
-        $loginid = $m->get_loginid_by_token($token);
-        return $err unless $loginid;
-    } elsif (length $token == 32 && $token =~ /^a1-/) {
-        my $m = BOM::Database::Model::OAuth->new;
-        $loginid = $m->get_loginid_by_access_token($token);
-        return $err unless $loginid;
-    } else {
-        my $session = BOM::Platform::SessionCookie->new(token => $token);
-        if (!$session || !$session->validate_session()) {
-            return $err;
-        }
-        $loginid = $session->loginid;
-    }
+    my $loginid = BOM::RPC::v3::Utility::token_to_loginid $params->{token};
+    return $err unless $loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $loginid});
     return $err unless $client;

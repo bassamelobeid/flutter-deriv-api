@@ -19,9 +19,11 @@ sub buy {
 
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
+    #       are done again in BOM::Product::Transaction
+    return BOM::RPC::v3::Utility::create_error({
+        code              => 'AuthorizationRequired',
+        message_to_client => localize('Please log in.')}) unless $client;
 
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
@@ -30,12 +32,10 @@ sub buy {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
 
-    my $contract = try { produce_contract({%$contract_parameters}) } || do {
-        my $err = $@;
+    my $contract = try { produce_contract({%$contract_parameters}) } ||
         return BOM::RPC::v3::Utility::create_error({
                 code              => 'ContractCreationFailure',
                 message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
 
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
@@ -51,6 +51,88 @@ sub buy {
             message_to_client => $err->{-message_to_client},
         });
     }
+
+    my $response = {
+        transaction_id => $trx->transaction_id,
+        contract_id    => $trx->contract_id,
+        balance_after  => $trx->balance_after,
+        purchase_time  => $trx->purchase_date->epoch,
+        buy_price      => $trx->price,
+        start_time     => $contract->date_start->epoch,
+        longcode       => $contract->longcode,
+        shortcode      => $contract->shortcode,
+        payout         => $contract->payout
+    };
+
+    if ($contract->is_spread) {
+        $response->{stop_loss_level}   = $contract->stop_loss_level;
+        $response->{stop_profit_level} = $contract->stop_profit_level;
+        $response->{amount_per_point}  = $contract->amount_per_point;
+    }
+
+    return $response;
+}
+
+sub buy_contract_for_multiple_accounts {
+    my $params = shift;
+
+    my @result;
+    my %per_broker;
+
+    my $msg = BOM::Platform::Context::localize('Invalid token');
+    for my $t (@{$params->{tokens} || []}) {
+        my $loginid = BOM::RPC::v3::Utility::token_to_loginid($_);
+        unless ($loginid) {
+            push @result, +{
+                token => $t,
+                code  => 'InvalidToken',
+                error => $msg,
+            };
+            next;
+        }
+
+        push @result, +{
+            token   => $t,
+            loginid => $loginid,
+        };
+        (my $broker = $loginid) =~ s/\D+$//;
+
+        push @{$per_broker{$broker}}, BOM::Platform::Client->new({loginid => $loginid});
+    }
+
+    return \@result unless keys %per_broker;
+
+    # NOTE: we rely here on BOM::Product::Transaction to perform all the client validations
+    #       like client_status and self_exclusion.
+
+    my $source              = $params->{source};
+    my $contract_parameters = $params->{contract_parameters};
+    my $args                = $params->{args};
+
+    my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
+    $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
+
+    my $contract = try { produce_contract({%$contract_parameters}) } || do {
+        $msg = BOM::Platform::Context::localize('Cannot create contract');
+        for (@result) {
+            $_->{code}  = 'ContractCreationFailure';
+            $_->{error} = $msg;
+        }
+        return \@result;
+    };
+
+    my $trx = BOM::Product::Transaction->new({
+        clients_per_broker => \%per_broker,
+        contract           => $contract,
+        price              => ($args->{price} || 0),
+        purchase_date      => $purchase_date,
+        source             => $source,
+    });
+
+    my $res = $trx->batch_buy;
+
+
+...
 
     my $response = {
         transaction_id => $trx->transaction_id,
