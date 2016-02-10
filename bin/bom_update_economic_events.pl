@@ -36,47 +36,6 @@ sub script_run {
 
     stats_gauge('economic_events_updates', scalar(@$events_received));
 
-    my $file_timestamp = Date::Utility->new->date_yyyymmdd;
-
-    #this will be an array of all extracted economic events. Later we will store
-
-    my $tentative_events = {};
-    my $past_events      = BOM::System::RedisReplicated::redis_read->zrangebyscore(
-        'ECONOMIC_EVENTS',
-        Date::Utility->new()->minus_time_interval('4d')->{epoch},
-        Date::Utility->new()->truncate_to_day()->{epoch} - 1
-    );
-
-    foreach my $event (@$past_events) {
-        my $event_param = JSON::from_json($event);
-        if ($event_param->{is_tentative} && $event_param->{is_tentative} + 0 == 1) {
-            $tentative_events->{$event_param->{release_date}}->{$event_param->{symbol}}->{$event_param->{event_name}} = $event_param;
-            BOM::System::RedisReplicated::redis_write->zrem('ECONOMIC_EVENTS',         $event);
-            BOM::System::RedisReplicated::redis_write->zrem('ECONOMIC_EVENTS_TRIMMED', $event);
-        }
-    }
-
-    foreach my $event_param (@$events_received) {
-
-        my $date_start = $event_param->{release_date}->truncate_to_day()->epoch;
-
-        $event_param->{release_date}  = $event_param->{release_date}->epoch;
-        $event_param->{recorded_date} = Date::Utility->new->epoch;
-
-        if (   $tentative_events->{$date_start}
-            && $tentative_events->{$date_start}->{$event_param->{symbol}}
-            && $tentative_events->{$date_start}->{$event_param->{symbol}}->{$event_param->{event_name}})
-        {
-            my %new_event_param = (%{$tentative_events->{$date_start}->{$event_param->{symbol}}->{$event_param->{event_name}}}, %{$event_param});
-            $event_param = \%new_event_param;
-            delete $tentative_events->{$date_start}->{$event_param->{symbol}}->{$event_param->{event_name}};
-        }
-
-        Path::Tiny::path("/feed/economic_events/$file_timestamp")->append(time . ' ' . JSON::to_json($event_param) . "\n");
-        BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS',         $event_param->{release_date}, JSON::to_json($event_param));
-        BOM::System::RedisReplicated::redis_write->zadd('ECONOMIC_EVENTS_TRIMMED', $event_param->{release_date}, JSON::to_json($event_param));
-    }
-
     try {
         #here we need epochs to sort events
         #the sorted array (by release date) in chronicle

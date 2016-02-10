@@ -19,13 +19,16 @@ Represents an economic event in the financial market
 =cut
 
 use Moose;
+use JSON;
+
 extends 'BOM::MarketData';
 
 use Date::Utility;
 
 use BOM::Market::Types;
 
-use constant EE => 'economic_events';
+use constant EE  => 'economic_events';
+use constant EET => 'economic_events_tentative';
 
 has document => (
     is         => 'rw',
@@ -96,13 +99,30 @@ sub save {
         BOM::System::Chronicle::set(EE, EE, {});
     }
 
+    #receive tentative events hash
+    my $tentative_events = BOM::System::Chronicle::get(EE, EET) || {};
+
     for my $event (@{$self->events}) {
         if (ref($event->{release_date}) eq 'Date::Utility') {
             $event->{release_date} = $event->{release_date}->datetime_iso8601;
         }
+
+        #update event if it's tentative
+        if ($event->{id} && $tentative_events->{$event->{id}}) {
+            $tentative_events->{$event->{id}} = $event = {(%{$tentative_events->{$event->{id}}}, %$event)};
+            if (!$event->{is_tentative}) {
+                delete $tentative_events->{$event->{id}};
+            }
+        }
+        #delete expired event from tentative hash
+        elsif ($event->{is_tentative}) {
+            $tentative_events->{$event->{id}} = $event;
+        }
     }
 
-    return BOM::System::Chronicle::set(EE, EE, $self->_document_content, $self->recorded_date);
+    return (
+        BOM::System::Chronicle::set(EE, EET, $tentative_events,        $self->recorded_date),
+        BOM::System::Chronicle::set(EE, EE,  $self->_document_content, $self->recorded_date));
 }
 
 sub get_latest_events_for_period {
