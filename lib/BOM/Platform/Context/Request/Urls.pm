@@ -101,7 +101,7 @@ sub domain_for {
         }
     }
 
-    if (BOM::System::Config::node->{www2} eq 'true') {
+    if (BOM::System::Config::node->{node}->{www2}) {
         $domain = 'www2.binary.com';
     }
     return $domain;
