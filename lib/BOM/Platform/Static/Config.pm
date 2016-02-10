@@ -13,14 +13,14 @@ sub get_display_languages {
 }
 
 sub get_static_path {
-    if (BOM::System::Localhost::name() eq 'wwwpool00' or BOM::System::Config::env =~ /^qa\d+$/) {
+    if (BOM::System::Config::node->{node}->{www2} or BOM::System::Config::env =~ /^qa\d+$/) {
         return "/home/git/binary-static/binary-static-www2/";
     }
     return "/home/git/binary-com/binary-static/";
 }
 
 sub get_static_url {
-    if (BOM::System::Localhost::name() eq 'wwwpool00') {
+    if (BOM::System::Config::node->{node}->{www2}) {
         return "https://static-www2.binary.com/";
     }
     return "https://static.binary.com/";
