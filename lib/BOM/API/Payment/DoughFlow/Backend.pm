@@ -162,19 +162,27 @@ sub write_transaction_line {
         BOM::Platform::Transaction->unfreeze_client($client->loginid);
     };
 
-    if (my $rejection = $c->check_predicates()) {
+    my $currency_code  = $c->request_parameters->{currency_code};
+    my $transaction_id = $c->request_parameters->{transaction_id};
+    my $trace_id       = $c->request_parameters->{trace_id};
+    my $amount         = $c->request_parameters->{amount};
+
+    if (
+        my $rejection = $c->check_predicates({
+                currency_code  => $currency_code,
+                transaction_id => $transaction_id,
+                trace_id       => $trace_id,
+                amount         => $amount
+            }))
+    {
         return $c->status_bad_request($rejection);
     }
 
     my $bonus = $c->request_parameters->{bonus} || 0;
     my $fee   = $c->request_parameters->{fee}   || 0;
 
-    my $currency_code     = $c->request_parameters->{currency_code};
-    my $amount            = $c->request_parameters->{amount};
     my $staff             = $c->request_parameters->{staff};
-    my $trace_id          = $c->request_parameters->{trace_id};
     my $payment_processor = $c->request_parameters->{payment_processor};
-    my $transaction_id    = $c->request_parameters->{transaction_id};
     my $created_by        = $c->request_parameters->{created_by};
     my $ip_address        = $c->request_parameters->{ip_address};
 
@@ -225,11 +233,12 @@ sub write_transaction_line {
 }
 
 sub check_predicates {
-    my $c = shift;
+    my $c    = shift;
+    my $args = shift;
 
-    my $trace_id      = $c->request_parameters->{'trace_id'};
-    my $amount        = $c->request_parameters->{'amount'};
-    my $currency_code = $c->request_parameters->{'currency_code'};
+    my $trace_id      = $args->{'trace_id'};
+    my $amount        = $args->{'amount'};
+    my $currency_code = $args->{'currency_code'};
 
     # Detecting duplicates for DoughFlow is simple; it'll be
     # any transaction with an identical type (deposit/withdrawal)
@@ -271,9 +280,21 @@ sub check_predicates {
         return $rejection if $rejection;
     }
 
-    my $comment = $c->comment;
-    if ($doughflow_datamapper->is_duplicate_payment_by_remark($comment)) {
-        $rejection = "Detected duplicate transaction [" . $comment . "] while processing request for " . $c->type . " with trace id " . $trace_id;
+    if (
+        $doughflow_datamapper->is_duplicate_payment({
+                transaction_type => $c->type,
+                trace_id         => $trace_id,
+                transaction_id   => $args->{transaction_id}}))
+    {
+        $rejection =
+              "Detected duplicate transaction ["
+            . $c->comment
+            . "] while processing request for "
+            . $c->type
+            . " with trace id "
+            . $trace_id
+            . " and transaction id "
+            . $args->{transaction_id};
     }
 
     return $rejection;
