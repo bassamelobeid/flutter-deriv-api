@@ -381,8 +381,6 @@ sub __handle {
         }
 
         if ($descriptor->{require_scope} and not(grep { $_ eq $descriptor->{require_scope} } @{$c->stash('token_scopes') || []})) {
-            print STDERR Dumper(\$c->stash('token_scopes'));
-            use Data::Dumper;
             return $c->new_error($descriptor->{category}, 'PermissionDenied',
                 $c->l('Permission denied, requiring [_1]', $descriptor->{require_scope}));
         }
