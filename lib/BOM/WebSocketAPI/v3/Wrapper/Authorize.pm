@@ -31,6 +31,7 @@ sub authorize {
 
                 $c->stash(
                     loginid              => $response->{loginid},
+                    token                => $token,
                     token_type           => $token_type,
                     account_id           => delete $response->{account_id},
                     currency             => $response->{currency},
@@ -63,10 +64,12 @@ sub logout {
 
             $c->stash(
                 loginid              => undef,
+                token                => undef,
                 token_type           => undef,
                 account_id           => undef,
                 currency             => undef,
-                landing_company_name => undef
+                landing_company_name => undef,
+                country              => undef
             );
 
             return {
