@@ -20,7 +20,7 @@ sub get_static_path {
 }
 
 sub get_static_url {
-    if (BOM::System::Config::node->{node}->{www2}) {
+    if (BOM::System::Config::node->{node}->{www2} or BOM::System::Config::env =~ /^qa\d+$/) {
         return "https://static-www2.binary.com/";
     }
     return "https://static.binary.com/";
