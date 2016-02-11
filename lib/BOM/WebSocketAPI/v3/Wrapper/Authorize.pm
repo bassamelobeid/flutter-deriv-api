@@ -5,6 +5,7 @@ use warnings;
 
 use BOM::WebSocketAPI::Websocket_v3;
 use BOM::Database::Model::OAuth;
+use BOM::Platform::SessionCookie;
 
 sub authorize {
     my ($c, $args) = @_;
@@ -60,7 +61,10 @@ sub logout {
             my $response = shift;
 
             # Invalidates token, but we can only do this if we have a cookie
-            $r->session_cookie->end_session if $r->session_cookie;
+            if ($c->stash('token_type') eq 'session_token') {
+                my $session = BOM::Platform::SessionCookie->new({token => $c->stash('token')});
+                $session->end_session if $session;
+            }
 
             $c->stash(
                 loginid              => undef,
