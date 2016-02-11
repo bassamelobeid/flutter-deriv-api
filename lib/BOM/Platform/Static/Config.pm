@@ -47,9 +47,8 @@ sub read_config {
             }
         }
         close $fh;
-    } else {
-        $static_hash = Data::UUID->new->create_str();
     }
+    $static_hash = Data::UUID->new->create_str() unless $static_hash;
     return {
         binary_static_hash => $static_hash,
     };
