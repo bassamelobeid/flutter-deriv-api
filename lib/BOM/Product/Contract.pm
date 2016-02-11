@@ -2609,7 +2609,7 @@ sub _subvalidate_lifetime_intraday {
     } else {
         if (not keys %$expiries_ref or $duration < $shortest->seconds or $duration > $longest->seconds) {
             my $asset_text = localize('Asset Index');
-            my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
+            my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
@@ -2658,7 +2658,7 @@ sub _subvalidate_lifetime_days {
             ? localize('Resale of this contract is not offered.')
             : localize("Trading is not offered for this duration.");
         my $asset_text = localize('Asset Index');
-        my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
+        my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
         push @errors,
             {
             message => format_error_string(
@@ -2865,7 +2865,7 @@ sub _validate_eod_market_risk {
                 duration => $self->remaining_time->as_concise_string
             ),
             message_to_client => $message . ' ',
-            info_link         => request()->url_for('/resources/asset_index'),
+            info_link         => request()->url_for('/resources/asset_indexws'),
             info_text         => localize('View Asset Index'),
             };
     }
