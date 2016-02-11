@@ -19,15 +19,17 @@ sub authorize {
                 return $c->new_error('authorize', $response->{error}->{code}, $response->{error}->{message_to_client});
             } else {
                 my $token_type = 'session_token';
+                my @scopes     = qw/read trade admin payments/;    # scopes is everything for session token
                 if (length $token == 15) {
                     $token_type = 'api_token';
+                    ## FIXME
                 } elsif (length $token == 32 && $token =~ /^a1-/) {
                     $token_type = 'oauth_token';
                     ## scopes
-                    my $m      = BOM::Database::Model::OAuth->new;
-                    my @scopes = $m->get_scopes_by_access_token($token);
-                    $c->stash('oauth_scopes' => \@scopes);
+                    my $m = BOM::Database::Model::OAuth->new;
+                    @scopes = $m->get_scopes_by_access_token($token);
                 }
+                $c->stash('token_scopes' => \@scopes);
 
                 $c->stash(
                     loginid              => $response->{loginid},
