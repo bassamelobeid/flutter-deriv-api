@@ -633,7 +633,7 @@ sub __client_withdrawal_notes {
     my $error    = $arg_ref->{'error'};
     my $currency = $client->currency;
 
-    my $balance = $client->default_account ? $client->default_account->balance : 0;
+    my $balance = $client->default_account ? to_monetary_number_format($client->default_account->balance) : 0;
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
     }
@@ -802,10 +802,10 @@ sub transfer_between_accounts {
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . sprintf('%.2f', $client_from->default_account->balance);
+            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
-            $limit = $currency . ' ' . sprintf('%.2f', ($client_from->default_account->balance - $frozen_bonus));
+            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
             my $bal_1 = $1;
             my $bal_2 = $2;
