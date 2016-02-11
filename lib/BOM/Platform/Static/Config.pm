@@ -42,7 +42,7 @@ sub read_config {
                 $static_hash = $line;
                 last;
             }
-            if ($line =~ /environment-manifests$/) {
+            if ($line =~ /environment-manifests(?:-www2|qa)?$/) {
                 $flag = 1;
             }
         }
