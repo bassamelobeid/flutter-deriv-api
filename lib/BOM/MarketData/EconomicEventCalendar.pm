@@ -20,6 +20,7 @@ Represents an economic event in the financial market
 
 use Moose;
 use JSON;
+use Digest::MD5 qw(md5_hex);
 
 extends 'BOM::MarketData';
 
@@ -167,12 +168,18 @@ sub get_latest_events_for_period {
         my $doc_events = $doc->{events};
 
         for my $doc_event (@{$doc_events}) {
-            my $key = $doc_event->{event_name} . $doc_event->{impact} . $doc_event->{symbol} . $doc_event->{release_date};
 
             $doc_event->{release_date} = Date::Utility->new($doc_event->{release_date});
             my $epoch = $doc_event->{release_date}->epoch;
 
-            $all_events{$key} = $doc_event if ($epoch >= $from and $epoch <= $to);
+            $doc_event->{id} = substr(
+                md5_hex(
+                    $doc_event->{release_date}->truncate_to_day()->epoch . $doc_event->{event_name} . $doc_event->{symbol} . $doc_event->{impact}
+                ),
+                0, 16
+            ) unless defined $doc_event->{id};
+
+            $all_events{$doc_event->{id}} = $doc_event if ($epoch >= $from and $epoch <= $to);
         }
     }
 
