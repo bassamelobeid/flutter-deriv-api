@@ -31,6 +31,9 @@ before_install:
 
     - /tmp/travis-scripts/postgres_restart.sh
     - /tmp/travis-scripts/redis.sh
+    - sudo mkdir -p /etc/rmg/
+    - sudo touch /etc/rmg/version
+    - sudo chown $(id -u) /etc/rmg/version
 
 install:
     - source /tmp/travis-scripts/devbox_path.sh
