@@ -24,6 +24,7 @@ sub get_limits {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -73,6 +74,7 @@ sub paymentagent_withdraw {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid'),
             website_name   => $r->website->display_name
         });
@@ -100,6 +102,7 @@ sub paymentagent_transfer {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             website_name   => $r->website->display_name
         });
     return;
@@ -126,6 +129,7 @@ sub transfer_between_accounts {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -150,6 +154,7 @@ sub topup_virtual {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }

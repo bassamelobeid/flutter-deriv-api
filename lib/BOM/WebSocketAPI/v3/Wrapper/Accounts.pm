@@ -91,6 +91,7 @@ sub statement {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             source         => $c->stash('source')});
     return;
 }
@@ -115,6 +116,7 @@ sub profit_table {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             source         => $c->stash('source')});
     return;
 }
@@ -138,6 +140,7 @@ sub get_account_status {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -162,6 +165,7 @@ sub change_password {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             token_type     => $c->stash('token_type'),
             client_ip      => $r->client_ip
         });
@@ -188,6 +192,7 @@ sub cashier_password {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             client_ip      => $r->client_ip
         });
     return;
@@ -213,6 +218,7 @@ sub get_settings {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             language       => $c->stash('request')->language
         });
     return;
@@ -238,6 +244,7 @@ sub set_settings {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             website_name   => $r->website->display_name,
             client_ip      => $r->client_ip,
             user_agent     => $c->req->headers->header('User-Agent'),
@@ -265,6 +272,7 @@ sub get_self_exclusion {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -289,6 +297,7 @@ sub set_self_exclusion {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -322,6 +331,7 @@ sub balance {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -375,6 +385,7 @@ sub api_token {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -397,6 +408,7 @@ sub tnc_approval {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid'),
         });
 

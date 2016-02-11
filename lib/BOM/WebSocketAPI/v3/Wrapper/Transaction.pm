@@ -33,6 +33,7 @@ sub buy {
         {
             args                => $args,
             client_loginid      => $c->stash('loginid'),
+            token               => $c->stash('token'),
             source              => $c->stash('source'),
             contract_parameters => $contract_parameters
         });
@@ -59,6 +60,7 @@ sub sell {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             source         => $c->stash('source')});
     return;
 }
@@ -143,6 +145,7 @@ sub send_transaction_updates {
                 {
                     args           => $args,
                     client_loginid => $c->stash('loginid'),
+                    token          => $c->stash('token'),
                     short_code     => $payload->{short_code},
                     currency       => $payload->{currency_code},
                     language       => $c->stash('request')->language
