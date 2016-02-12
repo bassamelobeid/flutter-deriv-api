@@ -88,7 +88,6 @@ around _document_content => sub {
 };
 
 after save => {
-    my $self = shift;
     $self->update_tentative();
 };
 
