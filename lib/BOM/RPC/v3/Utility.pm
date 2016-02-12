@@ -37,6 +37,12 @@ sub create_error {
             $args->{details} ? (details => $args->{details}) : ()}};
 }
 
+sub invalid_token_error {
+    return create_error({
+            code              => 'InvalidToken',
+            message_to_client => localize('The token is invalid.')});
+}
+
 sub permission_error {
     return create_error({
             code              => 'PermissionDenied',

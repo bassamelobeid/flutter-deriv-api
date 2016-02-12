@@ -105,6 +105,8 @@ sub __build_landing_company {
 sub statement {
     my $params = shift;
 
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});

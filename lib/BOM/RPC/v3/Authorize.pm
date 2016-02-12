@@ -14,9 +14,7 @@ use BOM::RPC::v3::Utility;
 sub authorize {
     my $params = shift;
 
-    my $err = BOM::RPC::v3::Utility::create_error({
-            code              => 'InvalidToken',
-            message_to_client => BOM::Platform::Context::localize('The token is invalid.')});
+    my $err = BOM::RPC::v3::Utility::invalid_token_error();
 
     my $loginid = BOM::RPC::v3::Utility::token_to_loginid $params->{token};
     return $err unless $loginid;
