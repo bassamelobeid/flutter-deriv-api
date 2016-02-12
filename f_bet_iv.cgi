@@ -142,6 +142,11 @@ BOM::Platform::Context::template->process(
     },
 ) || die BOM::Platform::Context::template->error;
 
+Bar("Update then tentative events");
+print BOM::TentativeEvents::generate_tentative_events_form({
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+});
+
 Bar("Corporate Actions");
 my $corp_dm = BOM::MarketData::Fetcher::CorporateAction->new;
 my $list    = $corp_dm->get_underlyings_with_corporate_action;
