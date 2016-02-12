@@ -10,7 +10,6 @@ use BOM::Platform::SessionCookie;
 sub new_account_virtual {
     my ($c, $args) = @_;
 
-    my $token = $c->cookie('verify_token') || $args->{verification_code};
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'new_account_virtual',
@@ -26,9 +25,8 @@ sub new_account_virtual {
             }
         },
         {
-            args  => $args,
-            token => $token
-        });
+            args              => $args,
+            verification_code => $args->{verification_code}});
     return;
 }
 
