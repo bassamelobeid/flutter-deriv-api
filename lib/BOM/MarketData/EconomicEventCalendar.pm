@@ -142,7 +142,7 @@ sub update {
 
         for my $event (@{$events->{events}}) {
             if (defined $new_events_hash{$event->{id}}) {
-                $events->{events} = {(%{$event->{id}}, %{$new_events_hash{$event->{id}}})};
+                $event = {(%$event, %{$new_events_hash{$event->{id}}})};
             }
         }
 
