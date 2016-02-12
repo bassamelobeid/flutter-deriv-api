@@ -19,17 +19,26 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t = build_mojo_test();
-
+my $t     = build_mojo_test();
 my $email = 'test@binary.com';
 
 subtest 'verify_email' => sub {
     $t = $t->send_ok({
             json => {
                 verify_email => $email,
-                type         => 'account_opening'
+                type         => 'some_garbage_value'
             }})->message_ok;
     my $res = decode_json($t->message->[1]);
+    is($res->{error}->{code}, 'InputValidationFailed', 'verify_email failed');
+    is($res->{msg_type},      'verify_email',          'Message type is correct in case of error');
+    test_schema('verify_email', $res);
+
+    $t = $t->send_ok({
+            json => {
+                verify_email => $email,
+                type         => 'account_opening'
+            }})->message_ok;
+    $res = decode_json($t->message->[1]);
     is($res->{verify_email}, 1, 'verify_email OK');
     test_schema('verify_email', $res);
 };
