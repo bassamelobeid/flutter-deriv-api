@@ -8,6 +8,7 @@ use Date::Utility;
 
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::SessionCookie;
 
 sub create_error {
     my $args = shift;
@@ -89,6 +90,16 @@ sub check_authorization {
     }
 
     return;
+}
+
+sub is_session_valid {
+    my ($token, $email) = @_;
+    my $session_cookie = BOM::Platform::SessionCookie->new({token => $token});
+    unless ($session_cookie and $session_cookie->email and $session_cookie->email eq $email) {
+        return 0;
+    }
+
+    return 1;
 }
 
 1;

@@ -42,7 +42,7 @@ sub new_account_virtual {
         $args->{myaffiliates_token} = delete $args->{affiliate_token};
     }
 
-    if (_is_session_cookie_valid($params->{token}, $args->{email})) {
+    if (BOM::RPC::v3::Utility::is_session_valid($params->{verification_code}, $args->{email})) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
             email_verified => 1
@@ -65,16 +65,6 @@ sub new_account_virtual {
     return BOM::RPC::v3::Utility::create_error({
             code              => $err_code,
             message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
-}
-
-sub _is_session_cookie_valid {
-    my ($token, $email) = @_;
-    my $session_cookie = BOM::Platform::SessionCookie->new({token => $token});
-    unless ($session_cookie and $session_cookie->email and $session_cookie->email eq $email) {
-        return 0;
-    }
-
-    return 1;
 }
 
 sub verify_email {
