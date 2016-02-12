@@ -195,10 +195,10 @@
 "/paymentagent/request_withdrawws":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/job-descriptions":
+"/open-positions":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
-"/job-descriptions/job-details":
+"/open-positions/job-details":
   header:
     Cache-Control: "public, max-age=1000, s-maxage=604800"
 "/user-testing":
