@@ -114,7 +114,7 @@ sub verify_email {
                     use_email_template => 1
                 });
         }
-    } elsif ($params->{type} eq 'payment_agent_withdrawal' && BOM::Platform::User->new({email => $params->{email}})) {
+    } elsif ($params->{type} eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
         send_email({
                 from    => BOM::Platform::Static::Config::get_customer_support_email(),
                 to      => $params->{email},
