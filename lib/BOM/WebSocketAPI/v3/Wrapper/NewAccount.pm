@@ -24,9 +24,7 @@ sub new_account_virtual {
                 };
             }
         },
-        {
-            args              => $args,
-            verification_code => $args->{verification_code}});
+        {args => $args});
     return;
 }
 
