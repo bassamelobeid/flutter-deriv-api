@@ -92,17 +92,18 @@ sub check_authorization {
     return;
 }
 
-sub is_session_valid {
+sub is_verification_token_valid {
     my ($token, $email) = @_;
 
     my $session = BOM::Platform::SessionCookie->new({token => $token});
     return unless $session;
-    unless ($session->email and $session->email eq $email) {
-        $session->end_session;
-        return;
+    my $response;
+    if ($session->email and $session->email eq $email) {
+        $response = 1;
     }
+    $session->end_session;
 
-    return 1;
+    return $response;
 }
 
 1;
