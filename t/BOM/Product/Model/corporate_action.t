@@ -10,7 +10,6 @@ use Test::NoWarnings;
 
 use Date::Utility;
 
-use Quant::Framework::CorporateAction;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
 use Quant::Framework::CorporateAction;
