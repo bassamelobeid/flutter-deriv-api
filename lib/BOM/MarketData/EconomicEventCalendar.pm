@@ -87,6 +87,10 @@ around _document_content => sub {
     return $data;
 };
 
+after save => {
+    $self->update_tentative();
+};
+
 =head3 C<< save >>
 
 Saves the calendar into Chronicle
@@ -100,8 +104,12 @@ sub save {
         BOM::System::Chronicle::set(EE, EE, {});
     }
 
+    if (not defined BOM::System::Chronicle::get(EE, EET)) {
+        BOM::System::Chronicle::set(EE, EET, {});
+    }
+
     #receive tentative events hash
-    my $tentative_events = BOM::System::Chronicle::get(EE, EET) || {};
+    my $tentative_events = BOM::System::Chronicle::get(EE, EET);
 
     for my $event (@{$self->events}) {
         if (ref($event->{release_date}) eq 'Date::Utility') {
@@ -124,6 +132,10 @@ sub save {
     return (
         BOM::System::Chronicle::set(EE, EET, $tentative_events,        $self->recorded_date),
         BOM::System::Chronicle::set(EE, EE,  $self->_document_content, $self->recorded_date));
+}
+
+sub update_tentative {
+    print 'hello';
 }
 
 sub get_latest_events_for_period {
