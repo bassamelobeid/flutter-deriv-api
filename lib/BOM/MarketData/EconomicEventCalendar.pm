@@ -100,8 +100,12 @@ sub save {
         BOM::System::Chronicle::set(EE, EE, {});
     }
 
+    if (not defined BOM::System::Chronicle::get(EE, EET)) {
+        BOM::System::Chronicle::set(EE, EET, {});
+    }
+
     #receive tentative events hash
-    my $tentative_events = BOM::System::Chronicle::get(EE, EET) || {};
+    my $tentative_events = BOM::System::Chronicle::get(EE, EET);
 
     for my $event (@{$self->events}) {
         if (ref($event->{release_date}) eq 'Date::Utility') {
@@ -124,6 +128,34 @@ sub save {
     return (
         BOM::System::Chronicle::set(EE, EET, $tentative_events,        $self->recorded_date),
         BOM::System::Chronicle::set(EE, EE,  $self->_document_content, $self->recorded_date));
+}
+
+sub update {
+
+    my $self             = shift;
+    my $events           = BOM::System::Chronicle::get(EE, EE);
+    my $tentative_events = BOM::System::Chronicle::get(EE, EET);
+
+    if ($events and ref($events->{events}) eq 'ARRAY' and $tentative_events) {
+
+        my %new_events_hash = map { $_->{id} => $_ } @{$self->{events}};
+
+        for my $event (@{$events->{events}}) {
+            if (defined $new_events_hash{$event->{id}}) {
+                $events->{events} = {(%{$event->{id}}, %{$new_events_hash{$event->{id}}})};
+            }
+        }
+
+        foreach my $id (keys %$tentative_events) {
+            if (defined($new_events_hash->{$id})) {
+                $tentative_events->{$id} = {(%{$tentative_events->{$id}}, %{$new_events_hash->{$id}})};
+            }
+        }
+    }
+
+    return (
+        BOM::System::Chronicle::set(EE, EET, $tentative_events, $self->recorded_date),
+        BOM::System::Chronicle::set(EE, EE,  $events,           $self->recorded_date));
 }
 
 sub get_latest_events_for_period {
