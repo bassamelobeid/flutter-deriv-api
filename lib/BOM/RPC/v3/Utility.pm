@@ -94,9 +94,12 @@ sub check_authorization {
 
 sub is_session_valid {
     my ($token, $email) = @_;
-    my $session_cookie = BOM::Platform::SessionCookie->new({token => $token});
-    unless ($session_cookie and $session_cookie->email and $session_cookie->email eq $email) {
-        return 0;
+
+    my $session = BOM::Platform::SessionCookie->new({token => $token});
+    return unless $session;
+    unless ($session->email and $session->email eq $email) {
+        $session->end_session;
+        return;
     }
 
     return 1;

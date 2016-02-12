@@ -42,7 +42,7 @@ sub new_account_virtual {
         $args->{myaffiliates_token} = delete $args->{affiliate_token};
     }
 
-    if (BOM::RPC::v3::Utility::is_session_valid($params->{verification_code}, $args->{email})) {
+    if (BOM::RPC::v3::Utility::is_session_valid($args->{verification_code}, $args->{email})) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
             email_verified => 1

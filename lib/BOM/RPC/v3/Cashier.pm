@@ -366,6 +366,12 @@ sub paymentagent_withdraw {
         return $auth_error;
     }
 
+    unless (BOM::RPC::v3::Utility::is_session_valid($args->{verification_code}, $client->email)) {
+        return BOM::RPC::v3::Utility::create_error({
+                code              => "InvalidVerificationCode",
+                message_to_client => localize("Your payment agent withdrawal token has expired.")});
+    }
+
     my $currency             = $args->{currency};
     my $amount               = $args->{amount};
     my $further_instruction  = $args->{description} // '';
