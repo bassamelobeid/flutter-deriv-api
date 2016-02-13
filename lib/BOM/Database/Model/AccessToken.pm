@@ -13,9 +13,24 @@ sub _build_dbh {
 }
 
 sub create_token {
-    my ($self, $loginid, $display_name) = @_;
+    my ($self, $loginid, $display_name, @scopes) = @_;
 
-    return $self->dbh->selectrow_array("SELECT auth.create_token(15, ?, ?)", undef, $loginid, $display_name);
+    my $dbh = $self->dbh;
+    my ($token) = $dbh->selectrow_array("SELECT auth.create_token(15, ?, ?)", undef, $loginid, $display_name);
+
+    ## insert scope as well
+    if (@scopes) {
+        my $get_scope_sth    = $dbh->prepare("SELECT id FROM auth.scopes WHERE scope = ?");
+        my $insert_scope_sth = $dbh->prepare("INSERT INTO auth.access_token_scope (access_token, scope_id) VALUES (?, ?)");
+        foreach my $scope (@scopes) {
+            $get_scope_sth->execute($scope);
+            my ($scope_id) = $get_scope_sth->fetchrow_array;
+            next unless $scope_id;
+            $insert_scope_sth->execute($token, $scope_id);
+        }
+    }
+
+    return $token;
 }
 
 sub get_loginid_by_token {
@@ -24,6 +39,28 @@ sub get_loginid_by_token {
     return $self->dbh->selectrow_array(
         "UPDATE auth.access_token SET last_used=NOW() WHERE token = ? RETURNING client_loginid", undef, $token
     );
+}
+
+sub get_scopes_by_access_token {
+    my ($self, $access_token) = @_;
+
+    my @scopes;
+    my $sth = $self->dbh->prepare("
+        SELECT scope FROM auth.access_token_scope
+        JOIN auth.scopes ON scopes.id=access_token_scope.scope_id
+        WHERE access_token = ?
+    ");
+    $sth->execute($access_token);
+    while (my ($scope) = $sth->fetchrow_array) {
+        push @scopes, $scope;
+    }
+
+    ## backwards compatibility
+    if (scalar(@scopes) == 0) {
+        @scopes = ('read', 'trade', 'admin', 'payments');
+    }
+
+    return @scopes;
 }
 
 sub get_tokens_by_loginid {

@@ -20,6 +20,8 @@ ok not $m->is_name_taken($test_loginid, 'Test Token');
 my $token = $m->create_token($test_loginid, 'Test Token');
 is length($token), 15;
 ok $m->is_name_taken($test_loginid, 'Test Token'), 'name is taken after create';
+my @scopes = $m->get_scopes_by_access_token($token);
+is_deeply([sort @scopes], ['admin', 'payments', 'read', 'trade'], 'old token is full scope');
 
 my $client_loginid = $m->get_loginid_by_token($token);
 is $client_loginid, $test_loginid;
@@ -44,5 +46,11 @@ is scalar @$tokens, 1;
 ok $m->remove_by_loginid($test_loginid), 'remove ok';
 $tokens = $m->get_tokens_by_loginid($test_loginid);
 is scalar @$tokens, 0, 'all removed';
+
+### test scope
+$token = $m->create_token($test_loginid, 'Test Token X', 'read', 'admin');
+@scopes = $m->get_scopes_by_access_token($token);
+is_deeply([sort @scopes], ['admin', 'read'], 'scope is correct');
+ok $m->remove_by_token($token);
 
 done_testing();
