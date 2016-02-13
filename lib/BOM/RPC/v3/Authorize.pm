@@ -22,15 +22,18 @@ sub authorize {
             message_to_client => BOM::Platform::Context::localize('The token is invalid.')});
 
     my $loginid;
-    my $token = $params->{token};
-    if (length $token == 15) {    # access token
+    my $token  = $params->{token};
+    my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
+    if (length $token == 15) {                     # access token
         my $m = BOM::Database::Model::AccessToken->new;
         $loginid = $m->get_loginid_by_token($token);
         return $err unless $loginid;
+        @scopes = $m->get_scopes_by_access_token($token);
     } elsif (length $token == 32 && $token =~ /^a1-/) {
         my $m = BOM::Database::Model::OAuth->new;
         $loginid = $m->get_loginid_by_access_token($token);
         return $err unless $loginid;
+        @scopes = $m->get_scopes_by_access_token($token);
     } else {
         my $session = BOM::Platform::SessionCookie->new(token => $token);
         if (!$session || !$session->validate_session()) {
@@ -52,7 +55,8 @@ sub authorize {
         email                => $client->email,
         account_id           => ($account ? $account->id : ''),
         landing_company_name => $client->landing_company->short,
-        country              => $client->residence
+        country              => $client->residence,
+        scopes               => \@scopes
     };
 }
 
