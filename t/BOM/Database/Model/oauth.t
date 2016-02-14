@@ -32,7 +32,7 @@ my $loginid = $m->verify_auth_code($test_appid, $code);
 is $loginid, $test_loginid, 'verify ok';
 
 my @scope_ids = $m->get_scope_ids_by_auth_code($code);
-is_deeply([sort @scope_ids], [1, 2], 'scope_ids by auth_code');
+ok((grep { $_ == 2 } @scope_ids), 'trade scope is there');
 
 # you can't re-use the code
 ok(!$m->verify_auth_code($test_appid, $code), 'can not re-use');
@@ -50,7 +50,7 @@ is $loginid, $test_loginid, 'refresh_token ok';
 my @scope_ids_rf = $m->get_scope_ids_by_refresh_token($refresh_token);
 is_deeply(\@scope_ids, \@scope_ids_rf, 'scope_ids by refresh_token is same as auth_code');
 my @scopes = $m->get_scopes_by_access_token($access_token);
-is_deeply([sort @scopes], ['trade', 'read'], 'correct scope by access_token');
+is_deeply([sort @scopes], ['read', 'trade'], 'correct scope by access_token');
 
 ok(!$m->verify_refresh_token($test_appid, $refresh_token), 'can not re-use');
 ok(!$m->verify_refresh_token($test_appid, $access_token),  'access_token is not for refresh');
