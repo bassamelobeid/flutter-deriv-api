@@ -847,13 +847,18 @@ sub api_token {
             my $token_cnt = $m->get_token_count_by_loginid($client->loginid);
             $display_name_err = localize('Max 30 tokens are allowed.') if $token_cnt >= 30;
         }
+        my $scopes = $args->{new_token_scopes} || [];
+        unless ($display_name_err) {
+            $display_name_err = localize('new_token_scopes is required.')
+                unless scalar(@$scopes);
+        }
         if ($display_name_err) {
             return BOM::RPC::v3::Utility::create_error({
                 code              => 'APITokenError',
                 message_to_client => $display_name_err,
             });
         }
-        $m->create_token($client->loginid, $display_name);
+        $m->create_token($client->loginid, $display_name, @$scopes);
         $rtn->{new_token} = 1;
     }
 
