@@ -52,7 +52,7 @@ sub _build_file {
     }
     @non_quanto_filename;
 
-    if (not $file and $now->hour > 0) {
+    if (not $file and $now->hour > 0 and $now->is_a_weekday) {
 
         die('Could not find volatility source file for time[' . $now->datetime . ']');
     }
