@@ -1,26 +1,57 @@
 BEGIN;
 
-INSERT INTO oauth.scopes (scope) VALUES ('read');
-INSERT INTO oauth.scopes (scope) VALUES ('admin');
-INSERT INTO oauth.scopes (scope) VALUES ('payments');
+CREATE TYPE token_scopes AS ENUM ('read', 'trade', 'payments', 'admin');
 
-UPDATE oauth.user_scope_confirm
-SET scope_id = (SELECT id FROM oauth.scopes WHERE scope='read')
-WHERE scope_id = (SELECT id FROM oauth.scopes WHERE scope='user');
+DROP TABLE oauth.user_scope_confirm;
+CREATE TABLE oauth.user_scope_confirm (
+    app_id           varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    loginid          character varying(12) NOT NULL,
+    scopes           token_scopes[]
+);
+ALTER TABLE ONLY oauth.user_scope_confirm
+    ADD CONSTRAINT pkey_oauth_user_scope_confirm PRIMARY KEY (app_id, loginid);
+GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.user_scope_confirm TO write;
+GRANT SELECT ON oauth.user_scope_confirm TO read;
 
-UPDATE oauth.auth_code_scope
-SET scope_id = (SELECT id FROM oauth.scopes WHERE scope='read')
-WHERE scope_id = (SELECT id FROM oauth.scopes WHERE scope='user');
+DROP TABLE oauth.auth_code_scope;
+DROP TABLE oauth.auth_code;
+CREATE TABLE oauth.auth_code (
+    auth_code            char(32) NOT NULL PRIMARY KEY,
+    app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    loginid              character varying(12) NOT NULL,
+    expires              timestamp NOT NULL,
+    scopes           token_scopes[],
+    verified             boolean NOT NULL DEFAULT false
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.auth_code TO write;
+GRANT SELECT ON oauth.auth_code TO read;
 
-UPDATE oauth.access_token_scope
-SET scope_id = (SELECT id FROM oauth.scopes WHERE scope='read')
-WHERE scope_id = (SELECT id FROM oauth.scopes WHERE scope='user');
+DROP TABLE oauth.access_token_scope;
+DROP TABLE oauth.access_token;
+CREATE TABLE oauth.access_token (
+    access_token         char(32) NOT NULL PRIMARY KEY,
+    app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    loginid              character varying(12) NOT NULL,
+    expires              timestamp NOT NULL,
+    scopes           token_scopes[],
+    last_used            TIMESTAMP DEFAULT NULL
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.access_token TO write;
+GRANT SELECT ON oauth.access_token TO read;
 
-UPDATE oauth.refresh_token_scope
-SET scope_id = (SELECT id FROM oauth.scopes WHERE scope='read')
-WHERE scope_id = (SELECT id FROM oauth.scopes WHERE scope='user');
+DROP TABLE oauth.refresh_token_scope;
+DROP TABLE oauth.refresh_token;
+CREATE TABLE oauth.refresh_token (
+    refresh_token        char(32) NOT NULL PRIMARY KEY,
+    app_id            varchar(32) NOT NULL REFERENCES oauth.apps(id),
+    loginid              character varying(12) NOT NULL,
+    scopes           token_scopes[],
+    revoked BOOLEAN NOT NULL DEFAULT false
+);
+GRANT SELECT, INSERT, UPDATE, DELETE ON oauth.refresh_token TO write;
+GRANT SELECT ON oauth.refresh_token TO read;
 
-DELETE FROM oauth.scopes WHERE scope IN ('cashier', 'user');
+DROP TABLE oauth.scopes;
 
 CREATE TABLE auth.scopes (
     id SERIAL PRIMARY KEY,

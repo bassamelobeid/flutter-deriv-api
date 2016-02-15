@@ -14,6 +14,24 @@ sub _build_dbh {
     return BOM::Database::AuthDB::rose_db->dbh;
 }
 
+sub __parse_array {
+    my ($array_string) = @_;
+    return [] unless $array_string;
+    return BOM::Database::AuthDB::rose_db->parse_array($array_string);
+}
+
+my @token_scopes = ('read', 'trade', 'payments', 'admin');
+sub __filter_valid_scopes {
+    my (@s) = @_;
+
+    my @vs;
+    foreach my $s (@s) {
+        push @vs, $s if grep { $_ eq $s } @token_scopes;
+    }
+
+    return @vs;
+}
+
 ## app
 sub verify_app {
     my ($self, $app_id) = @_;
@@ -27,17 +45,13 @@ sub confirm_scope {
     my ($self, $app_id, $loginid, @scopes) = @_;
 
     my $dbh           = $self->dbh;
-    my $get_scope_sth = $dbh->prepare("SELECT id FROM oauth.scopes WHERE scope = ?");
-    my $insert_sth    = $dbh->prepare("
-       INSERT INTO oauth.user_scope_confirm (app_id, loginid, scope_id) VALUES (?, ?, ?)
-    ");
 
-    foreach my $scope (@scopes) {
-        $get_scope_sth->execute($scope);
-        my ($scope_id) = $get_scope_sth->fetchrow_array;
-        next unless $scope_id;
-        $insert_sth->execute($app_id, $loginid, $scope_id);
-    }
+    # delete then insert
+    $dbh->do("DELETE FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?", undef,
+        $app_id, $loginid);
+
+    $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid, scopes) VALUES (?, ?, ?)", undef,
+        $app_id, $loginid, [ __filter_valid_scopes(@scopes) ] );
 
     return 1;
 }
@@ -46,15 +60,14 @@ sub is_scope_confirmed {
     my ($self, $app_id, $loginid, @scopes) = @_;
 
     my $dbh = $self->dbh;
-    my $sth = $dbh->prepare("
-        SELECT 1 FROM oauth.user_scope_confirm JOIN oauth.scopes ON user_scope_confirm.scope_id=scopes.id
-        WHERE app_id = ? AND loginid = ? AND scopes.scope = ?
-    ");
+
+    my ($confirmed_scopes) = $dbh->selectrow_array("
+        SELECT scopes FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
+    ", undef, $app_id, $loginid);
+    $confirmed_scopes = __parse_array($confirmed_scopes);
 
     foreach my $scope (@scopes) {
-        $sth->execute($app_id, $loginid, $scope);
-        my ($is_approved) = $sth->fetchrow_array;
-        return 0 unless $is_approved;
+        return 0 unless grep { $_ eq $scope } @$confirmed_scopes;
     }
 
     return 1;
@@ -67,17 +80,10 @@ sub store_auth_code {
     my $dbh          = $self->dbh;
     my $auth_code    = String::Random::random_regex('[a-zA-Z0-9]{32}');
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + 600)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.auth_code (auth_code, app_id, loginid, expires, verified) VALUES (?, ?, ?, ?, false)",
-        undef, $auth_code, $app_id, $loginid, $expires_time);
-
-    my $get_scope_sth    = $dbh->prepare("SELECT id FROM oauth.scopes WHERE scope = ?");
-    my $insert_scope_sth = $dbh->prepare("INSERT INTO oauth.auth_code_scope (auth_code, scope_id) VALUES (?, ?)");
-    foreach my $scope (@scopes) {
-        $get_scope_sth->execute($scope);
-        my ($scope_id) = $get_scope_sth->fetchrow_array;
-        next unless $scope_id;
-        $insert_scope_sth->execute($auth_code, $scope_id);
-    }
+    $dbh->do("
+        INSERT INTO oauth.auth_code (auth_code, app_id, loginid, expires, scopes, verified)
+        VALUES (?, ?, ?, ?, ?, false)
+    ", undef, $auth_code, $app_id, $loginid, $expires_time, [ __filter_valid_scopes(@scopes) ]);
 
     return $auth_code;
 }
@@ -101,39 +107,32 @@ sub verify_auth_code {
     return $auth_row->{loginid};
 }
 
-sub get_scope_ids_by_auth_code {
+sub get_scopes_by_auth_code {
     my ($self, $auth_code) = @_;
 
-    my @scope_ids;
-    my $sth = $self->dbh->prepare("SELECT scope_id FROM oauth.auth_code_scope WHERE auth_code = ?");
+    my $sth = $self->dbh->prepare("SELECT scopes FROM oauth.auth_code WHERE auth_code = ?");
     $sth->execute($auth_code);
-    while (my ($sid) = $sth->fetchrow_array) {
-        push @scope_ids, $sid;
-    }
-    return @scope_ids;
+    my $scopes = $sth->fetchrow_array;
+    $scopes = __parse_array($scopes);
+    return @$scopes;
 }
 
 ## store access token
 sub store_access_token {
-    my ($self, $app_id, $loginid, @scope_ids) = @_;
+    my ($self, $app_id, $loginid, @scopes) = @_;
 
     my $dbh           = $self->dbh;
     my $expires_in    = 3600;
     my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
     my $refresh_token = 'r1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
+    @scopes = __filter_valid_scopes(@scopes);
+
     my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
-        undef, $access_token, $app_id, $loginid, $expires_time);
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, scopes, expires) VALUES (?, ?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
 
-    $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid) VALUES (?, ?, ?)", undef, $refresh_token, $app_id, $loginid);
-
-    foreach my $related ('access_token', 'refresh_token') {
-        my $insert_sth = $dbh->prepare("INSERT INTO oauth.${related}_scope ($related, scope_id) VALUES (?, ?)");
-        foreach my $scope_id (@scope_ids) {
-            $insert_sth->execute($related eq 'access_token' ? $access_token : $refresh_token, $scope_id);
-        }
-    }
+    $dbh->do("INSERT INTO oauth.refresh_token (refresh_token, app_id, loginid, scopes) VALUES (?, ?, ?, ?)", undef, $refresh_token, $app_id, $loginid, \@scopes);
 
     return ($access_token, $refresh_token, $expires_in);
 }
@@ -145,18 +144,11 @@ sub store_access_token_only {
     my $expires_in    = 3600;
     my $access_token  = 'a1-' . String::Random::random_regex('[a-zA-Z0-9]{29}');
 
-    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
-    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, expires) VALUES (?, ?, ?, ?)",
-        undef, $access_token, $app_id, $loginid, $expires_time);
+    @scopes = __filter_valid_scopes(@scopes);
 
-    my $get_scope_sth    = $dbh->prepare("SELECT id FROM oauth.scopes WHERE scope = ?");
-    my $insert_scope_sth = $dbh->prepare("INSERT INTO oauth.access_token_scope (access_token, scope_id) VALUES (?, ?)");
-    foreach my $scope (@scopes) {
-        $get_scope_sth->execute($scope);
-        my ($scope_id) = $get_scope_sth->fetchrow_array;
-        next unless $scope_id;
-        $insert_scope_sth->execute($access_token, $scope_id);
-    }
+    my $expires_time = Date::Utility->new({epoch => (Date::Utility->new->epoch + $expires_in)})->datetime_yyyymmdd_hhmmss;    # 10 minutes max
+    $dbh->do("INSERT INTO oauth.access_token (access_token, app_id, loginid, scopes, expires) VALUES (?, ?, ?, ?, ?)",
+        undef, $access_token, $app_id, $loginid, \@scopes, $expires_time);
 
     return ($access_token, $expires_in);
 }
@@ -172,17 +164,14 @@ sub get_loginid_by_access_token {
 sub get_scopes_by_access_token {
     my ($self, $access_token) = @_;
 
-    my @scopes;
     my $sth = $self->dbh->prepare("
-        SELECT scope FROM oauth.access_token_scope
-        JOIN oauth.scopes ON scopes.id=access_token_scope.scope_id
+        SELECT scopes FROM oauth.access_token
         WHERE access_token = ?
     ");
     $sth->execute($access_token);
-    while (my ($scope) = $sth->fetchrow_array) {
-        push @scopes, $scope;
-    }
-    return @scopes;
+    my $scopes = $sth->fetchrow_array;
+    $scopes = __parse_array($scopes);
+    return @$scopes;
 }
 
 sub verify_refresh_token {
@@ -201,16 +190,14 @@ sub verify_refresh_token {
     return $loginid;
 }
 
-sub get_scope_ids_by_refresh_token {
+sub get_scopes_by_refresh_token {
     my ($self, $refresh_token) = @_;
 
-    my @scope_ids;
-    my $sth = $self->dbh->prepare("SELECT scope_id FROM oauth.refresh_token_scope WHERE refresh_token = ?");
+    my $sth = $self->dbh->prepare("SELECT scopes FROM oauth.refresh_token WHERE refresh_token = ?");
     $sth->execute($refresh_token);
-    while (my ($sid) = $sth->fetchrow_array) {
-        push @scope_ids, $sid;
-    }
-    return @scope_ids;
+    my $scopes = $sth->fetchrow_array;
+    $scopes = __parse_array($scopes);
+    return @$scopes;
 }
 
 sub is_name_taken {
