@@ -105,7 +105,8 @@ sub __build_landing_company {
 sub statement {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -169,7 +170,8 @@ sub statement {
 sub profit_table {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -231,7 +233,8 @@ sub profit_table {
 sub balance {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -258,7 +261,8 @@ sub balance {
 sub get_account_status {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -285,7 +289,8 @@ sub get_account_status {
 sub change_password {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my ($client_loginid, $token_type, $client_ip, $args) = @{$params}{qw/client_loginid token_type client_ip args/};
 
@@ -352,7 +357,8 @@ sub change_password {
 sub cashier_password {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my ($client_loginid, $client_ip, $args) = @{$params}{qw/client_loginid client_ip args/};
 
@@ -634,7 +640,8 @@ sub set_settings {
 sub get_self_exclusion {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -683,7 +690,8 @@ sub get_self_exclusion {
 sub set_self_exclusion {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my ($client_loginid, $args) = @{$params}{qw/client_loginid args/};
 
@@ -834,7 +842,8 @@ sub set_self_exclusion {
 sub api_token {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my ($client_loginid, $args) = @{$params}{qw/client_loginid args/};
 
@@ -884,7 +893,8 @@ sub api_token {
 sub tnc_approval {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {

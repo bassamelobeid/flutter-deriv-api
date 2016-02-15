@@ -17,7 +17,8 @@ sub __pre_hook {
 sub register {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
@@ -74,7 +75,8 @@ sub register {
 sub list {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
@@ -88,7 +90,8 @@ sub list {
 sub get {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
@@ -110,7 +113,8 @@ sub get {
 sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 

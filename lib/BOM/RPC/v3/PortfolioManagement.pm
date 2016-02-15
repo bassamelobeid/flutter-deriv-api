@@ -18,7 +18,8 @@ use BOM::Product::Transaction;
 sub portfolio {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -74,7 +75,8 @@ sub __get_open_contracts {
 sub sell_expired {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -112,7 +114,8 @@ sub _sell_expired_contracts {
 sub proposal_open_contract {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {

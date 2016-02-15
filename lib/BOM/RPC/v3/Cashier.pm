@@ -31,7 +31,8 @@ use BOM::System::AuditLog;
 sub get_limits {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -153,7 +154,8 @@ sub paymentagent_list {
 sub paymentagent_transfer {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my ($loginid_fm, $website_name, $args) =
         @{$params}{qw/client_loginid website_name args/};
@@ -674,7 +676,8 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -891,7 +894,8 @@ sub transfer_between_accounts {
 sub topup_virtual {
     my $params = shift;
 
-    return BOM::RPC::v3::Utility::invalid_token_error() unless BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
