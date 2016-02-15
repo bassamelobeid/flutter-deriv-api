@@ -10,7 +10,6 @@ use BOM::Test::Runtime qw(:normal);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::AggTicks;
 use Date::Utility;
-use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
 
 use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
@@ -78,7 +77,7 @@ subtest 'prices without economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is roundnear(0.0001,$c->theo_probability->amount), roundnear(0.0001,$expected->{$c->shortcode}), 'correct theo probability [' . $c->shortcode . ']';
+                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct theo probability [' . $c->shortcode . ']';
             } 'survived';
         }
     }
@@ -99,7 +98,7 @@ subtest 'atm prices without economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is roundnear(0.0001,$c->theo_probability->amount), roundnear(0.0001,$expected->{$c->shortcode}), 'correct theo probability [event_' . $c->shortcode . ']';
+                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
             } 'survived';
         }
     }
@@ -151,7 +150,7 @@ subtest 'prices with economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is roundnear(0.0001,$c->theo_probability->amount), roundnear(0.0001,$expected->{'event_' . $c->shortcode}), 'correct theo probability [event_' . $c->shortcode . ']';
+                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
             } 'survived';
         }
     }
@@ -172,7 +171,7 @@ subtest 'atm prices with economic events' => sub {
                     barrier      => 'S0P',
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is roundnear(0.0001,$c->theo_probability->amount), roundnear(0.0001,$expected->{'event_' . $c->shortcode}), 'correct theo probability [event_' . $c->shortcode . ']';
+                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
             } 'survived';
         }
     }
