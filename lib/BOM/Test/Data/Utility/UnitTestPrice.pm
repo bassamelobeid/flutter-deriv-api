@@ -11,37 +11,6 @@ use BOM::Market::Underlying;
 use List::MoreUtils qw(uniq);
 use YAML::XS qw(LoadFile);
 
-my %phased_mapper = (
-    RDMOON => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5-sin($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x+3*cos($x)-0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-    RDSUN => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5+sin($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x-3*cos($x)-0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-    RDMARS => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5+cos($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x+3*sin($x)+0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-    RDVENUS => {
-        "phase_for_x_code"    => 'sub { my $x = shift;  return (1.5-cos($x));};',
-        "variance_for_x_code" => 'sub { my $x = shift;  return (2.75*$x-3*sin($x)+0.25*sin(2*$x));};',
-        "x_for_epoch_code"    => 'sub { my $epoch = shift;  my $secs_after = $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-        "x2_for_epoch_code" =>
-            'sub { my $epoch = shift; my $crosses_day = shift; my $secs_after = ($crosses_day) ? ($epoch % 86400) + 86400 : $epoch % 86400; return 3.1415926 * $secs_after / 43200;};',
-    },
-);
-
 sub create_pricing_data {
     my ($underlying_symbol, $payout_currency, $for_date) = @_;
 
@@ -72,17 +41,13 @@ sub create_pricing_data {
     push @underlying_list, $underlying;
 
     foreach my $underlying (@underlying_list) {
-        my $surface_data = {};
-        $surface_data = $phased_mapper{$underlying->symbol}
-            if $underlying->volatility_surface_type eq 'phased';
-        if ($underlying->volatility_surface_type ne 'flat') {
+        if (grep { $underlying->volatility_surface_type eq $_ } qw(delta moneyness)) {
             next unless $underlying->volatility_surface_type;
             BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                 'volsurface_' . $underlying->volatility_surface_type,
                 {
                     symbol        => $underlying->symbol,
                     recorded_date => $for_date,
-                    %$surface_data,
                 });
         }
 
