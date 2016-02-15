@@ -11,7 +11,7 @@ with 'BOM::Utility::Logging';
 use Bloomberg::FileDownloader;
 use Bloomberg::CorporateAction;
 use BOM::MarketData::Fetcher::CorporateAction;
-use BOM::MarketData::CorporateAction;
+use Quant::Framework::CorporateAction;
 use BOM::Platform::Runtime;
 use Mail::Sender;
 use DataDog::DogStatsd::Helper qw(stats_gauge);
@@ -29,9 +29,11 @@ sub script_run {
     foreach my $file (@files) {
         my %grouped_actions = $parser->process_data($file);
         foreach my $symbol (keys %grouped_actions) {
-            my $corp = BOM::MarketData::CorporateAction->new(
-                symbol  => $symbol,
-                actions => $grouped_actions{$symbol});
+            my $corp = Quant::Framework::CorporateAction->new(
+                symbol           => $symbol,
+                actions          => $grouped_actions{$symbol},
+                chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+                chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 
             try {
                 $corp->save;
@@ -76,8 +78,8 @@ sub script_run {
 }
 
 sub _update_disabled_symbol_list {
-    my $list = shift;
-    my @new_list         = keys %$list;
+    my $list     = shift;
+    my @new_list = keys %$list;
     BOM::Platform::Runtime->instance->app_config->quants->underlyings->disabled_due_to_corporate_actions(\@new_list);
     BOM::Platform::Runtime->instance->app_config->save_dynamic;
 
