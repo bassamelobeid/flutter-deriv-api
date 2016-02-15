@@ -648,13 +648,13 @@ sub batch_buy { ## no critic (RequireArgUnpacking)
 
     ...;
 
-    return $self->stats_stop(
-        $stats_data,
-        Error::Base->cuss(
-            -type              => 'GeneralError',
-            -mesg              => 'Cannot perform database action',
-            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
-        )) if $error;
+    # return $self->stats_stop(
+    #     $stats_data,
+    #     Error::Base->cuss(
+    #         -type              => 'GeneralError',
+    #         -mesg              => 'Cannot perform database action',
+    #         -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+    #     )) if $error;
 
     $self->stats_stop($stats_data);
 
