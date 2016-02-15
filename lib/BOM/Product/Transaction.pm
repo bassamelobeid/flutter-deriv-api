@@ -646,24 +646,7 @@ sub batch_buy { ## no critic (RequireArgUnpacking)
     }
 
 
-
-    my $try   = 0;
-    my $error = 1;
-    my ($fmb, $txn);
-    TRY: {
-        try {
-            ($fmb, $txn) = $fmb_helper->buy_bet;
-            $error = 0;
-        }
-        catch {
-            # $error_status==undef means repeat operation
-            # if $error_status is defined, return it
-            # otherwise the function re-throws the exception (unrecoverable).
-            $error_status = $self->_recover($_, $try);
-        };
-        return $self->stats_stop($stats_data, $error_status) if $error_status;
-        redo TRY if $error and $try++ < 3;
-    }
+    ...;
 
     return $self->stats_stop(
         $stats_data,
@@ -674,10 +657,6 @@ sub batch_buy { ## no critic (RequireArgUnpacking)
         )) if $error;
 
     $self->stats_stop($stats_data);
-
-    $self->balance_after($txn->{balance_after});
-    $self->transaction_id($txn->{id});
-    $self->contract_id($fmb->{id});
 
     enqueue_new_transaction($self);    # For soft realtime expiration notification.
 
