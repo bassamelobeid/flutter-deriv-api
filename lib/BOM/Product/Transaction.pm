@@ -42,6 +42,11 @@ has client => (
     isa => 'BOM::Platform::Client',
 );
 
+has multiple => (
+    is  => 'ro',
+    isa => 'Maybe[Array]',
+);
+
 has contract => (
     is => 'rw',
 );
@@ -477,7 +482,6 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
     my %options = @_;
 
     my $error_status;
-    my $stats_data = $self->stats_start('buy');
 
     unless ($options{skip_validation}) {
         # all these validations MUST NOT use the database
@@ -485,44 +489,42 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
         # ask your friendly DBA team if in doubt
         #
         # Keep the transaction rate test first to limit the impact of abusive buyers
-        $error_status = $self->_validate_buy_transaction_rate        and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_iom_withdrawal_limit        and return $self->stats_stop($stats_data, $error_status);
-        my $client = $self->client;
-        undef $self->{client};
-        $error_status = $self->_is_valid_to_buy                      and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_date_pricing                and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_trade_pricing_adjustment    and return $self->stats_stop($stats_data, $error_status);
-        $self->{client} = $client;
-        $error_status = $self->_validate_payout_limit                and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_stake_limit                 and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_jurisdictional_restrictions and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_client_status               and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_client_self_exclusion       and return $self->stats_stop($stats_data, $error_status);
-        $error_status = $self->_validate_currency                    and return $self->stats_stop($stats_data, $error_status);
+        $error_status = $self->$_ and return $error_status for (
+            qw/
+            _validate_buy_transaction_rate
+            _validate_iom_withdrawal_limit
+            _validate_payout_limit
+            _is_valid_to_buy
+            _validate_date_pricing
+            _validate_trade_pricing_adjustment
+            _validate_stake_limit
+            _validate_jurisdictional_restrictions
+            _validate_client_status
+            _validate_client_self_exclusion
+            _validate_currency/
+            );
 
         $self->calculate_limits;
 
         $self->comment($self->_build_pricing_comment) unless defined $self->comment;
     }
 
-    $self->staff;               # build staff before undef client
-    my $client = $self->client;
-    undef $self->{client};
     ($error_status, my $bet_data) = $self->prepare_bet_data_for_buy;
-    $self->{client} = $client;
-    return $self->stats_stop($stats_data, $error_status) if $error_status;
+    return $error_status if $error_status;
 
-    $self->stats_validation_done($stats_data);
-
-    return $error_status, $stats_data, $bet_data;
+    return $error_status, $bet_data;
 }
 
 sub buy { ## no critic (RequireArgUnpacking)
     my $self    = shift;
-    my @options = @_;
+    my %options = @_;
 
-    my ($error_status, $stats_data, $bet_data) = $self->prepare_buy(@options);
-    return $error_status if $error_status;
+    my $stats_data = $self->stats_start('buy');
+
+    my ($error_status, $bet_data) = $self->prepare_buy(@options);
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    $self->stats_validation_done($stats_data);
 
     my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
         %$bet_data,
@@ -570,6 +572,105 @@ sub buy { ## no critic (RequireArgUnpacking)
 
     return;
 }
+
+=secret
+
+sub batch_buy { ## no critic (RequireArgUnpacking)
+    my $self    = shift;
+    my %options = @_;
+
+    # TODO: shall we allow this operation only if $self->client is real-money?
+    #       Or allow virtual $self->client only if all other clients are also
+    #       virtual?
+
+    unless ($options{skip_validation}) {
+        # this works based on $self->client.
+        $self->_validate_buy_transaction_rate and return;
+    }
+
+    my %per_broker;
+    for my $m (@{$self->multiple}) {
+        next if $m->{code};
+        (my $broker = $m->{loginid}) =~ s/\D+$//;
+
+        my $c = BOM::Platform::Client->new({loginid => $m->{loginid}});
+        next unless $c;
+
+        $m->{client} = $c;
+
+        push @{$per_broker{$broker}}, $m;
+    }
+
+    for my $broker (keys %per_broker) {
+        my $list = $per_broker{$broker};
+        # with hash key caching introduced in recent perl versions
+        # the "map sort map" pattern does not make sense anymore.
+        @$list = sort {$a->{loginid} cmp $b->{loginid}} @$list;
+
+        
+    }
+
+    for my $broker (keys %per_broker) {
+        my $list = $per_broker{$broker};
+
+        
+
+
+
+        my ($error_status, $stats_data, $bet_data) = $self->prepare_buy(@options, clients => $list);
+        #return $error_status if $error_status;
+
+        my $fmb_helper = BOM::Database::Helper::FinancialMarketBet->new(
+            %$bet_data,
+            account_data => {
+                client_loginid => $self->client->loginid,
+                currency_code  => $self->contract->currency,
+            },
+            limits => $self->limits,
+            db => BOM::Database::ClientDB->new({broker_code => $self->client->broker_code})->db,
+        );
+    }
+
+
+
+    my $try   = 0;
+    my $error = 1;
+    my ($fmb, $txn);
+    TRY: {
+        try {
+            ($fmb, $txn) = $fmb_helper->buy_bet;
+            $error = 0;
+        }
+        catch {
+            # $error_status==undef means repeat operation
+            # if $error_status is defined, return it
+            # otherwise the function re-throws the exception (unrecoverable).
+            $error_status = $self->_recover($_, $try);
+        };
+        return $self->stats_stop($stats_data, $error_status) if $error_status;
+        redo TRY if $error and $try++ < 3;
+    }
+
+    return $self->stats_stop(
+        $stats_data,
+        Error::Base->cuss(
+            -type              => 'GeneralError',
+            -mesg              => 'Cannot perform database action',
+            -message_to_client => BOM::Platform::Context::localize('A general error has occurred.'),
+        )) if $error;
+
+    $self->stats_stop($stats_data);
+
+    $self->balance_after($txn->{balance_after});
+    $self->transaction_id($txn->{id});
+    $self->contract_id($fmb->{id});
+
+    enqueue_new_transaction($self);    # For soft realtime expiration notification.
+
+    return;
+}
+
+=cut
 
 sub prepare_bet_data_for_sell {
     my $self = shift;
@@ -1293,10 +1394,20 @@ sub __validate_transaction_rate_limit {
                 consumer => $loginid,
             }))
     {
-        return Error::Base->cuss(
-            -type              => ucfirst($what) . 'RateExceeded',
-            -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
-            -message_to_client => BOM::Platform::Context::localize('Too many recent attempts. Try again later.'));
+        if ($self->multiple) {
+            my $msg = BOM::Platform::Context::localize('Too many recent attempts. Try again later.');
+            for my $m (@{$self->multiple}) {
+                next if $m->{code};
+                $m->{code}  = ucfirst($what) . 'RateExceeded';
+                $m->{error} = $msg;
+            }
+            return 1;
+        } else {
+            return Error::Base->cuss(
+                -type              => ucfirst($what) . 'RateExceeded',
+                -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
+                -message_to_client => BOM::Platform::Context::localize('Too many recent attempts. Try again later.'));
+        }
     }
 
     return;
