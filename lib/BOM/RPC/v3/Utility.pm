@@ -15,14 +15,16 @@ use BOM::Platform::SessionCookie;
 sub token_to_loginid {
     my $token = shift;
 
-    if (length $token == 15) {    # access token
-        return BOM::Database::Model::AccessToken->new->get_loginid_by_token($token);
-    } elsif (length $token == 32 && $token =~ /^a1-/) {
-        return BOM::Database::Model::OAuth->new->get_loginid_by_access_token($token);
-    } else {
-        my $session = BOM::Platform::SessionCookie->new(token => $token);
-        return unless $session and $session->validate_session;
-        return $session->loginid;
+    if ($token) {
+        if (length $token == 15) {    # access token
+            return BOM::Database::Model::AccessToken->new->get_loginid_by_token($token);
+        } elsif (length $token == 32 && $token =~ /^a1-/) {
+            return BOM::Database::Model::OAuth->new->get_loginid_by_access_token($token);
+        } else {
+            my $session = BOM::Platform::SessionCookie->new(token => $token);
+            return unless $session and $session->validate_session;
+            return $session->loginid;
+        }
     }
     return;
 }
