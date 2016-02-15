@@ -101,6 +101,8 @@ my %expiry_type = (
     tick     => '10t',
 );
 
+$SIG{__WARN__} = sub { my $w = shift; return if $w =~ /^Unhandled type: GLOB/; die $w; };
+
 sub _get_barrier {
     my $type = shift;
 
