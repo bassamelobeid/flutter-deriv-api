@@ -1344,7 +1344,8 @@ sub _build_pricing_vol {
     } elsif ($pen =~ /Intraday::Forex/) {
         my $volsurface       = $self->empirical_volsurface;
         my $duration_seconds = $self->timeindays->amount * 86400;
-        # volatility doesn't matter for less than 10 minutes ATM contracts.
+        # volatility doesn't matter for less than 10 minutes ATM contracts,
+        # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
         my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $volsurface->get_volatility({
             fill_cache            => !$self->backtest,
