@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Test::MockTime qw/:all/;
 use Test::MockModule;
-use Test::More tests => 26;
+use Test::More tests => 24;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use Guard;
@@ -980,128 +980,6 @@ subtest 'max_balance validation: try to buy a bet with a balance of 100 and max_
         cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
         is $txn->balance_after, $trx->{balance_after}, 'txn->balance_after';
         is $txn->balance_after + 0, 0, 'txn->balance_after == 0';
-    }
-    'survived';
-};
-
-subtest 'max_balance_without_real_deposit validation: try to buy a bet with a balance of 100.01 and FREE_BET promotion of 4', sub {
-    plan tests => 8;
-    lives_ok {
-        my $cl = create_client;
-
-        free_gift $cl, 'USD', 100.01;
-
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 100.01, 'free_gift USD balance is 100.01 got: ' . $bal;
-
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'FLASHU',
-            currency     => 'USD',
-            stake        => 1.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-        });
-
-        my $txn = BOM::Product::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 1.00,
-            payout      => $contract->payout,
-            amount_type => 'stake',
-        });
-
-        my $error = do {
-            $INC{'Promo.pm'} = 1;    # prevent loading
-            my $mock_promo = Test::MockModule->new('Promo');
-            $mock_promo->mock(promo_code_type => sub { note "mocked Promo->promo_code_type returning FREE_BET"; 'FREE_BET' });
-            $mock_promo->mock(promo_code_config => sub { note "mocked Promo->promo_code_config returning '{\"amount\":\"4\"}'"; '{"amount":"4"}' });
-
-            $INC{'PCode.pm'} = 1;    # prevent loading
-            my $mock_pcode = Test::MockModule->new('PCode');
-            $mock_pcode->mock(promotion => sub { note "mocked PCode->promotion returning Promo object"; bless {} => 'Promo' });
-            $mock_pcode->mock(status => sub { note "mocked PCode->status returning ACTIVE"; 'ACTIVE' });
-
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(client_promo_code => sub { note "mocked Client->client_promo_code returning PCode object"; bless {} => 'PCode' });
-
-            $txn->buy;
-        };
-        SKIP: {
-            skip 'no error', 4
-                unless isa_ok $error, 'Error::Base';
-
-            is $error->get_type, 'PromoCodeLimitExceeded', 'error is PromoCodeLimitExceeded';
-
-            is $txn->contract_id,    undef, 'txn->contract_id';
-            is $txn->transaction_id, undef, 'txn->transaction_id';
-            is $txn->balance_after,  undef, 'txn->balance_after';
-        }
-    }
-    'survived';
-};
-
-subtest 'max_balance_without_real_deposit validation: try to buy a bet with a balance of 100and FREE_BET promotion of 4', sub {
-    plan tests => 10;
-    lives_ok {
-        my $cl = create_client;
-
-        free_gift $cl, 'USD', 100;
-
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 100, 'free_gift USD balance is 100 got: ' . $bal;
-
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
-        my $contract = produce_contract({
-            underlying   => $underlying,
-            bet_type     => 'FLASHU',
-            currency     => 'USD',
-            stake        => 1.00,
-            duration     => '15m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-        });
-
-        my $txn = BOM::Product::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 1.00,
-            payout      => $contract->payout,
-            amount_type => 'stake',
-        });
-
-        my $error = do {
-            $INC{'Promo.pm'} = 1;    # prevent loading
-            my $mock_promo = Test::MockModule->new('Promo');
-            $mock_promo->mock(promo_code_type => sub { note "mocked Promo->promo_code_type returning FREE_BET"; 'FREE_BET' });
-            $mock_promo->mock(promo_code_config => sub { note "mocked Promo->promo_code_config returning '{\"amount\":\"4\"}'"; '{"amount":"4"}' });
-
-            $INC{'PCode.pm'} = 1;    # prevent loading
-            my $mock_pcode = Test::MockModule->new('PCode');
-            $mock_pcode->mock(promotion => sub { note "mocked PCode->promotion returning Promo object"; bless {} => 'Promo' });
-            $mock_pcode->mock(status => sub { note "mocked PCode->status returning ACTIVE"; 'ACTIVE' });
-
-            my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-            $mock_client->mock(client_promo_code => sub { note "mocked Client->client_promo_code returning PCode object"; bless {} => 'PCode' });
-
-            $txn->buy;
-        };
-        is $error, undef, 'no error';
-
-        ($trx, $fmb, $chld, $qv1, $qv2) = get_transaction_from_db higher_lower_bet => $txn->transaction_id;
-
-        is $txn->contract_id, $fmb->{id}, 'txn->contract_id';
-        cmp_ok $txn->contract_id, '>', 0, 'txn->contract_id > 0';
-        is $txn->transaction_id, $trx->{id}, 'txn->transaction_id';
-        cmp_ok $txn->transaction_id, '>', 0, 'txn->transaction_id > 0';
-        is $txn->balance_after, $trx->{balance_after}, 'txn->balance_after';
-        is $txn->balance_after + 0, 99, 'txn->balance_after == 99';
     }
     'survived';
 };

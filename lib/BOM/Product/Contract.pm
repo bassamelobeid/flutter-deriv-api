@@ -2132,7 +2132,7 @@ sub _validate_underlying {
             {
             message           => format_error_string('Underlying buy trades suspended for period', symbol => $underlying->symbol),
             message_to_client => localize('Trading on [_1] is suspended at the moment.',           $translated_name),
-            info_link => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+            info_link => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
             info_text => localize('Trading Times'),
             };
     }
@@ -2422,7 +2422,7 @@ sub _validate_start_date {
                 'actual seconds' => $sec_to_close
             ),
             message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
-            info_link => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+            info_link => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
             info_text => localize('Trading Times'),
             };
     } elsif ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
@@ -2435,7 +2435,7 @@ sub _validate_start_date {
                     'actual seconds' => $start_date_sec_to_close
                 ),
                 message_to_client => localize("Trading on this contract type is suspended for the last one hour of the session."),
-                info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+                info_link         => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
                 info_text         => localize('Trading Times'),
                 };
         }
@@ -2462,7 +2462,7 @@ sub _validate_expiry_date {
             };
     } elsif ($self->is_intraday) {
         if (not $exchange->is_open_at($self->date_expiry)) {
-            my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
@@ -2491,7 +2491,7 @@ sub _validate_expiry_date {
                     ),
                     };
             } elsif ($expiry_before_close->minutes < $eod_blackout_expiry->minutes) {
-                my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+                my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
                 push @errors,
                     {
                     message => format_error_string(
@@ -2610,7 +2610,7 @@ sub _subvalidate_lifetime_intraday {
     } else {
         if (not keys %$expiries_ref or $duration < $shortest->seconds or $duration > $longest->seconds) {
             my $asset_text = localize('Asset Index');
-            my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
+            my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
@@ -2659,7 +2659,7 @@ sub _subvalidate_lifetime_days {
             ? localize('Resale of this contract is not offered.')
             : localize("Trading is not offered for this duration.");
         my $asset_text = localize('Asset Index');
-        my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
+        my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
         push @errors,
             {
             message => format_error_string(
@@ -2687,7 +2687,7 @@ sub _subvalidate_lifetime_days {
                 ? localize('Resale of this contract is not offered due to market holiday during contract period.')
                 : localize("Market holiday during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
             # It's only safer, not safe, because if there are more holidays it still might go nuts.
-            my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
                 message           => format_error_string('underlying holidays in contract period', symbol => $self->underlying->symbol),
@@ -2706,7 +2706,7 @@ sub _subvalidate_lifetime_days {
                 ($self->built_with_bom_parameters)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
                 : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
-            my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
@@ -2866,7 +2866,7 @@ sub _validate_eod_market_risk {
                 duration => $self->remaining_time->as_concise_string
             ),
             message_to_client => $message . ' ',
-            info_link         => request()->url_for('/resources/asset_index'),
+            info_link         => request()->url_for('/resources/asset_indexws'),
             info_text         => localize('View Asset Index'),
             };
     }

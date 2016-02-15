@@ -301,18 +301,6 @@ sub calculate_limits {
         }
     }
 
-    # formerly _validate_promo_code_limit
-    my $cpc = $client->client_promo_code;
-    if ($cpc and $cpc->status ne 'CANCEL') {
-        my $pc = $cpc->promotion;
-        if ($pc->promo_code_type eq 'FREE_BET') {
-            # our rule is that a client who use free bet, cannot win an amount more than
-            # 25 times the promo code value without any deposit. If the Client already
-            # has a balance more than the amount, we do not allow him to trade anymore.
-            $self->limits->{max_balance_without_real_deposit} = 25 * from_json($pc->promo_code_config)->{amount};
-        }
-    }
-
     if ($contract->is_spread) {
         $self->limits->{spread_bet_profit_limit} = $app_config->spreads_daily_profit_limit;
     }
