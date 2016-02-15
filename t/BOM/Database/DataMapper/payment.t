@@ -10,6 +10,7 @@ use Test::Exception;
 use Date::Utility;
 use BOM::Database::Model::Account;
 use BOM::Database::DataMapper::Payment;
+use BOM::Database::DataMapper::Payment::DoughFlow;
 use BOM::Database::ClientDB;
 use BOM::Database::Model::Constants;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -74,20 +75,14 @@ subtest 'get total deposit & withdrawal' => sub {
 
 subtest 'get_payment_count_exclude_gateway' => sub {
     cmp_ok(
-        $payment_data_mapper->get_payment_count_exclude_gateway({
-                'exclude' => [
-                    'free_gift',
-                    $BOM::Database::Model::Constants::PAYMENT_GATEWAY_DATACASH
-                ]}
+        $payment_data_mapper->get_payment_count_exclude_gateway(
+            {'exclude' => ['free_gift', $BOM::Database::Model::Constants::PAYMENT_GATEWAY_DATACASH]}
         ),
         '==', 0,
         'check payment count exlude free gift, datacash'
     );
 
-    cmp_ok(
-        $payment_data_mapper->get_payment_count_exclude_gateway({'exclude' => ['free_gift']}),
-        '==', 1, 'check payment count exlude free gift'
-    );
+    cmp_ok($payment_data_mapper->get_payment_count_exclude_gateway({'exclude' => ['free_gift']}), '==', 1, 'check payment count exlude free gift');
 
     cmp_ok($payment_data_mapper->get_payment_count_exclude_gateway(), '==', 2, 'check payment count exlude free gift, datacash');
 };
@@ -125,8 +120,7 @@ subtest 'Prepare for other tests' => sub {
 
     $payment_data_mapper = BOM::Database::DataMapper::Payment->new({client_loginid => $client->loginid});
 
-    my $count = $payment_data_mapper->get_client_payment_count_by(
-        {payment_gateway_code => 'payment_fee'});
+    my $count = $payment_data_mapper->get_client_payment_count_by({payment_gateway_code => 'payment_fee'});
     is($count, 0, 'no payment count');
 
     $count = $payment_data_mapper->get_client_payment_count_by({
@@ -144,8 +138,7 @@ subtest 'Prepare for other tests' => sub {
     }
     'Insert new payment deposit';
 
-    $count = $payment_data_mapper->get_client_payment_count_by(
-        {payment_gateway_code => 'payment_fee'});
+    $count = $payment_data_mapper->get_client_payment_count_by({payment_gateway_code => 'payment_fee'});
     is($count, 1, 'has payment count');
 
     $count = $payment_data_mapper->get_client_payment_count_by({
@@ -164,8 +157,8 @@ subtest 'affiliate reward' => sub {
     lives_ok {
         my $account = $client->default_account;
 
-        my $remark               = 'Reward from affiliate program for trades done by CR34285';
-        my $amount               = 149.99;
+        my $remark = 'Reward from affiliate program for trades done by CR34285';
+        my $amount = 149.99;
 
         my $trx = $client->payment_affiliate_reward(
             amount   => $amount,
@@ -221,18 +214,23 @@ subtest 'get txn id by comment' => sub {
 };
 
 subtest 'check duplicate payment from remark' => sub {
+
+    my $doughflow_datamapper;
     lives_ok {
-        $payment_mapper = BOM::Database::DataMapper::Payment->new({
-            'client_loginid' => 'MX0016',
-            'currency_code'  => 'GBP',
+        $doughflow_datamapper = BOM::Database::DataMapper::Payment::DoughFlow->new({
+            client_loginid => 'CR9999',
+            currency_code  => 'USD'
         });
     }
     'Expect to initialize the object';
 
     ok(
-        $payment_mapper->is_duplicate_payment_by_remark(
-            'datacash credit card deposit ORDERID=77516059288 (71510466288,) TIMESTAMP=31-Jul-09 07h10GMT'),
-        'Check if payment is a duplicate by checking the remark'
+        $doughflow_datamapper->is_duplicate_payment({
+                transaction_type => 'deposit',
+                trace_id         => 1
+            }
+        ),
+        'Check if payment is a duplicate by checking the trace_id'
     );
 };
 
@@ -250,8 +248,8 @@ subtest 'check account has duplicate payment' => sub {
     'Expect to initialize mapper object';
 
     is(
-        $payment_mapper->is_duplicate_payment({
-                'remark' =>
+        $payment_mapper->is_duplicate_manual_payment({
+                remark =>
                     'Moneybookers deposit REF:MX100111271050920 ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT',
                 'date'   => Date::Utility->new({datetime => '09-Mar-11 06h22GMT'}),
                 'amount' => 2000,
@@ -262,11 +260,11 @@ subtest 'check account has duplicate payment' => sub {
     );
 
     is(
-        $payment_mapper->is_duplicate_payment({
-                'remark' =>
+        $payment_mapper->is_duplicate_manual_payment({
+                remark =>
                     'Moneybookers deposit REF:TEST_REF ID:257054611 Email:ohoushyar@gmail.com Amount:GBP2000.00 Moneybookers Timestamp 9-Mar-11 05h44GMT',
                 'date'   => Date::Utility->new({datetime => '10-Mar-11 06h22GMT'}),
-                'amount' => 2000,
+                'amount' => 2000
             }
         ),
         undef,
