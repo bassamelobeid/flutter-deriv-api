@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 585;
+use Test::More tests => 877;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -74,6 +74,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                             push @codes, $c->barrier->as_absolute;
                         }
                         my $code = join '_', @codes;
+                        isa_ok $c->pricing_engine, 'Pricing::Engine::EuropeanDigitalSlope';
                         is $c->theo_probability->amount, $expectation->{$code}, 'theo probability matches [' . $c->shortcode . ']';
                     } 'survived';
                 }

@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 21;
+use Test::More tests => 31;
 use Test::Exception;
 use Test::NoWarnings;
 
@@ -40,7 +40,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
     foreach my $contract_category (grep { not $skip_category{$_} } get_offerings_with_filter('contract_category', {underlying_symbol => $ul->symbol, expiry_type => 'intraday', start_type => 'spot'})) {
         my $category_obj = BOM::Product::Contract::Category->new($contract_category);
         next if $category_obj->is_path_dependent;
-        my @duration = map { $_ * 3600 } (1 .. 5);
+        my @duration = map { $_ * 60 } (15,20,25,40,60);
         foreach my $duration (@duration) {
             my $vol = BOM::MarketData::Fetcher::VolSurface->new->fetch_surface({underlying => $ul})->get_volatility({delta => 50, days => $duration / 24});
             foreach my $contract_type (get_offerings_with_filter('contract_type', {contract_category => $contract_category})) {
@@ -64,6 +64,7 @@ foreach my $ul (map { BOM::Market::Underlying->new($_) } @underlying_symbols) {
                         push @codes, $c->barrier->as_absolute;
                     }
                     my $code = join '_', @codes;
+                    isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Index';
                     is $c->theo_probability->amount, $expectation->{$code}, 'theo probability matches [' . $code . ']';
                 } 'survived';
             }
