@@ -573,8 +573,6 @@ sub buy { ## no critic (RequireArgUnpacking)
     return;
 }
 
-=secret
-
 sub batch_buy { ## no critic (RequireArgUnpacking)
     my $self    = shift;
     my @options = @_;
@@ -583,10 +581,24 @@ sub batch_buy { ## no critic (RequireArgUnpacking)
     #       Or allow virtual $self->client only if all other clients are also
     #       virtual?
 
-    unless ($options{skip_validation}) {
-        # this works based on $self->client.
-        $self->_validate_buy_transaction_rate and return;
+    my $stats_data = $self->stats_start('batch_buy');
+
+    for my $m (@{$self->multiple}) {
+        next if $m->{code};
+        my $c = BOM::Platform::Client->new({loginid => $m->{loginid}});
+        unless ($c) {
+            $m->{code}  = 'InvalidLoginid';
+            $m->{error} = BOM::Platform::Context::localize('Invalid loginid');
+            next;
+        }
+
+        $m->{client} = $c;
     }
+
+    my ($error_status, $bet_data) = $self->prepare_buy(@options);
+    return $self->stats_stop($stats_data, $error_status) if $error_status;
+
+    $self->stats_validation_done($stats_data);
 
     my %per_broker;
     for my $m (@{$self->multiple}) {
@@ -669,8 +681,6 @@ sub batch_buy { ## no critic (RequireArgUnpacking)
 
     return;
 }
-
-=cut
 
 sub prepare_bet_data_for_sell {
     my $self = shift;
@@ -1419,9 +1429,9 @@ Validate the withdrawal limit for IOM region
 
 =cut
 
-sub _validate_iom_withdrawal_limit {
+sub __validate_iom_withdrawal_limit {
     my $self   = shift;
-    my $client = $self->client;
+    my $client = shift;
 
     return if $client->is_virtual;
 
@@ -1462,6 +1472,23 @@ sub _validate_iom_withdrawal_limit {
         );
     }
     return;
+}
+
+sub _validate_iom_withdrawal_limit {
+    my $self   = shift;
+
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            my $res = $self->__validate_iom_withdrawal_limit($m->{client});
+            if ($res) {
+                $m->{code}  = $res->{-type};
+                $m->{error} = $res->{-message_to_client};
+            }
+        }
+        return;
+    } else {
+        return $self->__validate_iom_withdrawal_limit($self->client);
+    }
 }
 
 # This validation should always come after _validate_trade_pricing_adjustment
