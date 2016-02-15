@@ -65,7 +65,6 @@ BEGIN
     v_rate    := v_r.rate;
 
     PERFORM bet.validate_max_balance(v_account, v_rate, p_limits),
-            bet.validate_max_balance_without_real_deposit(v_account, v_rate, p_limits),
             bet.validate_max_open_bets(a_loginid, p_limits),
             bet.validate_max_payout(v_account, v_rate, b_underlying_symbol,
                                     b_bet_type, b_payout_price, p_limits),
