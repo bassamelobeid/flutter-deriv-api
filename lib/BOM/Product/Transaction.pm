@@ -517,7 +517,7 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
 
 sub buy { ## no critic (RequireArgUnpacking)
     my $self    = shift;
-    my %options = @_;
+    my @options = @_;
 
     my $stats_data = $self->stats_start('buy');
 
@@ -577,7 +577,7 @@ sub buy { ## no critic (RequireArgUnpacking)
 
 sub batch_buy { ## no critic (RequireArgUnpacking)
     my $self    = shift;
-    my %options = @_;
+    my @options = @_;
 
     # TODO: shall we allow this operation only if $self->client is real-money?
     #       Or allow virtual $self->client only if all other clients are also
