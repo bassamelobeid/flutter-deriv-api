@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 34;
+use Test::More tests => 33;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
