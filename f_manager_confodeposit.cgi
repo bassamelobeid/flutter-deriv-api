@@ -109,7 +109,10 @@ my $salutation = $client->salutation;
 my $first_name = $client->first_name;
 my $last_name  = $client->last_name;
 
-my $error = BOM::DualControl->new({staff => $clerk, transactiontype => $ttype})->validate_payment_control_code($DCcode, $loginID, $curr, $amount);
+my $error = BOM::DualControl->new({
+        staff           => $clerk,
+        transactiontype => $ttype
+    })->validate_payment_control_code($DCcode, $loginID, $curr, $amount);
 if ($error) {
     print $error->get_mesg();
     code_exit_BO();
@@ -124,10 +127,10 @@ my $payment_mapper = BOM::Database::DataMapper::Payment->new({
 });
 
 if (
-    $payment_mapper->is_duplicate_payment({
+    $payment_mapper->is_duplicate_manual_payment({
             remark => ($params{remark} || ''),
             date   => Date::Utility->new,
-            amount => $signed_amount,
+            amount => $signed_amount
         }))
 {
     print "ERROR: did you hit Reload ?  Very similar line already appears on client statement";
@@ -208,8 +211,7 @@ my $now = Date::Utility->new;
 # Logging
 my $msg = $now->datetime . " $ttype $curr$amount $loginID clerk=$clerk (DCcode=$DCcode) $ENV{REMOTE_ADDR}";
 BOM::System::AuditLog::log($msg, $loginID, $clerk);
-Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")
-    ->append($msg);
+Path::Tiny::path("/var/log/fixedodds/fmanagerconfodeposit.log")->append($msg);
 
 # Print confirmation
 Bar("$ttype confirmed");
