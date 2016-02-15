@@ -930,7 +930,17 @@ sub _build_total_markup {
           ($self->pricing_engine_name =~ /Intraday::Forex/ and not $self->is_atm_bet)
         ? ()
         : (maximum => BOM::Platform::Runtime->instance->app_config->quants->commission->maximum_total_markup / 100);
-    my %min = ($self->pricing_engine_name =~ /TickExpiry/) ? () : (minimum => 0);
+
+    my %min;
+    if ($self->pricing_engine_name =~ /TickExpiry/) {
+        # we allowed tick expiry total markup to be less than zero
+        # because of equal tick discount.
+        %min = ();
+    } elsif ($self->has_payout) {
+        %min = (minimum => 0.02 / $self->payout);
+    } else {
+        %min = (minimum => 0);
+    }
 
     my $total_markup = Math::Util::CalculatedValue::Validatable->new({
         name        => 'total_markup',
@@ -1106,7 +1116,13 @@ sub _build_ask_price {
 sub _build_payout {
     my $self = shift;
 
-    return roundnear(0.01, $self->ask_price / $self->ask_probability->amount);
+    my $payout            = $self->ask_price / $self->ask_probability->amount;
+    my $dollar_commission = $payout * $self->total_markup->amount;
+    if ($dollar_commission < 0.02) {
+        $payout -= (0.02 - $dollar_commission);
+    }
+
+    return roundnear(0.01, $payout);
 }
 
 sub _build_theo_probability {
@@ -1316,7 +1332,10 @@ sub _build_pricing_vol {
     my $vol;
     my $pen = $self->pricing_engine_name;
     if ($self->volsurface->type eq 'phased') {
-        $vol = $self->volsurface->get_volatility_for_period($self->effective_start->epoch, $self->date_expiry->epoch);
+        $vol = $self->volsurface->get_volatility({
+            start_epoch => $self->effective_start->epoch,
+            end_epoch   => $self->date_expiry->epoch
+        });
     } elsif ($pen =~ /VannaVolga/) {
         $vol = $self->volsurface->get_volatility({
             days  => $self->timeindays->amount,
@@ -1647,7 +1666,10 @@ sub _market_data {
             # if there's new surface data, calculate vol from that.
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
             } elsif ($surface_data) {
                 my $new_volsurface_obj = $volsurface->clone({surface => $surface_data});
                 $vol = $new_volsurface_obj->get_volatility($args);
@@ -1661,7 +1683,10 @@ sub _market_data {
             my $args = shift;
             my $vol;
             if ($volsurface->type eq 'phased') {
-                $vol = $volsurface->get_volatility_for_period($effective_start->epoch, $date_expiry->epoch);
+                $vol = $volsurface->get_volatility({
+                    start_epoch => $effective_start->epoch,
+                    end_epoch   => $date_expiry->epoch
+                });
             } else {
                 $args->{delta} = 50;
                 $vol = $volsurface->get_volatility($args);
@@ -1796,8 +1821,9 @@ sub _vols_at_point {
     my ($self, $end_date, $days_attr) = @_;
 
     my $vol_args = {
-        delta => 50,
-        days  => $self->$days_attr->amount,
+        delta     => 50,
+        days      => $self->$days_attr->amount,
+        for_epoch => $self->effective_start->epoch,
     };
 
     my $market_name = $self->underlying->market->name;
@@ -2138,7 +2164,7 @@ sub _validate_underlying {
             {
             message           => format_error_string('Underlying buy trades suspended for period', symbol => $underlying->symbol),
             message_to_client => localize('Trading on [_1] is suspended at the moment.',           $translated_name),
-            info_link => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+            info_link => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
             info_text => localize('Trading Times'),
             };
     }
@@ -2405,7 +2431,7 @@ sub _validate_start_date {
                 'actual seconds' => $sec_to_close
             ),
             message_to_client => localize("Trading suspended for the last [_1] of the session.", $localized_eod_blackout_start->as_string),
-            info_link => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+            info_link => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
             info_text => localize('Trading Times'),
             };
     } elsif ($underlying->market->name eq 'indices' and not $self->is_intraday and not $self->is_atm_bet and $self->timeindays->amount <= 7) {
@@ -2418,7 +2444,7 @@ sub _validate_start_date {
                     'actual seconds' => $start_date_sec_to_close
                 ),
                 message_to_client => localize("Trading on this contract type is suspended for the last one hour of the session."),
-                info_link         => request()->url_for('/resources/trading_times', undef, {no_host => 1}),
+                info_link         => request()->url_for('/resources/market_timesws', undef, {no_host => 1}),
                 info_text         => localize('Trading Times'),
                 };
         }
@@ -2445,7 +2471,7 @@ sub _validate_expiry_date {
             };
     } elsif ($self->is_intraday) {
         if (not $exchange->is_open_at($self->date_expiry)) {
-            my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
@@ -2474,7 +2500,7 @@ sub _validate_expiry_date {
                     ),
                     };
             } elsif ($expiry_before_close->minutes < $eod_blackout_expiry->minutes) {
-                my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+                my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
                 push @errors,
                     {
                     message => format_error_string(
@@ -2593,7 +2619,7 @@ sub _subvalidate_lifetime_intraday {
     } else {
         if (not keys %$expiries_ref or $duration < $shortest->seconds or $duration > $longest->seconds) {
             my $asset_text = localize('Asset Index');
-            my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
+            my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
@@ -2642,7 +2668,7 @@ sub _subvalidate_lifetime_days {
             ? localize('Resale of this contract is not offered.')
             : localize("Trading is not offered for this duration.");
         my $asset_text = localize('Asset Index');
-        my $asset_link = request()->url_for('/resources/asset_index', undef, {no_host => 1});
+        my $asset_link = request()->url_for('/resources/asset_indexws', undef, {no_host => 1});
         push @errors,
             {
             message => format_error_string(
@@ -2670,7 +2696,7 @@ sub _subvalidate_lifetime_days {
                 ? localize('Resale of this contract is not offered due to market holiday during contract period.')
                 : localize("Market holiday during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
             # It's only safer, not safe, because if there are more holidays it still might go nuts.
-            my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
                 message           => format_error_string('underlying holidays in contract period', symbol => $self->underlying->symbol),
@@ -2689,7 +2715,7 @@ sub _subvalidate_lifetime_days {
                 ($self->built_with_bom_parameters)
                 ? localize('Resale of this contract is not offered due to market holidays during contract period.')
                 : localize("Too many market holidays during the contract period. Select an expiry date after [_1].", $safer_expiry->date);
-            my $times_link = request()->url_for('/resources/trading_times', undef, {no_host => 1});
+            my $times_link = request()->url_for('/resources/market_timesws', undef, {no_host => 1});
             push @errors,
                 {
                 message => format_error_string(
@@ -2803,22 +2829,6 @@ sub _validate_volsurface {
     }
 
     if ($self->volsurface->type eq 'moneyness') {
-        my $max_acceptable_error = BOM::Platform::Runtime->instance->app_config->quants->market_data->volsurface_calibration_error_threshold;
-        $max_acceptable_error *= 5 if $self->is_atm_bet;    # More latitude when vols don't matter so much
-
-        if ($surface->price_with_parameterized_surface and $surface->calibration_error > $max_acceptable_error) {
-            push @errors,
-                {
-                message => format_error_string(
-                    'Calibration fit outside acceptable range',
-                    symbol              => $self->underlying->symbol,
-                    'calibration error' => $surface->calibration_error,
-                    acceptable          => $max_acceptable_error,
-                ),
-                message_to_client => $standard_message,
-                };
-        }
-
         if (abs($surface->spot_reference - $self->current_spot) / $self->current_spot * 100 > 5) {
             push @errors,
                 {
@@ -2865,7 +2875,7 @@ sub _validate_eod_market_risk {
                 duration => $self->remaining_time->as_concise_string
             ),
             message_to_client => $message . ' ',
-            info_link         => request()->url_for('/resources/asset_index'),
+            info_link         => request()->url_for('/resources/asset_indexws'),
             info_text         => localize('View Asset Index'),
             };
     }
