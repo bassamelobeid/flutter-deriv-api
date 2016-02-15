@@ -16,12 +16,13 @@ use BOM::MarketData::Fetcher::VolSurface;
 use BOM::MarketData::VolSurface::Cutoff;
 
 initialize_realtime_ticks_db();
+my $now = Date::Utility->new;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
     {
         symbol => 'EUR',
-        date   => Date::Utility->new,
+        date   => $now,
     });
 my $dm = BOM::MarketData::Fetcher::VolSurface->new;
 
@@ -33,7 +34,7 @@ subtest 'Saving delta then moneyness.' => sub {
     my $delta_surface = BOM::MarketData::VolSurface::Delta->new({
             deltas        => [75, 50, 25],
             underlying    => $forex,
-            recorded_date => Date::Utility->new,
+            recorded_date => $now,
             surface       => {
                 1 => {
                     smile => {
@@ -60,7 +61,7 @@ subtest 'Saving delta then moneyness.' => sub {
     my $moneyness_surface = BOM::MarketData::VolSurface::Moneyness->new({
             moneynesses   => [99, 100, 101],
             underlying    => $indices,
-            recorded_date => Date::Utility->new,
+            recorded_date => $now,
             surface       => {
                 7 => {
                     smile => {
@@ -90,7 +91,7 @@ subtest 'Fetch cut.' => sub {
         'volsurface_delta',
         {
             symbol        => 'frxUSDJPY',
-            recorded_date => Date::Utility->new,
+            recorded_date => $now,
         });
 
     my $cut_surface = $dm->fetch_surface({
@@ -151,7 +152,7 @@ subtest 'Consecutive saves.' => sub {
     my $surface = BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',
         {
-            recorded_date => Date::Utility->new(time - 3 * 3600),
+            recorded_date => $now->minus_time_interval('3h'),
             underlying    => $underlying,
         });
     my @recorded_dates = ($surface->recorded_date);    # keep track of all saved surface recorded_dates
@@ -159,7 +160,7 @@ subtest 'Consecutive saves.' => sub {
     is(scalar keys %{$surface->document->{surfaces}}, 3, 'saves the cut surface');
 
     for (0 .. 2) {
-        my $recorded_date = Date::Utility->new(time - (2 - $_) * 3600);
+        my $recorded_date = $now->minus_time_interval(2-$_ . 'h');
         BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
             'volsurface_delta',
             {

@@ -75,6 +75,24 @@ BI:
   tenfore_trading_timezone: Europe/Rome
   trading_days: weekdays
   trading_timezone: Europe/Rome
+BIS:
+  currency: TRY
+  delay_amount: '0'
+  display_name: Borsa Istanbul
+  market_times:
+    dst:
+      daily_close: 14h40m
+      daily_open: 06h30m
+      daily_settlement: 17h40m
+    partial_trading: {}
+    standard:
+      daily_close: 15h40m
+      daily_open: 07h30m
+      daily_settlement: 18h40m
+  symbol: BIS
+  tenfore_trading_timezone: Europe/Istanbul
+  trading_days: weekdays
+  trading_timezone: Europe/Istanbul
 BM:
   currency: EUR
   delay_amount: '15'
@@ -552,6 +570,20 @@ KRX:
   tenfore_trading_timezone: Asia/Seoul
   trading_days: weekdays
   trading_timezone: Asia/Seoul
+KSE:
+  currency: KWD
+  delay_amount: 0
+  display_name: Kuwait Stock Exchange
+  market_times:
+   partial_trading: {}
+   standard:
+      daily_close: 9h30m
+      daily_open: 6h
+      daily_settlement: 12h30m
+  symbol: KRX
+  tenfore_trading_timezone: Asia/Kuwait
+  trading_days: sun_thru_thu
+  trading_timezone: Asia/Kuwait
 LSE:
   currency: GBP
   delay_amount: '15'
@@ -574,6 +606,20 @@ LSE:
   tenfore_trading_timezone: UTC
   trading_days: weekdays
   trading_timezone: Europe/London
+MICEX:
+  currency: RUB
+  delay_amount: '0'
+  display_name: Moscow MICEX Exchange
+  market_times:
+    partial_trading: {}
+    standard:
+      daily_close: 15h30m
+      daily_open: 7h
+      daily_settlement: 18h30m
+  symbol: MICEX
+  tenfore_trading_timezone: Europe/Moscow
+  trading_days: weekdays
+  trading_timezone: Europe/Moscow
 MEFF:
   currency: EUR
   delay_amount: '1440'
