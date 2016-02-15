@@ -52,9 +52,9 @@ sub _build_file {
     }
     @non_quanto_filename;
 
-    if (not $file and $now->hour > 0){
+    if (not $file and $now->hour > 0) {
 
-    die('Could not find volatility source file for time[' . $now->datetime . ']');
+        die('Could not find volatility source file for time[' . $now->datetime . ']');
     }
     my $quanto_file = $now->is_a_weekday ? $loc . '/' . $day . '/quantovol.csv' : $loc . '/' . $day . '/quantovol_wknd.csv';
 
