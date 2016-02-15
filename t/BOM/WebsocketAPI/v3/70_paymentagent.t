@@ -19,7 +19,19 @@ $client_mocked->mock('add_note', sub { return 1 });
 my $email_mocked = Test::MockModule->new('BOM::Platform::Email');
 $email_mocked->mock('send_email', sub { return 1 });
 
-my $t = build_mojo_test();
+my $t     = build_mojo_test();
+my $email = 'joe@example.com';
+
+subtest 'verify_email' => sub {
+    $t = $t->send_ok({
+            json => {
+                verify_email => $email,
+                type         => 'paymentagent_withdraw'
+            }})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    is($res->{verify_email}, 1, 'verify_email OK');
+    test_schema('verify_email', $res);
+};
 
 my ($client,         $pa_client);
 my ($client_account, $pa_account);
@@ -70,6 +82,20 @@ ok(grep { $_->[0] eq 'id' } @{$res->{paymentagent_list}{available_countries}});
 ok(grep { $_->{name} eq 'Joe' } @{$res->{paymentagent_list}{list}});
 test_schema('paymentagent_list', $res);
 
+my $redis = BOM::System::RedisReplicated::redis_read;
+my $tokens = $redis->execute('keys', 'LOGIN_SESSION::*');
+
+my $code;
+foreach my $key (@{$tokens}) {
+    my $value = JSON::from_json($redis->get($key));
+
+    if ($value->{email} eq $email) {
+        $key =~ /^LOGIN_SESSION::(\w+)$/;
+        $code = $1;
+        last;
+    }
+}
+
 ## paymentagent_withdraw
 {
     my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'Test Token');
@@ -84,7 +110,8 @@ test_schema('paymentagent_list', $res);
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
-                amount                => 100
+                amount                => 100,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     is $res->{paymentagent_withdraw}, 1, 'paymentagent_withdraw ok';
@@ -102,6 +129,7 @@ test_schema('paymentagent_list', $res);
                     paymentagent_withdraw => 1,
                     paymentagent_loginid  => $pa_client->loginid,
                     currency              => 'USD',
+                    verification_code     => $code,
                     (defined $amount) ? (amount => $amount) : ()}})->message_ok;
         $res = decode_json($t->message->[1]);
         if (defined $amount and $amount ne '') {
@@ -116,7 +144,8 @@ test_schema('paymentagent_list', $res);
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => 'VRTC000001',
                 currency              => 'USD',
-                amount                => 100
+                amount                => 100,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /the Payment Agent does not exist/, 'the Payment Agent does not exist';
@@ -126,7 +155,8 @@ test_schema('paymentagent_list', $res);
                 paymentagent_withdraw => 1,
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'RMB',
-                amount                => 100
+                amount                => 100,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /your currency of USD is unavailable/, 'your currency of USD is unavailable';
@@ -137,7 +167,8 @@ test_schema('paymentagent_list', $res);
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
-                description           => 'x' x 301
+                description           => 'x' x 301,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{code} =~ /SanityCheckFailed/, 'Further instructions must not exceed';
@@ -150,6 +181,7 @@ test_schema('paymentagent_list', $res);
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /There was an error processing the request/, 'error';
@@ -164,6 +196,7 @@ test_schema('paymentagent_list', $res);
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /This Payment Agent cashier section is locked/, 'This Payment Agent cashier section is locked';
@@ -176,6 +209,7 @@ test_schema('paymentagent_list', $res);
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 500,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /you cannot withdraw./, 'you cannot withdraw.';
@@ -187,6 +221,7 @@ test_schema('paymentagent_list', $res);
                 currency              => 'USD',
                 amount                => 100,
                 dry_run               => 1,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     is $res->{paymentagent_withdraw}, 2, 'paymentagent_withdraw dry_run ok';
@@ -197,6 +232,7 @@ test_schema('paymentagent_list', $res);
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     ok $res->{error}->{message} =~ /An error occurred while processing request/, 'An error occurred while processing request';
@@ -210,6 +246,7 @@ test_schema('paymentagent_list', $res);
                 paymentagent_loginid  => $pa_client->loginid,
                 currency              => 'USD',
                 amount                => 100,
+                verification_code     => $code
             }})->message_ok;
     $res = decode_json($t->message->[1]);
     is $res->{paymentagent_withdraw}, 1, 'paymentagent_withdraw ok again';

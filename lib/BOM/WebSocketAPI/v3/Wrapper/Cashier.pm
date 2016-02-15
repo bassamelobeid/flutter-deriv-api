@@ -56,7 +56,6 @@ sub paymentagent_list {
 sub paymentagent_withdraw {
     my ($c, $args) = @_;
 
-    my $r = $c->stash('request');
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'paymentagent_withdraw',
@@ -74,7 +73,7 @@ sub paymentagent_withdraw {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
-            website_name   => $r->website->display_name
+            website_name   => $c->stash('request')->website->display_name
         });
     return;
 }

@@ -10,7 +10,6 @@ use BOM::Platform::SessionCookie;
 sub new_account_virtual {
     my ($c, $args) = @_;
 
-    my $token = $c->cookie('verify_token') || $args->{verification_code};
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
         'new_account_virtual',
@@ -25,10 +24,7 @@ sub new_account_virtual {
                 };
             }
         },
-        {
-            args  => $args,
-            token => $token
-        });
+        {args => $args});
     return;
 }
 
@@ -45,7 +41,7 @@ sub verify_email {
         $code = BOM::Platform::SessionCookie->new({
                 email       => $email,
                 expires_in  => 3600,
-                created_for => 'new_account'
+                created_for => 'account_opening'
             })->token;
     } elsif ($type eq 'lost_password') {
         $code = BOM::Platform::SessionCookie->new({
@@ -53,8 +49,13 @@ sub verify_email {
                 expires_in  => 3600,
                 created_for => 'lost_password'
             })->token;
+    } elsif ($type eq 'paymentagent_withdraw') {
+        $code = BOM::Platform::SessionCookie->new({
+                email       => $email,
+                expires_in  => 3600,
+                created_for => 'paymentagent_withdraw'
+            })->token;
     }
-
     $link = $r->url_for(
         '/user/validate_link',
         {
