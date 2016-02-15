@@ -135,14 +135,14 @@ sub access_token {
         return $c->throw_error('invalid_grant');
     }
 
-    my @scope_ids;
+    my @scopes;
     if ($grant_type eq 'refresh_token') {
-        @scope_ids = $oauth_model->get_scope_ids_by_refresh_token($refresh_token);
+        @scopes = $oauth_model->get_scopes_by_refresh_token($refresh_token);
     } else {
-        @scope_ids = $oauth_model->get_scope_ids_by_auth_code($auth_code);
+        @scopes = $oauth_model->get_scopes_by_auth_code($auth_code);
     }
 
-    my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($app_id, $loginid, @scope_ids);
+    my ($access_token, $refresh_token_new, $expires_in) = $oauth_model->store_access_token($app_id, $loginid, @scopes);
 
     $c->render(
         json => {
