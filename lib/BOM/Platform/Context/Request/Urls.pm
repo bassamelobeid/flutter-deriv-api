@@ -8,6 +8,7 @@ use YAML::XS;
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
 use BOM::Platform::Static::Config;
+use BOM::System::Config;
 
 sub domain {
     my $self   = shift;
@@ -100,6 +101,9 @@ sub domain_for {
         }
     }
 
+    if (BOM::System::Config::node->{node}->{www2}) {
+        $domain = 'www2.binary.com';
+    }
     return $domain;
 }
 

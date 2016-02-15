@@ -40,7 +40,7 @@ qr/Unknown broker code or loginid \[RC\]/, 'Dies with the correct message';
 
 subtest 'Build quality' => sub {
     my $cr = BOM::Platform::Runtime->instance->broker_codes->get('CR');
-    is $cr->server,           'www',       'dealing server is www';
+    is $cr->server, 'www', 'dealing server is www';
     is $cr->landing_company->short, 'costarica', 'landing company is BOM CR';
 };
 
