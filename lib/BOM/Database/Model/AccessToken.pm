@@ -12,23 +12,32 @@ sub _build_dbh {
     return BOM::Database::AuthDB::rose_db->dbh;
 }
 
+sub __parse_array {
+    my ($array_string) = @_;
+    return $array_string if ref($array_string) eq 'ARRAY';
+    return [] unless $array_string;
+    return BOM::Database::AuthDB::rose_db->parse_array($array_string);
+}
+
+my @token_scopes = ('read', 'trade', 'payments', 'admin');
+sub __filter_valid_scopes {
+    my (@s) = @_;
+
+    my @vs;
+    foreach my $s (@s) {
+        push @vs, $s if grep { $_ eq $s } @token_scopes;
+    }
+
+    return @vs;
+}
+
 sub create_token {
     my ($self, $loginid, $display_name, @scopes) = @_;
 
-    my $dbh = $self->dbh;
-    my ($token) = $dbh->selectrow_array("SELECT auth.create_token(15, ?, ?)", undef, $loginid, $display_name);
+    @scopes = __filter_valid_scopes(@scopes);
 
-    ## insert scope as well
-    if (@scopes) {
-        my $get_scope_sth    = $dbh->prepare("SELECT id FROM auth.scopes WHERE scope = ?");
-        my $insert_scope_sth = $dbh->prepare("INSERT INTO auth.access_token_scope (access_token, scope_id) VALUES (?, ?)");
-        foreach my $scope (@scopes) {
-            $get_scope_sth->execute($scope);
-            my ($scope_id) = $get_scope_sth->fetchrow_array;
-            next unless $scope_id;
-            $insert_scope_sth->execute($token, $scope_id);
-        }
-    }
+    my $dbh = $self->dbh;
+    my ($token) = $dbh->selectrow_array("SELECT auth.create_token(15, ?, ?, ?)", undef, $loginid, $display_name, \@scopes);
 
     return $token;
 }
@@ -44,23 +53,14 @@ sub get_loginid_by_token {
 sub get_scopes_by_access_token {
     my ($self, $access_token) = @_;
 
-    my @scopes;
     my $sth = $self->dbh->prepare("
-        SELECT scope FROM auth.access_token_scope
-        JOIN auth.scopes ON scopes.id=access_token_scope.scope_id
-        WHERE access_token = ?
+        SELECT scopes FROM auth.access_token
+        WHERE token = ?
     ");
     $sth->execute($access_token);
-    while (my ($scope) = $sth->fetchrow_array) {
-        push @scopes, $scope;
-    }
-
-    ## backwards compatibility
-    if (scalar(@scopes) == 0) {
-        @scopes = ('read', 'trade', 'admin', 'payments');
-    }
-
-    return @scopes;
+    my $scopes = $sth->fetchrow_array;
+    $scopes = __parse_array($scopes);
+    return @$scopes;
 }
 
 sub get_tokens_by_loginid {

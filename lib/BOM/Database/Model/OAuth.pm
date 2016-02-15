@@ -16,6 +16,7 @@ sub _build_dbh {
 
 sub __parse_array {
     my ($array_string) = @_;
+    return $array_string if ref($array_string) eq 'ARRAY';
     return [] unless $array_string;
     return BOM::Database::AuthDB::rose_db->parse_array($array_string);
 }

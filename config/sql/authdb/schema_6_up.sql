@@ -53,24 +53,35 @@ GRANT SELECT ON oauth.refresh_token TO read;
 
 DROP TABLE oauth.scopes;
 
-CREATE TABLE auth.scopes (
-    id SERIAL PRIMARY KEY,
-    scope VARCHAR( 100 ) NOT NULL
-);
-GRANT SELECT, INSERT, UPDATE, DELETE ON auth.scopes TO write;
-GRANT SELECT ON auth.scopes TO read;
+ALTER TABLE auth.access_token ADD COLUMN scopes token_scopes[];
+UPDATE auth.access_token SET scopes='{"read","admin","trade","payments"}';
 
-INSERT INTO auth.scopes (scope) VALUES ('read');
-INSERT INTO auth.scopes (scope) VALUES ('trade');
-INSERT INTO auth.scopes (scope) VALUES ('admin');
-INSERT INTO auth.scopes (scope) VALUES ('payments');
 
-CREATE TABLE auth.access_token_scope (
-    access_token         char(16) NOT NULL,
-    scope_id             INTEGER NOT NULL REFERENCES auth.scopes(id)
-);
-CREATE INDEX idx_auth_access_token_scope_access_token ON auth.access_token_scope USING btree (access_token);
-GRANT SELECT, INSERT, UPDATE, DELETE ON auth.access_token_scope TO write;
-GRANT SELECT ON auth.access_token_scope TO read;
+CREATE OR REPLACE FUNCTION auth.create_token(p_tlen        INT,
+                                             p_loginid     TEXT,
+                                             p_displayname TEXT,
+                                             p_scopes      token_scopes[])
+RETURNS TEXT AS $$
+
+DECLARE
+    t TEXT;
+BEGIN
+    LOOP
+        BEGIN
+            -- An INSERT locks the table automatically in ROW EXCLUSIVE mode
+            -- which blocks concurrent modifications. Hence, no other locking
+            -- is required.
+            INSERT INTO auth.access_token(token, display_name, client_loginid, scopes)
+            VALUES (auth.generate_random_token(p_tlen),
+                    p_displayname, p_loginid, p_scopes)
+            RETURNING token INTO t;
+            RETURN t;
+        EXCEPTION WHEN unique_violation THEN
+            -- do nothing and continue with next loop
+        END;
+    END LOOP;
+END;
+
+$$ LANGUAGE plpgsql VOLATILE;
 
 COMMIT;
