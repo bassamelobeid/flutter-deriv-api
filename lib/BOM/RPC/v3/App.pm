@@ -16,6 +16,9 @@ sub __pre_hook {
 
 sub register {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -70,6 +73,9 @@ sub register {
 
 sub list {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -81,6 +87,9 @@ sub list {
 
 sub get {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
     my $user = BOM::Platform::User->new({email => $client->email});
@@ -100,6 +109,9 @@ sub get {
 
 sub delete {    ## no critic (Subroutines::ProhibitBuiltinHomonyms)
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     return BOM::RPC::v3::Utility::permission_error() unless my $client = __pre_hook($params);
 
     my $user = BOM::Platform::User->new({email => $client->email});

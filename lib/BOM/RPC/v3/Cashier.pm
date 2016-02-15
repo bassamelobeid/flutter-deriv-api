@@ -31,6 +31,8 @@ use BOM::System::AuditLog;
 sub get_limits {
     my $params = shift;
 
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
@@ -98,7 +100,7 @@ sub get_limits {
 
 sub paymentagent_list {
     my $params = shift;
-    my ($language, $args) = ($params->{language}, $params->{args});
+    my ($language, $args) = @{$params}{qw/language args/};
 
     my $client;
     if ($params->{client_loginid}) {
@@ -150,8 +152,11 @@ sub paymentagent_list {
 
 sub paymentagent_transfer {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     my ($loginid_fm, $website_name, $args) =
-        ($params->{client_loginid}, $params->{website_name}, $params->{args});
+        @{$params}{qw/client_loginid website_name args/};
 
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
@@ -355,7 +360,7 @@ sub paymentagent_withdraw {
     my $params = shift;
 
     my ($client_loginid, $website_name, $args) =
-        ($params->{client_loginid}, $params->{website_name}, $params->{args});
+        @{$params}{qw/client_loginid website_name args/};
 
     my $client;
     if ($client_loginid) {
@@ -669,6 +674,8 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
@@ -883,6 +890,8 @@ sub transfer_between_accounts {
 
 sub topup_virtual {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error() if BOM::RPC::v3::Utility::token_to_loginid($params->{token});
 
     my $client;
     if ($params->{client_loginid}) {

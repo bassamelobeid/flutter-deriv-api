@@ -15,13 +15,11 @@ use BOM::Platform::SessionCookie;
 sub authorize {
     my $params = shift;
 
-    my $err = BOM::RPC::v3::Utility::invalid_token_error();
-
-    my $loginid = BOM::RPC::v3::Utility::token_to_loginid $params->{token};
-    return $err unless $loginid;
+    my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $loginid});
-    return $err unless $client;
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client;
 
     my $account = $client->default_account;
 
@@ -55,7 +53,7 @@ sub logout {
         BOM::System::AuditLog::log("user logout", "$email,$loginid");
     }
 
-    # Invalidates token, but we can only do this if we have a cookie
+    # Invalidates token, but we can only do this if we have a session token
     if ($params->{token_type} eq 'session_token') {
         my $session = BOM::Platform::SessionCookie->new({token => $params->{token}});
         $session->end_session if $session;
