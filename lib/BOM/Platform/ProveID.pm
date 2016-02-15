@@ -6,7 +6,7 @@ use warnings;
 use BOM::Utility::Log4perl;
 use BOM::Platform::Runtime;
 use BOM::System::Config;
-use BOM::System::Chronicle;
+use BOM::System::RedisReplicated;
 use Carp;
 use base 'Experian::IDAuth';
 
@@ -36,12 +36,12 @@ sub _throttle {
     my $loginid = shift;
     my $key     = 'PROVEID::THROTTLE::' . $loginid;
 
-    if (BOM::System::Chronicle->_redis_read->get($key)) {
+    if (BOM::System::RedisReplicated::redis_read()->get($key)) {
         Carp::confess 'Too many ProveID requests for ' . $loginid;
     }
 
-    BOM::System::Chronicle->_redis_write->set($key, 1);
-    BOM::System::Chronicle->_redis_write->expire($key, 3600);
+    BOM::System::RedisReplicated::redis_write()->set($key, 1);
+    BOM::System::RedisReplicated::redis_write()->expire($key, 3600);
 
     return 1;
 }

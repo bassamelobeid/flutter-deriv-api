@@ -1,5 +1,7 @@
 use strict;
 use warnings;
+use Test::MockTime::HiRes;
+use Guard;
 
 use Test::More (tests => 4);
 use Test::Exception;
@@ -11,6 +13,7 @@ use BOM::Platform::Account::Real::maltainvest;
 use BOM::Platform::Runtime;
 use BOM::Platform::Account;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
 BOM::Platform::Runtime->instance->app_config->system->on_production(1);
 
@@ -49,18 +52,17 @@ my $vr_details = {
 };
 
 my %real_client_details = (
-    salutation       => 'Ms',
-    last_name        => 'binary',
-    date_of_birth    => '1990-01-01',
-    address_line_1   => 'address 1',
-    address_line_2   => 'address 2',
-    address_city     => 'city',
-    address_state    => 'state',
-    address_postcode => '89902872',
-    phone            => '82083808372',
-    secret_question  => 'Mother\'s maiden name',
-    secret_answer    => 'sjgjdhgdjgdj',
-    ,
+    salutation                    => 'Ms',
+    last_name                     => 'binary',
+    date_of_birth                 => '1990-01-01',
+    address_line_1                => 'address 1',
+    address_line_2                => 'address 2',
+    address_city                  => 'city',
+    address_state                 => 'state',
+    address_postcode              => '89902872',
+    phone                         => '82083808372',
+    secret_question               => 'Mother\'s maiden name',
+    secret_answer                 => 'sjgjdhgdjgdj',
     myaffiliates_token_registered => 0,
     checked_affiliate_exposures   => 0,
     latest_environment            => '',
@@ -122,6 +124,46 @@ subtest 'create account' => sub {
             is($real_acc->{error}, 'invalid', "$broker client can't open MF acc");
         }
     }
+
+    # test create account in 2016-02-29
+    set_absolute_time(1456724000);
+    my $guard = guard { restore_time };
+
+    my $broker       = 'CR';
+    my %t_vr_details = (
+        %{$vr_details->{CR}},
+        email => 'foo+nobug@binary.com',
+    );
+    my ($vr_client, $user, $real_acc, $real_client, $vr_acc);
+    lives_ok {
+        $vr_acc = create_vr_acc(\%t_vr_details);
+        ($vr_client, $user) = @{$vr_acc}{'client', 'user'};
+    }
+    'create VR acc';
+    $user->email_verified(1);
+    $user->save;
+
+    my %t_details = (
+        %real_client_details,
+        residence       => $t_vr_details{residence},
+        broker_code     => $broker,
+        first_name      => 'foonobug',
+        client_password => $vr_client->password,
+        email           => $t_vr_details{email});
+
+    # real acc
+    lives_ok {
+        $real_acc = BOM::Platform::Account::Real::default::create_account({
+            from_client => $vr_client,
+            user        => $user,
+            details     => \%t_details,
+            country     => $vr_client->residence,
+        });
+        ($real_client, $user) = @{$real_acc}{'client', 'user'};
+    }
+    "create $broker acc OK, after verify email";
+    is($real_client->broker, $broker, 'Successfully create ' . $real_client->loginid);
+
 };
 
 subtest 'get_real_acc_opening_type' => sub {

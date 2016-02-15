@@ -8,7 +8,6 @@ use YAML::XS;
 my $broker_codes;
 lives_ok {
     $broker_codes = BOM::Platform::Runtime::Broker::Codes->new(
-        hosts              => BOM::Platform::Runtime->instance->hosts,
         landing_companies  => BOM::Platform::Runtime->instance->landing_companies,
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
@@ -41,7 +40,7 @@ qr/Unknown broker code or loginid \[RC\]/, 'Dies with the correct message';
 
 subtest 'Build quality' => sub {
     my $cr = BOM::Platform::Runtime->instance->broker_codes->get('CR');
-    is $cr->server->name,           'www',       'dealing server is www';
+    is $cr->server, 'www', 'dealing server is www';
     is $cr->landing_company->short, 'costarica', 'landing company is BOM CR';
 };
 
@@ -61,8 +60,8 @@ subtest 'landing_company_for' => sub {
 subtest 'dealing_server_for' => sub {
     my $broker_codes = BOM::Platform::Runtime->instance->broker_codes;
 
-    is $broker_codes->dealing_server_for('MX')->name,     'www', "Got correct dealing server for MX";
-    is $broker_codes->dealing_server_for('MX4321')->name, 'www', "Got correct dealing server for MX4321";
+    is $broker_codes->dealing_server_for('MX'),     'www', "Got correct dealing server for MX";
+    is $broker_codes->dealing_server_for('MX4321'), 'www', "Got correct dealing server for MX4321";
 
     throws_ok {
         $broker_codes->dealing_server_for('4321MX');

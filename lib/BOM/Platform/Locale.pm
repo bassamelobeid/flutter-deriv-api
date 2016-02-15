@@ -3,10 +3,12 @@ package BOM::Platform::Locale;
 use strict;
 use warnings;
 use feature "state";
-use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request localize);
 use utf8;    # to support source-embedded country name strings in this module
 use Locale::SubCountry;
+
+use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(request localize);
+use BOM::Platform::Static::Config;
 
 sub getLanguageOptions {
     my $options = '';
@@ -56,8 +58,8 @@ sub language_selector {
 }
 
 sub get_display_languages {
-    my @allowed_langs = split(',', BOM::Platform::Context::request()->website->config->get('display_languages'));
-    my $al = {};
+    my @allowed_langs = @{BOM::Platform::Static::Config::get_display_languages()};
+    my $al            = {};
     map { $al->{$_} = _lang_display_name($_) } @allowed_langs;
     return $al;
 }
@@ -146,6 +148,7 @@ sub get_state_option {
 sub error_map {
     return {
         'email unverified'    => localize('Your email address is unverified.'),
+        'pricing error'       => localize('Unable to price the contract.'),
         'no residence'        => localize('Your account has no country of residence.'),
         'invalid'             => localize('Sorry, account opening is unavailable.'),
         'invalid residence'   => localize('Sorry, our service is not available for your country of residence.'),

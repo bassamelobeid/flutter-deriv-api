@@ -4,9 +4,6 @@ use 5.010;
 use strict;
 use warnings;
 
-use BOM::Platform::Runtime;
-use BOM::Platform::Context qw(request);
-use BOM::Utility::Log4perl qw(get_logger);
 use Sys::Hostname qw( );
 use URL::Encode;
 use Mail::Sender;
@@ -14,14 +11,18 @@ use HTML::FromText;
 use Try::Tiny;
 use Carp;
 
+use BOM::Platform::Runtime;
+use BOM::Platform::Context qw(request);
+use BOM::Platform::Static::Config;
+use BOM::Utility::Log4perl qw(get_logger);
+
 use base 'Exporter';
 our @EXPORT_OK = qw(send_email);
 
 $Mail::Sender::NO_X_MAILER = 1;    # avoid hostname/IP leak
 
 sub send_email {
-    my $args_ref = shift;
-    return if -e '/etc/rmg/travis';
+    my $args_ref           = shift;
     my $fromemail          = $args_ref->{'from'};
     my $email              = $args_ref->{'to'};
     my $subject            = $args_ref->{'subject'};
@@ -73,7 +74,7 @@ sub send_email {
         }
     }
 
-    if ($fromemail eq BOM::Platform::Context::request()->website->config->get('customer_support.email')) {
+    if ($fromemail eq BOM::Platform::Static::Config::get_customer_support_email()) {
         $fromemail = '"' . request()->website->display_name . "\" <$fromemail>";
     }
 

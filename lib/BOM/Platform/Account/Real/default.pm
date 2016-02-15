@@ -68,11 +68,16 @@ sub _validate {
         }
 
         # mininum age check: Estonia = 21, others = 18
-        my $dob_date   = Date::Utility->new($details->{date_of_birth});
-        my $minimumAge = ($residence eq 'ee') ? 21 : 18;
-        my $now        = Date::Utility->new;
-        my $mmyy       = $now->months_ahead(-12 * $minimumAge);
-        my $cutoff     = Date::Utility->new($now->day_of_month . '-' . $mmyy);
+        my $dob_date     = Date::Utility->new($details->{date_of_birth});
+        my $minimumAge   = ($residence eq 'ee') ? 21 : 18;
+        my $now          = Date::Utility->new;
+        my $mmyy         = $now->months_ahead(-12 * $minimumAge);
+        my $day_of_month = $now->day_of_month;
+        # we should pay special attention to 02-29 because maybe there is no such date $minimumAge years ago
+        if ($day_of_month == 29 && $now->month == 2) {
+            $day_of_month = $day_of_month - 1;
+        }
+        my $cutoff = Date::Utility->new($day_of_month . '-' . $mmyy);
         if ($dob_date->is_after($cutoff)) {
             return {error => 'too young'};
         }

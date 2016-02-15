@@ -30,10 +30,9 @@ isa_ok $cr, 'BOM::Platform::Runtime::Broker';
 my $binary = new_ok(
     'BOM::Platform::Runtime::Website',
     [
-        name            => 'Binary',
-        primary_url     => 'www.binary.com',
-        broker_codes    => [$cr,],
-        localhost       => BOM::Platform::Runtime->instance->hosts->localhost,
+        name         => 'Binary',
+        primary_url  => 'www.binary.com',
+        broker_codes => [$cr,],
     ],
 );
 

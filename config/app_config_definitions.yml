@@ -172,16 +172,28 @@ payments:
       contains:
         minimum_topup_balance:
           description: 'Minimum balance after which virtual clients can topup'
-          isa: Int
-          default: 1000
+          isa: section
+          contains:
+            USD:
+              description: 'for accounts in USD'
+              isa: Int
+              default: 1000
+            JPY:
+              description: 'for Japan accounts in JPY'
+              isa: Int
+              default: 100000
         topup_amount:
           description: 'The amount by which we want to topup the virtual account'
-          isa: Int
-          default: 10000
-        maximum_balance:
-          description: 'The maximum allowed balance for virtual accounts'
-          isa: Int
-          default: 1000000
+          isa: section
+          contains:
+            USD:
+              description: 'for accounts in USD'
+              isa: Int
+              default: 10000
+            JPY:
+              description: 'for Japan accounts in JPY'
+              isa: Int
+              default: 1000000
 price_streamer:
   description: "Configuration for price streaming daemon"
   isa: section
@@ -330,11 +342,6 @@ quants:
           global: 1
           isa: Bool
           default: 0
-        enable_parameterized_surface:
-          description: "A switch to turn on/off parameterized surface for all underlyings"
-          isa: Bool
-          default: 1
-          global: 1
     internal:
       description: "Internal configuration, probably not exposed to dynamic setitngs directly."
       isa: section
@@ -371,11 +378,6 @@ quants:
           description: "Disable autoupdate volatility for the following underlyings, eg: frxGBPUSD"
           isa: ArrayRef
           default: []
-          global: 1
-        price_with_parameterized_surface:
-          description: "A list of underlyings of which contracts are priced with parameterized surface"
-          isa: json_string
-          default: "{}"
           global: 1
         newly_added:
           description: "Specify the new launched underlyings that need more closely monitoring, eg: KOSPI2, JCI, .."
@@ -446,11 +448,6 @@ quants:
           isa: Num
           default: 5000
           global: 1
-        tick_expiry_turnover_limit:
-          description: "Daily tick expiry turnover limit per client"
-          isa: Num
-          default: 200000
-          global: 1
         intraday_spot_index_turnover_limit:
           description: "Daily intraday spot index turnover limit per client"
           isa: Num
@@ -476,11 +473,6 @@ quants:
           isa: Num
           default: 5000
           global: 1
-        digits_turnover_limit:
-          description: "Daily digits turnover limit per client"
-          isa: Num
-          default: 5000
-          global: 1
         intraday_forex_iv:
           description: "Limits on intraday client activity.  Set any sub-value to 0 to disable that limit"
           isa: json_string
@@ -490,11 +482,6 @@ quants:
       description: "Tunable parameters for market data"
       isa: section
       contains:
-        volsurface_calibration_error_threshold:
-          description: "VolSurface calibration is bad if it exceeds this number"
-          isa: Num
-          default: 20
-          global: 1
         interest_rates_source:
           description: "Determine whether we use market rates or implied rates"
           isa: Str

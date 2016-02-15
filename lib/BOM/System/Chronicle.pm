@@ -77,16 +77,45 @@ As we continue migrating new data types to this model, there will probably be mo
 use strict;
 use warnings;
 
-#we cache connections to Redis and Postgres so we use state feature.
+#we cache connection to Postgres, so we use state feature.
 use feature "state";
 
 #used for loading chronicle config file which contains connection information
 use YAML::XS;
 use JSON;
-use RedisDB;
 use DBI;
 use DateTime;
 use Date::Utility;
+use BOM::System::RedisReplicated;
+
+use Data::Chronicle::Reader;
+use Data::Chronicle::Writer;
+
+sub get_chronicle_writer {
+    state $redis = BOM::System::RedisReplicated::redis_write();
+    my $dbh = _dbh();
+
+    state $instance;
+    $instance //= Data::Chronicle::Writer->new(
+        cache_writer => $redis,
+        db_handle    => $dbh
+    );
+
+    return $instance;
+}
+
+sub get_chronicle_reader {
+    state $redis = BOM::System::RedisReplicated::redis_read();
+    my $dbh = _dbh();
+
+    state $instance;
+    $instance //= Data::Chronicle::Reader->new(
+        cache_reader => $redis,
+        db_handle    => $dbh
+    );
+
+    return $instance;
+}
 
 =head3 C<< set("category1", "name1", $value1)  >>
 
@@ -108,7 +137,7 @@ sub set {
     $value = JSON::to_json($value);
 
     my $key = $category . '::' . $name;
-    _redis_write()->set($key, $value);
+    BOM::System::RedisReplicated::redis_write()->set($key, $value);
     _archive($category, $name, $value, $rec_date) if _dbh();
 
     return 1;
@@ -125,7 +154,7 @@ sub get {
     my $name     = shift;
 
     my $key         = $category . '::' . $name;
-    my $cached_data = _redis_read()->get($key);
+    my $cached_data = BOM::System::RedisReplicated::redis_read()->get($key);
 
     return JSON::from_json($cached_data) if defined $cached_data;
     return;
@@ -205,26 +234,6 @@ SELECT $4, $1, $2, $3
 SQL
 }
 
-sub _redis_write {
-    state $redis_write = RedisDB->new(
-        timeout => 10,
-        host    => _config()->{write}->{host},
-        port    => _config()->{write}->{port},
-        (_config()->{write}->{password} ? ('password', _config()->{write}->{password}) : ()));
-
-    return $redis_write;
-}
-
-sub _redis_read {
-    state $redis_read = RedisDB->new(
-        timeout => 10,
-        host    => _config()->{read}->{host},
-        port    => _config()->{read}->{port},
-        (_config()->{read}->{password} ? ('password', _config()->{read}->{password}) : ()));
-
-    return $redis_read;
-}
-
 #According to discussions made, we are supposed to support "Redis only" installation where there is not Pg.
 #The assumption is that we have Redis for all data which is important for continutation of our services
 #We also have Pg for an archive of data used later for non-live services (e.g back-testing, auditing, ...)
@@ -246,6 +255,17 @@ sub _dbh {
 sub _config {
     state $config = YAML::XS::LoadFile('/etc/rmg/chronicle.yml');
     return $config;
+}
+
+# this code should be deleted after some time
+sub _redis_read {
+    warn "Chronicle::_redis_read is deprecated. Please, use RedisReplicated::redis_read";
+    return BOM::System::RedisReplicated::redis_read;
+}
+
+sub _redis_write {
+    warn "Chronicle::_redis_write is deprecated. Please, use RedisReplicated::redis_write";
+    return BOM::System::RedisReplicated::redis_write;
 }
 
 1;

@@ -10,6 +10,7 @@ use Data::Dumper;
 use Try::Tiny;
 use Format::Util::Strings qw( defang_lite );
 
+use BOM::System::Localhost;
 use BOM::Platform::Runtime;
 use BOM::Platform::Runtime::Website;
 use BOM::Platform::SessionCookie;
@@ -126,7 +127,7 @@ has 'broker_code' => (
 );
 
 has 'language' => (
-    is         => 'rw',
+    is         => 'ro',
     isa        => 'Str',
     lazy_build => 1,
 );
@@ -341,7 +342,8 @@ sub _build_cookie_domain {
 
 sub _build_domain_name {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->hosts->localhost->external_fqdn;
+
+    return BOM::System::Localhost::external_fqdn();
 }
 
 sub _build_broker_code {

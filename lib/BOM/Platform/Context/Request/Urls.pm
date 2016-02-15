@@ -4,8 +4,11 @@ use Memoize;
 use Moose::Role;
 use Mojo::URL;
 use YAML::XS;
+
 use BOM::Platform::Runtime;
 use BOM::Platform::Context;
+use BOM::Platform::Static::Config;
+use BOM::System::Config;
 
 sub domain {
     my $self   = shift;
@@ -35,7 +38,7 @@ sub url_for {
         if ($internal->{internal_static}) {
             $complete_path = Mojo::URL->new(BOM::Platform::Runtime->instance->app_config->cgi->backoffice->static_url);
         } else {
-            $complete_path = Mojo::URL->new(BOM::Platform::Context::request()->website->config->get('static.url'));
+            $complete_path = Mojo::URL->new(BOM::Platform::Static::Config::get_static_url());
         }
         $complete_path = $complete_path->to_string . $path;
         $url           = $url->parse($complete_path);
@@ -98,6 +101,9 @@ sub domain_for {
         }
     }
 
+    if (BOM::System::Config::node->{node}->{www2}) {
+        $domain = 'www2.binary.com';
+    }
     return $domain;
 }
 
@@ -167,12 +173,12 @@ sub _build__page_caching_rules {
 
 sub _build__dealing_domain {
     my $self = shift;
-    return $self->broker->server->name . '.' . $self->domain;
+    return $self->broker->server . '.' . $self->domain;
 }
 
 sub _build__localhost_domain {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->hosts->localhost->name . '.' . $self->domain;
+    return BOM::System::Localhost::name() . '.' . $self->domain;
 }
 
 1;

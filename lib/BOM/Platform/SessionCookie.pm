@@ -19,7 +19,7 @@ use JSON;
 use Carp;
 use Array::Utils qw (array_minus);
 
-use BOM::System::Chronicle;
+use BOM::System::RedisReplicated;
 
 use strict;
 use warnings;
@@ -81,26 +81,18 @@ my @ALLOWED      = qw(email loginid token expires_in loginat created_for scopes 
 my $EXPIRES_IN   = 3600 * 24;
 my $TOKEN_LENGTH = 48;
 
-sub rr {
-    return BOM::System::Chronicle->_redis_read;
-}
-
-sub rw {
-    return BOM::System::Chronicle->_redis_write;
-}
-
 sub new {    ## no critic RequireArgUnpack
     my ($package) = shift;
     my $self = ref $_[0] ? $_[0] : {@_};
     if ($self->{token}) {
-        $self = eval { JSON::from_json(rr->get('LOGIN_SESSION::' . $self->{token})) } || {};
+        $self = eval { JSON::from_json(BOM::System::RedisReplicated::redis_read()->get('LOGIN_SESSION::' . $self->{token})) } || {};
         return bless {}, $package unless $self->{token};
     } else {
         my @valid = grep { !$self->{$_} } @REQUIRED;
         croak "Error adding new session, missing: " . join(',', @valid)
             if @valid;
 
-        my @passed = keys $self;
+        my @passed = keys %$self;
         @valid = array_minus(@passed, @ALLOWED);
         croak "Error adding new session, contains keys:" . join(',', @valid) . " that are outside allowed keys" if @valid;
 
@@ -115,11 +107,11 @@ sub new {    ## no critic RequireArgUnpack
             NonBlocking => 1,
         )->string_from($STRING, $TOKEN_LENGTH);
         $self->{loginat} ||= time;
-        rw->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
+        BOM::System::RedisReplicated::redis_write()->set('LOGIN_SESSION::' . $self->{token}, JSON::to_json($self));
     }
     $self->{expires_in} ||= $EXPIRES_IN;
     $self->{issued_at} = time;
-    rw->expire('LOGIN_SESSION::' . $self->{token}, $self->{expires_in});
+    BOM::System::RedisReplicated::redis_write()->expire('LOGIN_SESSION::' . $self->{token}, $self->{expires_in});
     return bless $self, $package;
 }
 
@@ -146,7 +138,7 @@ Deletes from redis
 sub end_session {    ## no critic
     my $self = shift;
     return unless $self->{token};
-    rw->del('LOGIN_SESSION::' . $self->{token});
+    BOM::System::RedisReplicated::redis_write()->del('LOGIN_SESSION::' . $self->{token});
 }
 
 1;

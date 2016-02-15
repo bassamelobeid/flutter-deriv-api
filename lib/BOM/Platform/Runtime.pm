@@ -6,8 +6,6 @@ use feature 'state';
 use Data::Dumper;
 
 use BOM::Platform::Runtime::AppConfig;
-use BOM::System::Host::Registry;
-use BOM::System::Host::Role::Registry;
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Data::Sources;
 use BOM::Platform::Runtime::Broker::Codes;
@@ -86,28 +84,6 @@ has 'landing_companies' => (
     lazy_build => 1,
 );
 
-=head2 hosts
-
-Returns an reference to an BOM::System::Host::Registry
-
-=cut
-
-has 'hosts' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-=head2 host_roles
-
-Returns an reference to an BOM::System::Host::Role::Registry
-
-=cut
-
-has 'host_roles' => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
 =head2 countries
 
 Returns an reference to a Locale::Country::Extra object.
@@ -130,7 +106,7 @@ has 'countries_list' => (
 
 Returns an active instance of the object.
 
-It actively maintains instance of object using state functionality of perl. 
+It actively maintains instance of object using state functionality of perl.
 This means this class is not a singleton but has capabilities to maintain a single
 copy across the system's execution environment.
 
@@ -139,7 +115,7 @@ copy across the system's execution environment.
 sub instance {
     my ($class, $new) = @_;
     state $instance;
-    $instance = $new if ($new);
+    $instance = $new if (defined $new);
     $instance ||= $class->new;
 
     return $instance;
@@ -197,7 +173,7 @@ sub random_restricted_country {
 
 sub _build_app_config {
     my $self = shift;
-    return BOM::Platform::Runtime::AppConfig->new(couch => $self->datasources->couchdb);
+    return BOM::Platform::Runtime::AppConfig->new();
 }
 
 sub _build_website_list {
@@ -205,37 +181,23 @@ sub _build_website_list {
     return BOM::Platform::Runtime::Website::List->new(
         broker_codes => $self->broker_codes,
         definitions  => YAML::XS::LoadFile('/home/git/regentmarkets/bom-platform/config/websites.yml'),
-        localhost    => $self->hosts->localhost,
     );
 }
 
 sub _build_broker_codes {
     my $self = shift;
     return BOM::Platform::Runtime::Broker::Codes->new(
-        hosts              => $self->hosts,
         landing_companies  => $self->landing_companies,
         broker_definitions => YAML::XS::LoadFile('/etc/rmg/broker_codes.yml'));
 }
 
 sub _build_datasources {
     my $self = shift;
-    return BOM::Platform::Data::Sources->new(hosts => $self->hosts);
+    return BOM::Platform::Data::Sources->new();
 }
 
 sub _build_landing_companies {
     return BOM::Platform::Runtime::LandingCompany::Registry->new();
-}
-
-sub _build_hosts {
-    my $self = shift;
-    return BOM::System::Host::Registry->new(
-        role_definitions => $self->host_roles,
-    );
-}
-
-sub _build_host_roles {
-    my $self = shift;
-    return BOM::System::Host::Role::Registry->new();
 }
 
 __PACKAGE__->meta->make_immutable;

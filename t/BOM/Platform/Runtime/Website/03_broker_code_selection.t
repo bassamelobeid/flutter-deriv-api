@@ -269,7 +269,6 @@ sub prepare_website {
         name         => 'Binary',
         primary_url  => 'www.binary.com',
         broker_codes => [$cr, $mx, $mlt, $mf, $vrtc, $ci, $vrtj, $jp],
-        localhost    => BOM::Platform::Runtime->instance->hosts->localhost,
     );
 
     isa_ok $bom, 'BOM::Platform::Runtime::Website';
