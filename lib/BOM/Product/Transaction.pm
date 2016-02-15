@@ -1585,9 +1585,10 @@ Validates whether the client has provided his residence country
 
 =cut
 
-sub _validate_jurisdictional_restrictions {
+sub __validate_jurisdictional_restrictions {
     my $self        = shift;
-    my $client      = $self->client;
+    my $client      = shift;
+
     my $contract    = $self->contract;
     my $residence   = $client->residence;
     my $loginid     = $client->loginid;
@@ -1630,6 +1631,24 @@ sub _validate_jurisdictional_restrictions {
     }
 
     return;
+}
+
+sub _validate_jurisdictional_restrictions {
+    my $self = shift;
+
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            next if $m->{code};
+            my $res = $self->__validate_jurisdictional_restrictions($m->{client});
+            if ($res) {
+                $m->{code}  = $res->{-type};
+                $m->{error} = $res->{-message_to_client};
+            }
+        }
+        return;
+    } else {
+        return $self->__validate_jurisdictional_restrictions($self->client);
+    }
 }
 
 =head2 $self->_validate_client_status
