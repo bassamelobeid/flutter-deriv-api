@@ -493,10 +493,12 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
-            _validate_payout_limit
+
             _is_valid_to_buy
             _validate_date_pricing
             _validate_trade_pricing_adjustment
+
+            _validate_payout_limit
             _validate_stake_limit
             _validate_jurisdictional_restrictions
             _validate_client_status
@@ -1404,20 +1406,10 @@ sub __validate_transaction_rate_limit {
                 consumer => $loginid,
             }))
     {
-        if ($self->multiple) {
-            my $msg = BOM::Platform::Context::localize('Too many recent attempts. Try again later.');
-            for my $m (@{$self->multiple}) {
-                next if $m->{code};
-                $m->{code}  = ucfirst($what) . 'RateExceeded';
-                $m->{error} = $msg;
-            }
-            return 1;
-        } else {
-            return Error::Base->cuss(
-                -type              => ucfirst($what) . 'RateExceeded',
-                -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
-                -message_to_client => BOM::Platform::Context::localize('Too many recent attempts. Try again later.'));
-        }
+        return Error::Base->cuss(
+            -type              => ucfirst($what) . 'RateExceeded',
+            -mesg              => $loginid . ' request exceeds rate limits for ' . $service,
+            -message_to_client => BOM::Platform::Context::localize('Too many recent attempts. Try again later.'));
     }
 
     return;
@@ -1479,6 +1471,7 @@ sub _validate_iom_withdrawal_limit {
 
     if ($self->multiple) {
         for my $m (@{$self->multiple}) {
+            next if $m->{code};
             my $res = $self->__validate_iom_withdrawal_limit($m->{client});
             if ($res) {
                 $m->{code}  = $res->{-type};
@@ -1493,14 +1486,10 @@ sub _validate_iom_withdrawal_limit {
 
 # This validation should always come after _validate_trade_pricing_adjustment
 # because we recompute the price and that's the price that we going to transact with!
-sub _validate_stake_limit {
-    my $self = shift;
+sub __validate_stake_limit {
+    my $self   = shift;
+    my $client = shift;
 
-    # spread stake validation is within its module.
-    # spread bet won't be offered to maltainvest.
-    return if $self->contract->is_spread;
-
-    my $client          = $self->client;
     my $contract        = $self->contract;
     my $landing_company = $client->landing_company;
     my $stake_limit     = $landing_company->short eq 'maltainvest' ? 5 : $contract->staking_limits->{stake}->{min};
@@ -1521,16 +1510,38 @@ sub _validate_stake_limit {
     return;
 }
 
+sub _validate_stake_limit {
+    my $self = shift;
+
+    # spread stake validation is within its module.
+    # spread bet won't be offered to maltainvest.
+    return if $self->contract->is_spread;
+
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            next if $m->{code};
+            my $res = $self->__validate_stake_limit($m->{client});
+            if ($res) {
+                $m->{code}  = $res->{-type};
+                $m->{error} = $res->{-message_to_client};
+            }
+        }
+        return;
+    } else {
+        return $self->__validate_stake_limit($self->client);
+    }
+}
+
 =head2 $self->_validate_payout_limit
 
 Validate if payout is not over the client limits
 
 =cut
 
-sub _validate_payout_limit {
-    my $self = shift;
+sub __validate_payout_limit {
+    my $self   = shift;
+    my $client = shift;
 
-    my $client   = $self->client;
     my $contract = $self->contract;
     my $payout   = $self->payout;
 
@@ -1548,6 +1559,24 @@ sub _validate_payout_limit {
         );
     }
     return;
+}
+
+sub _validate_payout_limit {
+    my $self = shift;
+
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            next if $m->{code};
+            my $res = $self->__validate_payout_limit($m->{client});
+            if ($res) {
+                $m->{code}  = $res->{-type};
+                $m->{error} = $res->{-message_to_client};
+            }
+        }
+        return;
+    } else {
+        return $self->__validate_payout_limit($self->client);
+    }
 }
 
 =head2 $self->_validate_jurisdictional_restrictions
