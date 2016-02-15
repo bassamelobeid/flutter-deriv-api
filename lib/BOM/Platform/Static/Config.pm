@@ -6,22 +6,30 @@ use feature 'state';
 
 use Data::UUID;
 use YAML::XS qw(LoadFile);
+use BOM::System::Localhost;
+use BOM::System::Config;
 
 my $quants_config = LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
 
 sub quants {
     return $quants_config;
-};
+}
 
 sub get_display_languages {
     return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
 }
 
 sub get_static_path {
+    if (BOM::System::Config::node->{node}->{www2} or BOM::System::Config::env =~ /^qa\d+$/) {
+        return "/home/git/binary-static/binary-static-www2/";
+    }
     return "/home/git/binary-com/binary-static/";
 }
 
 sub get_static_url {
+    if (BOM::System::Config::node->{node}->{www2} or BOM::System::Config::env =~ /^qa\d+$/) {
+        return "https://static-www2.binary.com/";
+    }
     return "https://static.binary.com/";
 }
 
@@ -41,14 +49,13 @@ sub read_config {
                 $static_hash = $line;
                 last;
             }
-            if ($line =~ /environment-manifests$/) {
+            if ($line =~ /environment-manifests(?:-www2|-qa)?$/) {
                 $flag = 1;
             }
         }
         close $fh;
-    } else {
-        $static_hash = Data::UUID->new->create_str();
     }
+    $static_hash = Data::UUID->new->create_str() unless $static_hash;
     return {
         binary_static_hash => $static_hash,
     };
