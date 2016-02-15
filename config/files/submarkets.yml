@@ -155,10 +155,6 @@ energy:
         intraday:
           forward:
             euro_atm: five_mins_to_eod
-        daily:
-          spot:
-            euro_atm: day_to_year
-
 uk:
     name: uk
     offered: 0
