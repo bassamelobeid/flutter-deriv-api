@@ -22,8 +22,6 @@
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
-      - CALLE
-      - PUTE
       - CALL
       - PUT
       - DIGITDIFF
@@ -63,8 +61,6 @@
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
-      - CALLE
-      - PUTE
       - CALL
       - PUT
       - DIGITDIFF
@@ -108,8 +104,6 @@
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
-      - CALLE
-      - PUTE
       - CALL
       - PUT
       - DIGITDIFF
@@ -148,8 +142,6 @@
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
-      - CALLE
-      - PUTE
       - CALL
       - PUT
       - DIGITDIFF
@@ -187,8 +179,6 @@
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
-      - CALLE
-      - PUTE
       - CALL
       - PUT
       - DIGITDIFF
