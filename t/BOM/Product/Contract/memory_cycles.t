@@ -16,6 +16,10 @@ use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 
 my $recorded_date = Date::Utility->new;
 
+#Cycle test will complain because of data types it cannot handle (Redis's Socket has these data types)
+#So we just ignore those complaints here
+$SIG{__WARN__} = sub { my $w = shift; return if $w =~ /^Unhandled type: GLOB/; die $w; };
+
 subtest 'Check BOM::Product::Contract for memory cycles' => sub {
     use_ok('BOM::Product::Contract');
     my $params = {
