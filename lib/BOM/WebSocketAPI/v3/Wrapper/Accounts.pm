@@ -336,36 +336,6 @@ sub balance {
     return;
 }
 
-sub send_realtime_balance {
-    my ($c, $message) = @_;
-
-    my $args = {};
-    my $channel;
-    my $subscriptions = $c->stash('balance_channel');
-
-    if ($subscriptions) {
-        $channel = first { m/TXNUPDATE::balance/ } keys %$subscriptions;
-        $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
-    }
-
-    if ($c->stash('loginid')) {
-        my $payload = JSON::from_json($message);
-        $c->send({
-                json => {
-                    msg_type => 'balance',
-                    $args ? (echo_req => $args) : (),
-                    ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    balance => {
-                        loginid  => $c->stash('loginid'),
-                        currency => $c->stash('currency'),
-                        balance  => $payload->{balance_after},
-                        ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
-    } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
-        BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
-    }
-    return;
-}
-
 sub api_token {
     my ($c, $args) = @_;
 
