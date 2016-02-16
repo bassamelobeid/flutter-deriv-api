@@ -32,8 +32,6 @@
       - DIGITODD
       - EXPIRYMISS
       - EXPIRYRANGE
-      - EXPIRYMISSE
-      - EXPIRYRANGEE
       - RANGE
       - UPORDOWN
       - ONETOUCH
@@ -71,8 +69,6 @@
       - DIGITODD
       - EXPIRYMISS
       - EXPIRYRANGE
-      - EXPIRYMISSE
-      - EXPIRYRANGEE
       - RANGE
       - UPORDOWN
       - ONETOUCH
@@ -114,8 +110,6 @@
       - DIGITODD
       - EXPIRYMISS
       - EXPIRYRANGE
-      - EXPIRYMISSE
-      - EXPIRYRANGEE
       - RANGE
       - UPORDOWN
       - ONETOUCH
@@ -152,8 +146,6 @@
       - DIGITODD
       - EXPIRYMISS
       - EXPIRYRANGE
-      - EXPIRYMISSE
-      - EXPIRYRANGEE
       - RANGE
       - UPORDOWN
       - ONETOUCH
@@ -187,8 +179,6 @@
       - DIGITUNDER
       - DIGITEVEN
       - DIGITODD
-      - EXPIRYMISSE
-      - EXPIRYRANGEE
       - EXPIRYMISS
       - EXPIRYRANGE
       - RANGE
