@@ -65,11 +65,9 @@ print "<INPUT type=\"submit\" value=\"Go\"></form>
 <input type=submit value=\"CLIENT STATEMENT\" />
 </form><div style=\"clear:both\"></div>";
 
-if (BOM::Platform::Static::Config->quants->{enable_portfolio_autosell}) {
-    BOM::Product::Transaction::sell_expired_contracts({
-        client => $client,
-    });
-}
+BOM::Product::Transaction::sell_expired_contracts({
+    client => $client,
+});
 
 my $db = BOM::Database::ClientDB->new({
         client_loginid => $client->loginid,
