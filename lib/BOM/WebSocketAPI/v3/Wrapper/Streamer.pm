@@ -231,13 +231,17 @@ sub _transaction_channel {
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
             $redis->subscribe([$channel], sub { });
+            $subscriptions->{count} += 1;
             $subscriptions->{$type}->{args}       = $args if $args;
             $subscriptions->{$type}->{uuid}       = $uuid;
             $subscriptions->{$type}->{account_id} = $account_id;
             $c->stash('transaction_channel', $subscriptions);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
-            $redis->unsubscribe([$channel], sub { });
+            $subscriptions->{count} -= 1;
             delete $subscriptions->{$type};
+            if ($subscriptions->{count} <= 0) {
+                $redis->unsubscribe([$channel], sub { });
+            }
         }
     }
 
