@@ -71,14 +71,9 @@ sub transaction {
     my $id;
     my $account_id = $c->stash('account_id');
     if ($account_id) {
-        my $redis              = $c->stash('redis');
-        my $channel            = 'TXNUPDATE::transaction_' . $account_id;
-        my $subscriptions      = $c->stash('transaction_channel');
-        my $already_subscribed = $subscriptions->{$channel};
-
         if (    exists $args->{subscribe}
             and $args->{subscribe} eq '1'
-            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, $args)))
+            and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'transaction', $args)))
         {
             return $c->new_error('transaction', 'AlreadySubscribed', $c->l('You are already subscribed to transaction updates.'));
         }

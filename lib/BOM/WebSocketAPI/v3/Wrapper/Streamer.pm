@@ -223,24 +223,29 @@ sub _transaction_channel {
     my $uuid;
 
     my $redis              = $c->stash('redis');
-    my $subscriptions      = $c->stash('transaction_channel');
-    my $already_subscribed = $subscriptions ? exists $subscriptions->{$type} : undef;
+    my $channel            = $c->stash('transaction_channel');
+    my $subscription       = $c->stash('transaction_subscription');
+    my $already_subscribed = $channel ? exists $channel->{$type} : undef;
 
     if ($action) {
         my $channel = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
             $redis->subscribe([$channel], sub { });
-            $subscriptions->{count} += 1;
-            $subscriptions->{$type}->{args}       = $args if $args;
-            $subscriptions->{$type}->{uuid}       = $uuid;
-            $subscriptions->{$type}->{account_id} = $account_id;
-            $c->stash('transaction_channel', $subscriptions);
+            $subscription->{count} += 1;
+            $channel->{$type}->{args}       = $args if $args;
+            $channel->{$type}->{uuid}       = $uuid;
+            $channel->{$type}->{account_id} = $account_id;
+            $c->stash('transaction_channel',      $channel);
+            $c->stash('transaction_subscription', $subscription);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
-            $subscriptions->{count} -= 1;
-            delete $subscriptions->{$type};
-            if ($subscriptions->{count} <= 0) {
+            $subscription->{count} -= 1;
+            $c->stash('transaction_subscription', $subscription);
+            delete $channel->{$type};
+            if ($subscription->{count} <= 0) {
                 $redis->unsubscribe([$channel], sub { });
+                delete $c->stash('transaction_channel');
+                delete $c->stash('transaction_subscription');
             }
         }
     }
@@ -250,19 +255,19 @@ sub _transaction_channel {
 
 sub process_transaction_updates {
     my ($c, $message) = @_;
-    my $subscriptions = $c->stash('transaction_channel');
+    my $channel = $c->stash('transaction_channel');
 
-    if ($subscriptions) {
+    if ($channel) {
         my $payload = JSON::from_json($message);
         my $args    = {};
-        foreach my $type (keys %{$subscriptions}) {
+        foreach my $type (keys %{$channel}) {
             if ($payload and exists $payload->{error} and exists $payload->{error}->{code} and $payload->{error}->{code} eq 'TokenDeleted') {
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$type}->{account_id}, $type);
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             } else {
-                $args = (exists $subscriptions->{$type}->{args}) ? $subscriptions->{$type}->{args} : {};
+                $args = (exists $channel->{$type}->{args}) ? $channel->{$type}->{args} : {};
 
                 my $id;
-                $id = $subscriptions and exists $subscriptions->{$type}->{uuid} ? $subscriptions->{$type}->{uuid} : undef;
+                $id = ($channel and exists $channel->{$type}->{uuid}) ? $channel->{$type}->{uuid} : undef;
 
                 my $details = {
                     msg_type => $type,
@@ -281,7 +286,7 @@ sub process_transaction_updates {
                         $details->{$type}->{action}         = $payload->{action_type};
                         $details->{$type}->{amount}         = $payload->{amount};
                         $details->{$type}->{transaction_id} = $payload->{id};
-                        $payload->{currency_code} ? ($details->{$type}->currency => $payload->{currency_code}) : ();
+                        $payload->{currency_code} ? ($details->{$type}->{currency} = $payload->{currency_code}) : ();
 
                         if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
                             $details->{$type}->{transaction_time} =
@@ -322,9 +327,8 @@ sub process_transaction_updates {
                             $c->send({json => {%$details}});
                         }
                     }
-                } elsif ($subscriptions and exists $subscriptions->{$type}->{account_id}) {
-                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$type}->{account_id},
-                        $type, $args);
+                } elsif ($channel and exists $channel->{$type}->{account_id}) {
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
                 }
             }
         }

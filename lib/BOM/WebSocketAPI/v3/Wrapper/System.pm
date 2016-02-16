@@ -72,13 +72,13 @@ sub website_status {
 sub _forget_transaction_subscription {
     my ($c, $typeoruuid) = @_;
 
-    my $removed_ids  = [];
-    my $subscription = $c->stash('transaction_channel');
-    if ($subscription) {
-        foreach my $type (keys %{$subscription}) {
-            if ($typeoruuid eq $type or $typeoruuid eq $subscription->{$type}->{uuid}) {
-                push @$removed_ids, $subscription->{$type}->{uuid};
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscription->{$type}->{account_id}, $type);
+    my $removed_ids = [];
+    my $channel     = $c->stash('transaction_channel');
+    if ($channel) {
+        foreach my $type (keys %{$channel}) {
+            if ($typeoruuid eq $type or $typeoruuid eq $channel->{$type}->{uuid}) {
+                push @$removed_ids, $channel->{$type}->{uuid};
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
             }
         }
     }
