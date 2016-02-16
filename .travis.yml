@@ -12,8 +12,10 @@ addons:
 cache: apt
 before_install:
     - git clone https://60d764d753f8b0b231f5a4ee566d3eeaf5024cdc@github.com/teo-binary/travis-scripts /tmp/travis-scripts
+    - DEFAULT_PATH=`pwd`
     - cd /tmp/travis-scripts
     - git checkout teo/setup-feeddb-pgbouncer
+    - cd $DEFAULT_PATH
     - dpkg -l | grep postgres
     - pg_lsclusters
     - /tmp/travis-scripts/fixHostName.sh
