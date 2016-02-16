@@ -218,28 +218,26 @@ sub _feed_channel {
     return $uuid;
 }
 
-sub _balance_channel {
-    my ($c, $action, $account_id, $args) = @_;
+sub _transaction_channel {
+    my ($c, $action, $account_id, $type, $args) = @_;
     my $uuid;
 
     my $redis              = $c->stash('redis');
-    my $channel            = 'TXNUPDATE::balance_' . $account_id;
-    my $subscriptions      = $c->stash('balance_channel');
-    my $already_subscribed = $subscriptions ? $subscriptions->{$channel} : undef;
+    my $subscriptions      = $c->stash('transaction_channel');
+    my $already_subscribed = $subscriptions ? exists $subscriptions->{$type} : undef;
 
     if ($action) {
+        my $channel = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
             $redis->subscribe([$channel], sub { });
-            $subscriptions->{$channel}->{args}       = $args if $args;
-            $subscriptions->{$channel}->{uuid}       = $uuid;
-            $subscriptions->{$channel}->{account_id} = $account_id;
-            $subscriptions->{$channel}->{type}       = 'balance';
-            $c->stash('balance_channel', $subscriptions);
+            $subscriptions->{$type}->{args}       = $args if $args;
+            $subscriptions->{$type}->{uuid}       = $uuid;
+            $subscriptions->{$type}->{account_id} = $account_id;
+            $c->stash('transaction_channel', $subscriptions);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
             $redis->unsubscribe([$channel], sub { });
-            delete $subscriptions->{$channel};
-            delete $c->stash->{balance_channel};
+            delete $subscriptions->{$type};
         }
     }
 
