@@ -4,6 +4,7 @@ use 5.014;
 use strict;
 use warnings;
 
+use JSON;
 use Date::Utility;
 use Data::Password::Meter;
 
@@ -861,6 +862,16 @@ sub api_token {
     if ($args->{delete_token}) {
         $m->remove_by_token($args->{delete_token});
         $rtn->{delete_token} = 1;
+        # send notification to cancel streaming, if we add more streaming
+        # for authenticated calls in future, we need to add here as well
+        if (defined $params->{account_id}) {
+            BOM::System::RedisReplicated::redis_write()->publish(
+                'TXNUPDATE::transaction_' . $params->{account_id},
+                JSON::to_json({
+                        error => {
+                            code       => "TokenDeleted",
+                            account_id => $params->{account_id}}}));
+        }
     }
     if (my $display_name = $args->{new_token}) {
         my $display_name_err;
