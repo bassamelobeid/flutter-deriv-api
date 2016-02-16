@@ -23,11 +23,27 @@ use Math::Function::Interpolator;
 use BOM::Market::Underlying;
 use Date::Utility;
 
+use BOM::System::Chronicle;
+use Data::Chronicle::Reader;
+use Data::Chronicle::Writer;
+
 =head2 for_date
 
 The date for which we wish data
 
 =cut
+
+has chronicle_reader => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Reader',
+    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
+);
+
+has chronicle_writer => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Writer',
+    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
+);
 
 has for_date => (
     is      => 'ro',
@@ -43,10 +59,10 @@ has document => (
 sub _build_document {
     my $self = shift;
 
-    my $document = BOM::System::Chronicle::get('correlation_matrices', $self->symbol);
+    my $document = $self->chronicle_reader->get('correlation_matrices', $self->symbol);
 
     if ($self->for_date and $self->for_date->epoch < Date::Utility->new($document->{date})->epoch) {
-        $document = BOM::System::Chronicle::get_for('correlation_matrices', $self->symbol, $self->for_date->epoch);
+        $document = $self->chronicle_reader->get_for('correlation_matrices', $self->symbol, $self->for_date->epoch);
 
         # This works around a problem with Volatility surfaces and negative dates to expiry.
         # We have to use the oldest available surface.. and we don't really know when it
@@ -74,11 +90,11 @@ sub save {
     my $self = shift;
 
     #if chronicle does not have this document, first create it because in document_content we will need it
-    if (not defined BOM::System::Chronicle::get('correlation_matrices', $self->symbol)) {
-        BOM::System::Chronicle::set('correlation_matrices', $self->symbol, {});
+    if (not defined $self->chronicle_reader->get('correlation_matrices', $self->symbol)) {
+        $self->chronicle_writer->set('correlation_matrices', $self->symbol, {});
     }
 
-    return BOM::System::Chronicle::set('correlation_matrices', $self->symbol, $self->_document_content, $self->recorded_date);
+    return $self->chronicle_writer->set('correlation_matrices', $self->symbol, $self->_document_content, $self->recorded_date);
 }
 
 has correlations => (
