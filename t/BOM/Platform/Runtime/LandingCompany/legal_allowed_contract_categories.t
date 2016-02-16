@@ -12,8 +12,6 @@ use BOM::Platform::Runtime;
 my $all = [qw(
       ASIANU
       ASIAND
-      CALLE
-      PUTE
       CALL
       PUT
       DIGITDIFF
@@ -24,8 +22,6 @@ my $all = [qw(
       DIGITODD
       EXPIRYMISS
       EXPIRYRANGE
-      EXPIRYMISSE
-      EXPIRYRANGEE
       RANGE
       UPORDOWN
       ONETOUCH
@@ -36,8 +32,6 @@ my $all = [qw(
 my $no_spreads = [qw(
       ASIANU
       ASIAND
-      CALLE
-      PUTE
       CALL
       PUT
       DIGITDIFF
@@ -48,8 +42,6 @@ my $no_spreads = [qw(
       DIGITODD
       EXPIRYMISS
       EXPIRYRANGE
-      EXPIRYMISSE
-      EXPIRYRANGEE
       RANGE
       UPORDOWN
       ONETOUCH
