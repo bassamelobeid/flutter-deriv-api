@@ -71,14 +71,14 @@ $res = decode_json($t->message->[1]);
 ok $res->{error}->{message} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 test_schema('api_token', $res);
 
-$t = $t->send_ok({
-        json => {
-            api_token => 1,
-            new_token => 'Test'
-        }})->message_ok;
-$res = decode_json($t->message->[1]);
-ok $res->{error}->{message} =~ /new_token_scopes/, 'new_token_scopes is required';
-test_schema('api_token', $res);
+# $t = $t->send_ok({
+#         json => {
+#             api_token => 1,
+#             new_token => 'Test'
+#         }})->message_ok;
+# $res = decode_json($t->message->[1]);
+# ok $res->{error}->{message} =~ /new_token_scopes/, 'new_token_scopes is required';
+# test_schema('api_token', $res);
 
 $t = $t->send_ok({
         json => {
