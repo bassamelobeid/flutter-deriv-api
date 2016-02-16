@@ -361,6 +361,9 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+
     my ($client_loginid, $website_name, $args) =
         @{$params}{qw/client_loginid website_name args/};
 

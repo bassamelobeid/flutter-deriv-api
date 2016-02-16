@@ -480,6 +480,10 @@ sub cashier_password {
 
 sub get_settings {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+
     my ($client_loginid, $language) = @{$params}{qw/client_loginid language/};
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
@@ -522,6 +526,10 @@ sub get_settings {
 
 sub set_settings {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+
     my ($client_loginid, $website_name, $client_ip, $user_agent, $language, $args) =
         @{$params}{qw/client_loginid website_name client_ip user_agent language args/};
 
