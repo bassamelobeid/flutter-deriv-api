@@ -19,6 +19,14 @@
       - stocks
       - smarties
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
+      - spreads
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
@@ -56,6 +64,14 @@
       - GBP
     legal_allowed_markets:
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
+      - spreads
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
@@ -97,6 +113,13 @@
       - indices
       - stocks
       - smarties
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
@@ -133,6 +156,14 @@
       - stocks
       - smarties
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
+      - spreads
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
@@ -168,6 +199,14 @@
       - stocks
       - smarties
       - random
+    legal_allowed_contract_categories:
+      - asian
+      - callput
+      - digits
+      - endsinout
+      - staysinout
+      - touchnotouch
+      - spreads
     legal_allowed_contract_types:
       - ASIANU
       - ASIAND
@@ -203,6 +242,11 @@
       - JPY
     legal_allowed_markets:
       - forex
+    legal_allowed_contract_categories:
+      - callput
+      - endsinout
+      - staysinout
+      - touchnotouch
     legal_allowed_contract_types:
       - CALLE
       - PUTE
@@ -222,6 +266,11 @@
       - JPY
     legal_allowed_markets:
       - forex
+    legal_allowed_contract_categories:
+      - callput
+      - endsinout
+      - staysinout
+      - touchnotouch
     legal_allowed_contract_types:
       - CALLE
       - PUTE
