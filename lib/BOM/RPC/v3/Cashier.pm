@@ -562,6 +562,8 @@ sub paymentagent_withdraw {
         . ' Timestamp: '
         . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
 
+    $comment .= ". Client note: $further_instruction" if ($further_instruction);
+
     # execute the transfer.
     $client->payment_account_transfer(
         currency => $currency,
