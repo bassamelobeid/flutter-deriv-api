@@ -2,7 +2,8 @@
 
 use strict;
 use warnings;
-use Test::More tests => 34;
+
+use Test::More tests => 33;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
@@ -798,82 +799,6 @@ subtest 'more validation', sub {
         is $res->[0]->{txn}->{balance_after} + 0, 10000 - 120 + 5 * 30, 'balance_after';
     }
     'batch-sell 5 bets';
-};
-
-subtest 'free_gift', sub {
-    lives_ok {
-        $cl = create_client;
-
-        free_gift $cl, 'USD', 10000;
-
-        isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
-    }
-    'setup new client';
-
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000 - 0.01,
-            },
-            };
-    }
-    'cannot buy due to max_balance_without_real_deposit';
-    is_deeply $@,
-        [
-        BI010 => 'ERROR:  maximum balance reached for betting without a real deposit',
-        ],
-        'maximum net payout for open positions reached';
-
-    lives_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000,
-            },
-            };
-        is $balance_after + 0, 10000 - 20, 'correct balance_after';
-    }
-    'can buy when hitting max_balance_without_real_deposit exactly';
-
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000 - 0.01 - 20,
-            },
-            };
-    }
-    'ensure the new limit';
-    is_deeply $@,
-        [
-        BI010 => 'ERROR:  maximum balance reached for betting without a real deposit',
-        ],
-        'maximum net payout for open positions reached';
-
-    lives_ok {
-        top_up $cl, 'AUD', 10000;
-
-        isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
-
-        my $bal;
-        is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
-    }
-    'real deposit to differen account should be enough';
-
-    lives_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000 - 0.01 - 20,
-            },
-            };
-        is $balance_after + 0, 10000 - 40, 'correct balance_after';
-    }
-    'can buy after deposit into different account';
 };
 
 SKIP: {
