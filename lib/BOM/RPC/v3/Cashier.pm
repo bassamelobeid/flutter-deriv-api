@@ -553,9 +553,9 @@ sub paymentagent_withdraw {
         . ' Transaction reference: '
         . $reference
         . ' Timestamp: '
-        . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ
-        . '. Client note: '
-        . $further_instruction;
+        . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
+
+    $comment .= ". Client note: $further_instruction" if ($further_instruction);
 
     # execute the transfer.
     $client->payment_account_transfer(
