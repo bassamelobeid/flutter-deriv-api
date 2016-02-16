@@ -41,6 +41,15 @@ subtest 'validate_session_token' => sub {
     is $res->{error}->{code},    'InvalidToken',          'Can not request authenticated (like balance) call when token has expired';
     is $res->{error}->{message}, 'The token is invalid.', 'Correct invalid token message';
     test_schema('balance', $res);
+
+    $t = $t->send_ok({json => {logout => 1}})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    ok($res->{logout});
+    test_schema('logout', $res);
+
+    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is($balance->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };
 
 subtest 'validate_api_token' => sub {
@@ -95,6 +104,15 @@ subtest 'validate_api_token' => sub {
     is $res->{error}->{code},    'InvalidToken',          'Can not request authenticated (like balance) call when token has expired';
     is $res->{error}->{message}, 'The token is invalid.', 'Correct invalid token message';
     test_schema('balance', $res);
+
+    $t = $t->send_ok({json => {logout => 1}})->message_ok;
+    my $res = decode_json($t->message->[1]);
+    ok($res->{logout});
+    test_schema('logout', $res);
+
+    $t = $t->send_ok({json => {balance => 1}})->message_ok;
+    $res = decode_json($t->message->[1]);
+    is($balance->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };
 
 done_testing();
