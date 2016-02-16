@@ -256,72 +256,76 @@ sub process_transaction_updates {
         my $payload = JSON::from_json($message);
         my $args    = {};
         foreach my $type (keys %{$subscriptions}) {
-            $args = (exists $subscriptions->{$type}->{args}) ? $subscriptions->{$type}->{args} : {};
+            if ($payload and exists $payload->{error} and exists $payload->{error}->{code} and $payload->{error}->{code} eq 'TokenDeleted') {
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$type}->{account_id}, $type);
+            } else {
+                $args = (exists $subscriptions->{$type}->{args}) ? $subscriptions->{$type}->{args} : {};
 
-            my $id;
-            $id = $subscriptions and exists $subscriptions->{$type}->{uuid} ? $subscriptions->{$type}->{uuid} : undef;
+                my $id;
+                $id = $subscriptions and exists $subscriptions->{$type}->{uuid} ? $subscriptions->{$type}->{uuid} : undef;
 
-            my $details = {
-                msg_type => $type,
-                $args ? (echo_req => $args) : (),
-                ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                $type => {$id ? (id => $id) : ()}};
+                my $details = {
+                    msg_type => $type,
+                    $args ? (echo_req => $args) : (),
+                    ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
+                    $type => {$id ? (id => $id) : ()}};
 
-            if ($c->stash('account_id')) {
-                if ($type eq 'balance') {
-                    $details->{$type}->{loginid}  = $c->stash('loginid');
-                    $details->{$type}->{currency} = $c->stash('currency');
-                    $details->{$type}->{balance}  = $payload->{balance_after};
-                    $c->send({json => {%$details}}) if $c->tx;
-                } elsif ($type eq 'transaction') {
-                    $details->{$type}->{balance}        = $payload->{balance_after};
-                    $details->{$type}->{action}         = $payload->{action_type};
-                    $details->{$type}->{amount}         = $payload->{amount};
-                    $details->{$type}->{transaction_id} = $payload->{id};
-                    $payload->{currency_code} ? ($details->{$type}->currency => $payload->{currency_code}) : ();
+                if ($c->stash('account_id')) {
+                    if ($type eq 'balance') {
+                        $details->{$type}->{loginid}  = $c->stash('loginid');
+                        $details->{$type}->{currency} = $c->stash('currency');
+                        $details->{$type}->{balance}  = $payload->{balance_after};
+                        $c->send({json => {%$details}}) if $c->tx;
+                    } elsif ($type eq 'transaction') {
+                        $details->{$type}->{balance}        = $payload->{balance_after};
+                        $details->{$type}->{action}         = $payload->{action_type};
+                        $details->{$type}->{amount}         = $payload->{amount};
+                        $details->{$type}->{transaction_id} = $payload->{id};
+                        $payload->{currency_code} ? ($details->{$type}->currency => $payload->{currency_code}) : ();
 
-                    if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
-                        $details->{$type}->{transaction_time} =
-                            ($payload->{action_type} eq 'sell')
-                            ? Date::Utility->new($payload->{sell_time})->epoch
-                            : Date::Utility->new($payload->{purchase_time})->epoch;
+                        if (exists $payload->{referrer_type} and $payload->{referrer_type} eq 'financial_market_bet') {
+                            $details->{$type}->{transaction_time} =
+                                ($payload->{action_type} eq 'sell')
+                                ? Date::Utility->new($payload->{sell_time})->epoch
+                                : Date::Utility->new($payload->{purchase_time})->epoch;
 
-                        BOM::WebSocketAPI::Websocket_v3::rpc(
-                            $c,
-                            'get_contract_details',
-                            sub {
-                                my $response = shift;
-                                if (exists $response->{error}) {
-                                    BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
-                                    return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
-                                } else {
-                                    $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
-                                    $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
-                                        if ($payload->{action_type} eq 'sell');
-                                    $details->{$type}->{longcode}     = $response->{longcode};
-                                    $details->{$type}->{symbol}       = $response->{symbol};
-                                    $details->{$type}->{display_name} = $response->{display_name};
-                                    $details->{$type}->{date_expiry}  = $response->{date_expiry};
-                                    return $details;
-                                }
-                            },
-                            {
-                                args           => $args,
-                                client_loginid => $c->stash('loginid'),
-                                token          => $c->stash('token'),
-                                short_code     => $payload->{short_code},
-                                currency       => $payload->{currency_code},
-                                language       => $c->stash('request')->language
-                            });
-                    } else {
-                        $details->{$type}->{longcode}         = $payload->{payment_remark};
-                        $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
-                        $c->send({json => {%$details}});
+                            BOM::WebSocketAPI::Websocket_v3::rpc(
+                                $c,
+                                'get_contract_details',
+                                sub {
+                                    my $response = shift;
+                                    if (exists $response->{error}) {
+                                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
+                                        return $c->new_error('transaction', $response->{error}->{code}, $response->{error}->{message_to_client});
+                                    } else {
+                                        $details->{$type}->{contract_id}   = $payload->{financial_market_bet_id};
+                                        $details->{$type}->{purchase_time} = Date::Utility->new($payload->{purchase_time})->epoch
+                                            if ($payload->{action_type} eq 'sell');
+                                        $details->{$type}->{longcode}     = $response->{longcode};
+                                        $details->{$type}->{symbol}       = $response->{symbol};
+                                        $details->{$type}->{display_name} = $response->{display_name};
+                                        $details->{$type}->{date_expiry}  = $response->{date_expiry};
+                                        return $details;
+                                    }
+                                },
+                                {
+                                    args           => $args,
+                                    client_loginid => $c->stash('loginid'),
+                                    token          => $c->stash('token'),
+                                    short_code     => $payload->{short_code},
+                                    currency       => $payload->{currency_code},
+                                    language       => $c->stash('request')->language
+                                });
+                        } else {
+                            $details->{$type}->{longcode}         = $payload->{payment_remark};
+                            $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
+                            $c->send({json => {%$details}});
+                        }
                     }
+                } elsif ($subscriptions and exists $subscriptions->{$type}->{account_id}) {
+                    BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$type}->{account_id},
+                        $type, $args);
                 }
-            } elsif ($subscriptions and exists $subscriptions->{$type}->{account_id}) {
-                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $subscriptions->{$type}->{account_id}, $type,
-                    $args);
             }
         }
     }

@@ -356,6 +356,7 @@ sub api_token {
         {
             args           => $args,
             token          => $c->stash('token'),
+            account_id     => $c->stash('account_id'),
             client_loginid => $c->stash('loginid')});
     return;
 }
