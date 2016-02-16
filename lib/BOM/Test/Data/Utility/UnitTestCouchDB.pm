@@ -114,18 +114,19 @@ sub _init {
                         'disable_iv' => []
                     },
                     'features' => {
-                        'suspend_claim_types'          => [],
+                        'suspend_claim_types' => [],
                     },
                     'client_limits' => {
-                        'asian_turnover_limit'                 => '50000',
-                        'spreads_daily_profit_limit'           => '10000',
-                        'smarties_turnover_limit'              => '100000',
-                        'intraday_forex_iv'                    => '{
+                        'asian_turnover_limit'       => '50000',
+                        'spreads_daily_profit_limit' => '10000',
+                        'smarties_turnover_limit'    => '100000',
+                        'intraday_forex_iv'          => '{
                                "potential_profit" : 35000,
                                "realized_profit" : 35000,
                                "turnover" : 35000
                             }',
-                        'tick_expiry_engine_turnover_limit' => '0.5'}}
+                        'tick_expiry_engine_turnover_limit' => '0.5'
+                    }}
             },
             '_rev' => time
         });
