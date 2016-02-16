@@ -14,8 +14,6 @@ commission:
     spread_multiplier: 1
     forward_start_factor: 1.5
 
-enable_pricedebug: 1
-
 bet_limits:
   holiday_blackout_start: 345
   holiday_blackout_end: 5
