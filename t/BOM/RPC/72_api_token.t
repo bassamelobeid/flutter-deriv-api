@@ -16,7 +16,7 @@ use BOM::Database::Model::AccessToken;
 # cleanup
 BOM::Database::Model::AccessToken->new->dbh->do("
     DELETE FROM $_
-") foreach ('auth.access_token_scope', 'auth.access_token');
+") foreach ('auth.access_token');
 
 my $test_loginid = create_test_user();
 
