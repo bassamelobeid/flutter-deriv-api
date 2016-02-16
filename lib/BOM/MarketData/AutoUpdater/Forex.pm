@@ -58,8 +58,7 @@ sub _build_file {
     }
     my $quanto_file = $now->is_a_weekday ? $loc . '/' . $day . '/quantovol.csv' : $loc . '/' . $day . '/quantovol_wknd.csv';
 
-    my @files = ($file, $quanto_file);
-
+    my @files = $file ? ($file, $quanto_file) : ($quanto_file);
     return \@files;
 }
 
