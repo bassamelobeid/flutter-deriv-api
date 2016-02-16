@@ -66,11 +66,19 @@ sub get_scopes_by_access_token {
 sub get_tokens_by_loginid {
     my ($self, $loginid) = @_;
 
-    return $self->dbh->selectall_arrayref("
+    my @tokens;
+    my $sth = $self->dbh->prepare("
         SELECT
-            token, display_name, last_used::timestamp(0)
+            token, display_name, scopes, last_used::timestamp(0)
         FROM auth.access_token WHERE client_loginid = ? ORDER BY display_name
-    ", { Slice => {} }, $loginid);
+    ");
+    $sth->execute($loginid);
+    while (my $r = $sth->fetchrow_hashref) {
+        $r->{scopes} = __parse_array($r->{scopes});
+        push @tokens, $r;
+    }
+
+    return wantarray ? @tokens : \@tokens;
 }
 
 sub get_token_count_by_loginid {

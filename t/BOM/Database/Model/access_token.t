@@ -31,6 +31,7 @@ my $tokens = $m->get_tokens_by_loginid($test_loginid);
 is scalar @$tokens, 1;
 is $tokens->[0]->{token}, $token;
 is $tokens->[0]->{display_name}, 'Test Token';
+is_deeply [sort @{$tokens->[0]->{scopes}}], ['admin', 'payments', 'read'];
 ok $tokens->[0]->{last_used} =~ /^[\d\-]{10}\s+[\d\:]{8}$/; # update on get_loginid_by_token
 my $token_cnt = $m->get_token_count_by_loginid($test_loginid);
 is $token_cnt, 1;
