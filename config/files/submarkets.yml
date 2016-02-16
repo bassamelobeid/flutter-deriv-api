@@ -201,51 +201,6 @@ amsterdam:
     display_order: 8
     market: stocks
 
-global:
-    name: global
-    display_name: "Global Sector"
-    display_order: 1
-    market: sectors
-agriculture:
-    name: agriculture
-    display_name: "Agriculture Sector"
-    display_order: 2
-    market: sectors
-financial:
-    name: financial
-    display_name: "Financial Sector"
-    display_order: 3
-    market: sectors
-energy_sector:
-    name: energy_sector
-    display_name: "Energy Sector"
-    display_order: 4
-    market: sectors
-metals_sector:
-    name: metals_sector
-    display_name: "Metals Sector"
-    display_order: 5
-    market: sectors
-technology:
-    name: technology
-    display_name: "Technology Sector"
-    display_order: 6
-    market: sectors
-healthcare:
-    name: healthcare
-    display_name: "Health Care Sector"
-    display_order: 7
-    market: sectors
-industrials:
-    name: industrials
-    display_name: "Industrials Sector"
-    display_order: 8
-    market: sectors
-consumer_services:
-    name: consumer_services
-    display_name: "Consumer Srv Sector"
-    display_order: 9
-    market: sectors
 
 asia_oceania_future:
     name: asia_oceania_future
