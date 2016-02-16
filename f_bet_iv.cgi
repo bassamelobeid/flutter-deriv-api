@@ -12,6 +12,7 @@ use BOM::MarketData::Fetcher::CorporateAction;
 use Bloomberg::FileDownloader;
 use Bloomberg::RequestFiles;
 use BOM::BloombergCalendar;
+use BOM::TentativeEvents;
 use BOM::Platform::Plack qw( PrintContentType );
 use BOM::Platform::Sysinit ();
 BOM::Platform::Sysinit::init();
@@ -69,8 +70,8 @@ print qq~
 my $request_files_upload_url = request()->url_for('backoffice/f_bbdl_upload_request_files.cgi');
 print '<LI><b>Upload the request files<b> ';
 print qq~<br><form method=post action=$request_files_upload_url>
-	Server: $selectbbdlserver
-	<select name=frequency>
+    Server: $selectbbdlserver
+    <select name=frequency>
             <option value='daily'>Daily (Normal)</option>
             <option value='oneshot'>Oneshot</option>
         </select>
@@ -78,10 +79,10 @@ print qq~<br><form method=post action=$request_files_upload_url>
             <option value=request>request file</option>
             <option value=cancel>cancel file</option>
         </select>
-	<input type=submit value='Upload Request files'>
-	<br><font color=gray>Note 1: If you select 'Convert all to oneshot' then the requests will be processed immediately, once only.
-	<br>Note 2: if you want to over-write existing scheduled requests, upload CANCEL requests first.</font>
-	</form>~;
+    <input type=submit value='Upload Request files'>
+    <br><font color=gray>Note 1: If you select 'Convert all to oneshot' then the requests will be processed immediately, once only.
+    <br>Note 2: if you want to over-write existing scheduled requests, upload CANCEL requests first.</font>
+    </form>~;
 
 my $single_file_upload_dir = request()->url_for('backoffice/f_bbdl_upload.cgi');
 print qq~<P><LI>
@@ -142,9 +143,9 @@ BOM::Platform::Context::template->process(
     },
 ) || die BOM::Platform::Context::template->error;
 
-Bar("Update then tentative events");
+Bar("Update the tentative events");
 print BOM::TentativeEvents::generate_tentative_events_form({
-    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/quant_market_tools_backoffice.cgi'),
+    upload_url => request()->url_for('backoffice/quant/market_data_mgmt/update_tentative_events.cgi'),
 });
 
 Bar("Corporate Actions");
