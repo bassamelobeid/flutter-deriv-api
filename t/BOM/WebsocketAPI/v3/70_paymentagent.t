@@ -98,7 +98,7 @@ foreach my $key (@{$tokens}) {
 
 ## paymentagent_withdraw
 {
-    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'Test Token');
+    my $token = BOM::Database::Model::AccessToken->new->create_token($client->loginid, 'Test Token', 'read', 'payments');
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     $client = BOM::Platform::Client->new({loginid => $client->loginid});
@@ -273,7 +273,7 @@ foreach my $key (@{$tokens}) {
     $t->finish_ok;
     $t = build_mojo_test();
 
-    my $token = BOM::Database::Model::AccessToken->new->create_token($pa_client->loginid, 'Test Token');
+    my $token = BOM::Database::Model::AccessToken->new->create_token($pa_client->loginid, 'Test Token', 'read', 'payments');
     $t = $t->send_ok({json => {authorize => $token}})->message_ok;
 
     $t = $t->send_ok({
