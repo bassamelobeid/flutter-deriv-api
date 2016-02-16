@@ -58,9 +58,7 @@ sub from_mojo {
     %ENV = (%ENV, %{$request->env});    ## no critic (Variables::RequireLocalizedPunctuationVars)
     __SetEnvironment();
 
-    if (my $client_ip = $main::ENV{'REMOTE_ADDR'}) {
-        $args->{_ip} = $client_ip;
-    }
+    $args->{_ip} = $request->headers->header('x-forwarded-for') || $main::ENV{'REMOTE_ADDR'} || '';
 
     $args->{domain_name} = $request->url->to_abs->host;
 
