@@ -39,7 +39,7 @@ use Format::Util::Numbers qw(roundnear);
 use Time::Duration::Concise;
 use BOM::Platform::Runtime;
 use BOM::Market::Data::DatabaseAPI;
-use BOM::MarketData::CorporateAction;
+use Quant::Framework::CorporateAction;
 use BOM::Platform::Context qw(request localize);
 use POSIX;
 use Try::Tiny;
@@ -1993,7 +1993,10 @@ sub _build_corporate_actions {
 
     return [] if not $self->market->affected_by_corporate_actions;
 
-    my $corp = BOM::MarketData::CorporateAction->new(symbol => $self->symbol);
+    my $corp = Quant::Framework::CorporateAction->new(
+        symbol           => $self->symbol,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer());
 
     my $available_actions = $corp->actions;
     my %grouped_by_date;

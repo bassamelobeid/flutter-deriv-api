@@ -8,9 +8,14 @@ use Test::Exception;
 use Test::NoWarnings;
 
 use BOM::MarketData::Fetcher::CorporateAction;
+use Quant::Framework::Utils::Test;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc('corporate_action');
+Quant::Framework::Utils::Test::create_doc('corporate_action',
+    {
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer()
+    });
 
 lives_ok {
     my $corp    = BOM::MarketData::Fetcher::CorporateAction->new;
