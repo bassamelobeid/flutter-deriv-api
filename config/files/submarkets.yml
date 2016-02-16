@@ -155,52 +155,52 @@ energy:
         intraday:
           forward:
             euro_atm: five_mins_to_eod
-uk:
-    name: uk
-    offered: 0
-    display_name: "United Kingdom Stocks"
-    display_order: 1
-    market: stocks
-us:
-    name: us
-    offered: 0
-    display_name: "United States Stocks"
-    display_order: 2
-    market: stocks
+
 australia:
     name: australia
     offered: 0
     display_name: "Australia Stocks"
+    display_order: 1
+    market: stocks
+belgium:
+    name: belgium
+    display_name: "Belgian Stocks"
+    display_order: 2
+    market: stocks
+amsterdam:
+    name: amsterdam
+    display_name: "Dutch Stocks"
     display_order: 3
+    market: stocks
+france:
+    name: france
+    display_name: "French Stocks"
+    display_order: 4
     market: stocks
 germany:
     name: germany
     offered: 0
     display_name: "Germany Stocks"
-    display_order: 4
+    display_order: 5
     market: stocks
 india:
     name: india
     offered: 0
     display_name: "India Stocks"
-    display_order: 5
-    market: stocks
-france:
-    name: france
-    display_name: "French Stocks"
     display_order: 6
     market: stocks
-belgium:
-    name: belgium
-    display_name: "Belgian Stocks"
+uk:
+    name: uk
+    offered: 0
+    display_name: "United Kingdom Stocks"
     display_order: 7
     market: stocks
-amsterdam:
-    name: amsterdam
-    display_name: "Dutch Stocks"
+us:
+    name: us
+    offered: 0
+    display_name: "United States Stocks"
     display_order: 8
     market: stocks
-
 
 asia_oceania_future:
     name: asia_oceania_future
