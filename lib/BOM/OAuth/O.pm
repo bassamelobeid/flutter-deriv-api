@@ -21,7 +21,7 @@ sub authorize {
     $app_id or return $c->__bad_request('the request was missing app_id');
 
     my @scopes = $scope ? split(/[\s\,\+]/, $scope) : ();
-    unshift @scopes, 'user' unless grep { $_ eq 'user' } @scopes;
+    unshift @scopes, 'read' unless grep { $_ eq 'read' } @scopes;
 
     my $oauth_model = __oauth_model();
     my $app         = $oauth_model->verify_app($app_id);
