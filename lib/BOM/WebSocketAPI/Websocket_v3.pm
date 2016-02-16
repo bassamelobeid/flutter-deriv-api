@@ -69,11 +69,9 @@ sub entry_point {
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
-                BOM::WebSocketAPI::v3::Wrapper::Accounts::send_realtime_balance($c, $msg)
-                    if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg)
                     if $channel =~ /^FEED::/;
-                BOM::WebSocketAPI::v3::Wrapper::Transaction::send_transaction_updates($c, $msg)
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
                     if $channel =~ /^TXNUPDATE::transaction_/;
             });
         $c->stash->{redis} = $redis;
