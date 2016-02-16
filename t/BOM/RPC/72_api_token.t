@@ -61,11 +61,12 @@ $res = BOM::RPC::v3::Accounts::api_token({
 });
 ok $res->{error}->{message_to_client} =~ /alphanumeric with space and dash/, 'alphanumeric with space and dash';
 
-$res = BOM::RPC::v3::Accounts::api_token({
-    client_loginid => $test_loginid,
-    args           => {new_token => 'Test'},
-});
-ok $res->{error}->{message_to_client} =~ /new_token_scopes/, 'new_token_scopes is required';
+## we default to all scopes for backwards
+# $res = BOM::RPC::v3::Accounts::api_token({
+#     client_loginid => $test_loginid,
+#     args           => {new_token => 'Test'},
+# });
+# ok $res->{error}->{message_to_client} =~ /new_token_scopes/, 'new_token_scopes is required';
 
 $res = BOM::RPC::v3::Accounts::api_token({
         client_loginid => $test_loginid,
