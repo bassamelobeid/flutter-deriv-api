@@ -337,23 +337,27 @@ sub __handle {
         if (not $c->stash('connection_id')) {
             $c->stash('connection_id' => Data::UUID->new()->create_str());
         }
-        my $limiting_service = 'websocket_call';
-        if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
-            $limiting_service = 'websocket_call_expensive';
-        }
-        if (grep { $_ eq $descriptor->{category} } ('proposal', 'proposal_open_contract')) {
-            $limiting_service = 'websocket_call_pricing';
-        }
-        if ('verify_email' eq $descriptor->{category}) {
-            $limiting_service = 'websocket_call_email';
-        }
-        if (
-            not within_rate_limits({
-                    service  => $limiting_service,
-                    consumer => $c->stash('connection_id'),
-                }))
-        {
-            return $c->new_error($descriptor->{category}, 'RateLimit', $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
+
+        if (not grep { $_ eq $descriptor->{category} } ('ping', 'time')) {
+            my $limiting_service = 'websocket_call';
+            if (grep { $_ eq $descriptor->{category} } ('portfolio', 'statement', 'profit_table')) {
+                $limiting_service = 'websocket_call_expensive';
+            }
+            if (grep { $_ eq $descriptor->{category} } ('proposal', 'proposal_open_contract')) {
+                $limiting_service = 'websocket_call_pricing';
+            }
+            if ('verify_email' eq $descriptor->{category}) {
+                $limiting_service = 'websocket_call_email';
+            }
+            if (
+                not within_rate_limits({
+                        service  => $limiting_service,
+                        consumer => $c->stash('connection_id'),
+                    }))
+            {
+                return $c->new_error($descriptor->{category}, 'RateLimit',
+                    $c->l('You have reached the rate limit for [_1].', $descriptor->{category}));
+            }
         }
 
         my $t0 = [Time::HiRes::gettimeofday];
