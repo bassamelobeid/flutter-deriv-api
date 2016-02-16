@@ -553,7 +553,9 @@ sub paymentagent_withdraw {
         . ' Transaction reference: '
         . $reference
         . ' Timestamp: '
-        . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
+        . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ
+        . '. Client note: '
+        . $further_instruction;
 
     # execute the transfer.
     $client->payment_account_transfer(
