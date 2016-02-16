@@ -49,7 +49,7 @@ subtest 'validate_session_token' => sub {
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = decode_json($t->message->[1]);
-    is($balance->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
+    is($res->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };
 
 subtest 'validate_api_token' => sub {
@@ -112,7 +112,7 @@ subtest 'validate_api_token' => sub {
 
     $t = $t->send_ok({json => {balance => 1}})->message_ok;
     $res = decode_json($t->message->[1]);
-    is($balance->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
+    is($res->{error}->{code}, 'AuthorizationRequired', 'Proper code for authorization rather than invalid token');
 };
 
 done_testing();
