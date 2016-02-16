@@ -147,8 +147,8 @@ sub update {
         }
 
         foreach my $id (keys %$tentative_events) {
-            if (defined($new_events_hash->{$id})) {
-                $tentative_events->{$id} = {(%{$tentative_events->{$id}}, %{$new_events_hash->{$id}})};
+            if (defined($new_events_hash{$id})) {
+                $tentative_events->{$id} = {(%{$tentative_events->{$id}}, %{$new_events_hash{$id}})};
             }
         }
     }
