@@ -228,10 +228,10 @@ sub _transaction_channel {
     my $already_subscribed = $channel ? exists $channel->{$type} : undef;
 
     if ($action) {
-        my $channel = 'TXNUPDATE::transaction_' . $account_id;
+        my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
-            $redis->subscribe([$channel], sub { });
+            $redis->subscribe([$channel_name], sub { });
             $subscription->{count} += 1;
             $channel->{$type}->{args}       = $args if $args;
             $channel->{$type}->{uuid}       = $uuid;
@@ -243,9 +243,9 @@ sub _transaction_channel {
             $c->stash('transaction_subscription', $subscription);
             delete $channel->{$type};
             if ($subscription->{count} <= 0) {
-                $redis->unsubscribe([$channel], sub { });
-                delete $c->stash('transaction_channel');
-                delete $c->stash('transaction_subscription');
+                $redis->unsubscribe([$channel_name], sub { });
+                delete $c->stash->{transaction_channel};
+                delete $c->stash->{transaction_subscription};
             }
         }
     }
