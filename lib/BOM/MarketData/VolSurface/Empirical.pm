@@ -1,6 +1,5 @@
 package BOM::MarketData::VolSurface::Empirical;
 
-use feature 'state';
 use Moose;
 
 use Machine::Epsilon;
@@ -10,7 +9,7 @@ use List::Util qw(max min sum);
 use List::MoreUtils qw(uniq);
 use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
-use YAML::CacheLoader qw(LoadFile);
+use YAML::XS qw(LoadFile);
 
 use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -18,8 +17,8 @@ use BOM::Market::AggTicks;
 use BOM::Market::Underlying;
 use BOM::Market::Types;
 
-state $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
-state $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
+my $news_categories = LoadFile('/home/git/regentmarkets/bom-market/config/files/economic_events_categories.yml');
+my $coefficients    = LoadFile('/home/git/regentmarkets/bom-market/config/files/volatility_calibration_coefficients.yml');
 
 sub get_volatility {
     my ($self, $args) = @_;
