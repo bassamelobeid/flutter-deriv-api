@@ -1135,7 +1135,7 @@ subtest 'intraday index missing pricing coefficient' => sub {
     my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
     $mock_contract->mock('pricing_engine_name' => sub { 'BOM::Product::Pricing::Engine::Intraday::Index' });
     my $mock_engine = Test::MockModule->new('BOM::Product::Pricing::Engine::Intraday::Index');
-    $mock_engine->mock('_calibration_coefficient', sub {undef});
+    $mock_engine->mock('coefficients', sub {undef});
     my $c = produce_contract($params);
     my $expected_reasons = [qr/Calibration coefficient missing/];
     test_error_list('buy', $c, $expected_reasons);
