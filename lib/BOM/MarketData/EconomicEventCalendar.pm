@@ -114,8 +114,9 @@ sub save {
 
         #update event if it's tentative
         if ($event->{id} && $tentative_events->{$event->{id}}) {
+            my $is_tentative = $event->{is_tentative};
             $tentative_events->{$event->{id}} = $event = {(%{$tentative_events->{$event->{id}}}, %$event)};
-            if (!$event->{is_tentative}) {
+            unless ($is_tentative) {
                 delete $tentative_events->{$event->{id}};
             }
         }
