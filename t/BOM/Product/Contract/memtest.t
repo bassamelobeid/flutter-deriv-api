@@ -101,6 +101,10 @@ my %expiry_type = (
     tick     => '10t',
 );
 
+#Cycle test will complain because of data types it cannot handle (Redis's Socket has these data types)
+#So we just ignore those complaints here
+$SIG{__WARN__} = sub { my $w = shift; return if $w =~ /^Unhandled type: GLOB/; die $w; };
+
 sub _get_barrier {
     my $type = shift;
 

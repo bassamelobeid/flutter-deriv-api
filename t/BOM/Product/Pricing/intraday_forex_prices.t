@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 
-use Test::Most tests => 3;
+use Test::Most tests => 5;
 use Test::NoWarnings;
 use File::Spec;
 
@@ -10,7 +10,6 @@ use BOM::Test::Runtime qw(:normal);
 use BOM::Product::Offerings qw(get_offerings_with_filter);
 use BOM::Market::AggTicks;
 use Date::Utility;
-use Format::Util::Numbers qw( roundnear );
 use BOM::Product::ContractFactory qw( produce_contract );
 
 use BOM::Test::Data::Utility::UnitTestPrice qw( :init );
@@ -78,24 +77,45 @@ subtest 'prices without economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is roundnear(0.0001,$c->theo_probability->amount), roundnear(0.0001,$expected->{$c->shortcode}), 'correct theo probability [' . $c->shortcode . ']';
+                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct theo probability [' . $c->shortcode . ']';
+            } 'survived';
+        }
+    }
+};
+
+subtest 'atm prices without economic events' => sub {
+    foreach my $contract_type (qw(CALL PUT)) {
+        foreach my $duration (map {$_ * 60} (2, 5, 10, 15)) {
+            lives_ok {
+                my $c = produce_contract({
+                    bet_type     => $contract_type,
+                    underlying   => $underlying,
+                    date_start   => $date_start,
+                    date_pricing => $date_pricing,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => $payout,
+                    barrier      => 'S0P',
+                });
+                isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+                is $c->theo_probability->amount, $expected->{$c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
             } 'survived';
         }
     }
 };
 
 subtest 'prices with economic events' => sub {
-    my $event_date = $date_start->minus_time_interval('15m');
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-        'economic_events',
-        {
-            recorded_date => $event_date,
-            events        => [{
-                    symbol       => 'USD',
-                    impact       => 5,
-                    release_date => $event_date,
-                    event_name   => 'Construction Spending m/m'
-                }]});
+   my $event_date = $date_start->minus_time_interval('15m');
+   BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+       'economic_events',
+       {
+           recorded_date => $event_date,
+           events        => [{
+                   symbol       => 'USD',
+                   impact       => 5,
+                   release_date => $event_date,
+                   event_name   => 'Construction Spending m/m'
+               }]});
     foreach my $contract_type (
         get_offerings_with_filter(
             'contract_type',
@@ -130,7 +150,28 @@ subtest 'prices with economic events' => sub {
                     %$barrier,
                 });
                 isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
-                is roundnear(0.0001,$c->theo_probability->amount), roundnear(0.0001,$expected->{'event_' . $c->shortcode}), 'correct theo probability [event_' . $c->shortcode . ']';
+                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
+            } 'survived';
+        }
+    }
+};
+
+subtest 'atm prices with economic events' => sub {
+    foreach my $contract_type (qw(CALL PUT)) {
+        foreach my $duration (map {$_ * 60} (2, 5, 10, 15)) {
+            lives_ok {
+                my $c = produce_contract({
+                    bet_type     => $contract_type,
+                    underlying   => $underlying,
+                    date_start   => $date_start,
+                    date_pricing => $date_pricing,
+                    duration     => $duration . 's',
+                    currency     => $payout_currency,
+                    payout       => $payout,
+                    barrier      => 'S0P',
+                });
+                isa_ok $c->pricing_engine, 'BOM::Product::Pricing::Engine::Intraday::Forex';
+                is $c->theo_probability->amount, $expected->{'event_' . $c->shortcode}, 'correct theo probability [event_' . $c->shortcode . ']';
             } 'survived';
         }
     }
