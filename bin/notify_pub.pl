@@ -67,11 +67,7 @@ sub _publish {
     my $msg   = shift;
     my $json  = JSON::to_json($msg);
 
-    for ('TXNUPDATE::balance_' . $msg->{account_id},
-         'TXNUPDATE::' . $msg->{action_type} . '_' . $msg->{account_id},
-         'TXNUPDATE::transaction_' . $msg->{account_id}) {
-        $redis->publish($_, $json);
-    }
+    $redis->publish('TXNUPDATE::transaction_' . $msg->{account_id}, $json);
 }
 
 sub _msg {
