@@ -27,7 +27,6 @@ subtest 'BOM::Market::SubMarket::Registry' => sub {
         random      => 3,
         indices     => 5,
         stocks      => 3,
-        sectors     => 9,
         commodities => 2,
     );
 
