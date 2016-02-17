@@ -1,6 +1,8 @@
 package BOM::MarketData::ImpliedRate;
 
 use BOM::System::Chronicle;
+use Data::Chronicle::Reader;
+use Data::Chronicle::Writer;
 
 =head1 NAME
 
@@ -37,6 +39,18 @@ has for_date => (
     default => undef,
 );
 
+has chronicle_reader => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Reader',
+    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
+);
+
+has chronicle_writer => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Writer',
+    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
+);
+
 around _document_content => sub {
     my $orig = shift;
     my $self = shift;
@@ -65,10 +79,10 @@ has document => (
 sub _build_document {
     my $self = shift;
 
-    my $document = BOM::System::Chronicle::get('interest_rates', $self->symbol);
+    my $document = $self->chronicle_reader->get('interest_rates', $self->symbol);
 
     if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
-        $document = BOM::System::Chronicle::get_for('interest_rates', $self->symbol, $self->for_date->epoch);
+        $document = $self->chronicle_reader->get_for('interest_rates', $self->symbol, $self->for_date->epoch);
 
         # This works around a problem with Volatility surfaces and negative dates to expiry.
         # We have to use the oldest available surface.. and we don't really know when it
@@ -84,11 +98,11 @@ sub _build_document {
 sub save {
     my $self = shift;
 
-    if (not defined BOM::System::Chronicle::get('interest_rates', $self->symbol)) {
-        BOM::System::Chronicle::set('interest_rates', $self->symbol, {});
+    if (not defined $self->chronicle_reader->get('interest_rates', $self->symbol)) {
+        $self->chronicle_writer->set('interest_rates', $self->symbol, {});
     }
 
-    return BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content);
+    return $self->chronicle_writer->set('interest_rates', $self->symbol, $self->_document_content);
 }
 
 has type => (
