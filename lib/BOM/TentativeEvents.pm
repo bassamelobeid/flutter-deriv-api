@@ -8,7 +8,8 @@ use BOM::MarketData::EconomicEventCalendar;
 
 sub _get_tentative_events {
 
-    my $tentative_events = BOM::System::Chronicle::get('economic_events', 'economic_events_tentative') || {};
+    my $reader = BOM::System::Chronicle::get_chronicle_reader();
+    my $tentative_events = $reader->get('economic_events', 'economic_events_tentative') || {};
 
     return $tentative_events;
 }
