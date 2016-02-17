@@ -4,7 +4,6 @@ use strict;
 use warnings;
 
 use DBI;
-use feature "state";
 
 sub read_dbh {
     return DBI->connect_cached(
