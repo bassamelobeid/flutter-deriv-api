@@ -73,6 +73,10 @@ sub proposal_open_contract {
                                 $details->{buy_price}     = $response->{$contract_id}->{buy_price};
                                 $details->{sell_price}    = $response->{$contract_id}->{sell_price};
                                 $details->{purchase_time} = $response->{$contract_id}->{purchase_time};
+                                $details->{is_sold}       = $response->{$contract_id}->{is_sold};
+
+                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $response->{$contract_id}->account_id,
+                                    $contract_id, $details);
 
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                     $c, 'subscribe',
@@ -135,6 +139,7 @@ sub send_proposal {
             short_code  => delete $details->{short_code},
             contract_id => delete $details->{contract_id},
             currency    => delete $details->{currency},
+            is_sold     => delete $details->{is_sold},
             args        => $details
         });
     return;
