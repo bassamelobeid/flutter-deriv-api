@@ -130,12 +130,11 @@ sub save {
         if ($event->{id} && $tentative_events->{$event->{id}}) {
             my $is_tentative = $event->{is_tentative};
             $tentative_events->{$event->{id}} = $event = {(%{$tentative_events->{$event->{id}}}, %$event)};
+            #delete expired event from tentative hash
             unless ($is_tentative) {
                 delete $tentative_events->{$event->{id}};
             }
-        }
-        #delete expired event from tentative hash
-        elsif ($event->{is_tentative}) {
+        } elsif ($event->{is_tentative}) {
             $tentative_events->{$event->{id}} = $event;
         }
     }
@@ -235,8 +234,8 @@ sub get_latest_events_for_period {
 }
 
 sub get_tentative_events {
-    
-    my $self             = shift;
+
+    my $self = shift;
     return $self->chronicle_reader->get(EE, EET);
 }
 
