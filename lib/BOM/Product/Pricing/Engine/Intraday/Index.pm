@@ -3,10 +3,17 @@ package BOM::Product::Pricing::Engine::Intraday::Index;
 use Moose;
 extends 'BOM::Product::Pricing::Engine::Intraday';
 
-use YAML::CacheLoader;
+use YAML::XS qw(LoadFile);
 use Time::Duration::Concise;
 use BOM::Platform::Context qw(localize);
 use BOM::Utility::ErrorStrings qw( format_error_string );
+
+my $coefficients = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_index_calibration_coefficient.yml');
+
+has coefficients => (
+    is      => 'ro',
+    default => sub {$coefficients},
+);
 
 has pricing_vol => (
     is         => 'ro',
@@ -33,26 +40,11 @@ has _supported_types => (
     },
 );
 
-has _calibration_coefficient => (
-    is         => 'ro',
-    lazy_build => 1,
-);
-
-sub _build__calibration_coefficient {
-    my $self = shift;
-
-    my $bet  = $self->bet;
-    my $coef = YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom/config/files/intraday_index_calibration_coefficient.yml')
-        ->{$bet->underlying->symbol};
-
-    return $coef;
-}
-
 sub _build_probability {
     my $self = shift;
 
     my $bet      = $self->bet;
-    my $coef_ref = $self->_calibration_coefficient;
+    my $coef_ref = $self->coefficients->{$self->bet->underlying->symbol};
 
     # if calibration coefficients are not present, we could not price
     if (not $coef_ref) {
