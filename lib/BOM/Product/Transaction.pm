@@ -265,7 +265,7 @@ sub stats_stop {
 sub calculate_limits {
     my $self = shift;
 
-    my $app_config = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
+    my $app_config    = BOM::Platform::Runtime->instance->app_config->quants->client_limits;
     my $static_config = BOM::Platform::Static::Config->quants->{client_limits};
 
     my $contract = $self->contract;
@@ -1556,7 +1556,8 @@ sub sell_expired_contracts {
     my %stats_failure;
     for my $bet (@$bets) {
         my $contract;
-        my $error = try { $contract = produce_contract($bet->{short_code}, $currency); } || 1;
+        my $error;
+        try { $contract = produce_contract($bet->{short_code}, $currency); } catch { $error = 1; };
         next if $error;
 
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
