@@ -137,14 +137,17 @@
           "type": "string",
           "description": "error message if validation fails"
         },
-        "sell_price":{
+        "sell_price": {
           "type":"number",
           "description": "Price at which contract was sold, only available when contract has been sold."
         },
-        "buy_price":{
+        "buy_price": {
           "type":"number",
           "description": "Price at which contract was purchased"
-        }
+        },
+        "purchase_time": {
+          "type": "integer",
+          "description": "Epoch of purchase time, will be same as date_start for all contracts except forward starting contracts."
       }
     },
     "msg_type": {

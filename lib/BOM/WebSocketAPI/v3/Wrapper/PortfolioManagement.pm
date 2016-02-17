@@ -67,11 +67,12 @@ sub proposal_open_contract {
                             if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
                                 # these keys needs to be deleted from args (check send_proposal)
                                 # populating here cos we stash them in redis channel
-                                $details->{short_code}  = $response->{$contract_id}->{shortcode};
-                                $details->{contract_id} = $contract_id;
-                                $details->{currency}    = $response->{$contract_id}->{currency};
-                                $details->{buy_price}   = $response->{$contract_id}->{buy_price};
-                                $details->{sell_price}  = $response->{$contract_id}->{sell_price};
+                                $details->{short_code}    = $response->{$contract_id}->{shortcode};
+                                $details->{contract_id}   = $contract_id;
+                                $details->{currency}      = $response->{$contract_id}->{currency};
+                                $details->{buy_price}     = $response->{$contract_id}->{buy_price};
+                                $details->{sell_price}    = $response->{$contract_id}->{sell_price};
+                                $details->{purchase_time} = $response->{$contract_id}->{purchase_time};
 
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                     $c, 'subscribe',
@@ -110,7 +111,6 @@ sub send_proposal {
             my $response = shift;
             if ($response) {
                 my $sell_price = delete $details->{sell_price};
-                my $buy_price  = delete $details->{buy_price};
                 if (exists $response->{error}) {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     return $c->new_error('proposal_open_contract', $response->{error}->{code}, $response->{error}->{message_to_client});
@@ -122,7 +122,8 @@ sub send_proposal {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
                         $id ? (id => $id) : (),
-                        buy_price => $buy_price,
+                        buy_price     => delete $details->{buy_price},
+                        purchase_time => delete $details->{purchase_time},
                         (defined $sell_price) ? (sell_price => $sell_price) : (),
                         %$response
                     }};
