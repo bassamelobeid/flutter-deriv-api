@@ -100,6 +100,7 @@ sub new_account_real {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -123,6 +124,7 @@ sub new_account_maltainvest {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -146,6 +148,7 @@ sub new_account_japan {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
