@@ -61,9 +61,9 @@ sub from_mojo {
     $args->{_ip} = '';
     if ($request->headers->header('x-forwarded-for')) {
         my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
-        shift @ips while ($ips[0] and $ips[0] =~ /^(192|10|172|127)\./);
-        $args->{_ip} = $ips[0];
-    } elsif ($main::ENV{'REMOTE_ADDR'}) {
+        $args->{_ip} = $ips[0] if $ips[0] =~ /^(\d+\.\d+\.\d+\.\d+)$/;
+    }
+    if (not $args->{_ip} and $main::ENV{'REMOTE_ADDR'}) {
         $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
     }
 
