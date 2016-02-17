@@ -422,8 +422,7 @@ sub _build_digital_spread_markup {
         name        => 'commission_level_multiplier',
         description => 'Multiplier for the underlying-specific risk level',
         set_by      => 'quants.commission.digital_spread.level_multiplier',
-        base_amount =>
-            BOM::Platform::Static::Config->quants->{commission}->{digital_spread}->{level_multiplier} ** ($self->commission_level - 1),
+        base_amount => BOM::Platform::Static::Config->quants->{commission}->{digital_spread}->{level_multiplier}**($self->commission_level - 1),
     });
 
     $dsp->include_adjustment('multiply', $level_multiplier);
