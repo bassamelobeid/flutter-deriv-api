@@ -47,13 +47,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol => 'R_100',
         date   => Date::Utility->new,
     });
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'index',
-    {
-        symbol        => 'SYNAEX',
-        date          => Date::Utility->new,
-        recorded_date => $now,
-    });
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'currency',
@@ -68,13 +61,6 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         symbol        => $_,
         recorded_date => Date::Utility->new,
     }) for qw/frxUSDJPY WLDUSD/;
-
-BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-    'volsurface_moneyness',
-    {
-        symbol        => $_,
-        recorded_date => Date::Utility->new,
-    }) for qw/GDAXI SYNAEX/;
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
@@ -528,113 +514,6 @@ subtest 'intraday_spot_index_turnover_limit', sub {
     'survived';
 };
 
-subtest 'smart_index_turnover_limit', sub {
-    plan tests => 13;
-    lives_ok {
-        my $cl = create_client;
-
-        top_up $cl, 'USD', 5000;
-
-        isnt + (my $acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 5000, 'USD balance is 5000 got: ' . $bal;
-
-        local $ENV{REQUEST_STARTTIME} = time;    # fix race condition
-        my $contract = produce_contract({
-            underlying   => 'SYNAEX',
-            bet_type     => 'FLASHU',
-            currency     => 'USD',
-            payout       => 100,
-            duration     => '5m',
-            current_tick => $tick,
-            barrier      => 'S0P',
-        });
-
-        my $txn = BOM::Product::Transaction->new({
-            client      => $cl,
-            contract    => $contract,
-            price       => 50.00,
-            payout      => $contract->payout,
-            amount_type => 'payout',
-        });
-
-        my $error = do {
-            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
-
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
-            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
-
-            note "mocked quants->{client_limits}->{smart_index_turnover_limit returning 149.99";
-            BOM::Platform::Static::Config->quants->{client_limits}->{smart_index_turnover_limit} = 149.99;
-
-            is $txn->buy, undef, 'bought 1st contract';
-            is $txn->buy, undef, 'bought 2nd contract';
-
-            # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                price       => 50.00,
-                payout      => $contract->payout,
-                amount_type => 'payout',
-            });
-
-            $txn->buy;
-        };
-        SKIP: {
-            skip 'no error', 6
-                unless isa_ok $error, 'Error::Base';
-
-            is $error->get_type, 'smart_index_turnover_limitExceeded', 'error is smarties_turnover_limit';
-
-            is $error->{-message_to_client}, 'You have exceeded the daily limit for contracts of this type.', 'message_to_client';
-            is $error->{-mesg},              'Exceeds turnover limit on smart_index_turnover_limit',          'mesg';
-
-            is $txn->contract_id,    undef, 'txn->contract_id';
-            is $txn->transaction_id, undef, 'txn->transaction_id';
-            is $txn->balance_after,  undef, 'txn->balance_after';
-        }
-
-        # now matching exactly the limit -- should succeed
-        $error = do {
-            my $mock_contract = Test::MockModule->new('BOM::Product::Contract');
-            $mock_contract->mock(is_valid_to_buy => sub { note "mocked Contract->is_valid_to_buy returning true"; 1 });
-
-            my $mock_transaction = Test::MockModule->new('BOM::Product::Transaction');
-            # _validate_trade_pricing_adjustment() is tested in trade_validation.t
-            $mock_transaction->mock(
-                _validate_trade_pricing_adjustment => sub { note "mocked Transaction->_validate_trade_pricing_adjustment returning nothing"; () });
-            $mock_transaction->mock(_validate_stake_limit => sub { note "mocked Transaction->_validate_stake_limit returning nothing"; () });
-            $mock_transaction->mock(_build_pricing_comment => sub { note "mocked Transaction->_build_pricing_comment returning 'TEST'"; 'TEST' });
-
-            my $class = ref BOM::Platform::Runtime->instance->app_config->quants->client_limits;
-            (my $fname = $class) =~ s!::!/!g;
-            $INC{$fname . '.pm'} = 1;
-            my $mock_limits = Test::MockModule->new($class);
-            $mock_limits->mock(
-                smarties_turnover_limit => sub { note "mocked app_config->quants->client_limits->smarties_turnover_limit returning 150"; 150 });
-
-            # create a new transaction object to get pristine (undef) contract_id and the like
-            $txn = BOM::Product::Transaction->new({
-                client      => $cl,
-                contract    => $contract,
-                price       => 50.00,
-                payout      => $contract->payout,
-                amount_type => 'payout',
-            });
-
-            $txn->buy;
-        };
-        is $error, undef, 'exactly matching the limit ==> successful buy';
-    }
-    'survived';
-};
 subtest 'smarties_turnover_limit', sub {
     plan tests => 13;
     lives_ok {
