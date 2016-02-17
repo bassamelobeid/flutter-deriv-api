@@ -11,7 +11,7 @@ use BOM::Market::SubMarket;
 use BOM::Market::SubMarket::Registry;
 
 subtest 'BOM::Market::SubMarket::Registry' => sub {
-    plan tests => 29;
+    plan tests => 25;
 
     my $random_daily = BOM::Market::SubMarket::Registry->instance->get('random_daily');
     is($random_daily->name,                      'random_daily', 'name');
