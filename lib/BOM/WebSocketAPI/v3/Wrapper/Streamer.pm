@@ -230,7 +230,7 @@ sub _transaction_channel {
         my $channel_name = 'TXNUPDATE::transaction_' . $account_id;
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
-            $redis->subscribe([$channel_name], sub { });
+            $redis->subscribe([$channel_name], sub { }) unless (keys %$channel);
             $channel->{$type}->{args}       = $args if $args;
             $channel->{$type}->{uuid}       = $uuid;
             $channel->{$type}->{account_id} = $account_id;
