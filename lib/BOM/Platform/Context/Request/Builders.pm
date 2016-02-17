@@ -58,7 +58,14 @@ sub from_mojo {
     %ENV = (%ENV, %{$request->env});    ## no critic (Variables::RequireLocalizedPunctuationVars)
     __SetEnvironment();
 
-    $args->{_ip} = $request->headers->header('x-forwarded-for') || $main::ENV{'REMOTE_ADDR'} || '';
+    $args->{_ip} = '';
+    if ($request->headers->header('x-forwarded-for')) {
+        my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
+        shift @ips while ($ips[0] and $ips[0] =~ /^(192|10|172|127)\./);
+        $args->{_ip} = $ips[0];
+    } elsif ($main::ENV{'REMOTE_ADDR'}) {
+        $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
+    }
 
     $args->{domain_name} = $request->url->to_abs->host;
 
