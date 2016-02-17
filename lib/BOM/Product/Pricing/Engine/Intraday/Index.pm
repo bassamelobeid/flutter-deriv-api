@@ -12,7 +12,7 @@ my $coefficients = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_i
 
 has coefficients => (
     is      => 'ro',
-    default => sub {$coefficients},
+    default => sub { $coefficients },
 );
 
 has pricing_vol => (

@@ -27,9 +27,8 @@ my $coefficient = LoadFile('/home/git/regentmarkets/bom/config/files/intraday_tr
 
 has coefficients => (
     is      => 'ro',
-    default => sub {$coefficient},
+    default => sub { $coefficient },
 );
-
 
 has [qw(average_tick_count long_term_prediction)] => (
     is         => 'ro',
