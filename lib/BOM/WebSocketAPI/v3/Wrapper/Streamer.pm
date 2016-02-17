@@ -224,7 +224,6 @@ sub _transaction_channel {
 
     my $redis              = $c->stash('redis');
     my $channel            = $c->stash('transaction_channel');
-    my $subscription       = $c->stash('transaction_subscription');
     my $already_subscribed = $channel ? exists $channel->{$type} : undef;
 
     if ($action) {
@@ -232,20 +231,15 @@ sub _transaction_channel {
         if ($action eq 'subscribe' and not $already_subscribed) {
             $uuid = Data::UUID->new->create_str();
             $redis->subscribe([$channel_name], sub { });
-            $subscription->{count} += 1;
             $channel->{$type}->{args}       = $args if $args;
             $channel->{$type}->{uuid}       = $uuid;
             $channel->{$type}->{account_id} = $account_id;
-            $c->stash('transaction_channel',      $channel);
-            $c->stash('transaction_subscription', $subscription);
+            $c->stash('transaction_channel', $channel);
         } elsif ($action eq 'unsubscribe' and $already_subscribed) {
-            $subscription->{count} -= 1;
-            $c->stash('transaction_subscription', $subscription);
             delete $channel->{$type};
-            if ($subscription->{count} <= 0) {
+            unless (keys %$channel) {
                 $redis->unsubscribe([$channel_name], sub { });
                 delete $c->stash->{transaction_channel};
-                delete $c->stash->{transaction_subscription};
             }
         }
     }
@@ -280,7 +274,7 @@ sub process_transaction_updates {
                         $details->{$type}->{loginid}  = $c->stash('loginid');
                         $details->{$type}->{currency} = $c->stash('currency');
                         $details->{$type}->{balance}  = $payload->{balance_after};
-                        $c->send({json => {%$details}}) if $c->tx;
+                        $c->send({json => $details}) if $c->tx;
                     } elsif ($type eq 'transaction') {
                         $details->{$type}->{balance}        = $payload->{balance_after};
                         $details->{$type}->{action}         = $payload->{action_type};
@@ -324,7 +318,7 @@ sub process_transaction_updates {
                         } else {
                             $details->{$type}->{longcode}         = $payload->{payment_remark};
                             $details->{$type}->{transaction_time} = Date::Utility->new($payload->{payment_time})->epoch;
-                            $c->send({json => {%$details}});
+                            $c->send({json => $details});
                         }
                     }
                 } elsif ($channel and exists $channel->{$type}->{account_id}) {
