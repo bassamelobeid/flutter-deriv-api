@@ -19,7 +19,6 @@ use BOM::Platform::Context::Request;
 use BOM::Product::Transaction;
 use Time::HiRes;
 use BOM::Database::Rose::DB;
-use BOM::Platform::Static::Config;
 
 sub ok {
     my $c      = shift;
