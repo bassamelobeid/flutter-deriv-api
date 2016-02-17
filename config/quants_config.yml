@@ -24,7 +24,7 @@ bet_limits:
 client_limits:
   payout_per_symbol_and_bet_type_limit: 200000
   intraday_spot_index_turnover_limit: 30000
-  smart_index_turnover_limit: 5000
+  smartfx_turnover_limit: 5000
   stocks_turnover_limit: 5000
 
 market_data:

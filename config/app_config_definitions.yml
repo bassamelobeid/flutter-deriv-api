@@ -312,11 +312,6 @@ quants:
           isa: json_string
           default: '{"turnover" : 20000, "realized_profit" : 10000, "potential_profit" : 25000 }'
           global: 1
-        smarties_turnover_limit:
-          description: "Daily smarties turnover limit per client"
-          isa: Num
-          default: 5000
-          global: 1
         spreads_daily_profit_limit:
           description: "Daily profit limit for spreads per client"
           isa: Num
