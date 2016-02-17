@@ -2731,7 +2731,7 @@ sub _subvalidate_lifetime_days {
         $year-- if ($date_expiry->day_of_year < $date_start->day_of_year);    # Expiry is into next year, already.
         my $end_of_bo =
             Date::Utility->new('31-Dec-' . $year)
-            ->plus_time_interval(BOM::Platform::Runtime->instance->app_config->quants->bet_limits->holiday_blackout_end . 'd');
+            ->plus_time_interval(BOM::Platform::Static::Config->quants->{bet_limits}->{holiday_blackout_end} . 'd');
         my $message =
             ($self->built_with_bom_parameters)
             ? localize('Resale of this contract is not offered due to end-of-year market holidays.')
