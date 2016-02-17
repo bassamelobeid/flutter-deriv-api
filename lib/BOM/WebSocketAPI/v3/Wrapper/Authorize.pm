@@ -34,7 +34,7 @@ sub authorize {
                     token_type           => $token_type,
                     account_id           => delete $response->{account_id},
                     currency             => $response->{currency},
-                    landing_company_name => delete $response->{landing_company_name},
+                    landing_company_name => $response->{landing_company_name},
                     country              => delete $response->{country});
                 return {
                     msg_type  => 'authorize',
