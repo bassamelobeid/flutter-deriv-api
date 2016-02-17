@@ -332,12 +332,12 @@ sub calculate_limits {
             };
     }
 
-    if ($contract->underlying->submarket->name eq 'smart_index' or $contract->underlying->submarket->name eq 'smart_fx') {
+    if ($contract->underlying->submarket->name eq 'smart_fx') {
         push @{$self->limits->{specific_turnover_limits}},
             +{
-            name    => 'smarties_turnover_limit',
-            limit   => $app_config->smarties_turnover_limit,
-            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => ['smart_fx', 'smart_index']})],
+            name    => 'smartfx_turnover_limit',
+            limit   => $static_config->{smartfx_turnover_limit},
+            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_fx'})],
             };
     }
 
@@ -347,15 +347,6 @@ sub calculate_limits {
             name    => 'stocks_turnover_limit',
             limit   => $static_config->{stocks_turnover_limit},
             symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {market => 'stocks'})],
-            };
-    }
-
-    if ($contract->underlying->submarket->name eq 'smart_index') {
-        push @{$self->limits->{specific_turnover_limits}},
-            +{
-            name    => 'smart_index_turnover_limit',
-            limit   => $static_config->{smart_index_turnover_limit},
-            symbols => [map { {n => $_} } get_offerings_with_filter('underlying_symbol', {submarket => 'smart_index'})],
             };
     }
 
