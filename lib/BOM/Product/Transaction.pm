@@ -493,17 +493,18 @@ sub prepare_buy { ## no critic (RequireArgUnpacking)
             qw/
             _validate_buy_transaction_rate
             _validate_iom_withdrawal_limit
+            _validate_available_currency
+            _validate_currency
+            _validate_jurisdictional_restrictions
+            _validate_client_status
+            _validate_client_self_exclusion
 
             _is_valid_to_buy
             _validate_date_pricing
             _validate_trade_pricing_adjustment
 
             _validate_payout_limit
-            _validate_stake_limit
-            _validate_jurisdictional_restrictions
-            _validate_client_status
-            _validate_client_self_exclusion
-            _validate_currency/
+            _validate_stake_limit/
             );
 
         $self->calculate_limits;
@@ -1130,24 +1131,31 @@ sub _recover {
     die $err;
 }
 
-sub _validate_currency {
+sub _validate_available_currency {
     my $self     = shift;
-    my $broker   = $self->client->broker_code;
     my $currency = $self->contract->currency;
-
-    if ($currency ne $self->client->currency) {
-        return Error::Base->cuss(
-            -type              => 'NotDefaultCurrency',
-            -mesg              => "not default currency for client [$currency], client currency[" . $self->client->currency . "]",
-            -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is not the default currency", $currency),
-        );
-    }
 
     if (not grep { $currency eq $_ } @{request()->available_currencies}) {
         return Error::Base->cuss(
             -type              => 'InvalidCurrency',
             -mesg              => "Invalid $currency",
             -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is invalid.", $currency),
+        );
+    }
+    return;
+}
+
+sub __validate_currency {
+    my $self     = shift;
+    my $client   = shift;
+    my $broker   = $client->broker_code;
+    my $currency = $self->contract->currency;
+
+    if ($currency ne $client->currency) {
+        return Error::Base->cuss(
+            -type              => 'NotDefaultCurrency',
+            -mesg              => "not default currency for client [$currency], client currency[" . $client->currency . "]",
+            -message_to_client => BOM::Platform::Context::localize("The provided currency [_1] is not the default currency", $currency),
         );
     }
 
@@ -1159,6 +1167,24 @@ sub _validate_currency {
         );
     }
     return;
+}
+
+sub _validate_currency {
+    my $self = shift;
+
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            next if $m->{code};
+            my $res = $self->__validate_currency($m->{client});
+            if ($res) {
+                $m->{code}  = $res->{-type};
+                $m->{error} = $res->{-message_to_client};
+            }
+        }
+        return;
+    } else {
+        return $self->__validate_currency($self->client);
+    }
 }
 
 sub _build_pricing_comment {
@@ -1637,9 +1663,9 @@ is not able to purchase contract
 
 =cut
 
-sub _validate_client_status {
+sub __validate_client_status {
     my $self   = shift;
-    my $client = $self->client;
+    my $client = shift;
 
     if ($client->get_status('unwelcome') or $client->get_status('disabled')) {
         return Error::Base->cuss(
@@ -1652,6 +1678,24 @@ sub _validate_client_status {
     return;
 }
 
+sub _validate_client_status {
+    my $self = shift;
+
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            next if $m->{code};
+            my $res = $self->__validate_client_status($m->{client});
+            if ($res) {
+                $m->{code}  = $res->{-type};
+                $m->{error} = $res->{-message_to_client};
+            }
+        }
+        return;
+    } else {
+        return $self->__validate_client_status($self->client);
+    }
+}
+
 =head2 $self->_validate_client_self_exclusion
 
 Validates to make sure that the client with self exclusion
@@ -1659,9 +1703,9 @@ is not able to purchase contract
 
 =cut
 
-sub _validate_client_self_exclusion {
+sub __validate_client_self_exclusion {
     my $self   = shift;
-    my $client = $self->client;
+    my $client = shift;
 
     my $limit_excludeuntil;
     if (    $limit_excludeuntil = $client->get_self_exclusion
@@ -1677,6 +1721,24 @@ sub _validate_client_self_exclusion {
     }
 
     return;
+}
+
+sub _validate_client_self_exclusion {
+    my $self   = shift;
+
+    if ($self->multiple) {
+        for my $m (@{$self->multiple}) {
+            next if $m->{code};
+            my $res = $self->__validate_client_self_exclusion($m->{client});
+            if ($res) {
+                $m->{code}  = $res->{-type};
+                $m->{error} = $res->{-message_to_client};
+            }
+        }
+        return;
+    } else {
+        return $self->__validate_client_self_exclusion($self->client);
+    }
 }
 
 =head2 sell_expired_contracts
