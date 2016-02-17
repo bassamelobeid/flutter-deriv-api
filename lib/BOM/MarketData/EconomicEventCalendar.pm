@@ -114,12 +114,12 @@ sub save {
         $self->chronicle_writer->set(EE, EE, {});
     }
 
-    if (not defined $self->chronicle_reader->get(EE, EET)) {
+    if (not defined $self->get_tentative_events) {
         $self->chronicle_writer->set(EE, EET, {});
     }
 
     #receive tentative events hash
-    my $tentative_events = $self->chronicle_reader->get(EE, EET);
+    my $tentative_events = $self->get_tentative_events;
 
     for my $event (@{$self->events}) {
         if (ref($event->{release_date}) eq 'Date::Utility') {
@@ -149,7 +149,7 @@ sub update {
 
     my $self             = shift;
     my $events           = $self->chronicle_reader->get(EE, EE);
-    my $tentative_events = $self->chronicle_reader->get(EE, EET);
+    my $tentative_events = $self->get_tentative_events;
 
     if ($events and ref($events->{events}) eq 'ARRAY' and $tentative_events) {
 
@@ -232,6 +232,12 @@ sub get_latest_events_for_period {
 
     my @result = values %all_events;
     return \@result;
+}
+
+sub get_tentative_events {
+    
+    my $self             = shift;
+    return $self->chronicle_reader->get(EE, EET);
 }
 
 no Moose;
