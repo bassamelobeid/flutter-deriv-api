@@ -1555,7 +1555,10 @@ sub sell_expired_contracts {
     my %stats_attempt;
     my %stats_failure;
     for my $bet (@$bets) {
-        my $contract = produce_contract($bet->{short_code}, $currency);
+        my $contract;
+        my $error = try { $contract = produce_contract($bet->{short_code}, $currency); } || 1;
+        next if $error;
+
         my $logging_class = $BOM::Database::Model::Constants::BET_TYPE_TO_CLASS_MAP->{$contract->code};
         $stats_attempt{$logging_class}++;
         if (not $contract->is_expired) {
