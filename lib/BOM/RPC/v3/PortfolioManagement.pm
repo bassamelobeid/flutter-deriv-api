@@ -151,6 +151,8 @@ sub proposal_open_contract {
                 $response->{$id} = {
                     buy_price     => $fmb->{buy_price},
                     purchase_time => $fmb->{purchase_time},
+                    account_id    => $fmb->{account_id},
+                    is_sold       => $fmb->{is_sold},
                     defined $fmb->{sell_price}
                     ? (sell_price => sprintf('%.2f', $fmb->{sell_price}))
                     : (),
