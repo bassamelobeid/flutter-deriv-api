@@ -125,14 +125,11 @@ sub verify_email {
 sub new_account_real {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -178,14 +175,11 @@ sub new_account_real {
 sub new_account_maltainvest {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -242,16 +236,14 @@ sub new_account_maltainvest {
 sub new_account_japan {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $args = $params->{args};
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
     }
-
-    return BOM::RPC::v3::Utility::permission_error() unless $client;
 
     my $response  = 'new_account_japan';
     my $error_map = BOM::Platform::Locale::error_map();
