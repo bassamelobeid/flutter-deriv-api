@@ -17,11 +17,16 @@ use BOM::Platform::Client;
 sub buy {
     my $params = shift;
 
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 
-    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
-        return $auth_error;
-    }
+    # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
+    #       are done again in BOM::Product::Transaction
+    return BOM::RPC::v3::Utility::create_error({
+            code              => 'AuthorizationRequired',
+            message_to_client => localize('Please log in.')}) unless $client;
 
     my $source              = $params->{source};
     my $contract_parameters = $params->{contract_parameters};
@@ -30,12 +35,10 @@ sub buy {
     my $purchase_date = time;    # Purchase is considered to have happened at the point of request.
     $contract_parameters = BOM::RPC::v3::Contract::prepare_ask($contract_parameters);
 
-    my $contract = try { produce_contract({%$contract_parameters}) } || do {
-        my $err = $@;
-        return BOM::RPC::v3::Utility::create_error({
-                code              => 'ContractCreationFailure',
-                message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
-    };
+    my $contract = try { produce_contract($contract_parameters) }
+        || return BOM::RPC::v3::Utility::create_error({
+            code              => 'ContractCreationFailure',
+            message_to_client => BOM::Platform::Context::localize('Cannot create contract')});
 
     my $trx = BOM::Product::Transaction->new({
         client        => $client,
@@ -75,6 +78,9 @@ sub buy {
 
 sub sell {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
 

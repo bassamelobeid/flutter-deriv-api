@@ -6,9 +6,37 @@ use warnings;
 use RateLimitations;
 use Date::Utility;
 
+use BOM::Database::Model::AccessToken;
+use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
 use BOM::Platform::SessionCookie;
+
+sub token_to_loginid {
+    my $token = shift;
+
+    return unless $token;
+
+    my $loginid;
+    my @scopes = qw/read trade admin payments/;    # scopes is everything for session token
+    if (length $token == 15) {                     # access token
+        my $m = BOM::Database::Model::AccessToken->new;
+        $loginid = $m->get_loginid_by_token($token);
+        return unless $loginid;
+        @scopes = $m->get_scopes_by_access_token($token);
+    } elsif (length $token == 32 && $token =~ /^a1-/) {
+        my $m = BOM::Database::Model::OAuth->new;
+        $loginid = $m->get_loginid_by_access_token($token);
+        return unless $loginid;
+        @scopes = $m->get_scopes_by_access_token($token);
+    } else {
+        my $session = BOM::Platform::SessionCookie->new(token => $token);
+        return unless $session and $session->validate_session;
+        $loginid = $session->loginid;
+    }
+
+    return ($loginid, @scopes);
+}
 
 sub create_error {
     my $args = shift;
@@ -18,6 +46,12 @@ sub create_error {
             message_to_client => $args->{message_to_client},
             $args->{message} ? (message => $args->{message}) : (),
             $args->{details} ? (details => $args->{details}) : ()}};
+}
+
+sub invalid_token_error {
+    return create_error({
+            code              => 'InvalidToken',
+            message_to_client => localize('The token is invalid.')});
 }
 
 sub permission_error {
