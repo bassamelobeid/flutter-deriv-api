@@ -1510,7 +1510,11 @@ sub _build_staking_limits {
             max => $stake_max,
             err => ($self->built_with_bom_parameters)
             ? localize('Contract market price is too close to final payout.')
-            : localize('Buy price must be between [_1] and [_2].', to_monetary_number_format($stake_min, 1), to_monetary_number_format($stake_max, 1)),
+            : localize(
+                'Buy price must be between [_1] and [_2].',
+                to_monetary_number_format($stake_min, 1),
+                to_monetary_number_format($stake_max, 1)
+            ),
         },
         payout => {
             min => $payout_min,
