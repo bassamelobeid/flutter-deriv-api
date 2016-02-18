@@ -24,8 +24,8 @@ sub payout_currencies {
             };
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token')});
     return;
 }
 
@@ -89,10 +89,9 @@ sub statement {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
@@ -114,10 +113,9 @@ sub profit_table {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            source         => $c->stash('source')});
+            args   => $args,
+            token  => $c->stash('token'),
+            source => $c->stash('source')});
     return;
 }
 
@@ -139,9 +137,9 @@ sub get_account_status {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -163,11 +161,10 @@ sub change_password {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            token_type     => $c->stash('token_type'),
-            client_ip      => $r->client_ip
+            args       => $args,
+            token      => $c->stash('token'),
+            token_type => $c->stash('token_type'),
+            client_ip  => $r->client_ip
         });
     return;
 }
@@ -190,10 +187,9 @@ sub cashier_password {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            client_ip      => $r->client_ip
+            args      => $args,
+            token     => $c->stash('token'),
+            client_ip => $r->client_ip
         });
     return;
 }
@@ -216,10 +212,9 @@ sub get_settings {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            language       => $c->stash('request')->language
+            args     => $args,
+            token    => $c->stash('token'),
+            language => $c->stash('request')->language
         });
     return;
 }
@@ -242,13 +237,12 @@ sub set_settings {
             }
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            website_name   => $r->website->display_name,
-            client_ip      => $r->client_ip,
-            user_agent     => $c->req->headers->header('User-Agent'),
-            language       => $r->language
+            args         => $args,
+            token        => $c->stash('token'),
+            website_name => $r->website->display_name,
+            client_ip    => $r->client_ip,
+            user_agent   => $c->req->headers->header('User-Agent'),
+            language     => $r->language
         });
     return;
 }
@@ -271,9 +265,9 @@ sub get_self_exclusion {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -296,9 +290,9 @@ sub set_self_exclusion {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -330,9 +324,9 @@ sub balance {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -354,10 +348,10 @@ sub api_token {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            account_id     => $c->stash('account_id'),
-            client_loginid => $c->stash('loginid')});
+            args       => $args,
+            token      => $c->stash('token'),
+            account_id => $c->stash('account_id'),
+        });
     return;
 }
 
@@ -378,9 +372,8 @@ sub tnc_approval {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid'),
+            args  => $args,
+            token => $c->stash('token'),
         });
 
     return;

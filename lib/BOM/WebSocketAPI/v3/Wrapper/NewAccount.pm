@@ -99,9 +99,9 @@ sub new_account_real {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -123,9 +123,9 @@ sub new_account_maltainvest {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 
@@ -147,9 +147,9 @@ sub new_account_japan {
             }
         },
         {
-            args           => $args,
-            token          => $c->stash('token'),
-            client_loginid => $c->stash('loginid')});
+            args  => $args,
+            token => $c->stash('token'),
+        });
     return;
 }
 

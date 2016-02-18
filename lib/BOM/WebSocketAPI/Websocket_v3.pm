@@ -381,7 +381,7 @@ sub __handle {
         }
 
         if ($loginid) {
-            my $account_type = $loginid =~ /^VRT/ ? 'virtual' : 'real';
+            my $account_type = $c->stash('is_virtual') ? 'virtual' : 'real';
             DataDog::DogStatsd::Helper::stats_inc('bom_websocket_api.v_3.authenticated_call.all',
                 {tags => [$tag, $descriptor->{category}, "loginid:$loginid", "account_type:$account_type"]});
         }
