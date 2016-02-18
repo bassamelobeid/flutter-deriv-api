@@ -22,15 +22,10 @@ sub __parse_array {
 }
 
 my @token_scopes = ('read', 'trade', 'payments', 'admin');
+my %available_scopes = map { $_ => 1 } @token_scopes;
 sub __filter_valid_scopes {
     my (@s) = @_;
-
-    my @vs;
-    foreach my $s (@s) {
-        push @vs, $s if grep { $_ eq $s } @token_scopes;
-    }
-
-    return @vs;
+    return grep { $available_scopes{$_} } @s;
 }
 
 ## app
