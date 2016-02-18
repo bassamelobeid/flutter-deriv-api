@@ -182,7 +182,6 @@ sub get_settings_by_group {
 
                 quants.client_limits.asian_turnover_limit
                 quants.client_limits.intraday_forex_iv
-                quants.client_limits.smarties_turnover_limit
                 quants.client_limits.spreads_daily_profit_limit
                 quants.client_limits.tick_expiry_engine_turnover_limit
 
