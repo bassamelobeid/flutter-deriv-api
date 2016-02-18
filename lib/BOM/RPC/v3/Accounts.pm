@@ -920,9 +920,9 @@ sub login_history {
     foreach my $record (@{$login_history}) {
         push @history,
             {
-            login_date  => Date::Utility->new($record->history_date)->epoch,
+            time        => Date::Utility->new($record->history_date)->epoch,
             action      => $record->action,
-            status      => $record->successful ? "ok" : "failed",
+            status      => $record->successful ? 1 : 0,
             environment => $record->environment
             };
     }
