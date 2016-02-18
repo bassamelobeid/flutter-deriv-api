@@ -74,15 +74,14 @@ sub logout {
                 logout   => $response->{status}};
         },
         {
-            args           => $args,
-            client_loginid => $c->stash('loginid'),
-            token          => $c->stash('token'),
-            token_type     => $c->stash('token_type'),
-            client_email   => $r->email,
-            client_ip      => $r->client_ip,
-            country_code   => $r->country_code,
-            language       => $r->language,
-            user_agent     => $c->req->headers->header('User-Agent')});
+            args         => $args,
+            token        => $c->stash('token'),
+            token_type   => $c->stash('token_type'),
+            client_email => $r->email,
+            client_ip    => $r->client_ip,
+            country_code => $r->country_code,
+            language     => $r->language,
+            user_agent   => $c->req->headers->header('User-Agent')});
     return;
 }
 
