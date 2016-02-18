@@ -254,6 +254,7 @@ sub new_account_japan {
                 message_to_client => $error_map->{'invalid'}});
     }
 
+    my $args = $params->{args};
     my $details_ref = _get_client_details($args, $client, BOM::Platform::Context::Request->new(country_code => 'jp')->real_account_broker->code);
     if (my $err = $details_ref->{error}) {
         return BOM::RPC::v3::Utility::create_error({

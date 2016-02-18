@@ -698,7 +698,7 @@ sub set_self_exclusion {
         return $err;
     };
 
-    my %args = %$params->{args};
+    my %args = %{$params->{args}};
     foreach my $field (
         qw/max_balance max_turnover max_losses max_7day_turnover max_7day_losses max_30day_losses max_30day_turnover max_open_bets session_duration_limit/
         )
