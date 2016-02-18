@@ -148,7 +148,11 @@
         "purchase_time": {
           "type": "integer",
           "description": "Epoch of purchase time, will be same as date_start for all contracts except forward starting contracts."
-      }
+        },
+        "sell_time":{
+          "type":["integer", "null"],
+          "description": "sell time of contract, only present for sold contracts"
+        }
     },
     "msg_type": {
       "type": "string",
