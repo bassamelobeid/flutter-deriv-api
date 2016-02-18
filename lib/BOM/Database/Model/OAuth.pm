@@ -3,6 +3,7 @@ package BOM::Database::Model::OAuth;
 use Moose;
 use Date::Utility;
 use String::Random ();
+use List::MoreUtils qw(uniq);
 use BOM::Database::AuthDB;
 
 has 'dbh' => (
@@ -40,14 +41,22 @@ sub verify_app {
 sub confirm_scope {
     my ($self, $app_id, $loginid, @scopes) = @_;
 
-    my $dbh           = $self->dbh;
+    my $dbh = $self->dbh;
 
-    # delete then insert
-    $dbh->do("DELETE FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?", undef,
-        $app_id, $loginid);
-
-    $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid, scopes) VALUES (?, ?, ?)", undef,
-        $app_id, $loginid, [ __filter_valid_scopes(@scopes) ] );
+    my ($is_exists, $exists_scopes) = $dbh->selectrow_array("
+        SELECT true, scopes FROM oauth.user_scope_confirm WHERE app_id = ? AND loginid = ?
+    ", undef, $app_id, $loginid);
+    if ($is_exists) {
+        $exists_scopes = __parse_array($exists_scopes);
+        push @scopes, @$exists_scopes;
+        @scopes = __filter_valid_scopes(uniq @scopes);
+        $dbh->do("
+            UPDATE oauth.user_scope_confirm SET scopes = ? WHERE app_id = ? AND loginid = ?
+        ", undef, \@scopes, $app_id, $loginid);
+    } else {
+        $dbh->do("INSERT INTO oauth.user_scope_confirm (app_id, loginid, scopes) VALUES (?, ?, ?)", undef,
+            $app_id, $loginid, [ __filter_valid_scopes(@scopes) ] );
+    }
 
     return 1;
 }

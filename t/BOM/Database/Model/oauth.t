@@ -24,6 +24,12 @@ ok $m->confirm_scope($test_appid, $test_loginid, 'read', 'trade'), 'confirm scop
 $is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade');
 is $is_confirmed, 1, 'confirmed after confirm_scope';
 
+$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade', 'admin');
+is $is_confirmed, 0, 'admin is not confirmed';
+ok $m->confirm_scope($test_appid, $test_loginid, 'admin'), 'confirm admin scope';
+$is_confirmed = $m->is_scope_confirmed($test_appid, $test_loginid, 'read', 'trade', 'admin');
+is $is_confirmed, 1, 'admin is confirmed';
+
 # create then verify
 my $code = $m->store_auth_code($test_appid, $test_loginid, 'read', 'trade');
 ok $code, 'code created';
