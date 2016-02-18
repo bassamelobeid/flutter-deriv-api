@@ -156,6 +156,7 @@ sub get_bid {
             longcode            => $contract->longcode,
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
+            purchase_time       => $params->{purchase_time},
         };
 
         if (not $contract->is_valid_to_sell) {
@@ -167,8 +168,8 @@ sub get_bid {
             $response->{entry_tick_time} = $contract->entry_tick ? $contract->entry_tick->epoch : '';
             $response->{exit_tick}       = $contract->exit_tick  ? $contract->exit_tick->quote  : '';
             $response->{exit_tick_time}  = $contract->exit_tick  ? $contract->exit_tick->epoch  : '';
-            $response->{current_spot}    = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-            $response->{entry_spot}      = $contract->entry_spot;
+            $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+            $response->{entry_spot} = $contract->entry_spot;
 
             if ($contract->expiry_type eq 'tick') {
                 $response->{prediction} = $contract->prediction;
