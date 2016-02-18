@@ -17,10 +17,11 @@ use BOM::Platform::Client;
 sub buy {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
 
     # NOTE: no need to call BOM::RPC::v3::Utility::check_authorization. All checks
     #       are done again in BOM::Product::Transaction
@@ -79,11 +80,11 @@ sub buy {
 sub sell {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
