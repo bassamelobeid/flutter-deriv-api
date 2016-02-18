@@ -36,6 +36,7 @@ sub authorize {
                     currency             => $response->{currency},
                     landing_company_name => $response->{landing_company_name},
                     country              => delete $response->{country});
+                    is_virtual           => $response->{is_virtual});
                 return {
                     msg_type  => 'authorize',
                     authorize => $response,
