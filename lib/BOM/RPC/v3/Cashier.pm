@@ -31,14 +31,11 @@ use BOM::System::AuditLog;
 sub get_limits {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -104,8 +101,9 @@ sub paymentagent_list {
     my ($language, $args) = @{$params}{qw/language args/};
 
     my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
+    if ($params->{token}) {
+        my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+        $client = BOM::Platform::Client->new({loginid => $client_loginid}) if $client_loginid;
     }
 
     my $broker_code = $client ? $client->broker_code : 'CR';
@@ -154,12 +152,16 @@ sub paymentagent_list {
 sub paymentagent_transfer {
     my $params = shift;
 
+    my $loginid_fm = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $loginid_fm);
 
-    my ($loginid_fm, $website_name, $args) =
-        @{$params}{qw/client_loginid website_name args/};
+    my $client = BOM::Platform::Client->new({loginid => $loginid_fm});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
 
+    my ($website_name, $args) = @{$params}{qw/website_name args/};
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
     my $loginid_to = uc $args->{transfer_to};
@@ -361,20 +363,16 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my ($client_loginid, $website_name, $args) =
-        @{$params}{qw/client_loginid website_name args/};
-
-    my $client;
-    if ($client_loginid) {
-        $client = BOM::Platform::Client->new({loginid => $client_loginid});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
+
+    my ($website_name, $args) = @{$params}{qw/website_name args/};
 
     # expire token only when its not dry run
     if (exists $args->{dry_run} and not $args->{dry_run}) {
@@ -681,14 +679,11 @@ sub __client_withdrawal_notes {
 sub transfer_between_accounts {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
@@ -899,14 +894,11 @@ sub transfer_between_accounts {
 sub topup_virtual {
     my $params = shift;
 
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
     return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
 
-    my $client;
-    if ($params->{client_loginid}) {
-        $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
-    }
-
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
     }
