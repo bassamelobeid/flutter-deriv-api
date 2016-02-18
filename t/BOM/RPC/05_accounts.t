@@ -4,8 +4,8 @@ use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
-use Data::Dumper;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Database::Model::AccessToken;
 
 package MojoX::JSON::RPC::Client;
 
@@ -50,12 +50,31 @@ $user->save;
 my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
+#cleanup
+BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+
+my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
+# need to mock it as to access api token we need token beforehand
+$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
+
+# create new api token
+my $res = BOM::RPC::v3::Accounts::api_token({
+        token => 'Abc123',
+        args  => {
+            api_token => 1,
+            new_token => 'Sample1'
+        }});
+is scalar(@{$res->{tokens}}), 1, "token created succesfully";
+my $token = $res->{tokens}->[0]->{token};
+
+$mock_utility->unmock('token_to_loginid');
+
 my $method = 'payout_currencies';
 subtest $method => sub {
     my $m               = ref(BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica'));
     my $mocked_m        = Test::MockModule->new($m, no_auto => 1);
     my $mocked_currency = [qw(A B C)];
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), ['USD'], "will return client's currency");
+    is_deeply($c->tcall($method, {token => $token}), ['EUR'], "will return client's currency");
     $mocked_m->mock('legal_allowed_currencies', sub { return $mocked_currency });
     is_deeply($c->tcall($method, {}), $mocked_currency, "will return legal currencies");
 };
@@ -96,12 +115,12 @@ subtest $method => sub {
 
 $method = 'statement';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 100, 'have 100 statements');
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
+    is($c->tcall($method, {token => 'some_dummy_token'})->{error}{code}, 'InvalidToken', 'need a valid client');
+    is($c->tcall($method, {token => $token})->{count}, 100, 'have 100 statements');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 0, 'have 0 statements if no default account');
+    is($c->tcall($method, {token => $token})->{count}, 0, 'have 0 statements if no default account');
     undef $mock_client;
     my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
     my $_sell_expired_is_called = 0;
@@ -171,7 +190,7 @@ subtest $method => sub {
         }];
 
     $mocked_transaction->mock('get_transactions_ws', sub { return $txns });
-    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    my $result = $c->tcall($method, {token => $token});
     ok($_sell_expired_is_called, "_sell_expired_contracts is called");
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{sell_time})->epoch,     'transaction time correct for sell');
@@ -183,7 +202,7 @@ subtest $method => sub {
     $result = $c->tcall(
         $method,
         {
-            client_loginid => 'CR0021',
+            token => $token,
             args           => {description => 1}});
     is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
     is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
@@ -192,14 +211,14 @@ subtest $method => sub {
 
 $method = 'balance';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
+    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid client');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{currency}, '', 'have no currency if no default account');
+    is($c->tcall($method, {token => $token})->{balance},  0,  'have 0 balance if no default account');
+    is($c->tcall($method, {token => $token})->{currency}, '', 'have no currency if no default account');
     undef $mock_client;
-    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    my $result = $c->tcall($method, {token => $token});
     is_deeply(
         $result,
         {
@@ -213,8 +232,8 @@ subtest $method => sub {
 
 $method = 'get_account_status';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
+    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid client');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     my %status      = (
         status1      => 1,
@@ -223,18 +242,18 @@ subtest $method => sub {
     );
     $mock_client->mock('client_status_types', sub { return \%status });
     $mock_client->mock('get_status', sub { my ($self, $status) = @_; return $status{$status} });
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(status1)]}, 'no tnc_approval, no status with value 0');
+    is_deeply($c->tcall($method, {token => $token}), {status => [qw(status1)]}, 'no tnc_approval, no status with value 0');
     %status = (tnc_approval => 1);
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
+    is_deeply($c->tcall($method, {token => $token}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
     %status = ();
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(active)]}, 'no result, active');
+    is_deeply($c->tcall($method, {token => $token}), {status => [qw(active)]}, 'no result, active');
 };
 
 $method = 'change_password';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
-    is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
-    my $params = {client_loginid => $test_loginid};
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
+    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid client');
+    my $params = {token => $token};
     is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
     $params->{token_type} = 'hello';
     is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
@@ -262,5 +281,13 @@ subtest $method => sub {
     ok($send_email_called, 'send_email called');
     $password = $new_password;
 };
+
+$res = BOM::RPC::v3::Accounts::api_token({
+        token => $token,
+        args  => {
+            api_token    => 1,
+            delete_token => $token
+        }});
+is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
 
 done_testing();

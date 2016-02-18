@@ -6,6 +6,7 @@ use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Client;
 use BOM::Platform::Runtime;
+use BOM::Database::Model::AccessToken;
 
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
@@ -25,6 +26,9 @@ my $test_loginid = $test_client->loginid;
 
 my $res = BOM::RPC::v3::Utility::website_status(BOM::Platform::Runtime->instance->app_config);
 is $res->{terms_conditions_version}, 'version 1', 'version 1';
+
+# cleanup
+BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 # need to mock it as to access api token we need token beforehand
