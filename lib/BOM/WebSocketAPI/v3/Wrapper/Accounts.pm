@@ -392,7 +392,7 @@ sub login_history {
             } else {
                 return {
                     msg_type      => 'login_history',
-                    login_history => $response->{status}};
+                    login_history => $response->{records}};
             }
         },
         {
