@@ -117,7 +117,6 @@ sub statement {
     }
 
     my $account = $client->default_account;
-
     return {
         transactions => [],
         count        => 0
