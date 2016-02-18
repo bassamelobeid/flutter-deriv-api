@@ -379,5 +379,28 @@ sub tnc_approval {
     return;
 }
 
-1;
+sub login_history {
+    my ($c, $args) = @_;
 
+    BOM::WebSocketAPI::Websocket_v3::rpc(
+        $c,
+        'login_history',
+        sub {
+            my $response = shift;
+            if (exists $response->{error}) {
+                return $c->new_error('login_history', $response->{error}->{code}, $response->{error}->{message_to_client});
+            } else {
+                return {
+                    msg_type      => 'login_history',
+                    login_history => $response->{status}};
+            }
+        },
+        {
+            args  => $args,
+            token => $c->stash('token'),
+        });
+
+    return;
+}
+
+1;
