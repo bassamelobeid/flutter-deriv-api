@@ -69,11 +69,9 @@ sub entry_point {
                 # set correct request context for localize
                 BOM::Platform::Context::request($c->stash('request'))
                     if $channel =~ /^FEED::/;
-                BOM::WebSocketAPI::v3::Wrapper::Accounts::send_realtime_balance($c, $msg)
-                    if $channel =~ /^TXNUPDATE::balance_/;
                 BOM::WebSocketAPI::v3::Wrapper::Streamer::process_realtime_events($c, $msg)
                     if $channel =~ /^FEED::/;
-                BOM::WebSocketAPI::v3::Wrapper::Transaction::send_transaction_updates($c, $msg)
+                BOM::WebSocketAPI::v3::Wrapper::Streamer::process_transaction_updates($c, $msg)
                     if $channel =~ /^TXNUPDATE::transaction_/;
             });
         $c->stash->{redis} = $redis;
@@ -258,14 +256,14 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1, 'payments'
     ],
+    ['api_token', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1],
+    ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1, 'admin'],
 
     ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1, 'admin'],
     ['app_list',     \&BOM::WebSocketAPI::v3::Wrapper::App::list,     1, 'admin'],
     ['app_get',      \&BOM::WebSocketAPI::v3::Wrapper::App::get,      1, 'admin'],
     ['app_delete',   \&BOM::WebSocketAPI::v3::Wrapper::App::delete,   1, 'admin'],
 
-    ['api_token', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1],
-    ['tnc_approval',  \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1, 'admin'],
     ['topup_virtual', \&BOM::WebSocketAPI::v3::Wrapper::Cashier::topup_virtual, 1, 'trade'],
     ['get_limits',    \&BOM::WebSocketAPI::v3::Wrapper::Cashier::get_limits,    1, 'read'],
     [
