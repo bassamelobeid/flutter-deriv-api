@@ -91,6 +91,7 @@ sub statement {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             source         => $c->stash('source')});
     return;
 }
@@ -115,6 +116,7 @@ sub profit_table {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             source         => $c->stash('source')});
     return;
 }
@@ -138,6 +140,7 @@ sub get_account_status {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -162,6 +165,7 @@ sub change_password {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             token_type     => $c->stash('token_type'),
             client_ip      => $r->client_ip
         });
@@ -188,6 +192,7 @@ sub cashier_password {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             client_ip      => $r->client_ip
         });
     return;
@@ -213,6 +218,7 @@ sub get_settings {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             language       => $c->stash('request')->language
         });
     return;
@@ -238,6 +244,7 @@ sub set_settings {
         {
             args           => $args,
             client_loginid => $c->stash('loginid'),
+            token          => $c->stash('token'),
             website_name   => $r->website->display_name,
             client_ip      => $r->client_ip,
             user_agent     => $c->req->headers->header('User-Agent'),
@@ -265,6 +272,7 @@ sub get_self_exclusion {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -289,6 +297,7 @@ sub set_self_exclusion {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -301,7 +310,7 @@ sub balance {
     if (    $account_id
         and exists $args->{subscribe}
         and $args->{subscribe} eq '1'
-        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'subscribe', $account_id, $args)))
+        and (not $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $account_id, 'balance', $args)))
     {
         return $c->new_error('balance', 'AlreadySubscribed', $c->l('You are already subscribed to balance updates.'));
     }
@@ -322,37 +331,8 @@ sub balance {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid')});
-    return;
-}
-
-sub send_realtime_balance {
-    my ($c, $message) = @_;
-
-    my $args = {};
-    my $channel;
-    my $subscriptions = $c->stash('balance_channel');
-
-    if ($subscriptions) {
-        $channel = first { m/TXNUPDATE::balance/ } keys %$subscriptions;
-        $args = ($channel and exists $subscriptions->{$channel}->{args}) ? $subscriptions->{$channel}->{args} : {};
-    }
-
-    if ($c->stash('loginid')) {
-        my $payload = JSON::from_json($message);
-        $c->send({
-                json => {
-                    msg_type => 'balance',
-                    $args ? (echo_req => $args) : (),
-                    ($args and exists $args->{req_id}) ? (req_id => $args->{req_id}) : (),
-                    balance => {
-                        loginid  => $c->stash('loginid'),
-                        currency => $c->stash('currency'),
-                        balance  => $payload->{balance_after},
-                        ($channel and exists $subscriptions->{$channel}->{uuid}) ? (id => $subscriptions->{$channel}->{uuid}) : ()}}}) if $c->tx;
-    } elsif ($channel and exists $subscriptions->{$channel}->{account_id}) {
-        BOM::WebSocketAPI::v3::Wrapper::Streamer::_balance_channel($c, 'unsubscribe', $subscriptions->{$channel}->{account_id}, $args);
-    }
     return;
 }
 
@@ -375,6 +355,8 @@ sub api_token {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
+            account_id     => $c->stash('account_id'),
             client_loginid => $c->stash('loginid')});
     return;
 }
@@ -397,6 +379,7 @@ sub tnc_approval {
         },
         {
             args           => $args,
+            token          => $c->stash('token'),
             client_loginid => $c->stash('loginid'),
         });
 
