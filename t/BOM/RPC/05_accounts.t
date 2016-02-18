@@ -203,7 +203,7 @@ subtest $method => sub {
         $method,
         {
             token => $token,
-            args           => {description => 1}});
+            args  => {description => 1}});
     is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
     is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
 
