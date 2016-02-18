@@ -10,6 +10,7 @@ use Time::HiRes;
 use BOM::Platform::Context;
 use BOM::Platform::Context::Request;
 use BOM::Database::Rose::DB;
+use BOM::RPC::v3::Utility;
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Static;
 use BOM::RPC::v3::TickStreamer;
@@ -55,7 +56,8 @@ sub register {
             my ($params) = @_;
 
             my $args = {country_code => $params->{country}};
-            if ($params->{client_loginid} and $params->{client_loginid} =~ /^(\D+)\d+$/) {
+            my $loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+            if ($loginid and $loginid =~ /^(\D+)\d+$/) {
                 $args->{broker_code} = $1;
             }
             $args->{language} = $params->{language} if ($params->{language});
