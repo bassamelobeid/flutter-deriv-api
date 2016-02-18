@@ -18,8 +18,7 @@ sub buy {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
 
@@ -81,8 +80,7 @@ sub sell {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {

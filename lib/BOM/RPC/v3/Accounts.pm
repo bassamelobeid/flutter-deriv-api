@@ -109,8 +109,7 @@ sub statement {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -170,8 +169,7 @@ sub profit_table {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -230,8 +228,7 @@ sub balance {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -255,8 +252,7 @@ sub get_account_status {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -280,8 +276,7 @@ sub change_password {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     my ($token_type, $client_ip, $args) = @{$params}{qw/token_type client_ip args/};
@@ -345,8 +340,7 @@ sub cashier_password {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -464,8 +458,7 @@ sub get_settings {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -507,8 +500,7 @@ sub set_settings {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -626,8 +618,7 @@ sub get_self_exclusion {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -673,8 +664,7 @@ sub set_self_exclusion {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -820,8 +810,7 @@ sub api_token {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -877,8 +866,7 @@ sub tnc_approval {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
@@ -902,8 +890,7 @@ sub login_history {
     my $params = shift;
 
     my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
-    return BOM::RPC::v3::Utility::invalid_token_error()
-        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+    return BOM::RPC::v3::Utility::invalid_token_error() unless $client_loginid;
 
     my $client = BOM::Platform::Client->new({loginid => $client_loginid});
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {

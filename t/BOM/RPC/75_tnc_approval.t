@@ -7,7 +7,6 @@ use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::Client;
 use BOM::Platform::Runtime;
 use BOM::Database::Model::AccessToken;
-
 use BOM::RPC::v3::Accounts;
 use BOM::RPC::v3::Utility;
 

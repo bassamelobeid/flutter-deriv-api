@@ -1,14 +1,15 @@
 use strict;
 use warnings;
 use Test::More;
+use Test::MockModule;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis;
 use BOM::Platform::User;
 use BOM::Platform::Client;
 use BOM::System::Password;
-
 use BOM::RPC::v3::App;
 use BOM::Database::Model::OAuth;
+use BOM::Database::Model::AccessToken;
 
 # cleanup
 my $dbh = BOM::Database::Model::OAuth->new->dbh;
