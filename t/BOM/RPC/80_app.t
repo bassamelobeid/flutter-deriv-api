@@ -8,6 +8,7 @@ use BOM::Platform::User;
 use BOM::Platform::Client;
 use BOM::System::Password;
 use BOM::RPC::v3::App;
+use BOM::RPC::v3::Accounts;
 use BOM::Database::Model::OAuth;
 use BOM::Database::Model::AccessToken;
 
