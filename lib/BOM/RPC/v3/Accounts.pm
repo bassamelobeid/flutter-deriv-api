@@ -16,6 +16,7 @@ use BOM::Platform::Email qw(send_email);
 use BOM::Platform::Runtime::LandingCompany::Registry;
 use BOM::Platform::Locale;
 use BOM::Platform::Client;
+use BOM::Platform::User;
 use BOM::Platform::Static::Config;
 use BOM::Product::Transaction;
 use BOM::Product::ContractFactory qw( simple_contract_info );
@@ -895,6 +896,39 @@ sub tnc_approval {
     }
 
     return {status => 1};
+}
+
+sub login_history {
+    my $params = shift;
+
+    my $client_loginid = BOM::RPC::v3::Utility::token_to_loginid($params->{token});
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not $client_loginid);
+
+    my $client = BOM::Platform::Client->new({loginid => $client_loginid});
+    if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
+        return $auth_error;
+    }
+
+    my $user = BOM::Platform::User->new({email => $client->email});
+    my $login_history = $user->find_login_history(
+        sort_by => 'history_date desc',
+        limit   => 50
+    );
+
+    my @history = ();
+    foreach my $record (@{$login_history}) {
+        push @history,
+            {
+            login_date  => Date::Utility->new($record->history_date)->epoch,
+            action      => $record->action,
+            status      => $record->successful ? "ok" : "failed",
+            environment => $record->environment
+            };
+    }
+
+    return {records => [@history]};
+
 }
 
 1;

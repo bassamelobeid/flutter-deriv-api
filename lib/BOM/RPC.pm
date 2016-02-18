@@ -133,6 +133,7 @@ sub startup {
                 '/set_self_exclusion'        => register('set_self_exclusion',        \&BOM::RPC::v3::Accounts::set_self_exclusion),
                 '/balance'                   => register('balance',                   \&BOM::RPC::v3::Accounts::balance),
                 '/api_token'                 => register('api_token',                 \&BOM::RPC::v3::Accounts::api_token),
+                '/login_history'             => register('login_history',             \&BOM::RPC::v3::Accounts::login_history),
                 '/verify_email'              => register('verify_email',              \&BOM::RPC::v3::NewAccount::verify_email),
                 '/send_ask'                  => register('send_ask',                  \&BOM::RPC::v3::Contract::send_ask),
                 '/get_bid'                   => register('get_bid',                   \&BOM::RPC::v3::Contract::get_bid),
