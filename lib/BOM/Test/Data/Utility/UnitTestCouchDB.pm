@@ -119,7 +119,6 @@ sub _init {
                     'client_limits' => {
                         'asian_turnover_limit'       => '50000',
                         'spreads_daily_profit_limit' => '10000',
-                        'smarties_turnover_limit'    => '100000',
                         'intraday_forex_iv'          => '{
                                "potential_profit" : 35000,
                                "realized_profit" : 35000,
