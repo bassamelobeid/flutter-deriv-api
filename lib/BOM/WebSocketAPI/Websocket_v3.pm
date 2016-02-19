@@ -336,10 +336,10 @@ sub __handle {
 
         my $limit = 1;
         if (not grep { $_ eq $descriptor->{category} } ('ping', 'time')) {
-            $limit=0;
+            $limit = 0;
         }
         if ($c->stash('loginid') and not $c->stash('is_virtual') and grep { $_ eq $descriptor->{category} } ('buy', 'sell')) {
-            $limit=0;
+            $limit = 0;
         }
 
         if ($limit) {
