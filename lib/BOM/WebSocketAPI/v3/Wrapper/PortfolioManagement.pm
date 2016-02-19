@@ -64,7 +64,11 @@ sub proposal_open_contract {
                         } else {
                             my $details = {%$args};
                             my $id;
-                            if (exists $args->{subscribe} and $args->{subscribe} eq '1' and not $response->{$contract_id}->{is_expired}) {
+                            if (    exists $args->{subscribe}
+                                and $args->{subscribe} eq '1'
+                                and not $response->{$contract_id}->{is_expired}
+                                and not $response->{$contract_id}->{is_sold})
+                            {
                                 # these keys needs to be deleted from args (check send_proposal)
                                 # populating here cos we stash them in redis channel
                                 $details->{short_code}    = $response->{$contract_id}->{shortcode};
@@ -72,11 +76,13 @@ sub proposal_open_contract {
                                 $details->{currency}      = $response->{$contract_id}->{currency};
                                 $details->{buy_price}     = $response->{$contract_id}->{buy_price};
                                 $details->{sell_price}    = $response->{$contract_id}->{sell_price};
+                                $details->{sell_time}     = $response->{$contract_id}->{sell_time};
                                 $details->{purchase_time} = $response->{$contract_id}->{purchase_time};
                                 $details->{is_sold}       = $response->{$contract_id}->{is_sold};
                                 $details->{underlying}    = $response->{$contract_id}->{underlying};
                                 $details->{account_id}    = $response->{$contract_id}->{account_id};
 
+                                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $response->{$contract_id}->account_id,
                                     $contract_id, $details);
 
@@ -122,8 +128,6 @@ sub send_proposal {
         sub {
             my $response = shift;
             if ($response) {
-                my $sell_price = delete $details->{sell_price};
-                my $sell_time  = delete $details->{sell_time};
                 if (exists $response->{error}) {
                     BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, $id) if $id;
                     BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
@@ -133,6 +137,9 @@ sub send_proposal {
                     BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $account_id, $contract_id);
                     $id = undef;
                 }
+
+                my $sell_price = delete $details->{sell_price};
+                my $sell_time  = delete $details->{sell_time};
                 return {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
@@ -153,6 +160,7 @@ sub send_proposal {
             contract_id => $contract_id,
             currency    => delete $details->{currency},
             is_sold     => delete $details->{is_sold},
+            sell_time   => $sell_time,
             args        => $details
         });
     return;
