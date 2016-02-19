@@ -5,6 +5,7 @@ use strict;
 use warnings;
 
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use Quant::Framework::Utils::Test;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Date::Utility;
 use BOM::Market::Underlying;
@@ -68,7 +69,7 @@ sub create_pricing_data {
             symbol        => $_,
             recorded_date => $for_date
         }) for @dividend_symbols;
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+    Quant::Framework::Utils::Test::create_doc(
         'currency',
         {
             symbol        => $_,
