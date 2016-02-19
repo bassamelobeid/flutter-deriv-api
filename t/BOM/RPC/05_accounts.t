@@ -64,7 +64,7 @@ my $res = BOM::RPC::v3::Accounts::api_token({
             api_token => 1,
             new_token => 'Sample1'
         }});
-is scalar(@{$res->{tokens}}), 1, "token created succesfully";
+is scalar(@{$res->{tokens}}), 1, "token created succesfully for MF client";
 my $token = $res->{tokens}->[0]->{token};
 
 $mock_utility->unmock('token_to_loginid');
@@ -113,10 +113,36 @@ subtest $method => sub {
     is($c->tcall($method, {args => {landing_company_details => 'costarica'}})->{name}, 'Binary (C.R.) S.A.', "details result ok");
 };
 
+$res = BOM::RPC::v3::Accounts::api_token({
+        token => $token,
+        args  => {
+            api_token    => 1,
+            delete_token => $token
+        }});
+is scalar(@{$res->{tokens}}), 0, "MF client token deleted successfully";
+
+$test_loginid = 'CR0021';
+# cleanup
+BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+
+$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
+
+# create new api token
+$res = BOM::RPC::v3::Accounts::api_token({
+        token => 'Abc123',
+        args  => {
+            api_token => 1,
+            new_token => 'Sample1'
+        }});
+is scalar(@{$res->{tokens}}), 1, "token created succesfully for CR client";
+$token = $res->{tokens}->[0]->{token};
+
+$mock_utility->unmock('token_to_loginid');
+
 $method = 'statement';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
-    is($c->tcall($method, {token => 'some_dummy_token'})->{error}{code}, 'InvalidToken', 'need a valid client');
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
+    is($c->tcall($method, {token => 'some_dummy_token'})->{error}{code}, 'InvalidToken', 'need a valid token');
     is($c->tcall($method, {token => $token})->{count}, 100, 'have 100 statements');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
@@ -211,8 +237,8 @@ subtest $method => sub {
 
 $method = 'balance';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
-    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid client');
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
+    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid token');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     $mock_client->mock('default_account', sub { undef });
     is($c->tcall($method, {token => $token})->{balance},  0,  'have 0 balance if no default account');
@@ -232,8 +258,8 @@ subtest $method => sub {
 
 $method = 'get_account_status';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
-    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid client');
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
+    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid token');
     my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     my %status      = (
         status1      => 1,
@@ -249,27 +275,52 @@ subtest $method => sub {
     is_deeply($c->tcall($method, {token => $token}), {status => [qw(active)]}, 'no result, active');
 };
 
+$res = BOM::RPC::v3::Accounts::api_token({
+        token => $token,
+        args  => {
+            api_token    => 1,
+            delete_token => $token
+        }});
+is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
+
+sub _get_session_token {
+    return BOM::Platform::SessionCookie->new({
+            email      => 'shuwnyuan@regentmarkets.com',
+            loginid    => 'CR0021',
+            expires_in => 3600
+        })->token;
+}
+
 $method = 'change_password';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need loginid');
-    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid client');
-    my $params = {token => $token};
+    is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
+    is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid token');
+    my $params = {token => _get_session_token()};
     is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
-    $params->{token_type} = 'hello';
-    is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
+
+    $params->{token}              = _get_session_token();
     $params->{token_type}         = 'session_token';
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';
+
+    $res = $c->tcall($method, $params);
+    note explain $res;
+
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Old password is wrong.');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
 
+    $params->{token} = _get_session_token();
     is($c->tcall($method, $params)->{error}{message_to_client}, 'New password is same as old password.');
+
     $params->{args}{new_password} = '111111111';
+    $params->{token} = _get_session_token();
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
+
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
+    $params->{token} = _get_session_token();
     my $send_email_called = 0;
     my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
     $mocked_account->mock('send_email', sub { $send_email_called++ });
@@ -281,13 +332,5 @@ subtest $method => sub {
     ok($send_email_called, 'send_email called');
     $password = $new_password;
 };
-
-$res = BOM::RPC::v3::Accounts::api_token({
-        token => $token,
-        args  => {
-            api_token    => 1,
-            delete_token => $token
-        }});
-is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
 
 done_testing();
