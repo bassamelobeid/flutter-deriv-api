@@ -121,6 +121,7 @@ sub send_proposal {
     my $details     = {%$args};
     my $contract_id = delete $details->{contract_id};
     my $account_id  = delete $details->{account_id};
+    my $sell_time   = delete $details->{sell_time};
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
@@ -139,7 +140,6 @@ sub send_proposal {
                 }
 
                 my $sell_price = delete $details->{sell_price};
-                my $sell_time  = delete $details->{sell_time};
                 return {
                     msg_type               => 'proposal_open_contract',
                     proposal_open_contract => {
