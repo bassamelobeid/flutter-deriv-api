@@ -129,7 +129,9 @@ sub _init {
                     'commission' => {
                         'adjustment' => {
                             'global_scaling' => '100',
-                        }}}
+                        }
+                    }
+                }
             },
             '_rev' => time
         });
