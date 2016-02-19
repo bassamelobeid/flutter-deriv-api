@@ -206,16 +206,11 @@ sub buy_multiple_bets {
     };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
-            bet_data     => $bet_data,
-            account_data => [map {
-                +{
-                    client_loginid => $_->client_loginid,
-                    currency_code  => $_->currency_code
-                 }
-            } @$acc],
-            limits => undef,
-            db     => db,
-        });
+        bet_data     => $bet_data,
+        account_data => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+        limits       => undef,
+        db           => db,
+    });
     my $res = $fmb->batch_buy_bet;
     # note explain [$res];
     return $res;
@@ -1560,13 +1555,12 @@ subtest 'batch_buy', sub {
     use YAML::XS;
 
     my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    my $ip     = $config->{costarica}->{write}->{ip}; # create_client creates CR clients
+    my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
     my $pw     = $config->{password};
 
     my $listener = DBI->connect(
         "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
-        'write',
-        $pw,
+        'write', $pw,
         {
             AutoCommit => 1,
             RaiseError => 1,
@@ -1602,22 +1596,24 @@ subtest 'batch_buy', sub {
         while (my $notify = $listener->pg_notifies) {
             # note "got notification: $notify->[-1]";
             my $n = {};
-            @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/} =
+            @{$n}{
+                qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
+                } =
                 split ',', $notify->[-1];
             $notifications{$n->{id}} = $n;
         }
         # note explain \%notifications;
 
-        my $acc = $acc1;
+        my $acc     = $acc1;
         my $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
-            is $r->{e_code}, undef, 'e_code is undef';
+            is $r->{e_code},        undef, 'e_code is undef';
             is $r->{e_description}, undef, 'e_description is undef';
-            isnt $r->{fmb}, undef, 'got FMB';
-            isnt $r->{txn}, undef, 'got TXN';
+            isnt $r->{fmb},         undef, 'got FMB';
+            isnt $r->{txn},         undef, 'got TXN';
 
             my $fmb = $r->{fmb};
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
@@ -1626,7 +1622,7 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount}, '-20.0000', 'txn amount';
+            is $txn->{amount},        '-20.0000',  'txn amount';
             is $txn->{balance_after}, '4980.0000', 'txn balance_after';
 
             my $note = $notifications{$txn->{id}};
@@ -1640,28 +1636,28 @@ subtest 'batch_buy', sub {
             }
         };
 
-        $acc = $acc2;
+        $acc     = $acc2;
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
-            is $r->{e_code}, 'BI003', 'e_code is BI003';
+            is $r->{e_code},          'BI003',                  'e_code is BI003';
             like $r->{e_description}, qr/insufficient balance/, 'e_description mentions insufficient balance';
-            is $r->{fmb}, undef, 'no FMB';
-            is $r->{txn}, undef, 'no TXN';
+            is $r->{fmb},             undef,                    'no FMB';
+            is $r->{txn},             undef,                    'no TXN';
         };
 
-        $acc = $acc3;
+        $acc     = $acc3;
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
-            is $r->{e_code}, undef, 'e_code is undef';
+            is $r->{e_code},        undef, 'e_code is undef';
             is $r->{e_description}, undef, 'e_description is undef';
-            isnt $r->{fmb}, undef, 'got FMB';
-            isnt $r->{txn}, undef, 'got TXN';
+            isnt $r->{fmb},         undef, 'got FMB';
+            isnt $r->{txn},         undef, 'got TXN';
 
             my $fmb = $r->{fmb};
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
@@ -1670,7 +1666,7 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount}, '-20.0000', 'txn amount';
+            is $txn->{amount},        '-20.0000',  'txn amount';
             is $txn->{balance_after}, '9980.0000', 'txn balance_after';
 
             my $note = $notifications{$txn->{id}};
