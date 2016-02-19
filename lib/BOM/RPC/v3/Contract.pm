@@ -132,7 +132,7 @@ sub get_ask {
 
 sub get_bid {
     my $params = shift;
-    my ($short_code, $contract_id, $currency, $is_sold) = @{$params}{qw/short_code contract_id currency is_sold/};
+    my ($short_code, $contract_id, $currency, $is_sold, $sell_time) = @{$params}{qw/short_code contract_id currency is_sold sell_time/};
 
     my $response;
     try {
@@ -163,6 +163,10 @@ sub get_bid {
         }
 
         if (not $contract->is_spread) {
+            if ($sell_time) {
+                $response->{sell_spot} = $contract->underlying->tick_at($sell_time);
+            }
+
             if ($contract->expiry_type eq 'tick') {
                 $response->{prediction}      = $contract->prediction;
                 $response->{tick_count}      = $contract->tick_count;
