@@ -70,6 +70,7 @@ sub update_event {
             if ($events->{$id}->{blankout} > $events->{$id}->{blankout_end}) {
                 return 'Blankout end time should be after blankout start time!';
             }
+            $events->{$id}->{release_date} = int(($events->{$id}->{blankout}+$events->{$id}->{blankout_end})/2);
             push @updated_events, $events->{$id};
             last;
         }
