@@ -12,7 +12,7 @@ use Date::Utility;
 use BOM::System::Localhost;
 use BOM::Utility::Log4perl qw( get_logger );
 use Format::Util::Numbers qw( commas );
-use BOM::MarketData::InterestRate;
+use Quant::Framework::InterestRate;
 use BOM::MarketData::VolSurface::Delta;
 use BOM::MarketData::VolSurface::Moneyness;
 use BOM::MarketData::Fetcher::VolSurface;
@@ -173,7 +173,7 @@ if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
         }
     }
 
-    my $interest_rates = BOM::MarketData::InterestRate->new(
+    my $interest_rates = Quant::Framework::InterestRate->new(
         symbol => $symbol,
         rates  => $rates,
         date   => Date::Utility->new,
