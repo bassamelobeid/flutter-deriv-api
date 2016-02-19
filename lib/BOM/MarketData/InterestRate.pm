@@ -1,6 +1,8 @@
 package BOM::MarketData::InterestRate;
 
 use BOM::System::Chronicle;
+use Data::Chronicle::Reader;
+use Data::Chronicle::Writer;
 
 =head1 NAME
 
@@ -50,6 +52,18 @@ around _document_content => sub {
     };
 };
 
+has chronicle_reader => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Reader',
+    default => sub { BOM::System::Chronicle::get_chronicle_reader() },
+);
+
+has chronicle_writer => (
+    is      => 'ro',
+    isa     => 'Data::Chronicle::Writer',
+    default => sub { BOM::System::Chronicle::get_chronicle_writer() },
+);
+
 =head2 document
 
 The CouchDB document that this object is tied to.
@@ -64,10 +78,10 @@ has document => (
 sub _build_document {
     my $self = shift;
 
-    my $document = BOM::System::Chronicle::get('interest_rates', $self->symbol);
+    my $document = $self->chronicle_reader->get('interest_rates', $self->symbol);
 
     if ($self->for_date and $self->for_date->datetime_iso8601 lt $document->{date}) {
-        $document = BOM::System::Chronicle::get_for('interest_rates', $self->symbol, $self->for_date->epoch);
+        $document = $self->chronicle_reader->get_for('interest_rates', $self->symbol, $self->for_date->epoch);
         $document //= {};
     }
 
@@ -77,11 +91,11 @@ sub _build_document {
 sub save {
     my $self = shift;
 
-    if (not defined BOM::System::Chronicle::get('interest_rates', $self->symbol)) {
-        BOM::System::Chronicle::set('interest_rates', $self->symbol, {});
+    if (not defined $self->chronicle_reader->get('interest_rates', $self->symbol)) {
+        $self->chronicle_writer->set('interest_rates', $self->symbol, {});
     }
 
-    return BOM::System::Chronicle::set('interest_rates', $self->symbol, $self->_document_content, $self->recorded_date);
+    return $self->chronicle_writer->set('interest_rates', $self->symbol, $self->_document_content, $self->recorded_date);
 }
 
 has type => (
