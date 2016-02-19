@@ -9,9 +9,9 @@ use Text::CSV::Slurp;
 use Format::Util::Numbers qw(roundnear);
 use BOM::Market::Underlying;
 use Bloomberg::FileDownloader;
-use BOM::MarketData::ImpliedRate;
 use BOM::Platform::Runtime;
 use Bloomberg::UnderlyingConfig;
+use Quant::Framework::ImpliedRate;
 
 has file => (
     is         => 'ro',
@@ -171,10 +171,12 @@ sub run {
             }
         }
 
-        my $implied = BOM::MarketData::ImpliedRate->new(
+        my $implied = Quant::Framework::ImpliedRate->new(
             symbol        => $implied_symbol,
             rates         => $implied_rates,
             recorded_date => Date::Utility->new,
+            chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+            chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );
 
         $implied->save;

@@ -19,8 +19,8 @@ use List::Util qw(first);
 
 use Date::Utility;
 use BOM::MarketData::Holiday;
-use BOM::MarketData::InterestRate;
-use BOM::MarketData::ImpliedRate;
+use Quant::Framework::InterestRate;
+use Quant::Framework::ImpliedRate;
 
 =head2 symbol
 Represents currency symbol.
@@ -103,16 +103,18 @@ Returns an interest rates object
 
 has interest => (
     is         => 'ro',
-    isa        => 'BOM::MarketData::InterestRate',
+    isa        => 'Quant::Framework::InterestRate',
     lazy_build => 1,
 );
 
 sub _build_interest {
     my $self = shift;
 
-    return BOM::MarketData::InterestRate->new({
+    return Quant::Framework::InterestRate->new({
         symbol   => $self->symbol,
         for_date => $self->for_date,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 }
 
@@ -144,9 +146,11 @@ sub rate_implied_from {
     return $self->_cached->{$implied_symbol}->rate_for($tiy)
         if $self->_cached->{$implied_symbol};
 
-    $self->_cached->{$implied_symbol} = BOM::MarketData::ImpliedRate->new({
+    $self->_cached->{$implied_symbol} = Quant::Framework::ImpliedRate->new({
         symbol   => $implied_symbol,
         for_date => $self->for_date,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
 
     return $self->_cached->{$implied_symbol}->rate_for($tiy);
