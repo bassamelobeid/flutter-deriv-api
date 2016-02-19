@@ -625,6 +625,12 @@ sub get_self_exclusion {
         return $auth_error;
     }
 
+    return _get_self_exclusion_details($client);
+}
+
+sub _get_self_exclusion_details {
+    my $client = shift;
+
     my $get_self_exclusion = {};
     return $get_self_exclusion if $client->is_virtual;
 
@@ -657,7 +663,7 @@ sub get_self_exclusion {
         }
     }
 
-    return $get_self_exclusion,;
+    return $get_self_exclusion;
 }
 
 sub set_self_exclusion {
@@ -673,8 +679,8 @@ sub set_self_exclusion {
 
     return BOM::RPC::v3::Utility::permission_error() if $client->is_virtual;
 
-    # get old from above sub get_self_exclusion
-    my $self_exclusion = get_self_exclusion({client_loginid => $client_loginid});
+    # get old from above sub _get_self_exclusion_details
+    my $self_exclusion = _get_self_exclusion_details($client);
 
     ## validate
     my $error_sub = sub {
