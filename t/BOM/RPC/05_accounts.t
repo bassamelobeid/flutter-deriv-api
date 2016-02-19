@@ -295,6 +295,7 @@ $method = 'change_password';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'InvalidToken', 'need token');
     is($c->tcall($method, {token => 'dummy'})->{error}{code}, 'InvalidToken', 'need a valid token');
+
     my $params = {token => _get_session_token()};
     is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
 
@@ -303,9 +304,6 @@ subtest $method => sub {
     $params->{args}{old_password} = 'old_password';
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';
-
-    $res = $c->tcall($method, $params);
-    note explain $res;
 
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Old password is wrong.');
     $params->{args}{old_password} = $password;
