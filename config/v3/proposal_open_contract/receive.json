@@ -55,7 +55,7 @@
         },
         "date_expiry": {
           "type": "integer",
-          "description": "Example: 1446629000"
+          "description": "Example: 1446629000. Please note that it is not applicable for spreads and tick trade contracts"
         },
         "date_settlement": {
           "type": "integer",
