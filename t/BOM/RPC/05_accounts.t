@@ -35,13 +35,13 @@ my $test_client = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
 });
 $test_client->email($email);
 $test_client->save;
-my $test_loginid = $test_client->loginid;
-my $user         = BOM::Platform::User->create(
+my $test_loginid_mf = $test_client->loginid;
+my $user            = BOM::Platform::User->create(
     email    => $email,
     password => $hash_pwd
 );
 $user->save;
-$user->add_loginid({loginid => $test_loginid});
+$user->add_loginid({loginid => $test_loginid_mf});
 $user->save;
 ################################################################################
 # test
@@ -51,11 +51,11 @@ my $t = Test::Mojo->new('BOM::RPC');
 my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 #cleanup
-BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
+BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid_mf);
 
 my $mock_utility = Test::MockModule->new('BOM::RPC::v3::Utility');
 # need to mock it as to access api token we need token beforehand
-$mock_utility->mock('token_to_loginid', sub { return $test_loginid });
+$mock_utility->mock('token_to_loginid', sub { return $test_loginid_mf });
 
 # create new api token
 my $res = BOM::RPC::v3::Accounts::api_token({
@@ -121,7 +121,7 @@ $res = BOM::RPC::v3::Accounts::api_token({
         }});
 is scalar(@{$res->{tokens}}), 0, "MF client token deleted successfully";
 
-$test_loginid = 'CR0021';
+my $test_loginid = 'CR0021';
 # cleanup
 BOM::Database::Model::AccessToken->new->remove_by_loginid($test_loginid);
 
@@ -285,8 +285,8 @@ is scalar(@{$res->{tokens}}), 0, "token deleted successfully";
 
 sub _get_session_token {
     return BOM::Platform::SessionCookie->new({
-            email      => 'shuwnyuan@regentmarkets.com',
-            loginid    => 'CR0021',
+            email      => 'abc@binary.com',
+            loginid    => $test_loginid_mf,
             expires_in => 3600
         })->token;
 }
