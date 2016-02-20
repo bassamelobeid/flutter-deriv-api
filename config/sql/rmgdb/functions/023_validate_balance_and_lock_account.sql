@@ -35,11 +35,11 @@ BEGIN
     -- here and make the error handling on the Perl side easier.
     IF b_buy_price > account.balance THEN
         -- find pot. payout and count of expired bets
-        SELECT INTO v_r coalesce(sum(b.payout_price), 0) AS potential_payout, count(*) AS cnt
-          FROM bet.financial_market_bet b
-         WHERE b.account_id=account.id
-           AND NOT b.is_sold
-           AND b.expiry_time<now();
+        SELECT INTO v_r coalesce(sum(payout_price), 0) AS potential_payout, count(*) AS cnt
+          FROM bet.financial_market_bet
+         WHERE account_id=account.id
+           AND NOT is_sold
+           AND expiry_time<now();
         RAISE EXCEPTION USING
             MESSAGE=format((SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI003'),
                            b_buy_price - account.balance, v_r.cnt, v_r.potential_payout),
