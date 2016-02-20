@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION bet.validate_max_balance(p_account transaction.accoun
                                                     p_limits  JSON)
 RETURNS VOID AS $def$
 BEGIN
-    -- limits are given client's currency
+    -- limits are given in account currency
     IF (p_limits -> 'max_balance') IS NOT NULL AND
        p_account.balance > (p_limits ->> 'max_balance')::NUMERIC THEN
         RAISE EXCEPTION USING
