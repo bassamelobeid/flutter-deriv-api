@@ -14,6 +14,10 @@ commission:
     spread_multiplier: 1
     forward_start_factor: 1.5
 
+market_data:
+  interest_rates_source: "implied"
+  extra_vol_diff_by_delta: 0.1
+
 bet_limits:
   holiday_blackout_start: 345
   holiday_blackout_end: 5
@@ -26,8 +30,4 @@ client_limits:
   intraday_spot_index_turnover_limit: 30000
   smartfx_turnover_limit: 5000
   stocks_turnover_limit: 5000
-
-market_data:
-  interest_rates_source: "implied"
-  extra_vol_diff_by_delta: 0.1
 
