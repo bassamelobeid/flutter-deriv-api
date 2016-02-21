@@ -63,7 +63,7 @@ BEGIN
     v_account := v_r.account;
 
     PERFORM bet.validate_max_balance(v_account, p_limits),
-            bet.validate_max_open_bets(a_loginid, p_limits),
+            bet.validate_max_open_bets(v_account, p_limits),
             bet.validate_max_payout(v_account, b_underlying_symbol,
                                     b_bet_type, b_payout_price, p_limits),
             bet.validate_specific_turnover_limits(v_account,
