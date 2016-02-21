@@ -116,6 +116,19 @@ has legal_allowed_markets => (
     default => sub { [] },
 );
 
+=head2 legal_allowed_underlyings
+
+A list of underlyings allowed on a particular landing company.
+Defaults to 'all', a simple representation of 'all offered'
+
+=cut
+
+has legal_allowed_underlyings => (
+    is      => 'ro',
+    isa     => 'ArrayRef',
+    default => sub { ['all'] },
+);
+
 =head2 legal_allowed_contract_types
 A list of contract types allowed on a particular landing company
 =cut
