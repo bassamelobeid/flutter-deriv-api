@@ -42,7 +42,7 @@ sub new_account_virtual {
         $args->{myaffiliates_token} = delete $args->{affiliate_token};
     }
 
-    if (_is_session_cookie_valid($params->{token}, $args->{email})) {
+    if (BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $args->{email})) {
         my $acc = BOM::Platform::Account::Virtual::create_account({
             details        => $args,
             email_verified => 1
@@ -65,16 +65,6 @@ sub new_account_virtual {
     return BOM::RPC::v3::Utility::create_error({
             code              => $err_code,
             message_to_client => BOM::Platform::Locale::error_map()->{$err_code}});
-}
-
-sub _is_session_cookie_valid {
-    my ($token, $email) = @_;
-    my $session_cookie = BOM::Platform::SessionCookie->new({token => $token});
-    unless ($session_cookie and $session_cookie->email and $session_cookie->email eq $email) {
-        return 0;
-    }
-
-    return 1;
 }
 
 sub verify_email {
@@ -114,12 +104,29 @@ sub verify_email {
                     use_email_template => 1
                 });
         }
+    } elsif ($params->{type} eq 'paymentagent_withdraw' && BOM::Platform::User->new({email => $params->{email}})) {
+        send_email({
+                from    => BOM::Platform::Static::Config::get_customer_support_email(),
+                to      => $params->{email},
+                subject => BOM::Platform::Context::localize('Verify your withdrawal request - [_1]', $params->{website_name}),
+                message => [
+                    BOM::Platform::Context::localize(
+                        '<p>Dear Valued Customer,</p><p>In order to verify your withdrawal request, please click on the following link: </p><p> '
+                            . $params->{link} . ' </p>'
+                    )
+                ],
+                use_email_template => 1
+            });
     }
+
     return {status => 1};    # always return 1, so not to leak client's email
 }
 
 sub new_account_real {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -170,6 +177,9 @@ sub new_account_real {
 
 sub new_account_maltainvest {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -231,6 +241,9 @@ sub new_account_maltainvest {
 
 sub new_account_japan {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $args = $params->{args};
     my $client;

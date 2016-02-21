@@ -31,6 +31,9 @@ use BOM::System::AuditLog;
 sub get_limits {
     my $params = shift;
 
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+
     my $client;
     if ($params->{client_loginid}) {
         $client = BOM::Platform::Client->new({loginid => $params->{client_loginid}});
@@ -98,7 +101,7 @@ sub get_limits {
 
 sub paymentagent_list {
     my $params = shift;
-    my ($language, $args) = ($params->{language}, $params->{args});
+    my ($language, $args) = @{$params}{qw/language args/};
 
     my $client;
     if ($params->{client_loginid}) {
@@ -150,8 +153,12 @@ sub paymentagent_list {
 
 sub paymentagent_transfer {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+
     my ($loginid_fm, $website_name, $args) =
-        ($params->{client_loginid}, $params->{website_name}, $params->{args});
+        @{$params}{qw/client_loginid website_name args/};
 
     my $currency   = $args->{currency};
     my $amount     = $args->{amount};
@@ -354,8 +361,11 @@ The [_4] team.', $currency, $amount, $payment_agent->payment_agent_name, $websit
 sub paymentagent_withdraw {
     my $params = shift;
 
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
+
     my ($client_loginid, $website_name, $args) =
-        ($params->{client_loginid}, $params->{website_name}, $params->{args});
+        @{$params}{qw/client_loginid website_name args/};
 
     my $client;
     if ($client_loginid) {
@@ -364,6 +374,15 @@ sub paymentagent_withdraw {
 
     if (my $auth_error = BOM::RPC::v3::Utility::check_authorization($client)) {
         return $auth_error;
+    }
+
+    # expire token only when its not dry run
+    if (exists $args->{dry_run} and not $args->{dry_run}) {
+        unless (BOM::RPC::v3::Utility::is_verification_token_valid($args->{verification_code}, $client->email)) {
+            return BOM::RPC::v3::Utility::create_error({
+                    code              => "InvalidVerificationCode",
+                    message_to_client => localize("Your payment agent withdrawal token has expired.")});
+        }
     }
 
     my $currency             = $args->{currency};
@@ -546,6 +565,8 @@ sub paymentagent_withdraw {
         . ' Timestamp: '
         . Date::Utility->new->datetime_ddmmmyy_hhmmss_TZ;
 
+    $comment .= ". Client note: $further_instruction" if ($further_instruction);
+
     # execute the transfer.
     $client->payment_account_transfer(
         currency => $currency,
@@ -633,7 +654,7 @@ sub __client_withdrawal_notes {
     my $error    = $arg_ref->{'error'};
     my $currency = $client->currency;
 
-    my $balance = $client->default_account ? $client->default_account->balance : 0;
+    my $balance = $client->default_account ? to_monetary_number_format($client->default_account->balance) : 0;
     if ($error =~ /exceeds client balance/) {
         return (localize('Sorry, you cannot withdraw. Your account balance is [_1] [_2].', $currency, $balance));
     }
@@ -659,6 +680,9 @@ sub __client_withdrawal_notes {
 ## This endpoint is only available for MLT/MF accounts
 sub transfer_between_accounts {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
@@ -802,10 +826,10 @@ sub transfer_between_accounts {
     if ($err) {
         my $limit;
         if ($err =~ /exceeds client balance/) {
-            $limit = $currency . ' ' . sprintf('%.2f', $client_from->default_account->balance);
+            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance);
         } elsif ($err =~ /includes frozen bonus \[(.+)\]/) {
             my $frozen_bonus = $1;
-            $limit = $currency . ' ' . sprintf('%.2f', ($client_from->default_account->balance - $frozen_bonus));
+            $limit = $currency . ' ' . to_monetary_number_format($client_from->default_account->balance - $frozen_bonus);
         } elsif ($err =~ /exceeds withdrawal limit \[(.+)\]\s+\((.+)\)/) {
             my $bal_1 = $1;
             my $bal_2 = $2;
@@ -874,6 +898,9 @@ sub transfer_between_accounts {
 
 sub topup_virtual {
     my $params = shift;
+
+    return BOM::RPC::v3::Utility::invalid_token_error()
+        if (exists $params->{token} and defined $params->{token} and not BOM::RPC::v3::Utility::token_to_loginid($params->{token}));
 
     my $client;
     if ($params->{client_loginid}) {
