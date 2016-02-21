@@ -6,8 +6,28 @@ use warnings;
 use RateLimitations;
 use Date::Utility;
 
+use BOM::Database::Model::AccessToken;
+use BOM::Database::Model::OAuth;
 use BOM::Platform::Context qw (localize);
 use BOM::Platform::Runtime;
+use BOM::Platform::SessionCookie;
+
+sub token_to_loginid {
+    my $token = shift;
+
+    if ($token) {
+        if (length $token == 15) {    # access token
+            return BOM::Database::Model::AccessToken->new->get_loginid_by_token($token);
+        } elsif (length $token == 32 && $token =~ /^a1-/) {
+            return BOM::Database::Model::OAuth->new->get_loginid_by_access_token($token);
+        } else {
+            my $session = BOM::Platform::SessionCookie->new(token => $token);
+            return unless $session and $session->validate_session;
+            return $session->loginid;
+        }
+    }
+    return;
+}
 
 sub create_error {
     my $args = shift;
@@ -17,6 +37,12 @@ sub create_error {
             message_to_client => $args->{message_to_client},
             $args->{message} ? (message => $args->{message}) : (),
             $args->{details} ? (details => $args->{details}) : ()}};
+}
+
+sub invalid_token_error {
+    return create_error({
+            code              => 'InvalidToken',
+            message_to_client => localize('The token is invalid.')});
 }
 
 sub permission_error {
@@ -89,6 +115,20 @@ sub check_authorization {
     }
 
     return;
+}
+
+sub is_verification_token_valid {
+    my ($token, $email) = @_;
+
+    my $session = BOM::Platform::SessionCookie->new({token => $token});
+    return unless $session;
+    my $response;
+    if ($session->email and $session->email eq $email) {
+        $response = 1;
+    }
+    $session->end_session;
+
+    return $response;
 }
 
 1;
