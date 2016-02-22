@@ -42,7 +42,7 @@ my $file_broker_code;
 my @removed_lines = ();
 
 if ($filen eq 'editvol') { $ok = 1; }
-if ($filen =~ /^vol\/master(\S+)\.interest$/) { $ok = 1; }
+if ($filen =~ /^vol\/master(\w\w\w-?\w?\w?\w?)\.interest$/) { $ok = 1; }
 
 if ($ok == 0) {
     print "Wrong file<P>";
@@ -142,7 +142,7 @@ if ($filen eq 'editvol') {
     code_exit_BO();
 }
 
-if ($filen =~ /^vol\/master(\S+)\.(interest)$/) {
+if ($filen =~ /^vol\/master(\w\w\w-?\w?\w?\w?)\.(interest)$/) {
     my $symbol = $1;
     my $rates  = {};
 
