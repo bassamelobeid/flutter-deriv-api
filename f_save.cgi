@@ -177,6 +177,8 @@ if ($filen =~ /^vol\/master(\w+)\.(interest)$/) {
         symbol => $symbol,
         rates  => $rates,
         date   => Date::Utility->new,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
     $interest_rates->save;
 

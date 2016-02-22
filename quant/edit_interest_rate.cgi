@@ -14,7 +14,11 @@ PrintContentType();
 BOM::Backoffice::Auth0::can_access(['Quants']);
 
 my $currency_symbol = request()->param('symbol');
-my $existing_interest_rate = Quant::Framework::InterestRate->new({symbol => $currency_symbol})->rates;
+my $existing_interest_rate = Quant::Framework::InterestRate->new({
+        symbol => $currency_symbol,
+        chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
+        chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
+    })->rates;
 
 Bar("Updates $currency_symbol rates");
 print '<html><head><title>Editing interest rate files for ' . $currency_symbol . '</title></head>';
