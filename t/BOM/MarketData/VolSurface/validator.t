@@ -442,7 +442,7 @@ subtest 'Admissible Checks 1 & 2: Strike related.' => sub {
 
     # Setting this increases our tolerance for jumps in the vol across smiles,
     # allowing this test data to get through to the check that's supposed to catch it.
-    BOM::Platform::Static::Config->quants->{market_data}->{extra_vol_diff_by_delta} = 5;
+    BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta} = 5;
 
     # Need an existing USDJPY surface in place...
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(

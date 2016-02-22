@@ -336,7 +336,7 @@ sub _check_structure {
     my $type = $surface->type;
     my ($max_term, $diff_smile_point) = $type eq 'delta' ? (380, 30) : (750, 100);
 
-    my $extra_allowed = BOM::Platform::Static::Config->quants->{market_data}->{extra_vol_diff_by_delta} || 0;
+    my $extra_allowed = BOM::Platform::Static::Config::quants->{market_data}->{extra_vol_diff_by_delta} || 0;
     my $max_vol_change_by_delta = 0.4 + $extra_allowed;
 
     my @days = keys %{$surface_hashref};
