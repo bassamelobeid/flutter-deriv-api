@@ -182,7 +182,7 @@ sub _build_spread_divisor {
 
 sub _build_spread_multiplier {
     my $self = shift;
-    return BOM::Platform::Static::Config->quants->{commission}->{adjustment}->{spread_multiplier};
+    return BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
 }
 
 sub _build_half_spread {

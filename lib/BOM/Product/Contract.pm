@@ -930,7 +930,7 @@ sub _build_total_markup {
     my %max =
           ($self->pricing_engine_name =~ /Intraday::Forex/ and not $self->is_atm_bet)
         ? ()
-        : (maximum => BOM::Platform::Static::Config->quants->{commission}->{maximum_total_markup} / 100);
+        : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
 
     my %min;
     if ($self->pricing_engine_name =~ /TickExpiry/) {
@@ -1038,8 +1038,8 @@ sub _build_commission_adjustment {
         name        => 'global_commission_adjustment',
         description => 'Our scaling adjustment to calculated model markup.',
         set_by      => 'BOM::Product::Contract',
-        minimum     => (BOM::Platform::Static::Config->quants->{commission}->{adjustment}->{minimum} / 100),
-        maximum     => (BOM::Platform::Static::Config->quants->{commission}->{adjustment}->{maximum} / 100),
+        minimum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100),
+        maximum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100),
         base_amount => 0,
     });
 
@@ -1061,7 +1061,7 @@ sub _build_commission_adjustment {
                     minimum     => 0,
                     maximum     => 1,
                     set_by      => 'quants.commission.adjustment.bom_created_bet',
-                    base_amount => (BOM::Platform::Static::Config->quants->{commission}->{adjustment}->{bom_created_bet} / 100),
+                    base_amount => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{bom_created_bet} / 100),
                 }));
     }
 
@@ -1194,7 +1194,7 @@ sub _build_model_markup {
                 name        => 'sell_discount',
                 description => 'Discount on sell',
                 set_by      => __PACKAGE__,
-                base_amount => BOM::Platform::Static::Config->quants->{commission}->{resell_discount_factor},
+                base_amount => BOM::Platform::Static::Config::quants->{commission}->{resell_discount_factor},
             });
             $commission_markup->include_adjustment('multiply', $sell_discount);
         }
@@ -1491,10 +1491,10 @@ sub _build_staking_limits {
 
     my @possible_payout_maxes = ($self->_payout_limit);
 
-    push @possible_payout_maxes, BOM::Platform::Static::Config->quants->{bet_limits}->{maximum_payout};
-    push @possible_payout_maxes, BOM::Platform::Static::Config->quants->{bet_limits}->{maximum_payout_on_new_markets}
+    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout};
+    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout_on_new_markets}
         if ($underlying->is_newly_added);
-    push @possible_payout_maxes, BOM::Platform::Static::Config->quants->{bet_limits}->{maximum_payout_on_less_than_7day_indices_call_put}
+    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout_on_less_than_7day_indices_call_put}
         if ($self->underlying->market->name eq 'indices' and not $self->is_atm_bet and $self->timeindays->amount < 7);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
@@ -2722,16 +2722,16 @@ sub _subvalidate_lifetime_days {
     }
     if (
             $underlying->market->equity
-        and $date_start->day_of_year >= BOM::Platform::Static::Config->quants->{bet_limits}->{holiday_blackout_start}
+        and $date_start->day_of_year >= BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_start}
         and (  $date_expiry->day_of_year > $date_start->day_of_year
-            or $date_expiry->day_of_year <= BOM::Platform::Static::Config->quants->{bet_limits}->{holiday_blackout_end}))
+            or $date_expiry->day_of_year <= BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end}))
     {
         # Assumes that the black out period always extends over Jan 1 into the next year.
         my $year = $date_expiry->year;
         $year-- if ($date_expiry->day_of_year < $date_start->day_of_year);    # Expiry is into next year, already.
         my $end_of_bo =
             Date::Utility->new('31-Dec-' . $year)
-            ->plus_time_interval(BOM::Platform::Static::Config->quants->{bet_limits}->{holiday_blackout_end} . 'd');
+            ->plus_time_interval(BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end} . 'd');
         my $message =
             ($self->built_with_bom_parameters)
             ? localize('Resale of this contract is not offered due to end-of-year market holidays.')

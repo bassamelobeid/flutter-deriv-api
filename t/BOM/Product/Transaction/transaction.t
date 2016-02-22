@@ -1436,7 +1436,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
 
         my $error = do {
             note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 29.99";
-            BOM::Platform::Static::Config->quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
@@ -1470,7 +1470,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation', sub {
         # retry with a slightly higher limit should succeed
         $error = do {
             note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 30";
-            BOM::Platform::Static::Config->quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 30;
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 30;
 
             my $contract_r100 = produce_contract({
                 underlying   => $underlying_r100,
@@ -1532,7 +1532,7 @@ subtest 'max_payout_per_symbol_and_bet_type validation: selling bets on the way'
         my $txn_id_buy_expired_contract;
         my $error = do {
             note "change quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} to 29.99";
-            BOM::Platform::Static::Config->quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
+            BOM::Platform::Static::Config::quants->{client_limits}->{payout_per_symbol_and_bet_type_limit} = 29.99;
 
             is +BOM::Product::Transaction->new({
                     client      => $cl,
