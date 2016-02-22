@@ -124,7 +124,7 @@ sub _passes_sanity_check {
     }
 
     my $underlying = BOM::Market::Underlying->new($bom_underlying_symbol);
-    my $spot_eod   = BOM::Market::Underlying->new($underlying->spot);
+    my $spot_eod   = $underlying->spot;
     my $symbol     = $underlying->symbol;
     my $date       = $data->{LAST_UPDATE_DATE_EOD} ? $data->{LAST_UPDATE_DATE_EOD} : $data->{PX_YEST_DT};
     $date =~ s/^0//;
