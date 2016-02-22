@@ -2,7 +2,8 @@
 
 use strict;
 use warnings;
-use Test::More tests => 34;
+
+use Test::More tests => 33;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
@@ -205,16 +206,11 @@ sub buy_multiple_bets {
     };
 
     my $fmb = BOM::Database::Helper::FinancialMarketBet->new({
-            bet_data     => $bet_data,
-            account_data => [map {
-                +{
-                    client_loginid => $_->client_loginid,
-                    currency_code  => $_->currency_code
-                 }
-            } @$acc],
-            limits => undef,
-            db     => db,
-        });
+        bet_data     => $bet_data,
+        account_data => [map { +{client_loginid => $_->client_loginid, currency_code => $_->currency_code} } @$acc],
+        limits       => undef,
+        db           => db,
+    });
     my $res = $fmb->batch_buy_bet;
     # note explain [$res];
     return $res;
@@ -798,82 +794,6 @@ subtest 'more validation', sub {
         is $res->[0]->{txn}->{balance_after} + 0, 10000 - 120 + 5 * 30, 'balance_after';
     }
     'batch-sell 5 bets';
-};
-
-subtest 'free_gift', sub {
-    lives_ok {
-        $cl = create_client;
-
-        free_gift $cl, 'USD', 10000;
-
-        isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-
-        my $bal;
-        is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
-    }
-    'setup new client';
-
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000 - 0.01,
-            },
-            };
-    }
-    'cannot buy due to max_balance_without_real_deposit';
-    is_deeply $@,
-        [
-        BI010 => 'ERROR:  maximum balance reached for betting without a real deposit',
-        ],
-        'maximum net payout for open positions reached';
-
-    lives_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000,
-            },
-            };
-        is $balance_after + 0, 10000 - 20, 'correct balance_after';
-    }
-    'can buy when hitting max_balance_without_real_deposit exactly';
-
-    dies_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000 - 0.01 - 20,
-            },
-            };
-    }
-    'ensure the new limit';
-    is_deeply $@,
-        [
-        BI010 => 'ERROR:  maximum balance reached for betting without a real deposit',
-        ],
-        'maximum net payout for open positions reached';
-
-    lives_ok {
-        top_up $cl, 'AUD', 10000;
-
-        isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
-
-        my $bal;
-        is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
-    }
-    'real deposit to differen account should be enough';
-
-    lives_ok {
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
-            +{
-            limits => {
-                max_balance_without_real_deposit => 10000 - 0.01 - 20,
-            },
-            };
-        is $balance_after + 0, 10000 - 40, 'correct balance_after';
-    }
-    'can buy after deposit into different account';
 };
 
 SKIP: {
@@ -1635,13 +1555,12 @@ subtest 'batch_buy', sub {
     use YAML::XS;
 
     my $config = YAML::XS::LoadFile('/etc/rmg/clientdb.yml');
-    my $ip     = $config->{costarica}->{write}->{ip}; # create_client creates CR clients
+    my $ip     = $config->{costarica}->{write}->{ip};           # create_client creates CR clients
     my $pw     = $config->{password};
 
     my $listener = DBI->connect(
         "dbi:Pg:dbname=regentmarkets;host=$ip;port=5432;application_name=notify_pub",
-        'write',
-        $pw,
+        'write', $pw,
         {
             AutoCommit => 1,
             RaiseError => 1,
@@ -1677,22 +1596,24 @@ subtest 'batch_buy', sub {
         while (my $notify = $listener->pg_notifies) {
             # note "got notification: $notify->[-1]";
             my $n = {};
-            @{$n}{qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/} =
+            @{$n}{
+                qw/id account_id action_type referrer_type financial_market_bet_id payment_id amount balance_after transaction_time short_code currency_code purchase_time buy_price sell_time payment_remark/
+                } =
                 split ',', $notify->[-1];
             $notifications{$n->{id}} = $n;
         }
         # note explain \%notifications;
 
-        my $acc = $acc1;
+        my $acc     = $acc1;
         my $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
-            is $r->{e_code}, undef, 'e_code is undef';
+            is $r->{e_code},        undef, 'e_code is undef';
             is $r->{e_description}, undef, 'e_description is undef';
-            isnt $r->{fmb}, undef, 'got FMB';
-            isnt $r->{txn}, undef, 'got TXN';
+            isnt $r->{fmb},         undef, 'got FMB';
+            isnt $r->{txn},         undef, 'got TXN';
 
             my $fmb = $r->{fmb};
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
@@ -1701,7 +1622,7 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount}, '-20.0000', 'txn amount';
+            is $txn->{amount},        '-20.0000',  'txn amount';
             is $txn->{balance_after}, '4980.0000', 'txn balance_after';
 
             my $note = $notifications{$txn->{id}};
@@ -1715,28 +1636,28 @@ subtest 'batch_buy', sub {
             }
         };
 
-        $acc = $acc2;
+        $acc     = $acc2;
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
-            is $r->{e_code}, 'BI003', 'e_code is BI003';
+            is $r->{e_code},          'BI003',                  'e_code is BI003';
             like $r->{e_description}, qr/insufficient balance/, 'e_description mentions insufficient balance';
-            is $r->{fmb}, undef, 'no FMB';
-            is $r->{txn}, undef, 'no TXN';
+            is $r->{fmb},             undef,                    'no FMB';
+            is $r->{txn},             undef,                    'no TXN';
         };
 
-        $acc = $acc3;
+        $acc     = $acc3;
         $loginid = $acc->client_loginid;
         subtest 'testing result for ' . $loginid, sub {
             my $r = $res->{$loginid};
             isnt $r, undef, 'got result hash';
             is $r->{loginid}, $loginid, 'found loginid';
-            is $r->{e_code}, undef, 'e_code is undef';
+            is $r->{e_code},        undef, 'e_code is undef';
             is $r->{e_description}, undef, 'e_description is undef';
-            isnt $r->{fmb}, undef, 'got FMB';
-            isnt $r->{txn}, undef, 'got TXN';
+            isnt $r->{fmb},         undef, 'got FMB';
+            isnt $r->{txn},         undef, 'got TXN';
 
             my $fmb = $r->{fmb};
             is $fmb->{account_id}, $acc->id, 'fmb account id matches';
@@ -1745,7 +1666,7 @@ subtest 'batch_buy', sub {
             is $txn->{account_id}, $acc->id, 'txn account id matches';
             is $txn->{referrer_type}, 'financial_market_bet', 'txn referrer_type is financial_market_bet';
             is $txn->{financial_market_bet_id}, $fmb->{id}, 'txn fmb id matches';
-            is $txn->{amount}, '-20.0000', 'txn amount';
+            is $txn->{amount},        '-20.0000',  'txn amount';
             is $txn->{balance_after}, '9980.0000', 'txn balance_after';
 
             my $note = $notifications{$txn->{id}};

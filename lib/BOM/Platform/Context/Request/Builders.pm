@@ -2,6 +2,7 @@ package BOM::Platform::Context::Request::Builders;
 
 use Moose::Role;
 use CGI::Cookie;
+use Data::Validate::IP;
 
 sub from_cgi {
     my $args = shift;
@@ -58,8 +59,13 @@ sub from_mojo {
     %ENV = (%ENV, %{$request->env});    ## no critic (Variables::RequireLocalizedPunctuationVars)
     __SetEnvironment();
 
-    if (my $client_ip = $main::ENV{'REMOTE_ADDR'}) {
-        $args->{_ip} = $client_ip;
+    $args->{_ip} = '';
+    if ($request->headers->header('x-forwarded-for')) {
+        my @ips = split(/,\s*/, $request->headers->header('x-forwarded-for'));
+        $args->{_ip} = $ips[0] if Data::Validate::IP::is_ipv4($ips[0]);
+    }
+    if (not $args->{_ip} and $main::ENV{'REMOTE_ADDR'}) {
+        $args->{_ip} = $main::ENV{'REMOTE_ADDR'};
     }
 
     $args->{domain_name} = $request->url->to_abs->host;
