@@ -8,14 +8,14 @@ use DBI;
 sub read_dbh {
     return DBI->connect_cached(
         "dbi:Pg:dbname=feed-replica;port=6433;host=/var/run/postgresql",
-        "read", '' )
+        "read", "" )
       || die($DBI::errstr);
 }
 
 sub write_dbh {
     return DBI->connect_cached(
         "dbi:Pg:dbname=feed-write;port=6433;host=/var/run/postgresql",
-        "write", '' )
+        "write", "" )
       || die($DBI::errstr);
 }
 
