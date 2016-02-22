@@ -154,7 +154,7 @@ sub proposal_open_contract {
             } else {
                 $response->{$id} = {
                     buy_price     => $fmb->{buy_price},
-                    purchase_time => $fmb->{purchase_time},
+                    purchase_time => Date::Utility->new($fmb->{purchase_time})->epoch,
                     account_id    => $fmb->{account_id},
                     is_sold       => $fmb->{is_sold},
                     $sell_time ? (sell_time => $sell_time) : (),
