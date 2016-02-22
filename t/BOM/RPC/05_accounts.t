@@ -192,7 +192,7 @@ subtest $method => sub {
             client_loginid => 'CR0021',
          args           => {description => 1}});
 
-    is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
+    is($result->{transactions}[0]{longcode}, "CALL_FRXUSDJPY_20_1311574735_1311576535_S10P_0", "if have short code, then simple_contract_info is called");
     is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
 
 };
