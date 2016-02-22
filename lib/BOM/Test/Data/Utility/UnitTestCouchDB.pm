@@ -156,9 +156,6 @@ sub _init {
         ));
     BOM::System::Chronicle::set('economic_events', 'economic_events', {events => []});
 
-    BOM::Platform::Static::Config->quants->{client_limits}->{smartfx_turnover_limit} = 100000;
-    BOM::Platform::Static::Config->quants->{market_data}->{interest_rates_source}    = 'market';
-
     return 1;
 }
 
