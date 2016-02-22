@@ -179,8 +179,8 @@ subtest $method => sub {
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
     ## this function simple_contract_info is 'loaded' into module Accounts, So mock this module
-    #my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
-    #$mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
+    my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
+    $mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
     $result = $c->tcall(
         $method,
         {
