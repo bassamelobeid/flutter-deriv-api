@@ -54,13 +54,8 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 
 my $method = 'payout_currencies';
 subtest $method => sub {
-    #my $m               = ref(BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica'));
-    #my $mocked_m        = Test::MockModule->new($m, no_auto => 1);
-    #my $mocked_currency = [qw(A B C)];
     is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), ['USD'], "will return client's currency");
-    #$mocked_m->mock('legal_allowed_currencies', sub { return $mocked_currency });
-    diag(Dumper($c->tcall($method,{})));
-    #is_deeply($c->tcall($method, {}), $mocked_currency, "will return legal currencies");
+    is_deeply($c->tcall($method, {}), BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica')->legal_allowed_currencies, "will return legal currencies");
 };
 
 $method = 'landing_company';
