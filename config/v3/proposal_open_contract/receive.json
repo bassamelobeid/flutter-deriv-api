@@ -159,11 +159,11 @@
           ],
           "description": "sell time of contract, only present for contracts already sold"
         },
-        "sell_tick": {
+        "sell_spot": {
           "type": "number",
           "description": "Example: 86.630, only present for contracts already sold"
         },
-        "sell_tick_time": {
+        "sell_spot_time": {
           "type": "integer",
           "description": "Example: 1446629000, only present for contracts already sold"
         }
