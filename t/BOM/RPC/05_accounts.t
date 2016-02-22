@@ -23,6 +23,7 @@ sub tcall {
     return $r->result;
 }
 
+
 package main;
 
 ################################################################################
@@ -181,12 +182,21 @@ subtest $method => sub {
     ## this function simple_contract_info is 'loaded' into module Accounts, So mock this module
     #my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
     #$mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
-    $result = $c->tcall(
-        $method,
-        {
-            client_loginid => 'CR0021',
-         args           => {description => 1}});
-    diag(Dumper($result));
+
+    my $r = $self->call(
+                        "/$method",
+                        {
+                         id     => Data::UUID->new()->create_str(),
+                         method => $method,
+                         params => {client_loginid => 'CR0021', args => {description => 1}},
+                        });
+
+    #$result = $c->tcall(
+    #    $method,
+    #    {
+    #        client_loginid => 'CR0021',
+    #     args           => {description => 1}});
+    diag(Dumper($r));
     #is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
     #is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
 
