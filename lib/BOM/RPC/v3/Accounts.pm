@@ -154,6 +154,7 @@ sub statement {
         if ($params->{args}->{description}) {
             $struct->{shortcode} = $txn->{short_code} // '';
             if ($struct->{shortcode} && $account->currency_code) {
+              print "shortcode: $struct->{shortcode}\n";
                 $struct->{longcode} = (simple_contract_info($struct->{shortcode}, $account->currency_code))[0];
             }
             $struct->{longcode} //= $txn->{payment_remark} // '';
