@@ -97,8 +97,8 @@ subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 100, 'have 100 statements');
-    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-    $mock_client->mock('default_account', sub { undef });
+    #my $mock_client = Test::MockModule->new('BOM::Platform::Client');
+    #$mock_client->mock('default_account', sub { undef });
     is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 0, 'have 0 statements if no default account');
     undef $mock_client;
     my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
