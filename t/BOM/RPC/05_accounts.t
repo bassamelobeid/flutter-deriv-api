@@ -254,15 +254,14 @@ subtest $method => sub {
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
 
+    is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     my %msg = get_email_by_address_subject(email => $email,subject => qr/Your password has been changed/);
     ok(%msg, "email received");
     clear_mailbox();
-    is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     $user->load;
     isnt($user->password, $hash_pwd, 'user password updated');
     $test_client->load;
     isnt($user->password, $hash_pwd, 'client password updated');
-    ok($send_email_called, 'send_email called');
     $password = $new_password;
 };
 
