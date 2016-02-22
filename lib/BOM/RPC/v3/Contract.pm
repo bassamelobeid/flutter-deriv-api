@@ -158,13 +158,13 @@ sub get_bid {
             payout              => $contract->payout,
         };
 
-        if (not $contract->is_valid_to_sell) {
+        if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
             $response->{validation_error} = $contract->primary_validation_error->message_to_client;
         }
 
         if (not $contract->is_spread) {
             if ($sell_time) {
-                $response->{sell_spot} = $contract->underlying->tick_at($sell_time);
+                $response->{sell_spot} = $contract->underlying->tick_at($sell_time)->quote;
             }
 
             if ($contract->expiry_type eq 'tick') {
