@@ -321,7 +321,7 @@ sub add_design_doc {
 sub create_doc {
     my ($yaml_couch_db, $data_mod) = @_;
 
-    if ( grep { $_ eq $yaml_couch_db } qw/currency/ ) {
+    if (grep { $_ eq $yaml_couch_db } qw/currency/) {
         $data_mod->{chronicle_reader} = BOM::System::Chronicle::get_chronicle_reader();
         $data_mod->{chronicle_writer} = BOM::System::Chronicle::get_chronicle_writer();
 
