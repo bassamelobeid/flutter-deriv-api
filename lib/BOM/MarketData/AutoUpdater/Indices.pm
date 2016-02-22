@@ -63,10 +63,7 @@ has symbols_to_update => (
 sub _build_symbols_to_update {
     my $self      = shift;
     my $market    = $self->input_market;
-    my %skip_list = map { $_ => 1 } (
-        @{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol},
-        qw(OMXS30 USAAPL USGOOG USMSFT USORCL USQCOM USQQQQ)
-    );
+    my %skip_list = map { $_ => 1 } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->disable_autoupdate_vol});
 
     my @symbols_to_update;
     if ($market eq 'indices') {
