@@ -223,9 +223,9 @@ subtest $method => sub {
     $test_client->set_status('tnc_approval','test staff', 1);
     $test_client->save();
     is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
-    $test_client->set_status('unwelcome','test staff',1);
+    $test_client->set_status('ok','test staff',1);
     $test_client->save();
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(ok)]}, 'no tnc_approval');
+    is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(ok)]}, 'no tnc_approval');
 
 };
 
