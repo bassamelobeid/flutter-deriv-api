@@ -100,7 +100,7 @@ subtest $method => sub {
     #my $mock_client = Test::MockModule->new('BOM::Platform::Client');
     #$mock_client->mock('default_account', sub { undef });
     is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 0, 'have 0 statements if no default account');
-    undef $mock_client;
+    #undef $mock_client;
     my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
     my $_sell_expired_is_called = 0;
     $mock_Portfolio->mock('_sell_expired_contracts',
