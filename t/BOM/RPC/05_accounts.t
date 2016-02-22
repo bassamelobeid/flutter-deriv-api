@@ -5,6 +5,7 @@ use Test::Mojo;
 use Test::MockModule;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
+use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 package MojoX::JSON::RPC::Client;
@@ -43,6 +44,7 @@ my $user         = BOM::Platform::User->create(
 $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->save;
+clear_mailbox();
 ################################################################################
 # test
 ################################################################################
