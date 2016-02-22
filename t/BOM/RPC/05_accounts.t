@@ -27,7 +27,6 @@ sub tcall {
     if($r->is_error){
       diag(Dumper($r));
     }
-    diag(Dumper($r->error)) if $r->error;
     return $r->result;
 }
 
