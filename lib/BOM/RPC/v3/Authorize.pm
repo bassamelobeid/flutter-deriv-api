@@ -32,7 +32,8 @@ sub authorize {
         account_id           => ($account ? $account->id : ''),
         landing_company_name => $client->landing_company->short,
         country              => $client->residence,
-        scopes               => \@scopes
+        scopes               => \@scopes,
+        is_virtual           => ($client->is_virtual ? 1 : 0),
     };
 }
 
