@@ -201,11 +201,8 @@ $method = 'balance';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
-    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-    $mock_client->mock('default_account', sub { undef });
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{currency}, '', 'have no currency if no default account');
-    undef $mock_client;
+    is($c->tcall($method, {client_loginid => $test_loginid})->{balance},  0,  'have 0 balance if no default account');
+    is($c->tcall($method, {client_loginid => $test_loginid})->{currency}, '', 'have no currency if no default account');
     my $result = $c->tcall($method, {client_loginid => 'CR0021'});
     is_deeply(
         $result,
