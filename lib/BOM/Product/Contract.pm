@@ -1078,6 +1078,8 @@ sub is_valid_to_buy {
 sub is_valid_to_sell {
     my $self = shift;
 
+    return 0 if $self->is_sold;
+
     if (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
         $self->add_error($self->opposite_bet->primary_validation_error);
@@ -2934,6 +2936,12 @@ sub _build_default_probabilities {
 
     return \%map;
 }
+
+has is_sold => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0
+);
 
 # Don't mind me, I just need to make sure my attibutes are available.
 with 'BOM::Product::Role::Reportable';

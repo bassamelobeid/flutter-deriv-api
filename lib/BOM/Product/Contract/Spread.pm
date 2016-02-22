@@ -275,6 +275,12 @@ has [qw(is_valid_to_buy is_valid_to_sell may_settle_automatically)] => (
     lazy_build => 1,
 );
 
+has is_sold => (
+    is      => 'ro',
+    isa     => 'Bool',
+    default => 0
+);
+
 sub _build_is_valid_to_buy {
     my $self = shift;
     return $self->_report_validation_stats('buy', $self->confirm_validity);
@@ -282,6 +288,7 @@ sub _build_is_valid_to_buy {
 
 sub _build_is_valid_to_sell {
     my $self = shift;
+    return 0 if $self->is_sold;
     return $self->_report_validation_stats('sell', $self->confirm_validity);
 }
 
