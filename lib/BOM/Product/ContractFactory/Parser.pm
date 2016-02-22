@@ -39,13 +39,12 @@ my %AVAILABLE_CONTRACTS = map { $_ => 1 } get_offerings_with_filter('contract_ty
 sub financial_market_bet_to_parameters {
     my $fmb      = shift;
     my $currency = shift;
-    my $is_sold  = shift;
     croak 'Expected BOM::Database::Model::FinancialMarketBet instance.'
         if not $fmb->isa('BOM::Database::Model::FinancialMarketBet');
 
     # don't bother to get legacy parameters; rather we can just use shortcode
     if ($fmb->bet_class eq $BOM::Database::Model::Constants::BET_CLASS_LEGACY_BET) {
-        return shortcode_to_parameters($fmb->short_code, $currency, $is_sold);
+        return shortcode_to_parameters($fmb->short_code, $currency, $fmb->is_sold);
     }
 
     my $underlying     = BOM::Market::Underlying->new($fmb->underlying_symbol);
@@ -55,7 +54,7 @@ sub financial_market_bet_to_parameters {
         amount_type => 'payout',
         amount      => $fmb->payout_price,
         currency    => $currency,
-        is_sold     => $is_sold
+        is_sold     => $fmb->is_sold
     };
 
     my $purchase_time       = Date::Utility->new($fmb->purchase_time);

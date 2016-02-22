@@ -288,7 +288,15 @@ sub _build_is_valid_to_buy {
 
 sub _build_is_valid_to_sell {
     my $self = shift;
-    return 0 if $self->is_sold;
+
+    if ($self->is_sold) {
+        $self->add_errors({
+            message           => 'Contract already sold',
+            severity          => 99,
+            message_to_client => localize("This contract has been slready old."),
+        });
+        return 0;
+    }
     return $self->_report_validation_stats('sell', $self->confirm_validity);
 }
 

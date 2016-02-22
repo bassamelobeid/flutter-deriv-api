@@ -1078,7 +1078,13 @@ sub is_valid_to_buy {
 sub is_valid_to_sell {
     my $self = shift;
 
-    return 0 if $self->is_sold;
+    if ($self->is_sold) {
+        $self->add_error({
+            message           => 'Contract already sold',
+            message_to_client => localize("This contract has been slready old."),
+        });
+        return 0;
+    }
 
     if (not $self->is_expired and not $self->opposite_bet->is_valid_to_buy) {
         # Their errors are our errors, now!
