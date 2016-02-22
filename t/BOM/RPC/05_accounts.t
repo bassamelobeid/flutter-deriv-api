@@ -20,7 +20,7 @@ sub tcall {
             method => $method,
             params => $params
         });
-    Test::Most::diag(Data::Dumper($r));
+    Test::Most::diag(Data::Dumper::Dumper($r));
     return $r->result;
 }
 
