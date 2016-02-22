@@ -69,7 +69,7 @@ sub create_pricing_data {
             symbol        => $_,
             recorded_date => $for_date
         }) for @dividend_symbols;
-    Quant::Framework::Utils::Test::create_doc(
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
         {
             symbol        => $_,
