@@ -9,6 +9,8 @@ use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 package MojoX::JSON::RPC::Client;
+use Data::Dumper;
+use Test::Most;
 sub tcall {
     my $self   = shift;
     my $method = shift;
@@ -20,6 +22,9 @@ sub tcall {
             method => $method,
             params => $params
         });
+    ok($r->result, 'rpc response ok');
+    ok(!$r->error, 'rpc response ok');
+    diag(Dumper($r->error)) if $r->error;
     return $r->result;
 }
 
@@ -183,20 +188,12 @@ subtest $method => sub {
     #my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
     #$mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
 
-    my $r = $c->call(
-                        "/$method",
-                        {
-                         id     => Data::UUID->new()->create_str(),
-                         method => $method,
-                         params => {client_loginid => 'CR0021', args => {description => 1}},
-                        });
+    $result = $c->tcall(
+        $method,
+        {
+            client_loginid => 'CR0021',
+         args           => {description => 1}});
 
-    #$result = $c->tcall(
-    #    $method,
-    #    {
-    #        client_loginid => 'CR0021',
-    #     args           => {description => 1}});
-    diag(Dumper($r));
     #is($result->{transactions}[0]{longcode}, "mocked info", "if have short code, then simple_contract_info is called");
     #is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
 
