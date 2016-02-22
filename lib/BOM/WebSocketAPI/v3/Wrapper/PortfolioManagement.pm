@@ -83,7 +83,8 @@ sub proposal_open_contract {
                                 $details->{account_id}    = $response->{$contract_id}->{account_id};
 
                                 # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe', $response->{$contract_id}->account_id,
+                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe',
+                                    $response->{$contract_id}->{account_id},
                                     $contract_id, $details);
 
                                 # need underlying to cancel streaming when manual sell occurs, delete it as it will be stashed in transaction channel
