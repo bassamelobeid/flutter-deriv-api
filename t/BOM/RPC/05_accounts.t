@@ -55,8 +55,7 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 my $method = 'payout_currencies';
 subtest $method => sub {
     is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), ['USD'], "will return client's currency");
-    diag(Dumper(BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica')->legal_allowed_currencies));
-    is_deeply($c->tcall($method, {}), BOM::Platform::Runtime::LandingCompany::Registry->new->get('costarica')->legal_allowed_currencies, "will return legal currencies");
+    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)] , "will return legal currencies");
 };
 
 $method = 'landing_company';
