@@ -253,9 +253,10 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.');
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-    my $send_email_called = 0;
-    my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
-    $mocked_account->mock('send_email', sub { $send_email_called++ });
+
+    my %msg = get_email_by_address_subject(email => $email,subject => qr/Your password has been changed/);
+    ok(%msg, "email received");
+    clear_mailbox();
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
     $user->load;
     isnt($user->password, $hash_pwd, 'user password updated');
