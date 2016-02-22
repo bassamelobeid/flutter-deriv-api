@@ -219,19 +219,13 @@ $method = 'get_account_status';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
-    my $mock_client = Test::MockModule->new('BOM::Platform::Client');
-    my %status      = (
-        status1      => 1,
-        tnc_approval => 1,
-        status2      => 0
-    );
-    $mock_client->mock('client_status_types', sub { return \%status });
-    $mock_client->mock('get_status', sub { my ($self, $status) = @_; return $status{$status} });
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(status1)]}, 'no tnc_approval, no status with value 0');
-    %status = (tnc_approval => 1);
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
-    %status = ();
-    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(active)]}, 'no result, active');
+    is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(active)]}, 'no result, active');
+    $test_client->set_status('tnc_approval','test staff', 1);
+    $test_client->save();
+    is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
+    $test_client->set_status('ok','test staff',1);
+    is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), {status => [qw(ok)]}, 'no tnc_approval');
+
 };
 
 $method = 'change_password';
