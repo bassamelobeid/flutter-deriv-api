@@ -102,75 +102,76 @@ subtest $method => sub {
     my $_sell_expired_is_called = 0;
     $mock_Portfolio->mock('_sell_expired_contracts',
         sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
-    my $mocked_transaction = Test::MockModule->new('BOM::Database::DataMapper::Transaction');
-    my $txns               = [{
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:46:00',
-            'action_type'             => 'buy',
-            'referrer_type'           => 'financial_market_bet',
-            'financial_market_bet_id' => '202339',
-            'payment_id'              => undef,
-            'id'                      => '204459',
-            'purchase_time'           => '2005-09-21 06:46:00',
-            'short_code'              => 'RUNBET_DOUBLEDOWN_USD200_frxUSDJPY_5',
-            'balance_after'           => '505.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => undef,
-            'account_id'              => '200359',
-            'amount'                  => '-10.0000',
-            'payment_remark'          => undef
-        },
-        {
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:46:00',
-            'action_type'             => 'sell',
-            'referrer_type'           => 'financial_market_bet',
-            'financial_market_bet_id' => '202319',
-            'payment_id'              => undef,
-            'id'                      => '204439',
-            'purchase_time'           => '2005-09-21 06:46:00',
-            'short_code'              => 'RUNBET_DOUBLEDOWN_USD2500_frxUSDJPY_5',
-            'balance_after'           => '515.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => undef,
-            'account_id'              => '200359',
-            'amount'                  => '237.5000',
-            'payment_remark'          => undef
-        },
-        {
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:14:00',
-            'action_type'             => 'deposit',
-            'referrer_type'           => 'payment',
-            'financial_market_bet_id' => undef,
-            'payment_id'              => '200599',
-            'id'                      => '201399',
-            'purchase_time'           => undef,
-            'short_code'              => undef,
-            'balance_after'           => '600.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => '2005-09-21 06:14:00',
-            'account_id'              => '200359',
-            'amount'                  => '600.0000',
-            'payment_remark' =>
-                'Egold deposit Batch 49100734 from egold ac 2427854 (1.291156 ounces of Gold at $464.70/ounce) Egold Timestamp 1127283282'
-        }];
-
-    $mocked_transaction->mock('get_transactions_ws', sub { return $txns });
+#    my $mocked_transaction = Test::MockModule->new('BOM::Database::DataMapper::Transaction');
+#    my $txns               = [{
+#            'staff_loginid'           => 'CR0021',
+#            'source'                  => undef,
+#            'sell_time'               => undef,
+#            'transaction_time'        => '2005-09-21 06:46:00',
+#            'action_type'             => 'buy',
+#            'referrer_type'           => 'financial_market_bet',
+#            'financial_market_bet_id' => '202339',
+#            'payment_id'              => undef,
+#            'id'                      => '204459',
+#            'purchase_time'           => '2005-09-21 06:46:00',
+#            'short_code'              => 'RUNBET_DOUBLEDOWN_USD200_frxUSDJPY_5',
+#            'balance_after'           => '505.0000',
+#            'remark'                  => undef,
+#            'quantity'                => 1,
+#            'payment_time'            => undef,
+#            'account_id'              => '200359',
+#            'amount'                  => '-10.0000',
+#            'payment_remark'          => undef
+#        },
+#        {
+#            'staff_loginid'           => 'CR0021',
+#            'source'                  => undef,
+#            'sell_time'               => undef,
+#            'transaction_time'        => '2005-09-21 06:46:00',
+#            'action_type'             => 'sell',
+#            'referrer_type'           => 'financial_market_bet',
+#            'financial_market_bet_id' => '202319',
+#            'payment_id'              => undef,
+#            'id'                      => '204439',
+#            'purchase_time'           => '2005-09-21 06:46:00',
+#            'short_code'              => 'RUNBET_DOUBLEDOWN_USD2500_frxUSDJPY_5',
+#            'balance_after'           => '515.0000',
+#            'remark'                  => undef,
+#            'quantity'                => 1,
+#            'payment_time'            => undef,
+#            'account_id'              => '200359',
+#            'amount'                  => '237.5000',
+#            'payment_remark'          => undef
+#        },
+#        {
+#            'staff_loginid'           => 'CR0021',
+#            'source'                  => undef,
+#            'sell_time'               => undef,
+#            'transaction_time'        => '2005-09-21 06:14:00',
+#            'action_type'             => 'deposit',
+#            'referrer_type'           => 'payment',
+#            'financial_market_bet_id' => undef,
+#            'payment_id'              => '200599',
+#            'id'                      => '201399',
+#            'purchase_time'           => undef,
+#            'short_code'              => undef,
+#            'balance_after'           => '600.0000',
+#            'remark'                  => undef,
+#            'quantity'                => 1,
+#            'payment_time'            => '2005-09-21 06:14:00',
+#            'account_id'              => '200359',
+#            'amount'                  => '600.0000',
+#            'payment_remark' =>
+#                'Egold deposit Batch 49100734 from egold ac 2427854 (1.291156 ounces of Gold at $464.70/ounce) Egold Timestamp 1127283282'
+#        }];
+#
+#    $mocked_transaction->mock('get_transactions_ws', sub { return $txns });
     my $result = $c->tcall($method, {client_loginid => 'CR0021'});
-    ok($_sell_expired_is_called, "_sell_expired_contracts is called");
-    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
-    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{sell_time})->epoch,     'transaction time correct for sell');
-    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
+    diag(Dumper($result));
+#    ok($_sell_expired_is_called, "_sell_expired_contracts is called");
+#    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
+#    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{sell_time})->epoch,     'transaction time correct for sell');
+#    is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
     # this function simple_contract_info is 'loaded' into module Accounts, So mock this module
     my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
