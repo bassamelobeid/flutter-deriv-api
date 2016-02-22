@@ -9,7 +9,7 @@ use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
 package MojoX::JSON::RPC::Client;
-
+use Data::Dumper;
 sub tcall {
     my $self   = shift;
     my $method = shift;
