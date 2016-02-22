@@ -164,8 +164,8 @@ sub get_bid {
 
         if (not $contract->is_spread) {
             if ($sell_time) {
-                $response->{sell_tick}      = $contract->underlying->tick_at($sell_time)->quote;
-                $response->{sell_tick_time} = $contract->underlying->tick_at($sell_time)->epoch;
+                $response->{sell_spot}      = $contract->underlying->tick_at($sell_time)->quote;
+                $response->{sell_spot_time} = $contract->underlying->tick_at($sell_time)->epoch;
             }
 
             if ($contract->expiry_type eq 'tick') {
