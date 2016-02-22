@@ -111,8 +111,8 @@ sub _build_interest {
     my $self = shift;
 
     return Quant::Framework::InterestRate->new({
-        symbol   => $self->symbol,
-        for_date => $self->for_date,
+        symbol           => $self->symbol,
+        for_date         => $self->for_date,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });
@@ -147,8 +147,8 @@ sub rate_implied_from {
         if $self->_cached->{$implied_symbol};
 
     $self->_cached->{$implied_symbol} = Quant::Framework::ImpliedRate->new({
-        symbol   => $implied_symbol,
-        for_date => $self->for_date,
+        symbol           => $implied_symbol,
+        for_date         => $self->for_date,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     });

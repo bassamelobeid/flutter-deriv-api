@@ -172,9 +172,9 @@ sub run {
         }
 
         my $implied = Quant::Framework::ImpliedRate->new(
-            symbol        => $implied_symbol,
-            rates         => $implied_rates,
-            recorded_date => Date::Utility->new,
+            symbol           => $implied_symbol,
+            rates            => $implied_rates,
+            recorded_date    => Date::Utility->new,
             chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
             chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
         );

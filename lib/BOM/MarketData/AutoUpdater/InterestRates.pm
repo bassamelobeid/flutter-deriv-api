@@ -63,9 +63,9 @@ sub run {
             };
         } else {
             my $rates = Quant::Framework::InterestRate->new(
-                symbol        => $currency_symbol,
-                rates         => $data,
-                recorded_date => Date::Utility->new,
+                symbol           => $currency_symbol,
+                rates            => $data,
+                recorded_date    => Date::Utility->new,
                 chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
                 chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
             );
