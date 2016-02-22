@@ -157,7 +157,15 @@
             "integer",
             "null"
           ],
-          "description": "sell time of contract, only present for sold contracts"
+          "description": "sell time of contract, only present for contracts already sold"
+        },
+        "sell_tick": {
+          "type": "number",
+          "description": "Example: 86.630, only present for contracts already sold"
+        },
+        "sell_tick_time": {
+          "type": "integer",
+          "description": "Example: 1446629000, only present for contracts already sold"
         }
       }
     },
