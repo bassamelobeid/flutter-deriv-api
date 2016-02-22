@@ -183,7 +183,7 @@ subtest $method => sub {
     #my $mocked_account = Test::MockModule->new('BOM::RPC::v3::Accounts');
     #$mocked_account->mock('simple_contract_info', sub { return ("mocked info") });
 
-    my $r = $self->call(
+    my $r = $c->call(
                         "/$method",
                         {
                          id     => Data::UUID->new()->create_str(),
