@@ -14,13 +14,15 @@ sub tcall {
     my $self   = shift;
     my $method = shift;
     my $params = shift;
-    return $self->call(
+    my $r = $self->call(
         "/$method",
         {
             id     => Data::UUID->new()->create_str(),
             method => $method,
             params => $params
-        })->result;
+        });
+    diag(Dumper($r));
+    return $r->result;
 }
 
 package main;
