@@ -282,8 +282,7 @@ sub _args_to_ref {
 
     my $params_ref =
           (ref $build_arg eq 'HASH') ? $build_arg
-        : ((ref $build_arg) =~ /BOM::Database::Model::FinancialMarketBet/)
-        ? financial_market_bet_to_parameters($build_arg, $maybe_currency, $maybe_sold)
+        : ((ref $build_arg) =~ /BOM::Database::Model::FinancialMarketBet/) ? financial_market_bet_to_parameters($build_arg, $maybe_currency)
         : (defined $build_arg) ? shortcode_to_parameters($build_arg, $maybe_currency, $maybe_sold)
         :                        undef;
 
