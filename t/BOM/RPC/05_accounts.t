@@ -23,7 +23,10 @@ sub tcall {
             params => $params
         });
     ok($r->result, 'rpc response ok');
-    ok(!$r->error, 'rpc response ok');
+    ok(!$r->is_error, 'rpc response ok');
+    if($r->is_error){
+      diag(Dumper($r));
+    }
     diag(Dumper($r->error)) if $r->error;
     return $r->result;
 }
