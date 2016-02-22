@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Deep;
 use Test::Exception;
 use Test::NoWarnings;
@@ -11,9 +11,12 @@ use YAML::XS qw(LoadFile);
 
 use BOM::Market::Underlying;
 use BOM::Product::Offerings qw(get_offerings_with_filter);
+use BOM::System::Chronicle;
 
 # test wriiten date.
 note('Underlying-Contract offerings on 22-Feb-2016');
+ok (BOM::System::Chronicle::set('app_settings','binary', LoadFile('/home/git/regentmarkets/bom/t/BOM/Product/Contract/app_settings_test.yml')));
+note('app_settings configuration as of 22-Feb-2016');
 
 subtest 'markets' => sub {
     my @expected = (qw(forex commodities stocks indices random));
