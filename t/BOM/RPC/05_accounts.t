@@ -189,13 +189,15 @@ subtest $method => sub {
             args           => {description => 1}});
 
     is(
-        $result->{transactions}[0]{longcode},'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
+        $result->{transactions}[0]{longcode},
+        'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.',
         "if have short code, then simple_contract_info is called"
     );
     is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
 
     # here the expired contract is sold, so we can get the txns as test value
-    my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})->get_transactions_ws({}, $test_client2->default_account);
+    my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})
+        ->get_transactions_ws({}, $test_client2->default_account);
     $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
