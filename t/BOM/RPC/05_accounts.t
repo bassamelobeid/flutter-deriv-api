@@ -196,7 +196,7 @@ subtest $method => sub {
     is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
 
 
-    my $txns = BOM::Database::DataMapper::Transaction->new({db => $account->db})->get_transactions_ws({}, $test_client2->default_account);
+    my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})->get_transactions_ws({}, $test_client2->default_account);
     diag(Dumper($txns));
     ################################################################################
     # Here I want to test the time of result
