@@ -93,7 +93,7 @@ subtest $method => sub {
         $c->tcall($method, {language => 'ZH_CN',args => {landing_company => 'nosuchcountry'}}),
         {
             error => {
-                message_to_client => 'Unknown landing company.',
+                message_to_client => '未知着陆公司。',
                 code              => 'UnknownLandingCompany'
             }
         },
