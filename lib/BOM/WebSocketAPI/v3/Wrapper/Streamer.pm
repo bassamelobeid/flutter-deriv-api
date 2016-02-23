@@ -322,7 +322,11 @@ sub process_transaction_updates {
                         }
                     } elsif ($type =~ /^[0-9]+$/ and $payload->{action_type} eq 'sell') {
                         # cancel proposal open contract streaming, transaction subscription and mark is_sold as 1
-                        BOM::WebSocketAPI::v3::Wrapper::System::forget_one($c, delete $args->{feed_subscribe_id}) if $args->{feed_subscribe_id};
+                        BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
+                            $c, 'unsubscribe',
+                            delete $args->{underlying},
+                            'proposal_open_contract:' . JSON::to_json($args), $args
+                        ) if $args->{underlying};
                         BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'unsubscribe', $channel->{$type}->{account_id}, $type);
 
                         $args->{is_sold}    = 1;

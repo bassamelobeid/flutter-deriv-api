@@ -82,21 +82,20 @@ sub proposal_open_contract {
                                 $details->{is_sold}       = $response->{$contract_id}->{is_sold};
                                 $details->{account_id}    = $response->{$contract_id}->{account_id};
 
+                                # need underlying to cancel streaming when manual sell occurs
+                                $details->{underlying} = $response->{$contract_id}->{underlying};
+
+                                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe',
+                                    $response->{$contract_id}->{account_id},
+                                    $contract_id, $details);
+
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                     $c, 'subscribe',
                                     $response->{$contract_id}->{underlying},
                                     'proposal_open_contract:' . JSON::to_json($details), $details
                                 );
 
-                                $details->{feed_subscribe_id} = $id;
-                                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-
-                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe',
-                                    $response->{$contract_id}->{account_id},
-                                    $contract_id, $details);
-
-                                # need subscribe id to cancel streaming when manual sell occurs
-                                delete $details->{feed_subscribe_id} = $id;
                             }
                             my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
                             $send_details->($res);
@@ -128,6 +127,8 @@ sub send_proposal {
     my $buy_price     = delete $details->{buy_price};
     my $purchase_time = delete $details->{purchase_time};
     my $sell_price    = delete $details->{sell_price};
+
+    delete $details->{underlying};
 
     BOM::WebSocketAPI::Websocket_v3::rpc(
         $c,
