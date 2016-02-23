@@ -266,7 +266,7 @@ subtest "predefined barriers" => sub {
         },
         expiryrange_daily => {
             available_barriers => [
-                [1.15436, 1.16056],
+                [1.15436, 1.15746],
                 [1.15281, 1.15591],
                 [1.15591, 1.15901],
                 [1.15126, 1.15436],

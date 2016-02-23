@@ -376,7 +376,7 @@ sub _set_predefined_barriers {
 =head2 _get_barriers_pair
 
 - For staysinout contract, we need to pair the barriers symmetry, ie ( 45, 55), (40,60), (35,65), (20,80), (5,95) 
-- For endsinout contract, we need to pair barriers as follow: (45,65), (40,50), (50,60), (35,45), (55,65), (20,40), (60,80)
+- For endsinout contract, we need to pair barriers as follow: (45,55), (40,50), (50,60), (35,45), (55,65), (20,40), (60,80)
 
 Note: 45 is -5d from the spot at start and 55 is +5d from spot at start
 where d is the minimum increment that determine by divided the distance of boundaries by 90 (45 each side) 
@@ -392,7 +392,7 @@ sub _get_barriers_pair {
     my @keys =
         $contract_category eq 'staysinout'
         ? ((45, 55), (40, 60), (35, 65), (20, 80), (5, 95))
-        : ((45, 65), (40, 50), (50, 60), (35, 45), (55, 65), (20, 40), (60, 80));
+        : ((45, 55), (40, 50), (50, 60), (35, 45), (55, 65), (20, 40), (60, 80));
     my @barriers;
     for (my $i = 0; $i < (scalar @keys); $i += 2) {
 
