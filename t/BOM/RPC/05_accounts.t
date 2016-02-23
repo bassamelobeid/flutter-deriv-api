@@ -58,6 +58,14 @@ $user->save;
 $user->add_loginid({loginid => $test_loginid});
 $user->save;
 clear_mailbox();
+
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+                                                      'currency',
+                                                      {
+                                                       symbol => $_,
+                                                       date   => Date::Utility->new,
+                                                      }) for qw(JPY USD JPY-USD);
+
 ################################################################################
 # test
 ################################################################################
