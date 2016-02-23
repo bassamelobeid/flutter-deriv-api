@@ -237,7 +237,7 @@ has contracts => (
 sub _build_contracts {
     my $self = shift;
 
-    return ($self->quanto_only) ? {} : $self->parsed_contracts // $self->submarket->contracts;
+    return ($self->quanto_only) ? {} : $self->parsed_contracts;
 
 }
 

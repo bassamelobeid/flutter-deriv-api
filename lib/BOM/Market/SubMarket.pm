@@ -14,8 +14,6 @@ my $forex = BOM::Market::SubMarket->new({name => 'random_daily'});
 
 use Moose;
 
-with 'BOM::Market::Role::ParsedOfferings';
-
 use BOM::Market::Registry;
 use BOM::Market::Types;
 use BOM::Platform::Context qw(request localize);
@@ -128,19 +126,6 @@ has 'asset_type' => (
     is      => 'ro',
     isa     => 'Str',
     default => 'asset',
-);
-
-=head2 contracts
-
-A HashRef of available contracts on this submarket
-
-=cut
-
-has contracts => (
-    is      => 'ro',
-    isa     => 'HashRef',
-    lazy    => 1,
-    default => sub { my $self = shift; return $self->parsed_contracts; },
 );
 
 has asset_type => (
