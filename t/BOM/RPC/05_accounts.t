@@ -394,20 +394,20 @@ subtest $method => sub {
         '密码安全度不够。' );
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-    #delete $params->{language};
+    clear_mailbox();
     is( $c->tcall( $method, $params )->{status},
         1, 'update password correctly' );
     my $subject = '您的密码已更改。';
     $subject = encode_qp(encode('UTF-8',$subject));
+    # I don't know why encode_qp will append two characters "=\n"
+    # so I chopped it
     chop($subject);chop($subject);
-    diag "subject in test is $subject yeah";
     my %msg = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
     );
     ok( %msg, "email received" );
-    #diag([keys %msg]);
-    #clear_mailbox();
+    clear_mailbox();
     $user->load;
     isnt( $user->password, $hash_pwd, 'user password updated' );
     $test_client->load;
