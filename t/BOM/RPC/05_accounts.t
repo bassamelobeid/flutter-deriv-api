@@ -116,6 +116,61 @@ subtest $method => sub {
         );
 
 
+    my $now       = Date::Utility->new;
+
+    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+                                                          'randomindex',
+                                                          {
+                                                           symbol => 'R_50',
+                                                           date   => Date::Utility->new
+                                                          });
+
+    my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                             epoch      => $now->epoch - 99,
+                                                                             underlying => 'R_50',
+                                                                             quote      => 76.5996,
+                                                                             bid        => 76.6010,
+                                                                             ask        => 76.2030,
+                                                                            });
+
+    my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                             epoch      => $now->epoch - 52,
+                                                                             underlying => 'R_50',
+                                                                             quote      => 76.6996,
+                                                                             bid        => 76.7010,
+                                                                             ask        => 76.3030,
+                                                                            });
+
+    my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
+                                                                        epoch      => $now->epoch,
+                                                                        underlying => 'R_50',
+                                                                       });
+
+            my $contract_expired = produce_contract({
+                                                     underlying   => $underlying,
+                                                     bet_type     => 'FLASHU',
+                                                     currency     => 'USD',
+                                                     stake        => 100,
+                                                     date_start   => $now->epoch - 100,
+                                                     date_expiry  => $now->epoch - 50,
+                                                     current_tick => $tick,
+                                                     entry_tick   => $old_tick1,
+                                                     exit_tick    => $old_tick2,
+                                                     barrier      => 'S0P',
+                                                    });
+
+    my $txn = BOM::Product::Transaction->new({
+                                              client        => $cl,
+                                              contract      => $contract_expired,
+                                              price         => 100,
+                                              payout        => $contract_expired->payout,
+                                              amount_type   => 'stake',
+                                              purchase_date => $now->epoch - 101,
+                                             });
+
+    $txn->buy(skip_validation => 1);
+    my $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
+    diag(Dumper($result));
 #my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
 #my $_sell_expired_is_called = 0;
 #$mock_Portfolio->mock('_sell_expired_contracts',
@@ -190,7 +245,7 @@ subtest $method => sub {
         }];
 
     $mocked_transaction->mock('get_transactions_ws', sub { return $txns });
-    my $result = $c->tcall($method, {client_loginid => 'CR0021'});
+    $result = $c->tcall($method, {client_loginid => 'CR0021'});
     #ok($_sell_expired_is_called, "_sell_expired_contracts is called");
     is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{sell_time})->epoch,     'transaction time correct for sell');
