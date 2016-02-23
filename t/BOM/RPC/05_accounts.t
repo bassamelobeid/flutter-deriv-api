@@ -399,6 +399,8 @@ subtest $method => sub {
         1, 'update password correctly' );
     my $subject = '您的密码已更改。';
     $subject = encode_qp(encode('UTF-8',$subject));
+    chop($subject);chop($subject);
+    diag "subject in test is $subject yeah";
     my %msg = get_email_by_address_subject(
         email   => $email,
         subject => qr/\Q$subject\E/
