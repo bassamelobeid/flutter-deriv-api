@@ -12,29 +12,28 @@ use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
 use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
 
-
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use Test::Most;
+
 sub tcall {
     my $self   = shift;
     my $method = shift;
     my $params = shift;
-    my $r = $self->call(
+    my $r      = $self->call(
         "/$method",
         {
             id     => Data::UUID->new()->create_str(),
             method => $method,
             params => $params
         });
-    ok($r->result, 'rpc response ok');
+    ok($r->result,    'rpc response ok');
     ok(!$r->is_error, 'rpc response ok');
-    if($r->is_error){
-      diag(Dumper($r));
+    if ($r->is_error) {
+        diag(Dumper($r));
     }
     return $r->result;
 }
-
 
 package main;
 
@@ -60,20 +59,20 @@ $user->save;
 clear_mailbox();
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-                                                      'currency',
-                                                      {
-                                                       symbol => $_,
-                                                       date   => Date::Utility->new,
-                                                      }) for qw(JPY USD JPY-USD);
+    'currency',
+    {
+        symbol => $_,
+        date   => Date::Utility->new,
+    }) for qw(JPY USD JPY-USD);
 
-my $now       = Date::Utility->new('2005-09-21 06:46:00');
-my $underlying      = BOM::Market::Underlying->new('R_50');
+my $now        = Date::Utility->new('2005-09-21 06:46:00');
+my $underlying = BOM::Market::Underlying->new('R_50');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-                                                      'randomindex',
-                                                      {
-                                                       symbol => 'R_50',
-                                                       date   => $now,
-                                                      });
+    'randomindex',
+    {
+        symbol => 'R_50',
+        date   => $now,
+    });
 
 ################################################################################
 # test
@@ -85,7 +84,7 @@ my $c = MojoX::JSON::RPC::Client->new(ua => $t->app->ua);
 my $method = 'payout_currencies';
 subtest $method => sub {
     is_deeply($c->tcall($method, {client_loginid => 'CR0021'}), ['USD'], "will return client's currency");
-    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)] , "will return legal currencies");
+    is_deeply($c->tcall($method, {}), [qw(USD EUR GBP AUD)], "will return legal currencies");
 };
 
 $method = 'landing_company';
@@ -126,72 +125,74 @@ $method = 'statement';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
-    is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 100, 'have 100 statements');
-    is($c->tcall($method, {client_loginid => $test_loginid})->{count}, 0, 'have 0 statements if no default account');
+    is($c->tcall($method, {client_loginid => 'CR0021'})->{count},           100,                     'have 100 statements');
+    is($c->tcall($method, {client_loginid => $test_loginid})->{count},      0,                       'have 0 statements if no default account');
     my $test_client2 = BOM::Test::Data::Utility::UnitTestDatabase::create_client({
-    broker_code => 'MF',
-});
+        broker_code => 'MF',
+    });
     $test_client2->payment_free_gift(
-            currency => 'USD',
-            amount   => 1000,
-            remark   => 'free gift',
-        );
-
-
+        currency => 'USD',
+        amount   => 1000,
+        remark   => 'free gift',
+    );
 
     my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 99,
-                                                                             underlying => 'R_50',
-                                                                             quote      => 76.5996,
-                                                                             bid        => 76.6010,
-                                                                             ask        => 76.2030,
-                                                                            });
+        epoch      => $now->epoch - 99,
+        underlying => 'R_50',
+        quote      => 76.5996,
+        bid        => 76.6010,
+        ask        => 76.2030,
+    });
 
     my $old_tick2 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                             epoch      => $now->epoch - 52,
-                                                                             underlying => 'R_50',
-                                                                             quote      => 76.6996,
-                                                                             bid        => 76.7010,
-                                                                             ask        => 76.3030,
-                                                                            });
+        epoch      => $now->epoch - 52,
+        underlying => 'R_50',
+        quote      => 76.6996,
+        bid        => 76.7010,
+        ask        => 76.3030,
+    });
 
     my $tick = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
-                                                                        epoch      => $now->epoch,
-                                                                        underlying => 'R_50',
-                                                                       });
+        epoch      => $now->epoch,
+        underlying => 'R_50',
+    });
 
-            my $contract_expired = produce_contract({
-                                                     underlying   => $underlying,
-                                                     bet_type     => 'FLASHU',
-                                                     currency     => 'USD',
-                                                     stake        => 100,
-                                                     date_start   => $now->epoch - 100,
-                                                     date_expiry  => $now->epoch - 50,
-                                                     current_tick => $tick,
-                                                     entry_tick   => $old_tick1,
-                                                     exit_tick    => $old_tick2,
-                                                     barrier      => 'S0P',
-                                                    });
+    my $contract_expired = produce_contract({
+        underlying   => $underlying,
+        bet_type     => 'FLASHU',
+        currency     => 'USD',
+        stake        => 100,
+        date_start   => $now->epoch - 100,
+        date_expiry  => $now->epoch - 50,
+        current_tick => $tick,
+        entry_tick   => $old_tick1,
+        exit_tick    => $old_tick2,
+        barrier      => 'S0P',
+    });
 
     my $txn = BOM::Product::Transaction->new({
-                                              client        => $test_client2,
-                                              contract      => $contract_expired,
-                                              price         => 100,
-                                              payout        => $contract_expired->payout,
-                                              amount_type   => 'stake',
-                                              purchase_date => $now->epoch - 101,
-                                             });
+        client        => $test_client2,
+        contract      => $contract_expired,
+        price         => 100,
+        payout        => $contract_expired->payout,
+        amount_type   => 'stake',
+        purchase_date => $now->epoch - 101,
+    });
 
     $txn->buy(skip_validation => 1);
     my $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
-    is($result->{transactions}[0]{action_type},'sell', 'the transaction is sold, so _sell_expired_contracts is called');
+    is($result->{transactions}[0]{action_type}, 'sell', 'the transaction is sold, so _sell_expired_contracts is called');
     $result = $c->tcall(
-                        $method,
-                        {
-                         client_loginid => $test_client2->loginid,
-                         args           => {description => 1}});
+        $method,
+        {
+            client_loginid => $test_client2->loginid,
+            args           => {description => 1}});
 
-    is($result->{transactions}[0]{longcode}, "USD 20.00 payout if USD/JPY is strictly higher than entry spot plus  10 pips at 30 minutes after contract start time.", "if have short code, then simple_contract_info is called");
+    is(
+        $result->{transactions}[0]{longcode},
+        "USD 20.00 payout if USD/JPY is strictly higher than entry spot plus  10 pips at 30 minutes after contract start time.",
+        "if have short code, then simple_contract_info is called"
+    );
     is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
 
     ################################################################################
@@ -274,8 +275,8 @@ $method = 'balance';
 subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
-    is($c->tcall($method, {client_loginid => $test_loginid})->{balance},  0,  'have 0 balance if no default account');
-    is($c->tcall($method, {client_loginid => $test_loginid})->{currency}, '', 'have no currency if no default account');
+    is($c->tcall($method, {client_loginid => $test_loginid})->{balance},    0,                       'have 0 balance if no default account');
+    is($c->tcall($method, {client_loginid => $test_loginid})->{currency},   '',                      'have no currency if no default account');
     my $result = $c->tcall($method, {client_loginid => 'CR0021'});
     is_deeply(
         $result,
@@ -293,10 +294,14 @@ subtest $method => sub {
     is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(active)]}, 'no result, active');
-    $test_client->set_status('tnc_approval','test staff', 1);
+    $test_client->set_status('tnc_approval', 'test staff', 1);
     $test_client->save();
-    is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(active)]}, 'status no tnc_approval, but if no result, it will active');
-    $test_client->set_status('ok','test staff',1);
+    is_deeply(
+        $c->tcall($method, {client_loginid => $test_loginid}),
+        {status => [qw(active)]},
+        'status no tnc_approval, but if no result, it will active'
+    );
+    $test_client->set_status('ok', 'test staff', 1);
     $test_client->save();
     is_deeply($c->tcall($method, {client_loginid => $test_loginid}), {status => [qw(ok)]}, 'no tnc_approval');
 
@@ -325,7 +330,10 @@ subtest $method => sub {
     $params->{args}{new_password} = $new_password;
 
     is($c->tcall($method, $params)->{status}, 1, 'update password correctly');
-    my %msg = get_email_by_address_subject(email => $email,subject => qr/Your password has been changed/);
+    my %msg = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/Your password has been changed/
+    );
     ok(%msg, "email received");
     clear_mailbox();
     $user->load;
