@@ -128,12 +128,12 @@ subtest interest => sub {
 subtest implied_rates_from => sub {
     plan tests => 5;
 
-    BOM::Platform::Static::Config->quants->{market_data}->{interest_rates_source} = 'implied';
-    is(BOM::Platform::Static::Config->quants->{market_data}->{interest_rates_source}, 'implied', 'sets environment for test');
+    BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} = 'implied';
+    is(BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source}, 'implied', 'sets environment for test');
     my $usd;
     lives_ok { $usd = BOM::Market::Currency->new('USD') } 'creates currency object';
     can_ok($usd, 'rate_implied_from');
     is($usd->rate_implied_from('JPY', 7 / 365), 0.008, '->rate_implied_from(\'JPY\', $tiy) returns rate for requested term for USD-JPY');
-    BOM::Platform::Static::Config->quants->{market_data}->{interest_rates_source} = 'market';
-    is(BOM::Platform::Static::Config->quants->{market_data}->{interest_rates_source}, 'market', 'resets environment after test');
+    BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} = 'market';
+    is(BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source}, 'market', 'resets environment after test');
 };
