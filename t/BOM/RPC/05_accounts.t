@@ -3,6 +3,7 @@ use warnings;
 use Test::Most;
 use Test::Mojo;
 use Test::MockModule;
+use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
