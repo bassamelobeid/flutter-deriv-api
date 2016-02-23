@@ -2,8 +2,6 @@ package BOM::Market::Underlying;
 use 5.010;
 use Moose;
 
-with 'BOM::Market::Role::ParsedOfferings';
-
 =head1 NAME
 
 BOM::Market::Underlying
