@@ -140,7 +140,7 @@ has contracts => (
     is      => 'ro',
     isa     => 'HashRef',
     lazy    => 1,
-    default => sub { my $self = shift; return $self->parsed_contracts // $self->market->contracts; },
+    default => sub { my $self = shift; return $self->parsed_contracts; },
 );
 
 has asset_type => (
