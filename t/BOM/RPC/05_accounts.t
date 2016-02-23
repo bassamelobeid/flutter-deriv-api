@@ -66,6 +66,15 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                                                        date   => Date::Utility->new,
                                                       }) for qw(JPY USD JPY-USD);
 
+my $now       = Date::Utility->new('2005-09-21 06:46:00');
+my $underlying      = BOM::Market::Underlying->new('R_50');
+BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
+                                                      'randomindex',
+                                                      {
+                                                       symbol => 'R_50',
+                                                       date   => $now,
+                                                      });
+
 ################################################################################
 # test
 ################################################################################
@@ -129,14 +138,6 @@ subtest $method => sub {
         );
 
 
-    my $now       = Date::Utility->new;
-    my $underlying      = BOM::Market::Underlying->new('R_50');
-    BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
-                                                          'randomindex',
-                                                          {
-                                                           symbol => 'R_50',
-                                                           date   => Date::Utility->new
-                                                          });
 
     my $old_tick1 = BOM::Test::Data::Utility::FeedTestDatabase::create_tick({
                                                                              epoch      => $now->epoch - 99,
