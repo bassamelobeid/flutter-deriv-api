@@ -256,7 +256,7 @@ my @dispatch = (
         'cashier_password',
         \&BOM::WebSocketAPI::v3::Wrapper::Accounts::cashier_password, 1, 'payments'
     ],
-    ['api_token', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1],
+    ['api_token', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::api_token, 1, 'admin'],
     ['tnc_approval', \&BOM::WebSocketAPI::v3::Wrapper::Accounts::tnc_approval, 1, 'admin'],
 
     ['app_register', \&BOM::WebSocketAPI::v3::Wrapper::App::register, 1, 'admin'],
