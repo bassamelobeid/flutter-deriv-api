@@ -15,19 +15,18 @@ CREATE OR REPLACE FUNCTION bet.validate_balance_and_lock_account(-- account
                                                                  -- how much to withdraw
                                                                  b_buy_price         NUMERIC,
                                                              OUT account             transaction.account)
-RETURNS RECORD AS $def$
+AS $def$
 DECLARE
     v_r RECORD;
 BEGIN
     -- This query not only fetches the account balance. It also works as lock
     -- to prevent deadlocks. It MUST BE THE FIRST QUERY in the function and
     -- it must use FOR UPDATE (instead of FOR NO KEY UPDATE).
-    SELECT INTO v_r a AS acc
+    SELECT INTO account a
       FROM transaction.account a
      WHERE a.client_loginid=a_loginid
        AND a.currency_code=a_currency
        FOR UPDATE;
-    account := v_r.acc;
     account.balance := coalesce(account.balance, 0);
 
     -- This is not really necessary because we have a constraint that ensures
