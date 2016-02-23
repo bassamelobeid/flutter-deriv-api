@@ -7,17 +7,17 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_30day_limits(p_account           transaction.account,
-                                                     p_purchase_time     TIMESTAMP,
-                                                     p_buy_price         NUMERIC,
-                                                     p_limits            JSON)
+CREATE OR REPLACE FUNCTION bet_v1.validate_30day_limits(p_account           transaction.account,
+                                                        p_purchase_time     TIMESTAMP,
+                                                        p_buy_price         NUMERIC,
+                                                        p_limits            JSON)
 RETURNS VOID AS $def$
 DECLARE
     v_r                RECORD;
     v_potential_losses NUMERIC;
 BEGIN
     IF (p_limits -> 'max_30day_losses') IS NOT NULL THEN
-        v_potential_losses:=bet.calculate_potential_losses(p_account);
+        v_potential_losses:=bet_v1.calculate_potential_losses(p_account);
     END IF;
 
     IF (p_limits -> 'max_30day_turnover') IS NOT NULL OR

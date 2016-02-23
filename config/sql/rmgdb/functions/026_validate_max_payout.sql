@@ -7,11 +7,11 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_max_payout(p_account           transaction.account,
-                                                   p_underlying_symbol VARCHAR(50),
-                                                   p_bet_type          VARCHAR(30),
-                                                   p_payout_price      NUMERIC,
-                                                   p_limits            JSON)
+CREATE OR REPLACE FUNCTION bet_v1.validate_max_payout(  p_account           transaction.account,
+                                                        p_underlying_symbol VARCHAR(50),
+                                                        p_bet_type          VARCHAR(30),
+                                                        p_payout_price      NUMERIC,
+                                                        p_limits            JSON)
 RETURNS VOID AS $def$
 DECLARE
     v_r RECORD;

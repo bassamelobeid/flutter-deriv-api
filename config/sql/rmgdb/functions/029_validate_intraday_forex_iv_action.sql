@@ -8,11 +8,11 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_intraday_forex_iv_action(p_account           transaction.account,
-                                                                 p_purchase_time     TIMESTAMP,
-                                                                 p_buy_price         NUMERIC,
-                                                                 p_payout_price      NUMERIC,
-                                                                 p_limits            JSON)
+CREATE OR REPLACE FUNCTION bet_v1.validate_intraday_forex_iv_action(p_account           transaction.account,
+                                                                    p_purchase_time     TIMESTAMP,
+                                                                    p_buy_price         NUMERIC,
+                                                                    p_payout_price      NUMERIC,
+                                                                    p_limits            JSON)
 RETURNS VOID AS $def$
 DECLARE
     v_r RECORD;

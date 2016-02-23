@@ -9,12 +9,12 @@ CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explan
 -- Returns the account record if there is enough balance to withdraw b_buy_price.
 -- Otherwise an exception is thrown.
 -- Upon return, the account record is locked FOR UPDATE.
-CREATE OR REPLACE FUNCTION bet.validate_balance_and_lock_account(-- account
-                                                                 a_loginid           VARCHAR(12),
-                                                                 a_currency          VARCHAR(3),
-                                                                 -- how much to withdraw
-                                                                 b_buy_price         NUMERIC,
-                                                             OUT account             transaction.account)
+CREATE OR REPLACE FUNCTION bet_v1.validate_balance_and_lock_account( -- account
+                                                                     a_loginid           VARCHAR(12),
+                                                                     a_currency          VARCHAR(3),
+                                                                     -- how much to withdraw
+                                                                     b_buy_price         NUMERIC,
+                                                                 OUT account             transaction.account)
 AS $def$
 DECLARE
     v_r RECORD;

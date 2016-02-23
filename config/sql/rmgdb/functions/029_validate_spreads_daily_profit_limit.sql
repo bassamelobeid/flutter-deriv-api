@@ -6,10 +6,10 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_spreads_daily_profit_limit(p_account           transaction.account,
-                                                                   p_purchase_time     TIMESTAMP,
-                                                                   p_chld              JSON,
-                                                                   p_limits            JSON)
+CREATE OR REPLACE FUNCTION bet_v1.validate_spreads_daily_profit_limit(  p_account           transaction.account,
+                                                                        p_purchase_time     TIMESTAMP,
+                                                                        p_chld              JSON,
+                                                                        p_limits            JSON)
 RETURNS BOOLEAN AS $def$
 DECLARE
     v_profit  NUMERIC;

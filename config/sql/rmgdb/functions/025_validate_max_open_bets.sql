@@ -6,8 +6,8 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_max_open_bets(p_account transaction.account,
-                                                      p_limits  JSON)
+CREATE OR REPLACE FUNCTION bet_v1.validate_max_open_bets(   p_account transaction.account,
+                                                            p_limits  JSON)
 RETURNS VOID AS $def$
 DECLARE
     v_n BIGINT;
