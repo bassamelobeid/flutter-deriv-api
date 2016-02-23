@@ -17,14 +17,14 @@
     },
     "first_name": {
       "type": "string",
-      "pattern": "^[\\w\\s'.-]{2,30}$",
-      "description": "Within 2-30 characters, use only word characters, spaces, hyphens, full-stops or apostrophes.",
+      "pattern": "^[\\w\\s'.-]{1,30}$",
+      "description": "Within 1-30 characters, use only word characters, spaces, hyphens, full-stops or apostrophes.",
       "required": 1
     },
     "last_name": {
       "type": "string",
-      "pattern": "^[\\w\\s'.-]{2,30}$",
-      "description": "Within 2-30 characters, use only words characters, spaces, hyphens, full-stops or apostrophes.",
+      "pattern": "^[\\w\\s'.-]{1,30}$",
+      "description": "Within 1-30 characters, use only words characters, spaces, hyphens, full-stops or apostrophes.",
       "required": 1
     },
     "date_of_birth" : {
