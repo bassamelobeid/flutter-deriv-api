@@ -323,29 +323,18 @@ lives_ok {
     $cl = create_client;
 
     top_up $cl, 'USD', 10000;
-    top_up $cl, 'AUD', 10000;
-    top_up $cl, 'USD', 5000;
-
     isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-    isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
 
     my $bal;
     is + ($bal = $acc_usd->balance + 0), 15000, 'USD balance is 15000 got: ' . $bal;
-    is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
 }
-'client with 2 segments created and funded';
+'client funded';
 
 lives_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd;
     is $balance_after + 0, 15000 - 20, 'correct balance_after';
 }
 'bought USD bet';
-
-lives_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud;
-    is $balance_after + 0, 10000 - 20, 'correct balance_after';
-}
-'bought AUD bet';
 
 dies_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
