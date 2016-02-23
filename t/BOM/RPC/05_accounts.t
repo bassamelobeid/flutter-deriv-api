@@ -110,10 +110,10 @@ subtest $method => sub {
 $method = 'landing_company_details';
 subtest $method => sub {
     is_deeply(
-        $c->tcall($method, {args => {landing_company_details => 'nosuchcountry'}}),
+        $c->tcall($method, {language => 'ZH_CN', args => {landing_company_details => 'nosuchcountry'}}),
         {
             error => {
-                message_to_client => 'Unknown landing company.',
+                message_to_client => '未知着陆公司。',
                 code              => 'UnknownLandingCompany'
             }
         },
@@ -244,7 +244,7 @@ subtest $method => sub {
 
 $method = 'change_password';
 subtest $method => sub {
-    is($c->tcall($method, {})->{error}{code}, 'AuthorizationRequired', 'need loginid');
+    is($c->tcall($method, {language => 'ZH_CN'})->{error}{message_to_client}, 'AuthorizationRequired', 'need loginid');
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     my $params = {client_loginid => $test_loginid};
     is($c->tcall($method, $params)->{error}{code}, 'PermissionDenied', 'need token_type');
