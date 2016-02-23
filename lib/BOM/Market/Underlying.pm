@@ -1218,7 +1218,7 @@ sub _build_is_trading_suspended {
     my $self = shift;
 
     return (
-               not $self->contracts_offered
+               not keys %{$self->contracts}
             or $self->market->disabled
             or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}));
 }
@@ -1777,18 +1777,6 @@ sub pipsized_value {
         $value = sprintf '%.' . $display_decimals . 'f', $value;
     }
     return $value;
-}
-
-=head2 contracts_offered
-
-Is the contract category offered on this underlying?
-
-=cut
-
-sub contracts_offered {
-    my ($self, $contract_category) = @_;
-
-    return exists $self->contracts->{$contract_category};
 }
 
 =head2 price_at_intervals(\%args)
