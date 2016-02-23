@@ -405,7 +405,7 @@ subtest $method => sub {
     );
     ok( %msg, "email received" );
     #diag([keys %msg]);
-    clear_mailbox();
+    #clear_mailbox();
     $user->load;
     isnt( $user->password, $hash_pwd, 'user password updated' );
     $test_client->load;
