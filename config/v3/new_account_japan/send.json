@@ -55,7 +55,6 @@
       "type" : "string",
       "maxLength": 70,
       "description": "Optional field, within 70 characters.",
-      "required": 1
     },
     "address_city": {
       "type" : "string",
@@ -66,14 +65,15 @@
     },
     "address_state": {
       "type" : "string",
+      "minLength": 1,
       "maxLength": 35,
-      "description": "Optional field, possible value receive from states_list call.",
+      "description": "Possible value receive from states_list call.",
       "required": 1
     },
     "address_postcode": {
       "type" : "string",
-      "pattern": "^[^+]{0,20}$",
-      "description": "Optional field, within 20 characters and may not contain '+'.",
+      "pattern": "^[^+]{1,20}$",
+      "description": "Within 20 characters and may not contain '+'.",
       "required": 1
     },
     "phone": {
