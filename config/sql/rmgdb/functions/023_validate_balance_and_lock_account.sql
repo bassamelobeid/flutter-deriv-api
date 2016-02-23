@@ -22,11 +22,12 @@ BEGIN
     -- This query not only fetches the account balance. It also works as lock
     -- to prevent deadlocks. It MUST BE THE FIRST QUERY in the function and
     -- it must use FOR UPDATE (instead of FOR NO KEY UPDATE).
-    SELECT INTO account a
+    SELECT INTO v_r a AS acc
       FROM transaction.account a
      WHERE a.client_loginid=a_loginid
        AND a.currency_code=a_currency
        FOR UPDATE;
+    account := v_r.acc;
     account.balance := coalesce(account.balance, 0);
 
     -- This is not really necessary because we have a constraint that ensures
