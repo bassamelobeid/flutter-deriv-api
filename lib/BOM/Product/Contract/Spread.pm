@@ -293,7 +293,7 @@ sub _build_is_valid_to_sell {
         $self->add_errors({
             message           => 'Contract already sold',
             severity          => 99,
-            message_to_client => localize("This contract has been slready old."),
+            message_to_client => localize("This contract has been sold."),
         });
         return 0;
     }

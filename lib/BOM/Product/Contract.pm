@@ -1081,7 +1081,7 @@ sub is_valid_to_sell {
     if ($self->is_sold) {
         $self->add_error({
             message           => 'Contract already sold',
-            message_to_client => localize("This contract has been slready old."),
+            message_to_client => localize("This contract has been sold."),
         });
         return 0;
     }
