@@ -117,7 +117,7 @@ subtest $method => sub {
 
 
     my $now       = Date::Utility->new;
-
+    my $underlying      = BOM::Market::Underlying->new('R_50');
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
                                                           'randomindex',
                                                           {
