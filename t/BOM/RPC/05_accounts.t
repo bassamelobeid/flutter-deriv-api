@@ -183,12 +183,7 @@ subtest $method => sub {
 
     $txn->buy(skip_validation => 1);
     my $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
-    diag(Dumper($result));
-#my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
-#my $_sell_expired_is_called = 0;
-#$mock_Portfolio->mock('_sell_expired_contracts',
-#    sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
-
+    is($result->{transactions}[0]{action_type},'sell', 'the transaction is sold, so _sell_expired_contracts is called');
 
     ################################################################################
     # Here I want to test the time of result
