@@ -6,6 +6,8 @@ use Test::MockModule;
 use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
+use MIME::Base64;
+use Encode qw(encode);
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Product::ContractFactory qw( produce_contract );
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
@@ -370,7 +372,7 @@ subtest $method => sub {
         '请登陆。',
         'need a valid client'
     );
-    my $params = { client_loginid => $test_loginid };
+    my $params = { language => 'ZH_CN', client_loginid => $test_loginid };
     is( $c->tcall( $method, $params )->{error}{code},
         'PermissionDenied', 'need token_type' );
     $params->{token_type} = 'hello';
@@ -381,23 +383,25 @@ subtest $method => sub {
     $params->{cs_email}           = 'cs@binary.com';
     $params->{client_ip}          = '127.0.0.1';
     is( $c->tcall( $method, $params )->{error}{message_to_client},
-        'Old password is wrong.' );
+        '旧密码不正确。');
     $params->{args}{old_password} = $password;
     $params->{args}{new_password} = $password;
 
     is( $c->tcall( $method, $params )->{error}{message_to_client},
-        'New password is same as old password.' );
+        '新密码与旧密码相同。' );
     $params->{args}{new_password} = '111111111';
     is( $c->tcall( $method, $params )->{error}{message_to_client},
-        'Password is not strong enough.' );
+        '密码安全度不够。' );
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
 
     is( $c->tcall( $method, $params )->{status},
         1, 'update password correctly' );
+    my $subject = '您的密码已更改';
+    $subject = encode_base64(encode('UTF-8',$subject));
     my %msg = get_email_by_address_subject(
         email   => $email,
-        subject => qr/Your password has been changed/
+        subject => qr/$subject/
     );
     ok( %msg, "email received" );
     clear_mailbox();
