@@ -154,7 +154,6 @@ sub startup {
                 $path =~ s/\///;
                 DataDog::DogStatsd::Helper::stats_inc('bom_rpc.v_3.call_failure.count', {tags => ["rpc:$path"]});
                 $dispatcher->app->log->error(qq{Internal error: $err});
-                print "error: $err\n";
                 $m->invalid_request('Invalid request');
                 return;
             }
