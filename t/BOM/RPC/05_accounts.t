@@ -90,7 +90,7 @@ subtest $method => sub {
 $method = 'landing_company';
 subtest $method => sub {
     is_deeply(
-        $c->tcall($method, {args => {landing_company => 'nosuchcountry'}}),
+        $c->tcall($method, {language => 'ZH_CN',args => {landing_company => 'nosuchcountry'}}),
         {
             error => {
                 message_to_client => 'Unknown landing company.',
