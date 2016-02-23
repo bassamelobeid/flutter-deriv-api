@@ -311,7 +311,7 @@ subtest "predefined barriers" => sub {
         current_tick => $underlying->tick_at($now),
         date         => $now
     });
-    cmp_deeply(
+    cmp_bag(
         $contract->{available_barriers},
         $expected_barriers{call_intraday}{available_barriers},
         "Expected available barriers for intraday call"
