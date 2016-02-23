@@ -160,7 +160,7 @@ subtest $method => sub {
                                                     });
 
     my $txn = BOM::Product::Transaction->new({
-                                              client        => $cl,
+                                              client        => $test_client2,
                                               contract      => $contract_expired,
                                               price         => 100,
                                               payout        => $contract_expired->payout,
