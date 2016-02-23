@@ -106,10 +106,18 @@ subtest $method => sub {
     is($c->tcall($method, {client_loginid => 'CR12345678'})->{error}{code}, 'AuthorizationRequired', 'need a valid client');
     is($c->tcall($method, {client_loginid => 'CR0021'})->{count}, 100, 'have 100 statements');
     is($c->tcall($method, {client_loginid => $test_loginid})->{count}, 0, 'have 0 statements if no default account');
-    my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
-    my $_sell_expired_is_called = 0;
-    $mock_Portfolio->mock('_sell_expired_contracts',
-        sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
+
+    $test_client->payment_free_gift(
+            currency => 'USD',
+            amount   => 1000,
+            remark   => 'free gift',
+        );
+
+
+#my $mock_Portfolio          = Test::MockModule->new('BOM::RPC::v3::PortfolioManagement');
+#my $_sell_expired_is_called = 0;
+#$mock_Portfolio->mock('_sell_expired_contracts',
+#    sub { $_sell_expired_is_called = 1; $mock_Portfolio->original('_sell_expired_contracts')->(@_) });
 
 
     ################################################################################
