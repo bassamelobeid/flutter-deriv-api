@@ -394,7 +394,7 @@ subtest $method => sub {
         '密码安全度不够。' );
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-
+    delete $params->{language};
     is( $c->tcall( $method, $params )->{status},
         1, 'update password correctly' );
     my $subject = '您的密码已更改';
