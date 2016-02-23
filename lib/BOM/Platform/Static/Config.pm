@@ -9,11 +9,7 @@ use YAML::XS qw(LoadFile);
 use BOM::System::Localhost;
 use BOM::System::Config;
 
-my $quants_config = LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
-
-sub quants {
-    return $quants_config;
-}
+use constant quants => LoadFile('/home/git/regentmarkets/bom-platform/config/quants_config.yml');
 
 sub get_display_languages {
     return ['EN', 'ID', 'RU', 'ES', 'FR', 'PT', 'DE', 'ZH_CN', 'PL', 'AR', 'ZH_TW', 'VI', 'IT'];
