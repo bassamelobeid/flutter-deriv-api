@@ -155,29 +155,27 @@ energy:
         intraday:
           forward:
             euro_atm: five_mins_to_eod
-uk:
-    name: uk
-    offered: 0
-    display_name: "United Kingdom Stocks"
-    display_order: 11
-    market: stocks
-us:
-    name: us
-    offered: 0
-    display_name: "United States Stocks"
-    display_order: 12
-    market: stocks
+
 australia:
     name: australia
     offered: 0
     display_name: "Australia Stocks"
-    display_order: 13
-    market: stocks
-japan:
-    name: japan
-    offered: 0
-    display_name: "Japan Stocks"
     display_order: 4
+    market: stocks
+belgium:
+    name: belgium
+    display_name: "Belgian Stocks"
+    display_order: 1
+    market: stocks
+amsterdam:
+    name: amsterdam
+    display_name: "Dutch Stocks"
+    display_order: 2
+    market: stocks
+france:
+    name: france
+    display_name: "French Stocks"
+    display_order: 3
     market: stocks
 germany:
     name: germany
@@ -191,91 +189,18 @@ india:
     display_name: "India Stocks"
     display_order: 6
     market: stocks
-italy:
-    name: italy
+uk:
+    name: uk
     offered: 0
-    display_name: "Italy Stocks"
+    display_name: "United Kingdom Stocks"
     display_order: 7
     market: stocks
-korea:
-    name: korea
+us:
+    name: us
     offered: 0
-    display_name: "Korea Stocks"
+    display_name: "United States Stocks"
     display_order: 8
     market: stocks
-spain:
-    name: spain
-    offered: 0
-    display_name: "Spain Stocks"
-    display_order: 9
-    market: stocks
-norway:
-    name: norway
-    offered: 0
-    display_name: "Norway Stocks"
-    display_order: 10
-    market: stocks
-france:
-    name: france
-    display_name: "French Stocks"
-    display_order: 1
-    market: stocks
-belgium:
-    name: belgium
-    display_name: "Belgian Stocks"
-    display_order: 2
-    market: stocks
-amsterdam:
-    name: amsterdam
-    display_name: "Dutch Stocks"
-    display_order: 3
-    market: stocks
-
-global:
-    name: global
-    display_name: "Global Sector"
-    display_order: 1
-    market: sectors
-agriculture:
-    name: agriculture
-    display_name: "Agriculture Sector"
-    display_order: 2
-    market: sectors
-financial:
-    name: financial
-    display_name: "Financial Sector"
-    display_order: 3
-    market: sectors
-energy_sector:
-    name: energy_sector
-    display_name: "Energy Sector"
-    display_order: 4
-    market: sectors
-metals_sector:
-    name: metals_sector
-    display_name: "Metals Sector"
-    display_order: 5
-    market: sectors
-technology:
-    name: technology
-    display_name: "Technology Sector"
-    display_order: 6
-    market: sectors
-healthcare:
-    name: healthcare
-    display_name: "Health Care Sector"
-    display_order: 7
-    market: sectors
-industrials:
-    name: industrials
-    display_name: "Industrials Sector"
-    display_order: 8
-    market: sectors
-consumer_services:
-    name: consumer_services
-    display_name: "Consumer Srv Sector"
-    display_order: 9
-    market: sectors
 
 asia_oceania_future:
     name: asia_oceania_future
