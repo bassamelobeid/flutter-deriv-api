@@ -67,7 +67,8 @@ sub proposal_open_contract {
                             my $id;
                             if (    exists $args->{subscribe}
                                 and $args->{subscribe} eq '1'
-                                and not $response->{$contract_id}->{is_expired})
+                                and not $response->{$contract_id}->{is_expired}
+                                and not $response->{$contract_id}->{is_sold})
                             {
                                 # these keys needs to be deleted from args (check send_proposal)
                                 # populating here cos we stash them in redis channel
@@ -80,22 +81,22 @@ sub proposal_open_contract {
                                 $details->{purchase_time} = $response->{$contract_id}->{purchase_time};
                                 $details->{is_sold}       = $response->{$contract_id}->{is_sold};
                                 $details->{account_id}    = $response->{$contract_id}->{account_id};
-                                $details->{underlying}    = $response->{$contract_id}->{underlying};
-
-                                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
-                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe',
-                                    $response->{$contract_id}->{account_id},
-                                    $contract_id, $details)
-                                    if (not $response->{$contract_id}->{is_sold});
-
-                                # need underlying to cancel streaming when manual sell occurs, delete it as it will be stashed in transaction channel
-                                delete $details->{underlying};
 
                                 $id = BOM::WebSocketAPI::v3::Wrapper::Streamer::_feed_channel(
                                     $c, 'subscribe',
                                     $response->{$contract_id}->{underlying},
                                     'proposal_open_contract:' . JSON::to_json($details), $details
                                 );
+
+                                $details->{feed_subscribe_id} = $id;
+                                # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
+
+                                BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe',
+                                    $response->{$contract_id}->{account_id},
+                                    $contract_id, $details);
+
+                                # need subscribe id to cancel streaming when manual sell occurs
+                                delete $details->{feed_subscribe_id} = $id;
                             }
                             my $res = {$id ? (id => $id) : (), %{$response->{$contract_id}}};
                             $send_details->($res);
