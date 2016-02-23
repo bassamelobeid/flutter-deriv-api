@@ -54,7 +54,7 @@
     "address_line_2": {
       "type" : "string",
       "maxLength": 70,
-      "description": "Optional field, within 70 characters.",
+      "description": "Optional field, within 70 characters."
     },
     "address_city": {
       "type" : "string",
