@@ -237,8 +237,8 @@ has contracts => (
 sub _build_contracts {
     my $self = shift;
 
-    return ($self->quanto_only) ? {} : $self->parsed_contracts;
-
+    return {} if $self->quanto_only;
+    return $BOM::Product::Offerings::PRODUCT_OFFERINGS->{$self->symbol} // {};
 }
 
 has submarket => (
