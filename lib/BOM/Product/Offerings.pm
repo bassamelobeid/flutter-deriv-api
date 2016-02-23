@@ -14,8 +14,7 @@ use List::MoreUtils qw( uniq all );
 use Module::Load::Conditional qw(can_load);
 use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
-use YAML::CacheLoader qw(LoadFile);
-use Finance::Asset;
+use YAML::XS qw(LoadFile);
 
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
@@ -46,6 +45,8 @@ my %record_map = (
     max_historical_pricer_duration => 'historical_pricer_max',
 );
 
+my $product_offerings = LoadFile('/home/git/regentmarkets/bom/config/files/product_offerings.yml');
+
 sub _make_new_flyby {
 
     state $cache_key = 'FLYBY';
@@ -61,10 +62,7 @@ sub _make_new_flyby {
 
         # TODO: Remove all these sorts.  They are only important for transition testing
         UL:
-        foreach my $ul (
-            map  { BOM::Market::Underlying->new($_->{symbol}) }
-            sort { $a->{symbol} cmp $b->{symbol} } values %{Finance::Asset->instance->all_parameters})
-        {
+        foreach my $ul (map { BOM::Market::Underlying->new($_->{symbol}) } sort { $a cmp $b } keys %$product_offerings) {
             next UL unless $ul->market->display_order and not $ul->quanto_only and not $suspended_underlyings{$ul->symbol};
             my %record = (
                 market            => $ul->market->name,
