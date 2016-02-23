@@ -36,6 +36,7 @@ our $BARRIER_CATEGORIES = {
     asian        => ['asian'],
     spreads      => ['spreads'],
 };
+our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom/config/files/product_offerings.yml');
 
 my %record_map = (
     min_contract_duration          => 'min',
@@ -44,8 +45,6 @@ my %record_map = (
     min_historical_pricer_duration => 'historical_pricer_min',
     max_historical_pricer_duration => 'historical_pricer_max',
 );
-
-my $product_offerings = LoadFile('/home/git/regentmarkets/bom/config/files/product_offerings.yml');
 
 sub _make_new_flyby {
 
@@ -62,7 +61,7 @@ sub _make_new_flyby {
 
         # TODO: Remove all these sorts.  They are only important for transition testing
         UL:
-        foreach my $ul (map { BOM::Market::Underlying->new($_->{symbol}) } sort { $a cmp $b } keys %$product_offerings) {
+        foreach my $ul (map { BOM::Market::Underlying->new($_->{symbol}) } sort { $a cmp $b } keys %$PRODUCT_OFFERINGS) {
             next UL unless $ul->market->display_order and not $ul->quanto_only and not $suspended_underlyings{$ul->symbol};
             my %record = (
                 market            => $ul->market->name,
