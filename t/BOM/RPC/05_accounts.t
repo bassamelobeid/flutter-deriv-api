@@ -197,8 +197,8 @@ subtest $method => sub {
     # here the expired contract is sold, so we can get the txns as test value
     my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})->get_transactions_ws({}, $test_client2->default_account);
     $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
-    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
-    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
+    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
+    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
 };
