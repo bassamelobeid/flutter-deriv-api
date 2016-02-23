@@ -5,7 +5,6 @@ use strict;
 use warnings;
 
 use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
-use Quant::Framework::Utils::Test;
 use VolSurface::Utils qw(get_strike_for_spot_delta);
 use Date::Utility;
 use BOM::Market::Underlying;
