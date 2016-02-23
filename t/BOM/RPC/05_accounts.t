@@ -397,11 +397,11 @@ subtest $method => sub {
     #delete $params->{language};
     is( $c->tcall( $method, $params )->{status},
         1, 'update password correctly' );
-    my $subject = '您的密码已更改';
+    my $subject = '您的密码已更改。';
     $subject = encode_qp(encode('UTF-8',$subject));
     my %msg = get_email_by_address_subject(
         email   => $email,
-        subject => qr/$subject/
+        subject => qr/\Q$subject\E/
     );
     ok( %msg, "email received" );
     #diag([keys %msg]);
