@@ -401,10 +401,10 @@ subtest $method => sub {
     $subject = encode_base64(encode('UTF-8',$subject));
     my %msg = get_email_by_address_subject(
         email   => $email,
-        subject => qr/Your password has been changed./
+        subject => qr/.*/
     );
     #ok( %msg, "email received" );
-    diag($msg{subject});
+    diag([keys %msg]);
     clear_mailbox();
     $user->load;
     isnt( $user->password, $hash_pwd, 'user password updated' );
