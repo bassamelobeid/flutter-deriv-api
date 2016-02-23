@@ -401,7 +401,7 @@ subtest $method => sub {
     $subject = encode_base64(encode('UTF-8',$subject));
     my %msg = get_email_by_address_subject(
         email   => $email,
-        subject => qr/.*/
+        subject => qr/Your password has been changed./
     );
     #ok( %msg, "email received" );
     diag($msg{subject});
