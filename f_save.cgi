@@ -174,22 +174,16 @@ if ($filen =~ /^vol\/master(\w\w\w-?\w?\w?\w?)\.(interest)$/) {
         }
     }
     
-    if ( $symbol =~ /-/ ) { 
-        my $implied_rate = BOM::MarketData::ImpliedRate->new(
-            symbol => $symbol,
-            rates  => $rates,
-            date   => Date::Utility->new,
-        );
-        $implied_rate->save;
-    } else {
-        my $interest_rates = BOM::MarketData::InterestRate->new(
-            symbol => $symbol,
-            rates  => $rates,
-            date   => Date::Utility->new,
-        );
-        $interest_rates->save;
-    }
 
+    my $class = 'BOM::MarketData::InterestRate';
+    $class = 'BOM::MarketData::ImpliedRate' if $symbol =~ /-/;
+
+    my $rates = $class->new(
+        symbol => $symbol,
+        rates  => $rates,
+        date   => Date::Utility->new,
+    );
+    $rates->save;
 }
 
 if (not $overridefilename) {
