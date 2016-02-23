@@ -375,8 +375,7 @@ sub _set_predefined_barriers {
 
 =head2 _split_boundaries_barriers
 
-
--Split the boundaries barriers into 20 barriers.
+-Split the boundaries barriers into 10 barriers by divided the distance of boundaries by 80 (40 each side) - to be used as increment.
 The barriers will be split in the way more cluster towards current spot and gradually spread out from current spot.
 - Included entry spot as well
 
@@ -389,11 +388,11 @@ sub _split_boundaries_barriers {
     my $spot_at_start               = $args->{start_tick};
     my @boundaries_barrier          = @{$args->{boundaries_barrier}};
     my $distance_between_boundaries = abs($boundaries_barrier[0] - $boundaries_barrier[1]);
-    my @steps                       = (1, 2, 3, 4, 5, 7, 9, 14, 24, 44);
+    my @steps                       = (5, 10, 15, 30, 45);
     my $minimum_step                = roundnear($pip_size, $distance_between_boundaries / ($steps[-1] * 2));
-    my @barriers                    = map { ($spot_at_start - $_ * $minimum_step, $spot_at_start + $_ * $minimum_step) } @steps;
-    push @barriers, $spot_at_start;
-    return @barriers;
+    my %barriers                    = map {"-$_" => $spot_at_start - $_ * $minimum_step; "$_" =>$spot_at_start + $_ * $minimum_step; } @steps;
+    $barriers{0} = $spot_at_start
+    return %barriers;
 }
 
 =head2 _get_strike_from_call_bs_price
