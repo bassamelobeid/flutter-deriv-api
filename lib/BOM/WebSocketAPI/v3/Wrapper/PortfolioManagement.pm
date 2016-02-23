@@ -62,6 +62,7 @@ sub proposal_open_contract {
                                     contract_id      => $contract_id,
                                     validation_error => $response->{$contract_id}->{error}->{message_to_client}});
                         } else {
+                            # need to do this as args are passed back to client as response echo_req
                             my $details = {%$args};
                             my $id;
                             if (    exists $args->{subscribe}
@@ -79,8 +80,8 @@ sub proposal_open_contract {
                                 $details->{sell_time}     = $response->{$contract_id}->{sell_time};
                                 $details->{purchase_time} = $response->{$contract_id}->{purchase_time};
                                 $details->{is_sold}       = $response->{$contract_id}->{is_sold};
-                                $details->{underlying}    = $response->{$contract_id}->{underlying};
                                 $details->{account_id}    = $response->{$contract_id}->{account_id};
+                                $details->{underlying}    = $response->{$contract_id}->{underlying};
 
                                 # subscribe to transaction channel as when contract is manually sold we need to cancel streaming
                                 BOM::WebSocketAPI::v3::Wrapper::Streamer::_transaction_channel($c, 'subscribe',
