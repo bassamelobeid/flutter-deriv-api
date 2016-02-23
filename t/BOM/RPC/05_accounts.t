@@ -193,7 +193,7 @@ subtest $method => sub {
         "USD 20.00 payout if USD/JPY is strictly higher than entry spot plus  10 pips at 30 minutes after contract start time.",
         "if have short code, then simple_contract_info is called"
     );
-    is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
+    #is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
 
 
     my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})->get_transactions_ws({}, $test_client2->default_account);
