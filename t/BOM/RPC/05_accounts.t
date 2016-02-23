@@ -6,7 +6,7 @@ use Test::MockModule;
 use utf8;
 use MojoX::JSON::RPC::Client;
 use Data::Dumper;
-use MIME::Base64;
+use MIME::QuotedPrint qw(encode_qp);
 use Encode qw(encode);
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Product::ContractFactory qw( produce_contract );
@@ -394,17 +394,17 @@ subtest $method => sub {
         '密码安全度不够。' );
     my $new_password = 'Fsfjxljfwkls3@fs9';
     $params->{args}{new_password} = $new_password;
-    delete $params->{language};
+    #delete $params->{language};
     is( $c->tcall( $method, $params )->{status},
         1, 'update password correctly' );
     my $subject = '您的密码已更改';
-    $subject = encode_base64(encode('UTF-8',$subject));
+    $subject = encode_qp(encode('UTF-8',$subject));
     my %msg = get_email_by_address_subject(
         email   => $email,
-        subject => qr/.*/
+        subject => qr/$subject/
     );
-    #ok( %msg, "email received" );
-    diag([keys %msg]);
+    ok( %msg, "email received" );
+    #diag([keys %msg]);
     clear_mailbox();
     $user->load;
     isnt( $user->password, $hash_pwd, 'user password updated' );
