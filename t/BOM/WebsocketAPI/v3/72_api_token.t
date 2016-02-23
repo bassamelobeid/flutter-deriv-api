@@ -11,6 +11,12 @@ use TestHelper qw/test_schema build_mojo_test/;
 use BOM::Platform::SessionCookie;
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
 
+# cleanup
+use BOM::Database::Model::AccessToken;
+BOM::Database::Model::AccessToken->new->dbh->do("
+    DELETE FROM $_
+") foreach ('auth.access_token');
+
 my $t = build_mojo_test();
 
 my $token = BOM::Platform::SessionCookie->new(
@@ -84,7 +90,7 @@ $t = $t->send_ok({
         json => {
             api_token        => 1,
             new_token        => 'Test',
-            new_token_scopes => ['read']}})->message_ok;
+            new_token_scopes => ['read', 'admin']}})->message_ok;
 $res = decode_json($t->message->[1]);
 is scalar(@{$res->{api_token}->{tokens}}), 1, '1 token created';
 $test_token = $res->{api_token}->{tokens}->[0];
