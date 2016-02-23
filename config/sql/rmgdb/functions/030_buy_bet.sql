@@ -54,13 +54,11 @@ CREATE OR REPLACE FUNCTION bet_v1.buy_bet(  a_loginid           VARCHAR(12),    
                                         OUT v_trans             transaction.transaction)
 RETURNS SETOF RECORD AS $def$
 DECLARE
-    v_r                RECORD;
     v_account          transaction.account;
 BEGIN
-    SELECT INTO v_r *
+    SELECT * INTO v_account
       FROM bet_v1.validate_balance_and_lock_account(a_loginid, a_currency,
-                                                    b_buy_price)
-    v_account := v_r.account;
+                                                    b_buy_price);
 
     PERFORM bet_v1.validate_max_balance(v_account, p_limits),
             bet_v1.validate_max_open_bets(v_account, p_limits),
