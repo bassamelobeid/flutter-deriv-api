@@ -189,87 +189,16 @@ subtest $method => sub {
             args           => {description => 1}});
 
     is(
-        $result->{transactions}[0]{longcode},
-        "USD 20.00 payout if USD/JPY is strictly higher than entry spot plus  10 pips at 30 minutes after contract start time.",
+        $result->{transactions}[0]{longcode},'USD 100.00 payout if Random 50 Index is strictly higher than entry spot at 50 seconds after contract start time.'
         "if have short code, then simple_contract_info is called"
     );
-    #is($result->{transactions}[2]{longcode}, $txns->[2]{payment_remark}, "if no short code, then longcode is the remark");
+    is($result->{transactions}[2]{longcode}, 'free gift', "if no short code, then longcode is the remark");
 
-
+    # here the expired contract is sold, so we can get the txns as test value
     my $txns = BOM::Database::DataMapper::Transaction->new({db => $test_client2->default_account->db})->get_transactions_ws({}, $test_client2->default_account);
-    diag(Dumper($txns));
-    ################################################################################
-    # Here I want to test the time of result
-    #I cannot control the value of timestamp fields
-    #So I mocked the result of transactions
-    my $mocked_transaction = Test::MockModule->new('BOM::Database::DataMapper::Transaction');
-    my $txns               = [{
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:46:00',
-            'action_type'             => 'buy',
-            'referrer_type'           => 'financial_market_bet',
-            'financial_market_bet_id' => '202339',
-            'payment_id'              => undef,
-            'id'                      => '204459',
-            'purchase_time'           => '2005-09-21 06:46:00',
-            'short_code'              => 'CALL_FRXUSDJPY_20_1311574735_1311576535_S10P_0',
-            'balance_after'           => '505.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => undef,
-            'account_id'              => '200359',
-            'amount'                  => '-10.0000',
-            'payment_remark'          => undef
-        },
-        {
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:46:00',
-            'action_type'             => 'sell',
-            'referrer_type'           => 'financial_market_bet',
-            'financial_market_bet_id' => '202319',
-            'payment_id'              => undef,
-            'id'                      => '204439',
-            'purchase_time'           => '2005-09-21 06:46:00',
-            'short_code'              => 'CALL_FRXUSDJPY_20_1311574735_1311576535_S10P_0',
-            'balance_after'           => '515.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => undef,
-            'account_id'              => '200359',
-            'amount'                  => '237.5000',
-            'payment_remark'          => undef
-        },
-        {
-            'staff_loginid'           => 'CR0021',
-            'source'                  => undef,
-            'sell_time'               => undef,
-            'transaction_time'        => '2005-09-21 06:14:00',
-            'action_type'             => 'deposit',
-            'referrer_type'           => 'payment',
-            'financial_market_bet_id' => undef,
-            'payment_id'              => '200599',
-            'id'                      => '201399',
-            'purchase_time'           => undef,
-            'short_code'              => undef,
-            'balance_after'           => '600.0000',
-            'remark'                  => undef,
-            'quantity'                => 1,
-            'payment_time'            => '2005-09-21 06:14:00',
-            'account_id'              => '200359',
-            'amount'                  => '600.0000',
-            'payment_remark' =>
-                'Egold deposit Batch 49100734 from egold ac 2427854 (1.291156 ounces of Gold at $464.70/ounce) Egold Timestamp 1127283282'
-        }];
-
-    $mocked_transaction->mock('get_transactions_ws', sub { return $txns });
-    $result = $c->tcall($method, {client_loginid => 'CR0021'});
-    #ok($_sell_expired_is_called, "_sell_expired_contracts is called");
-    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[0]{purchase_time})->epoch, 'transaction time correct for buy ');
-    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[1]{sell_time})->epoch,     'transaction time correct for sell');
+    $result = $c->tcall($method, {client_loginid => $test_client2->loginid});
+    is($result->{transactions}[1]{transaction_time}, Date::Utility->new($txns->[0]{sell_time})->epoch,     'transaction time correct for sell');
+    is($result->{transactions}[0]{transaction_time}, Date::Utility->new($txns->[1]{purchase_time})->epoch, 'transaction time correct for buy ');
     is($result->{transactions}[2]{transaction_time}, Date::Utility->new($txns->[2]{payment_time})->epoch,  'transaction time correct for payment');
 
 };
