@@ -7,6 +7,10 @@ use MojoX::JSON::RPC::Client;
 use Data::Dumper;
 use BOM::Test::Email qw(get_email_by_address_subject clear_mailbox);
 use BOM::Test::Data::Utility::UnitTestDatabase qw(:init);
+use BOM::Test::Data::Utility::FeedTestDatabase qw(:init);
+use BOM::Test::Data::Utility::UnitTestCouchDB qw(:init);
+use BOM::Test::Data::Utility::UnitTestRedis qw(initialize_realtime_ticks_db);
+
 
 package MojoX::JSON::RPC::Client;
 use Data::Dumper;
