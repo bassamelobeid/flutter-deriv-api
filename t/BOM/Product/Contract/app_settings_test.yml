@@ -39,13 +39,6 @@ global:
          "shyamala" : 100000
       }
   quants:
-    bet_limits:
-      holiday_blackout_end: '5'
-      holiday_blackout_start: '345'
-      maximum_payout: ''
-      maximum_payout_on_less_than_7day_indices_call_put: '5000'
-      maximum_payout_on_new_markets: '100'
-      maximum_tick_trade_stake: '1000'
     client_limits:
       asian_turnover_limit: '50000'
       intraday_forex_iv: |
@@ -54,37 +47,10 @@ global:
            "realized_profit" : 30000,
            "turnover" : 30000
         }
-      intraday_spot_index_turnover_limit: '30000'
-      payout_per_symbol_and_bet_type_limit: '200000'
-      smart_index_turnover_limit: '5000'
-      smarties_turnover_limit: '100000'
-      spreads_daily_profit_limit: '10000'
-      stocks_turnover_limit: '5000'
-      tick_expiry_engine_turnover_limit: '0.5'
     commission:
       adjustment:
-        bom_created_bet: '100'
-        forward_start_factor: '1.5'
         global_scaling: '100'
-        maximum: '500'
-        minimum: '1'
-        news_factor: '1'
-        quanto_scale_factor: '1'
-        spread_multiplier: '1'
-      digital_spread:
-        level_multiplier: '1.4'
-      equality_discount_retained: '1'
-      intraday:
-        historical_bounceback: "{}\n"
-        historical_fixed: '0.0125'
-        historical_iv_risk: '10'
-        historical_vol_meanrev: '0.10'
-      maximum_total_markup: '50'
-      minimum_total_markup: '0.3'
-      resell_discount_factor: '0.2'
     features:
-      enable_portfolio_autosell: 1
-      enable_pricedebug: 1
       suspend_claim_types: []
     internal:
       custom_client_limits:
@@ -207,10 +173,6 @@ global:
               modified: 11-Feb-16
               payout_limit: ~
               staff: ren
-    market_data:
-      economic_announcements_source: forexfactory
-      extra_vol_diff_by_delta: '0.1'
-      interest_rates_source: implied
     markets:
       disable_iv: []
       disabled:
