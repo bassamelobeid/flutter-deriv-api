@@ -1220,7 +1220,7 @@ sub _build_is_trading_suspended {
     my $self = shift;
 
     return (
-               not $self->market->contracts_offered
+               not $self->contracts_offered
             or $self->market->disabled
             or grep { $_ eq $self->symbol } (@{BOM::Platform::Runtime->instance->app_config->quants->underlyings->suspend_trades}));
 }
