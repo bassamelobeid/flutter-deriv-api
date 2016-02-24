@@ -3,7 +3,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 33;
+use Test::More tests => 29;
 use Test::NoWarnings ();    # no END block test
 use Test::Exception;
 use BOM::Database::Helper::FinancialMarketBet;
@@ -234,56 +234,33 @@ my $acc_aud;
 # real tests begin here
 ####################################################################
 
-lives_ok {
-    # need to date the timestamps back at least for 1 second because
-    # Date::Utility->new->epoch rounds down fractions of seconds.
-    # Hence, "now()" might come after purchase_time.
-    my $db = db;
-    $db->dbh->do(<<'SQL');
-INSERT INTO data_collection.exchange_rate (source_currency, target_currency, date, rate)
-VALUES ('USD', 'USD', now()-'1s'::INTERVAL, 1),
-       ('AUD', 'USD', now()-'1s'::INTERVAL, 2),
-       ('GBP', 'USD', now()-'1s'::INTERVAL, 4),
-       ('EUR', 'USD', now()-'1s'::INTERVAL, 8)
-SQL
-
-    my $stmt = $db->dbh->prepare(<<'SQL');
-SELECT t.cur, t.val * exch.rate
-FROM (VALUES ('USD', 80),
-             ('AUD', 40),
-             ('GBP', 20),
-             ('EUR', 10)) t(cur, val)
-CROSS JOIN data_collection.exchangeToUSD_rate(t.cur) exch(rate)
-ORDER BY t.cur
-SQL
-
-    $stmt->execute;
-    my $res = $stmt->fetchall_arrayref;
-
-    note explain $res;
-    is_deeply $res, [[AUD => '80.0000'], [EUR => '80.0000'], [GBP => '80.0000'], [USD => '80.0000'],], 'got correct exchange rates';
-}
-'setup exchange rates';
-
+my $bal;
 lives_ok {
     $cl = create_client;
 
-    top_up $cl, 'USD', 10000;
+    top_up $cl, 'USD', 15000;
     isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
 
-    my $bal;
     is + ($bal = $acc_usd->balance + 0), 15000, 'USD balance is 15000 got: ' . $bal;
 }
 'client funded';
 
 lives_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd;
-    is $balance_after + 0, 15000 - 20, 'correct balance_after';
+    $bal -= 20;
+    is $balance_after + 0, $bal, 'correct balance_after';
 }
 'bought USD bet';
 
+lives_ok {
+    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd;
+    $bal -= 20;
+    is $balance_after + 0, $bal, 'correct balance_after';
+}
+'bought 2nd USD bet';
+
 dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
         +{
         limits => {
             max_open_bets => 2,
@@ -297,16 +274,12 @@ is_deeply $@,
     ],
     'max_open_bets reached';
 
-# We have 2 accounts, AUD and USD, with 1 bet for 20 each. Since AUD=>USD rate is 2,
-# the net value is 60 USD.
 
-# We are buying and AUD 20 (= USD 40) bet. So, with max_turnover=100 it should succeed.
-# Anything less should fail.
-
+# bought 2 bets before, sum turnover = 20 + 20, which exceeds max_turnover
 dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud, +{
+    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
         limits => {
-            max_turnover => 99.9999,    # unit is USD
+            max_turnover => 39,
         },
     };
 }
@@ -318,38 +291,40 @@ is_deeply $@,
     'max_turnover reached';
 
 lives_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud, +{
+    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
         limits => {
-            max_turnover => 1000,    # in USD
+            max_turnover => 100,
         },
     };
-    is $balance_after + 0, 10000 - 40, 'correct balance_after';
-    sell_one_bet $acc_aud,
+    $bal -= 20;
+    is $balance_after + 0, $bal, 'correct balance_after';
+    sell_one_bet $acc_usd,
         {
         id         => $fmbid,
         sell_price => 0,
         sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp
         };
 }
-'bought and sold one more AUD bet with slightly increased max_turnover';
+'bought and sold one more bet with slightly increased max_turnover';
 
-# at this point we have 2 open contracts: USD 20 and AUD 20. Since our AUDUSD rate
-# is 2 this amounts to USD 60. Also, we have one lost contract for AUD 20 which is
-# USD 40. As for the max_losses test, we need to sum up all open bets as losses
-# plus the currently realized losses plus the current contract which is
+# at this point we have 2 open contracts: USD 20 + USD 20.
+# we have 1 lost contract for USD 20.
+# As for max_losses test, we need to sum up
+#   a) all open bets as losses
+#   b) current realized losses
+#   c) current contract
 #
-#  40 (realized) + 60 (open) + 10000 (current) = 10100
+# which is: 40 (open) + 20 (realized) + 10000 (current) = 10060
 
 dies_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
         +{
         buy_price => 10000,
         limits    => {
-            max_losses    => 10099.99,
+            max_losses    => 10059,
             max_open_bets => 3,
         },
         };
-    is $balance_after + 0, 15000 - 10020, 'correct balance_after';
 }
 'exception thrown';
 is_deeply $@,
@@ -358,21 +333,24 @@ is_deeply $@,
     ],
     'max_losses reached';
 
+my $buy_price;
 lives_ok {
+    $buy_price = 10000;
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
         +{
-        buy_price => 10000,
+        buy_price => $buy_price,
         limits    => {
             max_losses    => 10100,
             max_open_bets => 3,
         },
         };
-    is $balance_after + 0, 15000 - 10020, 'correct balance_after';
+    $bal -= $buy_price;
+    is $balance_after + 0, $bal, 'correct balance_after';
 }
-'bought one more USD bet with slightly increased max_open_bets' or diag Dumper($@);
+'bought one more USD bet with slightly increased max_losses' or diag Dumper($@);
 
 dies_ok {
-    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+    my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
         +{
         limits => {
             max_open_bets => 3,
@@ -389,7 +367,7 @@ is_deeply $@,
 dies_ok {
     my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
         +{
-        buy_price => 15000 - 10020 + 0.01,
+        buy_price => $bal + 0.01,
         };
 }
 'exception thrown';
@@ -399,6 +377,7 @@ is_deeply $@,
     ],
     'insufficient balance';
 
+my $sell_price;
 SKIP: {
     my @gmtime = gmtime;
     skip 'at least one minute must be left before mignight', 1
@@ -414,7 +393,8 @@ SKIP: {
                 # seconds are inserted. So, in principle a day can have 24h + 1sec.
                 duration => (24 * 3600 + 1) . 's',
             };
-            is $balance_after + 0, 15000 - 10040, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'This bet should not be taken into account in the intraday_forex_iv_action tests due to duration > 1day';
 
@@ -428,7 +408,8 @@ SKIP: {
                     },
                 },
                 };
-            is $balance_after + 0, 15000 - 10060, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
             push @bets_to_sell, $fmbid;
         }
         'bought USD bet with relative_barrier=test';
@@ -456,6 +437,8 @@ SKIP: {
         # it has buy_price=20 and payout_price=200
         # let's buy one more with potential profit of 20
         # then the net potential profit is 200
+
+        $buy_price = 20;
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
@@ -469,7 +452,8 @@ SKIP: {
                     },
                 },
                 };
-            is $balance_after + 0, 15000 - 10080, 'correct balance_after';
+            $bal -= $buy_price;
+            is $balance_after + 0, $bal, 'correct balance_after';
             push @bets_to_sell, $fmbid;
         }
         'now we have potential_profit=200';
@@ -496,16 +480,18 @@ SKIP: {
             'maximum intraday forex potential profit limit reached';
 
         # now we need to sell some bets
+        $sell_price = 200;
         lives_ok {
             my $txnid = sell_one_bet $acc_usd,
                 +{
                 id         => shift(@bets_to_sell),
-                sell_price => 200,
+                sell_price => $sell_price,
                 sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
                 };
         }
         '1st bet sold';
 
+        $bal += $sell_price;
         # here we have a realized profit of 180. Let's see if that's true.
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -537,22 +523,13 @@ SKIP: {
                     },
                 },
                 };
-            is $balance_after + 0, 15000 - 10100 + 200, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
             push @bets_to_sell, $fmbid;
         }
         'successfully bought USD bet with sightly higher intraday_forex_iv_action.realized_profit limit';
     };
 }
-
-
-
-exit;
-
-
-
-
-
-
 
 subtest 'more validation', sub {
     my @usd_bets;
@@ -561,14 +538,8 @@ subtest 'more validation', sub {
         $cl = create_client;
 
         top_up $cl, 'USD', 10000;
-        top_up $cl, 'AUD', 10000;
-
         isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-        isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
-
-        my $bal;
         is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
-        is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
     }
     'setup new client';
 
@@ -594,18 +565,19 @@ subtest 'more validation', sub {
                 max_balance => 10000,
             },
             };
+
+        $bal -= 20;
         push @usd_bets, $fmbid;
-        is $balance_after + 0, 10000 - 20, 'correct balance_after';
+        is $balance_after + 0, $bal, 'correct balance_after';
     }
     'can still buy when balance is exactly at max_balance';
 
     lives_ok {
-        note 'this verifies that closed bets or open bets in other segments do not affect this validation';
-        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud;
-        is $balance_after + 0, 10000 - 20, 'correct balance_after';
-        ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd;
+        my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd;
+        $bal -= 20;
         push @usd_bets, $fmbid;
-        is $balance_after + 0, 10000 - 40, 'correct balance_after';
+        is $balance_after + 0, $bal, 'correct balance_after';
+
         $txnid = sell_one_bet $acc_usd,
             +{
             id         => $fmbid,
@@ -613,7 +585,7 @@ subtest 'more validation', sub {
             sell_time  => Date::Utility->new->plus_time_interval('1s')->db_timestamp,
             };
     }
-    'buy a bet in the other account + buy and sell one in the current';
+    'buy & sell a bet';
 
     dies_ok {
         my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
@@ -652,8 +624,9 @@ subtest 'more validation', sub {
                 max_payout_open_bets => 400,
             },
             };
+        $bal -= 20;
         push @usd_bets, $fmbid;
-        is $balance_after + 0, 10000 - 60, 'correct balance_after';
+        is $balance_after + 0, $bal, 'correct balance_after';
     }
     'can buy when summary open payout is exactly at max_payout_open_bets';
 
@@ -664,8 +637,9 @@ subtest 'more validation', sub {
                 max_payout_per_symbol_and_bet_type => 600,
             },
             };
+        $bal -= 20;
         push @usd_bets, $fmbid;
-        is $balance_after + 0, 10000 - 80, 'correct balance_after';
+        is $balance_after + 0, $bal, 'correct balance_after';
     }
     'can buy when summary open payout is exactly at max_payout_per_symbol_and_bet_type';
 
@@ -677,8 +651,9 @@ subtest 'more validation', sub {
                 max_payout_per_symbol_and_bet_type => 800 - 0.01,
             },
             };
+        $bal -= 20;
         push @usd_bets, $fmbid;
-        is $balance_after + 0, 10000 - 100, 'correct balance_after';
+        is $balance_after + 0, $bal, 'correct balance_after';
     }
     'can buy for different symbol';
 
@@ -690,8 +665,9 @@ subtest 'more validation', sub {
                 max_payout_per_symbol_and_bet_type => 1000 - 0.01,
             },
             };
+        $bal -= 20;
         push @usd_bets, $fmbid;
-        is $balance_after + 0, 10000 - 120, 'correct balance_after';
+        is $balance_after + 0, $bal, 'correct balance_after';
     }
     'can buy for different bet_type';
 
@@ -710,8 +686,7 @@ subtest 'more validation', sub {
         ],
         'maximum net payout for open positions reached';
 
-    # the USD account has 6 bets here, 5 of which are unsold. Let's sell them
-    # all.
+    # the USD account has 6 bets here, 5 of which are unsold. Let's sell them all.
     lives_ok {
         my @bets_to_sell =
             map { {id => $_, sell_price => 30, sell_time => Date::Utility->new->plus_time_interval('1s')->db_timestamp,} } @usd_bets;
@@ -734,9 +709,9 @@ subtest 'more validation', sub {
         my $res = $fmb->batch_sell_bet;
 
         # note explain $res;
-
+        $bal += 5*30;
         is 0 + @$res, 5, 'sold 5 out of 6 bets (1 was already sold)';
-        is $res->[0]->{txn}->{balance_after} + 0, 10000 - 120 + 5 * 30, 'balance_after';
+        is $res->[0]->{txn}->{balance_after} + 0, $bal, 'balance_after';
     }
     'batch-sell 5 bets';
 };
@@ -751,43 +726,41 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            top_up $cl, 'AUD', 10000;
-
             isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-            isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
-
-            my $bal;
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
-            is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
         my @bets_to_sell;
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd;
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 tick_count => 19,
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 underlying_symbol => 'fritz',
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 40, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
 
             ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 bet_type => 'CLUB',
                 };
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 40, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'buy a few bets';
 
@@ -804,57 +777,55 @@ SKIP: {
         }
         'and sell them for 0';
 
-        # NOTE: exchange rates have been set up as the very 1st test
-        #       We have a turnover of USD 40 and AUD 40 = USD 80
-        #       which amounts to a net turnover of USD 120.
-        #       And since all those bets are losses we have a net loss of USD 120.
-        #       Also, there are no open bets. So, the loss limit is
-        #           120 + 20 (current contract)
+        # We have a turnover of USD 80
+        # And since all those bets are losses we have a net loss of USD 80.
+        # Also, there are no open bets. So, the loss limit is
+        #       80 + 20 (current contract)
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
-                    max_turnover             => 140 - 0.01,
-                    max_losses               => 140 - 0.01,
+                    max_turnover             => 100 - 0.01,
+                    max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
-                            limit    => 140 - 0.01,
+                            limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
-                            limit    => 140,
+                            limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
-                            limit    => 120 - 0.01,
+                            limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
-                            limit    => 120,
+                            limit    => 80,
                             name     => 'test4',
                         },
-                        {    # fails (count only the one bet w/ tick_count, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
                             tick_expiry => 1,
-                            limit       => 60 - 0.01,
+                            limit       => 40 - 0.01,
                             name        => 'test5',
                         },
-                        {    # passes  (count only the one bet w/ tick_count, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
                             tick_expiry => 1,
-                            limit       => 60,
+                            limit       => 40,
                             name        => 'test6',
                         },
-                        {    # fails (count only the one bet w/ sym=fritz, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
                             symbols => [map { {n => $_} } qw/hugo fritz/],
-                            limit   => 60 - 0.01,
+                            limit   => 40 - 0.01,
                             name    => 'test7',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
                             symbols => [map { {n => $_} } qw/hugo fritz/],
-                            limit   => 60,
+                            limit   => 40,
                             name    => 'test8',
                         },
                     ],
@@ -871,48 +842,48 @@ SKIP: {
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
-                    max_turnover             => 140,
-                    max_losses               => 140 - 0.01,
+                    max_turnover             => 100,
+                    max_losses               => 100 - 0.01,
                     specific_turnover_limits => [{    # fails
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
-                            limit    => 140 - 0.01,
+                            limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
-                            limit    => 140,
+                            limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
-                            limit    => 120 - 0.01,
+                            limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
-                            limit    => 120,
+                            limit    => 80,
                             name     => 'test4',
                         },
-                        {    # fails (count only the one bet w/ tick_count, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
                             tick_expiry => 1,
-                            limit       => 60 - 0.01,
+                            limit       => 40 - 0.01,
                             name        => 'test5',
                         },
-                        {    # passes  (count only the one bet w/ tick_count, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
                             tick_expiry => 1,
-                            limit       => 60,
+                            limit       => 40,
                             name        => 'test6',
                         },
-                        {    # fails (count only the one bet w/ sym=fritz, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
                             symbols => [map { {n => $_} } qw/hugo fritz/],
-                            limit   => 60 - 0.01,
+                            limit   => 40 - 0.01,
                             name    => 'test7',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
                             symbols => [map { {n => $_} } qw/hugo fritz/],
-                            limit   => 60,
+                            limit   => 40,
                             name    => 'test8',
                         },
                     ],
@@ -929,48 +900,48 @@ SKIP: {
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
-                    max_turnover             => 140,
-                    max_losses               => 140,
+                    max_turnover             => 100,
+                    max_losses               => 100,
                     specific_turnover_limits => [{    # fails
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
-                            limit    => 140 - 0.01,
+                            limit    => 100 - 0.01,
                             name     => 'test1',
                         },
                         {    # passes
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
-                            limit    => 140,
+                            limit    => 100,
                             name     => 'test2',
                         },
                         {    # fails (leave out the CLUB bet above)
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
-                            limit    => 120 - 0.01,
+                            limit    => 80 - 0.01,
                             name     => 'test3',
                         },
                         {    # passes (leave out the CLUB bet above)
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
-                            limit    => 120,
+                            limit    => 80,
                             name     => 'test4',
                         },
-                        {    # fails (count only the one bet w/ tick_count, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # fails (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
                             tick_expiry => 1,
-                            limit       => 60 - 0.01,
+                            limit       => 40 - 0.01,
                             name        => 'test5',
                         },
-                        {    # passes  (count only the one bet w/ tick_count, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
                             tick_expiry => 1,
-                            limit       => 60,
+                            limit       => 40,
                             name        => 'test6',
                         },
-                        {    # fails (count only the one bet w/ sym=fritz, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # fails (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
                             symbols => [map { {n => $_} } qw/hugo fritz/],
-                            limit   => 60 - 0.01,
+                            limit   => 40 - 0.01,
                             name    => 'test7',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
                             symbols => [map { {n => $_} } qw/hugo fritz/],
-                            limit   => 60,
+                            limit   => 40,
                             name    => 'test8',
                         },
                     ],
@@ -987,33 +958,34 @@ SKIP: {
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{
                 limits => {
-                    max_turnover             => 140,
-                    max_losses               => 140,
+                    max_turnover             => 100,
+                    max_losses               => 100,
                     specific_turnover_limits => [{    # passes
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY CLUB/],
                             symbols  => [map { {n => $_} } qw/frxUSDJPY frxUSDGBP fritz/],
-                            limit    => 140,
+                            limit    => 100,
                             name     => 'test2',
                         },
                         {    # passes (leave out the CLUB bet above)
                             bet_type => [map { {n => $_} } qw/FLASHU FLASHD DUMMY/],
-                            limit    => 120,
+                            limit    => 80,
                             name     => 'test4',
                         },
-                        {    # passes  (count only the one bet w/ tick_count, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ tick_count, USD 20 + USD 20 for the bet to be bought => limit=40)
                             tick_expiry => 1,
-                            limit       => 60,
+                            limit       => 40,
                             name        => 'test6',
                         },
-                        {    # passes  (count only the one bet w/ sym=fritz, (AUD 20 = USD 40) + USD 20 for the bet to be bought => limit=60)
+                        {    # passes  (count only the one bet w/ sym=fritz, USD 20 + USD 20 for the bet to be bought => limit=40)
                             symbols => [map { {n => $_} } qw/hugo fritz/],
-                            limit   => 60,
+                            limit   => 40,
                             name    => 'test8',
                         },
                     ],
                 },
             };
-            is $balance_after + 0, 10000 - 60, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'specific turnover validation succeeded';
     };
@@ -1023,14 +995,12 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            top_up $cl, 'AUD', 10000;
-
             isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-            isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
-
-            my $bal;
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
-            is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
+
+#            top_up $cl, 'AUD', 10000;
+#            isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
+#            is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
@@ -1043,32 +1013,39 @@ SKIP: {
                 amount_per_point => 8,
                 purchase_time    => $yest->db_timestamp
                 };
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
+
+            $sell_price = 100;
             $txnid = sell_one_bet $acc_usd,
                 +{
                 id         => $fmbid,
-                sell_price => 100,
+                sell_price => $sell_price,
                 sell_time  => $yest->plus_time_interval('1s')->db_timestamp,
                 };
+            $bal += $sell_price;
         }
         'bought and sold a spread bet with USD 80 profit';
 
         my @bets_to_sell;
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd;
-            is $balance_after + 0, 10080 - 20, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
             push @bets_to_sell, [$acc_usd, $fmbid];
-            ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_aud;
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+
+            ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd;
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'buy spread bets';
 
-        # I bought 2 spread contracts with a potential profit of USD 20 and AUD 20 (USD 60 in total).
+        # I bought 2 spread contracts with a potential profit of USD 20 and USD 20 (USD 40 in total).
         # dies if you try to buy a contract with potential payout of USD 20.01
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd,
                 +{
-                limits           => {spread_bet_profit_limit => 80},
+                limits           => {spread_bet_profit_limit => 60},
                 amount_per_point => 2.001
                 };
         }
@@ -1079,10 +1056,11 @@ SKIP: {
             ],
             'daily profit limit on spread bets exceeded';
 
-        # can still buy a contract worth USD 20 when limit is set to USD 80.
+        # can still buy a contract worth USD 20 when limit is set to USD 60.
         lives_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}};
-            is $balance_after + 0, 10080 - 40, 'correct balance_after';
+            my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd, +{limits => {spread_bet_profit_limit => 60}};
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'can still buy bet worth USD 20';
 
@@ -1097,17 +1075,17 @@ SKIP: {
                 };
         }
         'and sell one bet in USD account for profit of USD 10';
+        $bal += 30;
 
         # Current status:
-        # USD account: USD 10 profit and potential profit of USD 20 in one open contract
-        # AUD account: potential profit of AUD 20
-        # total: USD 70
+        # USD account: USD 10 profit and potential profit of USD 40 in 2 open contracts
+        # total: USD 50
 
         # dies if try to buy a contract with potential payout of USD 10.01
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd,
                 +{
-                limits           => {spread_bet_profit_limit => 80},
+                limits           => {spread_bet_profit_limit => 60},
                 amount_per_point => 1.001
                 };
         }
@@ -1117,23 +1095,25 @@ SKIP: {
             BI015 => 'ERROR:  daily profit limit on spread bets exceeded',
             ],
             'daily profit limit on spread bets exceeded';
+
         lives_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_spread_bet $acc_usd,
                 +{
-                limits           => {spread_bet_profit_limit => 80},
+                limits           => {spread_bet_profit_limit => 60},
                 amount_per_point => 1
                 };
-            is $balance_after + 0, 10080 - 30, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'can still buy bet worth USD 10';
 
         # can buy other bet even though we have hit the spread daily limit
         lives_ok {
-            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{limits => {spread_bet_profit_limit => 80}};
-            is $balance_after + 0, 10080 - 50, 'correct balance_after';
+            my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd, +{limits => {spread_bet_profit_limit => 60}};
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'can still buy bet worth USD 20';
-
     };
 
     subtest '7day limits', sub {
@@ -1141,14 +1121,8 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            top_up $cl, 'AUD', 10000;
-
             isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-            isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
-
-            my $bal;
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
-            is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
@@ -1163,43 +1137,49 @@ SKIP: {
                 +{
                 purchase_time => $_6daysbefore->minus_time_interval('1s')->db_timestamp,
                 };
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $_6daysbefore->minus_time_interval('1s')->db_timestamp,
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
 
             ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $_6daysbefore->db_timestamp,
                 };
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 40, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $_6daysbefore->db_timestamp,
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 40, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
 
             ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $today->db_timestamp,
                 };
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 60, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $today->db_timestamp,
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 60, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'buy a few bets';
 
@@ -1216,19 +1196,19 @@ SKIP: {
         }
         'and sell them for 0';
 
-        # Here we have 6 bought and sold bets, 3 USD and 3 AUD. Two of them, 1 USD + 1 AUD,
-        # where bought before the time interval considered by the 7day limits. In total, we
-        # have a worth of USD 120 turnover and losses within the 7day interval.
+        # Here we have 6 bought and sold bets. Two of them
+        # were bought before the time interval considered by the 7day limits. In total, we
+        # have a worth of USD 80 turnover and losses within the 7day interval.
         # There are no open bets. So, the loss limit is:
         #
-        #     120 (realized loss) + 20 (current contract)
+        #     80 (realized loss) + 20 (current contract)
 
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_7day_turnover => 140 - 0.01,
-                    max_7day_losses   => 140 - 0.01,
+                    max_7day_turnover => 100 - 0.01,
+                    max_7day_losses   => 100 - 0.01,
                 },
                 };
         }
@@ -1243,8 +1223,8 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_7day_turnover => 140,
-                    max_7day_losses   => 140 - 0.01,
+                    max_7day_turnover => 100,
+                    max_7day_losses   => 100 - 0.01,
                 },
                 };
         }
@@ -1259,11 +1239,12 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_7day_turnover => 140,
-                    max_7day_losses   => 140,
+                    max_7day_turnover => 100,
+                    max_7day_losses   => 100,
                 },
                 };
-            is $balance_after + 0, 10000 - 80, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         '7day turnover validation passed with slightly higher limits';
 
@@ -1274,8 +1255,8 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_7day_turnover => 160 - 0.01,
-                    max_7day_losses   => 160 - 0.01,
+                    max_7day_turnover => 120 - 0.01,
+                    max_7day_losses   => 120 - 0.01,
                 },
                 };
         }
@@ -1290,8 +1271,8 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_7day_turnover => 160,
-                    max_7day_losses   => 160 - 0.01,
+                    max_7day_turnover => 120,
+                    max_7day_losses   => 120 - 0.01,
                 },
                 };
         }
@@ -1306,11 +1287,12 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_7day_turnover => 160,
-                    max_7day_losses   => 160,
+                    max_7day_turnover => 120,
+                    max_7day_losses   => 120,
                 },
                 };
-            is $balance_after + 0, 10000 - 100, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         '7day turnover validation passed with slightly higher limits (with open bet)';
     };
@@ -1320,14 +1302,8 @@ SKIP: {
             $cl = create_client;
 
             top_up $cl, 'USD', 10000;
-            top_up $cl, 'AUD', 10000;
-
             isnt + ($acc_usd = $cl->find_account(query => [currency_code => 'USD'])->[0]), undef, 'got USD account';
-            isnt + ($acc_aud = $cl->find_account(query => [currency_code => 'AUD'])->[0]), undef, 'got AUD account';
-
-            my $bal;
             is + ($bal = $acc_usd->balance + 0), 10000, 'USD balance is 10000 got: ' . $bal;
-            is + ($bal = $acc_aud->balance + 0), 10000, 'AUD balance is 10000 got: ' . $bal;
         }
         'setup new client';
 
@@ -1342,43 +1318,49 @@ SKIP: {
                 +{
                 purchase_time => $_29daysbefore->minus_time_interval('1s')->db_timestamp,
                 };
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $_29daysbefore->minus_time_interval('1s')->db_timestamp,
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 20, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
 
             ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $_29daysbefore->db_timestamp,
                 };
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 40, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $_29daysbefore->db_timestamp,
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 40, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
 
             ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $today->db_timestamp,
                 };
+            $bal -= 20;
             push @bets_to_sell, [$acc_usd, $fmbid];
-            is $balance_after + 0, 10000 - 60, 'correct balance_after';
+            is $balance_after + 0, $bal, 'correct balance_after';
 
-            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_aud,
+            ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 purchase_time => $today->db_timestamp,
                 };
-            push @bets_to_sell, [$acc_aud, $fmbid];
-            is $balance_after + 0, 10000 - 60, 'correct balance_after';
+            $bal -= 20;
+            push @bets_to_sell, [$acc_usd, $fmbid];
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         'buy a few bets';
 
@@ -1395,19 +1377,19 @@ SKIP: {
         }
         'and sell them for 0';
 
-        # Here we have 6 bought and sold bets, 3 USD and 3 AUD. Two of them, 1 USD + 1 AUD,
-        # where bought before the time interval considered by the 30day limits. In total, we
+        # Here we have 6 bought and sold bets. Two of them
+        # were bought before the time interval considered by the 30day limits. In total, we
         # have a worth of USD 120 turnover and losses within the 30day interval.
         # There are no open bets. So, the loss limit is:
         #
-        #     120 (realized loss) + 20 (current contract)
+        #     80 (realized loss) + 20 (current contract)
 
         dies_ok {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_30day_turnover => 140 - 0.01,
-                    max_30day_losses   => 140 - 0.01,
+                    max_30day_turnover => 100 - 0.01,
+                    max_30day_losses   => 100 - 0.01,
                 },
                 };
         }
@@ -1422,8 +1404,8 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_30day_turnover => 140,
-                    max_30day_losses   => 140 - 0.01,
+                    max_30day_turnover => 100,
+                    max_30day_losses   => 100 - 0.01,
                 },
                 };
         }
@@ -1438,11 +1420,12 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_30day_turnover => 140,
-                    max_30day_losses   => 140,
+                    max_30day_turnover => 100,
+                    max_30day_losses   => 100,
                 },
                 };
-            is $balance_after + 0, 10000 - 80, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         '30day turnover validation passed with slightly higher limits';
 
@@ -1453,8 +1436,8 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_30day_turnover => 160 - 0.01,
-                    max_30day_losses   => 160 - 0.01,
+                    max_30day_turnover => 120 - 0.01,
+                    max_30day_losses   => 120 - 0.01,
                 },
                 };
         }
@@ -1469,8 +1452,8 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_30day_turnover => 160,
-                    max_30day_losses   => 160 - 0.01,
+                    max_30day_turnover => 120,
+                    max_30day_losses   => 120 - 0.01,
                 },
                 };
         }
@@ -1485,11 +1468,12 @@ SKIP: {
             my ($txnid, $fmbid, $balance_after) = buy_one_bet $acc_usd,
                 +{
                 limits => {
-                    max_30day_turnover => 160,
-                    max_30day_losses   => 160,
+                    max_30day_turnover => 120,
+                    max_30day_losses   => 120,
                 },
                 };
-            is $balance_after + 0, 10000 - 100, 'correct balance_after';
+            $bal -= 20;
+            is $balance_after + 0, $bal, 'correct balance_after';
         }
         '30day turnover validation passed with slightly higher limits (with open bet)';
     };
