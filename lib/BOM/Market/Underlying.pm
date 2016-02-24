@@ -42,8 +42,11 @@ use BOM::Platform::Context qw(request localize);
 use POSIX;
 use Try::Tiny;
 use BOM::Market::Types;
+use YAML::XS qw(LoadFile);
 
 with 'BOM::Market::Role::ExpiryConventions';
+
+our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom-market/config/files/product_offerings.yml');
 
 =head1 METHODS
 
@@ -236,7 +239,7 @@ sub _build_contracts {
     my $self = shift;
 
     return {} if $self->quanto_only;
-    return $BOM::Product::Offerings::PRODUCT_OFFERINGS->{$self->symbol} // {};
+    return $PRODUCT_OFFERINGS->{$self->symbol} // {};
 }
 
 has submarket => (
