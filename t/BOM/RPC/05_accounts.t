@@ -517,6 +517,8 @@ subtest $method => sub {
     $params->{args}{lock_password} = '1111111';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
     $params->{args}{lock_password} = $tmp_new_password;
+
+    clear_mailbox();
     # here I mocked function 'save' to simulate the db failure.
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('save', sub { return undef });
@@ -527,19 +529,13 @@ subtest $method => sub {
     );
     $mocked_client->unmock_all;
 
-    clear_mailbox();
-    my $subject = 'cashier password updated'
+    my $subject = 'cashier password updated';
     my %msg = get_email_by_address_subject(
                                            email   => $email,
                                            subject => qr/\Q$subject\E/
                                           );
     ok(%msg, "email received");
-
-    my $send_email_called = 0;
-    my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
-    $mocked_account->mock('send_email', sub { $send_email_called++ });
-    is($c->tcall($method, $params)->{status}, 1, 'set password success');
-    ok($send_email_called, "email sent");
+    clear_mailbox();
 
     # test unlock
     $test_client->cashier_setting_password('');
@@ -547,15 +543,23 @@ subtest $method => sub {
     delete $params->{args}{lock_password};
     $params->{args}{unlock_password} = '123456';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Your cashier was not locked.', 'return error if not locked');
+
+    clear_mailbox();
     $test_client->cashier_setting_password(BOM::System::Password::hashpw($tmp_password));
     $test_client->save;
-    $send_email_called = 0;
     is(
         $c->tcall($method, $params)->{error}{message_to_client},
         'Sorry, you have entered an incorrect cashier password',
         'return error if not correct'
     );
-    ok($send_email_called, 'send email if entered wrong password');
+    $subject = 'Failed attempt to unlock cashier section';
+    %msg = get_email_by_address_subject(
+                                                 email   => $email,
+                                                 subject => qr/\Q$subject\E/
+                                                );
+    ok(%msg, "email received");
+    clear_mailbox();
+
     $mocked_client->mock('save', sub { return undef });
     $params->{args}{unlock_password} = $tmp_password;
     is(
@@ -564,11 +568,19 @@ subtest $method => sub {
         'return error if cannot save'
     );
     $mocked_client->unmock_all;
-    $send_email_called = 0;
+
+    clear_mailbox();
     is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'cashier password unset');
     ok($send_email_called,                      'send email after unlock cashier');
+    $subject = 'cashier password updated';
+    %msg = get_email_by_address_subject(
+                                           email   => $email,
+                                           subject => qr/\Q$subject\E/
+                                          );
+    ok(%msg, "email received");
+    clear_mailbox();
 };
 
 done_testing();
