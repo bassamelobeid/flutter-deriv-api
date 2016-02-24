@@ -1510,7 +1510,11 @@ sub _build_staking_limits {
             max => $stake_max,
             err => ($self->built_with_bom_parameters)
             ? localize('Contract market price is too close to final payout.')
-            : localize('Stake must be between [_1] and [_2].', to_monetary_number_format($stake_min, 1), to_monetary_number_format($stake_max, 1)),
+            : localize(
+                'Buy price must be between [_1] and [_2].',
+                to_monetary_number_format($stake_min, 1),
+                to_monetary_number_format($stake_max, 1)
+            ),
         },
         payout => {
             min => $payout_min,
@@ -2618,7 +2622,7 @@ sub _subvalidate_lifetime_intraday {
                     symbol             => $self->underlying->symbol,
                     code               => $self->code
                 ),
-                message_to_client => localize('Duration must be between [_1] and [_2].', $shortest->as_string, $longest->as_string),
+                message_to_client => localize('Trading is not offered for this duration.'),
                 info_link         => $asset_link,
                 info_text         => $asset_text,
                 };
