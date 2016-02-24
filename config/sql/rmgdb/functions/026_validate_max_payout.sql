@@ -7,12 +7,11 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_max_payout(p_account           transaction.account,
-                                                   p_rate              NUMERIC,
-                                                   p_underlying_symbol VARCHAR(50),
-                                                   p_bet_type          VARCHAR(30),
-                                                   p_payout_price      NUMERIC,
-                                                   p_limits            JSON)
+CREATE OR REPLACE FUNCTION bet_v1.validate_max_payout(  p_account           transaction.account,
+                                                        p_underlying_symbol VARCHAR(50),
+                                                        p_bet_type          VARCHAR(30),
+                                                        p_payout_price      NUMERIC,
+                                                        p_limits            JSON)
 RETURNS VOID AS $def$
 DECLARE
     v_r RECORD;
@@ -29,14 +28,14 @@ BEGIN
            AND NOT is_sold;
 
         IF (p_limits -> 'max_payout_open_bets') IS NOT NULL AND
-           (v_r.payout + p_payout_price) * p_rate > (p_limits ->> 'max_payout_open_bets')::NUMERIC THEN
+           (v_r.payout + p_payout_price) > (p_limits ->> 'max_payout_open_bets')::NUMERIC THEN
             RAISE EXCEPTION USING
                 MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI009'),
                 ERRCODE='BI009';
         END IF;
 
         IF (p_limits -> 'max_payout_per_symbol_and_bet_type') IS NOT NULL AND
-           (v_r.same_symtype + p_payout_price) * p_rate > (p_limits ->> 'max_payout_per_symbol_and_bet_type')::NUMERIC THEN
+           (v_r.same_symtype + p_payout_price) > (p_limits ->> 'max_payout_per_symbol_and_bet_type')::NUMERIC THEN
             RAISE EXCEPTION USING
                 MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI007'),
                 ERRCODE='BI007';

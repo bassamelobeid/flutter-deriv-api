@@ -8,12 +8,11 @@ SELECT r.*
   ) dat(code, explanation)
 CROSS JOIN LATERAL betonmarkets.update_custom_pg_error_code(dat.code, dat.explanation) r;
 
-CREATE OR REPLACE FUNCTION bet.validate_intraday_forex_iv_action(p_account           transaction.account,
-                                                                 p_rate              NUMERIC,
-                                                                 p_purchase_time     TIMESTAMP,
-                                                                 p_buy_price         NUMERIC,
-                                                                 p_payout_price      NUMERIC,
-                                                                 p_limits            JSON)
+CREATE OR REPLACE FUNCTION bet_v1.validate_intraday_forex_iv_action(p_account           transaction.account,
+                                                                    p_purchase_time     TIMESTAMP,
+                                                                    p_buy_price         NUMERIC,
+                                                                    p_payout_price      NUMERIC,
+                                                                    p_limits            JSON)
 RETURNS VOID AS $def$
 DECLARE
     v_r RECORD;
@@ -52,19 +51,19 @@ BEGIN
            AND (b.expiry_time - b.start_time) < '1 day'::INTERVAL
            AND coalesce(t.relative_barrier, h.relative_barrier) <> 'S0P';
 
-        IF (v_r.turnover + p_buy_price) * p_rate > (p_limits -> 'intraday_forex_iv_action' ->> 'turnover')::NUMERIC THEN
+        IF (v_r.turnover + p_buy_price) > (p_limits -> 'intraday_forex_iv_action' ->> 'turnover')::NUMERIC THEN
             RAISE EXCEPTION USING
                 MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI004'),
                 ERRCODE='BI004';
         END IF;
 
-        IF (v_r.potential_profit+p_payout_price-p_buy_price) * p_rate > (p_limits -> 'intraday_forex_iv_action' ->> 'potential_profit')::NUMERIC THEN
+        IF (v_r.potential_profit+p_payout_price-p_buy_price) > (p_limits -> 'intraday_forex_iv_action' ->> 'potential_profit')::NUMERIC THEN
             RAISE EXCEPTION USING
                 MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI005'),
                 ERRCODE='BI005';
         END IF;
 
-        IF v_r.realized_profit * p_rate > (p_limits -> 'intraday_forex_iv_action' ->> 'realized_profit')::NUMERIC THEN
+        IF v_r.realized_profit > (p_limits -> 'intraday_forex_iv_action' ->> 'realized_profit')::NUMERIC THEN
             RAISE EXCEPTION USING
                 MESSAGE=(SELECT explanation FROM betonmarkets.custom_pg_error_codes WHERE code='BI006'),
                 ERRCODE='BI006';
