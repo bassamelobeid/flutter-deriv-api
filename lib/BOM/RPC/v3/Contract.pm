@@ -156,6 +156,7 @@ sub get_bid {
             longcode            => $contract->longcode,
             shortcode           => $contract->shortcode,
             payout              => $contract->payout,
+            purchase_time       => $params->{purchase_time},
         };
 
         if (not $contract->is_valid_to_sell and $contract->primary_validation_error) {
@@ -163,21 +164,21 @@ sub get_bid {
         }
 
         if (not $contract->is_spread) {
+
+            $response->{entry_tick}      = $contract->entry_tick ? $contract->entry_tick->quote : '';
+            $response->{entry_tick_time} = $contract->entry_tick ? $contract->entry_tick->epoch : '';
+            $response->{exit_tick}       = $contract->exit_tick  ? $contract->exit_tick->quote  : '';
+            $response->{exit_tick_time}  = $contract->exit_tick  ? $contract->exit_tick->epoch  : '';
+            $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
+            $response->{entry_spot} = $contract->entry_spot;
             if ($sell_time) {
                 $response->{sell_spot}      = $contract->underlying->tick_at($sell_time)->quote;
                 $response->{sell_spot_time} = $contract->underlying->tick_at($sell_time)->epoch;
             }
 
             if ($contract->expiry_type eq 'tick') {
-                $response->{prediction}      = $contract->prediction;
-                $response->{tick_count}      = $contract->tick_count;
-                $response->{entry_tick}      = $contract->entry_tick ? $contract->entry_tick->quote : '';
-                $response->{entry_tick_time} = $contract->entry_tick ? $contract->entry_tick->epoch : '';
-                $response->{exit_tick}       = $contract->exit_tick ? $contract->exit_tick->quote : '';
-                $response->{exit_tick_time}  = $contract->exit_tick ? $contract->exit_tick->epoch : '';
-            } else {
-                $response->{current_spot} = $contract->current_spot if $contract->underlying->feed_license eq 'realtime';
-                $response->{entry_spot} = $contract->entry_spot;
+                $response->{prediction} = $contract->prediction;
+                $response->{tick_count} = $contract->tick_count;
             }
 
             if ($contract->two_barriers) {
