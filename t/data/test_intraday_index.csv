@@ -1,5 +1,0 @@
-underlying,bet_type,date_start,duration,currency,payout,theo_probability,trend,vol
-AS51,FLASHU,1428458885,60,USD,100,0.5,-30.40,0.52
-AS51,FLASHU,1428458885,30,USD,100,0.5,-24,0.52
-GDAXI,FLASHU,1428489885,30,USD,100,0.5,-20.8,0.38
-GDAXI,FLASHU,1428489885,50,USD,100,0.5,-43.4,0.38

@@ -17,6 +17,7 @@ use BOM::Market::Data::Tick;
 use BOM::Market::Underlying;
 use BOM::Market::Types;
 use BOM::Utility::ErrorStrings qw( format_error_string );
+use BOM::Platform::Static::Config;
 
 with 'MooseX::Role::Validatable';
 
@@ -181,7 +182,7 @@ sub _build_spread_divisor {
 
 sub _build_spread_multiplier {
     my $self = shift;
-    return BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->spread_multiplier;
+    return BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{spread_multiplier};
 }
 
 sub _build_half_spread {

@@ -20,7 +20,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => $_,
         recorded_date   => $now
-    }) for ('USD', 'JPY');
+    }) for ('USD', 'JPY', 'JPY-USD');
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',
     {

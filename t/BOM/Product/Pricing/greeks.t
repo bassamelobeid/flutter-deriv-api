@@ -20,7 +20,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => $_,
         recorded_date   => Date::Utility->new($date_pricing),
-    }) for (qw/GBP JPY USD/);
+    }) for (qw/GBP JPY USD JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

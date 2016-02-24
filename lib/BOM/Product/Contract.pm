@@ -31,6 +31,7 @@ use BOM::MarketData::Fetcher::EconomicEvent;
 use BOM::Product::Offerings qw( get_contract_specifics );
 use BOM::Utility::ErrorStrings qw( format_error_string );
 use BOM::MarketData::VolSurface::Utils;
+use BOM::Platform::Static::Config;
 
 # require Pricing:: modules to avoid circular dependency problems.
 require BOM::Product::Pricing::Engine::Intraday::Forex;
@@ -929,7 +930,7 @@ sub _build_total_markup {
     my %max =
           ($self->pricing_engine_name =~ /Intraday::Forex/ and not $self->is_atm_bet)
         ? ()
-        : (maximum => BOM::Platform::Runtime->instance->app_config->quants->commission->maximum_total_markup / 100);
+        : (maximum => BOM::Platform::Static::Config::quants->{commission}->{maximum_total_markup} / 100);
 
     my %min;
     if ($self->pricing_engine_name =~ /TickExpiry/) {
@@ -1037,8 +1038,8 @@ sub _build_commission_adjustment {
         name        => 'global_commission_adjustment',
         description => 'Our scaling adjustment to calculated model markup.',
         set_by      => 'BOM::Product::Contract',
-        minimum     => (BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->minimum / 100),
-        maximum     => (BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->maximum / 100),
+        minimum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{minimum} / 100),
+        maximum     => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{maximum} / 100),
         base_amount => 0,
     });
 
@@ -1060,7 +1061,7 @@ sub _build_commission_adjustment {
                     minimum     => 0,
                     maximum     => 1,
                     set_by      => 'quants.commission.adjustment.bom_created_bet',
-                    base_amount => (BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->bom_created_bet / 100),
+                    base_amount => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{bom_created_bet} / 100),
                 }));
     }
 
@@ -1193,7 +1194,7 @@ sub _build_model_markup {
                 name        => 'sell_discount',
                 description => 'Discount on sell',
                 set_by      => __PACKAGE__,
-                base_amount => BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor,
+                base_amount => BOM::Platform::Static::Config::quants->{commission}->{resell_discount_factor},
             });
             $commission_markup->include_adjustment('multiply', $sell_discount);
         }
@@ -1342,11 +1343,17 @@ sub _build_pricing_vol {
             delta => 50
         });
     } elsif ($pen =~ /Intraday::Forex/) {
-        my $volsurface = $self->empirical_volsurface;
+        my $volsurface       = $self->empirical_volsurface;
+        my $duration_seconds = $self->timeindays->amount * 86400;
+        # volatility doesn't matter for less than 10 minutes ATM contracts,
+        # where the intraday_delta_correction is the bounceback which is a function of trend, not volatility.
+        my $uses_flat_vol = ($self->is_atm_bet and $duration_seconds < 10 * 60) ? 1 : 0;
         $vol = $volsurface->get_volatility({
             fill_cache            => !$self->backtest,
             current_epoch         => $self->date_pricing->epoch,
-            seconds_to_expiration => $self->timeindays->amount * 86400,
+            seconds_to_expiration => $duration_seconds,
+            economic_events       => $self->applicable_economic_events,
+            uses_flat_vol         => $uses_flat_vol,
         });
         $self->long_term_prediction($volsurface->long_term_prediction);
         $self->average_tick_count($volsurface->average_tick_count);
@@ -1375,16 +1382,44 @@ sub _build_pricing_vol {
     return $vol;
 }
 
+has applicable_economic_events => (
+    is      => 'ro',
+    lazy    => 1,
+    builder => '_build_applicable_economic_events',
+);
+
+sub _build_applicable_economic_events {
+    my $self = shift;
+
+    my $effective_start   = $self->effective_start;
+    my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
+    my $current_epoch     = $effective_start->epoch;
+    # Go back another hour because we expect the maximum impact on any news would not last for more than an hour.
+    my $start = $current_epoch - $seconds_to_expiry - 3600;
+    # Plus 5 minutes for the shifting logic.
+    # If news occurs 5 minutes before/after the contract expiration time, we shift the news triangle to 5 minutes before the contract expiry.
+    my $end = $current_epoch + $seconds_to_expiry + 300;
+
+    return BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
+            from => Date::Utility->new($start),
+            to   => Date::Utility->new($end)});
+}
+
 sub _build_news_adjusted_pricing_vol {
     my $self = shift;
 
-    my $secs_to_expiry = $self->get_time_to_expiry({from => $self->effective_start})->seconds;
     my $news_adjusted_vol = $self->pricing_vol;
-    if ($secs_to_expiry and $secs_to_expiry > 10) {
+    my $effective_start   = $self->effective_start;
+    my $seconds_to_expiry = $self->get_time_to_expiry({from => $effective_start})->seconds;
+    my $events            = $self->applicable_economic_events;
+
+    # Only recalculated if there's economic_events.
+    if ($seconds_to_expiry > 10 and @$events) {
         $news_adjusted_vol = $self->empirical_volsurface->get_volatility({
             fill_cache            => !$self->backtest,
-            current_epoch         => $self->effective_start->epoch,
-            seconds_to_expiration => $secs_to_expiry,
+            current_epoch         => $effective_start->epoch,
+            seconds_to_expiration => $seconds_to_expiry,
+            economic_events       => $self->applicable_economic_events,
             include_news_impact   => 1,
         });
     }
@@ -1490,10 +1525,10 @@ sub _build_staking_limits {
 
     my @possible_payout_maxes = ($self->_payout_limit);
 
-    push @possible_payout_maxes, BOM::Platform::Runtime->instance->app_config->quants->bet_limits->maximum_payout;
-    push @possible_payout_maxes, BOM::Platform::Runtime->instance->app_config->quants->bet_limits->maximum_payout_on_new_markets
+    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout};
+    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout_on_new_markets}
         if ($underlying->is_newly_added);
-    push @possible_payout_maxes, BOM::Platform::Runtime->instance->app_config->quants->bet_limits->maximum_payout_on_less_than_7day_indices_call_put
+    push @possible_payout_maxes, BOM::Platform::Static::Config::quants->{bet_limits}->{maximum_payout_on_less_than_7day_indices_call_put}
         if ($self->underlying->market->name eq 'indices' and not $self->is_atm_bet and $self->timeindays->amount < 7);
 
     my $payout_max = min(grep { looks_like_number($_) } @possible_payout_maxes);
@@ -1510,7 +1545,11 @@ sub _build_staking_limits {
             max => $stake_max,
             err => ($self->built_with_bom_parameters)
             ? localize('Contract market price is too close to final payout.')
-            : localize('Stake must be between [_1] and [_2].', to_monetary_number_format($stake_min, 1), to_monetary_number_format($stake_max, 1)),
+            : localize(
+                'Buy price must be between [_1] and [_2].',
+                to_monetary_number_format($stake_min, 1),
+                to_monetary_number_format($stake_max, 1)
+            ),
         },
         payout => {
             min => $payout_min,
@@ -2384,29 +2423,6 @@ sub _validate_start_date {
                     localize("Start time on forward-starting contracts must be more than [_1] from now.", $forward_starting_blackout->as_string),
                 };
         }
-
-    } elsif ($underlying->market->name eq 'forex' and ($self->remaining_time->minutes < 2 or $self->tick_expiry)) {
-        my $economic_events = BOM::MarketData::Fetcher::EconomicEvent->new->get_latest_events_for_period({
-            from => $self->date_start->minus_time_interval('15m'),
-            to   => $self->date_start,
-        });
-        if (my $event = first { $_->{impact} == 5 and $_->{symbol} eq 'USD' } @$economic_events) {
-            push @errors,
-                {
-                message => format_error_string(
-                    'too short duration during news event',
-                    symbol        => $underlying->symbol,
-                    duration      => $self->remaining_time->as_concise_string,
-                    min           => '2m',
-                    'news impact' => $event->{impact},
-                    'news symbol' => $event->{symbol},
-                ),
-                message_to_client => localize(
-                    "Trades on Forex with duration less than 2 minutes are temporarily disabled until [_1]",
-                    $event->{release_date}->plus_time_interval('15m')->time_hhmm
-                ),
-                };
-        }
     } elsif ($eod_blackout_start and $sec_to_close < $eod_blackout_start->seconds) {
         my $localized_eod_blackout_start = Time::Duration::Concise::Localize->new(
             interval => $eod_blackout_start->seconds,
@@ -2618,7 +2634,7 @@ sub _subvalidate_lifetime_intraday {
                     symbol             => $self->underlying->symbol,
                     code               => $self->code
                 ),
-                message_to_client => localize('Duration must be between [_1] and [_2].', $shortest->as_string, $longest->as_string),
+                message_to_client => localize('Trading is not offered for this duration.'),
                 info_link         => $asset_link,
                 info_text         => $asset_text,
                 };
@@ -2721,16 +2737,16 @@ sub _subvalidate_lifetime_days {
     }
     if (
             $underlying->market->equity
-        and $date_start->day_of_year >= BOM::Platform::Runtime->instance->app_config->quants->bet_limits->holiday_blackout_start
+        and $date_start->day_of_year >= BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_start}
         and (  $date_expiry->day_of_year > $date_start->day_of_year
-            or $date_expiry->day_of_year <= BOM::Platform::Runtime->instance->app_config->quants->bet_limits->holiday_blackout_end))
+            or $date_expiry->day_of_year <= BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end}))
     {
         # Assumes that the black out period always extends over Jan 1 into the next year.
         my $year = $date_expiry->year;
         $year-- if ($date_expiry->day_of_year < $date_start->day_of_year);    # Expiry is into next year, already.
         my $end_of_bo =
             Date::Utility->new('31-Dec-' . $year)
-            ->plus_time_interval(BOM::Platform::Runtime->instance->app_config->quants->bet_limits->holiday_blackout_end . 'd');
+            ->plus_time_interval(BOM::Platform::Static::Config::quants->{bet_limits}->{holiday_blackout_end} . 'd');
         my $message =
             ($self->built_with_bom_parameters)
             ? localize('Resale of this contract is not offered due to end-of-year market holidays.')

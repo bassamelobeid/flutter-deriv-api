@@ -22,6 +22,7 @@ use BOM::Platform::Context qw(request localize);
 use BOM::Product::Pricing::Greeks::BlackScholes;
 use BOM::MarketData::VolSurface::Utils;
 use BOM::MarketData::Fetcher::EconomicEvent;
+use BOM::Platform::Static::Config;
 
 =head1 ATTRIBUTES
 
@@ -368,7 +369,7 @@ sub _build_commission_markup {
 
     my $comm_base_amount =
         ($self->bet->built_with_bom_parameters)
-        ? BOM::Platform::Runtime->instance->app_config->quants->commission->resell_discount_factor
+        ? BOM::Platform::Static::Config::quants->{commission}->{resell_discount_factor}
         : 1;
 
     my $comm_scale = Math::Util::CalculatedValue::Validatable->new({
@@ -421,8 +422,7 @@ sub _build_digital_spread_markup {
         name        => 'commission_level_multiplier',
         description => 'Multiplier for the underlying-specific risk level',
         set_by      => 'quants.commission.digital_spread.level_multiplier',
-        base_amount =>
-            BOM::Platform::Runtime->instance->app_config->quants->commission->digital_spread->level_multiplier**($self->commission_level - 1),
+        base_amount => BOM::Platform::Static::Config::quants->{commission}->{digital_spread}->{level_multiplier}**($self->commission_level - 1),
     });
 
     $dsp->include_adjustment('multiply', $level_multiplier);
@@ -473,7 +473,7 @@ sub _build_forward_starting_markup {
             name        => 'is_forward_starting',
             description => 'Adjustment because this is a forward-starting option',
             set_by      => 'quants.commission.adjustment.forward_start_factor',
-            base_amount => (BOM::Platform::Runtime->instance->app_config->quants->commission->adjustment->forward_start_factor / 100),
+            base_amount => (BOM::Platform::Static::Config::quants->{commission}->{adjustment}->{forward_start_factor} / 100),
         });
         $fs->include_adjustment('reset', $is_fs);
     }

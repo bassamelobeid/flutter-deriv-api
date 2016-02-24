@@ -23,7 +23,7 @@ BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     {
         symbol => $_,
         recorded_date   => $now->minus_time_interval('10m'),
-    }) for (qw/JPY USD/);
+    }) for (qw/JPY USD JPY-USD/);
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
     'volsurface_delta',

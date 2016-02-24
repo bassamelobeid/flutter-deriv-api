@@ -16,7 +16,7 @@ my @duration   = ('20m',                 '24h',                 '2m');
 my @error      = (
     qr/Trading is available after the first 10 minutes of the session. Try out the Random Indices which are always open./,
     qr/Contracts on Oil\/USD with durations under 24 hours must expire on the same trading day./,
-    qr/Duration must be between 5 minutes and 1 day./,
+    qr/Trading is not offered for this duration./,
 );
 my $u     = BOM::Market::Underlying->new('frxBROUSD');
 my $count = 0;
