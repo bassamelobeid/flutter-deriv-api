@@ -48,7 +48,7 @@ foreach my $day ($first_day, $next_day) {
         {
             symbol        => $_,
             recorded_date => $day,
-        }) for (qw/GBP JPY USD AUD EUR SGD/);
+        }) for (qw/GBP JPY USD AUD EUR SGD JPY-USD/);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'volsurface_delta',

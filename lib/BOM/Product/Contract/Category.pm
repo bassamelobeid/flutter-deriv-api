@@ -18,9 +18,11 @@ This class represents available contract categories.
 
 use Carp;
 use Moose;
-use YAML::CacheLoader qw(LoadFile);
+use YAML::XS qw(LoadFile);
 use namespace::autoclean;
 use BOM::Platform::Context qw(localize);
+
+my $category_config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_categories.yml');
 
 has code => (
     is       => 'ro',
@@ -98,7 +100,7 @@ around BUILDARGS => sub {
         unless $_[0];
 
     my %args   = ref $_[0] eq 'HASH' ? %{$_[0]} : (code => $_[0]);
-    my $config = LoadFile('/home/git/regentmarkets/bom/config/files/contract_categories.yml');
+    my $config = $category_config;
     my $wanted = $config->{$args{code}};
 
     return $class->$orig(%args) unless $wanted;

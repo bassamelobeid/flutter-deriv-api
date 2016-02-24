@@ -14,7 +14,6 @@ use List::MoreUtils qw( uniq all );
 use Module::Load::Conditional qw(can_load);
 use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
-use YAML::CacheLoader qw(LoadFile);
 use Finance::Asset;
 
 use BOM::Market::Underlying;
