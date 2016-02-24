@@ -530,10 +530,10 @@ subtest $method => sub {
     $mocked_client->unmock_all;
 
     my $subject = 'cashier password updated';
-    my %msg = get_email_by_address_subject(
-                                           email   => $email,
-                                           subject => qr/\Q$subject\E/
-                                          );
+    my %msg     = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/\Q$subject\E/
+    );
     ok(%msg, "email received");
     clear_mailbox();
 
@@ -553,10 +553,10 @@ subtest $method => sub {
         'return error if not correct'
     );
     $subject = 'Failed attempt to unlock cashier section';
-    %msg = get_email_by_address_subject(
-                                                 email   => $email,
-                                                 subject => qr/\Q$subject\E/
-                                                );
+    %msg     = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/\Q$subject\E/
+    );
     ok(%msg, "email received");
     clear_mailbox();
 
@@ -575,10 +575,10 @@ subtest $method => sub {
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'cashier password unset');
     $subject = 'cashier password updated';
-    %msg = get_email_by_address_subject(
-                                           email   => $email,
-                                           subject => qr/\Q$subject\E/
-                                          );
+    %msg     = get_email_by_address_subject(
+        email   => $email,
+        subject => qr/\Q$subject\E/
+    );
     ok(%msg, "email received");
     clear_mailbox();
 };
