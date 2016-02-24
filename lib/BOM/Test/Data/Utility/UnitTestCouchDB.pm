@@ -114,62 +114,22 @@ sub _init {
                         'disable_iv' => []
                     },
                     'features' => {
-                        'suspend_claim_types'          => [],
-                        'enable_pricedebug'            => 1,
-                        'enable_parameterized_surface' => '1',
-                        'enable_portfolio_autosell'    => 0
+                        'suspend_claim_types' => [],
                     },
                     'client_limits' => {
-                        'asian_turnover_limit'                 => '50000',
-                        'spreads_daily_profit_limit'           => '10000',
-                        'smarties_turnover_limit'              => '100000',
-                        'payout_per_symbol_and_bet_type_limit' => '200000',
-                        'intraday_spot_index_turnover_limit'   => '30000',
-                        'intraday_forex_iv'                    => '{
-           "potential_profit" : 35000,
-           "realized_profit" : 35000,
-           "turnover" : 35000
-        }
-        ',
+                        'asian_turnover_limit'       => '50000',
+                        'spreads_daily_profit_limit' => '10000',
+                        'intraday_forex_iv'          => '{
+                               "potential_profit" : 35000,
+                               "realized_profit" : 35000,
+                               "turnover" : 35000
+                            }',
                         'tick_expiry_engine_turnover_limit' => '0.5'
-                    },
-                    'bet_limits' => {
-                        'maximum_payout_on_less_than_7day_indices_call_put' => '5000',
-                        'maximum_payout'                                    => '',
-                        'maximum_tick_trade_stake'                          => '1000',
-                        'maximum_payout_on_new_markets'                     => '100',
-                        'holiday_blackout_start'                            => '345',
-                        'holiday_blackout_end'                              => '5'
-                    },
-                    'market_data' => {
-                        'interest_rates_source'                  => 'market',
-                        'economic_announcements_source'          => 'forexfactory',
-                        'extra_vol_diff_by_delta'                => '0.1',
-                        'volsurface_calibration_error_threshold' => '20'
                     },
                     'commission' => {
                         'adjustment' => {
-                            'minimum'              => '1',
-                            'maximum'              => '500',
-                            'spread_multiplier'    => '1',
-                            'quanto_scale_factor'  => '1',
-                            'bom_created_bet'      => '100',
-                            'news_factor'          => '1',
-                            'forward_start_factor' => '1.5',
-                            'global_scaling'       => '100'
-                        },
-                        'intraday' => {
-                            'historical_iv_risk'    => '10',
-                            'historical_bounceback' => '{}
-        ',
-                            'historical_fixed'       => '0.0125',
-                            'historical_vol_meanrev' => '0.10'
-                        },
-                        'maximum_total_markup'       => '50',
-                        'minimum_total_markup'       => '0.3',
-                        'resell_discount_factor'     => '0.2',
-                        'equality_discount_retained' => '1',
-                        'digital_spread'             => {'level_multiplier' => '1.4'}}}
+                            'global_scaling' => '100',
+                        }}}
             },
             '_rev' => time
         });
