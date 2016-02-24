@@ -18,7 +18,7 @@ configuration information.
 
 use Moose;
 use namespace::autoclean;
-use YAML::CacheLoader;
+use YAML::XS qw(LoadFile);
 
 use BOM::Platform::Runtime::AppConfig::Attribute::Section;
 use BOM::Platform::Runtime::AppConfig::Attribute::Global;
@@ -28,6 +28,8 @@ use Carp qw(croak);
 use BOM::Utility::Log4perl qw( get_logger );
 
 use BOM::System::Chronicle;
+
+my $app_config_definitions = LoadFile('/home/git/regentmarkets/bom-platform/config/app_config_definitions.yml');
 
 sub check_for_update {
     my $self     = shift;
@@ -49,7 +51,7 @@ sub check_for_update {
 has _defdb => (
     is      => 'rw',
     lazy    => 1,
-    default => sub { YAML::CacheLoader::LoadFile('/home/git/regentmarkets/bom-platform/config/app_config_definitions.yml') },
+    default => sub { $app_config_definitions },
 );
 
 has 'data_set' => (
@@ -212,7 +214,8 @@ sub save_dynamic {
 sub _build_data_set {
     my $self = shift;
 
-    my $data_set->{app_config} = Data::Hash::DotNotation->new(data => YAML::CacheLoader::LoadFile('/etc/rmg/app_config.yml'));
+    # relatively small yaml, so loading it shouldn't be expensive.
+    my $data_set->{app_config} = Data::Hash::DotNotation->new(data => LoadFile('/etc/rmg/app_config.yml'));
 
     $self->_add_app_setttings($data_set, BOM::System::Chronicle::get('app_settings', 'binary') || {});
 
