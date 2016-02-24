@@ -36,7 +36,6 @@ use namespace::autoclean;
 use List::Util qw(first);
 use List::MoreUtils qw( uniq );
 use Memoize;
-use YAML::CacheLoader;
 
 use BOM::Utility::Log4perl qw( get_logger );
 use BOM::Market::Registry;
