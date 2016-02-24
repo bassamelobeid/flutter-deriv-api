@@ -63,7 +63,7 @@ $user->save;
 clear_mailbox();
 
 my $m = BOM::Database::Model::AccessToken->new;
-my $token = $m->create_token($test_loginid, $display_name);
+my $token = $m->create_token($test_loginid, 'test token');
 
 
 BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
