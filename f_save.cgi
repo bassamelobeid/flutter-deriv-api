@@ -178,14 +178,14 @@ if ($filen =~ m!^vol/master(\w{3}(?:-\w{3})?)\.interest$!) {
     my $class = 'Quant::Framework::InterestRate';
     $class = 'Quant::Framework::ImpliedRate' if $symbol =~ /-/;
 
-    my $rates = $class->new(
+    my $rates_object = $class->new(
         symbol => $symbol,
         rates  => $rates,
         date   => Date::Utility->new,
         chronicle_reader => BOM::System::Chronicle::get_chronicle_reader(),
         chronicle_writer => BOM::System::Chronicle::get_chronicle_writer(),
     );
-    $rates->save;
+    $rates_object->save;
 }
 
 if (not $overridefilename) {
