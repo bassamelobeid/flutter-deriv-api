@@ -218,6 +218,7 @@ tick_streamer:
       description: 'Number of worker processes'
       isa: Int
       default: 30
+
 quants:
   description: "Various quants' parameters"
   isa: section
@@ -226,122 +227,24 @@ quants:
       description: "Tunable factors for commissions"
       isa: section
       contains:
-        resell_discount_factor:
-          description: "Discount factor for sell back (0 means best sell prices for clients)"
-          isa: Num
-          default: 0.5
-          global: 1
-        equality_discount_retained:
-          description: "Percentage of equality discount retained by us (so 1 means we keep 100% of the equal tick discount)"
-          isa: Num
-          default: 1
-          global: 1
-        intraday:
-          description: "Tunable intraday factors"
-          isa: section
-          contains:
-            historical_fixed:
-              description: "Commission (percent of stake) for things priced with P::E:IH."
-              isa: Num
-              default: 0.0125
-              global: 1
-            historical_bounceback:
-              description: "Expected spot bounce back over duration as a percentage of recent trend."
-              isa: json_string
-              default: '{"client_favor" : { "euro" : 0.01, "path" : 0.00 },  "BOM_favor" : { "euro" : 0.10, "path" : 0.10 } }'
-              global: 1
-            historical_vol_meanrev:
-              description: "Expected vol bounce back over duration as a percentage of recent trend."
-              isa: Num
-              default: 0.10
-              global: 1
-            historical_iv_risk:
-              description: "Additional commission for IV-IH contracts.  Setting to 1 will add 1% to final price."
-              isa: Num
-              default: 0
-              global: 1
-        digital_spread:
-          description: "Base commission schedule"
-          isa: section
-          contains:
-            level_multiplier:
-              description: "The multiplier for each underlying commission level over 1"
-              isa: Num
-              default: 1.4
-              global: 1
-        minimum_total_markup:
-          description: "The minimum commission applied (percent of stake)"
-          isa: Num
-          default: 1
-          global: 1
-        maximum_total_markup:
-          description: "The maximum commission applied (percent of stake)"
-          isa: Num
-          default: 25
-          global: 1
         adjustment:
           description: "BOM specific adjustments to manage risk."
           isa: section
           contains:
-            minimum:
-              description: "Minimum adjustment (percent of commission)"
-              isa: Num
-              default: 1
-              global: 1
-            maximum:
-              description: "Maximum adjustment (percent of commission)"
-              isa: Num
-              default: 500
-              global: 1
-            bom_created_bet:
-              description: "Adjusment for contracts we created on behalf of clients (percent of commission)"
-              isa: Num
-              default: 100
-              global: 1
-            spread_multiplier:
-              description: "Spread adjustment."
-              isa: Num
-              default: 1
-              global: 1
             global_scaling:
               description: "The scaling factor for all commissions. (percent of commission)"
               isa: Num
               default: 100
               global: 1
-            news_factor:
-              description: "Multiplicative factor for the worst impact by news (percent of news impact ranging 1,3,5)"
-              isa: Num
-              default: 1
-              global: 1
-            forward_start_factor:
-              description: "Discount factor for forward-starting contracts. (subtracted from spread)"
-              isa: Num
-              default: 2
-              global: 1
-            quanto_scale_factor:
-              description: "Multiplicative scaling for the quanto_spread portion of commission."
-              isa: Num
-              default: 1
-              global: 1
     features:
       description: "Toggles for various platform features"
       isa: section
       contains:
-        enable_portfolio_autosell:
-          description: "enable auto sell in portfolio"
-          isa: Bool
-          default: 0
-          global: 1
         suspend_claim_types:
           description: "Suspend trades only on these bet types (Flash, DoubleDown, DoubleUp, ..)"
           isa: ArrayRef
           default: []
           global: 1
-        enable_pricedebug:
-          description: "Show the pricing debug pop-up to office IPs"
-          global: 1
-          isa: Bool
-          default: 0
     internal:
       description: "Internal configuration, probably not exposed to dynamic setitngs directly."
       isa: section
@@ -361,10 +264,11 @@ quants:
           default: []
           global: 1
         disable_iv:
-          description: "Disable buying of IV contracts on a particular underlying. Allow selling off these contracts.-"
+          description: "Disable buying of IV contracts on a particular underlying. Allow selling off these contracts."
           isa: ArrayRef
           default: []
           global: 1
+
     underlyings:
       description: "Underlying-specific variables"
       isa: section
@@ -394,82 +298,12 @@ quants:
           global: 1
           isa: ArrayRef
           default: []
-    bet_limits:
-      description: "Per bet limit"
-      isa: section
-      contains:
-        maximum_payout_on_new_markets:
-          description: "Maximum allowed payout for purchasing those new launched market, eg: 1000"
-          isa: Str
-          default: 1000
-          global: 1
-        maximum_payout:
-          description: "Maximum allowed payout, eg: 1000"
-          isa: Str
-          default: ""
-          global: 1
-        maximum_payout_on_less_than_7day_indices_call_put:
-          description: "Maximum allowed payout on less than 7 day call/put indiex contracts, eg: 1000"
-          isa: Num
-          default: 5000
-          global: 1
-        holiday_blackout_start:
-          description: "The day of the year on which the end of year holiday blackout period starts"
-          isa: Int
-          default: 345
-          global: 1
-        holiday_blackout_end:
-          description: "The day of the year on which the end of year holiday blackout period ends"
-          isa: Int
-          default: 5
-          global: 1
-        maximum_tick_trade_stake:
-          description: "The maximum permitted stake for tick trades"
-          isa: Int
-          default: 1000
-          dynamic: 1
-          global: 1
     client_limits:
       description: "Per client limits on turnover and payout"
       isa: section
       contains:
-        payout_per_symbol_and_bet_type_limit:
-          description: "Maximum potential payout for open contracts with same symbol and bet_type"
-          isa: Num
-          default: 200000
-          global: 1
-        spreads_daily_profit_limit:
-          description: "Daily profit limit for spreads per client"
-          isa: Num
-          default: 1000
-          global: 1
         asian_turnover_limit:
           description: "Daily turnover limit for asian per client"
-          isa: Num
-          default: 5000
-          global: 1
-        intraday_spot_index_turnover_limit:
-          description: "Daily intraday spot index turnover limit per client"
-          isa: Num
-          default: 30000
-          global: 1
-        tick_expiry_engine_turnover_limit:
-          description: "Daily turnover limit for tick expiry engine per client"
-          isa: Num
-          default: 5000
-          global: 1
-        smarties_turnover_limit:
-          description: "Daily smarties turnover limit per client"
-          isa: Num
-          default: 5000
-          global: 1
-        smart_index_turnover_limit:
-          description: "Daily smart index turnover limit per client"
-          isa: Num
-          default: 5000
-          global: 1
-        stocks_turnover_limit:
-          description: "Daily stocks turnover limit per client"
           isa: Num
           default: 5000
           global: 1
@@ -478,29 +312,17 @@ quants:
           isa: json_string
           default: '{"turnover" : 20000, "realized_profit" : 10000, "potential_profit" : 25000 }'
           global: 1
-    market_data:
-      description: "Tunable parameters for market data"
-      isa: section
-      contains:
-        interest_rates_source:
-          description: "Determine whether we use market rates or implied rates"
-          isa: Str
-          default: "market"
+        spreads_daily_profit_limit:
+          description: "Daily profit limit for spreads per client"
+          isa: Num
+          default: 1000
           global: 1
-        economic_announcements_source:
-          description: "Determine the economic annoucements source to be used in bet pricing which is either forexfactory or bloomberg."
-          isa: Str
-          default: "forexfactory"
+        tick_expiry_engine_turnover_limit:
+          description: "Daily turnover limit for tick expiry engine per client"
+          isa: Num
+          default: 5000
           global: 1
-        extra_vol_diff_by_delta:
-          description: "Increase the maximum volatility differences between delta ,e.g. 0.1 means increase the maximum limit by 10%"
-          isa: Str
-          default: ""
-          global: 1
-    email_vol_autoupdate_report:
-      description: "Whether or not to email the vol autoupdate cron report to Quants on this system."
-      isa: Bool
-      default: 0
+
 system:
   description: "Various parameters determining core application functionality"
   isa: section
