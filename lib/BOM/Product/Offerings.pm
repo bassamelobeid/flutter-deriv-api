@@ -14,7 +14,6 @@ use List::MoreUtils qw( uniq all );
 use Module::Load::Conditional qw(can_load);
 use Tie::Scalar::Timeout;
 use Time::Duration::Concise;
-use YAML::XS qw(LoadFile);
 
 use BOM::Market::Underlying;
 use BOM::Platform::Runtime;
@@ -36,8 +35,6 @@ our $BARRIER_CATEGORIES = {
     asian        => ['asian'],
     spreads      => ['spreads'],
 };
-our $PRODUCT_OFFERINGS = LoadFile('/home/git/regentmarkets/bom/config/files/product_offerings.yml');
-
 my %record_map = (
     min_contract_duration          => 'min',
     max_contract_duration          => 'max',
@@ -61,7 +58,7 @@ sub _make_new_flyby {
 
         # TODO: Remove all these sorts.  They are only important for transition testing
         UL:
-        foreach my $ul (map { BOM::Market::Underlying->new($_) } sort { $a cmp $b } keys %$PRODUCT_OFFERINGS) {
+        foreach my $ul (map { BOM::Market::Underlying->new($_) } sort { $a cmp $b } keys %{$BOM::Market::Underlying::PRODUCT_OFFERINGS}) {
             next UL unless $ul->market->display_order and not $ul->quanto_only and not $suspended_underlyings{$ul->symbol};
             my %record = (
                 market            => $ul->market->name,
