@@ -517,6 +517,7 @@ subtest $method => sub {
     $params->{args}{lock_password} = '1111111';
     is($c->tcall($method, $params)->{error}{message_to_client}, 'Password is not strong enough.', 'check strong');
     $params->{args}{lock_password} = $tmp_new_password;
+    # here I mocked function 'save' to simulate the db failure.
     my $mocked_client = Test::MockModule->new(ref($test_client));
     $mocked_client->mock('save', sub { return undef });
     is(
@@ -525,6 +526,15 @@ subtest $method => sub {
         'return error if cannot save password'
     );
     $mocked_client->unmock_all;
+
+    clear_mailbox();
+    my $subject = 'cashier password updated'
+    my %msg = get_email_by_address_subject(
+                                           email   => $email,
+                                           subject => qr/\Q$subject\E/
+                                          );
+    ok(%msg, "email received");
+
     my $send_email_called = 0;
     my $mocked_account    = Test::MockModule->new('BOM::RPC::v3::Accounts');
     $mocked_account->mock('send_email', sub { $send_email_called++ });
