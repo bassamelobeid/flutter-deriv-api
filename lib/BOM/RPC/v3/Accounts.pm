@@ -903,10 +903,19 @@ sub login_history {
         return $auth_error;
     }
 
+    my $limit = 10;
+    if (exists $params->{args}->{limit}) {
+        if ($params->{args}->{limit} > 50) {
+            $limit = 50;
+        } else {
+            $limit = $params->{args}->{limit};
+        }
+    }
+
     my $user = BOM::Platform::User->new({email => $client->email});
     my $login_history = $user->find_login_history(
         sort_by => 'history_date desc',
-        limit   => 50
+        limit   => $limit
     );
 
     my @history = ();
