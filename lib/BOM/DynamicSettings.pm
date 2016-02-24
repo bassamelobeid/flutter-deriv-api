@@ -172,60 +172,19 @@ sub get_settings_by_group {
                 system.suspend.all_logins
                 system.suspend.logins
                 system.suspend.system
-                quants.features.suspend_claim_types
-                quants.markets.disabled
                 )
         ],
         quant => [qw(
-                quants.markets.newly_added
-                quants.commission.minimum_total_markup
-                quants.commission.maximum_total_markup
-                quants.commission.adjustment.minimum
-                quants.commission.adjustment.maximum
-                quants.commission.adjustment.bom_created_bet
-                quants.commission.adjustment.spread_multiplier
                 quants.commission.adjustment.global_scaling
-                quants.commission.adjustment.news_factor
-                quants.commission.adjustment.forward_start_factor
-                quants.commission.adjustment.quanto_scale_factor
-                quants.commission.intraday.historical_bounceback
-                quants.commission.intraday.historical_iv_risk
-                quants.commission.intraday.historical_fixed
-                quants.commission.intraday.historical_vol_meanrev
-                quants.commission.resell_discount_factor
-                quants.commission.equality_discount_retained
-                quants.commission.digital_spread.level_multiplier
-                quants.commission.digital_spread.random.european
-                quants.commission.digital_spread.random.single_barrier
-                quants.commission.digital_spread.random.double_barrier
-                quants.commission.digital_spread.forex.european
-                quants.commission.digital_spread.forex.single_barrier
-                quants.commission.digital_spread.forex.double_barrier
-                quants.commission.digital_spread.equities.european
-                quants.commission.digital_spread.equities.single_barrier
-                quants.commission.digital_spread.equities.double_barrier
-                quants.commission.digital_spread.commodities.european
-                quants.commission.digital_spread.commodities.single_barrier
-                quants.commission.digital_spread.commodities.double_barrier
+                quants.markets.disabled
                 quants.markets.disable_iv
-                quants.features.enable_portfolio_autosell
-                quants.features.enable_pricedebug
-                quants.bet_limits.holiday_blackout_start
-                quants.bet_limits.holiday_blackout_end
-                quants.bet_limits.maximum_payout
-                quants.bet_limits.maximum_payout_on_new_markets
-                quants.bet_limits.maximum_payout_on_less_than_7day_indices_call_put
-                quants.bet_limits.maximum_tick_trade_stake
-                quants.client_limits.intraday_forex_iv
+                quants.features.suspend_claim_types
+
                 quants.client_limits.asian_turnover_limit
+                quants.client_limits.intraday_forex_iv
                 quants.client_limits.spreads_daily_profit_limit
-                quants.client_limits.smarties_turnover_limit
-                quants.client_limits.intraday_spot_index_turnover_limit
                 quants.client_limits.tick_expiry_engine_turnover_limit
-                quants.client_limits.payout_per_symbol_and_bet_type_limit
-                quants.market_data.extra_vol_diff_by_delta
-                quants.market_data.interest_rates_source
-                quants.market_data.economic_announcements_source
+
                 quants.underlyings.disable_autoupdate_vol
                 quants.underlyings.disabled_due_to_corporate_actions
                 quants.underlyings.suspend_buy
