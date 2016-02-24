@@ -2,9 +2,9 @@ BEGIN;
 
 CREATE OR REPLACE FUNCTION notify_transaction_trigger() RETURNS trigger AS $$
 DECLARE
-  short_code VARCHAR(255) :='';
-  currency_code VARCHAR(3) :='';
-  payment_remark VARCHAR(255) :='';
+  short_code TEXT :='';
+  currency_code TEXT :='';
+  payment_remark TEXT :='';
   purchase_time TEXT := '';
   sell_time TEXT := '';
   purchase_price NUMERIC := 0;
