@@ -1,0 +1,33 @@
+commission:
+  resell_discount_factor: 0.2
+  intraday:
+    historical_fixed: 0.0125
+    historical_vol_meanrev: 0.10
+    historical_iv_risk: 10
+  digital_spread:
+    level_multiplier: 1.4
+  maximum_total_markup: 50
+  adjustment:
+    minimum: 1
+    maximum: 500
+    bom_created_bet: 100
+    spread_multiplier: 1
+    forward_start_factor: 1.5
+
+market_data:
+  interest_rates_source: "implied"
+  extra_vol_diff_by_delta: 0.1
+
+bet_limits:
+  holiday_blackout_start: 345
+  holiday_blackout_end: 5
+  maximum_payout: 100000
+  maximum_payout_on_new_markets: 100
+  maximum_payout_on_less_than_7day_indices_call_put: 5000
+
+client_limits:
+  payout_per_symbol_and_bet_type_limit: 200000
+  intraday_spot_index_turnover_limit: 30000
+  smartfx_turnover_limit: 5000
+  stocks_turnover_limit: 5000
+

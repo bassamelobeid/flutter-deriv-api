@@ -77,11 +77,6 @@ sub create_account {
         password => $password,
         ($email_verified) ? (email_verified => 1) : ());
     $user->add_loginid({loginid => $client->loginid});
-    $user->add_login_history({
-        environment => $details->{latest_environment} // '',
-        successful  => 't',
-        action      => 'login'
-    });
     $user->save;
     $client->deposit_virtual_funds;
 
