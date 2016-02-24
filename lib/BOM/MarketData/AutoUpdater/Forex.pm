@@ -115,7 +115,7 @@ sub _build_surfaces_from_file {
         push @volsurface, $surface;
     }
 
-    my $combined = {%{$volsurface[0]}, %{$volsurface[1]}};
+    my $combined = (scalar @volsurface) > 1 ? {%{$volsurface[0]}, %{$volsurface[1]}} : {%{$volsurface[0]}};
     return $combined;
 }
 
