@@ -46,13 +46,10 @@ sub top_up {
 
     my $fdp = $c->is_first_deposit_pending;
     my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
+
+    return if (@acc && $acc[0]->currency_code ne $cur);
+
+    if (not @acc) {
         @acc = $c->add_account({
             currency_code => $cur,
             is_default    => 1
@@ -74,57 +71,6 @@ sub top_up {
         remark               => __FILE__ . ':' . __LINE__,
     });
     $pm->legacy_payment({legacy_type => "ewallet"});
-    my ($trx) = $pm->add_transaction({
-        account_id    => $acc->id,
-        amount        => $amount,
-        staff_loginid => "test",
-        remark        => __FILE__ . ':' . __LINE__,
-        referrer_type => "payment",
-        action_type   => ($amount > 0 ? "deposit" : "withdrawal"),
-        quantity      => 1,
-    });
-    $acc->save(cascade => 1);
-    $trx->load;    # to re-read (get balance_after)
-
-    BOM::Platform::Client::IDAuthentication->new(client => $c)->run_authentication
-        if $fdp;
-
-    note $c->loginid . "'s balance is now $cur " . $trx->balance_after . "\n";
-}
-
-sub free_gift {
-    my ($c, $cur, $amount) = @_;
-
-    my $fdp = $c->is_first_deposit_pending;
-    my @acc = $c->account;
-    if (@acc) {
-        @acc = grep { $_->currency_code eq $cur } @acc;
-        @acc = $c->add_account({
-                currency_code => $cur,
-                is_default    => 0
-            }) unless @acc;
-    } else {
-        @acc = $c->add_account({
-            currency_code => $cur,
-            is_default    => 1
-        });
-    }
-
-    my $acc = $acc[0];
-    unless (defined $acc->id) {
-        $acc->save;
-        note 'Created account ' . $acc->id . ' for ' . $c->loginid . ' segment ' . $cur;
-    }
-
-    my ($pm) = $acc->add_payment({
-        amount               => $amount,
-        payment_gateway_code => "free_gift",
-        payment_type_code    => "free_gift",
-        status               => "OK",
-        staff_loginid        => "test",
-        remark               => __FILE__ . ':' . __LINE__,
-    });
-    $pm->free_gift({reason => "test"});
     my ($trx) = $pm->add_transaction({
         account_id    => $acc->id,
         amount        => $amount,
@@ -597,6 +543,16 @@ SKIP: {
         'successfully bought USD bet with sightly higher intraday_forex_iv_action.realized_profit limit';
     };
 }
+
+
+
+exit;
+
+
+
+
+
+
 
 subtest 'more validation', sub {
     my @usd_bets;
