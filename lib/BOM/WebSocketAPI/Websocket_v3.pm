@@ -338,7 +338,7 @@ sub __handle {
         if (grep { $_ eq $descriptor->{category} } ('ping', 'time')) {
             $limit = 0;
         }
-        if ($c->stash('loginid') and not $c->stash('is_virtual') and grep { $_ eq $descriptor->{category} } ('buy', 'sell')) {
+        if ($c->stash('loginid') and not $c->stash('is_virtual') and grep { $_ eq $descriptor->{category} } ('buy', 'sell', 'proposal')) {
             $limit = 0;
         }
 
