@@ -239,7 +239,7 @@ sub _sample_bet {
         {
             symbol => $_,
             recorded_date   => $overrides{date_pricing},
-        }) for (qw/GBP JPY USD/);
+        }) for (qw/GBP JPY USD JPY-USD/);
 
     BOM::Test::Data::Utility::UnitTestCouchDB::create_doc(
         'currency',
