@@ -574,7 +574,6 @@ subtest $method => sub {
     is($c->tcall($method, $params)->{status}, 0, 'unlock password ok');
     $test_client->load;
     ok(!$test_client->cashier_setting_password, 'cashier password unset');
-    ok($send_email_called,                      'send email after unlock cashier');
     $subject = 'cashier password updated';
     %msg = get_email_by_address_subject(
                                            email   => $email,
