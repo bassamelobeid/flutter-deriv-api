@@ -42,11 +42,11 @@
           "description": "Example: USD"
         },
         "current_spot": {
-          "type": "number",
+          "type": ["number", "null"],
           "description": "Spot value if we have license to stream this symbol. Example: 9874.52"
         },
         "current_spot_time": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "description": "Example: 1439999052"
         },
         "entry_spot": {
@@ -110,19 +110,19 @@
           "description": "Example: BSESENSEX30"
         },
         "entry_tick": {
-          "type": "number",
+          "type": ["number", "null"],
           "description": "Example: 86.630"
         },
         "entry_tick_time": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "description": "Example: 1446629000"
         },
         "exit_tick": {
-          "type": "number",
+          "type": ["number", "null"],
           "description": "Example: 86.810"
         },
         "exit_tick_time": {
-          "type": "integer",
+          "type": ["integer", "null"],
           "description": "Example: 1446629000"
         },
         "prediction": {
