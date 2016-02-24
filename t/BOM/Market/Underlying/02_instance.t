@@ -615,7 +615,7 @@ subtest 'contracts_offered' => sub {
 };
 
 subtest 'daily close crossing intradays' => sub {
-    plan tests => 7;
+    plan tests => 6;
     my %expectations = (
         'frxEURUSD' => 0,
         'frxBROUSD' => 1,
@@ -623,7 +623,6 @@ subtest 'daily close crossing intradays' => sub {
         'USAAPL'    => 1,
         'R_100'     => 0,
         'RDBULL'    => 1,
-        SPSIBI      => 1,
     );
 
     foreach my $ul (map { BOM::Market::Underlying->new($_) } (keys %expectations)) {

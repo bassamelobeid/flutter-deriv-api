@@ -10,6 +10,7 @@ use Date::Utility;
 use BOM::Market::Currency;
 use BOM::Test::Data::Utility::UnitTestCouchDB qw( :init );
 use BOM::Platform::Runtime;
+use BOM::Platform::Static::Config;
 
 my $historical_ir_date = Date::Utility->new;
 #Here currency means create an "InterestRate" data item in Chronicle
@@ -127,12 +128,12 @@ subtest interest => sub {
 subtest implied_rates_from => sub {
     plan tests => 5;
 
-    BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source('implied');
-    is(BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source, 'implied', 'sets environment for test');
+    BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} = 'implied';
+    is(BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source}, 'implied', 'sets environment for test');
     my $usd;
     lives_ok { $usd = BOM::Market::Currency->new('USD') } 'creates currency object';
     can_ok($usd, 'rate_implied_from');
     is($usd->rate_implied_from('JPY', 7 / 365), 0.008, '->rate_implied_from(\'JPY\', $tiy) returns rate for requested term for USD-JPY');
-    BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source('market');
-    is(BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source, 'market', 'resets environment after test');
+    BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} = 'market';
+    is(BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source}, 'market', 'resets environment after test');
 };

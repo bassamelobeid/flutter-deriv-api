@@ -44,6 +44,7 @@ use BOM::Platform::Context qw(request localize);
 use POSIX;
 use Try::Tiny;
 use BOM::Market::Types;
+use BOM::Platform::Static::Config;
 
 with 'BOM::Market::Role::ExpiryConventions';
 
@@ -1077,7 +1078,7 @@ sub uses_implied_rate {
     my ($self, $which) = @_;
 
     return
-        if BOM::Platform::Runtime->instance->app_config->quants->market_data->interest_rates_source eq 'market';
+        if BOM::Platform::Static::Config::quants->{market_data}->{interest_rates_source} eq 'market';
     return unless $self->forward_feed;
     return unless $self->market->name eq 'forex';    # only forex for now
     return $self->rate_to_imply eq $which ? 1 : 0;
